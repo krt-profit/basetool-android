@@ -186,3 +186,57 @@ library). Two repo facts the designer cannot know: (1) no clean vector logo exis
 old SVG exports are broken rasters) — the icon work includes a vector redraw of the mark;
 (2) the Lato font files ship in the APK from `design/fonts/` with the OFL 1.1 license text added
 (currently missing next to the fonts).
+
+---
+
+## Amendment prompt: Fan Kit compliance band
+
+If the design spec was (or is being) produced from an earlier version of the prompt above that
+did not yet contain the Fan Kit requirements, paste the following amendment into the same Claude
+Design session instead of re-running the full brief. It is self-contained.
+
+```text
+AMENDMENT to the Basetool Android design spec you produced from my earlier brief. One addition
+is legally required; update only the deliverables listed at the end and keep everything else
+exactly as designed.
+
+## New mandatory component: Star Citizen Fan Kit compliance band
+
+The app is a Star Citizen fan project and must display two legally COUPLED elements as one
+inseparable unit (Fan Kit Guidelines sections 2, 2b, 3):
+
+1. The "Made By The Community" logo — the official white artwork, used UNMODIFIED: no
+   recolor, tint, flip, distortion, outline, drop shadow, pattern, or effect. Rendered at
+   about 36 dp on the dark ground. (Asset: made-by-the-community.png, square, white on
+   transparent.)
+2. The trademark notice, byte-exact, including the space before the third registered sign:
+   "Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks
+   of Cloud Imperium Rights LLC"
+
+Binding rules:
+- The two elements form ONE component ("Fan Kit band") and never appear separately.
+- The notice text is prescribed legal wording: it stays verbatim ENGLISH in every locale,
+  including the German UI. Never rephrase, retranslate, or typographically "improve" it.
+- Legibility: notice at >= 14 sp in #D2D2D2 (or brighter) on the dark surfaces — muted is
+  fine, illegible is not. WCAG AA contrast applies.
+- The band is static, quiet, and non-interactive. It must not compete with the screen's
+  single orange CTA and must not look like a button or badge of the KRT brand — it is a
+  third-party attribution. Keep KRT corner brackets/glows OFF this component; a plain
+  hairline-topped row on the page background is the right register.
+- Layout: logo left, notice right of it, vertically centered; on narrow phones the notice
+  may wrap to two lines. On tablet landscape keep the band to the content max-width,
+  centered. Suggested placement: pinned to the bottom of the login screen's content, above
+  the version footer.
+
+## Deliverables to update (and nothing else)
+
+1. Component sheet: add the "Fan Kit band" with its spacing and type annotations (one
+   exemplar is enough; include the two-line phone wrap variant).
+2. Screen 1 (Login): both mockups (phone portrait + tablet landscape) now include the band
+   as described. This placement is MANDATORY — the login screen is the app's start surface
+   and must carry the band.
+3. Screen 12 (Einstellungen): the About/Impressum area repeats the same band as a welcome
+   addition (identical component, no variation).
+4. Do not add the band to any other screen, and do not move any existing element to make
+   room beyond minor spacing adjustments on the two affected screens.
+```
