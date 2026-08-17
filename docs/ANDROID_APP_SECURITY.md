@@ -202,15 +202,27 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   `iat` is computed from **server time** (tracked via the `Date` header of the latest
   token/API response), never from the raw device clock; the desktop extractor documents clock
   drift as its primary DPoP failure mode.
-- **Phase-0 task: create, then verify (test stack, before committing).** Code-verified: the
-  realm has **no** Client Policies at all today (`clientPolicies: []` in the realm export) — the
-  refresh-only executor (`dpop-bind-enforcer` with `allow-only-refresh-token-binding`, already
-  validated against the Keycloak 26.7 image for the desktop extractor, REQ-INGEST-012) exists
-  only as prose. Phase 0 first *creates* the policy (config-as-code where the realm tooling
-  allows, documented operator step otherwise — the same vehicle carries the realm-wide S256
-  policy of §2.11), then confirms for `basetool-android`: access token issued without
-  `cnf` (backend accepts it as Bearer), refresh token bound, refresh replay from a different key
-  fails. Fallback ladder if the policy is unavailable or misbehaves: (a) bind **both** tokens
+- **Phase-0 task: create, then verify (test stack, before committing) — and this is a first, not
+  a repeat.** Verified against a fresh production export (2026-08-17): the realm carries **zero
+  client profiles and zero policies**. An earlier draft of this document cited the desktop
+  extractor as a validated precedent for refresh-only binding; **it is not one.** The extractor
+  needs no policy and must not have one: since ADR-0129 its gateway validates the DPoP proof at
+  the hop that consumes the token, so binding *both* tokens is the wanted state there
+  (REQ-INGEST-012). The setup document that still described an `extractor-dpop` policy was
+  corrected in the main repo.
+
+  The app is the opposite case, which is why refresh-only remains right here: it talks to the
+  backend directly, and Spring Security's bearer filter rejects a `cnf`-bound access token
+  outright. So Phase 0 *creates* the policy for the first time (config-as-code where the realm
+  tooling allows, documented operator step otherwise — the same vehicle carries the realm-wide
+  S256 policy of §2.11), then confirms for `basetool-android`: access token issued without `cnf`
+  (backend accepts it as Bearer), refresh token bound, refresh replay from a different key fails.
+
+  Scoping note, verified against the Keycloak sources: there is **no** condition that names
+  clients directly. The documented way to scope a policy is a marker **client role** plus the
+  `client-roles` condition (provider id `client-roles`, config key `roles`); the executor is
+  `dpop-bind-enforcer` with `allow-only-refresh-token-binding`
+  (`DPoPBindEnforcerExecutorFactory`). Fallback ladder if the policy is unavailable or misbehaves: (a) bind **both** tokens
   ("Require DPoP bound tokens") and add `.dPoP()` support to the backend resource server (Spring
   Security ≥ 6.5 supports it; the ingest module already runs Bearer+DPoP side by side — proven
   pattern in this codebase, at the cost of a backend change + proofs on every API call);
