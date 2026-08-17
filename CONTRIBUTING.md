@@ -12,7 +12,7 @@ two ever disagree, `CLAUDE.md` and the specs win.
 ## Code of Conduct
 
 This project follows the [Contributor Covenant 3.0](CODE_OF_CONDUCT.md). Report violations
-to [lucas.greuloch@pm.me](mailto:lucas.greuloch@pm.me).
+to [lucas.greuloch@gmail.com](mailto:lucas.greuloch@gmail.com).
 
 ## Asking questions, reporting bugs, suggesting features
 
@@ -24,7 +24,7 @@ steps — never include tokens, account data, or screenshots showing other membe
 
 **Do not open a public issue.** Use GitHub's private vulnerability reporting on this
 repository (Security → Report a vulnerability) or mail
-[lucas.greuloch@pm.me](mailto:lucas.greuloch@pm.me).
+[lucas.greuloch@gmail.com](mailto:lucas.greuloch@gmail.com).
 
 ## Contributor License Agreement (CLA)
 
