@@ -146,6 +146,7 @@ optional.)
 | Phase | Item |
 |---|---|
 | 0 | Extend web `privacy.html` + DE/EN bundles for the new API vhost access logs (31-day IP retention) |
+| 0 | If Keycloak user event logging is enabled (security doc §2.11): VVT/TOM entry, bounded retention (`eventsExpiration`), and a privacy-policy mention of the auth-event log (login IPs, client ids) |
 | 1 | In-app screens: Datenschutzerklärung, Impressum (§ 18 MStV), OSS licenses, operator contact |
 | 1 | VVT entry + TOM addendum + one-page DPIA negative assessment filed |
 | 2–3 | Re-run the § 25 TDDDG table on every new stored artifact (review gate) |

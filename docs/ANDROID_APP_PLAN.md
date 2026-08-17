@@ -95,8 +95,10 @@ Key decisions (each becomes an ADR in this repo when implemented — see §8):
    per-client toggle, which binds both token types). **The exact configuration is a Phase-0
    verification task on the test stack** — the security doc §4 carries the mechanism and the
    fallback ladder.
-3. **Mobile session = pure Bearer.** No cookies, no Spring Session, no CSRF involvement (verified:
-   the resource-server DSL bypasses CSRF for Bearer requests). The app sends
+3. **Mobile session = pure Bearer.** No cookies, no Spring Session, no CSRF involvement (verified
+   down to the Spring Security 7.1 bytecode: `OAuth2ResourceServerConfigurer#registerDefaultCsrfOverride`
+   registers every Bearer request as a CSRF exemption; the backend's explicit ignore list only
+   serves the anonymous write paths). The app sends
    `Authorization`, `X-Active-Org-Unit-Id` (org pin), `Accept-Language`, and a client-generated
    `X-Correlation-Id` on every call.
 4. **Live data**: MVP uses the existing Bearer-capable **SSE stream**
@@ -126,9 +128,13 @@ Key decisions (each becomes an ADR in this repo when implemented — see §8):
   - `core:network` — OkHttp/Retrofit, kotlinx.serialization, RFC 7807 problem parser (stable
     `code` + `correlationId`), auth interceptor, SSE client, DTOs **generated from the committed
     `openapi.json`** (openapi-generator, same source-of-truth approach as the frontend's typed JS
-    DTOs per ADR-0125).
-  - `core:auth` — AppAuth flow, token store (Keystore AES-GCM + DataStore), DPoP proof signer,
-    session state machine (incl. `PENDING_APPROVAL`, terms gate, logout/revocation).
+    DTOs per ADR-0125). No OkHttp disk cache — the Room cache is the only persistence layer
+    (security doc §4); 429/503/SSE reconnects use exponential backoff with full jitter;
+    non-idempotent writes are never auto-retried; every call carries
+    `User-Agent: basetool-android/<semver>` (security doc §6).
+  - `core:auth` — AppAuth flow, token store (Keystore AES-GCM + DataStore), DPoP proof signer
+    (proof `iat` from server-synced time, security doc §4), session state machine (incl.
+    `PENDING_APPROVAL`, terms gate, logout/revocation, kill-switch/min-version error mapping).
   - `core:data` — repositories, Room cache, org-unit context holder.
   - `feature:*` — one module per area (missions, notifications, hangar, inventory, orders, bank,
     refinery, exchange, promotion, settings).
@@ -207,16 +213,27 @@ data) exists server-side and is proposed as a **post-MVP** app mode (open decisi
 
 **Phase 0 — approvals & server-side groundwork** (this repo; no app code yet)
 Decisions Q1–Q7 resolved · ADRs written (API exposure, mobile auth, external-contract set) ·
-Keycloak client `basetool-android` on the test stack, DPoP-refresh-binding behavior verified ·
-NPM vhost + compose network + trusted-proxy config for the backend rate limiter · **anonymous-
-surface stance for the new vhost decided and enforced** (default: block the anonymous-write and
-guest paths at the API vhost until the app's guest mode ships — see security doc §2.8) ·
-**`/.well-known/assetlinks.json` served on `profit-base.online`** (App-Links prerequisite; small
-frontend/NPM change with its own probe) · REQ-SEC / REQ-API / REQ-OBS spec amendments · full
-monitoring package for the new public surface (blackbox liveness + edge-deny + force-SSL + HSTS +
-IPv6 twins + DNS, auth-failure counters, alert rules staged per REQ-OBS-014, dashboards, Alloy
-pipeline, privacy-policy extension for the new vhost's access log) · app repo scaffolded (public,
-hardened per DEV_CI doc).
+Keycloak client `basetool-android` on the test stack; the DPoP **Client Policy created** (the
+realm has none today) and refresh-binding behavior verified (security doc §4) · Keycloak realm
+hardening: user event logging + alerts, realm-wide S256 policy for public clients,
+`fullScopeAllowed` cleanup, `sslRequired: external`, versioned token-endpoint edge budget
+(security doc §2.11) · NPM vhost as **default-deny allowlist** + compose network (security doc
+§2.8) · backend **XFF right-to-left chain walk** + narrowed trusted proxies + forwarded-header
+overwrite at the edge (security doc §2.3) · backend Actuator moved to a dedicated management
+port (ADR-0090 pattern) + edge deny (security doc §2.2) · audience enforcement flipped as a
+**release gate** of the exposure PRs (security doc §2.4) · per-`sub` quotas behind auth +
+dedicated budgets for the app's endpoint families and SSE connects (security doc §2.9) ·
+`no-store` on sensitive GET families (security doc §2.12) · min-app-version gate +
+`User-Agent` convention, CAA record, edge body-size caps (security doc §2.13) ·
+**anonymous-write and guest paths stay off the allowlist until guest mode ships** (security doc
+§2.8) · **`/.well-known/assetlinks.json` served on `profit-base.online`** (App-Links
+prerequisite; small frontend/NPM change with its own probe; rotation-coupled per security doc
+§2.10) · REQ-SEC / REQ-API / REQ-OBS spec amendments incl. the two stale-doc fixes (security doc
+§2.14) · full monitoring package for the new public surface (blackbox liveness + edge-deny +
+force-SSL + HSTS + IPv6 twins + DNS, auth-failure + per-`azp` client counters, alert rules
+staged per REQ-OBS-014, dashboards, Alloy pipeline, privacy-policy extension for the new vhost's
+access log and — once enabled — the Keycloak event store) · app repo scaffolded (public,
+hardened per DEV_CI doc incl. Gradle dependency verification).
 
 **Phase 1 — walking skeleton (app)**
 Follows the design spec's implementation order: (1) theme + tokens from
@@ -247,10 +264,13 @@ create — the vhost's anonymous-path block lifts here) · system states + adapt
 notification channels per design-spec ch. 14. No push channel (decided Q2).
 
 **Phase 5 — hardening & first release**
-Certificate pinning rollout (backup-pin + expiration + documented rotation runbook) · MASVS-based
-security review · Datenschutzerklärung finalized in-app · beta (internal testers) → **first
-public release via GitHub Releases + Obtainium** (Q1). Play Integrity/store work only if a Play
-channel is ever added (Q3).
+Certificate pinning rollout (**CA-pin evaluated first**, else leaf backup-pin + expiration;
+documented rotation runbook — security doc §5) · MASVS-based security review + red-team pass per
+security doc §7 (incl. spoofed-XFF attribution, page-size amplification, assetlinks/key-rotation
+drill) · release provenance: artifact attestations + published APK SHA-256 + signing-cert
+fingerprint in the README (DEV_CI doc) · Datenschutzerklärung finalized in-app · beta (internal
+testers) → **first public release via GitHub Releases + Obtainium** (Q1). Play Integrity/store
+work only if a Play channel is ever added (Q3).
 
 Each phase lands with the binding repo obligations of §8. Phases 2–4 slice vertically (a feature
 ships UI + repository + tests + i18n together), so the cut lines can shift after Q6.
