@@ -124,7 +124,13 @@ destinations + list-detail.
 Screens to design (each phone + tablet):
  1. Login (KRT logo, orange radial top bloom allowed here, one CTA "Anmelden" -> opens
     Keycloak in a Custom Tab; guest-browse entry if enabled) · approval-pending state ·
-    terms-acceptance screen (scrollable terms, accept CTA).
+    terms-acceptance screen (scrollable terms, accept CTA). MANDATORY on the login screen:
+    the Star Citizen Fan Kit compliance band — the "Made By The Community" logo (white
+    artwork, unmodified, ~36 dp) paired with the verbatim notice "Star Citizen®, Roberts
+    Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium
+    Rights LLC" at >= 14 sp in #D2D2D2, as one quiet unit at the bottom; the two elements
+    are legally coupled and never appear separately, and the notice text is never
+    translated.
  2. Dashboard: next missions (cards with countdown), unread notifications, org context,
     announcement banner, quick actions.
  3. Missionen: list (search/filter, status pills, date grouping) · detail with section tabs
@@ -152,7 +158,9 @@ Screens to design (each phone + tablet):
 11. Beförderung: my evaluations matrix, eligibility progress.
 12. Einstellungen: language DE/EN, active org unit, app-lock (biometric toggle), payout
     preference, blueprint sharing, "Lokale Daten löschen", Datenschutzerklärung, Impressum,
-    OSS-Lizenzen, logout. Version/server-status footer.
+    OSS-Lizenzen, logout. Version/server-status footer. The About/Impressum area repeats
+    the Fan Kit band from screen 1 (same coupled unit, welcome addition to the mandatory
+    login placement).
 13. System states: offline banner + cached timestamp, 409-conflict dialog ("Neu laden und
     erneut versuchen"), 429/503 retry state, forced-update screen ("Server erwartet eine
     neuere App-Version").

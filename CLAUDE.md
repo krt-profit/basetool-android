@@ -78,6 +78,28 @@ Permissions stay minimal: `INTERNET`, `USE_BIOMETRIC` (optional app-lock),
 - The design specification produced from the Claude Design prompt is the binding UI
   reference once it exists; deviations need an ADR.
 
+## Star Citizen Fan Kit compliance (binding)
+
+The app is a Star Citizen fan project and uses Fan Kit assets, so the Fan Kit Guidelines
+(sections 2, 2b, 3) bind it exactly as they bind the web app (REQ-UI-018 there). Asset and
+detailed rules: [`core/designsystem/fankit/`](core/designsystem/fankit/README.md).
+
+- The **"Made By The Community" logo and the CIG trademark notice are ONE coupled unit** —
+  a single composable; neither may render, move, or be removed alone.
+- The notice is **prescribed legal wording, byte-exact, verbatim English in every locale**
+  (`translatable="false"`): `Star Citizen®, Roberts Space Industries® and Cloud Imperium ®
+  are registered trademarks of Cloud Imperium Rights LLC` — including the space before the
+  third ®. Never tidy it up, never translate it — a "fixed" string breaks compliance while
+  passing every key-parity check.
+- **Placement:** the login/entry screen (the app's home-page analog under section 2b,
+  visible without a login) carries the band; the settings "About" screen may repeat it as
+  an addition, never as a substitute. A legal subpage alone is not a sanctioned surface.
+- **Artwork unmodified** (section 3): white variant, no recolor/tint/flip/distortion/
+  outline/shadow/effect; notice ≥ 14 sp in `#D2D2D2`-grade contrast.
+- A UI test pins logo + notice + the byte-exact string per locale (mirror of the web app's
+  `FanKitComplianceMvcTest`); it ships together with the Phase-1 login screen and may never
+  be split into independently disableable halves.
+
 ## Build, run, test
 
 Always use the Gradle wrapper; it is the only sanctioned build/test path (never the IDE test

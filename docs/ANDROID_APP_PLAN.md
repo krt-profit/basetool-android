@@ -196,8 +196,10 @@ hardened per DEV_CI doc).
 **Phase 1 — walking skeleton (app)**
 Auth end-to-end (login via Custom Tab, token store, refresh loop, logout+revocation, PENDING/
 terms/409/429/503 problem handling) · KRT Compose design system (from the Claude Design spec) ·
-navigation shell for both form factors · settings (language, Impressum, Datenschutz, licenses) ·
-DE/EN bundles · CI green incl. release-signing dry run.
+**Fan Kit compliance band on the login screen** (coupled logo+notice composable + per-locale
+byte-exact string test — root `CLAUDE.md`, `core/designsystem/fankit/`) · navigation shell for
+both form factors · settings (language, Impressum, Datenschutz, licenses) · DE/EN bundles · CI
+green incl. release-signing dry run.
 
 **Phase 2 — read-only member core**
 Dashboard · missions list/detail · **operations list/detail incl. payout status** · notifications

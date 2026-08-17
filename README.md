@@ -37,6 +37,18 @@ The Gradle scaffold lands with Phase 1 of the [roadmap](docs/ANDROID_APP_PLAN.md
 Contributor ground rules: [`CLAUDE.md`](CLAUDE.md). Server-side counterpart work lives in the
 main `basetool` repository.
 
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) — one-time [CLA](CLA.md) signature
+(roster: [`docs/cla-signatures.md`](docs/cla-signatures.md)), per-commit DCO sign-off
+(`git commit -s`), and the [Contributor Covenant 3.0](CODE_OF_CONDUCT.md).
+
+## Star Citizen
+
+This is an unofficial fan project ("Made By The Community") and is not affiliated with or
+endorsed by Cloud Imperium. Star Citizen®, Roberts Space Industries® and Cloud Imperium ®
+are registered trademarks of Cloud Imperium Rights LLC.
+
 ## License
 
 [GPL-3.0](LICENSE.md), like the main Basetool repository.
