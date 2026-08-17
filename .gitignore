@@ -1,0 +1,54 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.navigation/
+output.json
+
+# Android
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+.externalNativeBuild/
+.cxx/
+lint-report.html
+lint-results*.xml
+
+# Kotlin
+.kotlin/
+
+# Signing material & local secrets — NEVER commit (public repo)
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+*.pepk
+.env
+.env.*
+!.env.example
+*.local.env
+secrets.properties
+
+# Test / coverage artifacts
+*.exec
+*.ec
+/reports/
+screenshots/failures/
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & temp
+*.log
+*.tmp
+*.swp

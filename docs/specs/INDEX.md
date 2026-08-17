@@ -1,0 +1,19 @@
+# Spec Registry
+
+Durable requirements for the Android app live here as docs-as-code, one file per area, using
+ids `REQ-APP-<AREA>-NNN`. Every behaviour change updates its requirement in the same PR; a
+change with no matching spec change is incomplete (see `CLAUDE.md`).
+
+Until the first specs are extracted, the **concept documents in [`docs/`](../) are the
+binding source** (marked `Doc type: living plan`):
+
+| Area (planned) | Will absorb |
+|---|---|
+| `auth.md` (`REQ-APP-AUTH-*`) | login flow, token storage, DPoP, session states, app-lock |
+| `api-contract.md` (`REQ-APP-API-*`) | consumed endpoints, headers, problem-code handling, pagination, version echo |
+| `privacy.md` (`REQ-APP-PRIV-*`) | dependency/data-flow gate, § 25 TDDDG storage table, permissions |
+| `ui.md` (`REQ-APP-UI-*`) | KRT design tokens, adaptive layout rules, i18n |
+| `offline.md` (`REQ-APP-OFFLINE-*`) | read-cache scope, backup exclusion, wipe semantics |
+
+Server-side requirements (API exposure, rate limits, monitoring) stay in the main `basetool`
+repo's `docs/specs/` — never duplicated here.
