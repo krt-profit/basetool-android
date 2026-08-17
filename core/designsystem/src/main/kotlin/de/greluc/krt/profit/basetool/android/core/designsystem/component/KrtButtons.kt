@@ -169,6 +169,24 @@ object KrtButtonStyles {
                 borderPressed = KrtTheme.colors.danger,
                 focusRing = MaterialTheme.colorScheme.primary,
             )
+
+    /**
+     * Borderless icon button for app chrome — the top bar's bell and back arrow.
+     *
+     * Chrome sits on a surface that already carries its own edges; a hairline around every icon up
+     * there would read as a second frame. Only the glyph reacts to the press.
+     */
+    val chrome: KrtButtonStyle
+        @Composable get() =
+            KrtButtonStyle(
+                container = Color.Transparent,
+                containerPressed = Color.Transparent,
+                content = KrtPalette.Gray1,
+                contentPressed = MaterialTheme.colorScheme.primary,
+                border = null,
+                borderPressed = null,
+                focusRing = MaterialTheme.colorScheme.primary,
+            )
 }
 
 /**

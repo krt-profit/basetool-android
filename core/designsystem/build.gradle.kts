@@ -66,6 +66,8 @@ dependencies {
     api(libs.compose.ui)
     api(libs.compose.ui.graphics)
     api(libs.compose.material3)
+    // Window size classes drive the phone/tablet split; versioned outside the Compose BOM.
+    api(libs.compose.material3.adaptive)
     api(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
 
