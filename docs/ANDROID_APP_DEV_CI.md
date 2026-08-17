@@ -74,6 +74,10 @@ Baseline posture (all from GitHub's current security docs):
 - Top-level `permissions: contents: read` in every workflow; scopes widened per job only.
 - **Every third-party action pinned to a full commit SHA** (the only immutable reference —
   tj-actions/changed-files, CVE-2025-30066, is the case study; >23 000 repos hit by tag rewrite).
+- **Gradle dependency verification** (`gradle/verification-metadata.xml`: checksums + PGP where
+  published) gates every resolved build/plugin artifact — the Android-toolchain counterpart of
+  SHA-pinned actions; the `--write-verification-metadata` refresh flow is documented in the
+  contributor docs so a bumped dependency fails loudly instead of resolving silently.
 - **zizmor** (v1.29.0) + **actionlint** (v1.7.12) lint the workflows in CI; zizmor's
   `cache-poisoning`, `template-injection`, `artipacked`, `unpinned-uses`, `excessive-permissions`
   audits are the checklist.
@@ -110,6 +114,12 @@ Baseline posture (all from GitHub's current security docs):
 - SBOM per release: CycloneDX Gradle plugin 3.4.1 (spec 1.6/1.7) — **verify AGP compatibility in
   Phase 1** (README is silent on Android); fallback: GitHub dependency-graph SBOM export. Matches
   this repo's `cyclonedxBom` habit.
+- **Release provenance & user-side verification**: each release publishes build provenance
+  (`actions/attest-build-provenance`) and the APK's SHA-256 next to the artifact; the README
+  documents the release signing certificate's SHA-256 fingerprint (the same digest served in
+  `assetlinks.json`), so Obtainium users can verify a download with
+  `apksigner verify --print-certs`. The rotation runbook updates `assetlinks.json` with **both**
+  the old and the new cert digest *before* a rotated APK ships (security doc §2.10).
 - Reproducible builds: aspirational, not gated — AGP is close but apksigner ≥ 35.x verification
   quirks, baseline profiles and PNG crunching still break byte-identity (F-Droid docs). Pin exact
   SDK/build-tools versions and revisit if F-Droid distribution ever becomes a goal.

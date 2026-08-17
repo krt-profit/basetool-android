@@ -2,7 +2,9 @@
 
 Doc type: **living plan** (draft, pending approval by @greluc).
 All external claims verified against live documentation on **2026-08-17**; repo claims verified
-against the current codebase. Master plan: [`ANDROID_APP_PLAN.md`](ANDROID_APP_PLAN.md).
+against the current codebase. Amended **2026-08-17** after a code-level security audit of the
+basetool backend/realm (verified findings are marked "code-verified" in §2/§4). Master plan:
+[`ANDROID_APP_PLAN.md`](ANDROID_APP_PLAN.md).
 
 ## 1. Threat model
 
@@ -18,56 +20,141 @@ these measures does not in itself constitute a vulnerability"), Google Play Inte
 ("part of a broader anti-abuse strategy, not sole mechanism"). Our bar: raise cost, detect,
 throttle, revoke — and never weaken server-side authorization in exchange for client-side trust.
 
-## 2. Exposing `/api/v1` (server-side delta in this repo)
+## 2. Exposing `/api/v1` (server-side delta — all work in the main `basetool` repo)
 
 Today the backend container is on **no** `net-proxy-*` network — `/api/v1` is not internet-
-reachable. The exposure package (one PR series, each with specs/monitoring per root `CLAUDE.md`):
+reachable. Everything in this section is server-side and therefore lands in the main `basetool`
+repo under its rules (REQ updates + ADRs + monitoring in the same PR); nothing here is app code.
+The exposure package (one PR series):
 
 1. **New NPM vhost** `api.profit-base.online` → `https://backend:11261` (re-encrypt like the
    other hosts); backend joins a new dual-stack proxy network (ADR-0112 pattern so real IPv4/IPv6
    client addresses reach nginx). The version-controlled edge snippets (`limit_req` 20 r/s,
    burst 80, `limit_conn` 500, 429 responses, keyed full-IPv4 / IPv6-/64) apply to every proxy
    host automatically — verify with the existing `EdgeRateLimitSpike` alert.
-2. **`/actuator` edge deny** on the new vhost (404), asserted by `blackbox-edge-deny` for both
-   `/actuator/prometheus` and `/actuator/health`, plus the external
+2. **`/actuator` off the public connector — two layers (code-verified gap).** Unlike
+   frontend/ingest (ADR-0090), the backend serves `/actuator/**` on its ordinary app connector
+   (no `management.server.port`), `/actuator/health*` is `permitAll`, and the existing NPM
+   actuator-deny rules live only in the unversioned NPM admin DB. The exposure package therefore
+   (a) moves the backend Actuator to a dedicated management port on the monitoring network
+   (ADR-0090 pattern) so the connector the new vhost proxies serves no Actuator at all, and
+   (b) still adds the `/actuator` edge deny (404) on the new vhost, asserted by
+   `blackbox-edge-deny` for both `/actuator/prometheus` and `/actuator/health`, plus the external
    `.github/workflows/edge-deny-probe.yml` — same posture as frontend/ingest (REQ-OBS-005/-012).
-3. **Rate-limit attribution**: the backend honors `X-Forwarded-For` only from
-   `app.rate-limit.trusted-proxies` (today: the frontend). NPM's network gateway must be added,
-   keeping the right-to-left chain-walk semantics (REQ-SEC-011/SEC-02) — otherwise every app user
-   collapses into a single Bucket4j bucket and 429s storm. Note CGNAT: many legitimate users can
-   share one IPv4; per-subject (JWT `sub`) limits complement per-IP limits (ingest precedent).
+   An unversioned edge rule alone is one NPM misconfiguration away from public health output.
+3. **Rate-limit attribution — the backend needs the SEC-02 walk first (code-verified gap).** The
+   backend honors `X-Forwarded-For` only from `app.rate-limit.trusted-proxies`, but
+   `RateLimitingFilter.resolveClientKey` takes the **leftmost** XFF element — the backend has no
+   right-to-left chain walk today. That is safe behind its current single sanitizing hop (the
+   SEC-02-hardened frontend) and becomes an exploitable hole behind NPM, which *appends* the real
+   peer (`$proxy_add_x_forwarded_for`): a client-chosen leftmost entry mints a fresh per-IP
+   bucket per request — a full rate-limit bypass plus foreign-IP framing. Phase 0 therefore
+   (a) implements the right-to-left walk in the backend (model: the frontend's
+   `ClientIpContextFilter`, REQ-SEC-011/SEC-02), (b) narrows the trusted-proxies range (prod
+   today: `172.28.0.0/16`) to the API vhost's proxy network, and (c) has the vhost **overwrite —
+   never append or pass through — the whole `X-Forwarded-*`/`Forwarded` family**: the backend
+   runs `server.forward-headers-strategy: framework`, whose `ForwardedHeaderFilter` consumes
+   forwarded headers from any peer, so an unfiltered client-supplied `X-Forwarded-Host` would
+   poison every rebuilt URL (Location headers, problem `instance` URIs). Without correct
+   attribution every app user collapses into a single Bucket4j bucket and 429s storm. Note
+   CGNAT: many legitimate users can share one IPv4; per-subject (JWT `sub`) limits complement
+   per-IP limits (ingest precedent).
 4. **Audience enforcement rollout** (REQ-INGEST-008 sequencing): the Android client gets the
    `aud=basetool-backend` mapper at creation; once *all* issuing clients stamp the audience,
    `IRI_BACKEND_EXPECTED_AUDIENCES=basetool-backend` is set in prod. Enforcement before mapping
-   would lock out the app the moment the flag flips.
+   would lock out the app the moment the flag flips. Code-verified state: the flag is unset in
+   prod today (commented out in `.env.example`; only the E2E stack enforces it) — the flip is a
+   **release gate of the exposure PRs**, not a later hardening step: the vhost does not go live
+   against a backend that accepts audience-less tokens from arbitrary realm clients.
 5. **Monitoring package** (binding, same PRs): blackbox `http_2xx_or_401` liveness probe on the
    API root + IPv6 twin + DNS A/AAAA probes + force-SSL + HSTS probes; keep new `/probe` jobs out
    of `TargetDown`'s scope regex deliberately; auth-failure and rate-limit-rejection counters for
    the new surface (model: `basetool_ingest_auth_failures_total`); alert rules staged per
    REQ-OBS-014 until proven live on the test stack; dashboard updates (03/07/08); Alloy pipeline +
    31-day IP-retention entry for the new vhost's access log **including the privacy-policy
-   extension that conditions it** (see privacy doc §7).
+   extension that conditions it** (see privacy doc §7); plus **client-id (`azp`) observability
+   from day one** — a bounded per-client counter on the new surface and an unknown-`azp` alert
+   (model: `basetool_ingest_client_total` / `IngestUnknownClient`), the detection half of the §5
+   revocation lever.
 6. **CORS stays closed** (`allowed-origin-patterns` empty). The native app sends no Origin; a
    browser-based client remains deliberately impossible.
 7. Edge software watch: NPM 2.15.1 carries an unpatched CVE watch item (CVE-2026-40519, memory).
    The new vhost raises the value of fast NPM bumps — keep the Dependabot merge cadence.
-8. **Anonymous-surface stance (explicit, Phase 0).** The backend deliberately permits anonymous
-   endpoints (master-data reads, redacted mission browsing, guest participant editing, anonymous
-   order creation). The new vhost would make these internet-reachable on day one — long before
-   the app's guest mode (post-MVP). Default stance: the API vhost **denies the anonymous-write
-   and guest paths** (`POST /api/v1/orders`, `/orders/items`, the guest participant mutations)
-   via edge location rules until guest mode ships, and the anonymous read surface stays open
-   only where the app needs it pre-login (master data). Each opened anonymous path gets its own
-   rate budget and an abuse counter/alert. Revisit when Q6 activates guest mode.
+8. **Anonymous-surface stance: default-deny allowlist (explicit, Phase 0).** The backend
+   deliberately permits anonymous endpoints (master-data reads, redacted mission browsing, guest
+   participant editing, anonymous order creation). The new vhost would make these
+   internet-reachable on day one — before the app's guest mode ships (Q6: with the first
+   release). Stance: the API vhost is a **default-deny allowlist** — it proxies only the
+   endpoint families the app consumes and 404s everything else, rather than blocklisting
+   known-anonymous paths. Two reasons: the anonymous surface is branchy (the `/slim` twins, the
+   guest participant mutations across PUT/DELETE/check-in/out/payout, `POST /api/v1/orders/items`
+   with its table-wide pessimistic lock — a DoS lever), so a blocklist misses paths; and any
+   *future* `permitAll` endpoint added for the web app would otherwise become internet-reachable
+   the day it merges. The anonymous read surface joins the allowlist only where the app needs it
+   pre-login (master data); the anonymous-write and guest paths join when guest mode ships. The
+   terms/consent endpoints (`/api/v1/terms/**`) and the registration-status read MUST be on the
+   allowlist from day one — the app's terms gate and `PENDING_APPROVAL` handling depend on them.
+   Each opened anonymous path gets its own rate budget and an abuse counter/alert.
 9. **Per-subject quotas (Phase 0 work item, not just an aspiration).** Extend the backend
    Bucket4j configuration with per-`sub` budgets on the write endpoints the app uses (the ingest
    module's enforceable per-subject limiter is the model), so CGNAT users don't share one IP
    bucket and a single hijacked account cannot exhaust an endpoint. Ships with the exposure PRs
-   including metrics + staged alerts.
+   including metrics + staged alerts. Implementation note (code-verified): the backend's
+   `RateLimitingFilter` runs before Spring Security (`HIGHEST_PRECEDENCE + 10`) and can only key
+   on IP — the per-`sub` layer must sit *behind* authentication like the ingest
+   `SubjectRateLimiter` (service-level, unforgeable key). Today `hangar/**`, `inventory/**`, the
+   bank surface, `users/search` and the SSE connect ride only the loose global per-IP umbrella
+   (5000/min) — the exposure package gives the app-consumed write families and
+   `GET /notifications/stream` connects their own budgets (the stream already caps at 5
+   concurrent emitters per `sub` server-side).
 10. **App-Links prerequisite.** The preferred redirect URI requires
     `/.well-known/assetlinks.json` on `profit-base.online` (served by the frontend or an NPM
     static location; carries the app's signing-cert SHA-256). Small change, own PR with a
-    blackbox probe asserting availability + content type — scheduled in Phase 0.
+    blackbox probe asserting availability + content type — scheduled in Phase 0. Coupled to key
+    rotation: on a v3.1 signing-key rotation the file must list **both** the old and the new
+    cert digest *before* the rotated APK ships, or verified App Links — and with them the login
+    redirect — break. This goes into the rotation runbook (DEV_CI doc) and the Phase-5 fire-drill
+    list (§7).
+11. **Keycloak realm hardening (same PR series, code-verified gaps).** The new public surface
+    turns these from cosmetic into operational: (a) `eventsEnabled`/`adminEventsEnabled` are
+    both `false` — no login-failure, token-error or client-disable event exists anywhere, i.e.
+    the "detect" half of the §5 ladder is blind on the very token endpoint that goes public;
+    enable user events with a bounded `eventsExpiration`, ship them into the Loki alert stack,
+    and extend the VVT/privacy notes accordingly (privacy doc §9). (b) `basetool-frontend` — a
+    public client — carries no `pkce.code.challenge.method` attribute, and both existing public
+    clients run `fullScopeAllowed: true` (tracked as an open finding in
+    `docs/keycloak/README.md`); the Client-Policies infrastructure Phase 0 introduces for DPoP
+    (§4) doubles as the vehicle for a realm-wide **"S256 required for public clients"** policy
+    and the `fullScopeAllowed` cleanup. (c) `sslRequired` is `"none"` — set `external`. (d) The
+    token endpoint (`/realms/iri/protocol/openid-connect/token`) becomes the hottest public path
+    (AT 300 s ⇒ each active app user refreshes ~12×/h): give it a stricter,
+    **version-controlled** edge budget — REQ-SEC-023 currently declares per-endpoint edge limits
+    unversioned host state; carve the token endpoint out of that rule.
+12. **Response-cache hardening.** The backend's `ApiCacheControlFilter` emits only `no-cache,
+    must-revalidate` (storage with revalidation allowed) and never `no-store`; the exposure
+    package adds `Cache-Control: private, no-store` on the sensitive GET families (bank, member
+    PII, notifications). The app-side mirror rule — no OkHttp disk cache at all — is in §4.
+13. **Minimum-app-version gate (forced upgrade) + edge misc.** The app sends
+    `User-Agent: basetool-android/<semver>` on every call; the backend (or vhost) can refuse
+    versions below a configured minimum with a dedicated RFC 7807 code the app maps to an
+    "update required" screen. This is the missing granularity between "do nothing" and the
+    all-or-nothing client kill switch (§5): without it, an app version with a security defect
+    can never be locked out without locking out everyone. Pairs with the client-side capability
+    ping (plan §4). Also Phase 0, cheap: a **CAA record** for `profit-base.online` (Let's
+    Encrypt only), and per-location `client_max_body_size` caps on the vhost (small default;
+    larger only on the hangar-import endpoints — the backend's `RequestBodySizeLimitFilter`
+    covers only its configured paths). Review the `PaginationUtil` clamp (`MAX_PAGE_SIZE`
+    100 000) for the public ingress in the REQ-API amendment — a single anonymous-reachable
+    list request returning 100 k rows is an amplification lever the global query timeout only
+    bounds in time.
+14. **Doc drift found while auditing — already fixed in the main repo (2026-08-17).** Two
+    security docs contradicted the code this concept builds on: `docs/keycloak/README.md`
+    documented `revokeRefreshToken/refreshTokenMaxReuse = true/5` although realm-wide rotation
+    has been **off** since 2026-06-18 (REQ-SEC-012 / ADR-0019 amendment #4) — precisely the fact
+    that makes DPoP the RFC 9700 path in §4; and `desktop-ingest.md` REQ-INGEST-012's acceptance
+    list claimed "the gateway does not configure `dPoP(...)`" although the ingest `SecurityConfig`
+    does (its own requirement body describes the mechanism correctly). Both corrected. Noted here
+    because §4's fallback ladder and the DPoP precedent rest on them.
 
 ## 3. Keycloak client `basetool-android` (spec)
 
@@ -78,7 +165,7 @@ Modeled on `basetool-sc-extractor` (the existing native-app precedent), tightene
 | Type | public (no secret) | RFC 8252; a secret in an open-source APK is theater |
 | Flows | Standard (Auth Code) only; direct grants OFF; device grant OFF | one login path via Custom Tab |
 | PKCE | **S256 enforced** (client attribute `pkce.code.challenge.method=S256`) | RFC 9700 §2.1.1 |
-| Redirect URIs | exact, wildcard-free. Preferred: **verified App Link** `https://profit-base.online/app/callback` (assetlinks.json on the domain we control); fallback custom scheme `de.kartell.basetool:/oauth2redirect` for dev | RFC 9700 §4.1.3; App Links are non-claimable by other apps |
+| Redirect URIs | exact, wildcard-free. Prod client: **verified App Link** `https://profit-base.online/app/callback` **only** (assetlinks.json on the domain we control). The custom-scheme fallback `de.kartell.basetool:/oauth2redirect` is registered solely on the dev/test-stack realm's client — a custom scheme is claimable by any installed app (PKCE prevents code theft, but the phishing/confusion surface is free to close) | RFC 9700 §4.1.3; App Links are non-claimable by other apps |
 | Scopes | `openid profile email roles` + default scope with `aud=basetool-backend` mapper; `fullScopeAllowed=false`; **no `offline_access`** initially (mirrors the frontend audit L-4 decision; revisit only with owner sign-off) | least privilege |
 | Access-token lifespan | per-client override **300 s** (matches realm) | short blast radius |
 | Session bounds | per-client Client Session Idle/Max tuned for mobile (proposal: idle 30 d / max 180 d, matching realm SSO) | usable without weekly logins |
@@ -110,9 +197,18 @@ public clients MUST be sender-constrained or use refresh token rotation"):
 - App side: per-install **P-256 key in Android Keystore** (non-exportable, StrongBox where
   available); DPoP proof JWTs (`htm`/`htu`/`iat`/`jti`) built with Nimbus JOSE and attached to
   token/refresh requests. AppAuth has no built-in DPoP — the proof header is added in our token
-  request layer (small, testable surface).
-- **Phase-0 verification task (test stack, before committing):** configure the refresh-only
-  Client Policy for `basetool-android` on Keycloak 26.7 and confirm: access token issued without
+  request layer (small, testable surface). Keycloak accepts a proof lifetime of **10 s** with
+  **15 s** clock skew (`DPoPUtil`) — tighter than typical mobile clock drift — so the proof
+  `iat` is computed from **server time** (tracked via the `Date` header of the latest
+  token/API response), never from the raw device clock; the desktop extractor documents clock
+  drift as its primary DPoP failure mode.
+- **Phase-0 task: create, then verify (test stack, before committing).** Code-verified: the
+  realm has **no** Client Policies at all today (`clientPolicies: []` in the realm export) — the
+  refresh-only executor (`dpop-bind-enforcer` with `allow-only-refresh-token-binding`, already
+  validated against the Keycloak 26.7 image for the desktop extractor, REQ-INGEST-012) exists
+  only as prose. Phase 0 first *creates* the policy (config-as-code where the realm tooling
+  allows, documented operator step otherwise — the same vehicle carries the realm-wide S256
+  policy of §2.11), then confirms for `basetool-android`: access token issued without
   `cnf` (backend accepts it as Bearer), refresh token bound, refresh replay from a different key
   fails. Fallback ladder if the policy is unavailable or misbehaves: (a) bind **both** tokens
   ("Require DPoP bound tokens") and add `.dPoP()` support to the backend resource server (Spring
@@ -127,13 +223,26 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   used. Instead: AES-256-GCM key in **AndroidKeyStore** (`PURPOSE_ENCRYPT|DECRYPT`,
   GCM/NoPadding, StrongBox attempt with fallback); refresh token encrypted with it; ciphertext in
   Preferences DataStore. Key material never enters the app process; ciphertext restored to
-  another device is undecryptable.
+  another device is undecryptable. The key additionally sets `setUnlockedDeviceRequired(true)`
+  (API 28+): while the device is locked the refresh token is cryptographically unusable —
+  exactly threat (c) — and since the app only refreshes in the foreground (no push, Q2) the
+  restriction costs nothing.
 - **Backup exclusion in all three rule sets** (minSdk 29 spans both worlds): legacy
   `fullBackupContent` (API ≤ 30 devices) *and* `dataExtractionRules` with explicit excludes in
   **both** `<cloud-backup>` and `<device-transfer>` (API 31+; `allowBackup=false` alone does not
   reliably stop D2D transfers — verified Android 12 behavior-change doc).
 - Access token lives in memory only. Logout = Keycloak end-session + local wipe + best-effort
   refresh-token revocation call.
+- **No OkHttp disk cache.** The API client configures no HTTP cache: the Room read cache
+  (backup-excluded, logout-wiped, settings-clearable) is the *only* persistence layer for member
+  data — an OkHttp cache would be a second, uncontrolled copy outside every wipe path. The
+  server mirrors this with `no-store` on sensitive reads (§2.12).
+- **Static guardrails in the app repo (CI-enforced):** a lint/detekt gate forbids `WebView`
+  (login runs only in the Custom Tab, RFC 8252), direct `android.util.Log` use (logger facade
+  only) and cleartext traffic (explicit `cleartextTrafficPermitted="false"` base config in every
+  flavor's Network Security Config); the manifest pins `android:taskAffinity=""` (StrandHogg),
+  keeps `exported` surfaces minimal, and sensitive confirm actions set
+  `filterTouchesWhenObscured` (tapjacking — complements `setHideOverlayWindows`).
 - **Optional app-lock** (user setting): BiometricPrompt `BIOMETRIC_STRONG` + `CryptoObject`
   gating a second, auth-bound Keystore key that wraps the token key. API-29 caveats honored:
   `DEVICE_CREDENTIAL` combos only on API 30+ (`setUserAuthenticationParameters`), API 29 uses
@@ -173,7 +282,11 @@ keypair/CSR is reused — so pinning requires either keypair-reuse on the pinned
 leaf-pin churn tied to app updates. Rollout in Phase 5 only, with a written rotation runbook
 (ship the *next* key's pin in an update before activating it server-side); a bricked-pin incident
 is worse than the MITM risk in year one. OkHttp's own docs: "Certificate Pinning is Dangerous!" —
-we do it with the documented backup-pin pattern or not at all.
+we do it with the documented backup-pin pattern or not at all. Preferred variant to evaluate
+first in Phase 5: pin the **CA key** (ISRG Root X1/X2 SPKI) instead of the leaf — the NSC
+`<pin-set>` accepts any pin in the chain, a root pin survives every Let's Encrypt renewal (no
+keypair-reuse requirement, no pin churn tied to app updates) and still excludes every other CA;
+the leaf+backup pin remains the stricter, higher-maintenance option.
 
 ## 6. App/API behavior contracts (security-relevant)
 
@@ -190,11 +303,20 @@ we do it with the documented backup-pin pattern or not at all.
   [`ANDROID_APP_DEV_CI.md`](ANDROID_APP_DEV_CI.md)); `.env.test`-style local files stay gitignored
   and synthetic (hard repo rule: never production credentials in tests/local stacks).
 - Logging: no names, emails, tokens in app logs (mirror REQ-OBS-004); correlation ids only.
+- Client politeness is server protection: exponential backoff with full jitter on 429
+  (`Retry-After`-aware), 503 and SSE reconnects (mirroring the web client's jittered timer);
+  non-idempotent writes are never auto-retried (the version-echo contract turns a blind replay
+  into a 409 anyway).
+- The app sends `User-Agent: basetool-android/<semver>` on every call (feeds the §2.13
+  min-version gate and abuse forensics) and maps a disabled Keycloak client (kill switch, §5) to
+  a dedicated "app blocked — check for updates / contact the org" screen rather than a generic
+  login error.
 
 ## 7. Verification & release gate (Phase 5)
 
 MASVS-based review (MASVS-STORAGE/CRYPTO/AUTH/NETWORK/PLATFORM/RESILIENCE) with MASTG test
 procedures; dependency audit against the §7 inventory of the plan; a red-team pass against the
-exposure package (rate-limit bypass, forwarded-header spoofing, audience/azp confusion, SSE
-starvation); pin-rotation fire drill on the test stack; kill-switch drill (client disable +
-observed lockout). Findings gate the release.
+exposure package (rate-limit bypass incl. spoofed-XFF attribution, forwarded-header spoofing,
+audience/azp confusion, SSE starvation, page-size amplification); pin-rotation fire drill on the
+test stack; assetlinks/key-rotation drill (§2.10); kill-switch drill (client disable + observed
+lockout + the §2.13 min-version gate). Findings gate the release.
