@@ -1,0 +1,296 @@
+/*
+ * Basetool Android — native companion app of the Profit Basetool.
+ * Copyright (C) 2026 Lucas Greuloch
+ *
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+
+package de.greluc.krt.profit.basetool.android.core.designsystem.component
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtBloom
+import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtCornerBrackets
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+
+/** Opacity of the modal scrim. */
+private const val SCRIM_ALPHA = 0.8f
+
+/** Height of the accent edge on modals, sheets and the toast. */
+private val MODAL_TOP_EDGE = 3.dp
+
+/** Bracket leg length on a modal — longer than on a container, the modal is the loudest surface. */
+private val MODAL_BRACKET = 13.dp
+
+/** Bracket stroke width on a modal. */
+private val MODAL_BRACKET_STROKE = 3.dp
+
+/** Maximum width of a modal on any form factor. */
+private val MODAL_MAX_WIDTH = 440.dp
+
+/** Reach of the bloom around a modal or toast. */
+private val MODAL_BLOOM = 20.dp
+
+/**
+ * Whether a modal asks for a routine confirmation or for a destructive one.
+ *
+ * The danger variant is not a colour swap for emphasis: it is reserved for actions that destroy
+ * data, and its copy must name the consequence rather than ask a yes/no question.
+ */
+enum class KrtModalTone {
+    /** Routine confirmation — orange accents. */
+    Standard,
+
+    /** Destructive confirmation — red accents, consequence named in the body. */
+    Danger,
+}
+
+/**
+ * The KRT modal.
+ *
+ * The app never uses platform dialogs: their rounded corners, tonal surface and system typography
+ * contradict the design system, and Android's own alert never looks like this product. The frame is
+ * the loudest surface in the app — accent top edge, 13 dp brackets, 20 dp bloom — because a modal
+ * interrupts, and an interruption must be unmistakable.
+ *
+ * Exactly one filled CTA, placed right, with a ghost cancel to its left; back and the scrim both
+ * dismiss.
+ *
+ * @param title the question or statement; uppercased for display.
+ * @param confirmText label of the single filled action.
+ * @param onConfirm invoked when the user confirms.
+ * @param onDismiss invoked on cancel, back or a scrim tap.
+ * @param modifier layout modifier applied to the modal frame.
+ * @param tone whether this is a routine or a destructive confirmation.
+ * @param cancelText label of the ghost cancel action.
+ * @param content the modal body — usually one paragraph explaining the consequence.
+ */
+@Composable
+fun KrtModal(
+    title: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    tone: KrtModalTone = KrtModalTone.Standard,
+    cancelText: String = "Abbrechen",
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val accent =
+        if (tone == KrtModalTone.Danger) KrtTheme.colors.danger else MaterialTheme.colorScheme.primary
+    val bloom =
+        if (tone == KrtModalTone.Danger) KrtTheme.colors.glowDangerLg else KrtTheme.colors.glowPrimaryLg
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(KrtPalette.Black.copy(alpha = SCRIM_ALPHA)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier =
+                    modifier
+                        .widthIn(max = MODAL_MAX_WIDTH)
+                        .padding(KrtSpacing.lg)
+                        .krtBloom(bloom, MODAL_BLOOM)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                        .krtCornerBrackets(color = accent, leg = MODAL_BRACKET, stroke = MODAL_BRACKET_STROKE),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(MODAL_TOP_EDGE)
+                            .background(accent),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = KrtSpacing.lg),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = title.krtUppercase(),
+                        modifier = Modifier.weight(1f).padding(vertical = KrtSpacing.md),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = KrtPalette.White,
+                    )
+                    KrtIconButton(
+                        iconRes = R.drawable.ic_krt_close,
+                        label = "Schließen",
+                        onClick = onDismiss,
+                    )
+                }
+                Column(
+                    modifier = Modifier.padding(horizontal = KrtSpacing.lg),
+                    content = content,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.End),
+                ) {
+                    KrtGhostButton(text = cancelText, onClick = onDismiss)
+                    if (tone == KrtModalTone.Danger) {
+                        KrtButton(
+                            text = confirmText,
+                            onClick = onConfirm,
+                            style =
+                                KrtButtonStyles.cta.copy(
+                                    container = KrtTheme.colors.danger,
+                                    containerPressed = KrtTheme.colors.dangerText,
+                                    content = KrtPalette.White,
+                                    contentPressed = KrtPalette.White,
+                                    bloom = false,
+                                ),
+                        )
+                    } else {
+                        KrtCtaButton(text = confirmText, onClick = onConfirm)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A toast: near-black panel with an accent border, corner brackets and the bloom.
+ *
+ * This composable only renders the panel; placement and the dismissal timer belong to the screen's
+ * scaffold. Destructive swipes pair it with a 5 second undo action.
+ *
+ * @param title short headline; uppercased and rendered in the accent colour.
+ * @param message one sentence of detail.
+ * @param modifier layout modifier.
+ * @param isError whether this is an error toast (red accents instead of orange).
+ */
+@Composable
+fun KrtToast(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+) {
+    val accent = if (isError) KrtTheme.colors.dangerText else MaterialTheme.colorScheme.primary
+    val bloom = if (isError) KrtTheme.colors.glowDangerLg else KrtTheme.colors.glowPrimaryLg
+
+    Column(
+        modifier =
+            modifier
+                .widthIn(max = TOAST_MAX_WIDTH)
+                .krtBloom(bloom, MODAL_BLOOM)
+                .background(KrtPalette.Black.copy(alpha = TOAST_FILL_ALPHA))
+                .border(KrtSpacing.hairline, accent)
+                .krtCornerBrackets(color = accent)
+                .padding(KrtSpacing.lg),
+    ) {
+        Text(
+            text = title.krtUppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = accent,
+        )
+        Text(
+            text = message,
+            modifier = Modifier.padding(top = KrtSpacing.xs),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+    }
+}
+
+/** Maximum width of a toast. */
+private val TOAST_MAX_WIDTH = 360.dp
+
+/** Fill opacity of a toast — near-opaque black so it reads over any content. */
+private const val TOAST_FILL_ALPHA = 0.95f
+
+/**
+ * One row of a selection sheet, for example the org switcher.
+ *
+ * The selected row uses the brand selection rule — orange background with black text — which is the
+ * same rule the navigation indicator and every Material selection surface follow.
+ *
+ * @param text the option label.
+ * @param selected whether this option is the active one.
+ * @param onClick invoked when the option is chosen.
+ * @param modifier layout modifier.
+ */
+@Composable
+fun KrtSheetOption(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val background = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+    val foreground =
+        if (selected) MaterialTheme.colorScheme.onSecondaryContainer else KrtPalette.Gray1
+
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(background)
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = foreground,
+        )
+        if (selected) {
+            KrtIcon(
+                id = R.drawable.ic_krt_check,
+                contentDescription = null,
+                size = 18.dp,
+                tint = foreground,
+            )
+        }
+    }
+}
+
+@Preview(name = "Toast", showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun ToastPreview() {
+    KrtPreviewSurface {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+            KrtToast(title = "Gespeichert", message = "Schiff erfolgreich hinzugefügt.")
+            KrtToast(
+                title = "Fehler 409",
+                message = "Der Eintrag wurde zwischenzeitlich geändert. Neu laden und erneut versuchen.",
+                isError = true,
+            )
+            KrtSheetOption(text = "Bereich Profit", selected = true, onClick = {})
+            KrtSheetOption(text = "SK VANGUARD", selected = false, onClick = {})
+        }
+    }
+}

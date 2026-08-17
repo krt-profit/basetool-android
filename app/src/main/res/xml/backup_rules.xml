@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for Android 11 (API 30) and lower.
+  Android 12+ devices read data_extraction_rules.xml instead — a minSdk-29 app
+  needs BOTH (docs/ANDROID_APP_SECURITY.md section 4).
+
+  Nothing security-relevant exists yet; the token store lands with :core:auth
+  and must be excluded here, in <cloud-backup> AND in <device-transfer>.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="krt_tokens.xml" />
+    <exclude domain="file" path="krt_tokens" />
+</full-backup-content>

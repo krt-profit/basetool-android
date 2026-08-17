@@ -120,15 +120,33 @@ detailed rules: [`core/designsystem/fankit/`](core/designsystem/fankit/README.md
 ## Build, run, test
 
 Always use the Gradle wrapper; it is the only sanctioned build/test path (never the IDE test
-runner). The Gradle scaffold lands in Phase 1 — until then this section is forward-looking:
+runner).
 
 ```bash
-./gradlew check                       # unit tests + Android Lint + detekt + Spotless verify
-./gradlew :app:assembleDevDebug       # dev flavor (test-stack endpoints, debug trust)
-./gradlew :app:assembleProdRelease    # prod flavor (real hosts; release signing in CI only)
-./gradlew testDebugUnitTest           # JVM tests incl. Robolectric
-./gradlew :app:gmdCheck               # Gradle Managed Devices instrumented suite
+./gradlew check                                  # tests + Android Lint + detekt + Spotless verify
+./gradlew spotlessApply                          # format — run before every push
+./gradlew :app:assembleDevDebug                  # dev flavor (test-stack endpoints, debug trust)
+./gradlew :app:assembleProdRelease               # prod flavor (real hosts; signing in CI only)
+./gradlew :core:designsystem:testDebugUnitTest   # JVM tests incl. Robolectric
 ```
+
+### Toolchain landmines (each cost a debugging round — do not "fix" them back)
+
+- **AGP 9 compiles Kotlin itself.** Applying `org.jetbrains.kotlin.android` fails the build
+  outright; only `org.jetbrains.kotlin.plugin.compose` is applied per module, and `jvmTarget`
+  is inherited from `android.compileOptions.targetCompatibility` rather than set by hand.
+- **detekt must stay on 2.x.** detekt 1.23's embedded IntelliJ library cannot parse the JDK 25
+  version string and dies with a bare `> 25`. The 2.0.0-alpha pin is deliberate, and its config
+  schema differs from 1.x (no `build>maxIssues`, `TooManyFunctions>allowedFunctionsPer*`,
+  `UnusedPrivateMember` split into `UnusedPrivateFunction`/`UnusedPrivateProperty`).
+- **ktlint needs `.editorconfig`.** `ktlint_function_naming_ignore_when_annotated_with =
+  Composable` keeps the standard naming rule from renaming every composable.
+- **Kotlin warnings are errors** (`allWarningsAsErrors`), so a deprecated Compose API breaks the
+  build instead of rotting quietly. Fix the call site; do not relax the flag.
+- **Android Lint runs with `warningsAsErrors`.** Exactly two rules are disabled, each with a
+  written reason in the build file (launcher icon pending design chapter 14; design-system
+  resources having no consumer yet). A third needs the same justification.
+- Robolectric ships no runtime for API 37, so resource tests pin `@Config(sdk = [34])`.
 
 Local backend = the main repo's isolated test stack (`docker-compose.test.yml`,
 `--env-file .env.test`). The emulator reaches it via `https://10.0.2.2:<port>`; its

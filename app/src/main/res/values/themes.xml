@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Dark-only platform theme. The real styling lives in Compose (KrtTheme);
+      this only paints the window before the first frame so the launch never
+      flashes a light background. See docs/design/android/01 Foundations.
+    -->
+    <style name="Theme.Basetool" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

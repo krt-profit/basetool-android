@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Star Citizen Fan Kit compliance (Fan Kit Guidelines sections 2, 2b, 3).
+
+      The trademark notice is PRESCRIBED LEGAL WORDING, not UI copy: it stays verbatim
+      English in every locale, including the space before the third registered sign.
+      translatable="false" keeps translation tooling from offering it up, and
+      KrtFanKitBandTest pins the exact byte sequence — a "tidied up" value fails the build
+      instead of silently shipping a compliance defect.
+    -->
+    <string name="krt_fankit_trademark_notice" translatable="false">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</string>
+
+    <!-- Spoken description of the artwork; this one IS localizable. -->
+    <string name="krt_fankit_logo_description">Star Citizen — Made by the Community</string>
+</resources>

@@ -1,0 +1,38 @@
+# Detekt configuration — layered on top of the default config
+# (buildUponDefaultConfig = true in the root build script).
+#
+# Schema: detekt 2.x. The 1.x keys (build>maxIssues, TooManyFunctions>threshold*,
+# style>UnusedPrivateMember) no longer exist and fail the run as "invalid config property".
+
+complexity:
+  LongMethod:
+    # A @Composable body is declarative markup, not procedural logic: splitting a layout
+    # into helper functions purely to satisfy a line budget hurts readability and hides the
+    # tree structure. Complexity rules that measure branching still apply.
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    # Compose component APIs are legitimately parameter-rich (modifier, colours, slots,
+    # state). The design-system module is the intended exception.
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # A component file groups all variants of one component family, plus their previews.
+    allowedFunctionsPerFile: 30
+    allowedFunctionsPerClass: 30
+
+naming:
+  FunctionNaming:
+    # @Composable functions are PascalCase by Compose convention.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
+
+style:
+  MagicNumber:
+    # Design tokens are literal by nature; they live in the theme package.
+    ignoreAnnotated: ['Composable']
+    excludes: ['**/theme/**']
+  MaxLineLength:
+    maxLineLength: 120
+  UnusedPrivateFunction:
+    # Previews are entry points for the IDE, never called from code.
+    ignoreAnnotated: ['Preview']

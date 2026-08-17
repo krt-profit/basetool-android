@@ -5,7 +5,9 @@ the "DAS KARTELL" / IRIDIUM Star Citizen organization. Kotlin + Jetpack Compose,
 portrait-first, tablets landscape-first, minSdk 29 (Android 10), dark-only DAS KARTELL
 design.
 
-**Status: concept phase — pre-implementation.** The owner-approved concept lives in
+**Status: Phase 1 in progress.** The theme and the component library from chapter 02 of the
+design specification are implemented and building (`./gradlew check` is green); the navigation
+shell, the auth flow and the feature screens follow. The owner-approved concept lives in
 [`docs/`](docs/):
 
 | Document | Content |
@@ -22,21 +24,27 @@ business logic) · distribution via **GitHub Releases** (no Google Play) · **ze
 data flows** — no analytics, no tracking, no Firebase, crash logs stay on-device ·
 consent-banner-free by design · admin area stays web-only.
 
-## Planned module layout
+## Module layout
 
 ```
-app/                  wiring, navigation, DI graph
-core/designsystem/    KRT Compose theme, tokens, component library
-core/network/         OkHttp/Retrofit, OpenAPI-generated DTOs, problem+json, SSE
-core/auth/            AppAuth flow, Keystore token store, DPoP, session state
-core/data/            repositories, Room cache, org-unit context
-feature/…             one module per area (missions, orders, inventory, bank, …)
-docs/                 concept docs, ADRs (docs/adr/), specs (docs/specs/)
+app/                  manifest, flavors, component showcase (navigation shell follows)   [built]
+core/designsystem/    KRT Compose theme, components, icon set, Lato fonts                [built]
+core/network/         OkHttp/Retrofit, OpenAPI-generated DTOs, problem+json, SSE         [planned]
+core/auth/            AppAuth flow, Keystore token store, DPoP, session state            [planned]
+core/data/            repositories, Room cache, org-unit context                         [planned]
+feature/…             one module per area (missions, orders, inventory, bank, …)         [planned]
+docs/                 concept docs, binding design spec, ADRs, specs
 ```
 
-The Gradle scaffold lands with Phase 1 of the [roadmap](docs/ANDROID_APP_PLAN.md#6-phased-roadmap).
-Contributor ground rules: [`CLAUDE.md`](CLAUDE.md). Server-side counterpart work lives in the
-main `basetool` repository.
+## Build
+
+Requires JDK 25 and the Android SDK (platform 37). `./gradlew check` runs tests, Android Lint,
+detekt and Spotless; `./gradlew :app:installDevDebug` puts the component showcase on a device.
+The toolchain has a few non-obvious constraints — see the *Toolchain landmines* section in
+[`CLAUDE.md`](CLAUDE.md) before changing build files.
+
+Contributor ground rules: [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Server-side counterpart work lives in the main `basetool` repository.
 
 ## Contributing
 

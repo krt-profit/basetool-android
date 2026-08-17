@@ -1,14 +1,17 @@
 # app
 
-Application module: Hilt DI graph, navigation shell (bottom bar on compact width, navigation
-rail + list-detail on expanded), flavors (`dev` = test stack + debug trust, `prod` = real
-hosts, no custom trust), manifest, adaptive app icon. Gradle scaffold lands in Phase 1
-(`docs/ANDROID_APP_PLAN.md` §6).
+Application module: manifest, flavors, window setup and — for now — the component showcase.
 
-Manifest / platform hardening owned by this module (`docs/ANDROID_APP_SECURITY.md` §4):
-`android:taskAffinity=""` (StrandHogg task-affinity hijack), a minimal set of `exported`
-components, `FLAG_SECURE` on every authenticated screen, and `filterTouchesWhenObscured` on
-sensitive confirm actions (tapjacking — complements `setHideOverlayWindows`). Backup exclusion
-is declared in **all three** rule sets (legacy `fullBackupContent` plus `dataExtractionRules`
-with excludes in both `<cloud-backup>` and `<device-transfer>`), because minSdk 29 spans both
-worlds and `allowBackup=false` alone does not reliably stop device-to-device transfer.
+- **Flavors**: `dev` (local test stack, debug trust anchors, `.dev` application id) and `prod`
+  (production hosts, system trust only). See `docs/ANDROID_APP_DEV_CI.md` section 6.
+- **`ShowcaseActivity`**: renders the full `:core:designsystem` component library so it can be
+  compared against `docs/design/android/02 Components.dc.html` on a real device, at real
+  densities and font scales. It is a development surface, not a product screen, and is replaced
+  by the navigation shell and the feature screens as they land (design chapters 03 onwards).
+- Backup rules exclude the future token store from both cloud backup and device-to-device
+  transfer in the API-30-and-below *and* the API-31-and-above rule sets.
+
+Build: `./gradlew :app:assembleDevDebug` · install: `./gradlew :app:installDevDebug`.
+
+The launcher icon is deliberately absent: the adaptive icon is chapter 14 of the design handoff,
+and the KRT mark may not be improvised (logo rule — orange, white or black only).

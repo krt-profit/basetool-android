@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup / device-transfer rules for Android 12 (API 31) and higher.
+  Exclusions must be repeated in BOTH sections: cloud-backup rules do not
+  cover device-to-device transfer (docs/ANDROID_APP_SECURITY.md section 4).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="krt_tokens.xml" />
+        <exclude domain="file" path="krt_tokens" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="krt_tokens.xml" />
+        <exclude domain="file" path="krt_tokens" />
+    </device-transfer>
+</data-extraction-rules>
