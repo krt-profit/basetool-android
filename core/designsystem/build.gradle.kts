@@ -38,7 +38,6 @@ android {
     lint {
         warningsAsErrors = true
         abortOnError = true
-        sarifReport = true
         // The icon set and the Fan Kit artwork are this module's published API: the design
         // handoff defines the complete sprite, and feature modules consume it as they land.
         // "Unused" here means "no consumer yet", not "dead resource".

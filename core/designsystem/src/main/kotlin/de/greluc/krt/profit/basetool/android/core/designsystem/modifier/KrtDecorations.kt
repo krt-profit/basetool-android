@@ -75,9 +75,9 @@ fun Modifier.krtCornerBrackets(
  *
  * CSS expresses it as `box-shadow: 0 0 N rgba(231,126,35,a)`. Compose has no blurred shadow that
  * works below API 31 (`Modifier.blur` is a no-op there), so the bloom is approximated by stacking
- * concentric strokes outside the bounds with linearly decaying alpha. At the sizes the system uses
- * — 5 dp for focus, 20 dp for modals and CTA press — the result is visually equivalent and renders
- * identically on every supported API level.
+ * concentric strokes outside the bounds whose alpha falls off quadratically, the way a Gaussian
+ * blur fades. At the sizes the system uses — 5 dp for focus, 20 dp for modals and CTA press — the
+ * result is visually equivalent and renders identically on every supported API level.
  *
  * Never use this for elevation: soft drop shadows are forbidden, the bloom marks focus and the one
  * primary action.
@@ -97,7 +97,10 @@ fun Modifier.krtBloom(
         val step = radiusPx / layers
         repeat(layers) { index ->
             val spread = step * (index + 1)
-            val alpha = color.alpha * (1f - index.toFloat() / layers)
+            // Quadratic falloff: a linear ramp leaves visible concentric banding at the
+            // 20 dp radius the modals and toasts use.
+            val distance = (index + 1).toFloat() / layers
+            val alpha = color.alpha * (1f - distance) * (1f - distance)
             drawRect(
                 color = color.copy(alpha = alpha),
                 topLeft = Offset(-spread, -spread),
@@ -107,8 +110,13 @@ fun Modifier.krtBloom(
         }
     }
 
-/** Number of stacked strokes used to approximate a CSS blur radius. */
-private const val DEFAULT_BLOOM_LAYERS = 6
+/**
+ * Number of stacked strokes approximating a CSS blur radius.
+ *
+ * Twelve is where the steps stop being visible at the 20 dp modal bloom; fewer layers band, more
+ * cost draw calls for no perceptible gain.
+ */
+private const val DEFAULT_BLOOM_LAYERS = 12
 
 /**
  * The 1 dp hairline that carries depth throughout the app.
