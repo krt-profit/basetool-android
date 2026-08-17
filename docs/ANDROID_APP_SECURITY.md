@@ -202,9 +202,9 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   `iat` is computed from **server time** (tracked via the `Date` header of the latest
   token/API response), never from the raw device clock; the desktop extractor documents clock
   drift as its primary DPoP failure mode.
-- **Phase-0 task: create, then verify (test stack, before committing) — and this is a first, not
-  a repeat.** Verified against a fresh production export (2026-08-17): the realm carries **zero
-  client profiles and zero policies**. An earlier draft of this document cited the desktop
+- **Phase 0 creates this policy for the first time — it is a first, not a repeat.** Verified
+  against a fresh production export (2026-08-17): the realm carries **zero client profiles and
+  zero policies**. An earlier draft of this document cited the desktop
   extractor as a validated precedent for refresh-only binding; **it is not one.** The extractor
   needs no policy and must not have one: since ADR-0129 its gateway validates the DPoP proof at
   the hop that consumes the token, so binding *both* tokens is the wanted state there
@@ -213,21 +213,48 @@ public clients MUST be sender-constrained or use refresh token rotation"):
 
   The app is the opposite case, which is why refresh-only remains right here: it talks to the
   backend directly, and Spring Security's bearer filter rejects a `cnf`-bound access token
-  outright. So Phase 0 *creates* the policy for the first time (config-as-code where the realm
-  tooling allows, documented operator step otherwise — the same vehicle carries the realm-wide
-  S256 policy of §2.11), then confirms for `basetool-android`: access token issued without `cnf`
-  (backend accepts it as Bearer), refresh token bound, refresh replay from a different key fails.
+  outright.
 
   Scoping note, verified against the Keycloak sources: there is **no** condition that names
   clients directly. The documented way to scope a policy is a marker **client role** plus the
   `client-roles` condition (provider id `client-roles`, config key `roles`); the executor is
-  `dpop-bind-enforcer` with `allow-only-refresh-token-binding`
-  (`DPoPBindEnforcerExecutorFactory`). Fallback ladder if the policy is unavailable or misbehaves: (a) bind **both** tokens
-  ("Require DPoP bound tokens") and add `.dPoP()` support to the backend resource server (Spring
-  Security ≥ 6.5 supports it; the ingest module already runs Bearer+DPoP side by side — proven
-  pattern in this codebase, at the cost of a backend change + proofs on every API call);
-  (b) plain PKCE + short sessions + revocation levers, documented as a REQ-SEC deviation
-  needing owner approval.
+  `dpop-bind-enforcer` with `allow-only-refresh-token-binding` (`DPoPBindEnforcerExecutorFactory`).
+
+- **✅ Verified 2026-08-17 — the posture holds, and the fallback ladder stays unused.** Against a
+  throwaway Keycloak 26.7, a profile carrying **only** `allow-only-refresh-token-binding: true`,
+  scoped by that marker client role, produces exactly the target posture in the
+  **authorization-code** flow: `token_type: Bearer`, access token **without `cnf`**, refresh token
+  **bound**, and a refresh refused both without a proof and with a different key. The reproducible
+  configuration and the full measurement table are in the main repo's
+  `docs/ANDROID_API_EXPOSURE_PLAN.md` section 7.
+
+  Four constraints this puts on the app, each measured rather than assumed:
+
+  1. Profile claims come from the **ID token**. The app must never call `/userinfo`: for a client
+     under this policy Keycloak answers **HTTP 500** there instead of a 401 (an
+     `IllegalArgumentException` in `UserInfoEndpoint`). The backend is unaffected — it validates
+     JWTs locally against the JWKS.
+  2. The client keeps `directAccessGrantsEnabled = false`, and this result must never be re-checked
+     through a direct grant: under ROPC the same realm binds the access token on the initial grant
+     and only narrows it from the first refresh onward, which reads as a failure of the whole
+     design when it is an artefact of the shortcut.
+  3. The per-client **"Require DPoP bound tokens"** switch stays **off** — it overrides the profile
+     and re-binds the access token even on refresh. It is also the prerequisite of
+     `enforce-authorization-code-binding-to-dpop`, so a DPoP-bound authorization code and a plain
+     Bearer access token cannot be had together. Sending the RFC 9449 §10 `dpop_jkt` parameter on
+     the authorization request is accepted and worth doing as defence in depth.
+  4. Operationally the client is **frozen while the policy is attached**: every admin edit is
+     refused with `invalid_client_metadata` / "DPoP token is disabled", down to a description
+     change. Provisioning configures the client first and attaches the policy last; later edits
+     need detach → edit → re-attach.
+
+  Fallback ladder, kept on the shelf: (a) bind **both** tokens ("Require DPoP bound tokens") and
+  let the backend do DPoP — Spring Security has shipped servlet-side resource-server DPoP since
+  **6.5**, auto-enabled whenever `oauth2-jose` is on the classpath, with no DSL to configure and no
+  supported seam to customise the `htu` comparison (plain string equality against
+  `getRequestURL()`, needing `ForwardedHeaderFilter` behind the proxy); the ingest module already
+  runs Bearer+DPoP side by side. (b) plain PKCE + short sessions + revocation levers, documented as
+  a REQ-SEC deviation needing owner approval.
 
 **On-device storage** (verified guidance):
 
