@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2400px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">11</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Raffinerie</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Meine Orders mit Ertrags-Summen, Order-Detail, „In Lager buchen"-Flow. Neue Orders können aus einem Desktop-Extractor-Screenshot-JSON vorbefüllt werden (Scan-Icon). Live: Status-Filter, Buchen-Bestätigung.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Raffinerie frames" style="display:flex;gap:28px;align-items:flex-start">
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Meine Orders (Filter live)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Raffinerie</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Extractor-Import"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-scan"></use></svg></button>
+          </div>
+          <div style="flex:none;padding:12px 16px;display:flex;gap:6px;overflow-x:auto">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+              <button class="chip {{ f.cls }}" style="font-size:10px;flex:none;cursor:pointer;min-height:32px" onClick="{{ f.onTap }}">{{ f.label }}</button>
+            </sc-for>
+          </div>
+          <div style="flex:1;overflow:auto;padding:0 16px 96px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+              <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:flex-start;gap:10px">
+                  <div style="flex:1;min-width:0">
+                    <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">Order {{ o.id }}</div>
+                    <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">{{ o.station }} · {{ o.method }}</div>
+                  </div>
+                  <span class="status-pill {{ o.statusCls }}" style="font-size:9.5px;flex:none;margin-top:2px">{{ o.status }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ o.yields }}" as="y" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ y.mat }}</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;border-top:1px solid #282828;padding-top:10px;font-variant-numeric:tabular-nums">
+                  <span style="font:300 11.5px/1 Lato,sans-serif;color:{{ o.timeColor }}">{{ o.time }}</span>
+                  <span style="flex:1"></span>
+                  <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">Wert ≈</span><span style="font:700 13px/1 Lato,sans-serif;color:#2EBC3D">{{ o.value }}</span>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Order anlegen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="width:56px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:22px;height:22px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 10.5px/1 Lato,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — RefineryOrdersScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Status: In Arbeit (info, Restzeit läuft) · Abholbereit (success) · Eingelagert (gray)</li>
+          <li>Restzeit lokal heruntergezählt, minütlich; „Abholbereit" pusht (Kanal Einsätze &amp; System)</li>
+          <li>Scan-Icon = Extractor-JSON-Import: Datei/Paste → Vorschau → Order vorbefüllt</li>
+          <li>Wert = UEX-Schätzung, als Daten weiß/grün — nie orange</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Order-Detail + „In Lager buchen" (live)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:1px solid #282828;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">Order #7841</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-active" style="font-size:9.5px">{{ detailStatus }}</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">ARC-L1 · Dinyx-Solventierung</span></div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <div class="hud-box" style="padding:14px 16px">
+              <dl class="kv-list" style="gap:8px 16px;font-size:13px;grid-template-columns:max-content 1fr">
+                <dt style="font-size:11px">Station</dt><dd style="font-size:13.5px">ARC-L1 Wide Forest</dd>
+                <dt style="font-size:11px">Methode</dt><dd style="font-size:13.5px">Dinyx-Solventierung <span class="chip chip--muted" style="font-size:8.5px;margin-left:4px">Ausbeute +</span></dd>
+                <dt style="font-size:11px">Gestartet</dt><dd style="font-size:13.5px;font-variant-numeric:tabular-nums">16.08. 22:41</dd>
+                <dt style="font-size:11px">Fertig</dt><dd style="font-size:13.5px;font-variant-numeric:tabular-nums">{{ readyText }}</dd>
+              </dl>
+            </div>
+            <div>
+              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Ertrag</div>
+              <div class="card card--flush" style="padding:0">
+                <sc-for list="{{ detailYields }}" as="y" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
+                    <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ y.mat }}</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Qualität {{ y.q }}</div></div>
+                    <span><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;align-items:center;gap:12px;min-height:44px;padding:6px 14px;background:#1C1C1C;font-variant-numeric:tabular-nums">
+                  <span style="flex:1;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.5px">Geschätzter Wert</span>
+                  <span style="font:900 15px/1 Lato,sans-serif;color:#2EBC3D">+96.900 aUEC</span>
+                </div>
+              </div>
+            </div>
+            <sc-if value="{{ booked }}" hint-placeholder-val="{{ false }}">
+              <div class="alert alert-success" style="margin:0;padding:10px 14px;font-size:12.5px">Ertrag eingelagert — 2 Einträge im Lager Bereich Profit · ARC-L1 angelegt.</div>
+            </sc-if>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464">„In Lager buchen" legt pro Material einen Lager-Eintrag mit Qualität an (Quelle: Order #7841) und markiert die Order als eingelagert. Zuordnung zu Aufträgen/Einsätzen danach im Lager (Kap. 09).</div>
+          </div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+            <button class="btn btn--cta" style="min-height:52px;width:100%;{{ bookBtnStyle }}" onClick="{{ bookNow }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bank-in"></use></svg>{{ bookBtnLabel }}</button>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — Orders + Detail</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+        <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+            <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+            <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+              <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="width:380px;flex:none;border-right:1px solid #282828;background:#0A0A0A;display:flex;flex-direction:column">
+            <div style="padding:14px 16px;display:flex;gap:6px;border-bottom:1px solid #282828">
+              <span class="chip chip--primary" style="font-size:9.5px">Alle</span><span class="chip" style="font-size:9.5px">In Arbeit</span><span class="chip" style="font-size:9.5px">Abholbereit</span>
+            </div>
+            <div style="flex:1;overflow:auto">
+              <div style="padding:10px 14px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">Order #7841</span><span class="status-pill status-active" style="font-size:9px">Abholbereit</span></div>
+                <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">ARC-L1 · 622 SCU · ≈ +96.900</div>
+              </div>
+              <div style="padding:10px 14px;border-bottom:1px solid #141414">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2;font-variant-numeric:tabular-nums">Order #7838</span><span class="status-pill status-planned" style="font-size:9px">In Arbeit</span></div>
+                <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Lorville · noch 5 Std. 12 Min.</div>
+              </div>
+              <div style="padding:10px 14px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2;font-variant-numeric:tabular-nums">Order #7822</span><span class="status-pill status-completed" style="font-size:9px">Eingelagert</span></div>
+                <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">ARC-L1 · 288 SCU · 14.08.</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0">
+            <div style="display:flex;align-items:flex-start;gap:16px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:10px"><span style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">Order #7841</span><span class="status-pill status-active" style="font-size:10px">Abholbereit</span></div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">ARC-L1 Wide Forest · Dinyx-Solventierung · gestartet 16.08. 22:41</div>
+              </div>
+              <button class="btn btn--cta" style="min-height:48px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bank-in"></use></svg>In Lager buchen</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;max-width:960px">
+              <div class="card card--flush" style="padding:0">
+                <div style="display:grid;grid-template-columns:1fr 110px 110px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Material</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Qualität</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Menge</div>
+                </div>
+                <sc-for list="{{ detailYields }}" as="y" hint-placeholder-count="2">
+                  <div style="display:grid;grid-template-columns:1fr 110px 110px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                    <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">{{ y.mat }}</div>
+                    <div style="padding:6px 14px;text-align:right;font:300 12.5px/1 Lato,sans-serif;color:#D2D2D2">{{ y.q }}</div>
+                    <div style="padding:6px 14px;text-align:right"><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></div>
+                  </div>
+                </sc-for>
+                <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.5px">Geschätzter Wert</span><span style="font:900 15px/1 Lato,sans-serif;color:#2EBC3D">+96.900 aUEC</span></div>
+              </div>
+              <div class="hud-box" style="padding:14px 16px;align-self:start">
+                <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Extractor-Import</div>
+                <div style="font:300 12px/1.6 Lato,sans-serif;color:#D2D2D2">Neue Orders per Screenshot-JSON des Desktop-Extractors vorbefüllen — Ingest nur für freigegebene Clients (§4 Nutzungsbedingungen).</div>
+                <button class="btn-outline btn" style="background:transparent;min-height:44px;margin-top:12px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-scan"></use></svg>JSON importieren</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;margin-top:32px;max-width:1200px">
+    <a href="10 Auftraege.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 10 Aufträge & Börse</a>
+    <a href="12 Bank.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">12 Bank →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { filter: 0, booked: false };
+  renderVals() {
+    const filterDefs = ['Alle', 'In Arbeit', 'Abholbereit', 'Eingelagert'];
+    const filters = filterDefs.map((label, i) => ({
+      label, cls: this.state.filter === i ? 'chip--primary' : '',
+      onTap: () => this.setState({ filter: i }),
+    }));
+    const all = [
+      { id: '#7841', station: 'ARC-L1 Wide Forest', method: 'Dinyx-Solventierung', status: 'Abholbereit', statusCls: 'status-active', f: 2, time: 'seit 06:41 abholbereit', timeColor: '#2EBC3D', value: '+96.900', yields: [ { mat: 'Quantainium (Q 874)', amt: '442' }, { mat: 'Bexalit (Q 733)', amt: '180' } ] },
+      { id: '#7838', station: 'Lorville L19', method: 'Ferron-Exchange', status: 'In Arbeit', statusCls: 'status-planned', f: 1, time: 'noch 5 Std. 12 Min.', timeColor: '#6C93EF', value: '+41.200', yields: [ { mat: 'Laranite (Q 655)', amt: '310' } ] },
+      { id: '#7822', station: 'ARC-L1 Wide Forest', method: 'Dinyx-Solventierung', status: 'Eingelagert', statusCls: 'status-completed', f: 3, time: 'eingelagert 14.08.', timeColor: '#8A8A8A', value: '+58.400', yields: [ { mat: 'Agricium (Q 901)', amt: '96' }, { mat: 'Titanium (Q 512)', amt: '192' } ] },
+    ];
+    const orders = this.state.filter === 0 ? all : all.filter(o => o.f === this.state.filter);
+    const detailYields = [ { mat: 'Quantainium', q: '874', amt: '442' }, { mat: 'Bexalit', q: '733', amt: '180' } ];
+    const navDefs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
+      { label: 'Mehr', icon: '#krt-icon-more-h' },
+    ];
+    const nav = navDefs.map((d, i) => ({ ...d, indBg: i === 4 ? '#E77E23' : 'transparent', iconColor: i === 4 ? '#000' : '#8A8A8A', labelColor: i === 4 ? '#FFFFFF' : '#8A8A8A' }));
+    const railDefs = navDefs.slice(0, 4).concat([{ label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' }, { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' }]);
+    const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 5 ? '#E77E23' : 'transparent', iconColor: i === 5 ? '#000' : '#8A8A8A', labelColor: i === 5 ? '#FFFFFF' : '#8A8A8A' }));
+    const booked = this.state.booked;
+    return {
+      filters, orders, detailYields, nav, railNav, booked,
+      detailStatus: booked ? 'Eingelagert' : 'Abholbereit',
+      readyText: booked ? 'eingelagert heute 15:04' : 'heute 06:41 (abholbereit)',
+      bookBtnLabel: booked ? 'Eingelagert' : 'In Lager buchen',
+      bookBtnStyle: booked ? 'opacity:.45;pointer-events:none' : '',
+      bookNow: () => this.setState({ booked: true }),
+    };
+  }
+}
+</script>
+</body>
+</html>

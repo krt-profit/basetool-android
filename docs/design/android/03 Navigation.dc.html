@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:1560px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">03</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Navigation map</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Both frames are live — tap destinations, open „Mehr". Structure map, back behavior and deep links below.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Nav shells" style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;margin-bottom:44px">
+    <div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Phone — bottom bar, 5 destinations · 412×915</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ phoneTitle }}</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+            <button style="all:unset;cursor:pointer;position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Benachrichtigungen">
+              <svg class="krt-icon" style="width:22px;height:22px"><use href="#krt-icon-bell"></use></svg>
+              <span style="position:absolute;top:6px;right:4px;min-width:16px;height:16px;padding:0 3px;background:#E77E23;color:#000;font:700 10px/16px Lato,sans-serif;text-align:center;font-variant-numeric:tabular-nums">3</span>
+            </button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div class="hud-box" style="padding:16px;min-height:120px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px">
+              <svg class="krt-icon" style="width:28px;height:28px;color:#E77E23"><use href="{{ phoneIcon }}"></use></svg>
+              <div style="font:700 13px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">{{ phoneTitle }}</div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;text-align:center;max-width:32ch">{{ phoneHint }}</div>
+            </div>
+            <sc-if value="{{ mehrOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px solid #282828;background:#141414">
+                <div style="padding:12px 16px 8px;font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Mehr — Sekundärziele</div>
+                <sc-for list="{{ mehrItems }}" as="m" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:14px;min-height:52px;padding:4px 16px;border-top:1px solid #282828">
+                    <svg class="krt-icon" style="width:22px;height:22px;color:#8A8A8A;flex:none"><use href="{{ m.icon }}"></use></svg>
+                    <span style="flex:1;font:300 14px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.label }}</span>
+                    <sc-if value="{{ m.chip }}" hint-placeholder-val="{{ false }}"><span class="chip chip--muted" style="font-size:10px">{{ m.chip }}</span></sc-if>
+                    <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
+            <sc-for list="{{ phoneNav }}" as="n" hint-placeholder-count="5">
+              <button style="all:unset;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:48px" onClick="{{ n.onTap }}">
+                <span style="width:56px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }};position:relative">
+                  <svg class="krt-icon" style="width:22px;height:22px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg>
+                  <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;right:6px;min-width:14px;height:14px;padding:0 2px;background:#E77E23;color:#000;font:700 9px/14px Lato,sans-serif;text-align:center;font-variant-numeric:tabular-nums">{{ n.badge }}</span></sc-if>
+                </span>
+                <span style="font:700 10.5px/1 Lato,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Tablet — rail 7 + „Mehr", list-detail · 1280×800</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+        <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+            <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+            <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+              <button style="all:unset;cursor:pointer;width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px" onClick="{{ n.onTap }}">
+                <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }};text-align:center">{{ n.label }}</span>
+              </button>
+            </sc-for>
+            <span style="flex:1"></span>
+            <button style="all:unset;cursor:pointer;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#8A8A8A" aria-label="Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-gear"></use></svg></button>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px;height:64px;padding:0 12px 0 24px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <h2 style="flex:1;margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">{{ tabTitle }}</h2>
+              <span class="squadron-badge" style="font-size:12px">Bereich Profit</span>
+              <button style="all:unset;cursor:pointer;position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Benachrichtigungen"><svg class="krt-icon" style="width:22px;height:22px"><use href="#krt-icon-bell"></use></svg><span style="position:absolute;top:6px;right:4px;min-width:16px;height:16px;padding:0 3px;background:#E77E23;color:#000;font:700 10px/16px Lato,sans-serif;text-align:center">3</span></button>
+            </div>
+            <div style="flex:1;display:grid;grid-template-columns:380px 1fr;gap:0;min-height:0">
+              <div style="border-right:1px solid #282828;background:#0A0A0A;padding:16px;display:flex;flex-direction:column;gap:8px">
+                <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Liste</div>
+                <div style="border:1px dashed #282828;flex:1;display:flex;align-items:center;justify-content:center;color:#646464;font:300 12px/1.5 Lato,sans-serif;text-align:center;padding:16px">List pane — dense rows,<br>search + filter on top</div>
+              </div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:8px;background:#000">
+                <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Detail</div>
+                <div class="hud-box" style="flex:1;display:flex;align-items:center;justify-content:center;color:#646464;font:300 12px/1.5 Lato,sans-serif;text-align:center;padding:16px">Detail pane — keeps its own tab row.<br>Empty selection shows an .empty-state.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Structure map" style="margin-bottom:44px;max-width:1200px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">Structure & deep links<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1px;background:#282828;border:1px solid #282828">
+      <sc-for list="{{ mapCols }}" as="c" hint-placeholder-count="6">
+        <div style="background:#141414;padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:8px;border-bottom:2px solid #E77E23;padding-bottom:8px;margin-bottom:10px">
+            <svg class="krt-icon" style="width:18px;height:18px;color:#E77E23"><use href="{{ c.icon }}"></use></svg>
+            <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em">{{ c.title }}</span>
+            <span style="flex:1"></span>
+            <span class="chip chip--muted" style="font-size:9.5px">{{ c.entry }}</span>
+          </div>
+          <sc-for list="{{ c.nodes }}" as="n" hint-placeholder-count="3">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:5px 0 5px {{ n.indent }}px;box-shadow:inset {{ n.rail }}">
+              <span style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">{{ n.label }}</span>
+              <span style="flex:1;border-bottom:1px dotted #282828"></span>
+              <span style="font:400 11px/1.4 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;white-space:nowrap">{{ n.link }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="Back behavior" style="margin-bottom:44px;max-width:1200px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">Back behavior — binding rules<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:#282828;border:1px solid #282828">
+      <sc-for list="{{ backRules }}" as="r" hint-placeholder-count="6">
+        <div style="background:#141414;padding:14px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">{{ r.title }}</div>
+          <div style="font:300 13px/1.55 Lato,sans-serif;color:#D2D2D2">{{ r.body }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="02 Components.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 02 Components</a>
+    <a href="04 Auth.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">04 Auth →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 0, railTab: 1 };
+  renderVals() {
+    const defs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard', hint: 'Dashboard — nächste Einsätze, Benachrichtigungen, Schnellaktionen. Kapitel 05.' },
+      { label: 'Einsätze', icon: '#krt-icon-target', hint: 'Liste mit Suche, Filter, Status. Detail mit 7 Tabs. Kapitel 06.', badge: '2' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list', hint: 'Priorisierte Queue + Materialbedarf. Kapitel 10.' },
+      { label: 'Lager', icon: '#krt-icon-crate', hint: 'Bestandsbaum, Ein-/Aus-/Umbuchen. Kapitel 09.' },
+      { label: 'Mehr', icon: '#krt-icon-more-h', hint: 'Sekundärziele — Liste unten. Zuletzt genutztes Ziel wird oben angepinnt.' },
+    ];
+    const mehrItems = [
+      { label: 'Hangar', icon: '#krt-icon-ship' },
+      { label: 'Materialbörse', icon: '#krt-icon-swap' },
+      { label: 'Raffinerie', icon: '#krt-icon-refinery' },
+      { label: 'Mein Inventar & Blueprints', icon: '#krt-icon-blueprint' },
+      { label: 'Bank', icon: '#krt-icon-bank' },
+      { label: 'Beförderung', icon: '#krt-icon-rank' },
+      { label: 'Organigramm', icon: '#krt-icon-users' },
+      { label: 'Einstellungen', icon: '#krt-icon-gear' },
+    ];
+    const mk = (d, i, active, set) => ({
+      label: d.label, icon: d.icon, badge: d.badge || false,
+      indBg: i === active ? '#E77E23' : 'transparent',
+      iconColor: i === active ? '#000000' : '#8A8A8A',
+      labelColor: i === active ? '#FFFFFF' : '#8A8A8A',
+      onTap: () => this.setState(set(i)),
+    });
+    const phoneNav = defs.map((d, i) => mk(d, i, this.state.tab, (n) => ({ tab: n })));
+    const railDefs = [
+      defs[0], defs[1], defs[2], defs[3],
+      { label: 'Hangar', icon: '#krt-icon-ship', hint: '' },
+      { label: 'Raffinerie', icon: '#krt-icon-refinery', hint: '' },
+      { label: 'Börse', icon: '#krt-icon-swap', hint: '' },
+      { label: 'Mehr', icon: '#krt-icon-more-h', hint: '' },
+    ];
+    const railNav = railDefs.map((d, i) => mk(d, i, this.state.railTab, (n) => ({ railTab: n })));
+    const cur = defs[this.state.tab];
+    const rail0 = 'inset 0 0 0 0 transparent', rail1 = '14px 0 0 -13px #646464';
+    const mapCols = [
+      { title: 'Übersicht', icon: '#krt-icon-dashboard', entry: 'basetool://home', nodes: [
+        { label: 'Dashboard', link: '/', indent: 0, rail: rail0 },
+        { label: 'Ankündigung (Vollansicht)', link: '/announcement', indent: 18, rail: rail1 },
+        { label: 'Benachrichtigungen (Bell)', link: '/notifications', indent: 18, rail: rail1 } ] },
+      { title: 'Einsätze', icon: '#krt-icon-target', entry: 'basetool://missions', nodes: [
+        { label: 'Liste (Suche, Filter, Datum)', link: '/missions', indent: 0, rail: rail0 },
+        { label: 'Detail · 7 Tabs', link: '/missions/{id}?tab=', indent: 18, rail: rail1 },
+        { label: 'Anmelden / Check-In Flow', link: '/missions/{id}/signup', indent: 36, rail: rail1 },
+        { label: 'Finanz-Eintrag (Form)', link: '/missions/{id}/finance/new', indent: 36, rail: rail1 },
+        { label: 'Operationen (Segment)', link: '/operations', indent: 0, rail: rail0 },
+        { label: 'Operation Detail + Auszahlung', link: '/operations/{id}', indent: 18, rail: rail1 } ] },
+      { title: 'Aufträge', icon: '#krt-icon-clipboard-list', entry: 'basetool://orders', nodes: [
+        { label: 'Queue (Priorität, Status)', link: '/orders', indent: 0, rail: rail0 },
+        { label: 'Detail · 4 Tabs', link: '/orders/{id}?tab=', indent: 18, rail: rail1 },
+        { label: 'Auftrag anlegen', link: '/orders/create', indent: 18, rail: rail1 },
+        { label: 'Materialbedarf', link: '/orders/material-demand', indent: 0, rail: rail0 } ] },
+      { title: 'Lager', icon: '#krt-icon-crate', entry: 'basetool://inventory', nodes: [
+        { label: 'Bestand (Baum)', link: '/inventory', indent: 0, rail: rail0 },
+        { label: 'Einbuchen / Ausbuchen / Umbuchen', link: '/inventory/book', indent: 18, rail: rail1 },
+        { label: 'Zuordnung (Auftrag/Einsatz)', link: '/inventory/{id}/assign', indent: 18, rail: rail1 } ] },
+      { title: 'Mehr — Sekundärziele', icon: '#krt-icon-more-h', entry: '—', nodes: [
+        { label: 'Hangar · Schiffe + Import', link: '/hangar', indent: 0, rail: rail0 },
+        { label: 'Materialbörse · Angebote/Gesuche', link: '/materialboerse', indent: 0, rail: rail0 },
+        { label: 'Raffinerie · Orders + Buchen', link: '/refinery-orders', indent: 0, rail: rail0 },
+        { label: 'Mein Inventar & Blueprints', link: '/personal-inventory', indent: 0, rail: rail0 },
+        { label: 'Bank · Konten + Anträge', link: '/org-unit-bank', indent: 0, rail: rail0 },
+        { label: 'Beförderung · Bewertungen', link: '/promotion/my-evaluations', indent: 0, rail: rail0 },
+        { label: 'Einstellungen', link: '/settings', indent: 0, rail: rail0 } ] },
+      { title: 'Deep-link Regeln', icon: '#krt-icon-external-link', entry: 'https + app links', nodes: [
+        { label: 'Push → Ziel-Screen direkt', link: 'notif → route', indent: 0, rail: rail0 },
+        { label: 'Kaltstart: Back-Stack = Ziel + Übersicht', link: 'synthesized', indent: 18, rail: rail1 },
+        { label: 'Web-Links (das-kartell.org) → App Links', link: 'assetlinks.json', indent: 0, rail: rail0 },
+        { label: 'Unbekannte Route → 404 in-fiction', link: 'Signal Lost', indent: 18, rail: rail1 } ] },
+    ];
+    const backRules = [
+      { title: 'Predictive back', body: 'Every screen supports the back-preview gesture (androidx.activity 1.9+). Transitions: 200 ms fade/slide — no parallax. The preview shows the real previous screen.' },
+      { title: 'Destination stacks', body: 'Each bottom-bar destination keeps its own back stack (NavigationSuiteScaffold + rememberNavController per graph). Re-tapping the active destination pops to its root and scrolls to top.' },
+      { title: 'Back from a root', body: 'Back on any destination root returns to Übersicht; back on Übersicht leaves the app (single-activity). Never a "press again to exit" toast.' },
+      { title: 'Up vs. system back', body: 'The top bar shows an arrow-left ONLY on pushed detail screens — it behaves identically to system back. No hamburger anywhere: the drawer pattern of the web app is replaced by bar + rail.' },
+      { title: 'Sheets & dialogs', body: 'Back closes the topmost overlay first (sheet → dialog → screen). Destructive forms intercept back once with the unsaved-changes modal („Änderungen verwerfen?").' },
+      { title: 'State preservation', body: 'List scroll positions, active tabs (?tab=) and filters survive navigation + process death via SavedStateHandle. Deep-linked tabs write into the same state.' },
+    ];
+    return {
+      phoneNav, railNav, mehrItems, mapCols, backRules,
+      phoneTitle: cur.label, phoneIcon: cur.icon, phoneHint: cur.hint,
+      mehrOpen: this.state.tab === 4,
+      tabTitle: railDefs[this.state.railTab].label,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -14,7 +14,8 @@ design.
 | [`ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) | Threat model, API exposure, Keycloak client + DPoP posture, layered abuse prevention, release gate |
 | [`ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md) | GDPR / TDDDG / German-law analysis and the compliance checklist |
 | [`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) | Local dev/test environment, hardened GitHub CI, release signing |
-| [`ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md) | Self-contained Claude Design prompt (KRT tokens, components, screens) |
+| [`docs/design/android/`](docs/design/android/README.md) | **Binding UI specification** (design handoff, 2026-08-17): chapters 00–14, `artifacts/Theme.kt`, icon export list, fonts. Open `00 Index.dc.html` in a browser. |
+| [`ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md) | Historical: the Claude Design brief that produced the specification above |
 
 Key properties, decided up front: consumes the existing Basetool backend API only (no own
 business logic) · distribution via **GitHub Releases** (no Google Play) · **zero third-party

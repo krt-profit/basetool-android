@@ -1,10 +1,17 @@
 # Android App — Claude Design Prompt
 
-Doc type: **living plan** (draft, pending approval by @greluc). The block below is the complete,
-self-contained prompt to hand to Claude Design. It embeds the DAS KARTELL design-system facts
-extracted from the populated submodule (`.claude/skills/das-kartell-design/`) and the binding spec
-`docs/specs/ui-design-system.md`, so the design tool needs no repo access. The resulting design
-specification becomes the binding UI reference for the app implementation.
+Doc type: **historical plan** — superseded 2026-08-17. This brief (including the Fan Kit
+amendment below) was executed in Claude Design; the resulting handoff is in-repo at
+[`docs/design/android/`](design/android/README.md) and is the **binding UI reference** now.
+Do not design or implement against this prompt anymore — it is kept for provenance only.
+Where prompt and delivered spec differ, the spec wins (notably: fixed copy rules
+„Einsätze"/„Bereich Profit"/„Administration", Fan Kit placements fixed to Login +
+Einstellungen, FLAG_SECURE app-wide).
+
+The block below was the complete, self-contained prompt handed to Claude Design. It embeds the
+DAS KARTELL design-system facts extracted from the populated submodule
+(`.claude/skills/das-kartell-design/`) and the binding spec `docs/specs/ui-design-system.md`,
+so the design tool needed no repo access.
 
 ---
 

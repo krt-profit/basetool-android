@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2400px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">13</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Beförderung & Einstellungen</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Meine Bewertungen als Matrix + Aufstiegs-Fortschritt; Einstellungen mit App-Lock, Sprache, Auszahlungspräferenz und Danger-Zone. Live: Toggles, Sprach-Wahl, „Lokale Daten löschen"-Modal.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Befoerderung Einstellungen frames" style="display:flex;gap:28px;align-items:flex-start">
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Beförderung — Meine Bewertungen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Beförderung</div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <div class="hud-box" style="padding:16px;display:flex;align-items:center;gap:16px">
+              <svg class="krt-icon" style="width:36px;height:36px;color:#E77E23;flex:none"><use href="#krt-icon-rank"></use></svg>
+              <div style="flex:1;min-width:0">
+                <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.5px;text-transform:uppercase">Aktueller Rang</div>
+                <div style="font:900 18px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.9px;margin-top:4px">Specialist</div>
+                <div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Nächster Rang: Senior Specialist</div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Aufstiegs-Voraussetzungen</span><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 12px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">3 / 5</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ reqs }}" as="r" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;background:#141414;border:1px solid #282828">
+                    <span class="matrix-flag {{ r.flagCls }}" style="flex:none">{{ r.mark }}</span>
+                    <div style="flex:1;min-width:0"><div style="font:300 13px/1.4 Lato,sans-serif;color:{{ r.color }}">{{ r.text }}</div>
+                      <sc-if value="{{ r.bar }}" hint-placeholder-val="{{ false }}"><div style="height:4px;background:#282828;margin-top:6px;position:relative;max-width:200px"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ r.bar }};background:#E77E23"></span></div></sc-if>
+                    </div>
+                    <span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums;flex:none">{{ r.meta }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Bewertungs-Matrix</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div class="card card--flush" style="padding:0">
+                <div style="display:grid;grid-template-columns:1fr 64px 64px 64px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                  <div style="padding:8px 14px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Themenbereich</div>
+                  <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:center">Selbst</div>
+                  <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:center">Leitung</div>
+                  <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:center">Ziel</div>
+                </div>
+                <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:1fr 64px 64px 64px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums;background:{{ m.bg }}">
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.topic }}</div>
+                    <div style="padding:6px;text-align:center;font:700 13px/1 Lato,sans-serif;color:#D2D2D2">{{ m.self }}</div>
+                    <div style="padding:6px;text-align:center;font:700 13px/1 Lato,sans-serif;color:{{ m.leadColor }}">{{ m.lead }}</div>
+                    <div style="padding:6px;text-align:center;font:300 12px/1 Lato,sans-serif;color:#646464">≥ {{ m.goal }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:8px">Skala 1–5 · Leitung unter Ziel = gelb. Read-only für Mitglieder; Bewertungen pflegt die Bewertungsverwaltung (Web).</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Einstellungen (live: Toggles, Sprache, Danger-Modal)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Einstellungen</div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Konto</div>
+              <div style="border:1px solid #282828;background:#141414">
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-user"></use></svg>
+                  <div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">GrafRotz</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">Specialist · Staffel 1</div></div>
+                  <span class="squadron-badge" style="font-size:10px">PROFIT</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-users"></use></svg>
+                  <div style="flex:1"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Aktive Org-Einheit</div></div>
+                  <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Bereich Profit</span>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-bank"></use></svg>
+                  <div style="flex:1"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Auszahlungspräferenz</div></div>
+                  <select class="chip-select" style="min-height:32px" onChange="{{ noop }}"><option>Auszahlung an mich</option><option>Verzicht (Org-Kasse)</option></select>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">App</div>
+              <div style="border:1px solid #282828;background:#141414">
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-globe"></use></svg>
+                  <div style="flex:1"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Sprache</div></div>
+                  <div style="display:flex;border:1px solid #282828;height:36px">
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:52px;display:flex;align-items:center;justify-content:center;font:700 11px/1 Lato,sans-serif;background:{{ deBg }};color:{{ deFg }}" onClick="{{ setDe }}">DE</button>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:52px;display:flex;align-items:center;justify-content:center;font:700 11px/1 Lato,sans-serif;background:{{ enBg }};color:{{ enFg }};border-left:1px solid #282828" onClick="{{ setEn }}">EN</button>
+                  </div>
+                </div>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C" onClick="{{ toggleLock }}">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-fingerprint"></use></svg>
+                  <div style="flex:1;text-align:left"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">App-Sperre (Biometrie)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#646464">{{ lockSub }}</div></div>
+                  <span style="width:44px;height:24px;flex:none;border:1px solid {{ lockBorder }};background:{{ lockTrack }};position:relative;transition:all .2s"><span style="position:absolute;top:2px;left:{{ lockKnobX }};width:18px;height:18px;background:{{ lockKnob }};transition:all .2s"></span></span>
+                </button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px" onClick="{{ toggleBp }}">
+                  <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-blueprint"></use></svg>
+                  <div style="flex:1;text-align:left"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Blueprints mit Org teilen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#646464">Sichtbar in der Verfügbarkeits-Übersicht</div></div>
+                  <span style="width:44px;height:24px;flex:none;border:1px solid {{ bpBorder }};background:{{ bpTrack }};position:relative;transition:all .2s"><span style="position:absolute;top:2px;left:{{ bpKnobX }};width:18px;height:18px;background:{{ bpKnob }};transition:all .2s"></span></span>
+                </button>
+              </div>
+            </div>
+            <div>
+              <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Rechtliches & Daten</div>
+              <div style="border:1px solid #282828;background:#141414">
+                <sc-for list="{{ legal }}" as="l" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A;flex:none"><use href="{{ l.icon }}"></use></svg>
+                    <span style="flex:1;font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ l.label }}</span>
+                    <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-external-link"></use></svg>
+                  </div>
+                </sc-for>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px" onClick="{{ openWipe }}">
+                  <svg class="krt-icon" style="width:18px;height:18px;color:#F2564B;flex:none"><use href="#krt-icon-trash"></use></svg>
+                  <span style="flex:1;text-align:left;font:300 13.5px/1.3 Lato,sans-serif;color:#F2564B">Lokale Daten löschen</span>
+                </button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 2px 2px">
+              <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
+              <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+            </div>
+            <button class="btn-quiet-danger btn" style="background:transparent;min-height:50px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-logout"></use></svg>Abmelden</button>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 4px">
+              <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2 (Build 37) · API v1</div>
+            </div>
+          </div>
+          <sc-if value="{{ wipeOpen }}" hint-placeholder-val="{{ false }}">
+            <div class="krt-modal-overlay" style="position:absolute" onClick="{{ closeWipe }}">
+              <div class="krt-modal krt-modal--danger" style="max-width:360px" onClick="{{ stop }}">
+                <div class="krt-modal-head"><h2>Lokale Daten löschen?</h2><button style="all:unset;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#8A8A8A" onClick="{{ closeWipe }}" aria-label="Schließen"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-close"></use></svg></button></div>
+                <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Entfernt alle gespeicherten Offline-Daten und Entwürfe von diesem Gerät. Serverdaten bleiben unberührt. Du bleibst angemeldet.</p></div>
+                <div class="krt-modal-foot">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px" onClick="{{ closeWipe }}">Abbrechen</button>
+                  <button class="btn" style="min-height:48px;background:#A3000A;color:#fff" onClick="{{ closeWipe }}">Endgültig löschen</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — SettingsScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Toggle = SQUARE track + knob (radius 0), on = orange track/black knob — nie der runde M3-Switch</li>
+          <li>App-Sperre aktivieren fordert sofort BiometricPrompt zur Bestätigung</li>
+          <li>OSS-Lizenzen als eigene Seite (Gradle license plugin); Datenschutz/Impressum als In-App-Webansicht</li>
+          <li>Version-Footer: Server-Status-Dot (grün/gelb/rot) + App-/API-Version, tabular</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — Einstellungen 2-spaltig + Beförderung rechts</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+        <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+            <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+            <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+              <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px;height:64px;padding:0 24px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <h2 style="flex:1;margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Einstellungen</h2>
+              <span class="squadron-badge" style="font-size:12px">Bereich Profit</span>
+            </div>
+            <div style="flex:1;overflow:auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-content:start;max-width:1200px">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div style="border:1px solid #282828;background:#141414">
+                  <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #E77E23">Konto & App</div>
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C"><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Aktive Org-Einheit</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Bereich Profit</span></div>
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C"><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Sprache</span><span class="chip chip--primary" style="font-size:9.5px">{{ langLabel }}</span></div>
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C"><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">App-Sperre</span><span class="chip {{ lockChipCls }}" style="font-size:9.5px">{{ lockChip }}</span></div>
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 16px"><span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Auszahlungspräferenz</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Auszahlung an mich</span></div>
+                </div>
+                <div style="border:1px solid #282828;background:#141414">
+                  <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #E77E23">Rechtliches & Daten</div>
+                  <div style="display:flex;align-items:center;min-height:48px;padding:8px 16px;border-bottom:1px solid #1C1C1C;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Datenschutzerklärung</div>
+                  <div style="display:flex;align-items:center;min-height:48px;padding:8px 16px;border-bottom:1px solid #1C1C1C;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Impressum · OSS-Lizenzen</div>
+                  <div style="display:flex;align-items:center;min-height:48px;padding:8px 16px;font:300 13px/1.3 Lato,sans-serif;color:#F2564B">Lokale Daten löschen</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 2px 0">
+                  <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
+                  <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="hud-box" style="padding:16px;display:flex;align-items:center;gap:16px">
+                  <svg class="krt-icon" style="width:32px;height:32px;color:#E77E23;flex:none"><use href="#krt-icon-rank"></use></svg>
+                  <div style="flex:1"><div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.5px;text-transform:uppercase">Beförderung</div><div style="font:900 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px;margin-top:4px">Specialist → Senior Specialist</div></div>
+                  <span class="chip chip--warning" style="font-size:9.5px">3 / 5 erfüllt</span>
+                </div>
+                <div class="card card--flush" style="padding:0">
+                  <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <div style="padding:8px 14px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Themenbereich</div>
+                    <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:center">Selbst</div>
+                    <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:center">Leitung</div>
+                    <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:center">Ziel</div>
+                  </div>
+                  <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="4">
+                    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;border-bottom:1px solid #1C1C1C;min-height:42px;align-items:center;font-variant-numeric:tabular-nums;background:{{ m.bg }}">
+                      <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.topic }}</div>
+                      <div style="padding:6px;text-align:center;font:700 12.5px/1 Lato,sans-serif;color:#D2D2D2">{{ m.self }}</div>
+                      <div style="padding:6px;text-align:center;font:700 12.5px/1 Lato,sans-serif;color:{{ m.leadColor }}">{{ m.lead }}</div>
+                      <div style="padding:6px;text-align:center;font:300 11.5px/1 Lato,sans-serif;color:#646464">≥ {{ m.goal }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;margin-top:32px;max-width:1200px">
+    <a href="12 Bank.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 12 Bank</a>
+    <a href="14 System States.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">14 System states & app icon →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang: 0, lock: true, bp: true, wipe: false };
+  renderVals() {
+    const reqs = [
+      { text: 'Mind. 12 Einsätze als Teilnehmer', meta: '12 / 12', flagCls: 'on', mark: '✓', color: '#8A8A8A', bar: false },
+      { text: 'Davon 2 als Einheitsführer', meta: '2 / 2', flagCls: 'on', mark: '✓', color: '#8A8A8A', bar: false },
+      { text: 'Bewertungsziele erreicht (alle ≥ Ziel)', meta: '5 / 6', flagCls: '', mark: '', color: '#D2D2D2', bar: '83%' },
+      { text: 'Dienstzeit im Rang ≥ 90 Tage', meta: '61 / 90', flagCls: '', mark: '', color: '#D2D2D2', bar: '68%' },
+      { text: 'Empfehlung der Staffelleitung', meta: 'liegt vor', flagCls: 'on', mark: '✓', color: '#8A8A8A', bar: false },
+    ];
+    const matrix = [
+      { topic: 'Flugdisziplin & Formation', self: '4', lead: '4', goal: '3', leadColor: '#2EBC3D', bg: '#141414' },
+      { topic: 'Kommunikation (Funk)', self: '4', lead: '3', goal: '3', leadColor: '#2EBC3D', bg: 'rgba(255,255,255,.02)' },
+      { topic: 'Logistik & Lagerführung', self: '3', lead: '2', goal: '3', leadColor: '#FFD23F', bg: '#141414' },
+      { topic: 'Führung kleiner Einheiten', self: '2', lead: '2', goal: '2', leadColor: '#2EBC3D', bg: 'rgba(255,255,255,.02)' },
+      { topic: 'Regelwerk & Sicherheit', self: '5', lead: '4', goal: '4', leadColor: '#2EBC3D', bg: '#141414' },
+    ];
+    const legal = [
+      { label: 'Datenschutzerklärung', icon: '#krt-icon-shield' },
+      { label: 'Impressum', icon: '#krt-icon-info' },
+      { label: 'Nutzungsbedingungen (v2.1)', icon: '#krt-icon-clipboard-check' },
+      { label: 'OSS-Lizenzen', icon: '#krt-icon-list' },
+    ];
+    const navDefs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
+      { label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' },
+      { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' },
+    ];
+    const railNav = navDefs.map((d, i) => ({ ...d, indBg: i === 7 ? '#E77E23' : 'transparent', iconColor: i === 7 ? '#000' : '#8A8A8A', labelColor: i === 7 ? '#FFFFFF' : '#8A8A8A' }));
+    const mkToggle = (on) => ({
+      track: on ? '#E77E23' : '#1C1C1C', knob: on ? '#000000' : '#646464',
+      border: on ? '#E77E23' : '#282828', knobX: on ? '22px' : '2px',
+    });
+    const lock = mkToggle(this.state.lock), bp = mkToggle(this.state.bp);
+    const de = this.state.lang === 0;
+    return {
+      reqs, matrix, legal, railNav,
+      deBg: de ? '#E77E23' : 'transparent', deFg: de ? '#000' : '#8A8A8A',
+      enBg: de ? 'transparent' : '#E77E23', enFg: de ? '#8A8A8A' : '#000',
+      setDe: () => this.setState({ lang: 0 }), setEn: () => this.setState({ lang: 1 }),
+      langLabel: de ? 'Deutsch' : 'English',
+      lockTrack: lock.track, lockKnob: lock.knob, lockBorder: lock.border, lockKnobX: lock.knobX,
+      lockSub: this.state.lock ? 'Aktiv — Sperre nach 5 Min. im Hintergrund' : 'Aus — Daten nur durch Gerätesperre geschützt',
+      lockChip: this.state.lock ? 'Aktiv' : 'Aus', lockChipCls: this.state.lock ? 'chip--success' : 'chip--muted',
+      toggleLock: () => this.setState(s => ({ lock: !s.lock })),
+      bpTrack: bp.track, bpKnob: bp.knob, bpBorder: bp.border, bpKnobX: bp.knobX,
+      toggleBp: () => this.setState(s => ({ bp: !s.bp })),
+      wipeOpen: this.state.wipe,
+      openWipe: () => this.setState({ wipe: true }),
+      closeWipe: () => this.setState({ wipe: false }),
+      stop: (e) => e.stopPropagation(),
+      noop: () => {},
+    };
+  }
+}
+</script>
+</body>
+</html>

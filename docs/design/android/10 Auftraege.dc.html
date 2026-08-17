@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2900px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">10</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Aufträge & Materialbörse</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Queue canon from the web: #ID + Art + Einheiten-Badges, Prio (Drag nur für Logistiker), Status, einklappbare Materialliste mit Fortschritt, Alters-Färbung 30/90 Tage. Live: Detail-Tabs, Börsen-Segment, „Ich kann liefern".</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Auftraege phone" style="display:flex;gap:28px;align-items:flex-start;margin-bottom:32px">
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Queue (Materialliste antippen)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Aufträge</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Filter"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-filter"></use></svg></button>
+          </div>
+          <div style="flex:none;padding:12px 16px;display:flex;gap:6px;overflow-x:auto">
+            <span class="chip chip--info" style="font-size:10px;flex:none">Offen</span>
+            <span class="chip chip--warning" style="font-size:10px;flex:none">In Bearbeitung</span>
+            <span class="chip chip--muted" style="font-size:10px;flex:none;border-style:dashed">Abgelehnt</span>
+            <span class="chip chip--muted" style="font-size:10px;flex:none;border-style:dashed">Abgeschlossen</span>
+            <span class="chip" style="font-size:10px;flex:none">Einheit: Alle</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:0 16px 96px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+              <div style="border:1px solid #282828;background:#141414">
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px 8px">
+                  <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px">
+                    <span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ o.prio }}</span>
+                    <span style="font:700 8.5px/1 Lato,sans-serif;color:#646464;letter-spacing:.1em;text-transform:uppercase">Prio</span>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14.5px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ o.id }}</span><span class="chip {{ o.kindCls }}" style="font-size:8.5px">{{ o.kind }}</span></div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap">
+                      <span class="status-pill {{ o.statusCls }}" style="font-size:9.5px">{{ o.status }}</span>
+                      <span style="font:300 11px/1 Lato,sans-serif;color:{{ o.ageColor }};font-variant-numeric:tabular-nums">{{ o.age }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap">
+                      <span style="font:700 9px/1 Lato,sans-serif;color:#646464;letter-spacing:.08em;text-transform:uppercase">Für</span><span class="squadron-badge" style="font-size:9.5px">{{ o.req }}</span>
+                      <span style="font:700 9px/1 Lato,sans-serif;color:#646464;letter-spacing:.08em;text-transform:uppercase;margin-left:6px">Durch</span><span class="squadron-badge squadron-badge-sk" style="font-size:9.5px">{{ o.resp }}</span>
+                    </div>
+                  </div>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;margin-top:4px"><use href="#krt-icon-chevron-right"></use></svg>
+                </div>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:4px 14px;border-top:1px solid #1C1C1C" onClick="{{ o.onToggle }}">
+                  <svg class="krt-icon" style="width:13px;height:13px;color:#E77E23;transform:rotate({{ o.chev }});transition:transform .15s"><use href="#krt-icon-chevron-right"></use></svg>
+                  <span style="font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase">Materialien</span>
+                  <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">({{ o.matCount }})</span>
+                </button>
+                <sc-if value="{{ o.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:0 14px 12px 35px;display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ o.mats }}" as="m" hint-placeholder-count="2">
+                      <div>
+                        <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.name }}</span><span style="font:700 12px/1 Lato,sans-serif;color:#FFFFFF">{{ m.have }}</span><span style="font:300 11px/1 Lato,sans-serif;color:#646464">/ {{ m.need }}</span></div>
+                        <div style="height:4px;background:#282828;margin-top:4px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ m.pct }};background:{{ m.barColor }}"></span></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Neuer Auftrag"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="width:56px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:22px;height:22px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 10.5px/1 Lato,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OrdersQueueScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Age tint on the created-date: &gt;30 d warning yellow, &gt;90 d danger red (web thresholds)</li>
+          <li>Prio-Reorder (Logistiker): long-press card → drag; fallback in overflow „Priorität ändern"</li>
+          <li>Progress bar green at 100%, orange below; Materialliste collapsed by default (localStorage)</li>
+          <li>Public „Auftrag anlegen" surface stays reachable for guests (ch. 04 guest mode)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Detail — 4 Tabs (live)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="flex:none;background:#141414;border-bottom:1px solid #282828">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#A-1042</span><span class="chip chip--primary" style="font-size:8.5px">Material</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill" style="font-size:9.5px;color:#FFD23F">In Bearbeitung</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">Prio 1 · fällig 21.08.</span></div>
+              </div>
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
+            </div>
+            <div class="facts-bar" style="border-bottom:none;padding:6px 16px 10px;gap:14px">
+              <span><span class="fact-k">Für</span><span class="fact-v">STAFFEL 1</span></span>
+              <span><span class="fact-k">Durch</span><span class="fact-v">SK VANGUARD</span></span>
+              <span><span class="fact-k">Zuständig</span><span class="fact-v">Vex</span></span>
+            </div>
+            <div class="tab-nav" style="padding:0 8px;background:transparent">
+              <sc-for list="{{ oTabs }}" as="t" hint-placeholder-count="4">
+                <button class="tab {{ t.cls }}" style="font-size:11px;padding:10px 12px;min-height:44px" onClick="{{ t.onTap }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+            <sc-if value="{{ ot0 }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ positions }}" as="p" hint-placeholder-count="2">
+                  <div style="border:1px solid #282828;background:#141414;padding:12px 14px">
+                    <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#646464">/ {{ p.need }}</span></div>
+                    <div style="height:5px;background:#282828;margin-top:8px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ p.pct }};background:{{ p.barColor }}"></span></div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">Gebucht: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">Zugesagt: <strong>{{ p.claimed }}</strong></span></div>
+                  </div>
+                </sc-for>
+                <div class="annotation" style="font-size:12.5px"><div class="annotation-label">Anmerkung</div>Qualität ist zweitrangig — Menge zählt. Anlieferung gesammelt an ARC-L1.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ot1 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A">Offener Bedarf über alle offenen Aufträge der bearbeitenden Einheit — Bestand und Zusagen gegenübergestellt.</div>
+                <sc-for list="{{ demand }}" as="d" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+                    <span style="flex:1;min-width:0;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</span>
+                    <div style="text-align:right"><div style="font:700 13px/1.2 Lato,sans-serif;color:{{ d.color }}">{{ d.open }}</div><div style="font:300 10px/1.2 Lato,sans-serif;color:#646464">noch offen</div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ot2 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ handovers }}" as="h" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;background:#141414;border:1px solid #282828">
+                    <svg class="krt-icon" style="width:20px;height:20px;color:#2EBC3D;flex:none"><use href="#krt-icon-clipboard-check"></use></svg>
+                    <div style="flex:1;min-width:0"><div style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ h.amt }} · {{ h.mat }}</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ h.who }} · {{ h.when }}</div></div>
+                  </div>
+                </sc-for>
+                <button class="btn btn--cta" style="min-height:50px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-clipboard-check"></use></svg>Übergabe erfassen</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ot3 }}" hint-placeholder-val="{{ false }}">
+              <ol class="ablauf" style="padding:4px 2px">
+                <li class="step step--done"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:13.5px">Auftrag angelegt</span><span class="step-meta">12.07. 19:22 · GrafRotz (STAFFEL 1)</span></div></li>
+                <li class="step step--done"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:13.5px">Angenommen · Prio 1</span><span class="step-meta">13.07. 09:10 · Vex (SK VANGUARD)</span></div></li>
+                <li class="step step--now"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:13.5px">In Bearbeitung — 62%</span><span class="step-meta">Übergaben laufen · zuletzt heute 14:02</span></div></li>
+                <li class="step"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:13.5px">Abschluss</span><span class="step-meta">bei 100% + Bestätigung des Auftraggebers</span></div></li>
+              </ol>
+            </sc-if>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OrderDetailScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Status change + Zuständigen setzen im Overflow → bottom sheet; Statuswechsel bestätigt mit Konsequenz</li>
+          <li>Materialbedarf ist die Queue-übergreifende Faltung (nur mit Queue-Sicht) — gleiche Gating-Regel wie Web</li>
+          <li>Verlauf = append-only Aktivitätsspur, read-only</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Materialbörse (live: Segment + „Ich kann liefern")</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Materialbörse</h2>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Suche"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-search"></use></svg></button>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ bSegOffBg }};color:{{ bSegOffFg }}" onClick="{{ bSegOff }}">Angebote</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ bSegReqBg }};color:{{ bSegReqFg }};border-left:1px solid #282828" onClick="{{ bSegReq }}">Gesuche</button>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 96px;display:flex;flex-direction:column;gap:10px">
+            <sc-if value="{{ showOffers }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ offers }}" as="o" hint-placeholder-count="2">
+                  <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:flex-start;gap:10px">
+                      <div style="flex:1;min-width:0">
+                        <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ o.mat }}</div>
+                        <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">{{ o.who }} · {{ o.when }}</div>
+                      </div>
+                      <span style="text-align:right;font-variant-numeric:tabular-nums"><span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">{{ o.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">{{ o.unit }}</span><br><span class="chip chip--muted" style="font-size:8.5px;margin-top:4px">Q {{ o.q }}</span></span>
+                    </div>
+                    <button class="{{ o.btnCls }}" style="{{ o.btnStyle }}" onClick="{{ o.onInterest }}"><svg class="krt-icon" style="width:15px;height:15px"><use href="{{ o.btnIcon }}"></use></svg>{{ o.btnLabel }}</button>
+                  </div>
+                </sc-for>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Übergabe & Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showReqs }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ requests }}" as="r" hint-placeholder-count="2">
+                  <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:flex-start;gap:10px">
+                      <div style="flex:1;min-width:0">
+                        <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ r.mat }}</div>
+                        <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Gesucht von {{ r.who }} · {{ r.when }}</div>
+                        <div style="display:flex;gap:6px;margin-top:6px"><span class="chip chip--data" style="font-size:9px">Menge: <strong>{{ r.amt }}</strong></span><sc-if value="{{ r.minQ }}" hint-placeholder-val="{{ false }}"><span class="chip chip--data" style="font-size:9px">Min. Q: <strong>{{ r.minQ }}</strong></span></sc-if></div>
+                      </div>
+                      <span class="chip chip--muted" style="font-size:9px;flex:none;font-variant-numeric:tabular-nums">{{ r.supplyCount }} Zusagen</span>
+                    </div>
+                    <button class="{{ r.btnCls }}" style="{{ r.btnStyle }}" onClick="{{ r.onInterest }}"><svg class="krt-icon" style="width:15px;height:15px"><use href="{{ r.btnIcon }}"></use></svg>{{ r.btnLabel }}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="{{ boersenFabLabel }}"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
+            <sc-for list="{{ navB }}" as="n" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="width:56px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:22px;height:22px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 10.5px/1 Lato,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Gesuch erstellen — Sheet</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Gesuch erstellen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Org-weit sichtbar · Anbieter melden sich über „Ich kann liefern"</div>
+              </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Material oder Item</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" placeholder="z. B. Bexalit" style="height:48px;font-size:14px;font-style:normal"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label style="font-size:13px;margin-bottom:6px">Gewünschte Menge</label><input type="text" value="500" style="width:100%;height:48px;font-size:15px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums"></div>
+                <div><label style="font-size:13px;margin-bottom:6px">Min. Qualität (optional)</label><input type="text" placeholder="0–1000" style="width:100%;height:48px;font-size:15px;text-align:center"></div>
+              </div>
+              <div><label style="font-size:13px;margin-bottom:6px">Anmerkung (optional)</label><input type="text" placeholder="z. B. für Blueprint Quantum-Antrieb" style="width:100%;height:48px;font-size:14px"></div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.4"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Gesuch veröffentlichen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Börse</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Angebot-Sheet identisch, plus Bestands-Vorschlag aus „Mein Inventar"</li>
+          <li>„Ich kann liefern" ist ein Toggle — Rücknahme jederzeit; Ersteller sieht die Zusagen-Liste</li>
+          <li>Eigene Einträge zeigen statt Toggle: Bearbeiten + Zurückziehen (quiet-danger)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Auftraege tablet" style="margin-bottom:32px">
+    <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Tablet 1280×800 — Queue + Detail (Drag-Handles für Logistiker)</div>
+    <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+      <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+        <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+          <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+          <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+            <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+              <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+              <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:400px;flex:none;border-right:1px solid #282828;background:#0A0A0A;display:flex;flex-direction:column">
+          <div style="padding:14px 16px;display:flex;gap:6px;border-bottom:1px solid #282828;flex-wrap:wrap">
+            <span class="chip chip--info" style="font-size:9.5px">Offen</span><span class="chip chip--warning" style="font-size:9.5px">In Bearbeitung</span><span class="chip" style="font-size:9.5px">Einheit: Alle</span>
+          </div>
+          <div style="flex:1;overflow:auto">
+            <div style="display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 14px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
+              <span style="font:900 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;width:20px">1</span>
+              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">#A-1042</span><span class="chip chip--primary" style="font-size:8px">Material</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill" style="font-size:9px;color:#FFD23F">In Bearbeitung</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">STAFFEL 1 → SK VG</span></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 14px;border-bottom:1px solid #141414">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
+              <span style="font:900 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;width:20px">2</span>
+              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2">#A-1039</span><span class="chip chip--info" style="font-size:8px">Item</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill status-planned" style="font-size:9px">Offen</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#F2564B">vor 94 Tagen</span></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 14px">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
+              <span style="font:900 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;width:20px">3</span>
+              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2">#A-1035</span><span class="chip chip--primary" style="font-size:8px">Material</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill status-planned" style="font-size:9px">Offen</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#FFD23F">vor 41 Tagen</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px;min-width:0">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:10px"><span style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#A-1042</span><span class="chip chip--primary" style="font-size:9px">Material</span><span class="status-pill" style="font-size:10px;color:#FFD23F">In Bearbeitung</span></div>
+              <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Prio 1 · angelegt 12.07. · fällig 21.08. · Für STAFFEL 1 · Durch SK VANGUARD · Zuständig Vex</div>
+            </div>
+            <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px">Status ändern</button>
+          </div>
+          <div class="tab-nav" style="background:transparent;padding:0">
+            <button class="tab active" style="font-size:11.5px">Positionen</button>
+            <button class="tab" style="font-size:11.5px">Materialbedarf</button>
+            <button class="tab" style="font-size:11.5px">Übergaben</button>
+            <button class="tab" style="font-size:11.5px">Verlauf</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:900px">
+            <sc-for list="{{ positions }}" as="p" hint-placeholder-count="2">
+              <div style="border:1px solid #282828;background:#141414;padding:12px 14px">
+                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#646464">/ {{ p.need }}</span></div>
+                <div style="height:5px;background:#282828;margin-top:8px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ p.pct }};background:{{ p.barColor }}"></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">Gebucht: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">Zugesagt: <strong>{{ p.claimed }}</strong></span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </x-import>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="09 Lager.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 09 Lager & Blueprints</a>
+    <a href="11 Raffinerie.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">11 Raffinerie →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { oTab: 0, bSeg: 0, mats0: false, mats1: false, mats2: false, int0: false, int1: false, intR0: true, intR1: false };
+  renderVals() {
+    const mkOrder = (key, o) => ({
+      ...o, open: this.state[key], chev: this.state[key] ? '90deg' : '0deg',
+      onToggle: () => this.setState(s => ({ [key]: !s[key] })),
+    });
+    const orders = [
+      mkOrder('mats0', { id: '#A-1042', kind: 'Material', kindCls: 'chip--primary', prio: '1', status: 'In Bearbeitung', statusCls: '', age: 'vor 36 Tagen', ageColor: '#FFD23F', req: 'STAFFEL 1', resp: 'SK VG', matCount: 2, mats: [
+        { name: 'Laranite', have: '748', need: '1.200 SCU', pct: '62%', barColor: '#E77E23' },
+        { name: 'Agricium', have: '96', need: '96 SCU', pct: '100%', barColor: '#239E33' } ] }),
+      mkOrder('mats1', { id: '#A-1039', kind: 'Item', kindCls: 'chip--info', prio: '2', status: 'Offen', statusCls: 'status-planned', age: 'vor 94 Tagen', ageColor: '#F2564B', req: 'SK VG', resp: 'STAFFEL 2', matCount: 3, mats: [
+        { name: 'Titanium (aus Blueprint)', have: '12', need: '40 SCU', pct: '30%', barColor: '#E77E23' },
+        { name: 'Kopion-Horn', have: '0', need: '4 Stück', pct: '0%', barColor: '#E77E23' } ] }),
+      mkOrder('mats2', { id: '#A-1035', kind: 'Material', kindCls: 'chip--primary', prio: '3', status: 'Offen', statusCls: 'status-planned', age: 'vor 12 Tagen', ageColor: '#8A8A8A', req: 'STAFFEL 1', resp: '—', matCount: 1, mats: [
+        { name: 'Bexalit', have: '0', need: '500 SCU', pct: '0%', barColor: '#E77E23' } ] }),
+    ];
+    const oTabDefs = ['Positionen', 'Materialbedarf', 'Übergaben', 'Verlauf'];
+    const oTabs = oTabDefs.map((label, i) => ({ label, cls: this.state.oTab === i ? 'active' : '', onTap: () => this.setState({ oTab: i }) }));
+    const positions = [
+      { name: 'Laranite', have: '748', need: '1.200 SCU', pct: '62%', barColor: '#E77E23', booked: '748 SCU', claimed: '300 SCU' },
+      { name: 'Agricium', have: '96', need: '96 SCU', pct: '100%', barColor: '#239E33', booked: '96 SCU', claimed: '—' },
+    ];
+    const demand = [
+      { name: 'Laranite', open: '452 SCU', color: '#FFD23F' },
+      { name: 'Bexalit', open: '500 SCU', color: '#F2564B' },
+      { name: 'Titanium', open: '28 SCU', color: '#D2D2D2' },
+    ];
+    const handovers = [
+      { amt: '+400 SCU', mat: 'Laranite', who: 'Dorn → Vex', when: 'heute 14:02' },
+      { amt: '+348 SCU', mat: 'Laranite', who: 'Mara → Vex', when: 'gestern 20:41' },
+    ];
+    const mkInterest = (key, active) => ({
+      btnCls: active ? 'btn-success btn' : 'btn-outline btn',
+      btnStyle: (active ? '' : 'background:transparent;') + 'min-height:48px;width:100%',
+      btnIcon: active ? '#krt-icon-check' : '#krt-icon-login',
+      btnLabel: active ? 'Zugesagt — zurücknehmen' : 'Ich kann liefern',
+      onInterest: () => this.setState(s => ({ [key]: !s[key] })),
+    });
+    const offers = [
+      { mat: 'Quantainium', who: 'Rhea (STAFFEL 1)', when: 'vor 3 Std.', amt: '240', unit: 'SCU', q: '874', ...mkInterest('int0', this.state.int0) },
+      { mat: 'Medpen (Hemozal)', who: 'Dorn (STAFFEL 1)', when: 'gestern', amt: '24', unit: 'Stück', q: '—', ...mkInterest('int1', this.state.int1) },
+    ];
+    const requests = [
+      { mat: 'Bexalit', who: 'GrafRotz', when: 'vor 1 Std.', amt: '500 SCU', minQ: '700', supplyCount: this.state.intR0 ? '2' : '1', ...mkInterest('intR0', this.state.intR0) },
+      { mat: 'Kopion-Horn', who: 'Vex (SK VG)', when: 'vor 2 Tagen', amt: '4 Stück', minQ: false, supplyCount: this.state.intR1 ? '1' : '0', ...mkInterest('intR1', this.state.intR1) },
+    ];
+    const navDefs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
+      { label: 'Mehr', icon: '#krt-icon-more-h' },
+    ];
+    const mkNav = (active) => navDefs.map((d, i) => ({ ...d, indBg: i === active ? '#E77E23' : 'transparent', iconColor: i === active ? '#000' : '#8A8A8A', labelColor: i === active ? '#FFFFFF' : '#8A8A8A' }));
+    const railDefs = navDefs.slice(0, 4).concat([{ label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' }, { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' }]);
+    const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 2 ? '#E77E23' : 'transparent', iconColor: i === 2 ? '#000' : '#8A8A8A', labelColor: i === 2 ? '#FFFFFF' : '#8A8A8A' }));
+    const b = this.state.bSeg;
+    return {
+      orders, oTabs, positions, demand, handovers, offers, requests, railNav,
+      nav: mkNav(2), navB: mkNav(4),
+      ot0: this.state.oTab === 0, ot1: this.state.oTab === 1, ot2: this.state.oTab === 2, ot3: this.state.oTab === 3,
+      showOffers: b === 0, showReqs: b === 1,
+      bSegOff: () => this.setState({ bSeg: 0 }), bSegReq: () => this.setState({ bSeg: 1 }),
+      bSegOffBg: b === 0 ? '#E77E23' : 'transparent', bSegOffFg: b === 0 ? '#000' : '#8A8A8A',
+      bSegReqBg: b === 1 ? '#E77E23' : 'transparent', bSegReqFg: b === 1 ? '#000' : '#8A8A8A',
+      boersenFabLabel: b === 0 ? 'Angebot erstellen' : 'Gesuch erstellen',
+    };
+  }
+}
+</script>
+</body>
+</html>

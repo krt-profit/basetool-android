@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:1200px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:12px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">02</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Component sheet</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Compose components in every state. Default cells are live — hover and press them. Pressed/focus cells are forced for redlining. 1 px = 1 dp.</div>
+    </div>
+  </header>
+  <div style="display:flex;gap:8px;margin:0 0 32px;align-items:flex-start"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Global</span><p style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;margin:0;max-width:100ch">All interactive heights ≥ 48 dp (web system uses 44 px — Android rounds up). Radius 0 everywhere except pills and circular radio/spinner/presence. Ripple: white 8%, bounded, square. Color transitions 200 ms. Disabled = 45% opacity, never a new color.</p></div>
+
+  <section data-screen-label="Buttons ladder" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">1 · Buttons — the ladder<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:100ch">Strongest → quietest. The filled orange CTA marks the ONE primary action per screen context — never two. Label: Lato Bold 13 sp, +0.03 em, UPPERCASE, text black on orange, white on green. Height 48 dp, padding 0/20 dp, icon 16 dp with 8 dp gap.</p>
+    <div style="border:1px solid #282828;background:#141414">
+      <div style="display:grid;grid-template-columns:220px repeat(4,1fr);background:#1C1C1C;border-bottom:2px solid #E77E23">
+        <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Variant</div>
+        <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Default (live)</div>
+        <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Pressed</div>
+        <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Focus</div>
+        <div style="padding:10px 16px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Disabled</div>
+      </div>
+      <sc-for list="{{ buttons }}" as="b" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:220px repeat(4,1fr);border-bottom:1px solid #282828;align-items:center">
+          <div style="padding:14px 16px"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">{{ b.name }}</div><div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:3px">{{ b.use }}</div></div>
+          <div style="padding:14px 16px"><button class="{{ b.cls }}" style="{{ b.base }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="{{ b.icon }}"></use></svg><sc-if value="{{ b.label }}" hint-placeholder-val="{{ true }}"><span>{{ b.label }}</span></sc-if></button></div>
+          <div style="padding:14px 16px"><button class="{{ b.cls }}" style="{{ b.pressed }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="{{ b.icon }}"></use></svg><sc-if value="{{ b.label }}" hint-placeholder-val="{{ true }}"><span>{{ b.label }}</span></sc-if></button></div>
+          <div style="padding:14px 16px"><button class="{{ b.cls }}" style="{{ b.focus }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="{{ b.icon }}"></use></svg><sc-if value="{{ b.label }}" hint-placeholder-val="{{ true }}"><span>{{ b.label }}</span></sc-if></button></div>
+          <div style="padding:14px 16px"><button class="{{ b.cls }}" style="{{ b.disabled }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="{{ b.icon }}"></use></svg><sc-if value="{{ b.label }}" hint-placeholder-val="{{ true }}"><span>{{ b.label }}</span></sc-if></button></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-start"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Redline</span><p style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;margin:0;max-width:100ch">Icon-only buttons are reserved for repeated universal row actions (edit, trash, check-in/out, bookout, close): 48×48 dp target, ghost border, ALWAYS contentDescription + tooltip. CTA focus ring is white (orange-on-orange vanishes); all others orange, 2 dp, offset 2 dp.</p></div>
+  </section>
+
+  <section data-screen-label="Containers" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">2 · Containers<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">HUD box — hero container (max 1–2 per screen)</div>
+        <div class="hud-box" style="padding:16px">
+          <div class="card-title" style="margin-bottom:8px">Nächste Mission</div>
+          <div style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2">1 dp hairline · rgba(20,20,20,.5) fill · 10 dp brackets TL+BR.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Card / inset / accent</div>
+        <div class="card" style="padding:12px 16px;margin-bottom:8px"><span style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">.card — default list/detail surface</span></div>
+        <div class="card card--inset" style="padding:12px 16px;margin-bottom:8px"><span style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">.card--inset — nested, quieter</span></div>
+        <div class="card card--accent" style="padding:12px 16px;margin-top:0"><span style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">.card--accent — 3 dp orange top bar (totals)</span></div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Panel header + key-value list</div>
+        <button class="panel-header" style="min-height:48px"><h3 style="font-size:14px">Finanzen<span class="panel-count">4</span></h3><svg class="krt-icon toggle-icon" style="width:16px;height:16px"><use href="#krt-icon-chevron-down"></use></svg></button>
+        <div class="card card--flush" style="border-top:none;padding:12px 16px">
+          <dl class="kv-list" style="font-size:13px;gap:8px 16px">
+            <dt style="font-size:11px">Treffpunkt</dt><dd style="font-size:14px">ARC-L1 Wide Forest Station</dd>
+            <dt style="font-size:11px">Frequenz</dt><dd style="font-size:14px"><span class="data-value data-value--mono" style="font-size:13px">148.500</span></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Status and badges" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">3 · Status, chips & badges<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Squadron badge — the ONE pill</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span class="squadron-badge">Bereich Profit</span>
+          <span class="squadron-badge squadron-badge-sk">SK VANGUARD</span>
+          <span class="squadron-badge squadron-badge-foreign">TITAN</span>
+          <span class="squadron-badge squadron-badge-muted">Alle Einheiten</span>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Top-bar context chip; tap opens the org switcher sheet. Foreign = cross-org yellow.</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Chips — squared, 11 sp uppercase</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="chip chip--primary">Auftrag</span><span class="chip chip--success">Ausgezahlt</span><span class="chip chip--danger">Überbucht</span><span class="chip chip--warning">HVU</span><span class="chip chip--info">Einsatz</span><span class="chip chip--muted">340 frei</span><span class="chip chip--data">IRI: <strong>1.200 SCU</strong></span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <span class="dept-tag" style="color:#37BBC0">Raumüberlegenheit</span><span class="dept-tag" style="color:#239E33">Profit</span><span class="dept-tag" style="color:#7A5E96">Marinekorps</span>
+        </div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Status pill — square 8 dp dot + tint text</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span class="status-pill status-planned">Geplant</span>
+          <span class="status-pill status-active">Aktiv</span>
+          <span class="status-pill" style="color:#FFD23F">Briefing</span>
+          <span class="status-pill status-completed">Abgeschlossen</span>
+          <span class="status-pill status-cancelled">Abgesagt</span>
+        </div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Page-level status badge + presence</div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+          <span class="status-badge status-active"><span class="status-badge-text">Aktiv</span></span>
+          <span class="krt-presence-indicator"><span class="krt-presence-dot"></span><span class="krt-presence-count">2</span>&nbsp;Wird gerade bearbeitet von Rhea, Dorn</span>
+          <button class="mission-livesync-pill" style="position:static;animation:none">Aktualisierung verfügbar — Antippen zum Laden</button>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Presence never blocks input. The update pill appears when live data changed under an open editor.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Rows and lists" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">4 · List rows (phone canon)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Anatomy — dense row, min 56 dp</div>
+        <div style="border:1px solid #282828;background:#141414">
+          <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-bottom:1px solid #282828">
+            <svg class="krt-icon" style="width:24px;height:24px;color:#8A8A8A;flex:none"><use href="#krt-icon-target"></use></svg>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div><div style="font:300 12.5px/1.4 Lato,sans-serif;color:#8A8A8A">Heute · 21:00 · <span class="status-pill status-planned" style="font-size:10px">Geplant</span></div></div>
+            <div style="text-align:right;flex:none"><div style="font:700 14px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">in 2 Std.</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">12 angemeldet</div></div>
+            <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;background:#282828">
+            <svg class="krt-icon" style="width:24px;height:24px;color:#8A8A8A;flex:none"><use href="#krt-icon-target"></use></svg>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF">Pressed — full-row fill #282828</div><div style="font:300 12.5px/1.4 Lato,sans-serif;color:#8A8A8A">whole row is the 48 dp+ target</div></div>
+            <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;background:rgba(231,126,35,.08);box-shadow:inset 3px 0 0 #E77E23">
+            <span class="matrix-flag on" style="flex:none">✓</span>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF">Selection mode (long-press)</div><div style="font:300 12.5px/1.4 Lato,sans-serif;color:#8A8A8A">3 dp orange inset bar + orange check</div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Swipe actions (inbox) — reveal, never auto-commit past 50%</div>
+        <div style="border:1px solid #282828;background:#141414;overflow:hidden">
+          <div style="display:flex;align-items:stretch;border-bottom:1px solid #282828">
+            <div style="width:96px;flex:none;background:#239E33;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px"><svg class="krt-icon" style="width:20px;height:20px;color:#fff"><use href="#krt-icon-check"></use></svg><span style="font:700 10px/1 Lato,sans-serif;color:#fff;letter-spacing:.05em;text-transform:uppercase">Gelesen</span></div>
+            <div style="flex:1;min-width:0;background:#141414;display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-left:1px solid #282828">
+              <svg class="krt-icon" style="width:22px;height:22px;color:#E77E23;flex:none"><use href="#krt-icon-bell"></use></svg>
+              <div style="flex:1;min-width:0"><div style="font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Swipe rechts → gelesen</div><div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A">vor 4 Min.</div></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:stretch">
+            <div style="flex:1;min-width:0;background:#141414;display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-right:1px solid #282828">
+              <svg class="krt-icon" style="width:22px;height:22px;color:#8A8A8A;flex:none"><use href="#krt-icon-bell"></use></svg>
+              <div style="flex:1;min-width:0"><div style="font:300 14px/1.3 Lato,sans-serif;color:#D2D2D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Swipe links → löschen (mit Undo-Toast)</div><div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A">vor 2 Std.</div></div>
+            </div>
+            <div style="width:96px;flex:none;background:#A3000A;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px"><svg class="krt-icon" style="width:20px;height:20px;color:#fff"><use href="#krt-icon-trash"></use></svg><span style="font:700 10px/1 Lato,sans-serif;color:#fff;letter-spacing:.05em;text-transform:uppercase">Löschen</span></div>
+          </div>
+        </div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin:16px 0 8px">Pagination — load more + end of list</div>
+        <div style="border:1px solid #282828;background:#141414;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+          <button class="btn-ghost btn" style="background:transparent;min-height:48px;width:100%">Mehr laden — 40 von 143</button>
+          <div style="display:flex;align-items:center;gap:12px"><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 10px/1 Lato,sans-serif;color:#646464;letter-spacing:.15em;text-transform:uppercase">Ende der Liste</span><span style="flex:1;height:1px;background:#282828"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Tables" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">5 · Data tables — tablet keeps tables, phone collapses to rows<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px">
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Tablet ≥ 840 dp — dense table</div>
+        <div style="border:1px solid #282828;background:#141414">
+          <div style="display:grid;grid-template-columns:1.6fr 1fr 100px 110px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+            <div style="padding:9px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Material</div>
+            <div style="padding:9px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Ort</div>
+            <div style="padding:9px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Qualität</div>
+            <div style="padding:9px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Menge</div>
+          </div>
+          <sc-for list="{{ tableRows }}" as="r" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.6fr 1fr 100px 110px;border-bottom:1px solid #282828;background:{{ r.bg }};min-height:48px;align-items:center">
+              <div style="padding:8px 14px;font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ r.mat }}</div>
+              <div style="padding:8px 14px;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">{{ r.ort }}</div>
+              <div style="padding:8px 14px;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2;text-align:right;font-variant-numeric:tabular-nums">{{ r.q }}</div>
+              <div style="padding:8px 14px;text-align:right;font-variant-numeric:tabular-nums"><span style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ r.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:8px">Header on #1C1C1C, uppercase 11 sp, 2 dp orange under-rule · zebra rgba(255,255,255,.02) · press #282828 · numerics right + tabular. Never horizontal page scroll.</div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Phone &lt; 600 dp — same record as key-value card</div>
+        <div style="border:1px solid #282828;background:#141414;padding:12px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px"><span style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span><span style="font-variant-numeric:tabular-nums"><span style="font:700 15px/1 Lato,sans-serif;color:#FFFFFF">642</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span></div>
+          <div style="display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font:300 12.5px/1.5 Lato,sans-serif">
+            <span style="color:#646464;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Ort</span><span style="color:#D2D2D2">Lager Bereich Profit · ARC-L1</span>
+            <span style="color:#646464;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Qualität</span><span style="color:#D2D2D2;font-variant-numeric:tabular-nums">874 / 1000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Forms" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">6 · Form fields<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div><label style="font-size:13px;margin-bottom:6px">Schiffsname</label><input type="text" placeholder="z. B. Carrack" style="width:100%;height:48px;font-size:15px"></div>
+        <div><label style="font-size:13px;margin-bottom:6px">Fokus (live) — orange border + bloom</label><input type="text" value="Quantainium" style="width:100%;height:48px;font-size:15px;border-color:#E77E23;box-shadow:0 0 5px rgba(231,126,35,.3)"></div>
+        <div><label style="font-size:13px;margin-bottom:6px">Menge (SCU)</label><input type="text" value="−200" style="width:100%;height:48px;font-size:15px;border-color:#A3000A"><div class="field-error" style="font-size:12px"><svg class="krt-icon" style="width:14px;height:14px;margin-top:2px"><use href="#krt-icon-warning"></use></svg>Menge muss größer als 0 sein.</div></div>
+        <div><label style="font-size:13px;margin-bottom:6px;color:#646464">Deaktiviert</label><input type="text" value="Bereich Profit" disabled style="width:100%;height:48px;font-size:15px;opacity:.45"></div>
+      </div>
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div><label style="font-size:13px;margin-bottom:6px">Org-Einheit — select, orange chevron</label><select style="width:100%;height:48px;font-size:15px"><option>Bereich Profit</option><option>SK VANGUARD</option></select></div>
+        <div>
+          <label style="font-size:13px;margin-bottom:6px">Material — combobox, type-to-filter</label>
+          <div class="krt-combobox">
+            <input class="krt-combobox__input" type="text" value="quan" style="height:48px;font-size:15px;border-color:#E77E23;box-shadow:0 0 5px rgba(231,126,35,.3)">
+            <ul class="krt-combobox__listbox" style="position:static;border-top:1px solid #E77E23">
+              <li class="krt-combobox__option krt-combobox__option--active" style="min-height:48px;font-size:14px"><span class="krt-combobox__label"><mark>Quan</mark>tainium</span></li>
+              <li class="krt-combobox__option" style="min-height:48px;font-size:14px"><span class="krt-combobox__label"><mark>Quan</mark>tum Fuel</span></li>
+              <li class="krt-combobox__notice" style="font-size:12px">2 von 118 Materialien</li>
+            </ul>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;align-items:center">
+          <label style="display:inline-flex;align-items:center;gap:10px;margin:0;font-size:14px;font-weight:300;color:#D2D2D2;min-height:48px"><input type="checkbox" checked style="width:20px;height:20px">LTI versichert</label>
+          <label style="display:inline-flex;align-items:center;gap:10px;margin:0;font-size:14px;font-weight:300;color:#D2D2D2;min-height:48px"><input type="radio" name="pay" checked style="width:20px;height:20px">Auszahlung</label>
+          <label style="display:inline-flex;align-items:center;gap:10px;margin:0;font-size:14px;font-weight:300;color:#D2D2D2;min-height:48px"><input type="radio" name="pay" style="width:20px;height:20px">Org-Kasse</label>
+        </div>
+      </div>
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div><label style="font-size:13px;margin-bottom:6px">Menge — stepper, 48 dp Tasten <span class="scu-hint" tabindex="0">?<span class="scu-hint__bubble">Teilmengen erlaubt: cSCU (0,01) und µSCU (0,001).</span></span></label>
+          <div style="display:flex;align-items:stretch;height:48px">
+            <button class="btn-ghost" style="width:48px;background:transparent;border:1px solid #282828;color:#D2D2D2;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-minus"></use></svg></button>
+            <input type="text" value="1.200" style="flex:1;height:48px;text-align:center;font-size:16px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;border-left:none;border-right:none">
+            <button class="btn-ghost" style="width:48px;background:transparent;border:1px solid #282828;color:#D2D2D2;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg></button>
+          </div>
+        </div>
+        <div><label style="font-size:13px;margin-bottom:6px">Funktion an Bord — chip select</label><select class="chip-select" style="min-height:32px"><option>Pilot</option><option>Turret</option><option>Cargo</option></select></div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A">Fill #1C1C1C · hairline border · radius 0 · height 48 dp · placeholder italic #646464 · labels neutral #D2D2D2 bold, NEVER orange · errors in #F2564B with warning icon.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Overlays" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">7 · Overlays — modal, sheet, toast (live)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn btn--cta" style="min-height:48px" onClick="{{ openModal }}">Modal öffnen</button>
+      <button class="btn-quiet-danger btn" style="background:transparent;min-height:48px" onClick="{{ openDanger }}">Danger-Modal öffnen</button>
+      <button class="btn-ghost btn" style="background:transparent;min-height:48px" onClick="{{ showToast }}">Toast auslösen</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Bottom sheet (phone) — org switcher</div>
+        <div style="max-width:340px;border:1px solid #282828;border-bottom:none;background:#141414;box-shadow:0 0 20px rgba(231,126,35,.2);position:relative">
+          <div style="height:3px;background:#E77E23"></div>
+          <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+          <div style="padding:8px 16px 4px;font:700 13px/1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em">Aktive Org-Einheit</div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 16px;background:#E77E23">
+            <span style="font:700 14px/1 Lato,sans-serif;color:#000">IRI — IRIDIUM</span><span style="flex:1"></span><svg class="krt-icon" style="width:18px;height:18px;color:#000"><use href="#krt-icon-check"></use></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 16px;border-top:1px solid #282828"><span style="font:300 14px/1 Lato,sans-serif;color:#D2D2D2">SK VANGUARD</span></div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 16px;border-top:1px solid #282828"><span style="font:300 14px/1 Lato,sans-serif;color:#D2D2D2">Alle Org-Einheiten</span></div>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:8px">M3 ModalBottomSheet, shape 0 dp, 3 dp orange top edge, drag handle = pill exception. Selection row = orange bg + black text.</div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Toast — corner brackets + bloom</div>
+        <div class="notification-toast" style="padding:16px;max-width:360px">
+          <h4 style="font-size:13px">Gespeichert</h4>
+          <p style="font-size:13px">Schiff erfolgreich hinzugefügt.</p>
+        </div>
+        <div class="notification-toast error-toast" style="padding:16px;max-width:360px;margin-top:12px">
+          <h4 style="font-size:13px">Fehler 409</h4>
+          <p style="font-size:13px">Der Eintrag wurde zwischenzeitlich geändert. Neu laden und erneut versuchen.</p>
+        </div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Modal rules</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.8 Lato,sans-serif;color:#D2D2D2">
+          <li>Scrim rgba(0,0,0,.8) + blur 4 dp; focus trap + back/Esc closes</li>
+          <li>3 dp orange top edge · 13 dp brackets · 20 dp bloom</li>
+          <li>Exactly ONE filled CTA (right) · cancel = ghost · close-X icon button</li>
+          <li>Danger variant: red edge/brackets, names the consequence</li>
+          <li>Type-to-confirm hurdle reserved for wipe-grade admin actions</li>
+          <li>Never native dialogs — no confirm()/alert() equivalents</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Feedback and system" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">8 · Feedback & system<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="krt-loading-indicator" style="margin-top:0;font-size:12px"><span class="krt-spinner"></span><span class="krt-loading-label" style="font-size:12px">Lade Einsätze…</span></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#1C1C1C;border:1px solid #282828;border-left:4px solid #FFD23F;padding:10px 14px;min-height:48px">
+          <svg class="krt-icon" style="width:20px;height:20px;color:#FFD23F;flex:none"><use href="#krt-icon-wifi-off"></use></svg>
+          <div style="flex:1;min-width:0"><div style="font:700 12px/1.3 Lato,sans-serif;color:#FFD23F;text-transform:uppercase;letter-spacing:.05em">Offline — zeigt gespeicherten Stand</div><div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Zuletzt aktualisiert 17.08. 14:32</div></div>
+          <button class="btn-ghost btn" style="background:transparent;min-height:36px;padding:4px 10px;font-size:11px">Erneut verbinden</button>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A">Loading = orange ring + uppercase label. Offline banner pinned under the top bar; actions that need the network get disabled (45%) with the banner as the reason.</div>
+      </div>
+      <div>
+        <div class="empty-state" style="padding:24px 16px">
+          <svg class="krt-icon" style="width:28px;height:28px;color:#646464"><use href="#krt-icon-crate"></use></svg>
+          <div class="empty-title" style="font-size:13px">Keine Einträge</div>
+          <div class="empty-text" style="font-size:12.5px">Dein Lager ist leer. Buche Material ein, um es hier zu verwalten.</div>
+          <button class="btn btn--cta" style="min-height:48px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Einbuchen</button>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:8px">Dashed border · short reason · exactly ONE next action.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="kpi-total"><div class="kpi-label">Gesamt IRI</div><div class="kpi-value" style="font-size:20px">1.245.300 <span style="font-size:11px;color:#646464;font-weight:300">aUEC</span></div></div>
+          <div class="kpi-card" style="gap:4px"><div class="kpi-title" style="font-size:12px">Einsatzkasse</div><div class="kpi-value" style="font-size:20px">84.200</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="kpi-delta kpi-delta--pos" style="color:#2EBC3D">+12.400</span><svg width="72" height="20" viewBox="0 0 72 20" style="flex:none"><polyline points="0,16 12,14 24,15 36,9 48,11 60,5 72,7" fill="none" stroke="#E77E23" stroke-width="1.5"></polyline></svg></div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:baseline;background:#141414;border:1px solid #282828;padding:10px 14px;font-variant-numeric:tabular-nums">
+          <span style="font:300 13px/1 Lato,sans-serif;color:#D2D2D2">Kauf <b style="color:#F2564B;font-weight:700">−24.150</b></span>
+          <span style="font:300 13px/1 Lato,sans-serif;color:#D2D2D2">Verkauf <b style="color:#2EBC3D;font-weight:700">+31.800</b></span>
+          <span style="font:300 11px/1 Lato,sans-serif;color:#646464">aUEC · tabular</span>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A">KPI value white Bold tabular on dark chip; totals get the 4 dp orange left bar; deltas in text tints. Sparkline = drawn line, no chart library.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Fan Kit band" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">9 · Fan Kit compliance band — mandatory<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:100ch">Legally coupled unit (Fan Kit Guidelines §2, 2b, 3): the unmodified white „Made By The Community" artwork + the verbatim trademark notice. One component — the two elements never appear separately. Placements: Login (above the version footer) and Einstellungen (About/Impressum). Nowhere else.</p>
+    <div style="max-width:900px;margin-bottom:16px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Wide (tablet, content max-width) — one line</div>
+      <div style="background:#000;border:1px dashed #282828;padding:0 16px">
+        <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 0">
+          <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
+          <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2;white-space:nowrap">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-start"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Redline</span><p style="font:300 12.5px/1.6 Lato,sans-serif;color:#D2D2D2;margin:0;max-width:100ch">Logo 36 dp, artwork unmodified (no recolor/tint/flip/effects) · gap 14 dp · notice Lato Light, ≥14 sp, #D2D2D2, line-height 1.45 · 1 dp hairline top rule · padding 12 dp vertical · sits on the page background #000. One line needs ≈760 dp text width — expect it on tablet only.</p></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">
+      <div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Phone 412 dp (32 dp margins) — wraps to 3 lines, allowed</div>
+        <div style="max-width:360px;background:#000;border:1px dashed #282828;padding:0 16px">
+          <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 0">
+            <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
+            <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+          </div>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:8px;max-width:52ch">Wrapping is fine (2–3 lines depending on width and font scale) — never shrink below 14 sp, never truncate or hyphenate the notice to force fewer lines.</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Binding rules</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.8 Lato,sans-serif;color:#D2D2D2">
+          <li>Notice stays verbatim ENGLISH in every locale — never rephrased, retranslated or typographically „improved" (incl. the space before the third ®)</li>
+          <li>Static and non-interactive — no ripple, no link styling; TalkBack reads logo alt + notice as one group</li>
+          <li>Third-party attribution: KRT brackets, glows and orange are OFF this component; it must not read as a button or KRT badge</li>
+          <li>Must not compete with the screen's single orange CTA; AA contrast applies (#D2D2D2 on #000 ≈ 13:1)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <sc-if value="{{ modalVisible }}" hint-placeholder-val="{{ false }}">
+    <div class="krt-modal-overlay" onClick="{{ closeModal }}">
+      <div class="krt-modal {{ modalCls }}" onClick="{{ stop }}">
+        <div class="krt-modal-head"><h2>{{ modalTitle }}</h2><button class="btn-ghost" style="all:unset;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#8A8A8A" onClick="{{ closeModal }}" aria-label="Schließen"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-close"></use></svg></button></div>
+        <div class="krt-modal-body"><p style="margin:0;font:300 14px/1.6 Lato,sans-serif;color:#D2D2D2">{{ modalBody }}</p></div>
+        <div class="krt-modal-foot">
+          <button class="btn-ghost btn" style="background:transparent;min-height:48px" onClick="{{ closeModal }}">Abbrechen</button>
+          <button class="btn" style="min-height:48px;background:{{ modalCtaBg }};color:{{ modalCtaFg }}" onClick="{{ closeModal }}">{{ modalCta }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toastVisible }}" hint-placeholder-val="{{ false }}">
+    <div class="notification-toast" style="position:fixed;right:24px;bottom:24px;z-index:4000;padding:16px;max-width:360px">
+      <h4 style="font-size:13px">Gespeichert</h4>
+      <p style="font-size:13px">Erfolgreich gespeichert.</p>
+    </div>
+  </sc-if>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px">
+    <a href="01 Foundations.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 01 Foundations</a>
+    <a href="03 Navigation.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">03 Navigation map →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { modal: null, toast: false };
+  renderVals() {
+    const cta = 'btn btn--cta', gho = 'btn-ghost btn', qd = 'btn-quiet-danger btn', suc = 'btn-success btn', out = 'btn-outline btn';
+    const H = 'min-height:48px', T = 'background:transparent;' + H;
+    const focusO = 'outline:2px solid #E77E23;outline-offset:2px', focusW = 'outline:2px solid #FFFFFF;outline-offset:2px';
+    const buttons = [
+      { name: 'Filled CTA', use: 'max ONE per context — Anmelden, Speichern', cls: cta, icon: '#krt-icon-login', label: 'Anmelden',
+        base: H, pressed: H + ';background:#EEB64B;box-shadow:0 0 20px rgba(231,126,35,.2)', focus: H + ';' + focusW, disabled: H + ';opacity:.45;cursor:not-allowed' },
+      { name: 'Filled success', use: 'state changes — Check-In', cls: suc, icon: '#krt-icon-check', label: 'Check-In',
+        base: H, pressed: H + ';background:#2EBC3D', focus: H + ';' + focusO, disabled: H + ';opacity:.45;cursor:not-allowed' },
+      { name: 'Orange outline', use: 'emphasized secondary — Crew zuweisen', cls: out, icon: '#krt-icon-users', label: 'Crew zuweisen',
+        base: T, pressed: T + ';background:rgba(231,126,35,.12);color:#EEB64B;border-color:#EEB64B', focus: T + ';' + focusO, disabled: T + ';opacity:.45;cursor:not-allowed' },
+      { name: 'Ghost', use: 'routine repeated — Bearbeiten, Check-Out', cls: gho, icon: '#krt-icon-edit', label: 'Bearbeiten',
+        base: T, pressed: T + ';background:rgba(231,126,35,.07);color:#E77E23;border-color:#E77E23', focus: T + ';' + focusO, disabled: T + ';opacity:.45;cursor:not-allowed' },
+      { name: 'Quiet danger', use: 'destructive — commits to red on press', cls: qd, icon: '#krt-icon-trash', label: 'Löschen',
+        base: T, pressed: T + ';background:rgba(163,0,10,.12);color:#F2564B;border-color:#A3000A', focus: T + ';' + focusO, disabled: T + ';opacity:.45;cursor:not-allowed' },
+      { name: 'Icon button', use: 'repeated row actions · aria-label + tooltip', cls: gho, icon: '#krt-icon-bookout', label: '',
+        base: T + ';width:48px;padding:0', pressed: T + ';width:48px;padding:0;background:rgba(231,126,35,.07);color:#E77E23;border-color:#E77E23', focus: T + ';width:48px;padding:0;' + focusO, disabled: T + ';width:48px;padding:0;opacity:.45;cursor:not-allowed' },
+    ];
+    const tableRows = [
+      { mat: 'Quantainium', ort: 'ARC-L1', q: '874', amt: '642', bg: '#141414' },
+      { mat: 'Laranite', ort: 'Everus Harbor', q: '655', amt: '1.208', bg: 'rgba(255,255,255,.02)' },
+      { mat: 'Agricium (Pressed)', ort: 'Lorville', q: '901', amt: '96', bg: '#282828' },
+    ];
+    const danger = this.state.modal === 'danger';
+    return {
+      buttons, tableRows,
+      modalVisible: this.state.modal !== null,
+      modalCls: danger ? 'krt-modal--danger' : '',
+      modalTitle: danger ? 'Schiff wirklich löschen?' : 'Check-In bestätigen',
+      modalBody: danger ? 'Die Carrack „Meridian" wird dauerhaft aus deinem Hangar entfernt. Zugewiesene Crew-Slots in geplanten Einsätze werden freigegeben.' : 'Du wirst als anwesend für „Vertikaler Abbau — Lyria" markiert. Der Einsatzleiter sieht deinen Status sofort.',
+      modalCta: danger ? 'Endgültig löschen' : 'Check-In',
+      modalCtaBg: danger ? '#A3000A' : '#E77E23',
+      modalCtaFg: danger ? '#FFFFFF' : '#000000',
+      toastVisible: this.state.toast,
+      openModal: () => this.setState({ modal: 'std' }),
+      openDanger: () => this.setState({ modal: 'danger' }),
+      closeModal: () => this.setState({ modal: null }),
+      stop: (e) => e.stopPropagation(),
+      showToast: () => { this.setState({ toast: true }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: false }), 2600); },
+    };
+  }
+}
+</script>
+</body>
+</html>

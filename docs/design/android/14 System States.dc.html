@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2400px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">14</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">System states & app icon</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Adaptive icon layers, notification shade, error/offline/update states. The 503 countdown is live.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="App icon" style="margin-bottom:44px;max-width:1200px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">1 · Adaptive app icon<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:100ch">Wedge-through-ring mark, orange on black — HARD RULE: the logo renders only in #E77E23, white or black. Mark drawn to the 66/108 dp safe zone; the launcher mask supplies every corner. Vector below is the spec approximation — final geometry from <span style="color:#D2D2D2">basetool/design/logos</span>.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Layers — ic_launcher.xml</div>
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:84px;height:84px;background:repeating-conic-gradient(#1C1C1C 0% 25%,#101010 0% 50%) 0 0/16px 16px;display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 108 108" style="width:64px;height:64px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="#E77E23"></polygon></svg>
+            </div>
+            <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">foreground<br>(orange, safe zone)</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:84px;height:84px;background:#000;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><span style="font:700 9px/1.4 Lato,sans-serif;color:#3a3a3a;letter-spacing:.1em;text-transform:uppercase;text-align:center">Flat<br>#000000</span></div>
+            <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">background<br>#000000 flat</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:84px;height:84px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 108 108" style="width:64px;height:64px"><circle cx="54" cy="54" r="30" fill="none" stroke="#FFFFFF" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="#FFFFFF"></polygon></svg>
+            </div>
+            <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">monochrome<br>(alpha-only white)</span>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Mask survival</div>
+        <div style="display:flex;gap:14px;align-items:flex-end">
+          <sc-for list="{{ masks }}" as="m" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:64px;height:64px;background:{{ m.bg }};border-radius:{{ m.radius }};display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #282828">
+                <svg viewBox="0 0 108 108" style="width:48px;height:48px"><circle cx="54" cy="54" r="30" fill="none" stroke="{{ m.fg }}" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="{{ m.fg }}"></polygon></svg>
+              </div>
+              <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">{{ m.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:300 12px/1.55 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Themed icon (Android 13+): the launcher tints the monochrome layer itself — ship it so the result is deliberate, never auto-derived.</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Launcher context + notification small icon</div>
+        <div style="background:#0D0F12;border:1px solid #282828;padding:14px;display:flex;gap:18px;justify-content:center">
+          <sc-for list="{{ launcher }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:52px;height:52px;border-radius:50%;background:{{ l.bg }};display:flex;align-items:center;justify-content:center;overflow:hidden">
+                <sc-if value="{{ l.krt }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 108 108" style="width:40px;height:40px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="#E77E23"></polygon></svg></sc-if>
+                <sc-if value="{{ l.dot }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:6px;background:{{ l.dot }}"></span></sc-if>
+              </div>
+              <span style="font:300 10.5px/1 Lato,sans-serif;color:{{ l.labelColor }}">{{ l.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;background:#141414;border:1px solid #282828;padding:10px 14px">
+          <span style="width:28px;height:28px;background:#1C1C1C;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 108 108" style="width:20px;height:20px"><circle cx="54" cy="54" r="30" fill="none" stroke="#FFFFFF" stroke-width="10"></circle><polygon points="96,37 96,71 10,54" fill="#FFFFFF"></polygon></svg></span>
+          <span style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Status-bar small icon: 24 dp alpha-only silhouette, thicker strokes; accent color = #E77E23.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="State frames" style="margin-bottom:24px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px;max-width:1200px">2 · State screens — phone 412×915<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#0D0F12;font-family:Lato,sans-serif;padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px 14px"><span style="font:300 26px/1 Lato,sans-serif;color:#fff">14:32</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">So., 17. Aug.</span></div>
+            <div style="background:#1A1C20;border-radius:0;border:1px solid #282828;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 108 108" style="width:16px;height:16px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="10"></circle><polygon points="96,37 96,71 10,54" fill="#E77E23"></polygon></svg>
+                <span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">Basetool · Einsätze · vor 5 Min.</span>
+              </div>
+              <div>
+                <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Einsatz beginnt in 30 Minuten</div>
+                <div style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2">Vertikaler Abbau — Lyria · Treffpunkt ARC-L1 · 12 angemeldet</div>
+              </div>
+              <div style="display:flex;gap:20px;padding-top:2px">
+                <span style="font:700 13px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.4px;text-transform:uppercase">Check-In</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.4px;text-transform:uppercase">Details</span>
+              </div>
+            </div>
+            <div style="background:#1A1C20;border:1px solid #282828;border-top:none;padding:12px 16px;display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 108 108" style="width:16px;height:16px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="10"></circle><polygon points="96,37 96,71 10,54" fill="#E77E23"></polygon></svg>
+                <span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">Basetool · Aufträge · vor 2 Std.</span>
+              </div>
+              <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Auftrag #A-1042 dir zugewiesen</div>
+              <div style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2">1.200 SCU Laranite · Priorität HOCH · Fällig 21.08.</div>
+            </div>
+            <div style="margin-top:16px;background:#141414;border:1px solid #282828;padding:12px 16px">
+              <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Kanäle — NotificationChannels</div>
+              <sc-for list="{{ channels }}" as="c" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:10px;min-height:36px;border-top:1px solid #1C1C1C">
+                  <span style="width:8px;height:8px;background:{{ c.dot }};flex:none"></span>
+                  <span style="flex:1;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">{{ c.name }}</span>
+                  <span class="chip chip--muted" style="font-size:9.5px">{{ c.imp }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="flex:1"></div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">System push — shade</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Small icon = monochrome mark; accent #E77E23; actions uppercase, max 2</li>
+            <li>Grouped per channel; deep link straight to the target screen</li>
+            <li>Never sensitive amounts on the lock screen — public version says „Neue Benachrichtigung"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+              <img src="assets/krt.webp" alt="KRT" style="width:72px;height:72px;object-fit:contain">
+              <div style="font:900 22px/1.2 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase">Update erforderlich</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:36ch">Der Server erwartet eine neuere App-Version. Bitte aktualisiere, um fortzufahren.</div>
+              <div style="display:flex;gap:10px;align-items:center;font-variant-numeric:tabular-nums">
+                <span class="chip chip--muted" style="font-size:11px">Installiert 1.4.2</span>
+                <svg class="krt-icon" style="width:14px;height:14px;color:#646464"><use href="#krt-icon-arrow-right"></use></svg>
+                <span class="chip chip--primary" style="font-size:11px">Benötigt ≥ 1.6.0</span>
+              </div>
+            </div>
+            <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
+              <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-download"></use></svg>Jetzt aktualisieren</button>
+              <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#8A8A8A;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Abmelden</button>
+            </div>
+            <div style="flex:1.3"></div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Forced update — blocks everything</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Triggered by an API version-gate response; not dismissible, back exits the app</li>
+            <li>CTA → Play Store listing; cached data stays untouched</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div class="hud-box" style="padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+              <svg class="krt-icon" style="width:40px;height:40px;color:#F2564B"><use href="#krt-icon-warning"></use></svg>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#F2564B;letter-spacing:1px;text-transform:uppercase">Access denied</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:34ch">Insufficient security clearance. This incident has been logged.</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#646464">Fehler 403 · Dir fehlt die Berechtigung für diesen Bereich.</div>
+            </div>
+            <div style="margin-top:24px">
+              <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Zurück zur Basis</button>
+            </div>
+            <div style="flex:1.3"></div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">In-fiction errors — 403 / 404 / 500</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>404: „Signal Lost — The requested coordinates are invalid or the sector has been redacted."</li>
+            <li>500: „System Malfunction — Critical system failure detected. Technical personnel notified."</li>
+            <li>Fiction headline EN (product canon), one plain German helper line, CTA „Zurück zur Basis"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+              <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center">
+                <span class="krt-spinner" style="position:absolute;inset:0;width:auto;height:auto;border-width:3px"></span>
+                <span style="font:900 24px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ retryIn }}</span>
+              </div>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#FFD23F;letter-spacing:1px;text-transform:uppercase">Signal instabil</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:36ch">Der Server ist ausgelastet (503). Automatischer Neuversuch in {{ retryIn }} s.</div>
+            </div>
+            <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
+              <button class="btn-outline btn" style="background:transparent;min-height:50px;width:100%" onClick="{{ retryNow }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg>Jetzt erneut versuchen</button>
+            </div>
+            <div style="flex:1.3"></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center;padding-bottom:16px">Backoff 3 → 6 → 12 → 30 s · 429 nutzt Retry-After des Servers.</div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">429 / 503 retry — live countdown</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Full-screen only when the FIRST load fails; loaded screens keep cached data + banner</li>
+            <li>Countdown inside the orange ring spinner; manual retry resets backoff</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:520px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">409 conflict dialog + offline exemplar</div>
+        <div class="krt-modal" style="max-width:440px;position:relative">
+          <div class="krt-modal-head"><h2>Konflikt festgestellt</h2><span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#8A8A8A"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-close"></use></svg></span></div>
+          <div class="krt-modal-body"><p style="margin:0;font:300 14px/1.6 Lato,sans-serif;color:#D2D2D2">Der Datensatz wurde zwischenzeitlich von <b style="color:#fff">Rhea</b> geändert. Deine Eingaben bleiben in der Zwischenablage erhalten.</p></div>
+          <div class="krt-modal-foot">
+            <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
+            <button class="btn btn--cta" style="min-height:48px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg>Neu laden und erneut versuchen</button>
+          </div>
+        </div>
+        <div style="border:1px solid #282828;background:#141414;max-width:440px">
+          <div style="display:flex;align-items:center;gap:12px;background:#1C1C1C;border-left:4px solid #FFD23F;padding:10px 14px;min-height:48px">
+            <svg class="krt-icon" style="width:20px;height:20px;color:#FFD23F;flex:none"><use href="#krt-icon-wifi-off"></use></svg>
+            <div style="flex:1"><div style="font:700 12px/1.3 Lato,sans-serif;color:#FFD23F;text-transform:uppercase;letter-spacing:.05em">Offline — zeigt gespeicherten Stand</div><div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Zuletzt aktualisiert 17.08. 14:32</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-top:1px solid #282828">
+            <svg class="krt-icon" style="width:24px;height:24px;color:#8A8A8A"><use href="#krt-icon-target"></use></svg>
+            <div style="flex:1"><div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div><div style="font:300 12.5px/1.4 Lato,sans-serif;color:#8A8A8A">Heute · 21:00 · Stand 14:32</div></div>
+            <span class="chip chip--muted" style="font-size:9.5px">Cache</span>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid #282828">
+            <button class="btn" style="min-height:48px;width:100%;opacity:.45;cursor:not-allowed">Anmelden</button>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px;text-align:center">Aktionen, die das Netz brauchen, werden deaktiviert — der Banner nennt den Grund.</div>
+          </div>
+        </div>
+        <div class="card" style="padding:12px 16px;max-width:440px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Offline rules (every screen)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Banner pinned under the top bar; rows keep full contrast, a „Cache" chip marks staleness</li>
+            <li>Mutations queue nothing — write actions disable instead (append-only ledgers must not fork)</li>
+            <li>Reconnect: banner flips green „Verbunden — aktualisiere…" for 2 s, then auto-refresh</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="04 Auth.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 04 Auth</a>
+    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">Index →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { retryIn: 12 };
+  componentDidMount() {
+    this._iv = setInterval(() => this.setState(s => ({ retryIn: s.retryIn > 0 ? s.retryIn - 1 : 12 })), 1000);
+  }
+  componentWillUnmount() { clearInterval(this._iv); }
+  renderVals() {
+    return {
+      retryIn: this.state.retryIn,
+      retryNow: () => this.setState({ retryIn: 12 }),
+      masks: [
+        { label: 'Circle', radius: '50%', bg: '#000', fg: '#E77E23' },
+        { label: 'Squircle', radius: '28%', bg: '#000', fg: '#E77E23' },
+        { label: 'Rounded', radius: '16%', bg: '#000', fg: '#E77E23' },
+        { label: 'Themed (13+)', radius: '50%', bg: '#DDE3DE', fg: '#3A4A42' },
+      ],
+      launcher: [
+        { label: 'Karten', bg: '#1E2A38', dot: '#5B87B2', krt: false, labelColor: '#8A8A8A' },
+        { label: 'Basetool', bg: '#000', dot: false, krt: true, labelColor: '#FFFFFF' },
+        { label: 'Wetter', bg: '#28303A', dot: '#8AA0B8', krt: false, labelColor: '#8A8A8A' },
+        { label: 'Kamera', bg: '#332E28', dot: '#B29B7A', krt: false, labelColor: '#8A8A8A' },
+      ],
+      channels: [
+        { name: 'Einsätze & Check-In', imp: 'Hoch', dot: '#E77E23' },
+        { name: 'Aufträge & Zuweisungen', imp: 'Hoch', dot: '#E77E23' },
+        { name: 'Materialbörse', imp: 'Standard', dot: '#646464' },
+        { name: 'Bank & Auszahlungen', imp: 'Standard', dot: '#646464' },
+        { name: 'System & Ankündigungen', imp: 'Standard', dot: '#646464' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -120,7 +120,9 @@ Key decisions (each becomes an ADR in this repo when implemented — see §8):
 - **Modules** (Gradle, own version catalog `gradle/libs.versions.toml`):
   - `app` — wiring, navigation, DI graph.
   - `core:designsystem` — KRT theme, tokens, the Compose component library (buttons ladder,
-    hud-box, cards, chips/status pills, tables/tree lists, modals, toasts, combobox equivalents).
+    hud-box, cards, chips/status pills, tables/tree lists, modals, toasts, combobox
+    equivalents), seeded from `docs/design/android/artifacts/Theme.kt` and chapter 02 of the
+    design spec.
   - `core:network` — OkHttp/Retrofit, kotlinx.serialization, RFC 7807 problem parser (stable
     `code` + `correlationId`), auth interceptor, SSE client, DTOs **generated from the committed
     `openapi.json`** (openapi-generator, same source-of-truth approach as the frontend's typed JS
@@ -141,11 +143,34 @@ Key decisions (each becomes an ADR in this repo when implemented — see §8):
 - **i18n**: DE + EN resource bundles; per-app language via the AppCompat backport
   (`setApplicationLocales`, works to API 21). Terminology mined from the existing frontend
   bundles (~3 356 keys) for parity — Staffel, Spezialkommando, Auftrag, Lager stay German in EN.
+  Binding copy rules from the design handoff: „**Einsätze**" (never „Missionen") in all
+  user-visible copy, „**Bereich Profit**" as org context, „**Administration**" (never
+  „Führung"); UPPERCASE labels, no emoji; error states keep the English in-fiction canon.
+  (Module/endpoint names like `feature:missions` are code, not copy — they stay.)
 - **API contract handling**: honor `Deprecation`/`Sunset`/`Link` response headers; UTC
   everywhere, display-local via the device zone; send `X-User-Time-Zone` on report/PDF endpoints;
   page-walk complete catalogs until `totalElements` (ADR-0102/0103); echo every DTO `version`
   field and map HTTP 409 `OPTIMISTIC_LOCK` to a reload-and-retry UX; Mission edits use the
   per-section PATCH + section version counters, never the coarse PUT.
+
+### Design specification — delivered 2026-08-17
+
+The Claude Design handoff is in-repo at [`docs/design/android/`](design/android/README.md)
+and is the **binding UI reference** (high-fidelity; 1 mockup px = 1 dp): chapters 00–14
+(foundations, component sheet, navigation, auth, all feature screens, system states +
+adaptive icon), `artifacts/Theme.kt` (drop-in M3 mapping: `secondaryContainer = #E77E23` /
+`onSecondaryContainer = #000` for the selection rule, `surfaceTint = surface` + tonal
+elevation 0 for flat surfaces, `error`/`errorContainer` split for the text-tint rule),
+`artifacts/icon-export.md` (42-symbol product sprite + 20 mobile extensions →
+VectorDrawables), the Lato fonts and DS CSS mirrored under `_ds/`, and the Fan Kit artwork.
+The `.dc.html` chapters are browser-viewed references, never shipped code. System-wide
+behavior it fixes (extract): `NavigationSuiteScaffold` with a SQUARE 56×32 dp orange
+indicator, per-destination back stacks, deep links per ch. 03; 200 ms color/fade motion
+only; KRT modal/sheet/toast overlays — never native dialogs; offline = cached banner +
+disabled writes (0.45 opacity), never queued mutations; 409 conflict dialog preserving
+input; 429/503 backoff 3/6/12/30 s honoring `Retry-After`; approval-pending polls 60 s;
+Custom-Tab-only auth; screen state survives process death via `SavedStateHandle`.
+`ANDROID_APP_DESIGN_PROMPT.md` is thereby historical.
 
 ### The "external contract" carve-out (must be settled in Phase 0)
 
@@ -194,12 +219,15 @@ pipeline, privacy-policy extension for the new vhost's access log) · app repo s
 hardened per DEV_CI doc).
 
 **Phase 1 — walking skeleton (app)**
-Auth end-to-end (login via Custom Tab, token store, refresh loop, logout+revocation, PENDING/
-terms/409/429/503 problem handling) · KRT Compose design system (from the Claude Design spec) ·
-**Fan Kit compliance band on the login screen** (coupled logo+notice composable + per-locale
-byte-exact string test — root `CLAUDE.md`, `core/designsystem/fankit/`) · navigation shell for
-both form factors · settings (language, Impressum, Datenschutz, licenses) · DE/EN bundles · CI
-green incl. release-signing dry run.
+Follows the design spec's implementation order: (1) theme + tokens from
+`docs/design/android/artifacts/Theme.kt`, icon VectorDrawables per `icon-export.md`, bundled
+Lato fonts (+ OFL text); (2) the chapter-02 component library (buttons ladder, chips/pills,
+rows, forms, modal/sheet/toast, empty/loading/offline states, **Fan Kit band** with the
+per-locale byte-exact string test); (3) navigation shell per ch. 03 for both form factors;
+(4) auth flow per ch. 04 end-to-end (login via Custom Tab, token store, refresh loop,
+logout+revocation, PENDING/terms/409/429/503 problem handling, app-lock) · settings
+(language, Impressum, Datenschutz, licenses — ch. 13) · DE/EN bundles · CI green incl.
+release-signing dry run.
 
 **Phase 2 — read-only member core**
 Dashboard · missions list/detail · **operations list/detail incl. payout status** · notifications
@@ -215,7 +243,8 @@ personal inventory/blueprints.
 Backend live-sync bridge (SSE or WS, Redis-fed; own ADR) with coalesced re-fetch semantics
 (400 ms detail / 1 500 ms global rooms, mirroring `krt-live-sync.js`) · Materialbörse ·
 Raffinerie · Beförderung · guest mode (browse redacted missions, guest signup, anonymous order
-create — the vhost's anonymous-path block lifts here). No push channel (decided Q2).
+create — the vhost's anonymous-path block lifts here) · system states + adaptive icon +
+notification channels per design-spec ch. 14. No push channel (decided Q2).
 
 **Phase 5 — hardening & first release**
 Certificate pinning rollout (backup-pin + expiration + documented rotation runbook) · MASVS-based

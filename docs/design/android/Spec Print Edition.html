@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Profit Basetool — Android UI Spec (Print Edition)</title>
+<style>
+  @font-face { font-family:'Lato'; src:url('_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/fonts/Lato-Light.woff2') format('woff2'); font-weight:300; }
+  @font-face { font-family:'Lato'; src:url('_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/fonts/Lato-Regular.woff2') format('woff2'); font-weight:400; }
+  @font-face { font-family:'Lato'; src:url('_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/fonts/Lato-Bold.woff2') format('woff2'); font-weight:700; }
+  @font-face { font-family:'Lato'; src:url('_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/fonts/Lato-Black.woff2') format('woff2'); font-weight:900; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+  doc-page:not(:defined){visibility:hidden}
+  doc-page { font:300 10.5pt/1.5 Lato,sans-serif; color:#1a1a1a; }
+  h1 { font:900 24pt/1.15 Lato,sans-serif; color:#C45C00; text-transform:uppercase; letter-spacing:.05em; margin:0 0 4pt; }
+  h2 { font:700 13pt/1.2 Lato,sans-serif; color:#C45C00; text-transform:uppercase; letter-spacing:.05em; border-bottom:2pt solid #E77E23; padding-bottom:4pt; margin:22pt 0 10pt; }
+  h3 { font:700 10.5pt/1.3 Lato,sans-serif; color:#1a1a1a; text-transform:uppercase; letter-spacing:.04em; margin:14pt 0 6pt; }
+  p { margin:0 0 8pt; max-width:80ch; }
+  ul { margin:0 0 10pt; padding-left:14pt; }
+  li { margin:0 0 3pt; orphans:3; widows:3; }
+  table { width:100%; border-collapse:collapse; margin:0 0 12pt; font-size:9pt; }
+  th { text-align:left; font:700 8pt/1.3 Lato,sans-serif; text-transform:uppercase; letter-spacing:.05em; color:#555; background:#f2f0ec; border-bottom:2pt solid #E77E23; padding:4pt 7pt; }
+  td { border-bottom:.5pt solid #d8d4cc; padding:4pt 7pt; vertical-align:top; }
+  tr { break-inside:avoid; }
+  .sw { display:inline-block; width:11pt; height:11pt; border:.5pt solid #999; vertical-align:-2pt; margin-right:5pt; }
+  .mono { font-variant-numeric:tabular-nums; }
+  .muted { color:#666; }
+  .tag { display:inline-block; border:1pt solid #C45C00; color:#C45C00; font:700 7pt/1 Lato,sans-serif; letter-spacing:.1em; text-transform:uppercase; padding:2pt 4pt; margin-right:5pt; }
+  .cols2 { column-count:2; column-gap:24pt; }
+  .rulecard { break-inside:avoid; border:.5pt solid #d8d4cc; border-left:3pt solid #E77E23; padding:7pt 9pt; margin:0 0 8pt; }
+  .rulecard b { font-weight:700; }
+  .screenblock { break-inside:avoid; margin:0 0 12pt; }
+  .bandfig { break-inside:avoid; background:#000; padding:10pt 12pt; display:flex; align-items:center; gap:10pt; margin:0 0 6pt; }
+  .kicker { font:700 8pt/1 Lato,sans-serif; letter-spacing:.15em; text-transform:uppercase; color:#8a8a8a; }
+  .iconGrid { display:grid; grid-template-columns:repeat(8,1fr); gap:6pt; margin:0 0 10pt; }
+  .iconCell { break-inside:avoid; border:.5pt solid #d8d4cc; padding:6pt 3pt; text-align:center; }
+  .iconCell svg { width:14pt; height:14pt; color:#1a1a1a; fill:currentColor; }
+  .iconCell div { font-size:6.5pt; color:#666; margin-top:3pt; word-break:break-all; }
+  .newpage { break-before:page; }
+</style>
+<script src="assets/krt-icons-mobile.js"></script>
+</head>
+<body>
+<doc-page margin="0.75in">
+  <div slot="footer" style="font:400 7.5pt/1 Lato,sans-serif;color:#888;display:flex;justify-content:space-between;padding:4pt 0;border-top:.5pt solid #d8d4cc"><span>DAS KARTELL / Bereich Profit — Restricted · Internal use only</span><span>Profit Basetool // Android UI Spec v0.1</span></div>
+
+  <div style="display:flex;align-items:center;gap:14pt;margin-bottom:6pt">
+    <img src="assets/krt.webp" alt="KRT" style="width:44pt;height:44pt;object-fit:contain">
+    <div>
+      <div class="kicker">Das Kartell / Bereich Profit</div>
+      <h1>Profit Basetool // Android</h1>
+      <div class="muted">UI design specification — Kotlin · Jetpack Compose · Material 3 · minSdk 29, target 37 · dark-only, DE-first</div>
+    </div>
+  </div>
+  <p class="muted" style="font-size:9pt">Print edition v0.1 · 17.08.2026 · This document carries the tokens, rules and per-screen redlines. The interactive mockups (phone 412×915 + tablet 1280×800, all states) live in the spec chapters 00–14 of the design project; this paper never replaces them. Print rendering uses dark-on-white for legibility — the app itself is dark-only.</p>
+
+  <h2>1 · Decisions (binding)</h2>
+  <div class="cols2" style="font-size:9pt">
+    <div class="rulecard"><b>Navigation.</b> Phone: bottom bar with 5 destinations — Übersicht, Einsätze, Aufträge, Lager, Mehr. Tablet: rail with 7 + „Mehr", list-detail panes. Each destination keeps its own back stack; back on a root → Übersicht; predictive back everywhere.</div>
+    <div class="rulecard"><b>Action hierarchy.</b> The filled orange CTA marks the ONE primary action per context. Square 56 dp FAB on list screens; bottom-anchored 48 dp CTA bar on forms/details. Ladder: CTA → filled-green success → orange outline → ghost → quiet-danger.</div>
+    <div class="rulecard"><b>Density & motion.</b> Dense web-near lists (rows ~56 dp), touch targets ≥48 dp, 200 ms color transitions only, reduced motion honored. Countdowns relative („in 2 Std.").</div>
+    <div class="rulecard"><b>Copy.</b> German-first, military-terse, UPPERCASE labels, no emoji. „Einsätze" (nie „Missionen"), „Bereich Profit" as org context, „Administration" (nie „Führung"). Error states in-fiction (EN canon) + one plain German helper line.</div>
+    <div class="rulecard"><b>Auth.</b> Keycloak via Custom Tab (never WebView) + optional Discord (fail-closed guild gate) + guest browse. Approval-pending and terms screens block the app. Custom KRT lock screen behind BiometricPrompt; FLAG_SECURE app-wide.</div>
+    <div class="rulecard"><b>Offline.</b> Cached-data banner (timestamp) pinned under the top bar; rows get a „Cache" chip; write actions disable at 45% — no offline queueing of mutations (append-only ledgers must not fork).</div>
+  </div>
+
+  <h2 class="newpage">2 · Material 3 colorScheme (darkColorScheme — no light theme, no dynamic color)</h2>
+  <table>
+    <thead><tr><th style="width:34%">M3 slot</th><th style="width:16%">Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="background:#E77E23"></span>primary / onPrimary</td><td class="mono">#E77E23 / #000000</td><td>THE one filled CTA, active nav, focus, headings — CTA text is black</td></tr>
+      <tr><td><span class="sw" style="background:#C45C00"></span>primaryContainer / onPC</td><td class="mono">#C45C00 / #FFFFFF</td><td>Admin/elevated chrome</td></tr>
+      <tr><td><span class="sw" style="background:#EEB64B"></span>secondary / onSecondary</td><td class="mono">#EEB64B / #000000</td><td>Hover/press tint of orange</td></tr>
+      <tr><td><span class="sw" style="background:#E77E23"></span>secondaryContainer / onSC</td><td class="mono">#E77E23 / #000000</td><td>M3 selection surfaces → brand rule „selection = orange bg + black text"</td></tr>
+      <tr><td><span class="sw" style="background:#FFD23F"></span>tertiary / onTertiary</td><td class="mono">#FFD23F / #000000</td><td>Cross-org highlight</td></tr>
+      <tr><td><span class="sw" style="background:#000"></span>background / onBackground</td><td class="mono">#000000 / #D2D2D2</td><td>Page canvas — flat black, no texture</td></tr>
+      <tr><td><span class="sw" style="background:#141414"></span>surface / onSurface</td><td class="mono">#141414 / #D2D2D2</td><td>Cards, top bar, bottom bar, tables, sheets</td></tr>
+      <tr><td><span class="sw" style="background:#1C1C1C"></span>surfaceVariant / onSV</td><td class="mono">#1C1C1C / #8A8A8A</td><td>Input fills, table heads / muted text (AA-safe)</td></tr>
+      <tr><td><span class="sw" style="background:#282828"></span>surfaceContainerHighest · outline</td><td class="mono">#282828</td><td>Pressed rows · 1 dp hairlines (the depth system)</td></tr>
+      <tr><td><span class="sw" style="background:#141414"></span>surfaceTint</td><td class="mono">#141414</td><td>= surface → tonal elevation renders flat; tonalElevation 0 dp app-wide</td></tr>
+      <tr><td><span class="sw" style="background:#F2564B"></span>error / onError</td><td class="mono">#F2564B / #000000</td><td>Error as TEXT (≈5.3:1 on black)</td></tr>
+      <tr><td><span class="sw" style="background:#A3000A"></span>errorContainer / onEC</td><td class="mono">#A3000A / #FFFFFF</td><td>Error as FILL (danger buttons, alert borders)</td></tr>
+      <tr><td><span class="sw" style="background:#000"></span>scrim</td><td class="mono">#000000</td><td>Modal scrim at 80% + blur 4 dp</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Extended brand colors (KrtTheme.colors)</h3>
+  <table>
+    <thead><tr><th style="width:22%">Role</th><th style="width:20%">Fill</th><th style="width:20%">Text tint</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Danger</td><td class="mono"><span class="sw" style="background:#A3000A"></span>#A3000A</td><td class="mono"><span class="sw" style="background:#F2564B"></span>#F2564B (5.3:1)</td><td>Buy prices red with −; fills for buttons/borders, tint for text</td></tr>
+      <tr><td>Success</td><td class="mono"><span class="sw" style="background:#239E33"></span>#239E33</td><td class="mono"><span class="sw" style="background:#2EBC3D"></span>#2EBC3D (5.6:1)</td><td>Sell prices green with +; Check-In state changes</td></tr>
+      <tr><td>Warning</td><td class="mono"><span class="sw" style="background:#FFD23F"></span>#FFD23F</td><td class="mono">#FFD23F (11.9:1)</td><td>Briefing status, cross-org; black text on fills</td></tr>
+      <tr><td>Info</td><td class="mono"><span class="sw" style="background:#355DDC"></span>#355DDC</td><td class="mono"><span class="sw" style="background:#6C93EF"></span>#6C93EF (6.1:1)</td><td>Planned status, info alerts</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:9pt">Bereichsfarben (frozen, semantic only, never decorative, never the logo): Raumüberlegenheit <span class="mono">#37BBC0</span> · Forschung <span class="mono">#355DDC</span> · Sub-Radar <span class="mono">#A3000A</span> · Marinekorps <span class="mono">#7A5E96</span> · Profit <span class="mono">#239E33</span> · Search &amp; Rescue <span class="mono">#FFD23F</span>. Gray discipline: #FFFFFF data values · #D2D2D2 body/labels · #8A8A8A muted text · #646464 decorative only (fails as text) · #282828 hairlines · #1C1C1C inputs · #141414 surface · #000 canvas.</p>
+
+  <h3>Typography — Lato only (bundled, OFL 1.1)</h3>
+  <table>
+    <thead><tr><th style="width:20%">M3 slot</th><th style="width:42%">Spec</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>headlineLarge</td><td>Black 900 · 32/38 sp · +1.6 sp · UPPERCASE · orange</td><td>Screen title (h1)</td></tr>
+      <tr><td>headlineMedium</td><td>Bold 700 · 24/30 sp · +1.2 sp · UPPERCASE · orange</td><td>Section heading</td></tr>
+      <tr><td>headlineSmall</td><td>Bold 700 · 19/25 sp · +0.95 sp · UPPERCASE</td><td>Sub-section</td></tr>
+      <tr><td>displaySmall</td><td>Black 900 · 32/36 sp · tabular (tnum) · white</td><td>KPI / hero numbers</td></tr>
+      <tr><td>titleMedium</td><td>Bold 700 · 16/22 sp · white</td><td>Row headline, card title</td></tr>
+      <tr><td>titleSmall</td><td>Bold 700 · 14/20 sp · +0.7 sp · UPPERCASE · gray</td><td>Section title w/ hairline</td></tr>
+      <tr><td>bodyLarge / Medium / Small</td><td>Light 300 · 16/24 · 14/21 · 13/20 sp</td><td>Body · secondary · meta</td></tr>
+      <tr><td>labelLarge</td><td>Bold 700 · 13/16 sp · +0.39 sp · UPPERCASE</td><td>Buttons</td></tr>
+      <tr><td>labelMedium</td><td>Bold 700 · 11/14 sp · +0.55 sp · UPPERCASE</td><td>Chips, table heads</td></tr>
+      <tr><td>labelSmall</td><td>Bold 700 · 11/14 sp · +1.65 sp (0.15 em) · UPPERCASE · orange</td><td>Overline</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:9pt">Compose has no text-transform — pass <span class="mono">text.uppercase()</span> at call sites. Numeric readouts set <span class="mono">fontFeatureSettings="tnum"</span>. Font scale 1.3× without truncation — never fix label widths (German compounds). Shapes: every M3 slot 0 dp; pills 999 dp + circular radio/spinner/presence are the only rounded elements; status dots SQUARE 8 dp. Spacing scale 4/8/12/16/24/32 dp; touch ≥48 dp; tablet content ≤1200 dp; prose ≤80 ch. Depth = hairlines + orange corner brackets + bloom (focus 0 0 5 dp @30%, modal/CTA 0 0 20 dp @20%) — no soft drop shadows, ripple white 8% bounded square. Artifacts: <b>artifacts/Theme.kt</b>, <b>artifacts/icon-export.md</b>.</p>
+
+  <h2 class="newpage">3 · Component canon (digest — states in ch. 02)</h2>
+  <table>
+    <thead><tr><th style="width:22%">Buttons ladder</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Filled CTA</td><td>Orange fill, BLACK text, bloom on press — max ONE per screen context (Anmelden, Speichern)</td></tr>
+      <tr><td>Filled success</td><td>Green #239E33, white text — state changes (Check-In)</td></tr>
+      <tr><td>Orange outline</td><td>Emphasized secondary (Crew zuweisen)</td></tr>
+      <tr><td>Ghost</td><td>Neutral hairline → orange on press — routine repeated actions</td></tr>
+      <tr><td>Quiet danger</td><td>Gray → red on press — destructive, always confirms with named consequence</td></tr>
+      <tr><td>Icon button</td><td>48×48 dp, only for repeated universal row actions; ALWAYS contentDescription + tooltip</td></tr>
+    </tbody>
+  </table>
+  <div class="cols2" style="font-size:9pt">
+    <div class="rulecard"><b>Buttons metric.</b> Height 48 dp, padding 0/20, label 13 sp Bold +0.03 em UPPERCASE, icon 16 dp gap 8. Disabled = 45% opacity. CTA focus ring white; others orange 2 dp offset 2.</div>
+    <div class="rulecard"><b>Containers.</b> HUD box (hairline + rgba(20,20,20,.5) + 10 dp brackets TL/BR) = hero container, max 1–2 per screen. Card / --inset / --accent (3 dp orange top). Panel header: #1C1C1C + 4 dp orange left bar.</div>
+    <div class="rulecard"><b>Status.</b> Squadron badge = the ONE pill (orange ring). Chips squared 11 sp UPPERCASE (primary/success/danger/warning/info/muted/data). Status pill = square 8 dp dot + tint text: Geplant info · Aktiv success · Briefing warning · Abgeschlossen gray · Abgesagt danger.</div>
+    <div class="rulecard"><b>Rows & tables.</b> Dense rows min 56 dp, press #282828, selection = 3 dp orange inset + orange check (long-press). Tablet keeps tables (head #1C1C1C, 2 dp orange rule, zebra 2%); phone collapses to key-value cards — never horizontal page scroll. Numerics right + tabular.</div>
+    <div class="rulecard"><b>Forms.</b> Fill #1C1C1C, hairline, radius 0, height 48 dp, focus = orange border + bloom; labels neutral #D2D2D2 bold (never orange); errors #F2564B + warning icon; orange-chevron selects, square orange checkbox (black check), circular radio; combobox type-to-filter, active option orange bg/black text.</div>
+    <div class="rulecard"><b>Overlays.</b> Modal: #141414, 3 dp orange top edge, 13 dp brackets, 20 dp bloom, ONE filled CTA right + ghost cancel; danger variant red; type-to-confirm only for wipe-grade actions. Bottom sheets: shape 0, 3 dp orange edge, drag-handle pill. Toast: near-black + brackets + bloom, uppercase orange title; error red. Never native dialogs.</div>
+    <div class="rulecard"><b>Feedback.</b> Loading = orange ring spinner + UPPERCASE label. Empty = dashed border, short reason, exactly ONE action. Presence pill pulses, never blocks input; „Aktualisierung verfügbar" pill floats above the CTA bar. Pagination: „Mehr laden — X von Y" + ENDE DER LISTE marker.</div>
+    <div class="rulecard"><b>KPI.</b> Value white Bold tabular on dark chip; totals get 4 dp orange left bar; deltas in text tints; sparkline = drawn polyline, no chart library.</div>
+  </div>
+
+  <h3>Fan Kit compliance band (legally required — coupled unit)</h3>
+  <div class="bandfig">
+    <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:28pt;height:28pt;flex:none">
+    <div style="font:300 10.5pt/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+  </div>
+  <ul style="font-size:9pt">
+    <li>Logo 36 dp, official white artwork UNMODIFIED (no recolor/tint/flip/effects) + notice — one component, never separated (Fan Kit Guidelines §2, 2b, 3)</li>
+    <li>Notice verbatim ENGLISH in every locale, incl. the space before the third ® — never rephrased or „improved"; ≥14 sp #D2D2D2, AA</li>
+    <li>Static, non-interactive, no KRT brackets/glow/orange — third-party attribution, must not compete with the screen's CTA</li>
+    <li>Placements: Login (above version footer) + Einstellungen (About/Impressum). Nowhere else. Wrapping to 2–3 lines on phones is allowed; never shrink below 14 sp or truncate</li>
+  </ul>
+
+  <h2 class="newpage">4 · Navigation & back behavior</h2>
+  <table>
+    <thead><tr><th style="width:18%">Surface</th><th>Destinations</th></tr></thead>
+    <tbody>
+      <tr><td>Phone bottom bar</td><td>Übersicht · Einsätze · Aufträge · Lager · Mehr — indicator = SQUARE 56×32 dp orange, icon black, label white Bold 11 sp UPPERCASE; badge = square orange, black tabular count, „99+" cap, hidden at 0</td></tr>
+      <tr><td>„Mehr" screen</td><td>Hangar · Materialbörse · Raffinerie · Mein Inventar &amp; Blueprints · Bank · Beförderung · Organigramm · Einstellungen (last-used pinned on top)</td></tr>
+      <tr><td>Tablet rail</td><td>88 dp rail: Übersicht, Einsätze, Aufträge, Lager, Hangar, Raffinerie, Börse + Mehr; KRT mark top, Einstellungen bottom; list-detail panes (380–400 dp list)</td></tr>
+      <tr><td>Top app bar</td><td>64 dp, #141414, 2 dp orange bottom rule; title orange Bold UPPERCASE; bell + unread badge; squadron context pill (tap = org switcher sheet). Pushed screens: back arrow, no bottom bar swap</td></tr>
+    </tbody>
+  </table>
+  <ul style="font-size:9pt">
+    <li>Predictive back everywhere; 200 ms fade/slide transitions; re-tap active destination pops to root + scrolls top</li>
+    <li>Back on a destination root → Übersicht; on Übersicht → exit (no „press again" toast). Sheets/dialogs close first; dirty forms intercept once („Änderungen verwerfen?")</li>
+    <li>Deep links: push → target screen; cold start synthesizes back stack (target + Übersicht); das-kartell.org App Links via assetlinks.json; unknown route → 404 in-fiction</li>
+    <li>State survives navigation + process death (SavedStateHandle): scroll, filters, active tab (?tab=)</li>
+  </ul>
+
+  <h2>5 · Screen handoffs (mockups: chapters 04–13)</h2>
+  <div class="screenblock"><h3>04 Auth</h3><ul style="font-size:9pt">
+    <li>Login: mark + radial bloom (auth-only), CTA Anmelden → Custom Tab (toolbar #141414), Discord ghost, guest link, Fan Kit band, legal + server-status footer. Offline: login disabled 45% + banner</li>
+    <li>Approval pending: NO filled CTA (outline refresh + quiet logout), 60 s poll + push; Terms: sticky checkbox + CTA (disabled till checked), decline = confirm logout; Lock screen: no data hints while locked</li></ul></div>
+  <div class="screenblock"><h3>05 Übersicht (Dashboard)</h3><ul style="font-size:9pt">
+    <li>Order: greeting → announcement (collapsible, mark-read) → Einsätze ≤7 Tage (whole card tappable, relative countdown + TS time, „Meine Einheit" chip) → 4 Schnellaktionen (Check-In, Einbuchen, Auftrag, Angebot) → unread preview</li></ul></div>
+  <div class="screenblock"><h3>06 Einsätze & Operationen</h3><ul style="font-size:9pt">
+    <li>Liste: segment Einsätze/Operationen, chip filters (sheets), date grouping, unit badge only in „Alle" mode, FAB 56 dp (Manager)</li>
+    <li>Detail: pinned head + facts bar (TS/Join/Ort/Leiter) + 7 tabs (Übersicht, Teilnehmer, Einheiten, Ablauf, Ziele, Frequenzen, Finanzen), ?tab= deeplink; ONE bottom CTA: Anmelden → green Check-In → ghost Check-Out; Einsatz-Briefing = fixed 6-field kv (Ziel, Teamspeak, Serverjoin, Treffpunkt, Dauer computed, Einsatzleiter); attendance open-ended (count + eingecheckt meter, no slots)</li>
+    <li>Anmelden sheet: payout radios (Auszahlung / Verzicht Org-Kasse) + optional ship; Finanz-Eintrag: sign from Typ segment, never typed; Operation: rollup + my payout status badge + manager toggles (asymmetric gate: mark instant, unmark confirms)</li></ul></div>
+  <div class="screenblock"><h3>07 Benachrichtigungen</h3><ul style="font-size:9pt">
+    <li>Unread = 3 dp orange bar + bold + orange type icon; swipe right gelesen / left löschen (commit ≥50%, undo toast 5 s, buttons remain for AT); newest 50 + „Mehr laden"; row tap deep-links; poll + SSE</li></ul></div>
+  <div class="screenblock"><h3>08 Hangar</h3><ul style="font-size:9pt">
+    <li>Cards: Typ + „Name", chips Versicherung/Fitted, Ort; edit 44 dp; segment Meine/Org-Einheit (KPI tiles + per-type breakdown); overflow: Home-Location, Import, Hangar leeren (count-naming danger modal); Fleetview import: file/paste → result modal (Importiert/Nicht erkannt/Duplikate)</li>
+    <li>Manufacturer marks: lettermark placeholders — repo white SVGs (Anvil/Drake/MISC) embed rasters; devs must re-export clean vectors</li></ul></div>
+  <div class="screenblock"><h3>09 Lager & Blueprints</h3><ul style="font-size:9pt">
+    <li>Tree: Material (orange rail) → Stack (gray rail) → Eintrag (dark inset); one header, quality mini-gauge 0–1000, amounts bright + dim unit; long-press bulk Umbuchen; collapse state persisted</li>
+    <li>Buchen: segment Ein-/Aus-/Umbuchen (Ausbuchen warns append-only; Umbuchen adds target); Zuordnung = Variante C/Modell G: two independent splits (Aufträge orange / Einsätze blue) with amounts, live Rest chip (0 success · frei muted · überbucht danger + save locked); personal entries carry no association</li>
+    <li>Blueprints: craftability chip + missing-materials breakdown; batch import file → match preview → apply; tablet master-detail with per-ingredient quality slider (live ×-factor on mapped stats only)</li></ul></div>
+  <div class="screenblock"><h3>10 Aufträge & Materialbörse</h3><ul style="font-size:9pt">
+    <li>Queue: Prio + #ID + Art chip + status pill + Für/Durch badges + collapsible materials w/ progress; age tint &gt;30 d yellow, &gt;90 d red; drag-reorder Logistiker only (long-press, overflow fallback)</li>
+    <li>Detail: facts (Für/Durch/Zuständig) + 4 tabs (Positionen, Materialbedarf — queue-gated fold, Übergaben + „Übergabe erfassen" CTA, Verlauf read-only); status change via sheet with named consequence</li>
+    <li>Börse: segment Angebote/Gesuche; „Ich kann liefern" toggle (retractable, creator sees list); Gesuch: Menge + optional Min-Qualität; handover/location stay off-tool; own entries: edit + withdraw</li></ul></div>
+  <div class="screenblock"><h3>11 Raffinerie</h3><ul style="font-size:9pt">
+    <li>Orders: status In Arbeit (countdown, minütlich) / Abholbereit (push) / Eingelagert; yield lines + est. value (data white/green, never orange); Extractor-JSON import (approved clients only, §4 terms)</li>
+    <li>„In Lager buchen": creates one Lager entry per material with quality + source ref, marks order eingelagert, CTA disables after</li></ul></div>
+  <div class="screenblock"><h3>12 Bank</h3><ul style="font-size:9pt">
+    <li>Tabs Konten/Anträge; KPI total + account cards w/ drawn sparkline; CARTEL visible to all, others per view grant</li>
+    <li>Detail: balance hero, custody holder bars (sum = balance), transactions (+/− tints), Kontoauszug PDF; Antrag: Typ segment, approval-ladder hint under amount (≥100 k → 2 Freigaben), never self-approve; ledger append-only — no offline queueing</li></ul></div>
+  <div class="screenblock"><h3>13 Beförderung & Einstellungen</h3><ul style="font-size:9pt">
+    <li>Beförderung: rank hero, 5 requirement rows w/ progress, matrix Selbst/Leitung/Ziel (below-goal yellow), read-only for members</li>
+    <li>Einstellungen: Sprache DE/EN segment, App-Sperre (SQUARE toggle, BiometricPrompt on enable), Blueprint-Sharing, Auszahlungspräferenz, aktive Org-Einheit, Rechtliches + Fan Kit band, „Lokale Daten löschen" (danger modal, server data untouched), Abmelden, version/server-status footer</li></ul></div>
+
+  <h2 class="newpage">6 · System states & app icon</h2>
+  <ul style="font-size:9pt">
+    <li><b>Offline:</b> banner (wifi-off, warning bar, „Zuletzt aktualisiert …") + Cache chips; reconnect flips green 2 s then auto-refresh</li>
+    <li><b>409:</b> „Konflikt festgestellt" modal — reload CTA, inputs preserved; <b>429/503:</b> full-screen only on first load — countdown in the ring spinner, backoff 3/6/12/30 s, 429 uses Retry-After; <b>Forced update:</b> blocking screen, installed→required chips, CTA Play Store</li>
+    <li><b>Errors (in-fiction canon):</b> 403 „Access Denied — Insufficient security clearance. This incident has been logged." · 404 „Signal Lost…" · 500 „System Malfunction…" · CTA „Zurück zur Basis"</li>
+    <li><b>Push:</b> small icon = alpha-only monochrome mark, accent #E77E23, ≤2 uppercase actions, channel set (Einsätze &amp; Check-In, Aufträge, Börse, Bank, System), sensitive amounts never on the lock screen</li>
+    <li><b>Adaptive icon:</b> foreground orange mark in 66/108 safe zone · background flat #000 · monochrome layer shipped deliberately (Android 13+ themed icons). Logo ONLY in #E77E23, white or black — hard rule</li>
+  </ul>
+
+  <h3>Icon inventory (24 dp, stroke 2, round caps, currentColor — export as VectorDrawables)</h3>
+  <div class="iconGrid">
+    <div class="iconCell"><svg><use href="#krt-icon-dashboard"></use></svg><div>dashboard</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-target"></use></svg><div>target</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-clipboard-list"></use></svg><div>clipboard-list</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-crate"></use></svg><div>crate</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-ship"></use></svg><div>ship</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-refinery"></use></svg><div>refinery</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-swap"></use></svg><div>swap</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-bank"></use></svg><div>bank</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-rank"></use></svg><div>rank</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-blueprint"></use></svg><div>blueprint</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-bell"></use></svg><div>bell</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-wifi-off"></use></svg><div>wifi-off</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-fingerprint"></use></svg><div>fingerprint</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-scan"></use></svg><div>scan</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-lock"></use></svg><div>lock</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-globe"></use></svg><div>globe</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-shield"></use></svg><div>shield</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-antenna"></use></svg><div>antenna</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-more-h"></use></svg><div>more-h</div></div>
+    <div class="iconCell"><svg><use href="#krt-icon-calendar"></use></svg><div>calendar</div></div>
+  </div>
+  <p class="muted" style="font-size:8.5pt">Plus the 43-symbol product sprite (verbatim from fragments/icons.html) — full list with usage dictionary in artifacts/icon-export.md. No icon libraries, no emoji.</p>
+</doc-page>
+<script src="doc-page.js"></script>
+</body>
+</html>

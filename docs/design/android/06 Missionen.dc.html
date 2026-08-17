@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:3000px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">06</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Einsätze & Operationen</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Live: list segment switch, all 7 detail tabs, payout radios, manager payout toggles. Detail pattern = Einsatz-Übersicht V. B (locked, #818): status badge + attendance + 6-field briefing + Ablauf checklist.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Einsätze phone" style="display:flex;gap:28px;align-items:flex-start;margin-bottom:32px">
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Liste — segment Einsätze / Operationen (live)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Einsätze</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+            <button style="all:unset;position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2"><svg class="krt-icon" style="width:22px;height:22px"><use href="#krt-icon-bell"></use></svg><span style="position:absolute;top:6px;right:4px;min-width:16px;height:16px;padding:0 3px;background:#E77E23;color:#000;font:700 10px/16px Lato,sans-serif;text-align:center">3</span></button>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ segMissionBg }};color:{{ segMissionFg }}" onClick="{{ segMissions }}">Einsätze</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ segOpsBg }};color:{{ segOpsFg }};border-left:1px solid #282828" onClick="{{ segOps }}">Operationen</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px">
+              <svg class="krt-icon" style="width:18px;height:18px;color:#646464"><use href="#krt-icon-search"></use></svg>
+              <span style="font:300 14px/1 Lato,sans-serif;color:#646464;font-style:italic">{{ searchPlaceholder }}</span>
+            </div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">
+              <span class="chip chip--primary" style="font-size:10px;flex:none">Status: Alle</span>
+              <span class="chip" style="font-size:10px;flex:none">Zeitraum</span>
+              <span class="chip" style="font-size:10px;flex:none">Vergangene aus</span>
+              <span class="chip chip--muted" style="font-size:10px;flex:none;border-style:dashed">Filter zurücksetzen</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:8px 16px 96px">
+            <sc-if value="{{ showMissions }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase;padding:14px 0 8px">Heute</div>
+                <div style="border:1px solid #282828;background:#141414">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span class="status-pill status-planned" style="font-size:10px">Geplant</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">TS 20:30 · in 2 Std.</span></div>
+                    </div>
+                    <span class="squadron-badge squadron-badge-sk" style="font-size:10px;flex:none">STAFFEL 1</span>
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                  </div>
+                </div>
+                <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase;padding:16px 0 8px">Dienstag · 19.08.</div>
+                <div style="border:1px solid #282828;background:#141414">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;border-bottom:1px solid #282828">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Konvoi-Eskorte Stanton–Pyro</div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span class="status-pill" style="font-size:10px;color:#FFD23F">Briefing</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">TS 19:00</span></div>
+                    </div>
+                    <span class="squadron-badge squadron-badge-sk" style="font-size:10px;flex:none">SK VANGUARD</span>
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:rgba(255,255,255,.02)">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bergung „Reclaimer Run 12"</div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span class="status-pill status-active" style="font-size:10px">Aktiv</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">seit 18:10</span></div>
+                    </div>
+                    <span class="squadron-badge squadron-badge-muted" style="font-size:10px;flex:none">—</span>
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:16px"><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 10px/1 Lato,sans-serif;color:#646464;letter-spacing:.15em;text-transform:uppercase">Ende der Liste</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showOps }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase;padding:14px 0 8px">Laufend</div>
+                <div style="border:1px solid #282828;background:#141414">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF">Operation Rotschild</div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span class="status-pill status-active" style="font-size:10px">Aktiv</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">2 Einsätze · 18 Teilnehmer</span></div>
+                    </div>
+                    <span class="chip chip--warning" style="font-size:9.5px;flex:none">Auszahlung offen</span>
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                  </div>
+                </div>
+                <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase;padding:16px 0 8px">Abgeschlossen</div>
+                <div style="border:1px solid #282828;background:#141414">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 15px/1.3 Lato,sans-serif;color:#D2D2D2">Operation Eisvogel</div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span class="status-pill status-completed" style="font-size:10px">Abgeschlossen</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">4 Einsätze</span></div>
+                    </div>
+                    <span class="chip chip--success" style="font-size:9.5px;flex:none">Ausgezahlt</span>
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Einsatz erstellen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="width:56px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:22px;height:22px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 10.5px/1 Lato,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — MissionsListScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Web filters (Suche, Von/Bis, Vergangene) collapse into the chip row; chips open pickers as bottom sheets</li>
+          <li>Date grouping replaces the web table's Start column; unit badge only in „Alle Org-Einheiten" mode</li>
+          <li>Square FAB 56 dp = „Einsatz erstellen" (MISSION_MANAGER only); hides on scroll-down</li>
+          <li>Search debounced 300 ms with .krt-loading-indicator overlay; pull-to-refresh</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Detail — sticky head + facts + 7 tabs (live)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="flex:none;background:#141414;border-bottom:1px solid #282828">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0">
+                <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span><span class="krt-presence-indicator" style="font-size:9.5px;margin-left:0;padding:1px 8px 1px 5px"><span class="krt-presence-dot" style="width:7px;height:7px"></span><span class="krt-presence-count">1</span></span></div>
+              </div>
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
+            </div>
+            <div class="facts-bar" style="border-bottom:none;padding:6px 16px 10px;gap:14px">
+              <span><span class="fact-k">TS</span><span class="fact-v">20:30</span></span>
+              <span><span class="fact-k">Join</span><span class="fact-v">21:00</span></span>
+              <span><span class="fact-k">Ort</span><span class="fact-v">ARC-L1</span></span>
+              <span><span class="fact-k">Leiter</span><span class="fact-v">Rhea</span></span>
+            </div>
+            <div class="tab-nav" style="padding:0 8px;background:transparent">
+              <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="7">
+                <button class="tab {{ t.cls }}" style="font-size:11px;padding:10px 11px;min-height:44px" onClick="{{ t.onTap }}">{{ t.label }}<sc-if value="{{ t.count }}" hint-placeholder-val="{{ false }}"><span class="tab-count">{{ t.count }}</span></sc-if></button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <sc-if value="{{ t0 }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div class="hud-box" style="padding:14px 16px;display:flex;align-items:center;gap:16px">
+                  <div class="attendance" style="min-width:0;flex:1">
+                    <div class="attendance-count"><span class="att-n" style="font-size:28px">14</span><span class="att-label" style="font-size:10px">Angemeldet</span></div>
+                    <div class="attendance-sub" style="font-size:12px">davon <b>9</b> eingecheckt</div>
+                    <div class="attendance-meter" style="margin-top:4px"><i style="width:64%"></i></div>
+                  </div>
+                  <div style="text-align:right;flex:none">
+                    <div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">in 2 Std.</div>
+                    <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Start 21:00</div>
+                  </div>
+                </div>
+                <div class="card card--flush" style="padding:0">
+                  <div style="padding:12px 16px 4px;font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:10px">Einsatz auf einen Blick</div>
+                  <dl style="display:grid;grid-template-columns:max-content 1fr;gap:0;margin:0;font-variant-numeric:tabular-nums">
+                    <sc-for list="{{ briefing }}" as="b" hint-placeholder-count="6">
+                      <dt style="font:700 11px/1.4 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.5px;padding:9px 14px 9px 16px;border-bottom:1px solid #1C1C1C">{{ b.k }}</dt>
+                      <dd style="font:300 13.5px/1.4 Lato,sans-serif;color:#FFFFFF;margin:0;padding:9px 16px 9px 0;border-bottom:1px solid #1C1C1C;overflow-wrap:anywhere">{{ b.v }}</dd>
+                    </sc-for>
+                  </dl>
+                </div>
+                <div>
+                  <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Beschreibung</div>
+                  <div style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:80ch">Quantainium-Abbau an der Lyria-Südwand. <b style="color:#fff">Voller Frachtraum → sofort zur Raffinerie.</b> Kein PvP-Risiko erwartet, Eskorte trotzdem Pflicht.</div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t1 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px"><span style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">14 Teilnehmer · 9 eingecheckt</span><span style="flex:1"></span><span class="chip chip--muted" style="font-size:9.5px">Sortiert: Check-In</span></div>
+                <sc-for list="{{ people }}" as="p" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;background:#141414;border:1px solid #282828">
+                    <span class="status-dot {{ p.dotCls }}" style="flex:none"></span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</div>
+                      <div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ p.sub }}</div>
+                    </div>
+                    <span class="chip {{ p.payCls }}" style="font-size:9.5px;flex:none">{{ p.pay }}</span>
+                    <sc-if value="{{ p.checkable }}" hint-placeholder-val="{{ false }}"><button class="btn-ghost" style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Check-In" title="Check-In"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg></button></sc-if>
+                  </div>
+                </sc-for>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen Status.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t2 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div class="card card--flush" style="padding:0">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#E77E23"><use href="#krt-icon-ship"></use></svg>
+                    <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Einheit Alpha</span>
+                    <span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">Carrack „Meridian"</span>
+                    <span style="flex:1"></span><span class="chip chip--muted" style="font-size:9.5px">4</span>
+                  </div>
+                  <div style="padding:8px;display:flex;flex-direction:column;gap:6px">
+                    <div class="person-row" style="min-height:48px"><svg class="krt-icon row-grip" style="width:16px;height:16px"><use href="#krt-icon-grip"></use></svg><span class="status-dot status-dot--on"></span><div class="row-main"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Rhea</div><div class="row-sub">Einsatzleiterin</div></div><select class="chip-select"><option>Pilot</option><option>Turret</option><option>Cargo</option><option>Scan</option></select></div>
+                    <div class="person-row" style="min-height:48px"><svg class="krt-icon row-grip" style="width:16px;height:16px"><use href="#krt-icon-grip"></use></svg><span class="status-dot status-dot--on"></span><div class="row-main"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Dorn <span class="chip chip--warning" style="font-size:8.5px;margin-left:4px">HVU</span></div><div class="row-sub">Staffel 1</div></div><select class="chip-select"><option>Turret</option><option>Pilot</option><option>Cargo</option></select></div>
+                    <div class="drop-hint" style="min-height:44px;display:flex;align-items:center;justify-content:center">+ Person zuweisen — antippen oder halten & ziehen</div>
+                  </div>
+                </div>
+                <div class="card card--flush" style="padding:0">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <svg class="krt-icon" style="width:18px;height:18px;color:#E77E23"><use href="#krt-icon-ship"></use></svg>
+                    <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Einheit Bravo</span>
+                    <span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">Prospector ×2</span>
+                    <span style="flex:1"></span><span class="chip chip--muted" style="font-size:9.5px">2</span>
+                  </div>
+                  <div style="padding:8px"><div class="drop-hint" style="min-height:44px;display:flex;align-items:center;justify-content:center">+ Person zuweisen</div></div>
+                </div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Einheiten sind offen (keine Slot-Grenze). Drag & Drop mit Klick-Fallback: Person antippen → Zielbox antippen.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t3 }}" hint-placeholder-val="{{ false }}">
+              <ol class="ablauf" style="padding:4px 2px">
+                <li class="step step--done"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:14px">Sammeln im Teamspeak</span><span class="step-meta">20:30 · Kanal <span class="data-value data-value--mono" style="font-size:11px">KRT/Einsatz-1</span></span></div></li>
+                <li class="step step--done"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:14px">Serverjoin & Staging</span><span class="step-meta">21:00 · ARC-L1 Wide Forest</span></div></li>
+                <li class="step step--now"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:14px">Abbau South Ridge</span><span class="step-meta">Rotation: 2 Prospector + Eskorte</span></div></li>
+                <li class="step"><span class="step-num"></span><div class="step-body"><span class="step-title" style="font-size:14px">Raffinerie-Abgabe & Debrief</span><span class="step-meta">ARC-L1 · Work Order auf Org-Konto</span></div></li>
+              </ol>
+            </sc-if>
+            <sc-if value="{{ t4 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ goals }}" as="g" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;background:#141414;border:1px solid #282828">
+                    <span class="matrix-flag {{ g.flagCls }}" style="flex:none">{{ g.mark }}</span>
+                    <div style="flex:1;font:300 13.5px/1.4 Lato,sans-serif;color:{{ g.color }}">{{ g.text }}</div>
+                    <span class="chip {{ g.chipCls }}" style="font-size:9px;flex:none">{{ g.kind }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t5 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ freqs }}" as="f" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;background:#141414;border:1px solid #282828">
+                    <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-antenna"></use></svg>
+                    <div style="flex:1;min-width:0"><div style="font:700 11px/1.3 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">{{ f.k }}</div></div>
+                    <span class="data-value data-value--mono" style="font-size:15px;padding:4px 10px">{{ f.v }}</span>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Kopieren" title="Kopieren"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-clipboard-check"></use></svg></button>
+                  </div>
+                </sc-for>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Tap kopiert den Wert; Werte sind Daten → weiß auf Chip, nie orange.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t6 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  <div class="kpi-total" style="padding:8px 10px"><div class="kpi-label" style="font-size:9px">Einnahmen</div><div class="kpi-value" style="font-size:15px;color:#2EBC3D">+86.400</div></div>
+                  <div class="kpi-total" style="padding:8px 10px;border-left-color:#A3000A"><div class="kpi-label" style="font-size:9px">Ausgaben</div><div class="kpi-value" style="font-size:15px;color:#F2564B">−11.700</div></div>
+                  <div class="kpi-total" style="padding:8px 10px"><div class="kpi-label" style="font-size:9px">Netto</div><div class="kpi-value" style="font-size:15px">74.700</div></div>
+                </div>
+                <div class="card card--flush" style="padding:0">
+                  <sc-for list="{{ finance }}" as="f" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border-bottom:1px solid #1C1C1C">
+                      <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ f.what }}</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ f.who }}</div></div>
+                      <span style="font:700 14px/1 Lato,sans-serif;color:{{ f.color }};font-variant-numeric:tabular-nums">{{ f.amt }}</span>
+                    </div>
+                  </sc-for>
+                  <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 14px;background:#1C1C1C">
+                    <span style="flex:1;font:700 12px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.5px">Anteil je Teilnehmer (14)</span>
+                    <span style="font:900 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">5.335 aUEC</span>
+                  </div>
+                </div>
+                <button class="btn-outline btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Finanz-Eintrag hinzufügen</button>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+            <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — MissionDetailScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Head + facts + tab row stay pinned; only tab content scrolls; ?tab= deeplink</li>
+          <li>ONE filled CTA, bottom-anchored: Anmelden → signed up it becomes green „Check-In", then ghost „Check-Out"</li>
+          <li>Dauer in the briefing = computed Ende − Teamspeak; Einsatzleiter = username</li>
+          <li>Presence pill in the title row; live-sync „Aktualisierung verfügbar" pill floats above the CTA bar</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Anmelden — bottom sheet (live radios)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4)">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:1px solid #282828">
+              <span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></span>
+              <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div>
+            </div>
+            <div style="padding:16px"><div class="hud-box" style="padding:16px;height:180px"></div></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Anmelden</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Vertikaler Abbau — Lyria · Heute 21:00</div>
+              </div>
+              <div>
+                <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Auszahlungspräferenz</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <label style="display:flex;align-items:center;gap:12px;margin:0;min-height:52px;padding:6px 14px;border:1px solid {{ pay0Border }};background:{{ pay0Bg }};cursor:pointer;font-weight:300">
+                    <input type="radio" name="payout" checked="{{ pay0 }}" onChange="{{ selPay0 }}" style="width:20px;height:20px;flex:none">
+                    <span style="flex:1"><span style="display:block;font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Auszahlung an mich</span><span style="display:block;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Anteil geht auf dein Konto</span></span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:12px;margin:0;min-height:52px;padding:6px 14px;border:1px solid {{ pay1Border }};background:{{ pay1Bg }};cursor:pointer;font-weight:300">
+                    <input type="radio" name="payout" checked="{{ pay1 }}" onChange="{{ selPay1 }}" style="width:20px;height:20px;flex:none">
+                    <span style="flex:1"><span style="display:block;font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Verzicht zugunsten Org-Kasse</span><span style="display:block;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Anteil bleibt bei Bereich Profit</span></span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Eigenes Schiff einbringen (optional)</div>
+                <select style="width:100%;height:48px;font-size:14px"><option>Kein Schiff</option><option>Carrack „Meridian"</option><option>Prospector „Digger 2"</option></select>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <button class="btn btn--cta" style="min-height:52px;width:100%">Verbindlich anmelden</button>
+                <button class="btn-ghost btn" style="background:transparent;min-height:48px;width:100%">Abbrechen</button>
+              </div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center">Abmelden bis 60 Min. vor Start möglich. Der Einsatzleiter sieht deine Präferenz.</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Finanz-Eintrag — form (live segment)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Schließen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Finanz-Eintrag</div>
+            <span class="chip chip--data" style="font-size:10px;margin-right:12px">Einsatz: <strong>Vertikaler Abbau</strong></span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px 16px;display:flex;flex-direction:column;gap:18px">
+            <div>
+              <label style="font-size:13px;margin-bottom:8px">Typ</label>
+              <div style="display:flex;border:1px solid #282828;height:48px">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ finInBg }};color:{{ finInFg }}" onClick="{{ finIn }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Einnahme</button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ finOutBg }};color:{{ finOutFg }};border-left:1px solid #282828" onClick="{{ finOut }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-minus"></use></svg>Ausgabe</button>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:13px;margin-bottom:8px">Betrag (aUEC)</label>
+              <input type="text" value="86.400" style="width:100%;height:56px;font-size:22px;font-weight:700;color:{{ finAmtColor }};font-variant-numeric:tabular-nums;text-align:right;padding-right:16px">
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Ganzzahlig · {{ finHint }}</div>
+            </div>
+            <div>
+              <label style="font-size:13px;margin-bottom:8px">Kategorie</label>
+              <select style="width:100%;height:48px;font-size:14px"><option>{{ finCat }}</option><option>Treibstoff</option><option>Reparatur</option><option>Munition</option></select>
+            </div>
+            <div>
+              <label style="font-size:13px;margin-bottom:8px">Verwendungszweck</label>
+              <input type="text" placeholder="z. B. Raffinerie Work Order #7841" style="width:100%;height:48px;font-size:14px">
+            </div>
+          </div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+            <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+            <button class="btn btn--cta" style="min-height:52px;flex:1.4"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — FinanceEntrySheet</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Amount keypad numeric; sign comes from the Typ segment, never typed</li>
+          <li>Validation inline (#F2564B): Betrag &gt; 0, Kategorie Pflicht; back with dirty form → unsaved-changes modal</li>
+          <li>409 on save → conflict dialog (ch. 14); entry appears optimistically with pending shimmer off (no motion)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Operation — Detail + Auszahlung (live toggles)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:1px solid #282828;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF">Operation Rotschild</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-active" style="font-size:9.5px">Aktiv</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">2 Einsätze · 18 Teilnehmer</span></div>
+            </div>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <div class="status-badge {{ myPayBadgeCls }}" style="width:100%;box-sizing:border-box;justify-content:flex-start;font-size:13px;padding:12px 14px"><span class="status-badge-text">Dein Anteil: {{ myPayLabel }}</span><span style="flex:1"></span><span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;text-transform:none">4.150 aUEC</span></div>
+            <div>
+              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Einsätze in dieser Operation</div>
+              <div class="card card--flush" style="padding:0">
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border-bottom:1px solid #1C1C1C">
+                  <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">14 Teilnehmer · abgeschlossen</div></div>
+                  <span style="font:700 13px/1 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">+74.700</span>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px">
+                  <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Konvoi-Eskorte Stanton–Pyro</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">8 Teilnehmer · aktiv</div></div>
+                  <span style="font:700 13px/1 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−3.200</span>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Finanz-Rollup</div>
+              <div class="card card--accent" style="padding:12px 16px">
+                <dl class="kv-list" style="gap:8px 16px;font-size:13px">
+                  <dt style="font-size:11px">Einnahmen</dt><dd style="font-size:14px;color:#2EBC3D">+89.600 aUEC</dd>
+                  <dt style="font-size:11px">Ausgaben</dt><dd style="font-size:14px;color:#F2564B">−14.900 aUEC</dd>
+                  <dt style="font-size:11px">Netto</dt><dd style="font-size:15px;font-weight:900">74.700 aUEC</dd>
+                  <dt style="font-size:11px">Anteil (18)</dt><dd style="font-size:14px">4.150 aUEC</dd>
+                </dl>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px"><span style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Auszahlungen</span><span class="chip chip--primary" style="font-size:9px">Manager-Ansicht</span></div>
+              <div class="card card--flush" style="padding:0">
+                <sc-for list="{{ payouts }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border-bottom:1px solid #1C1C1C">
+                    <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ p.sub }}</div></div>
+                    <span class="chip {{ p.chipCls }}" style="font-size:9.5px">{{ p.chip }}</span>
+                    <button class="matrix-flag {{ p.flagCls }}" style="width:28px;height:28px;font-size:12px" onClick="{{ p.onToggle }}" aria-label="Ausgezahlt umschalten">{{ p.mark }}</button>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:8px">Asymmetrisches Gate: Markieren sofort, Zurücknehmen nur mit Bestätigungs-Modal (nennt Konsequenz).</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Einsätze tablet" style="margin-bottom:32px">
+    <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Tablet 1280×800 — list-detail; tab row identical to phone (Übersicht shown)</div>
+    <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+      <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+        <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+          <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+          <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+            <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+              <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+              <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:380px;flex:none;border-right:1px solid #282828;display:flex;flex-direction:column;background:#0A0A0A">
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid #282828">
+            <div style="display:flex;align-items:center;gap:10px;height:44px;background:#1C1C1C;border:1px solid #282828;padding:0 12px">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-search"></use></svg>
+              <span style="font:300 13px/1 Lato,sans-serif;color:#646464;font-style:italic">Einsätze durchsuchen…</span>
+            </div>
+            <div style="display:flex;gap:6px"><span class="chip chip--primary" style="font-size:9.5px">Status: Alle</span><span class="chip" style="font-size:9.5px">Zeitraum</span><span class="chip" style="font-size:9.5px">Vergangene aus</span></div>
+          </div>
+          <div style="flex:1;overflow:auto">
+            <div style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;letter-spacing:1px;text-transform:uppercase;padding:12px 16px 6px">Heute</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 16px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
+              <div style="flex:1;min-width:0"><div style="font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div><div style="display:flex;gap:8px;margin-top:2px;align-items:center"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">TS 20:30</span></div></div>
+            </div>
+            <div style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;letter-spacing:1px;text-transform:uppercase;padding:12px 16px 6px">Dienstag · 19.08.</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 16px;border-bottom:1px solid #141414">
+              <div style="flex:1;min-width:0"><div style="font:700 14px/1.3 Lato,sans-serif;color:#D2D2D2">Konvoi-Eskorte Stanton–Pyro</div><div style="display:flex;gap:8px;margin-top:2px;align-items:center"><span class="status-pill" style="font-size:9.5px;color:#FFD23F">Briefing</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">TS 19:00</span></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 16px">
+              <div style="flex:1;min-width:0"><div style="font:700 14px/1.3 Lato,sans-serif;color:#D2D2D2">Bergung „Reclaimer Run 12"</div><div style="display:flex;gap:8px;margin-top:2px;align-items:center"><span class="status-pill status-active" style="font-size:9.5px">Aktiv</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">seit 18:10</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div style="flex:none;background:#141414;border-bottom:1px solid #282828">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 20px 8px">
+              <div style="flex:1;min-width:0">
+                <div style="font:700 19px/1.2 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:4px"><span class="status-pill status-planned" style="font-size:10px">Geplant</span><span class="krt-presence-indicator" style="font-size:10px;margin-left:0"><span class="krt-presence-dot" style="width:8px;height:8px"></span><span class="krt-presence-count">1</span> Rhea bearbeitet</span></div>
+              </div>
+              <button class="btn btn--cta" style="min-height:48px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
+            </div>
+            <div class="facts-bar" style="border-bottom:none;padding:4px 20px 10px;gap:18px">
+              <span><span class="fact-k">Teamspeak</span><span class="fact-v">20:30</span></span>
+              <span><span class="fact-k">Serverjoin</span><span class="fact-v">21:00</span></span>
+              <span><span class="fact-k">Treffpunkt</span><span class="fact-v">ARC-L1 Wide Forest</span></span>
+              <span><span class="fact-k">Dauer</span><span class="fact-v">~3 Std.</span></span>
+              <span><span class="fact-k">Leiter</span><span class="fact-v">Rhea</span></span>
+            </div>
+            <div class="tab-nav" style="padding:0 12px;background:transparent">
+              <button class="tab active" style="font-size:11.5px">Übersicht</button>
+              <button class="tab" style="font-size:11.5px">Teilnehmer<span class="tab-count">14</span></button>
+              <button class="tab" style="font-size:11.5px">Einheiten<span class="tab-count">3</span></button>
+              <button class="tab" style="font-size:11.5px">Ablauf</button>
+              <button class="tab" style="font-size:11.5px">Ziele<span class="tab-count">5</span></button>
+              <button class="tab" style="font-size:11.5px">Frequenzen</button>
+              <button class="tab" style="font-size:11.5px">Finanzen<span class="tab-count">6</span></button>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px;display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-content:start">
+            <div class="card card--flush" style="padding:0">
+              <div style="padding:12px 16px;font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828">Einsatz auf einen Blick</div>
+              <dl style="display:grid;grid-template-columns:max-content 1fr;gap:0;margin:0;font-variant-numeric:tabular-nums">
+                <sc-for list="{{ briefing }}" as="b" hint-placeholder-count="6">
+                  <dt style="font:700 11px/1.4 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.5px;padding:9px 14px 9px 16px;border-bottom:1px solid #1C1C1C">{{ b.k }}</dt>
+                  <dd style="font:300 13.5px/1.4 Lato,sans-serif;color:#FFFFFF;margin:0;padding:9px 16px 9px 0;border-bottom:1px solid #1C1C1C">{{ b.v }}</dd>
+                </sc-for>
+              </dl>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div class="hud-box" style="padding:14px 16px">
+                <div class="attendance">
+                  <div class="attendance-count"><span class="att-n">14</span><span class="att-label">Angemeldet</span></div>
+                  <div class="attendance-sub">davon <b>9</b> eingecheckt</div>
+                  <div class="attendance-meter" style="margin-top:6px"><i style="width:64%"></i></div>
+                </div>
+              </div>
+              <div class="card" style="padding:12px 16px">
+                <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Beschreibung</div>
+                <div style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2">Quantainium-Abbau an der Lyria-Südwand. <b style="color:#fff">Voller Frachtraum → sofort zur Raffinerie.</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </x-import>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="05 Dashboard.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 05 Dashboard</a>
+    <a href="07 Benachrichtigungen.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">07 Benachrichtigungen →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { seg: 0, tab: 0, pay: 0, fin: 0, paid: [true, false, false] };
+  renderVals() {
+    const tabDefs = [
+      { label: 'Übersicht' }, { label: 'Teilnehmer', count: '14' }, { label: 'Einheiten', count: '3' },
+      { label: 'Ablauf' }, { label: 'Ziele', count: '5' }, { label: 'Frequenzen' }, { label: 'Finanzen', count: '6' },
+    ];
+    const tabs = tabDefs.map((t, i) => ({ ...t, count: t.count || false, cls: i === this.state.tab ? 'active' : '', onTap: () => this.setState({ tab: i }) }));
+    const briefing = [
+      { k: 'Ziel', v: 'Quantainium-Abbau Süd-Grat, volle Prospector-Rotation' },
+      { k: 'Teamspeak', v: '20:30' }, { k: 'Serverjoin', v: '21:00' },
+      { k: 'Treffpunkt', v: 'ARC-L1 Wide Forest Station' }, { k: 'Dauer', v: '~3 Std. (Ende 00:00)' },
+      { k: 'Einsatzleiter', v: 'Rhea' },
+    ];
+    const people = [
+      { name: 'Rhea', sub: 'Einsatzleiterin · Staffel 1', dotCls: 'status-dot--on', pay: 'Auszahlung', payCls: 'chip--muted', checkable: false },
+      { name: 'Dorn', sub: 'Staffel 1', dotCls: 'status-dot--on', pay: 'Org-Kasse', payCls: 'chip--primary', checkable: false },
+      { name: 'Vex', sub: 'SK Vanguard', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true },
+      { name: 'Mara', sub: 'Staffel 2', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true },
+    ];
+    const goals = [
+      { text: '600 SCU Quantainium eingelagert', kind: 'Primär', chipCls: 'chip--primary', flagCls: 'on', mark: '✓', color: '#8A8A8A' },
+      { text: 'Raffinerie Work Order angelegt', kind: 'Primär', chipCls: 'chip--primary', flagCls: 'on', mark: '✓', color: '#8A8A8A' },
+      { text: 'Kein Schiffsverlust', kind: 'Primär', chipCls: 'chip--primary', flagCls: '', mark: '', color: '#D2D2D2' },
+      { text: 'Nebenvorkommen scannen (Bexalit)', kind: 'Sekundär', chipCls: 'chip--muted', flagCls: '', mark: '', color: '#D2D2D2' },
+      { text: 'Neue Piloten einweisen', kind: 'Sekundär', chipCls: 'chip--muted', flagCls: '', mark: '', color: '#D2D2D2' },
+    ];
+    const freqs = [
+      { k: 'Kommando', v: '148.500' }, { k: 'Einheit Alpha', v: '148.510' },
+      { k: 'Einheit Bravo', v: '148.520' }, { k: 'Notfall', v: '121.500' },
+    ];
+    const finance = [
+      { what: 'Raffinerie-Ertrag Quantainium', who: 'Rhea · Work Order #7841', amt: '+86.400', color: '#2EBC3D' },
+      { what: 'Treibstoff Staging', who: 'Dorn · ARC-L1', amt: '−7.200', color: '#F2564B' },
+      { what: 'Reparatur Prospector', who: 'Vex', amt: '−4.500', color: '#F2564B' },
+    ];
+    const payouts = this.state.paid.map((on, i) => {
+      const names = [{ name: 'Rhea', sub: 'Anteil 4.150 · Auszahlung' }, { name: 'Dorn', sub: 'Anteil 4.150 · Org-Kasse (Verzicht)' }, { name: 'Vex', sub: 'Anteil 4.150 · Auszahlung' }][i];
+      return { ...names, chip: on ? 'Ausgezahlt' : 'Offen', chipCls: on ? 'chip--success' : 'chip--warning', flagCls: on ? 'on' : '', mark: on ? '✓' : '', onToggle: () => this.setState(s => { const paid = s.paid.slice(); paid[i] = !paid[i]; return { paid }; }) };
+    });
+    const navDefs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
+      { label: 'Mehr', icon: '#krt-icon-more-h' },
+    ];
+    const nav = navDefs.map((d, i) => ({ ...d, indBg: i === 1 ? '#E77E23' : 'transparent', iconColor: i === 1 ? '#000' : '#8A8A8A', labelColor: i === 1 ? '#FFFFFF' : '#8A8A8A' }));
+    const railDefs = navDefs.slice(0, 4).concat([{ label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' }, { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' }]);
+    const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 1 ? '#E77E23' : 'transparent', iconColor: i === 1 ? '#000' : '#8A8A8A', labelColor: i === 1 ? '#FFFFFF' : '#8A8A8A' }));
+    const seg = this.state.seg, fin = this.state.fin, pay = this.state.pay;
+    const myPaid = this.state.paid[2];
+    return {
+      tabs, briefing, people, goals, freqs, finance, payouts, nav, railNav,
+      t0: this.state.tab === 0, t1: this.state.tab === 1, t2: this.state.tab === 2, t3: this.state.tab === 3,
+      t4: this.state.tab === 4, t5: this.state.tab === 5, t6: this.state.tab === 6,
+      showMissions: seg === 0, showOps: seg === 1,
+      segMissions: () => this.setState({ seg: 0 }), segOps: () => this.setState({ seg: 1 }),
+      segMissionBg: seg === 0 ? '#E77E23' : 'transparent', segMissionFg: seg === 0 ? '#000' : '#8A8A8A',
+      segOpsBg: seg === 1 ? '#E77E23' : 'transparent', segOpsFg: seg === 1 ? '#000' : '#8A8A8A',
+      searchPlaceholder: seg === 0 ? 'Einsätze durchsuchen…' : 'Operationen durchsuchen…',
+      pay0: pay === 0, pay1: pay === 1,
+      selPay0: () => this.setState({ pay: 0 }), selPay1: () => this.setState({ pay: 1 }),
+      pay0Border: pay === 0 ? '#E77E23' : '#282828', pay0Bg: pay === 0 ? 'rgba(231,126,35,.08)' : '#141414',
+      pay1Border: pay === 1 ? '#E77E23' : '#282828', pay1Bg: pay === 1 ? 'rgba(231,126,35,.08)' : '#141414',
+      finIn: () => this.setState({ fin: 0 }), finOut: () => this.setState({ fin: 1 }),
+      finInBg: fin === 0 ? '#239E33' : 'transparent', finInFg: fin === 0 ? '#fff' : '#8A8A8A',
+      finOutBg: fin === 1 ? '#A3000A' : 'transparent', finOutFg: fin === 1 ? '#fff' : '#8A8A8A',
+      finAmtColor: fin === 0 ? '#2EBC3D' : '#F2564B',
+      finHint: fin === 0 ? 'wird grün mit + angezeigt' : 'wird rot mit − angezeigt',
+      finCat: fin === 0 ? 'Fracht-Verkauf' : 'Treibstoff',
+      myPayLabel: myPaid ? 'Ausgezahlt' : 'Auszahlung offen',
+      myPayBadgeCls: myPaid ? 'status-active' : 'status-briefing',
+    };
+  }
+}
+</script>
+</body>
+</html>

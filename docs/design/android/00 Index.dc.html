@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}::-webkit-scrollbar{width:12px;background:#141414}::-webkit-scrollbar-thumb{background:#646464;border:2px solid #141414}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:48px 24px 80px">
+<div style="max-width:1200px;margin:0 auto">
+  <header style="display:flex;align-items:center;gap:24px;border-bottom:2px solid #E77E23;padding-bottom:24px">
+    <img src="assets/krt.webp" alt="KRT" style="width:64px;height:64px;object-fit:contain">
+    <div style="flex:1">
+      <div style="font:700 12px/1 Lato,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#8A8A8A;margin-bottom:8px">Das Kartell / Bereich Profit — Restricted · Internal use only</div>
+      <h1 style="font:900 32px/1.1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.05em;margin:0">Profit Basetool // Android</h1>
+      <div style="font:300 15px/1.4 Lato,sans-serif;color:#D2D2D2;margin-top:6px">UI design specification for the native companion app — Kotlin · Jetpack Compose · Material 3</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <span class="chip chip--primary">Dark-only</span>
+      <span class="chip chip--muted">minSdk 29 · target 37</span>
+      <span class="chip chip--muted">DE primary · EN</span>
+    </div>
+  </header>
+
+  <section style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px">
+    <div class="hud-box" style="padding:20px 24px">
+      <h3 style="font:700 14px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #282828;padding-bottom:10px;margin:0 0 14px">Binding sources</h3>
+      <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">
+        <li><span style="color:#fff;font-weight:700">DAS KARTELL design system</span> — colors, Lato, radius 0, HUD brackets, button ladder. No inventions outside it.</li>
+        <li><span style="color:#fff;font-weight:700">krt-profit/basetool</span> — screens, i18n copy, icon sprite, permission model. Seed data derived from repo docs.</li>
+        <li><span style="color:#fff;font-weight:700">Brief (2026-08)</span> — screen list, M3 token mapping, platform rules. Deviations are flagged inline.</li>
+      </ul>
+    </div>
+    <div class="hud-box" style="padding:20px 24px">
+      <h3 style="font:700 14px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #282828;padding-bottom:10px;margin:0 0 14px">How to read</h3>
+      <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">
+        <li>Every chapter is a <span style="color:#fff;font-weight:700">working prototype</span> in device frames — phone 412×915 dp portrait, tablet 1280×800 dp landscape. Tap through it.</li>
+        <li>1 CSS px = 1 dp. Annotations in <span style="color:#fff;font-weight:700">English</span>; UI copy is German-first, exactly as the product writes it.</li>
+        <li><span style="color:#E77E23;font-weight:700">Orange callout tags</span> carry redlines (spacing, type, behavior) on one exemplar per pattern — untagged screens follow the same rules.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section style="margin-top:40px">
+    <h2 style="font:700 18px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 20px">Decision log<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:#282828;border:1px solid #282828">
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Navigation</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Phone: bottom bar with 5 destinations (Übersicht · Einsätze · Aufträge · Lager · Mehr). Tablet: rail with 7 + „Mehr" menu, list-detail panes.</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Primary action</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Square 56 dp FAB on list screens; bottom-anchored 48 dp CTA bar on forms and detail contexts. Max one filled-orange action per context.</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Mission detail</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Sticky header + facts bar + scrollable tab row (web .tab-nav pattern carried over). 7 sections, deeplink ?tab=.</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Density</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Dense, web-near lists (rows ~56 dp) — touch targets never below 48 dp. Countdowns relative („in 2 Std."). No emoji, restrained motion (0.2 s).</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Auth</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Keycloak via Custom Tab + Discord entry (guild-gated). Approval-pending and terms-acceptance states. Custom KRT app-lock screen behind biometrics.</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Offline & states</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Cached-data banner with timestamp on every list + per-screen offline variants. In-fiction error copy. System-push mockups for notifications.</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">App icon</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Adaptive icon: orange mark on black, monochrome layer for themed icons. Logo only in orange #E77E23, white or black.</div></div>
+      <div style="background:#141414;padding:14px 16px"><div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Dev artifacts</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">Theme.kt (colorScheme/typography/shapes), HTML token sheet, icon SVG export list, handoff notes per screen.</div></div>
+    </div>
+  </section>
+
+  <section style="margin-top:40px">
+    <h2 style="font:700 18px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 20px">Chapters<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <sc-for list="{{ chapters }}" as="ch" hint-placeholder-count="6">
+      <a href="{{ ch.href }}" style="display:block;text-decoration:none;margin-bottom:1px">
+        <div style="display:flex;align-items:center;gap:20px;background:#141414;border:1px solid #282828;padding:16px 20px;transition:background .2s" style-hover="background:#282828">
+          <div style="font:900 24px/1 Lato,sans-serif;color:#E77E23;width:44px;letter-spacing:.02em">{{ ch.num }}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em">{{ ch.title }}</div>
+            <div style="font:300 13px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:4px">{{ ch.desc }}</div>
+          </div>
+          <span class="chip {{ ch.chipClass }}">{{ ch.status }}</span>
+          <svg class="krt-icon" style="width:20px;height:20px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+        </div>
+      </a>
+    </sc-for>
+  </section>
+
+  <footer style="margin-top:48px;border-top:1px solid #282828;padding-top:16px;display:flex;justify-content:space-between;font:300 12px/1.5 Lato,sans-serif;color:#646464">
+    <span>Spec v0.1 · 2026-08-17 · annotations EN, UI copy DE</span>
+    <span>Sources: github.com/krt-profit/basetool · krt-profit/design-system</span>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const live = 'chip--primary', queued = 'chip--muted';
+    return { chapters: [
+      { num: '01', title: 'Foundations & tokens', desc: 'M3 colorScheme / typography / shapes mapping · spacing · Theme.kt', href: '01 Foundations.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '02', title: 'Component sheet', desc: 'Buttons ladder · HUD box · chips & pills · rows · tables · forms · modal · toast · states', href: '02 Components.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '03', title: 'Navigation map', desc: 'Bottom bar · rail · Mehr · back behavior · deep links', href: '03 Navigation.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '04', title: 'Auth', desc: 'Login (Keycloak + Discord) · approval pending · terms · app-lock', href: '04 Auth.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '05', title: 'Dashboard', desc: 'Next missions · notifications · announcement · quick actions', href: '05 Dashboard.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '06', title: 'Einsätze & Operationen', desc: 'List · detail tabs · signup / check-in · finance entry · payout status', href: '06 Einsätze.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '07', title: 'Benachrichtigungen', desc: 'Inbox · swipe actions · system push · badge states', href: '07 Benachrichtigungen.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '08', title: 'Hangar', desc: 'My ships · add/edit · squadron overview · JSON import', href: '08 Hangar.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '09', title: 'Lager & Blueprints', desc: 'Stock tree · book in/out/rebook · my inventory · craftability', href: '09 Lager.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '10', title: 'Aufträge & Materialbörse', desc: 'Queue · detail tabs · offers/requests · interest toggle', href: '10 Auftraege.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '11', title: 'Raffinerie', desc: 'Orders · yield summaries · in Lager buchen', href: '11 Raffinerie.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '12', title: 'Bank', desc: 'Org-unit balances · account detail · booking request · approvals', href: '12 Bank.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '13', title: 'Beförderung & Einstellungen', desc: 'Evaluations matrix · eligibility · settings · app-lock toggle', href: '13 Einstellungen.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '14', title: 'System states & app icon', desc: 'Offline · 409/429/503 · forced update · adaptive icon · push shade', href: '14 System States.dc.html', status: 'READY', chipClass: 'chip--success' },
+    ]};
+  }
+}
+</script>
+</body>
+</html>

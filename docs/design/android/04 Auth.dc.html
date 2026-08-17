@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2800px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">04</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Auth</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Login → Keycloak Custom Tab → approval pending → terms → app-lock. Frames are live: try the terms checkbox and the lock screen. The orange top bloom is allowed on auth screens ONLY.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Auth phone flow" style="margin-bottom:16px">
+    <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Phone 412×915 — flow order left → right</div>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:radial-gradient(ellipse 440px 260px at 50% -80px,rgba(231,126,35,.25),rgba(0,0,0,0) 70%),#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1.2"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+              <img src="assets/krt.webp" alt="KRT" style="width:96px;height:96px;object-fit:contain">
+              <div style="text-align:center">
+                <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:2.4px;text-transform:uppercase;margin-bottom:8px">Das Kartell // Bereich Profit</div>
+                <div style="font:900 30px/1.1 Lato,sans-serif;color:#E77E23;letter-spacing:1.5px;text-transform:uppercase">Profit<br>Basetool</div>
+              </div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <button class="btn btn--cta" style="min-height:52px;width:100%" onClick="{{ noteKeycloak }}"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;width:100%" onClick="{{ noteDiscord }}"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-discord"></use></svg>Mit Discord anmelden</button>
+              <button style="all:unset;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;color:#8A8A8A;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase" onClick="{{ noteGuest }}">Als Gast fortfahren<svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-chevron-right"></use></svg></button>
+            </div>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 0 10px;margin-top:8px">
+              <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
+              <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:center;padding-bottom:16px">
+              <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#646464"><span>Datenschutz</span><span>Impressum</span><span>Nutzungsbedingungen</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2 (37)</div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">1 · Login — LoginScreen</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>„Anmelden" opens Keycloak in a <b>Custom Tab</b> (dark toolbar #141414) — never a WebView</li>
+            <li>Discord entry only when the IdP is configured (fail-closed guild gate)</li>
+            <li>Guest browse only when enabled: read-only Einsätze + Auftrag anlegen</li>
+            <li>Offline: both login buttons disabled 45% + offline banner; guest cache allowed</li>
+            <li>Radial bloom: 440×260 dp at top center, rgba(231,126,35,.25) → transparent</li>
+            <li><b>Fan Kit band</b> pinned above the version footer — mandatory, coupled unit, notice verbatim EN (spec: ch. 02 §9)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+            <div style="display:flex;align-items:center;gap:12px;height:56px;padding:0 8px;background:#141414;border-bottom:1px solid #282828;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+              <div style="flex:1;min-width:0">
+                <div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">keycloak.profit-base.online</div>
+                <div style="display:flex;align-items:center;gap:5px;font:300 10.5px/1.2 Lato,sans-serif;color:#8A8A8A"><svg class="krt-icon" style="width:10px;height:10px"><use href="#krt-icon-lock"></use></svg>Custom Tab · Chrome</div>
+              </div>
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-more-v"></use></svg></button>
+            </div>
+            <div style="flex:1;overflow:auto;background:#000;padding:32px 28px;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:8px">
+                <img src="assets/krt.webp" alt="KRT" style="width:64px;height:64px;object-fit:contain">
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#E77E23;letter-spacing:1px;text-transform:uppercase">Anmeldung</div>
+              </div>
+              <div class="hud-box" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div><label style="font-size:12px;margin-bottom:6px">Benutzername</label><input type="text" value="GrafRotz" style="width:100%;height:48px;font-size:15px"></div>
+                <div><label style="font-size:12px;margin-bottom:6px">Passwort</label><input type="password" value="••••••••••" style="width:100%;height:48px;font-size:15px"></div>
+                <button class="btn btn--cta" style="min-height:50px;width:100%">Anmelden</button>
+                <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 10px/1 Lato,sans-serif;color:#646464;letter-spacing:.1em">Oder</span><span style="flex:1;height:1px;background:#282828"></span></div>
+                <button class="btn-ghost btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-discord"></use></svg>Discord</button>
+              </div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center">Passwort vergessen? · Deutsch ▾</div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">2 · Keycloak Custom Tab (web, existing KRT theme)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Rendered by the krt-theme — shown for flow completeness, not an app screen</li>
+            <li>Toolbar color #141414; return via <b>app link redirect</b> (basetool://auth)</li>
+            <li>Cancel (X / back) returns to Login untouched — no error toast</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div class="hud-box" style="padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+              <svg class="krt-icon" style="width:40px;height:40px;color:#E77E23"><use href="#krt-icon-user-plus"></use></svg>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#FFFFFF;letter-spacing:1px;text-transform:uppercase">Freigabe ausstehend</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:34ch">Dein Zugang wartet auf Freigabe durch die Administration. Du wirst benachrichtigt, sobald dein Konto freigeschaltet ist.</div>
+              <div style="display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin-top:4px;text-align:left">
+                <span style="font:700 11px/1.6 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.05em">Konto</span><span class="data-value" style="font-size:13px;padding:2px 8px">GrafRotz</span>
+                <span style="font:700 11px/1.6 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.05em">Eingereicht</span><span style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2">vor 2 Std. · via Discord</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:24px">
+              <button class="btn-outline btn" style="background:transparent;min-height:50px;width:100%" onClick="{{ noteRefresh }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg>Status aktualisieren</button>
+              <button class="btn-quiet-danger btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-logout"></use></svg>Abmelden</button>
+            </div>
+            <div style="flex:1.4"></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center;padding-bottom:16px">Automatische Prüfung alle 60 s — Push bei Freigabe.</div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">3 · Approval pending — ApprovalPendingScreen</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Shown after SSO when the account awaits the admin approval queue</li>
+            <li>NO filled CTA — there is no primary action; outline refresh + quiet logout</li>
+            <li>Polls every 60 s; approval/rejection also arrives as push</li>
+            <li>Rejected: same layout, danger icon, copy names the reason if provided</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+            <div style="padding:20px 24px 12px;flex:none;border-bottom:1px solid #282828;background:#141414">
+              <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.65px;text-transform:uppercase;margin-bottom:6px">Vor dem ersten Einsatz</div>
+              <div style="font:900 22px/1.2 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase">Nutzungsbedingungen</div>
+              <div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:4px;font-variant-numeric:tabular-nums">Version 2.1 · Stand 03.06.2026</div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ terms }}" as="t" hint-placeholder-count="5">
+                <div>
+                  <div style="font:700 13px/1.4 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.65px;margin-bottom:4px">{{ t.h }}</div>
+                  <div style="font:300 13px/1.65 Lato,sans-serif;color:#8A8A8A">{{ t.p }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="flex:none;border-top:1px solid #282828;background:#141414;padding:14px 24px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+              <label style="display:flex;align-items:flex-start;gap:12px;margin:0;font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;font-weight:300;min-height:48px;cursor:pointer">
+                <input type="checkbox" checked="{{ termsChecked }}" onChange="{{ toggleTerms }}" style="width:20px;height:20px;flex:none;margin-top:2px">
+                <span>Ich akzeptiere die Nutzungsbedingungen (v2.1) einschließlich Abschnitt 4 (zugelassene Client-Software).</span>
+              </label>
+              <button class="btn btn--cta" style="min-height:52px;width:100%;{{ termsCtaStyle }}" onClick="{{ acceptTerms }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-clipboard-check"></use></svg>Akzeptieren</button>
+              <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#646464;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase" style-hover="color:#F2564B">Ablehnen & Abmelden</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">4 · Terms acceptance — TermsScreen (live checkbox)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Blocks the app until accepted; re-appears on every new terms version</li>
+            <li>CTA disabled (45%) until the checkbox is set — no scroll-to-bottom gate</li>
+            <li>Decline = logout with confirm modal naming the consequence</li>
+            <li>Sticky action bar gets the 20 dp bloom to anchor the ONE CTA</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px;position:relative">
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+              <img src="assets/krt.webp" alt="KRT" style="width:64px;height:64px;object-fit:contain;opacity:.9">
+              <sc-if value="{{ locked }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+                  <div style="width:96px;height:96px;border:1px solid #282828;background:#141414;display:flex;align-items:center;justify-content:center;position:relative">
+                    <span style="position:absolute;top:-1px;left:-1px;width:10px;height:10px;border-top:2px solid #E77E23;border-left:2px solid #E77E23"></span>
+                    <span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-bottom:2px solid #E77E23;border-right:2px solid #E77E23"></span>
+                    <svg class="krt-icon" style="width:44px;height:44px;color:#E77E23"><use href="#krt-icon-fingerprint"></use></svg>
+                  </div>
+                  <div style="text-align:center">
+                    <div style="font:900 18px/1.2 Lato,sans-serif;color:#FFFFFF;letter-spacing:1.8px;text-transform:uppercase">Gesperrt</div>
+                    <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:6px">Lokale Daten sind geschützt.<br>Entsperren, um fortzufahren.</div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ unlockedFlag }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+                  <svg class="krt-icon" style="width:44px;height:44px;color:#2EBC3D"><use href="#krt-icon-success"></use></svg>
+                  <div style="font:900 18px/1.2 Lato,sans-serif;color:#2EBC3D;letter-spacing:1.8px;text-transform:uppercase">Entsperrt</div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;gap:12px;padding-bottom:24px">
+              <button class="btn btn--cta" style="min-height:52px;width:100%" onClick="{{ unlock }}"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-fingerprint"></use></svg>Mit Biometrie entsperren</button>
+              <button style="all:unset;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:center;color:#8A8A8A;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase" style-hover="color:#D2D2D2">Gerätesperre verwenden</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">5 · App-lock — LockScreen (tap to unlock)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Opt-in via Einstellungen; sits UNDER the system BiometricPrompt sheet</li>
+            <li>Covers content on cold start + after 5 min background; FLAG_SECURE stays on app-wide</li>
+            <li>Fallback = device credential (PIN/pattern) via the same prompt</li>
+            <li>No data hints on this screen — never show counts or names while locked</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Auth tablet" style="margin-bottom:32px">
+    <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin:24px 0 12px">Tablet 1280×800 — same states, centered 480 dp column (Custom Tab identical to phone)</div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:none">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+          <div style="display:flex;flex-direction:column;align-items:center;height:100%;background:radial-gradient(ellipse 640px 300px at 50% -100px,rgba(231,126,35,.22),rgba(0,0,0,0) 70%),#000;font-family:Lato,sans-serif">
+            <div style="flex:1"></div>
+            <div style="width:480px;display:flex;flex-direction:column;align-items:center;gap:18px">
+              <img src="assets/krt.webp" alt="KRT" style="width:88px;height:88px;object-fit:contain">
+              <div style="text-align:center">
+                <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:2.4px;text-transform:uppercase;margin-bottom:8px">Das Kartell // Bereich Profit</div>
+                <div style="font:900 28px/1.1 Lato,sans-serif;color:#E77E23;letter-spacing:1.4px;text-transform:uppercase">Profit Basetool</div>
+              </div>
+              <div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-top:8px">
+                <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;width:100%"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-discord"></use></svg>Mit Discord anmelden</button>
+                <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;color:#8A8A8A;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Als Gast fortfahren</button>
+              </div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="width:480px;max-width:100%;display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 0;margin-bottom:2px">
+              <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
+              <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+            </div>
+            <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#646464;padding-bottom:20px"><span>Datenschutz</span><span>Impressum</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2</span></div>
+          </div>
+        </x-import>
+      </div>
+      <div style="flex:none">
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+          <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+            <div style="flex:1;border-right:1px solid #282828;display:flex;flex-direction:column">
+              <div style="padding:24px 32px 14px;border-bottom:1px solid #282828;background:#141414">
+                <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.65px;text-transform:uppercase;margin-bottom:6px">Vor dem ersten Einsatz</div>
+                <div style="font:900 24px/1.2 Lato,sans-serif;color:#E77E23;letter-spacing:1.2px;text-transform:uppercase">Nutzungsbedingungen</div>
+                <div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:4px;font-variant-numeric:tabular-nums">Version 2.1 · Stand 03.06.2026</div>
+              </div>
+              <div style="flex:1;overflow:auto;padding:24px 32px;display:flex;flex-direction:column;gap:16px;max-width:760px">
+                <sc-for list="{{ terms }}" as="t" hint-placeholder-count="5">
+                  <div>
+                    <div style="font:700 13px/1.4 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.65px;margin-bottom:4px">{{ t.h }}</div>
+                    <div style="font:300 13px/1.65 Lato,sans-serif;color:#8A8A8A;max-width:80ch">{{ t.p }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="width:400px;flex:none;background:#0A0A0A;display:flex;flex-direction:column;justify-content:center;padding:32px;gap:16px">
+              <div style="font:700 13px/1.4 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Bestätigung</div>
+              <label style="display:flex;align-items:flex-start;gap:12px;margin:0;font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;font-weight:300;cursor:pointer">
+                <input type="checkbox" checked="{{ termsChecked }}" onChange="{{ toggleTerms }}" style="width:20px;height:20px;flex:none;margin-top:2px">
+                <span>Ich akzeptiere die Nutzungsbedingungen (v2.1) einschließlich Abschnitt 4.</span>
+              </label>
+              <button class="btn btn--cta" style="min-height:52px;width:100%;{{ termsCtaStyle }}" onClick="{{ acceptTerms }}">Akzeptieren</button>
+              <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#646464;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase" style-hover="color:#F2564B">Ablehnen & Abmelden</button>
+            </div>
+          </div>
+        </x-import>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-start;max-width:1296px"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Tablet rule</span><p style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;margin:0">Terms use the split layout: document left (≤80 ch), action rail right. Pending + app-lock reuse the phone's centered column at 480 dp. Login stays a single centered column — no split.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <sc-if value="{{ toastMsg }}" hint-placeholder-val="{{ false }}">
+    <div class="notification-toast" style="position:fixed;right:24px;bottom:24px;z-index:4000;padding:16px;max-width:380px">
+      <h4 style="font-size:13px">{{ toastTitle }}</h4>
+      <p style="font-size:13px">{{ toastMsg }}</p>
+    </div>
+  </sc-if>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="03 Navigation.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 03 Navigation</a>
+    <a href="14 System States.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">14 System states & app icon →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { termsChecked: false, locked: true, toast: null };
+  _toast(title, msg) { this.setState({ toast: { title, msg } }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 2800); }
+  renderVals() {
+    const terms = [
+      { h: '§1 Zweck & Geltung', p: 'Das Profit Basetool ist das interne Verwaltungswerkzeug der Organisation DAS KARTELL. Mit der Nutzung erkennst du diese Bedingungen in der jeweils gültigen Fassung an.' },
+      { h: '§2 Konto & Sicherheit', p: 'Dein Konto ist personengebunden. Zugangsdaten sind geheim zu halten; sicherheitsrelevante Vorfälle sind unverzüglich der Administration zu melden.' },
+      { h: '§3 Daten & Protokollierung', p: 'Handlungen in auditierten Bereichen werden unveränderlich protokolliert. Personenbezogene Daten werden gemäß Datenschutzerklärung verarbeitet.' },
+      { h: '§4 Zugelassene Client-Software', p: 'Die Ingest-Schnittstelle darf ausschließlich mit vom Entwickler freigegebener Client-Software genutzt werden. Nicht zugelassene Clients werden abgewiesen (403 CLIENT_NOT_ALLOWED).' },
+      { h: '§5 Verfügbarkeit', p: 'Der Betrieb erfolgt ohne Zusicherung ständiger Verfügbarkeit. Wartungsfenster werden, soweit möglich, vorab angekündigt.' },
+    ];
+    return {
+      terms,
+      termsChecked: this.state.termsChecked,
+      toggleTerms: () => this.setState(s => ({ termsChecked: !s.termsChecked })),
+      termsCtaStyle: this.state.termsChecked ? '' : 'opacity:.45;pointer-events:none',
+      acceptTerms: () => this._toast('Bestätigt', 'Nutzungsbedingungen v2.1 akzeptiert — weiter zur Übersicht.'),
+      locked: this.state.locked,
+      unlockedFlag: !this.state.locked,
+      unlock: () => { this.setState({ locked: false }); clearTimeout(this._lt); this._lt = setTimeout(() => this.setState({ locked: true }), 2200); },
+      noteKeycloak: () => this._toast('Custom Tab', 'Öffnet Keycloak (Realm IRI) im Chrome Custom Tab — Frame 2.'),
+      noteDiscord: () => this._toast('Discord-Login', 'Keycloak-IdP „discord" — fail-closed Guild- und Rollen-Gate.'),
+      noteGuest: () => this._toast('Gast-Modus', 'Nur wenn serverseitig aktiviert: Einsätze ansehen, Auftrag anlegen.'),
+      noteRefresh: () => this._toast('Status geprüft', 'Freigabe weiterhin ausstehend — nächste automatische Prüfung in 60 s.'),
+      toastTitle: this.state.toast ? this.state.toast.title : '',
+      toastMsg: this.state.toast ? this.state.toast.msg : false,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}::-webkit-scrollbar{width:12px;background:#141414}::-webkit-scrollbar-thumb{background:#646464;border:2px solid #141414}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:1200px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:36px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">01</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Foundations & tokens</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Design tokens mapped to Material 3 slots — ready for the Compose theme. 1 CSS px = 1 dp on this page.</div>
+    </div>
+    <a href="artifacts/Theme.kt" download style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:1px solid #E77E23;color:#E77E23;font:700 12px/1 Lato,sans-serif;letter-spacing:.05em;text-transform:uppercase;text-decoration:none;transition:all .2s" style-hover="background:#E77E23;color:#000"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-download"></use></svg>Theme.kt</a>
+  </header>
+
+  <section data-screen-label="M3 colorScheme" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">1 · Material 3 colorScheme<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:80ch">darkColorScheme() only — there is no light theme; dynamic color is disabled. <span style="color:#D2D2D2">surfaceTint = surface</span> and tonalElevation 0 dp app-wide keep every surface flat: depth comes from hairlines and brackets, never shadow or tint.</p>
+    <div style="display:grid;grid-template-columns:220px 90px 1fr;gap:1px;background:#282828;border:1px solid #282828;font:300 13px/1.4 Lato,sans-serif">
+      <div style="background:#1C1C1C;padding:10px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #E77E23">M3 slot</div>
+      <div style="background:#1C1C1C;padding:10px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #E77E23">Value</div>
+      <div style="background:#1C1C1C;padding:10px 14px;font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #E77E23">Usage</div>
+      <sc-for list="{{ m3 }}" as="r" hint-placeholder-count="12">
+        <div style="background:#141414;padding:9px 14px;display:flex;align-items:center;gap:10px">
+          <span style="width:34px;height:22px;flex:none;border:1px solid #282828;background:{{ r.hex }};display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;background:{{ r.onHex }}"></span></span>
+          <span style="color:#FFFFFF;font-weight:700">{{ r.slot }}</span>
+        </div>
+        <div style="background:#141414;padding:9px 14px;color:#D2D2D2;font-variant-numeric:tabular-nums;display:flex;align-items:center">{{ r.hex }}</div>
+        <div style="background:#141414;padding:9px 14px;color:#8A8A8A;display:flex;align-items:center">{{ r.use }}</div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-start"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Redline</span><p style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;margin:0;max-width:90ch">The swatch inset square shows the mandatory on-color. secondaryContainer is mapped to orange so every stock M3 selection surface (nav-bar indicator, selected segmented button, chosen list option) automatically renders the brand rule „selection = orange background + black text".</p></div>
+  </section>
+
+  <section data-screen-label="Extended colors" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">2 · Extended brand colors (KrtTheme.colors)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div>
+        <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Semantic — fill vs. text tint</div>
+        <sc-for list="{{ semantic }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:0;border:1px solid #282828;margin-bottom:8px;background:#141414">
+            <div style="width:110px;flex:none;align-self:stretch;background:{{ s.fill }};display:flex;align-items:center;justify-content:center;font:700 11px/1 Lato,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:{{ s.onFill }}">{{ s.fillHex }}</div>
+            <div style="flex:1;padding:10px 14px">
+              <div style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em">{{ s.name }}</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">{{ s.note }}</div>
+            </div>
+            <div style="width:150px;flex:none;padding:10px 14px;border-left:1px solid #282828">
+              <div style="font:700 14px/1.2 Lato,sans-serif;color:{{ s.text }}">{{ s.sample }}</div>
+              <div style="font:300 11px/1.4 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">text {{ s.textHex }} · {{ s.ratio }}</div>
+            </div>
+          </div>
+        </sc-for>
+        <p style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;margin:8px 0 0;max-width:60ch">Mandatory: whenever the hue is small text on black, use the <span style="color:#D2D2D2">*-text tint</span> — the canonical fills fail WCAG AA as text. Buy prices red with −, sell prices green with +.</p>
+      </div>
+      <div>
+        <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Bereichsfarben — frozen, semantic only</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <sc-for list="{{ depts }}" as="d" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:10px;border:1px solid #282828;background:#141414;padding:8px 10px">
+              <span style="width:14px;height:14px;flex:none;background:{{ d.hex }}"></span>
+              <div style="min-width:0"><div style="font:700 11px/1.2 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</div><div style="font:300 11px/1.2 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">{{ d.hex }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;margin:10px 0 0;max-width:60ch">Only where that department actually applies (unit tags, responsible-unit badges). Never decorative, never the logo. Values must not be altered.</p>
+        <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px">Gray discipline</div>
+        <div style="border:1px solid #282828;background:#141414;padding:12px 14px;font:300 12.5px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <div><span style="color:#FFFFFF;font-weight:700">#FFFFFF</span> data values — the brightest thing on screen</div>
+          <div><span style="color:#D2D2D2;font-weight:700">#D2D2D2</span> body text, neutral bold labels</div>
+          <div><span style="color:#8A8A8A;font-weight:700">#8A8A8A</span> muted TEXT (AA-safe)</div>
+          <div><span style="color:#646464;font-weight:700">#646464</span> decorative only — rails, rules, disabled strokes. Fails contrast as text</div>
+          <div><span style="color:#D2D2D2;font-weight:700">#282828</span> hairlines & pressed-row fill · <span style="font-weight:700">#1C1C1C</span> input/table-head fill · <span style="font-weight:700">#141414</span> surface · <span style="font-weight:700">#000</span> canvas</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Typography" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">3 · Typography — Lato only<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:90ch">Bundled Lato (OFL 1.1), no downloadable fonts. Body = Light 300. Compose has no text-transform: uppercase styles take <span style="color:#D2D2D2">text.uppercase()</span> at the call site. Numeric readouts set <span style="color:#D2D2D2">fontFeatureSettings = "tnum"</span>. Must survive font scale 1.3× without truncation — never fix label widths (German compounds).</p>
+    <div style="border:1px solid #282828">
+      <sc-for list="{{ type }}" as="t" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:190px 260px 1fr;gap:16px;align-items:center;background:#141414;border-bottom:1px solid #282828;padding:12px 16px">
+          <div><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">{{ t.slot }}</div><div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">{{ t.use }}</div></div>
+          <div style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">{{ t.spec }}</div>
+          <div style="{{ t.css }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.sample }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="Shape and depth" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">4 · Shape & depth<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+      <div style="border:1px solid #282828;background:#141414;padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Shapes() — all 0 dp</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="width:72px;height:48px;background:#1C1C1C;border:1px solid #282828;display:flex;align-items:center;justify-content:center;font:300 10px/1 Lato,sans-serif;color:#8A8A8A">0 dp</div>
+          <span style="display:inline-flex;align-items:center;height:24px;padding:0 12px;border:1px solid #E77E23;border-radius:999px;font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.05em">IRI</span>
+          <span style="width:16px;height:16px;border-radius:50%;border:2px solid #E77E23;flex:none"></span>
+          <span style="width:8px;height:8px;background:#2EBC3D;flex:none"></span>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Rounded exceptions: pill badge 999 dp, circular radio/spinner/presence. Status dots are SQUARE 8 dp.</div>
+      </div>
+      <div style="border:1px solid #282828;background:rgba(20,20,20,.5);padding:16px;position:relative">
+        <span style="position:absolute;top:-1px;left:-1px;width:10px;height:10px;border-top:2px solid #E77E23;border-left:2px solid #E77E23"></span>
+        <span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-bottom:2px solid #E77E23;border-right:2px solid #E77E23"></span>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">HUD box — signature container</div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#D2D2D2">1 dp #282828 hairline · translucent #141414 fill · two 10 dp orange corner brackets (top-left + bottom-right), 2 dp stroke.</div>
+      </div>
+      <div style="border:1px solid #282828;background:#141414;padding:16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Focus & bloom — the only glow</div>
+        <div style="height:48px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:0 0 5px rgba(231,126,35,.3);display:flex;align-items:center;padding:0 14px;font:300 14px/1 Lato,sans-serif;color:#FFFFFF">Quantainium<span style="width:1.5px;height:18px;background:#E77E23;margin-left:2px"></span></div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Focus: orange border + 0 0 5 dp rgba(231,126,35,.3). Modals/CTAs: 0 0 20 dp at 20%. No soft drop shadows anywhere.</div>
+      </div>
+      <div style="border:1px solid #282828;background:#141414;padding:0;position:relative;overflow:hidden">
+        <div style="height:3px;background:#E77E23"></div>
+        <span style="position:absolute;top:0;left:0;width:13px;height:13px;border-top:3px solid #E77E23;border-left:3px solid #E77E23"></span>
+        <span style="position:absolute;bottom:0;right:0;width:13px;height:13px;border-bottom:3px solid #E77E23;border-right:3px solid #E77E23"></span>
+        <div style="padding:14px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Modal frame</div>
+          <div style="font:300 12px/1.6 Lato,sans-serif;color:#D2D2D2">#141414 · 3 dp orange top edge · 13 dp brackets · 20 dp bloom. Danger variant swaps orange → #A3000A. Exactly ONE filled CTA (right), ghost cancel. Scrim rgba(0,0,0,.8) + blur 4 dp.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Spacing and metrics" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">5 · Spacing & metrics<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:stretch">
+      <div style="border:1px solid #282828;background:#141414;padding:16px;flex:1;min-width:340px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">Scale (dp) — nothing off-scale</div>
+        <div style="display:flex;align-items:flex-end;gap:16px">
+          <sc-for list="{{ spacing }}" as="s" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:{{ s.px }}px;height:{{ s.px }}px;background:#E77E23;opacity:.85"></div>
+              <div style="font:700 11px/1 Lato,sans-serif;color:#D2D2D2;font-variant-numeric:tabular-nums">{{ s.px }}</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-left:16px">
+            <div style="width:48px;height:48px;border:1px dashed #646464;display:flex;align-items:center;justify-content:center"><span style="width:8px;height:8px;background:#E77E23"></span></div>
+            <div style="font:700 11px/1 Lato,sans-serif;color:#D2D2D2">≥48 target</div>
+          </div>
+        </div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Screen edge 16 · card padding 16 · list row min 56 (dense) with full-width 48 dp hit area · section gap 24 · page top gap 12 under app bar.</div>
+      </div>
+      <div style="border:1px solid #282828;background:#141414;padding:16px;flex:1;min-width:340px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">Platform rules</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.8 Lato,sans-serif;color:#D2D2D2">
+          <li>Edge-to-edge; system bars transparent over #000; light = never</li>
+          <li>Tablet content column caps at 1200 dp; prose ≤ 80 ch</li>
+          <li>Motion: 200 ms color/fade only — no bounce, no parallax; honor reduced motion</li>
+          <li>Pull-to-refresh on every list (orange ring spinner)</li>
+          <li>Font scale to 1.3× without truncation — flexible label widths</li>
+          <li>Pressed rows fill #282828; ripple = white 8% bounded, radius 0</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Icon inventory" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">6 · Icon inventory<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:90ch">24 dp viewBox, stroke-only 2 dp, round caps, currentColor — export each symbol as VectorDrawable, tint via theme. No icon libraries, no emoji. <span style="color:#E77E23">Orange-cornered tiles</span> are mobile extensions drawn for this app; the rest is the product sprite verbatim. Full export list: <a href="artifacts/icon-export.md" download style="color:#E77E23">icon-export.md</a>.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px">
+      <sc-for list="{{ icons }}" as="i" hint-placeholder-count="24">
+        <div style="border:1px solid {{ i.border }};background:#141414;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <svg class="krt-icon" style="width:24px;height:24px;color:#D2D2D2"><use href="{{ i.href }}"></use></svg>
+          <div style="font:300 10px/1.2 Lato,sans-serif;color:#8A8A8A;text-align:center;word-break:break-all">{{ i.id }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="Theme kt" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 16px">7 · Compose theme file<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <div style="border:1px solid #282828;background:#141414;position:relative">
+      <span style="position:absolute;top:-1px;left:-1px;width:10px;height:10px;border-top:2px solid #E77E23;border-left:2px solid #E77E23"></span>
+      <span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-bottom:2px solid #E77E23;border-right:2px solid #E77E23"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#1C1C1C;border-bottom:2px solid #E77E23;padding:10px 16px">
+        <span style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.05em;text-transform:uppercase">ui/theme/Theme.kt — excerpt</span>
+        <a href="artifacts/Theme.kt" download style="font:700 12px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.05em;text-transform:uppercase;text-decoration:none">Download full file</a>
+      </div>
+      <pre style="margin:0;padding:16px;overflow-x:auto;font:400 12.5px/1.65 Lato,sans-serif;font-variant-numeric:tabular-nums;color:#D2D2D2">val KrtColorScheme = darkColorScheme(
+    primary = Color(0xFFE77E23), onPrimary = Color(0xFF000000),
+    secondaryContainer = Color(0xFFE77E23),      // selection = orange bg
+    onSecondaryContainer = Color(0xFF000000),    //           + black text
+    background = Color(0xFF000000), onBackground = Color(0xFFD2D2D2),
+    surface = Color(0xFF141414), onSurface = Color(0xFFD2D2D2),
+    surfaceVariant = Color(0xFF1C1C1C), onSurfaceVariant = Color(0xFF8A8A8A),
+    surfaceTint = Color(0xFF141414),             // flat — no tonal elevation
+    error = Color(0xFFF2564B),                   // error-as-text (AA)
+    errorContainer = Color(0xFFA3000A),          // error-as-fill
+    outline = Color(0xFF282828), scrim = Color(0xFF000000), /* … */
+)
+val KrtShapes = Shapes(/* every slot */ RoundedCornerShape(0.dp))
+val PillShape = RoundedCornerShape(percent = 50) // badges only</pre>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px">
+    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 00 Index</a>
+    <a href="02 Components.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">02 Component sheet →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const m3 = [
+      { slot: 'primary / onPrimary', hex: '#E77E23', onHex: '#000000', use: 'THE one filled CTA per context, active nav, focus ring, headings. CTA text is black.' },
+      { slot: 'primaryContainer / onPC', hex: '#C45C00', onHex: '#FFFFFF', use: 'Admin/elevated chrome (top bar in admin mode).' },
+      { slot: 'secondary / onSecondary', hex: '#EEB64B', onHex: '#000000', use: 'Hover/press tint of orange (200 ms color transition).' },
+      { slot: 'secondaryContainer / onSC', hex: '#E77E23', onHex: '#000000', use: 'M3 selection surfaces — nav indicator, selected chip/option. Brand rule: orange bg + black text.' },
+      { slot: 'tertiary / onTertiary', hex: '#FFD23F', onHex: '#000000', use: 'Cross-org highlight (foreign Staffel rows/links).' },
+      { slot: 'background / onBackground', hex: '#000000', onHex: '#D2D2D2', use: 'Page canvas — flat black, no texture.' },
+      { slot: 'surface / onSurface', hex: '#141414', onHex: '#D2D2D2', use: 'Cards, top app bar, bottom bar, tables, sheets.' },
+      { slot: 'surfaceVariant / onSV', hex: '#1C1C1C', onHex: '#8A8A8A', use: 'Input fills, table heads / muted text (AA-safe).' },
+      { slot: 'surfaceContainerHighest', hex: '#282828', onHex: '#D2D2D2', use: 'Pressed/hover rows, highest tonal step.' },
+      { slot: 'outline', hex: '#282828', onHex: '#282828', use: '1 dp hairline borders — the depth system.' },
+      { slot: 'error / onError', hex: '#F2564B', onHex: '#000000', use: 'Error as TEXT (inline validation) — ≈5.3:1 on black.' },
+      { slot: 'errorContainer / onEC', hex: '#A3000A', onHex: '#FFFFFF', use: 'Error as FILL (danger buttons, alert borders).' },
+      { slot: 'surfaceTint', hex: '#141414', onHex: '#141414', use: '= surface → tonal elevation renders flat. Never tint.' },
+      { slot: 'scrim', hex: '#000000', onHex: '#000000', use: 'Modal scrim at 80% + backdrop blur 4 dp.' },
+    ];
+    const semantic = [
+      { name: 'Danger', fill: '#A3000A', fillHex: '#A3000A', onFill: '#FFFFFF', text: '#F2564B', textHex: '#F2564B', ratio: '5.3:1', sample: '−1.250 aUEC', note: 'Destructive actions, buy prices, cancelled. Fill for buttons/borders; tint for text.' },
+      { name: 'Success', fill: '#239E33', fillHex: '#239E33', onFill: '#FFFFFF', text: '#2EBC3D', textHex: '#2EBC3D', ratio: '5.6:1', sample: '+3.400 aUEC', note: 'State changes (Check-In), sell prices, active status.' },
+      { name: 'Warning', fill: '#FFD23F', fillHex: '#FFD23F', onFill: '#000000', text: '#FFD23F', textHex: '#FFD23F', ratio: '11.9:1', sample: 'Briefing läuft', note: 'Briefing status, cross-org. Bright enough as text; black text on fills.' },
+      { name: 'Info', fill: '#355DDC', fillHex: '#355DDC', onFill: '#FFFFFF', text: '#6C93EF', textHex: '#6C93EF', ratio: '6.1:1', sample: 'Geplant 21:00', note: 'Planned status, informational alerts.' },
+    ];
+    const depts = [
+      { name: 'Raumüberlegenheit', hex: '#37BBC0' }, { name: 'Forschung', hex: '#355DDC' },
+      { name: 'Sub-Radar', hex: '#A3000A' }, { name: 'Marinekorps', hex: '#7A5E96' },
+      { name: 'Profit', hex: '#239E33' }, { name: 'Search & Rescue', hex: '#FFD23F' },
+    ];
+    const type = [
+      { slot: 'headlineLarge', use: 'Screen title (h1)', spec: 'Black 900 · 32/38 sp · +1.6 sp · UPPERCASE · orange', css: 'font:900 32px/38px Lato,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:#E77E23', sample: 'Übersicht' },
+      { slot: 'headlineMedium', use: 'Section heading (h2)', spec: 'Bold 700 · 24/30 sp · +1.2 sp · UPPERCASE · orange', css: 'font:700 24px/30px Lato,sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#E77E23', sample: 'Nächste Missionen' },
+      { slot: 'headlineSmall', use: 'Sub-section (h3)', spec: 'Bold 700 · 19/25 sp · +0.95 sp · UPPERCASE', css: 'font:700 19px/25px Lato,sans-serif;letter-spacing:.95px;text-transform:uppercase;color:#FFFFFF', sample: 'Einheiten & Crew' },
+      { slot: 'displaySmall', use: 'KPI / hero numbers', spec: 'Black 900 · 32/36 sp · tabular figures · white', css: "font:900 32px/36px Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums", sample: '1.245.300' },
+      { slot: 'titleMedium', use: 'Row headline, card title', spec: 'Bold 700 · 16/22 sp · sentence case · white', css: 'font:700 16px/22px Lato,sans-serif;color:#FFFFFF', sample: 'Vertikaler Abbau — Lyria' },
+      { slot: 'titleSmall', use: 'Section title w/ hairline', spec: 'Bold 700 · 14/20 sp · +0.7 sp · UPPERCASE · gray', css: 'font:700 14px/20px Lato,sans-serif;letter-spacing:.7px;text-transform:uppercase;color:#8A8A8A', sample: 'Teilnehmer' },
+      { slot: 'bodyLarge', use: 'Body default', spec: 'Light 300 · 16/24 sp · #D2D2D2', css: 'font:300 16px/24px Lato,sans-serif;color:#D2D2D2', sample: 'Treffpunkt ist die Raffinerie-Plattform ARC-L1.' },
+      { slot: 'bodyMedium', use: 'Secondary text', spec: 'Light 300 · 14/21 sp · #D2D2D2', css: 'font:300 14px/21px Lato,sans-serif;color:#D2D2D2', sample: 'Zuletzt aktualisiert vor 4 Minuten' },
+      { slot: 'bodySmall', use: 'Meta, timestamps', spec: 'Light 300 · 13/20 sp · #8A8A8A', css: 'font:300 13px/20px Lato,sans-serif;color:#8A8A8A', sample: 'vor 12 Minuten · IRI — IRIDIUM' },
+      { slot: 'labelLarge', use: 'Buttons', spec: 'Bold 700 · 13/16 sp · +0.39 sp (0.03 em) · UPPERCASE', css: 'font:700 13px/16px Lato,sans-serif;letter-spacing:.39px;text-transform:uppercase;color:#FFFFFF', sample: 'Schiff hinzufügen' },
+      { slot: 'labelMedium', use: 'Chips, table heads', spec: 'Bold 700 · 11/14 sp · +0.55 sp · UPPERCASE', css: 'font:700 11px/14px Lato,sans-serif;letter-spacing:.55px;text-transform:uppercase;color:#D2D2D2', sample: 'Materialbedarf' },
+      { slot: 'labelSmall', use: 'Overline', spec: 'Bold 700 · 11/14 sp · +1.65 sp (0.15 em) · UPPERCASE · orange', css: 'font:700 11px/14px Lato,sans-serif;letter-spacing:1.65px;text-transform:uppercase;color:#E77E23', sample: 'Spezialkommando' },
+    ];
+    const product = ['close','chevron-down','chevron-up','chevron-left','chevron-right','warning','success','info','plus','minus','search','filter','filter-off','edit','trash','bookout','rebook','save','arrow-left','arrow-right','check','login','logout','user-plus','external-link','clock','map-pin','eye','download','upload','clipboard-check','list','bank-in','bank-out','swap','pdf','gear','reset','bell','headset','user','users','discord'];
+    const ext = ['dashboard','target','clipboard-list','crate','more-h','more-v','grip','ship','refinery','bank','rank','blueprint','wifi-off','fingerprint','scan','calendar','lock','globe','shield','antenna'];
+    const icons = product.map(id => ({ id, href: '#krt-icon-' + id, border: '#282828' }))
+      .concat(ext.map(id => ({ id, href: '#krt-icon-' + id, border: '#E77E23' })));
+    const spacing = [{px:4},{px:8},{px:12},{px:16},{px:24},{px:32}];
+    return { m3, semantic, depts, type, icons, spacing };
+  }
+}
+</script>
+</body>
+</html>

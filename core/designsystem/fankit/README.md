@@ -11,10 +11,11 @@ usage as REQ-UI-018 there). The binding rules for this app (root `CLAUDE.md`, se
   (`translatable="false"` in every locale):
   `Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks
   of Cloud Imperium Rights LLC` — including the space before the third ®.
-- **Placement** (section 2b, applied to the app analogously to a website home page): the
-  **login/entry screen** carries the band — it is the app's start surface and visible
-  without a login. The settings "About" screen may repeat it as a welcome addition, never
-  as a substitute.
+- **Placement (fixed by the design spec, ch. 02 §9): Login (above the version footer) and
+  Einstellungen — nowhere else.** The login screen is the app's start surface and visible
+  without a login (the section-2b home-page analog); Einstellungen is the second fixed
+  placement. The band renders static, without KRT brackets/glows (third-party attribution,
+  not brand chrome).
 - **Artwork unmodified** (section 3): the white variant, no recolor, tint, flip,
   distortion, outline, shadow, pattern, or effect; rendered on the dark KRT surfaces.
 - **Legibility** (section 2b): notice at ≥ 10 pt equivalent (≥ 14 sp) in a high-contrast

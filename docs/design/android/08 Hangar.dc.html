@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2400px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">08</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Hangar</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Web canon: Hersteller · Typ · Versicherung · Ort · Fitted · Name (+ edit). Live: segment „Meine Schiffe / Org-Einheit", Fitted-Toggle im Formular, Import-Ergebnis-Modal. Manufacturer marks = lettermark placeholders BY NECESSITY: the repo ships white SVGs only for Anvil/Drake/MISC (META-INF/resources/images/*_white.svg) and they embed raster data — devs must re-export clean vectors; until then the lettermark is the spec.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Hangar frames" style="display:flex;gap:28px;align-items:flex-start">
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Meine Schiffe / Org-Einheit (live segment)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Hangar</div>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
+          </div>
+          <div style="flex:none;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ segMyBg }};color:{{ segMyFg }}" onClick="{{ segMy }}">Meine Schiffe</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:{{ segOrgBg }};color:{{ segOrgFg }};border-left:1px solid #282828" onClick="{{ segOrg }}">Org-Einheit</button>
+            </div>
+            <sc-if value="{{ showMy }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#646464"><use href="#krt-icon-search"></use></svg>
+                <span style="font:300 14px/1 Lato,sans-serif;color:#646464;font-style:italic">Nach Schiffstyp filtern…</span>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:1;overflow:auto;padding:0 16px 96px">
+            <sc-if value="{{ showMy }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ ships }}" as="s" hint-placeholder-count="3">
+                  <div style="border:1px solid #282828;background:#141414;display:flex;align-items:center;gap:14px;padding:12px 14px;min-height:72px">
+                    <span style="width:44px;height:44px;flex:none;border:1px solid #282828;background:#1C1C1C;display:flex;align-items:center;justify-content:center;font:900 11px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px">{{ s.mfr }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.type }} <span style="font-weight:300;color:#8A8A8A">„{{ s.name }}"</span></div>
+                      <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">
+                        <span class="chip {{ s.insCls }}" style="font-size:9px">{{ s.ins }}</span>
+                        <span class="chip {{ s.fitCls }}" style="font-size:9px">{{ s.fit }}</span>
+                        <span style="display:inline-flex;align-items:center;gap:4px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A"><svg class="krt-icon" style="width:12px;height:12px"><use href="#krt-icon-map-pin"></use></svg>{{ s.ort }}</span>
+                      </div>
+                    </div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;flex:none" aria-label="Bearbeiten" title="Bearbeiten"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-edit"></use></svg></button>
+                  </div>
+                </sc-for>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:6px"><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 10px/1 Lato,sans-serif;color:#646464;letter-spacing:.15em;text-transform:uppercase">3 von 3 Schiffen</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showOrg }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  <div class="kpi-total" style="padding:10px 12px"><div class="kpi-label" style="font-size:9px">Schiffe</div><div class="kpi-value" style="font-size:20px">42</div></div>
+                  <div class="kpi-total" style="padding:10px 12px;border-left-color:#239E33"><div class="kpi-label" style="font-size:9px">Fitted</div><div class="kpi-value" style="font-size:20px;color:#2EBC3D">31</div></div>
+                  <div class="kpi-total" style="padding:10px 12px;border-left-color:#646464"><div class="kpi-label" style="font-size:9px">LTI</div><div class="kpi-value" style="font-size:20px">24</div></div>
+                </div>
+                <div class="card card--flush" style="padding:0">
+                  <div style="display:grid;grid-template-columns:1fr 74px 74px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Schiffstyp</div>
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Anzahl</div>
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Fitted</div>
+                  </div>
+                  <sc-for list="{{ orgRows }}" as="r" hint-placeholder-count="4">
+                    <div style="display:grid;grid-template-columns:1fr 74px 74px;border-bottom:1px solid #1C1C1C;min-height:48px;align-items:center;background:{{ r.bg }}">
+                      <div style="padding:6px 14px;display:flex;align-items:center;gap:10px;min-width:0"><span style="width:30px;height:30px;flex:none;border:1px solid #282828;background:#1C1C1C;display:flex;align-items:center;justify-content:center;font:900 9px/1 Lato,sans-serif;color:#8A8A8A">{{ r.mfr }}</span><span style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.type }}</span></div>
+                      <div style="padding:6px 14px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ r.n }}</div>
+                      <div style="padding:6px 14px;text-align:right;font:300 13px/1 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">{{ r.fit }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Aggregation über die aktive Org-Einheit (Bereich Profit). Zeile antippen → gefilterte Schiffsliste.</div>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ showMy }}" hint-placeholder-val="{{ true }}">
+            <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Schiff hinzufügen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          </sc-if>
+          <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="width:56px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:22px;height:22px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 10.5px/1 Lato,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — HangarScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Web table → cards: Typ + Name headline; Versicherung/Fitted as chips; Ort with map-pin; edit = 44 dp icon button</li>
+          <li>Hangar reached via „Mehr" (phone) — top bar shows back, not the bottom bar? No: pushed from Mehr keeps the bottom bar; back returns to Mehr</li>
+          <li>Overflow (⋮): Home-Location setzen (bulk), Hangar leeren (type-safe danger modal), Import</li>
+          <li>FAB „Schiff hinzufügen" only on „Meine Schiffe"; server search identical to web (REQ-HANGAR-002)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Schiff hinzufügen / bearbeiten (live Fitted)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Schließen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Schiff bearbeiten</div>
+            <button class="btn-quiet-danger btn" style="background:transparent;min-height:40px;margin-right:8px;padding:4px 10px;font-size:10.5px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-trash"></use></svg>Löschen</button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px">
+            <div><label style="font-size:13px;margin-bottom:6px">Hersteller</label><select style="width:100%;height:48px;font-size:14px"><option>Anvil Aerospace</option><option>MISC</option><option>Drake Interplanetary</option><option>RSI</option></select></div>
+            <div>
+              <label style="font-size:13px;margin-bottom:6px">Schiffstyp</label>
+              <div class="krt-combobox">
+                <input class="krt-combobox__input" type="text" value="Carrack" style="height:48px;font-size:14px">
+              </div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Type-to-filter; Liste folgt dem gewählten Hersteller (kaskadierend wie im Web).</div>
+            </div>
+            <div><label style="font-size:13px;margin-bottom:6px">Name (optional)</label><input type="text" value="Meridian" style="width:100%;height:48px;font-size:14px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div><label style="font-size:13px;margin-bottom:6px">Versicherung</label><select style="width:100%;height:48px;font-size:14px"><option>LTI</option><option>Keine</option><option>1 Monat</option><option>6 Monate</option></select></div>
+              <div><label style="font-size:13px;margin-bottom:6px">Ort</label><select style="width:100%;height:48px;font-size:14px"><option>ARC-L1</option><option>Lorville</option><option>Everus Harbor</option></select></div>
+            </div>
+            <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border:1px solid {{ fitBorder }};background:{{ fitBg }}" onClick="{{ toggleFit }}">
+              <span class="matrix-flag {{ fitFlag }}" style="width:22px;height:22px;font-size:13px;flex:none">{{ fitMark }}</span>
+              <span style="flex:1"><span style="display:block;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">Fitted (einsatzbereit)</span><span style="display:block;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Ausgerüstet und startklar für Einsätze</span></span>
+            </button>
+          </div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+            <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+            <button class="btn btn--cta" style="min-height:52px;flex:1.4"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Fleetview-Import (tap „Importieren")</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Fleetview-Import</div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px">
+            <div style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:60ch">Importiere deine Schiffe aus einem CCU-Game-Fleetview-Export. Datei wählen oder JSON direkt einfügen.</div>
+            <button class="btn-outline btn" style="background:transparent;min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-upload"></use></svg>JSON-Datei wählen</button>
+            <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 10px/1 Lato,sans-serif;color:#646464;letter-spacing:.1em">Oder einfügen</span><span style="flex:1;height:1px;background:#282828"></span></div>
+            <div style="background:#1C1C1C;border:1px solid #282828;padding:12px 14px;min-height:160px;font:400 12px/1.7 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">{"ships": [{"name": "Meridian", "type": "Carrack", "insurance": "LTI"}, {"name": "Digger 2", "type": "Prospector"}, …]}</div>
+            <button class="btn btn--cta" style="min-height:52px;width:100%" onClick="{{ runImport }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-clipboard-check"></use></svg>Importieren</button>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Duplikate werden übersprungen; nicht erkannte Typen landen in der Ergebnisliste. Kein Netz → Aktion deaktiviert + Offline-Banner.</div>
+          </div>
+          <sc-if value="{{ importOpen }}" hint-placeholder-val="{{ false }}">
+            <div class="krt-modal-overlay" style="position:absolute" onClick="{{ closeImport }}">
+              <div class="krt-modal" style="max-width:360px" onClick="{{ stop }}">
+                <div class="krt-modal-head"><h2>Import-Ergebnis</h2><button style="all:unset;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#8A8A8A" onClick="{{ closeImport }}" aria-label="Schließen"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-close"></use></svg></button></div>
+                <div class="krt-modal-body" style="display:flex;flex-direction:column;gap:0">
+                  <div style="display:flex;justify-content:space-between;border-bottom:1px solid #282828;padding:8px 0;font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">Importiert<span style="font-weight:700;color:#fff;font-variant-numeric:tabular-nums">17</span></div>
+                  <div style="display:flex;justify-content:space-between;border-bottom:1px solid #282828;padding:8px 0;font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">Nicht erkannt<span style="font-weight:700;color:#fff;font-variant-numeric:tabular-nums">2</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:8px 0;font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">Duplikate übersprungen<span style="font-weight:700;color:#fff;font-variant-numeric:tabular-nums">3</span></div>
+                  <div style="border:1px solid #282828;background:#1C1C1C;padding:8px 12px;margin-top:10px;font:300 12px/1.7 Lato,sans-serif;color:#8A8A8A">Nicht erkannt: „Syulen", „X1 Baseline"</div>
+                </div>
+                <div class="krt-modal-foot"><button class="btn-ghost btn" style="background:transparent;min-height:48px" onClick="{{ closeImport }}">Schließen</button></div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — FleetImportScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>SAF file picker (.json) OR paste field — both feed the same web endpoint</li>
+          <li>Result modal mirrors the web stats exactly: Importiert / Nicht erkannt / Duplikate + skip list</li>
+          <li>„Hangar leeren" lives in the overflow; danger modal names the count („Alle 3 Schiffe löschen?")</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — full table (web columns) + import below</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+        <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+            <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+            <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+              <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px;height:64px;padding:0 24px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <h2 style="flex:1;margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Hangar</h2>
+              <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px">Home-Location setzen</button>
+              <button class="btn btn--cta" style="min-height:44px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-plus"></use></svg>Schiff hinzufügen</button>
+            </div>
+            <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;align-items:center;gap:10px;height:44px;background:#1C1C1C;border:1px solid #282828;padding:0 12px;max-width:360px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-search"></use></svg>
+                <span style="font:300 13px/1 Lato,sans-serif;color:#646464;font-style:italic">Nach Schiffstyp filtern…</span>
+              </div>
+              <div style="border:1px solid #282828;background:#141414">
+                <div style="display:grid;grid-template-columns:150px 1.4fr 110px 150px 80px 1fr 70px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Hersteller</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Schiffstyp</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Versicherung</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Ort</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Fitted</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Name</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Aktion</div>
+                </div>
+                <sc-for list="{{ ships }}" as="s" hint-placeholder-count="3">
+                  <div style="display:grid;grid-template-columns:150px 1.4fr 110px 150px 80px 1fr 70px;border-bottom:1px solid #1C1C1C;min-height:52px;align-items:center;background:{{ s.bg }}">
+                    <div style="padding:6px 14px;display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;flex:none;border:1px solid #282828;background:#1C1C1C;display:flex;align-items:center;justify-content:center;font:900 8px/1 Lato,sans-serif;color:#8A8A8A">{{ s.mfr }}</span><span style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ s.mfrName }}</span></div>
+                    <div style="padding:6px 14px;font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ s.type }}</div>
+                    <div style="padding:6px 14px"><span class="chip {{ s.insCls }}" style="font-size:9px">{{ s.ins }}</span></div>
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ s.ort }}</div>
+                    <div style="padding:6px 14px"><span class="chip {{ s.fitCls }}" style="font-size:9px">{{ s.fitShort }}</span></div>
+                    <div style="padding:6px 14px;font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">„{{ s.name }}"</div>
+                    <div style="padding:6px 14px;display:flex;justify-content:flex-end"><span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-edit"></use></svg></span></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div class="hud-box" style="padding:14px 16px;display:flex;align-items:center;gap:16px;max-width:720px">
+                <div style="flex:1"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Fleetview-Import</div><div style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">CCU-Game-Export (.json) — Duplikate werden übersprungen.</div></div>
+                <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-upload"></use></svg>Importieren</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;margin-top:32px;max-width:1200px">
+    <a href="07 Benachrichtigungen.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 07 Benachrichtigungen</a>
+    <a href="09 Lager.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">09 Lager & Blueprints →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { seg: 0, fitted: true, importOpen: false };
+  renderVals() {
+    const ships = [
+      { mfr: 'ANVL', mfrName: 'Anvil Aerospace', type: 'Carrack', name: 'Meridian', ins: 'LTI', insCls: 'chip--primary', fit: 'Fitted', fitShort: 'Ja', fitCls: 'chip--success', ort: 'ARC-L1', bg: '#141414' },
+      { mfr: 'MISC', mfrName: 'MISC', type: 'Prospector', name: 'Digger 2', ins: '6 Monate', insCls: 'chip--muted', fit: 'Fitted', fitShort: 'Ja', fitCls: 'chip--success', ort: 'Lorville', bg: 'rgba(255,255,255,.02)' },
+      { mfr: 'DRAK', mfrName: 'Drake', type: 'Cutlass Black', name: 'Kater', ins: 'Keine', insCls: 'chip--muted', fit: 'Nicht fitted', fitShort: 'Nein', fitCls: 'chip--muted', ort: 'Everus Harbor', bg: '#141414' },
+    ];
+    const orgRows = [
+      { mfr: 'MISC', type: 'Prospector', n: '6', fit: '5', bg: '#141414' },
+      { mfr: 'ANVL', type: 'Carrack', n: '4', fit: '3', bg: 'rgba(255,255,255,.02)' },
+      { mfr: 'DRAK', type: 'Cutlass Black', n: '3', fit: '2', bg: '#141414' },
+      { mfr: 'AEGS', type: 'Reclaimer', n: '2', fit: '2', bg: 'rgba(255,255,255,.02)' },
+    ];
+    const navDefs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
+      { label: 'Mehr', icon: '#krt-icon-more-h' },
+    ];
+    const nav = navDefs.map((d, i) => ({ ...d, indBg: i === 4 ? '#E77E23' : 'transparent', iconColor: i === 4 ? '#000' : '#8A8A8A', labelColor: i === 4 ? '#FFFFFF' : '#8A8A8A' }));
+    const railDefs = navDefs.slice(0, 4).concat([{ label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' }, { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' }]);
+    const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 4 ? '#E77E23' : 'transparent', iconColor: i === 4 ? '#000' : '#8A8A8A', labelColor: i === 4 ? '#FFFFFF' : '#8A8A8A' }));
+    const seg = this.state.seg, fit = this.state.fitted;
+    return {
+      ships, orgRows, nav, railNav,
+      showMy: seg === 0, showOrg: seg === 1,
+      segMy: () => this.setState({ seg: 0 }), segOrg: () => this.setState({ seg: 1 }),
+      segMyBg: seg === 0 ? '#E77E23' : 'transparent', segMyFg: seg === 0 ? '#000' : '#8A8A8A',
+      segOrgBg: seg === 1 ? '#E77E23' : 'transparent', segOrgFg: seg === 1 ? '#000' : '#8A8A8A',
+      fitBorder: fit ? '#E77E23' : '#282828', fitBg: fit ? 'rgba(231,126,35,.08)' : '#141414',
+      fitFlag: fit ? 'on' : '', fitMark: fit ? '✓' : '',
+      toggleFit: () => this.setState(s => ({ fitted: !s.fitted })),
+      importOpen: this.state.importOpen,
+      runImport: () => this.setState({ importOpen: true }),
+      closeImport: () => this.setState({ importOpen: false }),
+      stop: (e) => e.stopPropagation(),
+    };
+  }
+}
+</script>
+</body>
+</html>

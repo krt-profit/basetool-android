@@ -18,8 +18,11 @@ Security below).
 Binding concept documents (until superseded by `docs/specs/`): [`docs/ANDROID_APP_PLAN.md`](docs/ANDROID_APP_PLAN.md)
 (master plan incl. the resolved decisions Q1–Q7), [`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md),
 [`docs/ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md),
-[`docs/ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md),
-[`docs/ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md).
+[`docs/ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md).
+The **binding UI specification is the delivered design handoff at
+[`docs/design/android/`](docs/design/android/README.md)** (chapters 00–14 + `artifacts/Theme.kt`;
+see the UI section below). [`docs/ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md)
+is the historical brief that produced it — do not design against the prompt anymore.
 
 ## Resolved project decisions (owner-approved 2026-08-17 — do not silently reopen)
 
@@ -75,8 +78,20 @@ Permissions stay minimal: `INTERNET`, `USE_BIOMETRIC` (optional app-lock),
 - All UI is Compose; layouts are `WindowSizeClass`-driven (compact width = phone portrait,
   expanded+ = tablet landscape with list-detail). Orientation may be locked only on
   < sw600dp screens; edge-to-edge and predictive back are on from the start.
-- The design specification produced from the Claude Design prompt is the binding UI
-  reference once it exists; deviations need an ADR.
+- **The delivered design specification at [`docs/design/android/`](docs/design/android/README.md)
+  is the binding UI reference** (high-fidelity: colors, type, spacing, states, and copy are
+  final; 1 mockup px = 1 dp). Deviations need an ADR. Read its README before any UI work.
+  The `.dc.html` chapter files are **design references to open in a browser — never
+  production code to port or ship**. Precedence: DAS KARTELL design system (mirrored in
+  `docs/design/android/_ds/`) > this spec > web-app behavioral parity. Token source of
+  truth for the Compose theme: `docs/design/android/artifacts/Theme.kt`; icon export
+  contract: `docs/design/android/artifacts/icon-export.md`.
+- **Copy rules (binding, from the product owner):** German-first, military-terse, UPPERCASE
+  labels, no emoji. Fixed terms: „**Einsätze**" (never „Missionen") in all user-visible copy,
+  „**Bereich Profit**" as org context, „**Administration**" (never „Führung"). Error states
+  keep the English in-fiction canon (403 "Access Denied — …", 404 "Signal Lost — …",
+  500 "System Malfunction…", CTA „Zurück zur Basis"). Reuse the web app's
+  `messages*.properties` keys where they exist.
 
 ## Star Citizen Fan Kit compliance (binding)
 
@@ -91,9 +106,11 @@ detailed rules: [`core/designsystem/fankit/`](core/designsystem/fankit/README.md
   are registered trademarks of Cloud Imperium Rights LLC` — including the space before the
   third ®. Never tidy it up, never translate it — a "fixed" string breaks compliance while
   passing every key-parity check.
-- **Placement:** the login/entry screen (the app's home-page analog under section 2b,
-  visible without a login) carries the band; the settings "About" screen may repeat it as
-  an addition, never as a substitute. A legal subpage alone is not a sanctioned surface.
+- **Placement (fixed by the design spec, ch. 02 §9): Login (above the version footer) and
+  Einstellungen — nowhere else.** The login screen is the mandatory home-page-analog
+  placement (section 2b, visible without a login); Einstellungen is the second fixed
+  placement. Do not add the band to further screens; a legal subpage alone would not be a
+  sanctioned surface.
 - **Artwork unmodified** (section 3): white variant, no recolor/tint/flip/distortion/
   outline/shadow/effect; notice ≥ 14 sp in `#D2D2D2`-grade contrast.
 - A UI test pins logo + notice + the byte-exact string per locale (mirror of the web app's
@@ -228,5 +245,9 @@ ship with the OFL 1.1 text next to them (missing upstream — add it when the fo
 
 ## Open items (tracked, not yet decided)
 
-- The DAS KARTELL design-system submodule may be added here in Phase 1 if UI work needs the
-  raw assets; until then the design prompt doc carries the extracted tokens.
+- The DAS KARTELL design-system submodule may still be added in Phase 1, but the raw
+  sources the UI work needs (colors/type CSS, component CSS, Lato WOFF2/TTF) are already
+  mirrored in-repo at `docs/design/android/_ds/`.
+- Manufacturer logos (Anvil/Drake/MISC …) exist upstream only as SVGs with embedded
+  rasters — clean vectors must be re-exported; until then the design spec's lettermark
+  placeholder IS the design (handoff README, Assets).

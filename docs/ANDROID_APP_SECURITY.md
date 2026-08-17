@@ -139,11 +139,13 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   `DEVICE_CREDENTIAL` combos only on API 30+ (`setUserAuthenticationParameters`), API 29 uses
   `setUserAuthenticationValidityDurationSeconds` + `KeyguardManager.isDeviceSecure()`. Keys with
   `setInvalidatedByBiometricEnrollment` die on new enrollment → re-login path required.
-- **`FLAG_SECURE`** on all authenticated screens (blocks screenshots/cast; ~70 % effective ≤ API
-  30 per Google's own numbers — treat as hardening, not guarantee); `setHideOverlayWindows` where
-  available; API 35+ `addScreenRecordingCallback` (`DETECT_SCREEN_RECORDING` normal permission)
-  to warn during capture. A user-facing toggle may relax FLAG_SECURE for screenshots if the org
-  wants it — default strict.
+- **`FLAG_SECURE` app-wide** (fixed by the design spec, ch. 04 — not just authenticated
+  screens; blocks screenshots/cast; ~70 % effective ≤ API 30 per Google's own numbers — treat
+  as hardening, not guarantee); `setHideOverlayWindows` where available; API 35+
+  `addScreenRecordingCallback` (`DETECT_SCREEN_RECORDING` normal permission) to warn during
+  capture. The app-lock renders as the spec's custom KRT lock screen driven by
+  BiometricPrompt. A user-facing toggle may relax FLAG_SECURE for screenshots if the org
+  wants it — default strict (secondary-decision register in the plan).
 - Cached member data: app-private storage under platform FBE (mandatory on devices launched with
   Android 10+) — the documented baseline; backup-excluded. SQLCipher (`sqlcipher-android` 4.17.0,
   active) only if the org classifies the cache as sensitive — it buys forensic-extraction
