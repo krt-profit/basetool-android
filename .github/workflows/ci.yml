@@ -91,6 +91,7 @@ jobs:
       # each produce a lint-results-*.sarif and the upload step takes a
       # directory, not a glob.
       - name: Collect Android Lint SARIF reports
+        id: lint_sarif
         if: always()
         run: |
           set -euo pipefail
@@ -103,15 +104,20 @@ jobs:
             found=$((found + 1))
           done < <(find . -path '*/build/reports/lint-results-*.sarif' -type f)
           echo "collected $found lint SARIF report(s)"
+          echo "count=$found" >> "$GITHUB_OUTPUT"
 
       - name: Upload Android Lint results to code scanning
         # Fork PRs cannot write security events; skipping beats a red step that
         # says nothing about the code.
+        # Skipped when the build died before lint ran — uploading an empty
+        # directory fails the step and reports the same root cause twice.
+        # Skipped on fork PRs too, where the token cannot write security events.
         if: >-
           always() &&
+          steps.lint_sarif.outputs.count != '0' &&
           (github.event_name != 'pull_request' ||
            github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@f3712979fa5f215279b101dd0a2e3bdfb4353324 # v3.37.7
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
         with:
           sarif_file: build/sarif
           category: android-lint
