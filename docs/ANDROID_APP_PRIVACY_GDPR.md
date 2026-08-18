@@ -43,6 +43,16 @@ purely local information that **never leaves the device** is not even in scope o
 Design consequence: **zero consent banners** as long as we add no analytics/tracking. This is a
 feature; guard it in review (any SDK addition re-triggers this analysis).
 
+**Re-run 2026-08-18 (token store implemented).** The assessment above is unchanged — what changed
+is that the first row now has a concrete subject. Stored: the **refresh token only**, AES-256-GCM
+encrypted with a non-exportable Android Keystore key bound to an unlocked device, ciphertext in
+`files/datastore/krt_tokens.preferences_pb`, excluded from cloud backup *and* device transfer. The
+access token is never persisted. Wiped on logout together with its key, and cleared automatically
+whenever it becomes undecryptable (new biometric enrolment, restore onto another device). Still no
+identifier is stored for any purpose other than delivering the login the member asked for, so § 25(2)
+Nr. 2 continues to apply and no consent banner is needed. New dependencies with this change:
+androidx DataStore and Nimbus JOSE — both local-only, neither sends anything anywhere.
+
 ## 3. Art. 13 GDPR — in-app privacy notice (Datenschutzerklärung)
 
 Required at first collection, reachable from login screen and settings, DE (+ EN courtesy):

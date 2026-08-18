@@ -32,7 +32,8 @@ core/common/          logging facade                                            
 core/designsystem/    KRT Compose theme, components, icon set, Lato fonts                [built]
 core/network/         OkHttp client, mandatory headers, problem+json → app states        [built]
                       (OpenAPI-generated DTOs, Retrofit services, SSE still planned)
-core/auth/            AppAuth flow, Keystore token store, DPoP, session state            [planned]
+core/auth/            Keystore token store, DPoP proof factory                          [built]
+                      (AppAuth login flow, session state still planned)
 core/data/            repositories, Room cache, org-unit context                         [planned]
 feature/…             one module per area (missions, orders, inventory, bank, …)         [planned]
 docs/                 concept docs, binding design spec, ADRs, specs

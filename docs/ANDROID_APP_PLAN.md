@@ -282,12 +282,12 @@ prior approval by @greluc.** Baseline set (all local-only, none phones home with
 
 | Dependency | Purpose | Data leaves device? |
 |---|---|---|
-| AndroidX / Jetpack (Compose, Room, DataStore, Paging, Navigation, Lifecycle, Biometric, AppCompat, Core-SplashScreen) | UI/persistence/lifecycle | No |
+| AndroidX / Jetpack (Compose, Room, DataStore, Paging, Navigation, Lifecycle, Biometric, AppCompat, Core-SplashScreen) | UI/persistence/lifecycle | No | DataStore **adopted 2026-08-18** (`core:auth`, encrypted refresh token) |
 | OkHttp 5 + Retrofit + kotlinx.serialization | HTTP/SSE to basetool only | Only to basetool |
 | AppAuth-Android (or kotlin-multiplatform-oidc) | OIDC flow against our Keycloak | Only to basetool Keycloak |
 | Hilt, KSP | compile-time DI | No |
 | Coil | images from basetool hosts | Only to basetool |
-| Nimbus JOSE (or equivalent) | DPoP proof JWTs, local signing | No |
+| Nimbus JOSE (or equivalent) | DPoP proof JWTs, local signing | No | **adopted 2026-08-18** (`core:auth`) |
 | Lato font files (OFL 1.1, bundled + license text) | typography | No |
 
 **Requires explicit approval before adoption** (not in the baseline): Firebase Cloud Messaging,
