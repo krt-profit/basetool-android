@@ -30,4 +30,6 @@ dependencyResolutionManagement {
 rootProject.name = "basetool-android"
 
 include(":app")
+include(":core:common")
 include(":core:designsystem")
+include(":core:network")
