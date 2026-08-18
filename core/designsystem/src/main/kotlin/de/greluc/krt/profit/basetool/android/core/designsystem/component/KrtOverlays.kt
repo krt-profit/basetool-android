@@ -19,12 +19,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.PillShape
 
 /** Opacity of the modal scrim. */
 private const val SCRIM_ALPHA = 0.8f
@@ -229,6 +235,71 @@ private val TOAST_MAX_WIDTH = 360.dp
 
 /** Fill opacity of a toast — near-opaque black so it reads over any content. */
 private const val TOAST_FILL_ALPHA = 0.95f
+
+/**
+ * The KRT bottom sheet — the phone's answer to a side panel.
+ *
+ * Square (shape 0 dp) with the accent top edge, and it carries the one rounded exception the design
+ * system grants besides the org badge: the pill drag handle. Used for pickers and switchers where a
+ * modal would be too heavy; the org switcher is the canonical case.
+ *
+ * @param onDismiss invoked on swipe-down, scrim tap or back.
+ * @param modifier layout modifier applied to the sheet body.
+ * @param title optional uppercase heading rendered under the handle.
+ * @param content the sheet content, typically a column of [KrtSheetOption]s.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun KrtBottomSheet(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+        sheetState = rememberModalBottomSheetState(),
+        shape = MaterialTheme.shapes.large,
+        containerColor = MaterialTheme.colorScheme.surface,
+        scrimColor = KrtPalette.Black.copy(alpha = SCRIM_ALPHA),
+        dragHandle = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(MODAL_TOP_EDGE)
+                            .background(MaterialTheme.colorScheme.primary),
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .padding(top = KrtSpacing.sm, bottom = KrtSpacing.xs)
+                            .size(width = DRAG_HANDLE_WIDTH, height = DRAG_HANDLE_HEIGHT)
+                            .clip(PillShape)
+                            .background(KrtPalette.Gray2),
+                )
+            }
+        },
+    ) {
+        if (title != null) {
+            Text(
+                text = title.krtUppercase(),
+                modifier = Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                style = MaterialTheme.typography.labelLarge,
+                color = KrtPalette.White,
+            )
+        }
+        content()
+    }
+}
+
+/** Width of the sheet drag handle. */
+private val DRAG_HANDLE_WIDTH = 32.dp
+
+/** Height of the sheet drag handle. */
+private val DRAG_HANDLE_HEIGHT = 4.dp
 
 /**
  * One row of a selection sheet, for example the org switcher.

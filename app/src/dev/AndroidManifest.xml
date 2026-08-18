@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  dev-flavor additions.
+
+  The component showcase gets its own launcher entry so the design system can be checked on a
+  device without going through the app shell. It exists only in the dev flavor — a release build
+  ships no development surfaces.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".ShowcaseActivity"
+            android:exported="true"
+            android:label="@string/showcase_name"
+            android:theme="@style/Theme.Basetool">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

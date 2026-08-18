@@ -67,7 +67,6 @@ android {
         warningsAsErrors = true
         abortOnError = true
         checkDependencies = true
-        sarifReport = true
         // The adaptive launcher icon is chapter 14 of the design handoff and lands with the
         // release work; drawing a placeholder KRT mark now would violate the logo rule.
         disable += "MissingApplicationIcon"
@@ -90,6 +89,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.navigation.compose)
 
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)

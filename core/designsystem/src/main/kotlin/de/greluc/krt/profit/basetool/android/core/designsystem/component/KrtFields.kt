@@ -18,11 +18,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -260,6 +268,47 @@ fun KrtStepperField(
         }
     }
 }
+
+/**
+ * The small "?" affordance that explains a domain rule in place.
+ *
+ * The web app uses it for the SCU precision note next to amount fields; the same pattern serves any
+ * rule too important to omit and too long for a label. A long-press tooltip costs no layout space
+ * and stays reachable for TalkBack.
+ *
+ * @param explanation the rule, one sentence.
+ * @param modifier layout modifier.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun KrtHint(
+    explanation: String,
+    modifier: Modifier = Modifier,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = { PlainTooltip { Text(explanation) } },
+        state = rememberTooltipState(),
+        modifier = modifier,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(HINT_SIZE)
+                    .border(KrtSpacing.hairline, MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "?",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/** Diameter of the hint disc. */
+private val HINT_SIZE = 18.dp
 
 @Preview(name = "Form fields", showBackground = true, backgroundColor = 0xFF000000)
 @Composable

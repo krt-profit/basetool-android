@@ -17,12 +17,26 @@
         android:theme="@style/Theme.Basetool">
 
         <activity
-            android:name=".ShowcaseActivity"
+            android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Basetool">
+            android:theme="@style/Theme.Basetool"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+              In-app deep links (basetool://…). Notifications and internal links resolve to the
+              same routes the navigation graph declares, so every screen has exactly one address.
+              Verified https App Links for the web domain follow once the server publishes
+              assetlinks.json (see docs/ANDROID_APP_SECURITY.md).
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="basetool" />
             </intent-filter>
         </activity>
     </application>

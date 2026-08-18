@@ -26,13 +26,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipSelect
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDepartmentTag
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
@@ -40,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFanKitBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHeading
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
@@ -49,18 +54,25 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOfflineBanner
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadgeKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPanelHeader
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPresenceIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRecordCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSuccessButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTable
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableCell
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableColumn
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
@@ -104,6 +116,25 @@ private val SECTION_GAP = 24.dp
 @Composable
 private fun ComponentGallery() {
     var modal by remember { mutableStateOf<KrtModalTone?>(null) }
+    var comboQuery by remember { mutableStateOf("quan") }
+    var comboOpen by remember { mutableStateOf(false) }
+    var selectValue by remember { mutableStateOf("Bereich Profit") }
+    var selectOpen by remember { mutableStateOf(false) }
+    var ltiInsured by remember { mutableStateOf(true) }
+    var payoutToMember by remember { mutableStateOf(true) }
+
+    val tableColumns =
+        listOf(
+            KrtTableColumn("Material", weight = 1.6f),
+            KrtTableColumn("Ort", weight = 1f),
+            KrtTableColumn("Qualität", weight = 0.8f, numeric = true),
+            KrtTableColumn("Menge", weight = 0.9f, numeric = true),
+        )
+    val tableRows =
+        listOf(
+            listOf("Quantainium", "ARC-L1", "874", "642"),
+            listOf("Laranite", "Everus Harbor", "655", "1.208"),
+        )
 
     Column(
         modifier =
@@ -182,6 +213,27 @@ private fun ComponentGallery() {
         KrtLoadMore("Mehr laden — 40 von 143", {})
         KrtEndOfList("Ende der Liste")
 
+        KrtSectionTitle("Tabellen")
+        KrtTable(columns = tableColumns, rowCount = tableRows.size) { row, column ->
+            KrtTableCell(
+                text = tableRows[row][column],
+                column = tableColumns[column],
+                modifier = Modifier.weight(tableColumns[column].weight),
+                emphasis = column == 0 || column == 3,
+                unit = if (column == 3) "SCU" else null,
+            )
+        }
+        KrtRecordCard(
+            title = "Quantainium",
+            value = "642",
+            unit = "SCU",
+            attributes =
+                listOf(
+                    "Ort" to "Lager Bereich Profit · ARC-L1",
+                    "Qualität" to "874 / 1000",
+                ),
+        )
+
         KrtSectionTitle("Formular")
         KrtTextField(value = "", onValueChange = {}, label = "Schiffsname", placeholder = "z. B. Carrack")
         KrtTextField(
@@ -191,7 +243,46 @@ private fun ComponentGallery() {
             isError = true,
             errorText = "Menge muss größer als 0 sein.",
         )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Teilmengen",
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+            KrtHint("Teilmengen erlaubt: cSCU (0,01) und µSCU (0,001).")
+        }
         KrtStepperField(value = "1.200", onValueChange = {}, onDecrement = {}, onIncrement = {}, label = "Menge")
+
+        KrtSectionTitle("Auswahl")
+        KrtCombobox(
+            query = comboQuery,
+            onQueryChange = { comboQuery = it },
+            options =
+                listOf(
+                    KrtOption("quantainium", "Quantainium"),
+                    KrtOption("quantum-fuel", "Quantum Fuel"),
+                ).filter { it.label.contains(comboQuery, ignoreCase = true) },
+            onSelect = { comboQuery = it.label },
+            expanded = comboOpen,
+            onExpandedChange = { comboOpen = it },
+            label = "Material",
+            notice = "2 von 118 Materialien",
+        )
+        KrtSelectField(
+            value = selectValue,
+            options = listOf(KrtOption("iri", "Bereich Profit"), KrtOption("sk", "SK VANGUARD")),
+            onSelect = { selectValue = it.label },
+            expanded = selectOpen,
+            onExpandedChange = { selectOpen = it },
+            label = "Org-Einheit",
+        )
+        KrtCheckboxRow(checked = ltiInsured, onCheckedChange = { ltiInsured = it }, label = "LTI versichert")
+        KrtRadioRow(selected = payoutToMember, onSelect = { payoutToMember = true }, label = "Auszahlung")
+        KrtRadioRow(selected = !payoutToMember, onSelect = { payoutToMember = false }, label = "Org-Kasse")
+        KrtChipSelect(value = "Pilot", onClick = {})
 
         KrtSectionTitle("Overlays")
         Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
