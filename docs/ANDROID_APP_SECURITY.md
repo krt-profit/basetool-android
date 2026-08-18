@@ -83,15 +83,19 @@ The exposure package (one PR series):
 8. **Anonymous-surface stance: default-deny allowlist (explicit, Phase 0).** The backend
    deliberately permits anonymous endpoints (master-data reads, redacted mission browsing, guest
    participant editing, anonymous order creation). The new vhost would make these
-   internet-reachable on day one — before the app's guest mode ships (Q6: with the first
-   release). Stance: the API vhost is a **default-deny allowlist** — it proxies only the
+   internet-reachable on day one. (An earlier revision tied this to the app's guest mode shipping;
+   that mode is now dropped — see below.) Stance: the API vhost is a **default-deny allowlist** — it proxies only the
    endpoint families the app consumes and 404s everything else, rather than blocklisting
    known-anonymous paths. Two reasons: the anonymous surface is branchy (the `/slim` twins, the
    guest participant mutations across PUT/DELETE/check-in/out/payout, `POST /api/v1/orders/items`
    with its table-wide pessimistic lock — a DoS lever), so a blocklist misses paths; and any
    *future* `permitAll` endpoint added for the web app would otherwise become internet-reachable
    the day it merges. The anonymous read surface joins the allowlist only where the app needs it
-   pre-login (master data); the anonymous-write and guest paths join when guest mode ships. The
+   pre-login (master data); **the anonymous-write and guest paths never join** — guest mode was
+   dropped (owner decision 2026-08-18, Q8 in the master plan) and every user of the app signs in,
+   so nothing on the app side will ever call them from the public vhost. That is a permanent
+   reduction of the exposed surface rather than a deferral: the endpoints keep serving the web
+   frontend on the internal network. The
    terms/consent endpoints (`/api/v1/terms/**`) and the registration-status read MUST be on the
    allowlist from day one — the app's terms gate and `PENDING_APPROVAL` handling depend on them.
    Each opened anonymous path gets its own rate budget and an abuse counter/alert.
@@ -303,7 +307,7 @@ public clients MUST be sender-constrained or use refresh token rotation"):
 
 | Layer | What it stops | What it does NOT stop |
 |---|---|---|
-| OAuth-only member surface + Keycloak brute-force protection + no self-registration; anonymous paths blocked at the vhost until guest mode (§2.8) | anonymous scraping of member data; bot signups; day-one abuse of the anonymous write endpoints | a member's own token in a foreign client |
+| OAuth-only member surface + Keycloak brute-force protection + no self-registration; anonymous paths blocked at the vhost permanently, since guest mode was dropped (§2.8) | anonymous scraping of member data; bot signups; day-one abuse of the anonymous write endpoints | a member's own token in a foreign client |
 | PKCE S256 + exact redirect URIs + App Links | code interception, redirect hijack, app impersonation at login | — |
 | DPoP-bound refresh token (per-install Keystore key) | **token exfiltration**: a stolen refresh token is useless off-device; the long-lived credential is sender-constrained | a foreign client doing its own full login as a real member |
 | Short (300 s) access tokens + per-client session ceilings | long replay windows | — |
