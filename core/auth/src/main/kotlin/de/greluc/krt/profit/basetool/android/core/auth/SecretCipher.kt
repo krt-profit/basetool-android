@@ -41,6 +41,19 @@ interface SecretCipher {
      *   is expected to treat them as "no usable secret"
      */
     fun decrypt(ciphertext: ByteArray): ByteArray
+
+    /**
+     * Destroys the key, making every blob this cipher ever produced permanently undecryptable.
+     *
+     * Part of the contract rather than an implementation detail: a logout that deletes the stored
+     * ciphertext but leaves the key behind still leaves a key that can decrypt any copy of that
+     * ciphertext which escaped the device — a backup that slipped through, a forensic image. A
+     * cipher that cannot be wiped cannot back a logout.
+     *
+     * Implementations must not throw: a key that cannot be deleted is not worth failing a logout
+     * over, and the next login overwrites the entry anyway.
+     */
+    fun deleteKey()
 }
 
 /**

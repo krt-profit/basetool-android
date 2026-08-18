@@ -78,7 +78,7 @@ class KeystoreSecretCipher(
      * behind that could decrypt a copy of it, and a wipe should not depend on having found every
      * copy.
      */
-    fun deleteKey() {
+    override fun deleteKey() {
         try {
             keyStore().deleteEntry(alias)
         } catch (failure: GeneralSecurityException) {
