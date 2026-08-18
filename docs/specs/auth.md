@@ -212,8 +212,61 @@ discard the only way back into the session.
 - [x] An unreachable realm leaves the stored token in place and yields `Stale`; `invalid_grant`
   clears it and yields `SignedOut`.
 - [x] A grant without a `refresh_token` keeps the stored one.
-- [ ] The Custom Tab launch, the redirect activity and the chapter-04 screens. **Open** — this
-  requirement covers the flow's logic; the UI half follows.
+- [x] The Custom Tab launch and the redirect activity (`REQ-APP-AUTH-008`).
+- [ ] The chapter-04 screens — login, approval-pending, terms, app-lock. **Open** — this
+  requirement covers the flow's logic; the screens that drive it follow.
 - [ ] The ID token's signature is not verified. **Accepted, not open** — OIDC Core §3.1.3.7 permits
   it when the token comes directly from the token endpoint over TLS, which is the only way this app
   obtains one (ADR-0004).
+
+### REQ-APP-AUTH-008 — The browser round trip: a Custom Tab, a claimed redirect, and an attempt that outlives the process
+
+Login happens in a **Custom Tab, never a WebView** (RFC 8252 §8.12). A WebView would put the
+member's realm password inside a surface this app controls and can read, share no session with the
+browser, and be indistinguishable from a phishing app. The toolbar is `#141414` so the realm's dark
+login page does not sit inside light chrome (design spec ch. 04).
+
+**The pending attempt is persisted, encrypted, and single-use.** While the Custom Tab is in front,
+Android may kill this process — on a low-memory phone it will. The `state`, `nonce` and PKCE
+verifier must therefore survive it, or the redirect cannot be recognised and the code cannot be
+redeemed. They live in the same encrypted store as the refresh token, because the verifier is
+exactly as sensitive as the code it unlocks for the length of the round trip. `take()` reads *and*
+clears: a code is redeemable once, so a consumed attempt must not be actionable again.
+
+**The redirect URI is per flavour and is claimed by a dedicated activity.** Production uses the
+verified App Link `https://profit-base.online/app/callback`, which no other app can claim because
+the domain publishes this app's signing-certificate digest; the custom scheme
+`de.kartell.basetool:/oauth2redirect` is registered on the dev realm only, since a custom scheme is
+claimable by any installed app (security concept §3). The design chapter's parenthetical
+`(basetool://auth)` is illustrative — the registered URIs are the ones above, and they are pinned
+on both ends: the realm refuses an unregistered redirect, and this end is asserted by a test.
+
+**The post-logout return must be claimed too**, or the browser opens the website after a logout and
+the member is left looking at it.
+
+A **separate** activity holds the filter rather than `MainActivity`: while the Custom Tab is open it
+sits on top of the task, so a `singleTop` `MainActivity` would be created a *second* time on top of
+the browser instead of returning to the running one. `singleTask` on a translucent, UI-less activity
+brings the task forward and re-launches `MainActivity` with `CLEAR_TOP`. Giving `MainActivity`
+itself `singleTask` would change the launch semantics of every deep link and notification to fix one
+flow.
+
+Endpoints come from `BuildConfig` and nowhere else — no runtime switch, no debug menu. A release
+build that can be pointed at another server is a gift to whoever gets hold of a device (DEV_CI §6).
+
+**Acceptance**
+
+- [x] The attempt survives a process restart, asserted by a second store instance reading what the
+  first wrote (`PendingAuthorizationTest`).
+- [x] `take()` consumes it; a second redirect finds nothing.
+- [x] An unreadable attempt is discarded rather than thrown, like an unreadable refresh token.
+- [x] The flavour's configured redirect resolves to exactly one activity of this app, and so does
+  its post-logout redirect (`AuthRedirectFilterTest`, run once per flavour).
+- [x] Login opens a Custom Tab; no `WebView` exists anywhere in the app.
+- [ ] A CI gate forbids `WebView` outright rather than relying on its absence. **Open** — same gate
+  as `REQ-APP-AUTH-001`'s access-token check.
+- [ ] `/.well-known/assetlinks.json` is served, so the production App Link verifies. **Open** —
+  server-side, main repo (exposure plan A7). Until then Android shows a disambiguation dialog
+  instead of opening the app.
+- [ ] The realm's `basetool-android` client exists with both redirect URIs registered. **Open** —
+  Phase-0 provisioning; none of this can be exercised end to end before it does.

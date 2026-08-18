@@ -27,13 +27,13 @@ consent-banner-free by design · admin area stays web-only.
 ## Module layout
 
 ```
-app/                  manifest, flavors, component showcase (navigation shell follows)   [built]
+app/                  manifest, flavors, auth redirect + Custom Tab, navigation shell    [built]
 core/common/          logging facade                                                     [built]
 core/designsystem/    KRT Compose theme, components, icon set, Lato fonts                [built]
 core/network/         OkHttp client, mandatory headers, problem+json → app states        [built]
                       (OpenAPI-generated DTOs, Retrofit services, SSE still planned)
 core/auth/            Keystore token store, DPoP, token client, PKCE login + session     [built]
-                      (Custom Tab launch + redirect activity still planned)
+                      (the chapter-04 screens still planned)
 core/data/            repositories, Room cache, org-unit context                         [planned]
 feature/…             one module per area (missions, orders, inventory, bank, …)         [planned]
 docs/                 concept docs, binding design spec, ADRs, specs

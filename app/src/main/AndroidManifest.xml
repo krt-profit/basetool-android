@@ -39,6 +39,23 @@
                 <data android:scheme="basetool" />
             </intent-filter>
         </activity>
+
+        <!--
+          Receives the browser's redirect at the end of a login. The intent filter that matches it
+          lives in the flavour manifests, because the two realms register different redirect URIs:
+          a verified App Link in production, a custom scheme on the dev realm only.
+
+          singleTask because the Custom Tab sits on top of this task while the login runs — a
+          singleTop activity would be created a second time on top of the browser instead of
+          returning to the app. Translucent and with no layout, so nothing flashes between the
+          browser closing and the app appearing.
+        -->
+        <activity
+            android:name=".auth.AuthRedirectActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
 </manifest>

@@ -19,6 +19,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          The dev realm's redirect. A custom scheme is claimable by any installed app, which is why
+          it is registered on this realm only — PKCE stops a stolen code from being redeemed, but
+          the phishing/confusion surface is free to close in production and is (security concept
+          section 3).
+
+          Scheme only, no path: Android ignores android:path when no android:host is given, so a
+          path here would look like a tightening and be none. The post-logout return
+          (de.kartell.basetool:/logout) therefore lands here too — it carries no code, is read as an
+          unusable redirect, and simply brings the app forward, which is what it should do.
+        -->
+        <activity
+            android:name=".auth.AuthRedirectActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="de.kartell.basetool" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
