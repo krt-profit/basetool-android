@@ -45,7 +45,6 @@ class LoginPreviewActivity : ComponentActivity() {
                     onSignIn = { state = next(state) },
                     onOpenPrivacy = {},
                     onOpenImprint = {},
-                    onOpenTerms = {},
                     versionName = BuildConfig.VERSION_NAME,
                     versionCode = BuildConfig.VERSION_CODE,
                 )
