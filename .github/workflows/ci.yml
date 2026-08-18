@@ -87,10 +87,14 @@ jobs:
       - name: Build, test and lint
         run: ./gradlew build --continue --stacktrace
 
-      # Collected into one directory with unique names because several modules
-      # each produce a lint-results-*.sarif and the upload step takes a
-      # directory, not a glob.
-      - name: Collect Android Lint SARIF reports
+      # Only the app module's report is uploaded, and that is not a narrowing:
+      # `:app` runs lint with `checkDependencies = true`, so its run already
+      # covers every library module's sources. The per-module reports exist too,
+      # but code scanning rejects several SARIF runs under one category
+      # (changelog 2025-07-21) and giving each module its own category would
+      # duplicate the module list into this workflow, where it would drift.
+      # Every module's own lint task still runs and still fails the build.
+      - name: Collect the Android Lint SARIF report
         id: lint_sarif
         if: always()
         run: |
@@ -98,11 +102,9 @@ jobs:
           mkdir -p build/sarif
           found=0
           while IFS= read -r report; do
-            module=$(printf '%s' "$report" | sed -e 's|/build/reports/.*||' -e 's|^\./||' -e 's|/|-|g')
-            [ -n "$module" ] || module=root
-            cp "$report" "build/sarif/${module}-$(basename "$report")"
+            cp "$report" "build/sarif/$(basename "$report")"
             found=$((found + 1))
-          done < <(find . -path '*/build/reports/lint-results-*.sarif' -type f)
+          done < <(find ./app -path '*/build/reports/lint-results-*.sarif' -type f)
           echo "collected $found lint SARIF report(s)"
           echo "count=$found" >> "$GITHUB_OUTPUT"
 

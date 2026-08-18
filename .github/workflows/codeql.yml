@@ -7,10 +7,15 @@ name: CodeQL
 # moving tokens and member data between a Keystore, a realm and an API, the
 # taint-tracking is the point.
 #
-# `build-mode: none` analyses the checked-out source without compiling it.
-# It costs a fraction of a manual build and, unlike a `manual` mode that has to
-# re-run Gradle with the configuration cache and AGP's built-in Kotlin
-# compilation, it cannot silently extract nothing because a build flag changed.
+# **Kotlin needs a real build.** `build-mode: none` was tried first and produced
+# "CodeQL could not process any code written in Java/Kotlin": buildless analysis
+# does not extract Kotlin, and in a repository with no `.java` file at all that
+# means an empty database rather than a partial one. The extractor hooks the
+# Kotlin compiler, so the compiler has to actually run — which also means the
+# Gradle build cache must be off for this job, or a restored task output would
+# skip compilation and produce the same empty database with a green build.
+#
+# The `actions` pack needs no build and stays on `none`.
 #
 # Blocking is enforced via branch protection: mark the two matrix check names
 # ("CodeQL / Analyze (java-kotlin)" and "CodeQL / Analyze (actions)") as
@@ -37,7 +42,7 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     permissions:
       contents: read
@@ -47,7 +52,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [java-kotlin, actions]
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: actions
+            build-mode: none
 
     steps:
       - name: Checkout
@@ -55,12 +64,38 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up JDK 25 (Temurin)
+        if: matrix.build-mode == 'manual'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up the Android SDK
+        if: matrix.build-mode == 'manual'
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+
+      - name: Set up Gradle
+        if: matrix.build-mode == 'manual'
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          # No cache at all here. A restored task output would make the compile
+          # tasks up-to-date, the Kotlin compiler would never run, and CodeQL
+          # would build an empty database — green, and analysing nothing.
+          cache-disabled: true
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
         with:
           languages: ${{ matrix.language }}
-          build-mode: none
+          build-mode: ${{ matrix.build-mode }}
           queries: security-and-quality
+
+      # One debug variant is enough: every module's Kotlin is compiled by it, and
+      # the release variants add R8 output CodeQL has no use for.
+      - name: Build for extraction
+        if: matrix.build-mode == 'manual'
+        run: ./gradlew assembleDevDebug --no-build-cache --stacktrace
 
       - name: Analyze
         uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
