@@ -268,5 +268,8 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
 - [ ] `/.well-known/assetlinks.json` is served, so the production App Link verifies. **Open** —
   server-side, main repo (exposure plan A7). Until then Android shows a disambiguation dialog
   instead of opening the app.
-- [ ] The realm's `basetool-android` client exists with both redirect URIs registered. **Open** —
-  Phase-0 provisioning; none of this can be exercised end to end before it does.
+- [ ] The redirect URIs compiled into the flavours match the ones registered on the realm's
+  `basetool-android` client. **Open** — the client exists, but this repo controls only one end of
+  that contract; a mismatch surfaces as `invalid_redirect_uri` at the realm, before the app is ever
+  reached. Note that `docs/keycloak/realm-config.reference.json` in the main repo does **not**
+  list this client, so the committed reference is stale and cannot serve as the check.

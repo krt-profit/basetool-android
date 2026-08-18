@@ -57,8 +57,10 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
   Robolectric silently uses an empty default manifest, every intent filter resolves to nothing, and
   a manifest assertion fails for a reason unrelated to the manifest.
 - Two things stay unverifiable here and are marked open: `assetlinks.json` is not served yet, so the
-  production App Link does not verify and Android will show a disambiguation dialog; and the realm's
-  `basetool-android` client does not exist, so nothing in this flow has met a real realm.
+  production App Link does not verify and Android will show a disambiguation dialog; and while the
+  realm's `basetool-android` client exists, the redirect URIs it registers have not been checked
+  against the ones compiled into the flavours — a mismatch fails at the realm with
+  `invalid_redirect_uri`, before any of this code runs.
 
 ## Alternatives rejected
 
