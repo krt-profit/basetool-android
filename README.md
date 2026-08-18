@@ -1,7 +1,7 @@
 # Basetool Android
 
 Native Android companion app for the **Profit Basetool** — the squadron-management tool of
-the "DAS KARTELL" / IRIDIUM Star Citizen organization. Kotlin + Jetpack Compose, phones
+the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
 portrait-first, tablets landscape-first, minSdk 29 (Android 10), dark-only DAS KARTELL
 design.
 
