@@ -70,4 +70,37 @@ object KrtHttpClient {
                     activeOrgUnitProvider = activeOrgUnitProvider,
                 ),
             ).build()
+
+    /**
+     * Derives the client used for Keycloak's token, revocation and logout endpoints.
+     *
+     * **The API client cannot be reused as-is, and the reason is a login failure rather than a
+     * matter of taste.** [MandatoryHeadersInterceptor] attaches `Authorization: Bearer <access
+     * token>` to every request it sees. Keycloak reads an `Authorization` header on the token
+     * endpoint as an attempt at client authentication and answers `invalid_client` — so a session
+     * refresh would work exactly once, on the first login, and fail forever after. The other three
+     * headers are merely meaningless there: the correlation id is the *backend's* log join key, and
+     * the org-unit pin is a Basetool concept the realm has never heard of.
+     *
+     * What is kept is everything that costs something to duplicate — the connection pool, the
+     * dispatcher and the timeouts all come from [api] — so token calls reuse a warm TLS connection
+     * instead of opening a second one to the same host.
+     *
+     * [ServerTimeInterceptor] is re-added deliberately, and it matters more here than on the API
+     * client: the clock a DPoP proof must agree with is **Keycloak's**, and this is the only
+     * traffic that observes it directly.
+     *
+     * @param api the API client to derive from
+     * @param serverClock the same clock instance the proof factory reads
+     * @return a client that sends exactly the headers a token request should carry
+     */
+    fun createTokenClient(
+        api: OkHttpClient,
+        serverClock: ServerClock,
+    ): OkHttpClient =
+        api
+            .newBuilder()
+            .apply { interceptors().clear() }
+            .addInterceptor(ServerTimeInterceptor(serverClock))
+            .build()
 }

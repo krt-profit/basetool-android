@@ -84,6 +84,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core:auth"))
     implementation(project(":core:designsystem"))
 
     implementation(libs.androidx.core.ktx)
@@ -99,4 +100,6 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.ext.junit)
 }

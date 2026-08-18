@@ -2,12 +2,13 @@
 <!--
   Auto Backup rules for Android 11 (API 30) and lower.
   Android 12+ devices read data_extraction_rules.xml instead — a minSdk-29 app
-  needs BOTH (docs/ANDROID_APP_SECURITY.md section 4).
+  needs BOTH (docs/ANDROID_APP_SECURITY.md section 4, REQ-APP-AUTH-004).
 
-  Nothing security-relevant exists yet; the token store lands with :core:auth
-  and must be excluded here, in <cloud-backup> AND in <device-transfer>.
+  The excluded path is the Preferences DataStore file the refresh token lives in.
+  It must stay byte-identical to AuthDataStore.RELATIVE_PATH; BackupExclusionTest
+  fails when the two drift, because nothing else would — a stale path here does
+  not break the build, it just starts uploading a refresh token.
 -->
 <full-backup-content>
-    <exclude domain="sharedpref" path="krt_tokens.xml" />
-    <exclude domain="file" path="krt_tokens" />
+    <exclude domain="file" path="datastore/krt_tokens.preferences_pb" />
 </full-backup-content>
