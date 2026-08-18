@@ -51,7 +51,9 @@ kotlin {
 
 dependencies {
     api(project(":core:network"))
-    implementation(libs.androidx.datastore.preferences)
+    // api, not implementation: AuthDataStore.create returns a DataStore<Preferences>, so the type
+    // is part of this module's surface and consumers need it on their compile classpath.
+    api(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.nimbus.jose.jwt)

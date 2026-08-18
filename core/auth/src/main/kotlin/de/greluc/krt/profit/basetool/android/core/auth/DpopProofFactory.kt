@@ -17,7 +17,7 @@ import com.nimbusds.jose.jwk.ECKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
-import java.security.interfaces.ECPrivateKey
+import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 import java.util.Date
 import java.util.UUID
@@ -45,7 +45,11 @@ class DpopProofFactory(
     private val keyPair: DpopKeyPair,
     private val serverClock: ServerClock,
 ) {
-    private val signer: JWSSigner = ECDSASigner(keyPair.privateKey)
+    // The (PrivateKey, Curve) constructor, not the ECPrivateKey one: a key that lives in the
+    // Android Keystore implements PrivateKey and ECKey but NOT java.security.interfaces.ECPrivateKey,
+    // because it cannot expose its scalar. Nimbus provides this overload for exactly that case, and
+    // the curve has to be named since it can no longer be read off the key.
+    private val signer: JWSSigner = ECDSASigner(keyPair.privateKey, Curve.P_256)
 
     private val publicJwk: ECKey =
         ECKey
@@ -124,10 +128,14 @@ class DpopProofFactory(
  * the keys, not in this type — which is what lets the proof format be tested on a JVM while the
  * key's hardware binding is an instrumented concern.
  *
- * @property privateKey signs the proof; never leaves the process it was created in
+ * @property privateKey signs the proof. Typed as [PrivateKey] rather than `ECPrivateKey` on
+ *   purpose: the production key lives in the Android Keystore, which hands out a handle that
+ *   implements `PrivateKey` and `ECKey` but never `ECPrivateKey` — it has no scalar to expose. A
+ *   narrower type compiles, passes every JVM test with an in-memory key, and throws
+ *   `ClassCastException` on the first real device
  * @property publicKey embedded in each proof header as the `jwk` claim
  */
 data class DpopKeyPair(
-    val privateKey: ECPrivateKey,
+    val privateKey: PrivateKey,
     val publicKey: ECPublicKey,
 )
