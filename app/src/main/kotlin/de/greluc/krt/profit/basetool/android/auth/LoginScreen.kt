@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -192,10 +193,15 @@ private fun Footer(
     onOpenImprint: () -> Unit,
     onOpenTerms: () -> Unit,
 ) {
-    Row(
+    // FlowRow, not Row: three equal shares of one line fit "Privacy / Imprint / Terms of use" and
+    // tore "Nutzungsbedingungen" into "NUTZUN GSBEDIN GUNGEN". German is the sizing baseline here —
+    // its compounds are the long ones, so a label that only fits in English is a defect waiting for
+    // the locale to change. Each button now takes the width its own text needs and the row wraps
+    // when they no longer fit beside each other.
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.Center,
     ) {
         KrtGhostButton(text = stringResource(R.string.login_privacy), onClick = onOpenPrivacy)
         KrtGhostButton(text = stringResource(R.string.login_imprint), onClick = onOpenImprint)
