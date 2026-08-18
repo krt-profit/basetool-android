@@ -11,15 +11,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,17 +66,16 @@ private const val BLOOM_ALPHA = 0.25f
  * legal unit and neither may be moved or dropped on its own (Fan Kit Guidelines §2/§2b/§3). It sits
  * here and on the settings screen, nowhere else.
  *
- * Two entries from the design chapter are deliberately absent for now, because rendering them would
- * be a promise the app cannot keep: **"Mit Discord anmelden"** is shown only when the realm has the
- * IdP configured, and **"Als Gast fortfahren"** only when guest browsing is enabled — both are
- * capability answers the app has no endpoint for yet. A button that fails after the tap is worse
- * than one that is not there.
+ * Two entries from the design chapter are absent, for different reasons. **"Als Gast fortfahren"**
+ * is gone for good: guest mode was dropped (owner decision, 2026-08-18) and every user signs in.
+ * **"Mit Discord anmelden"** waits — the design chapter shows it only when the realm has the IdP
+ * configured, and that is a capability answer the app has no endpoint for yet; a button that fails
+ * after the tap is worse than one that is not there.
  *
  * @param state what the login is currently doing
  * @param onSignIn starts the Custom Tab flow
  * @param onOpenPrivacy opens the privacy policy in a browser
  * @param onOpenImprint opens the imprint
- * @param onOpenTerms opens the terms of use
  * @param versionName the app's version, shown in the footer
  * @param versionCode the build number beside it
  * @param modifier layout modifier from the caller
@@ -85,7 +86,6 @@ fun LoginScreen(
     onSignIn: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
-    onOpenTerms: () -> Unit,
     versionName: String,
     versionCode: Int,
     modifier: Modifier = Modifier,
@@ -95,51 +95,69 @@ fun LoginScreen(
             modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .topBloom(),
+                .topBloom()
+                // Drawn edge to edge so the bloom reaches the top of the display, but the content
+                // is inset: without this the org line sits on the status bar clock, which a
+                // preview cannot show because it renders no system bars.
+                .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter,
     ) {
-        Column(
+        Box(
             modifier =
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = KrtSpacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(KrtSpacing.xxl))
-            Brand()
-            Spacer(Modifier.height(KrtSpacing.xxl))
-
-            KrtCtaButton(
-                text = stringResource(R.string.login_sign_in),
-                onClick = onSignIn,
-                enabled = state !is LoginUiState.Working,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // The message occupies its own slot rather than replacing the button: a member whose
-            // login was refused still needs the button to try again.
-            state.messageRes?.let { message ->
-                Spacer(Modifier.height(KrtSpacing.md))
-                Text(
-                    text = stringResource(message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (state is LoginUiState.Failed) KrtPalette.DangerText else KrtPalette.TextMuted,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            // Brand at the top, the call to action at exactly half the screen height, the legal
+            // block at the bottom edge. Three aligned children rather than one column with
+            // spacers: a spacer's share depends on what is above it, and the button's position is
+            // meant to be a fixed fraction of the screen rather than a consequence of the brand's
+            // line count.
+            Column(
+                modifier = Modifier.align(Alignment.TopCenter),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(Modifier.height(KrtSpacing.xxl))
+                Brand()
             }
 
-            // No weight spacer: the column scrolls, and a weight inside a scrollable
-            // parent has no finite height to take a share of.
-            Spacer(Modifier.height(KrtSpacing.xxl))
+            Column(
+                modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                KrtCtaButton(
+                    text = stringResource(R.string.login_sign_in),
+                    onClick = onSignIn,
+                    enabled = state !is LoginUiState.Working,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-            KrtFanKitBand()
-            Spacer(Modifier.height(KrtSpacing.lg))
-            Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint, onOpenTerms = onOpenTerms)
-            Version(versionName = versionName, versionCode = versionCode)
-            Spacer(Modifier.height(KrtSpacing.lg))
+                // The message occupies its own slot rather than replacing the button: a member
+                // whose login was refused still needs the button to try again.
+                state.messageRes?.let { message ->
+                    Spacer(Modifier.height(KrtSpacing.md))
+                    Text(
+                        text = stringResource(message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (state is LoginUiState.Failed) KrtPalette.DangerText else KrtPalette.TextMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                KrtFanKitBand()
+                Spacer(Modifier.height(KrtSpacing.lg))
+                Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint)
+                Spacer(Modifier.height(KrtSpacing.sm))
+                Version(versionName = versionName, versionCode = versionCode)
+                Spacer(Modifier.height(KrtSpacing.lg))
+            }
         }
     }
 }
@@ -161,26 +179,40 @@ private fun Brand() {
 }
 
 /**
- * The three legal links the login screen has to carry.
+ * The two legal links the login screen has to carry — and it is exactly two.
+ *
+ * Privacy and imprint belong **here**, before the login, because that is where their duty lives:
+ * the privacy notice has to be available before any processing begins, and processing begins with
+ * the sign-in tap rather than after it; the imprint has to be permanently and immediately
+ * reachable, which a link found only after logging in is not.
+ *
+ * The terms of use are deliberately **not** here (owner decision, 2026-08-18). They are a
+ * contractual document whose binding moment is the acceptance gate — mandatory, versioned and with
+ * an explicit checkbox (design spec ch. 04) — so a link in front of it is neither a legal
+ * substitute nor practically useful, and the design chapter's third button is dropped with that
+ * reasoning. There is no guest who could miss the gate: guest mode was dropped (owner decision,
+ * 2026-08-18), so every user of this app passes it.
  *
  * @param onOpenPrivacy opens the privacy policy
  * @param onOpenImprint opens the imprint
- * @param onOpenTerms opens the terms of use
  */
 @Composable
 private fun Footer(
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
-    onOpenTerms: () -> Unit,
 ) {
-    Row(
+    // FlowRow, not Row: three equal shares of one line fit "Privacy / Imprint / Terms of use" and
+    // tore "Nutzungsbedingungen" into "NUTZUN GSBEDIN GUNGEN". German is the sizing baseline here —
+    // its compounds are the long ones, so a label that only fits in English is a defect waiting for
+    // the locale to change. Each button now takes the width its own text needs and the row wraps
+    // when they no longer fit beside each other.
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.Center,
     ) {
         KrtGhostButton(text = stringResource(R.string.login_privacy), onClick = onOpenPrivacy)
         KrtGhostButton(text = stringResource(R.string.login_imprint), onClick = onOpenImprint)
-        KrtGhostButton(text = stringResource(R.string.login_terms), onClick = onOpenTerms)
     }
 }
 
@@ -220,14 +252,19 @@ private fun Modifier.topBloom(): Modifier =
     drawBehind {
         val width = BLOOM_WIDTH.toPx()
         val height = BLOOM_HEIGHT.toPx()
-        drawOval(
+        // A rectangle, not an oval, and the gradient makes the shape. Drawing an oval clipped the
+        // gradient at the oval's edge while it was still around 40 % opaque along the short axis,
+        // which put a hard arc across the top of the screen — visible on a device, invisible in a
+        // preview. Over a rectangle whose corners lie outside the gradient radius, the falloff
+        // reaches transparent on its own and there is no edge to see.
+        drawRect(
             brush =
                 Brush.radialGradient(
                     colors = listOf(KrtPalette.Orange.copy(alpha = BLOOM_ALPHA), Color.Transparent),
-                    center = Offset(size.width / 2f, height / 2f),
+                    center = Offset(size.width / 2f, 0f),
                     radius = width / 2f,
                 ),
-            topLeft = Offset(size.width / 2f - width / 2f, -height / 2f),
+            topLeft = Offset(size.width / 2f - width / 2f, 0f),
             size = Size(width, height),
         )
     }
@@ -268,7 +305,6 @@ private fun LoginScreenPreview() {
             onSignIn = {},
             onOpenPrivacy = {},
             onOpenImprint = {},
-            onOpenTerms = {},
             versionName = "0.1.0-alpha01",
             versionCode = 1,
         )
@@ -287,7 +323,6 @@ private fun LoginScreenFailedPreview() {
             onSignIn = {},
             onOpenPrivacy = {},
             onOpenImprint = {},
-            onOpenTerms = {},
             versionName = "0.1.0-alpha01",
             versionCode = 1,
         )

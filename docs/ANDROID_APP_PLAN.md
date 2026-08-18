@@ -256,11 +256,10 @@ Mission signup/check-in/payout/finance entries · hangar CRUD + imports · inven
 rebook · order assignee/note/status (role-gated) · bank booking requests + owner approvals ·
 personal inventory/blueprints.
 
-**Phase 4 — live parity & breadth** (still pre-release per Q6)
+**Phase 4 — live parity & breadth** (still pre-release per Q6; guest mode dropped per Q8)
 Backend live-sync bridge (SSE or WS, Redis-fed; own ADR) with coalesced re-fetch semantics
 (400 ms detail / 1 500 ms global rooms, mirroring `krt-live-sync.js`) · Materialbörse ·
-Raffinerie · Beförderung · guest mode (browse redacted missions, guest signup, anonymous order
-create — the vhost's anonymous-path block lifts here) · system states + adaptive icon +
+Raffinerie · Beförderung · system states + adaptive icon +
 notification channels per design-spec ch. 14. No push channel (decided Q2).
 
 **Phase 5 — hardening & first release**
@@ -314,7 +313,8 @@ Git/GitHub prose, DCO + `Co-Authored-By` trailers, Javadoc/KDoc gate.
 | Q3 | Play Integrity (data → Google) | **Only if Play distribution ever comes** — with Q1 = GitHub Releases it stays OFF; hardware Key Attestation remains the Phase-5 Google-lean option |
 | Q4 | Crash reporting | **Local only** — on-device log/crash buffer, user-initiated export; no automatic reporting backend |
 | Q5 | Repo layout | **New public repo `basetool-android`**; server-side changes stay in this repo |
-| Q6 | MVP scope | **Full member feature set before first release** — Phases 2–4 (incl. Materialbörse, Raffinerie, Beförderung, guest mode) are all pre-release; first public release ships after Phase 5 hardening |
+| Q6 | MVP scope | **Full member feature set before first release** — Phases 2–4 (incl. Materialbörse, Raffinerie, Beförderung) are all pre-release; first public release ships after Phase 5 hardening |
+| Q8 | Guest mode | **Dropped** (owner decision, 2026-08-18). Every user signs in; the app has no anonymous surface. Consequences: no "Als Gast fortfahren" entry on the login screen (design spec ch. 04), no guest signup or anonymous order create in Phase 4, and — server-side — the API vhost never has to open the anonymous read/write paths its allowlist stance held in reserve (security concept §2.8). The terms gate now covers every user of the app, since there is no one who reaches content without passing it. |
 | Q7 | Admin area in app | **Web-only permanently** |
 
 Consequences folded into this plan: the roadmap keeps its phase structure, but the **first
