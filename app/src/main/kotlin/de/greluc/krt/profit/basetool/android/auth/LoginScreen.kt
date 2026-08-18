@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -105,30 +103,30 @@ fun LoginScreen(
                 .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter,
     ) {
-        Column(
+        Box(
             modifier =
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
                     .padding(horizontal = KrtSpacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // The upper block takes the free height and scrolls when there is not enough of it;
-            // the legal block below stays at the bottom edge, where the design puts it. The weight
-            // lives here, on a column that is NOT scrollable — inside a scrolling parent it would
-            // have no finite height to take a share of.
+            // Brand at the top, the call to action at exactly half the screen height, the legal
+            // block at the bottom edge. Three aligned children rather than one column with
+            // spacers: a spacer's share depends on what is above it, and the button's position is
+            // meant to be a fixed fraction of the screen rather than a consequence of the brand's
+            // line count.
             Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
+                modifier = Modifier.align(Alignment.TopCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(Modifier.height(KrtSpacing.xxl))
                 Brand()
-                Spacer(Modifier.height(KrtSpacing.xxl))
+            }
 
+            Column(
+                modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 KrtCtaButton(
                     text = stringResource(R.string.login_sign_in),
                     onClick = onSignIn,
@@ -150,12 +148,17 @@ fun LoginScreen(
                 }
             }
 
-            KrtFanKitBand()
-            Spacer(Modifier.height(KrtSpacing.lg))
-            Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint, onOpenTerms = onOpenTerms)
-            Spacer(Modifier.height(KrtSpacing.sm))
-            Version(versionName = versionName, versionCode = versionCode)
-            Spacer(Modifier.height(KrtSpacing.lg))
+            Column(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                KrtFanKitBand()
+                Spacer(Modifier.height(KrtSpacing.lg))
+                Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint, onOpenTerms = onOpenTerms)
+                Spacer(Modifier.height(KrtSpacing.sm))
+                Version(versionName = versionName, versionCode = versionCode)
+                Spacer(Modifier.height(KrtSpacing.lg))
+            }
         }
     }
 }
