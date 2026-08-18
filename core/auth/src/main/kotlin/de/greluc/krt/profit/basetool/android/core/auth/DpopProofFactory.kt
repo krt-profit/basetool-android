@@ -58,11 +58,15 @@ class DpopProofFactory(
      *
      * @param httpMethod the request method, upper case — `htm`
      * @param httpUri the request URI **without** query or fragment, as RFC 9449 requires — `htu`
+     * @param nonce the value of the last `DPoP-Nonce` the server issued, or `null` when it has
+     *   issued none; RFC 9449 §8 lets a server start demanding one at any time, and a client that
+     *   cannot echo it back would be locked out by a server-side setting change
      * @return the serialised proof JWT for the `DPoP` header
      */
     fun createProof(
         httpMethod: String,
         httpUri: String,
+        nonce: String? = null,
     ): String {
         val issuedAt = Date.from(serverClock.now())
         val claims =
@@ -72,6 +76,7 @@ class DpopProofFactory(
                 .claim(CLAIM_HTTP_METHOD, httpMethod.uppercase())
                 .claim(CLAIM_HTTP_URI, httpUri)
                 .issueTime(issuedAt)
+                .apply { nonce?.let { claim(CLAIM_NONCE, it) } }
                 .build()
         val header =
             JWSHeader
@@ -82,6 +87,20 @@ class DpopProofFactory(
         return SignedJWT(header, claims).apply { sign(signer) }.serialize()
     }
 
+    /**
+     * The JWK SHA-256 thumbprint of the public key, base64url-encoded (RFC 7638).
+     *
+     * This is the `dpop_jkt` parameter of the authorization request (RFC 9449 §10): it tells the
+     * realm, before any token exists, which key the eventual grant must be bound to. Under the
+     * refresh-only policy it is defence in depth rather than a requirement — it closes the window
+     * in which an intercepted authorization code could be redeemed against a different key.
+     *
+     * Computed here rather than by the caller so the key never has to leave this class.
+     *
+     * @return the thumbprint, ready to send as a query parameter
+     */
+    fun publicKeyThumbprint(): String = publicJwk.computeThumbprint().toString()
+
     private companion object {
         /** `typ` RFC 9449 prescribes; a plain `JWT` here is rejected. */
         const val PROOF_TYPE = "dpop+jwt"
@@ -91,6 +110,9 @@ class DpopProofFactory(
 
         /** The target URI, query and fragment removed. */
         const val CLAIM_HTTP_URI = "htu"
+
+        /** The server-issued nonce, echoed back when the server has issued one (RFC 9449 §8). */
+        const val CLAIM_NONCE = "nonce"
     }
 }
 

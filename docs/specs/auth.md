@@ -75,7 +75,15 @@ refresh of a session fail intermittently and only in the field.
 - [x] `iat` follows an offset server clock.
 - [x] Two proofs never share a `jti`.
 - [x] The private half of the key is never serialised into the header.
-- [ ] The proof is attached to the actual token request. **Open** — lands with the token client.
+- [x] The proof is attached to the token request and to nothing else — `TokenClient` is the only
+  caller of the factory, and it builds its own HTTP client precisely so no interceptor can add one
+  (`REQ-APP-AUTH-006`).
+- [x] A server-issued `DPoP-Nonce` is echoed back, and a `use_dpop_nonce` refusal is retried exactly
+  once (RFC 9449 §8.3, `TokenClientTest`). The realm demands no nonce today; the handling exists so
+  that enabling one is not a client-breaking change.
+- [ ] The proof is accepted by the live realm under the refresh-only policy. **Open** — verified
+  against a throwaway Keycloak in the concept (security concept §4), not yet against the app's own
+  request.
 
 ### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
 
@@ -107,5 +115,46 @@ entry, in addition to the Keycloak end-session call and the best-effort refresh-
 
 - [x] `RefreshTokenStore.clear()` removes the entry; `KeystoreSecretCipher.deleteKey()` removes the
   key.
-- [ ] The full logout sequence — end-session, revocation, local wipe — is orchestrated and tested.
-  **Open** — lands with the token client and the login flow.
+- [x] The revocation call and the RP-initiated logout URL exist and are tested
+  (`TokenClient.revokeRefreshToken`, `TokenClient.endSessionUri`). Revocation cannot fail a logout:
+  it answers `false` and logs, because what protects the device is the local wipe and a phone with
+  no connectivity must still be able to log out.
+- [ ] The three steps are orchestrated in one sequence with a defined order and failure behaviour.
+  **Open** — lands with the login flow, which owns the session state they act on.
+
+### REQ-APP-AUTH-006 — Token requests use their own HTTP client, and every answer is a named state
+
+**The API client must not be reused for token requests.** It carries
+`MandatoryHeadersInterceptor`, which attaches `Authorization: Bearer <access token>` to everything
+it sees; Keycloak reads an `Authorization` header on its token endpoint as an attempt at client
+authentication and answers `invalid_client`. A refresh would therefore succeed exactly once — on
+the first login, when no access token exists yet — and fail for the rest of the install's life.
+`KrtHttpClient.createTokenClient` derives a client that keeps the connection pool, the dispatcher
+and the timeouts and drops the interceptors, re-adding only `ServerTimeInterceptor`: this traffic is
+the only kind that observes **Keycloak's** clock, and Keycloak is the party that judges a proof's
+`iat`.
+
+**The endpoints are derived from the issuer, not discovered.** Keycloak's URL layout is fixed, so a
+`/.well-known/openid-configuration` fetch would only add a round trip to the login path and another
+way for it to fail. Deriving them also makes an omission enforceable: `OidcConfiguration` has no
+`userinfo` property, and under the refresh-only DPoP policy Keycloak answers **HTTP 500** there
+(security concept §4, constraint 1). Profile claims come from the ID token.
+
+**Every outcome is a state, and the ones that look alike are kept apart.** `invalid_grant` and a
+realm misconfiguration both arrive as HTTP 400: the first means "show the login screen", the second
+means a login that cannot succeed, and collapsing them produces either a dead end or an infinite
+loop. A 2xx carrying `token_type` other than `Bearer` is a *third* case — the per-client "Require
+DPoP bound tokens" switch overriding the client policy — whose natural symptom is that every
+subsequent API call 401s, pointing at the wrong component entirely.
+
+**Acceptance**
+
+- [x] The token client sends no `Authorization`, correlation-id or org-unit header, and the API
+  client still sends all of them (`KrtHttpClientTest`).
+- [x] The token client updates the `ServerClock` from the realm's `Date` header.
+- [x] `invalid_grant` maps to a session that ended; any other OAuth error stays a rejection; a
+  refusal with no OAuth body keeps its status (`TokenClientTest`).
+- [x] `token_type` other than `Bearer` is reported as such instead of being handed on.
+- [x] A 2xx that is not a grant — the captive-portal case — is malformed, not an empty session.
+- [x] A transport failure is distinguishable from a refusal, so only it can read as "offline".
+- [ ] The states are rendered by the screens that own them. **Open** — lands with the login flow.

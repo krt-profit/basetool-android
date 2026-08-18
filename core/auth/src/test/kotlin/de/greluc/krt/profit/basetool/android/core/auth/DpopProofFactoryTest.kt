@@ -94,6 +94,30 @@ class DpopProofFactoryTest {
     }
 
     @Test
+    fun `the nonce claim appears only once the realm has issued one`() {
+        // RFC 9449 §8: a proof carrying a nonce the server never issued is rejected, and one
+        // missing a nonce the server demands is rejected too. Both directions have to hold.
+        val factory = DpopProofFactory(keyPair, ServerClock())
+
+        val without = parseVerified(factory.createProof("POST", TOKEN_URI))
+        val withNonce = parseVerified(factory.createProof("POST", TOKEN_URI, nonce = "nonce-1"))
+
+        assertNull(without.jwtClaimsSet.getStringClaim("nonce"))
+        assertEquals("nonce-1", withNonce.jwtClaimsSet.getStringClaim("nonce"))
+    }
+
+    @Test
+    fun `the thumbprint names the key the proof embeds`() {
+        // Sent as `dpop_jkt` on the authorization request. A thumbprint over a different key would
+        // not fail here — it would fail at the token endpoint, after the member logged in.
+        val factory = DpopProofFactory(keyPair, ServerClock())
+
+        val embedded = parseVerified(factory.createProof("POST", TOKEN_URI)).header.jwk.toECKey()
+
+        assertEquals(embedded.computeThumbprint().toString(), factory.publicKeyThumbprint())
+    }
+
+    @Test
     fun `iat follows server time, not the device clock`() {
         // The whole reason ServerClock exists: Keycloak allows 10 s lifetime with 15 s skew, so a
         // device a minute off cannot log in unless the proof is stamped with server time.
