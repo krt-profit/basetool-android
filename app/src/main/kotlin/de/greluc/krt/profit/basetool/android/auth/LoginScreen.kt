@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -95,7 +98,11 @@ fun LoginScreen(
             modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .topBloom(),
+                .topBloom()
+                // Drawn edge to edge so the bloom reaches the top of the display, but the content
+                // is inset: without this the org line sits on the status bar clock, which a
+                // preview cannot show because it renders no system bars.
+                .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
@@ -103,41 +110,50 @@ fun LoginScreen(
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = KrtSpacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(KrtSpacing.xxl))
-            Brand()
-            Spacer(Modifier.height(KrtSpacing.xxl))
+            // The upper block takes the free height and scrolls when there is not enough of it;
+            // the legal block below stays at the bottom edge, where the design puts it. The weight
+            // lives here, on a column that is NOT scrollable — inside a scrolling parent it would
+            // have no finite height to take a share of.
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(Modifier.height(KrtSpacing.xxl))
+                Brand()
+                Spacer(Modifier.height(KrtSpacing.xxl))
 
-            KrtCtaButton(
-                text = stringResource(R.string.login_sign_in),
-                onClick = onSignIn,
-                enabled = state !is LoginUiState.Working,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // The message occupies its own slot rather than replacing the button: a member whose
-            // login was refused still needs the button to try again.
-            state.messageRes?.let { message ->
-                Spacer(Modifier.height(KrtSpacing.md))
-                Text(
-                    text = stringResource(message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (state is LoginUiState.Failed) KrtPalette.DangerText else KrtPalette.TextMuted,
-                    textAlign = TextAlign.Center,
+                KrtCtaButton(
+                    text = stringResource(R.string.login_sign_in),
+                    onClick = onSignIn,
+                    enabled = state !is LoginUiState.Working,
                     modifier = Modifier.fillMaxWidth(),
                 )
-            }
 
-            // No weight spacer: the column scrolls, and a weight inside a scrollable
-            // parent has no finite height to take a share of.
-            Spacer(Modifier.height(KrtSpacing.xxl))
+                // The message occupies its own slot rather than replacing the button: a member
+                // whose login was refused still needs the button to try again.
+                state.messageRes?.let { message ->
+                    Spacer(Modifier.height(KrtSpacing.md))
+                    Text(
+                        text = stringResource(message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (state is LoginUiState.Failed) KrtPalette.DangerText else KrtPalette.TextMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
 
             KrtFanKitBand()
             Spacer(Modifier.height(KrtSpacing.lg))
             Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint, onOpenTerms = onOpenTerms)
+            Spacer(Modifier.height(KrtSpacing.sm))
             Version(versionName = versionName, versionCode = versionCode)
             Spacer(Modifier.height(KrtSpacing.lg))
         }
@@ -220,14 +236,19 @@ private fun Modifier.topBloom(): Modifier =
     drawBehind {
         val width = BLOOM_WIDTH.toPx()
         val height = BLOOM_HEIGHT.toPx()
-        drawOval(
+        // A rectangle, not an oval, and the gradient makes the shape. Drawing an oval clipped the
+        // gradient at the oval's edge while it was still around 40 % opaque along the short axis,
+        // which put a hard arc across the top of the screen — visible on a device, invisible in a
+        // preview. Over a rectangle whose corners lie outside the gradient radius, the falloff
+        // reaches transparent on its own and there is no edge to see.
+        drawRect(
             brush =
                 Brush.radialGradient(
                     colors = listOf(KrtPalette.Orange.copy(alpha = BLOOM_ALPHA), Color.Transparent),
-                    center = Offset(size.width / 2f, height / 2f),
+                    center = Offset(size.width / 2f, 0f),
                     radius = width / 2f,
                 ),
-            topLeft = Offset(size.width / 2f - width / 2f, -height / 2f),
+            topLeft = Offset(size.width / 2f - width / 2f, 0f),
             size = Size(width, height),
         )
     }
