@@ -9,7 +9,7 @@ the binding source** (marked `Doc type: living plan`):
 
 | Area (planned) | Will absorb |
 |---|---|
-| `auth.md` (`REQ-APP-AUTH-*`) | login flow, token storage, DPoP, session states, app-lock |
+| [`auth.md`](auth.md) (`REQ-APP-AUTH-*`) — **exists** (`001`–`005`) | login flow, token storage, DPoP, session states, app-lock |
 | [`api-contract.md`](api-contract.md) (`REQ-APP-API-*`) — **exists** (`001`–`005`) | consumed endpoints, headers, problem-code handling, pagination, version echo |
 | `privacy.md` (`REQ-APP-PRIV-*`) | dependency/data-flow gate, § 25 TDDDG storage table, permissions |
 | `ui.md` (`REQ-APP-UI-*`) | KRT design tokens, adaptive layout rules, i18n + copy rules, Fan Kit compliance band (see `core/designsystem/fankit/`) — extracted from the binding design spec at `docs/design/android/` |
