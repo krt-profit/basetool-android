@@ -1,0 +1,9 @@
+# Every path in this repository is owned by the maintainer.
+#
+# This is what makes "required review" on `main` mean something: without an
+# owner, branch protection can require a review from anyone, which on a public
+# repo is not the same as a review by someone who can judge the change.
+#
+# Full policy: CONTRIBUTING.md.
+
+* @greluc

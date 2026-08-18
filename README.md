@@ -49,6 +49,15 @@ The toolchain has a few non-obvious constraints — see the *Toolchain landmines
 Contributor ground rules: [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
 Server-side counterpart work lives in the main `basetool` repository.
 
+### What CI checks
+
+Every pull request runs `./gradlew build` — the same command as above plus `assemble`, so the
+gate and the working copy cannot drift apart — together with CodeQL (`java-kotlin` and
+`actions`), a range-scoped secret scan, dependency review, and a DCO sign-off check on every
+commit the PR adds. The workflows themselves are linted by actionlint and zizmor, and every
+third-party action is pinned to a full commit SHA. Details and the deliberately-still-open gates:
+[`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) § 4.
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) — one-time [CLA](CLA.md) signature

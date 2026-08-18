@@ -1,0 +1,68 @@
+name: CodeQL
+
+# Semantic SAST for the app's own Kotlin, plus GitHub's `actions` pack for the
+# workflows in this directory. It closes the gap left by the other gates:
+# detekt reports local code smells and Android Lint reports platform misuse,
+# but neither follows data across call boundaries. In an app whose whole job is
+# moving tokens and member data between a Keystore, a realm and an API, the
+# taint-tracking is the point.
+#
+# `build-mode: none` analyses the checked-out source without compiling it.
+# It costs a fraction of a manual build and, unlike a `manual` mode that has to
+# re-run Gradle with the configuration cache and AGP's built-in Kotlin
+# compilation, it cannot silently extract nothing because a build flag changed.
+#
+# Blocking is enforced via branch protection: mark the two matrix check names
+# ("CodeQL / Analyze (java-kotlin)" and "CodeQL / Analyze (actions)") as
+# required AFTER the first run on main, so GitHub knows the names.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, offset from the supply-chain workflow's Monday run.
+    - cron: '23 5 * * 3'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, actions]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@f3712979fa5f215279b101dd0a2e3bdfb4353324 # v3.37.7
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@f3712979fa5f215279b101dd0a2e3bdfb4353324 # v3.37.7
+        with:
+          category: /language:${{ matrix.language }}

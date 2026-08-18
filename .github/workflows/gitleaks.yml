@@ -1,0 +1,96 @@
+name: Secret Scan
+
+# Scans for committed secrets. CodeQL does taint analysis on code, not
+# credential detection, and GitHub's own secret scanning covers only the token
+# classes it has partner patterns for — neither would notice a signing keystore
+# password or a realm client secret pasted into a test.
+#
+# The stakes here are higher than in a private repo: this one is public by
+# design, and the project's rule is that nothing secret ever lands in it. A
+# leak "fixed" by a follow-up commit still sits in history and still trips a
+# range scan; the only real cure is rewriting the commit, so prevention is the
+# cheap path.
+#
+# Why the gitleaks BINARY and not gitleaks/gitleaks-action: the action requires
+# a paid GITLEAKS_LICENSE for commits under a GitHub Organization, and this
+# repo lives under `krt-profit`. Running the pinned release binary keeps the
+# version explicit and adds no third-party action to the supply chain.
+#
+# Scan scope:
+#   - pull_request      -> RANGE-scoped to base..head, so a pre-existing test
+#                          fixture never trips the check and only what a PR
+#                          actually adds can fail it. That is what makes this
+#                          gate safe to mark required without scrubbing history
+#                          first.
+#   - workflow_dispatch -> full-history scan.
+#
+# Findings are --redact-ed, so a matched value never lands in the log.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: gitleaks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # fetch-depth: 0 so gitleaks can walk base..head on a PR; a shallow
+          # clone has no merge-base and the range walk degrades to "nothing to
+          # scan" — green, and meaningless.
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          set -euo pipefail
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "$url" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # The SHAs travel through env, never through a `${{ }}` interpolation
+      # inside the script: a ref is attacker-controlled text on a fork PR, and
+      # interpolation would make it shell (zizmor's `template-injection`).
+      - name: Resolve scan range
+        id: range
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "log_opts=--no-merges ${BASE_SHA}..${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          else
+            echo "log_opts=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Scan for secrets
+        env:
+          LOG_OPTS: ${{ steps.range.outputs.log_opts }}
+        run: |
+          set -euo pipefail
+          args=(git . --redact --no-banner --exit-code 1)
+          if [ -n "$LOG_OPTS" ]; then
+            args+=(--log-opts="$LOG_OPTS")
+          fi
+          gitleaks "${args[@]}"
