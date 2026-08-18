@@ -81,6 +81,9 @@ refresh of a session fail intermittently and only in the field.
 - [x] A server-issued `DPoP-Nonce` is echoed back, and a `use_dpop_nonce` refusal is retried exactly
   once (RFC 9449 §8.3, `TokenClientTest`). The realm demands no nonce today; the handling exists so
   that enabling one is not a client-breaking change.
+- [x] The authorization request carries `dpop_jkt`, the thumbprint of the same key
+  (`AuthorizationRequestTest`) — RFC 9449 §10 defence in depth, so an intercepted code cannot be
+  redeemed against a different key.
 - [ ] The proof is accepted by the live realm under the refresh-only policy. **Open** — verified
   against a throwaway Keycloak in the concept (security concept §4), not yet against the app's own
   request.
@@ -119,8 +122,14 @@ entry, in addition to the Keycloak end-session call and the best-effort refresh-
   (`TokenClient.revokeRefreshToken`, `TokenClient.endSessionUri`). Revocation cannot fail a logout:
   it answers `false` and logs, because what protects the device is the local wipe and a phone with
   no connectivity must still be able to log out.
-- [ ] The three steps are orchestrated in one sequence with a defined order and failure behaviour.
-  **Open** — lands with the login flow, which owns the session state they act on.
+- [x] The three steps run in one defined order (`AuthSession.logout`, `AuthSessionTest`): the
+  in-memory session is dropped **first**, so a logout is instant and cannot be undone by a slow
+  network; the revocation follows while the token is still known; the local wipe of blob **and** key
+  comes last. A refused revocation does not stop any of it.
+- [x] `deleteKey()` is part of the `SecretCipher` contract rather than an implementation detail — a
+  cipher that cannot be wiped cannot back a logout.
+- [ ] The end-session URL is actually opened. **Open** — `logout()` returns it; opening a browser is
+  the UI's half and lands with the chapter-04 screens.
 
 ### REQ-APP-AUTH-006 — Token requests use their own HTTP client, and every answer is a named state
 
@@ -158,3 +167,53 @@ subsequent API call 401s, pointing at the wrong component entirely.
 - [x] A 2xx that is not a grant — the captive-portal case — is malformed, not an empty session.
 - [x] A transport failure is distinguishable from a refusal, so only it can read as "offline".
 - [ ] The states are rendered by the screens that own them. **Open** — lands with the login flow.
+
+### REQ-APP-AUTH-007 — One login attempt, three per-attempt secrets, and a session that survives a tunnel
+
+Login is Authorization Code + PKCE **S256** in a browser (RFC 8252), never a WebView. Each attempt
+mints three values that must not outlive it or be reused: the PKCE verifier redeems the code, the
+`state` ties the redirect to this attempt, and the `nonce` ties the ID token to it. They live
+together in one `AuthorizationRequest`, so losing one of them is a compile error rather than a
+quietly weakened login.
+
+**`state` is checked before anything else in a redirect is read.** A redirect the app did not start
+must not be able to steer the flow — not even into an error screen of its choosing.
+
+**The `nonce` is verified against the ID token, or it is decoration.** A token whose `nonce` does not
+match was not minted for this login; nothing is stored and no session starts.
+
+**The redirect is parsed at string level, not with a URL parser.** Production redirects to a verified
+App Link, but the dev realm registers the custom scheme `de.kartell.basetool:/oauth2redirect`, which
+an HTTP URL parser refuses outright — parsing with one would break every login on the build the flow
+is developed against.
+
+**Refreshing is single-flight, and only `invalid_grant` ends a session.** Several screens loading at
+once would each notice the expiry and each start a refresh; one mutex plus a re-check inside it means
+they wait and then find it done. A refresh that fails because the phone is in a tunnel leaves the
+stored token untouched and reports `SessionState.Stale` — the UI shows a retry, not a password
+prompt. Only a refusal from the realm clears the stored token.
+
+**A refresh response with no `refresh_token` keeps the stored one.** The realm does not rotate
+(main repo REQ-SEC-012), so omission is legitimate, and overwriting the field with `null` would
+discard the only way back into the session.
+
+**Acceptance**
+
+- [x] The verifier is 43 characters of unreserved entropy and the challenge is its base64url SHA-256,
+  recomputed independently in `PkceChallengeTest`; the verifier never appears in `toString`.
+- [x] The authorization request asks for `code` with `S256`, the registered redirect, the client's
+  scopes **without** `offline_access`, and `dpop_jkt` (`AuthorizationRequestTest`).
+- [x] `state`, `nonce` and the verifier differ between attempts.
+- [x] A redirect with a foreign `state` yields `StateMismatch` whether it carries a code or an error.
+- [x] A custom-scheme redirect is read exactly like an `https` one.
+- [x] An ID token with a mismatched `nonce` is refused and stores nothing (`AuthSessionTest`).
+- [x] Concurrent `refreshIfNeeded()` calls produce exactly one token request — asserted by a test
+  verified to fail when the lock is removed.
+- [x] An unreachable realm leaves the stored token in place and yields `Stale`; `invalid_grant`
+  clears it and yields `SignedOut`.
+- [x] A grant without a `refresh_token` keeps the stored one.
+- [ ] The Custom Tab launch, the redirect activity and the chapter-04 screens. **Open** — this
+  requirement covers the flow's logic; the UI half follows.
+- [ ] The ID token's signature is not verified. **Accepted, not open** — OIDC Core §3.1.3.7 permits
+  it when the token comes directly from the token endpoint over TLS, which is the only way this app
+  obtains one (ADR-0004).
