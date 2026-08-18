@@ -1,0 +1,207 @@
+name: CI
+
+# The gate every pull request has to pass: the app has to build, its tests have
+# to be green, and every static-analysis tool the project runs has to be clean.
+#
+# `./gradlew build` is deliberately the whole of it rather than a hand-picked
+# task list. It is `assemble` + `check`, so it covers all four variants
+# (dev/prod x debug/release, including the R8 pass on release), the unit and
+# Robolectric suites, Android Lint with `warningsAsErrors`, detekt and
+# Spotless/ktlint — and it is the exact command a contributor runs locally.
+# A CI-only task list is how CI and the working copy drift apart.
+#
+# `--continue` so a failing test still produces the lint reports and vice
+# versa: one run should report every problem, not the first one.
+#
+# Android Lint results are uploaded as SARIF into GitHub code scanning, which
+# is what makes a lint regression visible in the PR's "Files changed" tab
+# instead of only in a log nobody opens. Fork PRs get a read-only token by
+# design, so that upload is skipped for them rather than failing.
+#
+# Blocking is enforced via branch protection in repository settings: the check
+# names ("CI / Build, Test & Lint" and "CI / Workflow lint") must be marked as
+# required status checks against `main` AFTER this workflow has run at least
+# once on main, so the names are known to GitHub.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, Test & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: read
+      # Only for the Android Lint SARIF upload below; the step is skipped on
+      # fork PRs, where GitHub issues a read-only token regardless.
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes, and a checkout that leaves the token in
+          # .git/config hands it to every later step and to any build script
+          # that reads it (zizmor's `artipacked`).
+          persist-credentials: false
+
+      # gradle/gradle-daemon-jvm.properties pins the daemon to Java 25.
+      # Installing it here means Gradle finds a local JDK instead of
+      # downloading one from foojay on every run.
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+
+      # Verifies gradle-wrapper.jar against the known-good checksums for the
+      # declared distribution. A tampered wrapper jar is the classic way to run
+      # arbitrary code in a build that otherwise looks untouched.
+      - name: Validate the Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          # Branch builds read the cache but never write it: a cache entry
+          # written by a PR run is an entry an attacker's PR could have
+          # poisoned (zizmor's `cache-poisoning`).
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Build, test and lint
+        run: ./gradlew build --continue --stacktrace
+
+      # Collected into one directory with unique names because several modules
+      # each produce a lint-results-*.sarif and the upload step takes a
+      # directory, not a glob.
+      - name: Collect Android Lint SARIF reports
+        id: lint_sarif
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p build/sarif
+          found=0
+          while IFS= read -r report; do
+            module=$(printf '%s' "$report" | sed -e 's|/build/reports/.*||' -e 's|^\./||' -e 's|/|-|g')
+            [ -n "$module" ] || module=root
+            cp "$report" "build/sarif/${module}-$(basename "$report")"
+            found=$((found + 1))
+          done < <(find . -path '*/build/reports/lint-results-*.sarif' -type f)
+          echo "collected $found lint SARIF report(s)"
+          echo "count=$found" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Android Lint results to code scanning
+        # Fork PRs cannot write security events; skipping beats a red step that
+        # says nothing about the code.
+        # Skipped when the build died before lint ran — uploading an empty
+        # directory fails the step and reports the same root cause twice.
+        # Skipped on fork PRs too, where the token cannot write security events.
+        if: >-
+          always() &&
+          steps.lint_sarif.outputs.count != '0' &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          sarif_file: build/sarif
+          category: android-lint
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          retention-days: 14
+          if-no-files-found: ignore
+
+      # Only on failure: the HTML reports are large and, when the run is green,
+      # nobody reads them.
+      - name: Upload static-analysis reports
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: analysis-reports
+          path: |
+            **/build/reports/lint-results-*.*
+            **/build/reports/detekt/**
+          retention-days: 14
+          if-no-files-found: ignore
+
+  workflows:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Downloaded rather than run as an action, and verified against a pinned
+      # digest: a workflow linter that is itself an unpinned third-party action
+      # would be arguing with itself.
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          curl -fsSL "$url" -o /tmp/actionlint.tar.gz
+          echo "${ACTIONLINT_SHA256}  /tmp/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+          sudo install -m 0755 /tmp/actionlint /usr/local/bin/actionlint
+          actionlint -version
+
+      - name: Run actionlint
+        run: actionlint -color
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install zizmor
+        env:
+          ZIZMOR_VERSION: 1.29.0
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check "zizmor==${ZIZMOR_VERSION}"
+          zizmor --version
+
+      # The audits that matter for a public repo: unpinned actions, template
+      # injection into run blocks, credential persistence, excessive
+      # permissions, cache poisoning.
+      #
+      # GH_TOKEN switches zizmor out of offline mode, which is what enables the
+      # `known-vulnerable-actions` audit — the one that would have caught
+      # tj-actions/changed-files (CVE-2025-30066), the case study this repo's
+      # pinning policy exists for.
+      - name: Run zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --persona=regular --format=plain .github/workflows

@@ -23,9 +23,10 @@ on, plus gitleaks in CI for token classes GitHub doesn't cover (memory: a leak "
 trips range scans — history rewrite is the only cure, so prevention is the cheap path).
 
 Repo governance (set before the first external PR can arrive): branch protection on `main`
-(required status checks = the `ci.yml` gates, required review, no force-push, linear history);
-**tag protection for `v*`** (only the owner can push release tags — the release workflow triggers
-on them); `CODEOWNERS` = @greluc; a `SECURITY.md` with a private disclosure channel (GitHub
+(required status checks = the `ci.yml` gates, required review, no force-push, linear history) —
+**still to be set in repository settings, and only possible once each check has run on `main`
+so GitHub knows its name**; **tag protection for `v*`** (only the owner can push release tags —
+the release workflow triggers on them); `CODEOWNERS` = @greluc (**built**); a `SECURITY.md` with a private disclosure channel (GitHub
 private vulnerability reporting enabled) and the supported-versions statement; issue/PR templates
 mirroring this repo's conventions.
 
@@ -89,14 +90,29 @@ Baseline posture (all from GitHub's current security docs):
 
 ### Pipelines
 
-| Workflow | Trigger | Jobs |
-|---|---|---|
-| `ci.yml` | PR + push to main | assemble, unit + Robolectric tests, Android Lint (SARIF → code scanning), detekt (1.23.8), Spotless+ktlint check, zizmor/actionlint |
-| `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step (KVM is available on standard GitHub-hosted Linux runners) |
-| `codeql.yml` | PR + schedule | CodeQL **Kotlin (GA)** + the `actions` language pack for workflow scanning |
-| `supply-chain.yml` | PR + schedule | dependency-review-action (v5, fails on vulns/licenses), OpenSSF Scorecard (schedule, `id-token: write`), gitleaks |
-| `release.yml` | tag `v*` | build AAB/APK, SBOM, sign, attach to GitHub Release — **environment `release`** |
-| `deps` | — | Dependabot (`gradle` ecosystem, standard catalog location) — or Renovate if grouped updates prove necessary |
+| Workflow | Trigger | Jobs | State |
+|---|---|---|---|
+| `ci.yml` | PR + push to main | `./gradlew build` (assemble all four variants, unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor | **built** |
+| `codeql.yml` | PR + push + weekly | CodeQL `java-kotlin` and `actions`, `build-mode: none`, `security-and-quality` queries | **built** |
+| `dco.yml` | PR | Signed-off-by trailer matching the author on every commit the PR adds | **built** |
+| `gitleaks.yml` | PR + dispatch | pinned gitleaks binary, range-scoped to `base..head` on a PR | **built** |
+| `supply-chain.yml` | PR + push + weekly | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning | **built** |
+| `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
+| `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
+| `release.yml` | tag `v*` | build AAB/APK, SBOM, sign, attach to GitHub Release — **environment `release`** | planned — waits for the signing key and the `release` environment (Phase 5) |
+
+**Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
+`warningsAsErrors = true` and its dependency checks treat an available newer version as a
+finding, so a release upstream can turn `main` red without anyone touching this repository.
+Dependabot is therefore not hygiene here — it is what keeps the build green. The alternative,
+should the noise outweigh it, is to demote that one lint check and let Dependabot own freshness
+on its own schedule; that is an owner decision, not a CI one.
+
+**Not yet built, and deliberately so:** Gradle dependency verification
+(`gradle/verification-metadata.xml`). The metadata has to be generated on every platform whose
+resolved artifacts differ — a file written on Windows omits the Linux-only artifacts CI resolves,
+and the failure is a red build that looks like tampering. It needs one generation run per
+platform and a documented refresh flow before it can be turned on; see the open item in § 5.
 
 ### Release signing (no key leakage)
 
@@ -128,7 +144,16 @@ Baseline posture (all from GitHub's current security docs):
 
 `./gradlew check` = unit tests + Android Lint (`warningsAsErrors`, baseline file forbidden except
 by owner decision) + detekt + Spotless(ktlint) verify. All gates green before every push (the
-lint-gate discipline of this repo carried over). KDoc on every public API of `core:*` modules
+lint-gate discipline of this repo carried over). CI runs `./gradlew build` — `assemble` + `check`
+— rather than a hand-picked task list, so the command that gates a PR is the command a
+contributor runs locally; a CI-only task list is how the two drift apart.
+
+**Open gate: Gradle dependency verification.** `gradle/verification-metadata.xml` is the
+Android-toolchain counterpart of SHA-pinned actions and is not in place yet. The obstacle is
+platform-dependent resolution: metadata generated on one OS omits artifacts another OS resolves,
+and the resulting failure reads like tampering rather than like a missing checksum. It needs a
+generation run per platform plus a documented `--write-verification-metadata` refresh flow in
+CONTRIBUTING.md before it can gate anything. KDoc on every public API of `core:*` modules
 (the design-system module documents component contracts); CHANGELOG entry per user-visible
 change; README + docs move with behavior changes — same "incomplete without docs" bar as here.
 

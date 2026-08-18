@@ -1,0 +1,41 @@
+# Dependabot covers both ecosystems this repo has: the Gradle version catalog
+# and the action pins in .github/workflows.
+#
+# The Gradle schedule is **daily**, which is unusual and deliberate. Android
+# Lint runs with `warningsAsErrors = true`, and its dependency checks treat an
+# available newer version as a finding — so a dependency release upstream can
+# turn `main` red without anyone touching this repository. Dependabot is
+# therefore not hygiene here, it is what keeps the build green; a weekly
+# cadence would mean up to a week of red main for a bump nobody had a reason to
+# delay.
+#
+# No `labels:` on purpose: Dependabot creates and applies its own
+# `dependencies` label, while a label named here that does not exist in the
+# repo is silently dropped.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # AndroidX and Compose ship many artifacts on the same day; one PR per
+      # artifact would bury the ones that matter.
+      androidx:
+        patterns:
+          - "androidx.*"
+      kotlinx:
+        patterns:
+          - "org.jetbrains.kotlinx:*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(actions)"
