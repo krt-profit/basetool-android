@@ -31,6 +31,21 @@
           (de.kartell.basetool:/logout) therefore lands here too — it carries no code, is read as an
           unusable redirect, and simply brings the app forward, which is what it should do.
         -->
+        <!--
+          The login screen on a device, before anything is wired to it. Compose previews render the
+          tree; they do not answer what it is like at 412 dp with the system bars in place.
+        -->
+        <activity
+            android:name=".LoginPreviewActivity"
+            android:exported="true"
+            android:label="@string/login_preview_name"
+            android:theme="@style/Theme.Basetool">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".auth.AuthRedirectActivity"
             android:exported="true">
