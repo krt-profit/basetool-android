@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English overrides. Every key in values/strings.xml has one here — a missing key falls back to
+  German silently, which on an English device reads as a bug rather than as a translation gap.
+  StringsParityTest asserts the two bundles carry the same keys.
+-->
+<resources>
+    <string name="login_org">Das Kartell // Bereich Profit</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_sign_in_description">Opens the sign-in page in a browser</string>
+    <string name="login_privacy">Privacy</string>
+    <string name="login_imprint">Imprint</string>
+    <string name="login_terms">Terms of use</string>
+    <string name="login_version">v%1$s (%2$d)</string>
+    <string name="login_signing_in">Signing in …</string>
+
+    <string name="login_error_no_browser">No browser found. Signing in needs a browser on this device.</string>
+    <string name="login_error_cancelled">Sign-in cancelled.</string>
+    <string name="login_error_denied">Sign-in was refused.</string>
+    <string name="login_error_expired">The sign-in expired. Please try again.</string>
+    <string name="login_error_unreachable">Server unreachable.</string>
+    <string name="login_error_config">Sign-in is not possible right now. The administration has been notified.</string>
+
+    <string name="login_offline_title">No connection</string>
+    <string name="login_offline_retry">Reconnect</string>
+</resources>

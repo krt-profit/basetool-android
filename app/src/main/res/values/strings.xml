@@ -1,4 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  German is the default bundle: the squadron speaks German, so an untranslated key falls back to
+  the language the members actually read. values-en/ carries the English overrides.
+
+  The Star Citizen Fan Kit notice is deliberately NOT here — it is prescribed legal wording that
+  stays verbatim English in every locale and lives inside KrtFanKitBand, where it cannot be
+  translated by accident.
+-->
 <resources>
-    <string name="app_name">Profit Basetool</string>
+    <!-- Product name: identical in every locale, so lint must not ask for a translation. -->
+    <string name="app_name" translatable="false">Profit Basetool</string>
+
+    <!-- Login screen (design spec ch. 04) -->
+    <string name="login_org">Das Kartell // Bereich Profit</string>
+    <string name="login_sign_in">Anmelden</string>
+    <string name="login_sign_in_description">Anmeldung im Browser öffnen</string>
+    <string name="login_privacy">Datenschutz</string>
+    <string name="login_imprint">Impressum</string>
+    <string name="login_terms">Nutzungsbedingungen</string>
+    <string name="login_version">v%1$s (%2$d)</string>
+    <string name="login_signing_in">Anmeldung läuft …</string>
+
+    <!-- Login failures. Each names what the member can do, not what went wrong internally. -->
+    <string name="login_error_no_browser">Kein Browser gefunden. Die Anmeldung braucht einen Browser auf diesem Gerät.</string>
+    <string name="login_error_cancelled">Anmeldung abgebrochen.</string>
+    <string name="login_error_denied">Die Anmeldung wurde abgelehnt.</string>
+    <string name="login_error_expired">Die Anmeldung ist abgelaufen. Bitte erneut versuchen.</string>
+    <string name="login_error_unreachable">Server nicht erreichbar.</string>
+    <string name="login_error_config">Anmeldung derzeit nicht möglich. Die Administration wurde informiert.</string>
+
+    <!-- Offline state -->
+    <string name="login_offline_title">Keine Verbindung</string>
+    <string name="login_offline_retry">Erneut verbinden</string>
 </resources>
