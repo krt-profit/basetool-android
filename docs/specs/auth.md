@@ -268,8 +268,15 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
 - [ ] `/.well-known/assetlinks.json` is served, so the production App Link verifies. **Open** —
   server-side, main repo (exposure plan A7). Until then Android shows a disambiguation dialog
   instead of opening the app.
-- [ ] The redirect URIs compiled into the flavours match the ones registered on the realm's
-  `basetool-android` client. **Open** — the client exists, but this repo controls only one end of
-  that contract; a mismatch surfaces as `invalid_redirect_uri` at the realm, before the app is ever
-  reached. Note that `docs/keycloak/realm-config.reference.json` in the main repo does **not**
-  list this client, so the committed reference is stale and cannot serve as the check.
+- [x] The redirect URIs match the ones the realm registers, checked against the main repo's
+  `scripts/provision-keycloak-mobile-client.py`: production registers exactly
+  `https://profit-base.online/app/callback`, and the test profile adds
+  `de.kartell.basetool:/oauth2redirect` plus a loopback.
+- [x] The post-logout URI is one the client accepts, given its `"+"` setting.
+- [ ] The dev issuer's host and port. **Open** — unlike the redirect URIs it is not pinned by the
+  provisioning script; `https://10.0.2.2:18443/realms/iri` follows DEV_CI §6 and is confirmed the
+  first time the app runs against a local stack.
+- [ ] The live client matches the script that provisions it. **Open** — the script is the source of
+  truth this check used, not the realm itself, and `docs/keycloak/realm-config.reference.json` in
+  the main repo predates the client and cannot stand in for it; refreshing that snapshot would make
+  the realm's actual state checkable from the repo.

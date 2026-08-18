@@ -56,11 +56,11 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
 - Enabling `isIncludeAndroidResources` for `:app` unit tests was a prerequisite: without it
   Robolectric silently uses an empty default manifest, every intent filter resolves to nothing, and
   a manifest assertion fails for a reason unrelated to the manifest.
-- Two things stay unverifiable here and are marked open: `assetlinks.json` is not served yet, so the
-  production App Link does not verify and Android will show a disambiguation dialog; and while the
-  realm's `basetool-android` client exists, the redirect URIs it registers have not been checked
-  against the ones compiled into the flavours — a mismatch fails at the realm with
-  `invalid_redirect_uri`, before any of this code runs.
+- The redirect URIs are no longer an assumption: they are checked against the main repo's
+  `scripts/provision-keycloak-mobile-client.py`, which is the source of truth for the client. What
+  stays open is `assetlinks.json`, which is not served yet — until it is, the production App Link
+  does not verify and Android shows a disambiguation dialog instead of opening the app — and the dev
+  issuer's port, which the script does not pin.
 
 ## Alternatives rejected
 
