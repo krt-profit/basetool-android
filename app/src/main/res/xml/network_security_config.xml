@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release posture: no cleartext, anywhere, ever.
+
+  Android's default already forbids it at targetSdk 28+, but stating it explicitly is what makes it
+  a decision rather than an inherited default — and what keeps a future library that quietly opts
+  itself back in from succeeding (security concept §4).
+
+  The dev flavour overrides this file to allow cleartext to the emulator's host loopback alone; a
+  release build cannot inherit that, because the override lives in the dev source set.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

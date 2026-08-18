@@ -40,16 +40,19 @@ android {
             dimension = "backend"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            // Reaches the host's test stack from the emulator. The port is the one open item
-            // here: unlike the redirect URIs it is not pinned by the provisioning script, and it
-            // is confirmed the first time the app is run against a local stack.
-            buildConfigField("String", "OIDC_ISSUER", "\"https://10.0.2.2:18443/realms/iri\"")
+            // 10.0.2.2 is the emulator's route to the host loopback, and the dev stack's Keycloak
+            // runs `start-dev` bound to 127.0.0.1:18080 — plain HTTP. Not https/18443: that is the
+            // production listener, and compiling it in here made the dev flavour point at a port
+            // nothing answers on. Cleartext to this one host is permitted by the dev flavour's
+            // network security config and by nothing else.
+            buildConfigField("String", "OIDC_ISSUER", "\"http://10.0.2.2:18080/realms/iri\"")
             // Registered on the test realm only, per the main repo's
             // scripts/provision-keycloak-mobile-client.py: a custom scheme is claimable by any
             // installed app, and PKCE stops code theft but not the confusion surface.
             buildConfigField("String", "OIDC_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
             // Same value as the redirect on purpose — see the prod flavour below.
             buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
+            // The backend keeps its self-signed HTTPS; only Keycloak is plain HTTP locally.
             buildConfigField("String", "API_BASE_URL", "\"https://10.0.2.2:11261\"")
         }
         create("prod") {
