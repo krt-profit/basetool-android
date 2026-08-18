@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  prod-flavour additions.
+
+  The production redirect is a verified App Link, not a custom scheme: no other app can claim
+  https://profit-base.online/app/callback, because the domain publishes this app's signing-
+  certificate digest in /.well-known/assetlinks.json (security concept section 2.10).
+
+  android:autoVerify="true" is what makes the system check that file. Until it is served, the
+  link is not verified and Android shows a disambiguation dialog instead of opening the app —
+  which is why publishing assetlinks.json is a release gate, and why a signing-key rotation must
+  list both digests there BEFORE the rotated APK ships.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".auth.AuthRedirectActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!--
+                  Two paths, one filter: Android matches the cross-product of the scheme, host and
+                  path entries declared here. The post-logout return needs its own claim — without
+                  it the browser would simply open profit-base.online after a logout and leave the
+                  member looking at the website instead of the app. Both paths must also be
+                  registered on the realm's client, as redirect URI and post-logout redirect URI.
+                -->
+                <data
+                    android:host="profit-base.online"
+                    android:path="/app/callback"
+                    android:scheme="https" />
+                <data android:path="/app/logout" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

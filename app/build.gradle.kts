@@ -40,9 +40,25 @@ android {
             dimension = "backend"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
+            // Reaches the host's test stack from the emulator. The realm's `basetool-android`
+            // client is a Phase-0 deliverable and does not exist yet, so these values are the
+            // documented shape (DEV_CI section 6) and are confirmed when it is provisioned.
+            buildConfigField("String", "OIDC_ISSUER", "\"https://10.0.2.2:18443/realms/iri\"")
+            // A custom scheme is claimable by any installed app, which is why it is registered on
+            // the dev realm only. PKCE stops code theft; the confusion surface is simply not worth
+            // opening in production (security concept section 3).
+            buildConfigField("String", "OIDC_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
+            buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"de.kartell.basetool:/logout\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://10.0.2.2:11261\"")
         }
         create("prod") {
             dimension = "backend"
+            buildConfigField("String", "OIDC_ISSUER", "\"https://keycloak.profit-base.online/realms/iri\"")
+            // A verified App Link: no other app can claim it, because the domain publishes this
+            // app's signing-certificate digest in /.well-known/assetlinks.json.
+            buildConfigField("String", "OIDC_REDIRECT_URI", "\"https://profit-base.online/app/callback\"")
+            buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"https://profit-base.online/app/logout\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.profit-base.online\"")
         }
     }
 
@@ -61,6 +77,18 @@ android {
 
     buildFeatures {
         compose = true
+        // The OIDC endpoints differ per flavor and must not be switchable at runtime: a server
+        // switcher in a release build is an attacker-visible gift (DEV_CI section 6).
+        buildConfig = true
+    }
+
+    testOptions {
+        unitTests {
+            // Without this Robolectric never sees the merged manifest: it falls back to an empty
+            // default package, every intent filter resolves to nothing, and a test asserting one
+            // would fail for a reason that has nothing to do with the manifest.
+            isIncludeAndroidResources = true
+        }
     }
 
     lint {
@@ -87,6 +115,7 @@ dependencies {
     implementation(project(":core:auth"))
     implementation(project(":core:designsystem"))
 
+    implementation(libs.androidx.browser)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -102,4 +131,5 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
