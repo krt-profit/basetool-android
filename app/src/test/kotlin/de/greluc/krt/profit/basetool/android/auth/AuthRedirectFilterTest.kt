@@ -60,6 +60,20 @@ class AuthRedirectFilterTest {
     }
 
     @Test
+    fun `the post-logout redirect is one the realm accepts`() {
+        // The client sets post.logout.redirect.uris = "+", which in Keycloak means "the same list
+        // as redirectUris" (main repo scripts/provision-keycloak-mobile-client.py). Any other value
+        // is refused with "Invalid post logout redirect uri" — at the realm, before the browser
+        // comes back, so nothing on this side can observe it. Pinning the equality here is the only
+        // check this repo can make, and it stops the two from being tidied apart.
+        assertEquals(
+            "post-logout must equal the redirect URI while the client uses \"+\"",
+            BuildConfig.OIDC_REDIRECT_URI,
+            BuildConfig.OIDC_POST_LOGOUT_REDIRECT_URI,
+        )
+    }
+
+    @Test
     fun `the redirect activity is the only exported auth surface`() {
         // It has to be exported — the browser starts it. What keeps that safe is that the code it
         // carries is worthless without the PKCE verifier, which never leaves the app.

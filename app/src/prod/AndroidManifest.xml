@@ -22,17 +22,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <!--
-                  Two paths, one filter: Android matches the cross-product of the scheme, host and
-                  path entries declared here. The post-logout return needs its own claim — without
-                  it the browser would simply open profit-base.online after a logout and leave the
-                  member looking at the website instead of the app. Both paths must also be
-                  registered on the realm's client, as redirect URI and post-logout redirect URI.
+                  One path, and the post-logout return uses the same one. The client sets
+                  post.logout.redirect.uris = "+", which in Keycloak means "the same list as
+                  redirectUris" — so a separate /app/logout would be refused by the realm before
+                  the browser ever came back here, and claiming it would only look like coverage.
                 -->
                 <data
                     android:host="profit-base.online"
                     android:path="/app/callback"
                     android:scheme="https" />
-                <data android:path="/app/logout" />
             </intent-filter>
         </activity>
     </application>

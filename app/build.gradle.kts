@@ -40,24 +40,29 @@ android {
             dimension = "backend"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            // Reaches the host's test stack from the emulator. The realm's `basetool-android`
-            // client is a Phase-0 deliverable and does not exist yet, so these values are the
-            // documented shape (DEV_CI section 6) and are confirmed when it is provisioned.
+            // Reaches the host's test stack from the emulator. The port is the one open item
+            // here: unlike the redirect URIs it is not pinned by the provisioning script, and it
+            // is confirmed the first time the app is run against a local stack.
             buildConfigField("String", "OIDC_ISSUER", "\"https://10.0.2.2:18443/realms/iri\"")
-            // A custom scheme is claimable by any installed app, which is why it is registered on
-            // the dev realm only. PKCE stops code theft; the confusion surface is simply not worth
-            // opening in production (security concept section 3).
+            // Registered on the test realm only, per the main repo's
+            // scripts/provision-keycloak-mobile-client.py: a custom scheme is claimable by any
+            // installed app, and PKCE stops code theft but not the confusion surface.
             buildConfigField("String", "OIDC_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
-            buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"de.kartell.basetool:/logout\"")
+            // Same value as the redirect on purpose — see the prod flavour below.
+            buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
             buildConfigField("String", "API_BASE_URL", "\"https://10.0.2.2:11261\"")
         }
         create("prod") {
             dimension = "backend"
             buildConfigField("String", "OIDC_ISSUER", "\"https://keycloak.profit-base.online/realms/iri\"")
             // A verified App Link: no other app can claim it, because the domain publishes this
-            // app's signing-certificate digest in /.well-known/assetlinks.json.
+            // app's signing-certificate digest in /.well-known/assetlinks.json. The realm registers
+            // exactly this one URI in production (provision-keycloak-mobile-client.py).
             buildConfigField("String", "OIDC_REDIRECT_URI", "\"https://profit-base.online/app/callback\"")
-            buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"https://profit-base.online/app/logout\"")
+            // The client sets post.logout.redirect.uris = "+", which in Keycloak means "the same
+            // list as redirectUris". A separate /app/logout would therefore be refused with
+            // "Invalid post logout redirect uri" — the two must stay equal, and a test pins that.
+            buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"https://profit-base.online/app/callback\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.profit-base.online\"")
         }
     }
