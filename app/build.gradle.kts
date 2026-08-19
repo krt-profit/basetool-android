@@ -40,12 +40,15 @@ android {
             dimension = "backend"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            // 10.0.2.2 is the emulator's route to the host loopback, and the dev stack's Keycloak
-            // runs `start-dev` bound to 127.0.0.1:18080 — plain HTTP. Not https/18443: that is the
-            // production listener, and compiling it in here made the dev flavour point at a port
-            // nothing answers on. Cleartext to this one host is permitted by the dev flavour's
-            // network security config and by nothing else.
-            buildConfigField("String", "OIDC_ISSUER", "\"http://10.0.2.2:18080/realms/iri\"")
+            // The device's OWN loopback, forwarded to the host by `adb reverse tcp:18080
+            // tcp:18080`. Not 10.0.2.2, although that is the documented emulator route to the
+            // host: measured on this machine, an app socket to 10.0.2.2:18080 times out after 10 s
+            // while ICMP answers and the browser loads the same URL — so the app cannot rely on it.
+            // adb reverse also matches the loopback redirect the realm already registers, and the
+            // issuer must be the address the app calls, or the ID token's `iss` will not match.
+            // Plain HTTP: `start-dev` serves no TLS. Cleartext to this one host is permitted by the
+            // dev flavour's network security config and by nothing else.
+            buildConfigField("String", "OIDC_ISSUER", "\"http://127.0.0.1:18080/realms/iri\"")
             // Registered on the test realm only, per the main repo's
             // scripts/provision-keycloak-mobile-client.py: a custom scheme is claimable by any
             // installed app, and PKCE stops code theft but not the confusion surface.
