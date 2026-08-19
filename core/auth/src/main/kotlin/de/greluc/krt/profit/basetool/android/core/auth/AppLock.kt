@@ -26,11 +26,24 @@ interface AppLock {
     suspend fun isArmed(): Boolean
 
     /**
-     * Creates the key, seals a fresh session key with it, and re-seals the stored refresh token.
+     * Creates the key and returns the cipher a prompt must authenticate before [completeArm].
      *
-     * @throws SecretCipherException if the device cannot create or use an auth-bound key
+     * Two-phase because the lock key is auth-per-use: Keystore refuses to encrypt with it without
+     * an authentication, exactly as it refuses to decrypt. Arming is therefore a prompt, not a
+     * silent toggle — which also makes "armed" imply "satisfiable".
+     *
+     * @return the cipher to hand to the prompt
+     * @throws SecretCipherException if the device cannot create an auth-bound key at all
      */
-    suspend fun arm()
+    suspend fun prepareArm(): Cipher
+
+    /**
+     * Seals a fresh session key with the authenticated cipher and re-seals the stored token.
+     *
+     * @param cipher the cipher the platform vouched for
+     * @throws SecretCipherException if sealing fails despite the authentication
+     */
+    suspend fun completeArm(cipher: Cipher)
 
     /**
      * Removes the outer layer from the stored token, then the key and the sealed session key.
@@ -86,7 +99,7 @@ class KeystoreAppLock(
     override suspend fun isArmed(): Boolean = setting.sealedSessionKey() != null && key.exists()
 
     /**
-     * Arms the lock.
+     * Seals the session key and re-seals the stored token.
      *
      * The order matters. The refresh token is read **before** the envelope is opened, while the
      * stored blob is still unsealed; it is written back **after**, which seals it. Reversing the two
@@ -95,10 +108,12 @@ class KeystoreAppLock(
      * A token that cannot be read here is not an error to report: the member simply has no usable
      * session, and arming a lock over nothing is perfectly valid.
      */
-    override suspend fun arm() {
+    override suspend fun prepareArm(): Cipher = key.sealCipher()
+
+    override suspend fun completeArm(cipher: Cipher) {
         val existing = tokenStore.read()
         val sessionKey = envelope.newSessionKey()
-        setting.arm(key.seal(sessionKey))
+        setting.arm(key.seal(cipher, sessionKey))
         envelope.unlocked(sessionKey)
         if (existing != null) {
             tokenStore.write(existing)

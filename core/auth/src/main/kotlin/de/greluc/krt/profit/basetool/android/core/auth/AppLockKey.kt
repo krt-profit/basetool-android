@@ -69,20 +69,47 @@ class AppLockKey(
     fun exists(): Boolean = keyStore().containsAlias(alias)
 
     /**
-     * Creates the key and seals [sessionKey] with it.
+     * Creates the key and returns the cipher that will seal the session key.
      *
-     * Called when the member switches the lock on. A key already present is replaced, so enabling
-     * the lock twice cannot leave a sealed blob that no key can open.
+     * **Arming needs an authentication, and that is not a UX choice.** The key is auth-per-use, so
+     * Keystore refuses to ENCRYPT with it as firmly as it refuses to decrypt — an earlier revision
+     * sealed the session key inline here and failed on every device with `Key user not
+     * authenticated`, while every unit test stayed green because the Keystore is not exercised off
+     * a device. The returned cipher therefore goes into a `BiometricPrompt.CryptoObject` exactly
+     * like the unlock one, and [seal] finishes the job with what the prompt hands back.
      *
-     * @param sessionKey the freshly minted session key the token store's outer layer is built from
-     * @return the sealed session key, to be stored beside the setting
-     * @throws SecretCipherException if the device cannot create or use the key
+     * The prompt is worth having on its own terms: it makes "armed" imply "satisfiable". Without
+     * it a member could switch the lock on for a credential they cannot produce, and find out at
+     * the next cold start.
+     *
+     * A key already present is replaced, so enabling the lock twice cannot leave a sealed blob that
+     * no key can open.
+     *
+     * @return the initialised encrypt cipher, to be authenticated before [seal]
+     * @throws SecretCipherException if the device cannot create the key at all
      */
-    fun seal(sessionKey: ByteArray): ByteArray =
+    fun sealCipher(): Cipher =
         try {
             keyStore().deleteEntry(alias)
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.ENCRYPT_MODE, generateKey())
+            Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, generateKey()) }
+        } catch (failure: GeneralSecurityException) {
+            throw SecretCipherException("app-lock key could not be created", failure)
+        }
+
+    /**
+     * Seals [sessionKey] with the cipher the platform authenticated.
+     *
+     * @param cipher the cipher from [sealCipher], vouched for by the prompt
+     * @param sessionKey the freshly minted session key the token store's outer layer is built from
+     * @return the sealed session key, to be stored beside the setting
+     * @throws SecretCipherException if the operation fails, which on this path means the
+     *   authentication did not actually cover it
+     */
+    fun seal(
+        cipher: Cipher,
+        sessionKey: ByteArray,
+    ): ByteArray =
+        try {
             val iv = cipher.iv
             require(iv.size == IV_LENGTH_BYTES) { "unexpected GCM IV length" }
             iv + cipher.doFinal(sessionKey)

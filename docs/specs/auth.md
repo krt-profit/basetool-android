@@ -470,14 +470,28 @@ leaks exactly what it is there to withhold.
   lock gate composes, and `take()` discards what it cannot read — so an armed lock would silently
   swallow every login that survived a process death. It holds a PKCE verifier for one browser round
   trip, not a session, and is already encrypted by the same Keystore key.
-- [ ] Verified on a device. **Open** — the Keystore behaviours this rests on (an auth-per-use key
-  refusing use without a prompt, `CryptoObject` binding, invalidation on new enrolment) cannot be
-  exercised on the JVM or under Robolectric, so the tests above cover the format and the failure
-  branches while the platform contract itself is asserted only by reading the documentation. This
-  needs one pass on a real device with a fingerprint enrolled, and one on a device with only a PIN,
-  **before the first release** — the failure mode is a member unable to reach their own session.
-- [ ] Observed on a device with an enrolled fingerprint and on one with only a PIN. **Open** —
-  emulator verification covers the PIN path only.
+- [x] **Arming raises the prompt too, because an auth-bound key cannot be *written* unattended
+  either.** Sealing the session key inline while creating the key throws `Key user not
+  authenticated` (Keystore code `-26`) on every API 30+ device: auth-per-use means per *use*, and
+  encryption is a use. So arming is two-phase — `prepareArm()` creates the key and returns a cipher
+  initialised for encryption, the prompt vouches for that cipher, and `completeArm(cipher)` seals
+  with it. The prompt is not a formality here: it also makes "armed" imply "satisfiable", so nobody
+  can arm a lock they turn out to be unable to open.
+- [x] **The session is restored behind the lock, not in front of it.** The stored refresh token is
+  now sealed, so a restore attempted while locked reads nothing and settles the session on *signed
+  out* — and the member meets the login screen after every unlock, holding a session that was
+  fine all along. The restore therefore composes inside the gate's content, which only exists once
+  the lock is open; with no lock armed that content composes immediately and nothing changes. It is
+  guarded on `Unknown` so a background re-lock does not spend a refresh round trip, and a rotation
+  of the realm's refresh token, every time the member comes back.
+- [x] Verified on an emulator with a PIN: arming raises the prompt and succeeds; a cold start locks;
+  the sealed token reads as *locked* rather than *broken* (`refresh token is sealed and the app lock
+  is not open`); the unlock restores the session into the app rather than the login screen; a
+  20-second absence does not re-lock and a six-minute one does.
+- [ ] Observed on a device with an **enrolled fingerprint**. **Open** — the runs above cover the
+  device-credential path only, and both defects above were invisible to every unit test because the
+  Keystore is not exercised off a device. Needed **before the first release**: the failure mode is a
+  member unable to reach their own session.
 
 ### REQ-APP-AUTH-011 — The dev build's TLS relaxations cannot reach a release build
 

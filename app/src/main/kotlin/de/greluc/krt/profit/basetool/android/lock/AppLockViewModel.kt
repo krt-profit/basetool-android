@@ -83,6 +83,10 @@ class AppLockViewModel(
     fun onForegrounded(elapsedRealtimeMillis: Long) {
         val away = backgroundedAt ?: return
         backgroundedAt = null
+        // The one decision in this class with no visible trace when it goes wrong: too eager and
+        // the lock is unusable, too lax and it silently stops guarding. The reading is a monotonic
+        // duration, not a wall clock, so it carries nothing about the member.
+        KrtLog.d(LOG_TAG) { "away for ${elapsedRealtimeMillis - away} ms, state=${mutableState.value}" }
         if (mutableState.value !is AppLockState.Open) {
             return
         }
@@ -145,24 +149,50 @@ class AppLockViewModel(
     }
 
     /**
-     * Arms or disarms the lock.
+     * Disarms the lock. Arming goes through [prepareArm] and [completeArm] instead.
      *
-     * Arming does **not** lock immediately: the member is holding an unlocked, authenticated device
-     * at that moment, and sealing the app in their face would be a strange reward for switching a
-     * security feature on. It takes effect at the next cold start or background timeout.
+     * Arming does **not** lock immediately either: the member is holding an unlocked device at that
+     * moment, and sealing the app in their face would be a strange reward for switching a security
+     * feature on. It takes effect at the next cold start or background timeout.
      *
-     * A device that cannot create the key reports the failure rather than leaving a toggle that
-     * looks on and guards nothing.
-     *
-     * @param value whether the lock should be armed
+     * @param value `false` to disarm; `true` is ignored here, because arming needs a prompt
      */
     fun setEnabled(value: Boolean) {
+        if (value) {
+            return
+        }
+        viewModelScope.launch { lock.disarm() }
+    }
+
+    /**
+     * Creates the lock key and returns the cipher a prompt must authenticate.
+     *
+     * Arming is two-phase because the key is auth-per-use: Keystore refuses to encrypt with it
+     * without an authentication, exactly as it refuses to decrypt. An earlier revision sealed
+     * inline here and failed on every device with `Key user not authenticated` while every unit
+     * test stayed green — the Keystore is not exercised off a device.
+     *
+     * @return the cipher for the prompt, or `null` when the device cannot create the key at all
+     */
+    suspend fun prepareArm(): Cipher? =
+        try {
+            lock.prepareArm()
+        } catch (unusable: SecretCipherException) {
+            KrtLog.e(LOG_TAG, unusable) { "app lock key could not be created" }
+            null
+        }
+
+    /**
+     * Finishes arming with the authenticated cipher.
+     *
+     * @param cipher the cipher the platform vouched for
+     */
+    fun completeArm(cipher: Cipher) {
         viewModelScope.launch {
             try {
-                if (value) lock.arm() else lock.disarm()
+                lock.completeArm(cipher)
             } catch (unusable: SecretCipherException) {
                 KrtLog.e(LOG_TAG, unusable) { "app lock could not be armed" }
-                mutableState.value = AppLockState.Open
             }
         }
     }
