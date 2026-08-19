@@ -55,4 +55,13 @@
     <string name="terms_decline_cancel">Back</string>
     <string name="terms_error">Your consent could not be recorded. Please try again.</string>
     <string name="terms_error_offline">No connection. Your consent could not be recorded.</string>
+    <string name="lock_title">Locked</string>
+    <string name="lock_body">Local data is protected. Unlock to continue.</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_error_generic">Unlock failed. Please try again.</string>
+    <string name="lock_error_lockout">Too many failed attempts. Try again later, or use your device credential.</string>
+    <string name="lock_error_invalidated">A new fingerprint was enrolled. The app lock can no longer be opened — please sign out and sign in again.</string>
+    <string name="lock_setting">App lock</string>
+    <string name="lock_setting_hint">Unlock on start and after 5 minutes in the background</string>
+    <string name="lock_setting_unavailable">No device lock set up</string>
 </resources>

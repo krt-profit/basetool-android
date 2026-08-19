@@ -9,10 +9,14 @@ package de.greluc.krt.profit.basetool.android.auth
 
 import android.content.Context
 import de.greluc.krt.profit.basetool.android.BuildConfig
+import de.greluc.krt.profit.basetool.android.core.auth.AppLock
+import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
+import de.greluc.krt.profit.basetool.android.core.auth.AppLockSetting
 import de.greluc.krt.profit.basetool.android.core.auth.AuthDataStore
 import de.greluc.krt.profit.basetool.android.core.auth.AuthSession
 import de.greluc.krt.profit.basetool.android.core.auth.AuthorizationRequestFactory
 import de.greluc.krt.profit.basetool.android.core.auth.DpopProofFactory
+import de.greluc.krt.profit.basetool.android.core.auth.KeystoreAppLock
 import de.greluc.krt.profit.basetool.android.core.auth.KeystoreDpopKeyProvider
 import de.greluc.krt.profit.basetool.android.core.auth.KeystoreSecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.PendingAuthorization
@@ -54,6 +58,24 @@ class AuthContainer(
 
     /** The encrypted refresh token at rest. */
     val refreshTokenStore by lazy { RefreshTokenStore(dataStore, cipher) }
+
+    /**
+     * The app lock: an auth-bound Keystore key plus its sealed sentinel.
+     *
+     * The sentinel shares the token DataStore so a logout wipe reaches it too — a device handed on
+     * with the app signed out should not still ask the next person for a fingerprint.
+     */
+    private val appLockSetting by lazy { AppLockSetting(dataStore) }
+
+    val appLock: AppLock by lazy { KeystoreAppLock(AppLockKey(), appLockSetting) }
+
+    /**
+     * Whether a lock stands, for the settings row to reflect.
+     *
+     * Read from the stored sentinel rather than from a separate flag, so the switch shows what
+     * is actually armed instead of what somebody once asked for.
+     */
+    val appLockArmed get() = appLockSetting.enabled
 
     /** The login attempt that is currently out in the browser. */
     val pendingAuthorization by lazy { PendingAuthorization(dataStore, cipher) }
@@ -136,6 +158,9 @@ class AuthContainer(
     suspend fun logout(): String? {
         val endSession = session.logout()
         dpopKeys.deleteKey()
+        // The lock key goes with them: a device handed on with the app signed out must not still
+        // hold a key that once guarded it.
+        appLock.disarm()
         return endSession
     }
 }

@@ -369,3 +369,88 @@ it renders while every gated endpoint refuses.
   acceptance on record, and the main repo's document endpoint merged.
 - [ ] Observed against a live backend with a genuinely pending account. **Open** — needs a second
   test-realm user held in the approval queue.
+
+### REQ-APP-AUTH-010 — The app lock, and FLAG_SECURE underneath it
+
+**`FLAG_SECURE` is set app-wide, unconditionally.** Not only on authenticated screens: the design
+chapter fixes it for the whole app and the security concept repeats it, because the screenshot that
+matters is the one nobody takes deliberately — the recents thumbnail the system captures every time
+the app leaves the foreground, which then sits in the launcher. It is set before `setContent` so it
+covers the first frame. Google's own figures put its effectiveness near 70 % at API 30 and below, so
+it is **hardening, not a guarantee**, and nothing else may be justified by its presence.
+
+**The lock itself is opt-in and off by default** (design ch. 04). A lock nobody asked for is a daily
+obstacle, and the data behind it is already app-private, backup-excluded and covered by the flag
+above. Until chapter 13's settings screen exists the toggle lives in "Mehr" — a security feature
+that ships with no way to switch it on is dead code.
+
+**Authentication is the platform's, never this app's.** `BiometricPrompt` with `BIOMETRIC_STRONG or
+DEVICE_CREDENTIAL` draws above the process; the lock screen underneath carries no input field,
+because an app-rendered PIN pad would be a credential this app could read. The device-credential
+fallback is part of the same prompt, which is why the design's second button ("Gerätesperre
+verwenden") is not drawn: it would open the identical sheet and merely suggest the first one had
+not. A device with no screen lock at all cannot satisfy the prompt, so the setting is **disabled
+rather than hidden** there — hiding it reads as a missing feature, and the label says what is
+wrong.
+
+**The lock sits outside the account gate.** It protects what is already on the device, so it must
+not wait on a network round trip; a locked app shows nothing while `REQ-APP-AUTH-009` is still
+asking.
+
+**Cold start plus five minutes in the background.** The grace period is what makes the feature
+survive daily use — a member switching to Discord for four seconds must not be re-prompted, or the
+lock gets turned off within a day. Elapsed time is taken from a **monotonic** clock supplied by the
+caller, so moving the device clock cannot extend it, and the rule is testable without waiting.
+`onStop`/`onStart` are the hooks, not `onPause`/`onResume`: the latter also fire for dialogs and
+permission sheets, and re-locking behind those would make the app unusable.
+
+**The lock screen shows nothing.** No counts, no names, no last mission (design ch. 04: "No data
+hints"). The lock exists for the moment somebody else is holding the phone, and an unread badge
+leaks exactly what it is there to withhold.
+
+**Acceptance**
+
+- [x] `FLAG_SECURE` is set app-wide before the first frame.
+- [x] Off by default; a cold start with the setting on is locked, with it off is open
+  (`AppLockViewModelTest`).
+- [x] Nothing is rendered before the setting has been read — neither locked nor open — so the app's
+  contents cannot flash past somebody the lock excludes.
+- [x] A 30-second absence does not re-lock; six minutes does; exactly five minutes does (the
+  boundary is pinned, because "after 5 minutes" reads as both `>` and `>=` and the safer one locks).
+- [x] The setting is re-read on the way back, so switching the lock off and putting the phone down
+  leaves no delayed lock armed.
+- [x] `onStart` without a prior `onStop` changes nothing — otherwise the first launch would lock an
+  app that had just been opened.
+- [x] A refused unlock keeps the screen up and names the reason; a dismissed sheet is not treated as
+  a failure at all.
+- [x] Enabling the setting does not lock immediately.
+- [x] **Opening the app is a cryptographic act, not a state assignment.** The lock owns an
+  auth-bound Keystore key (`setUserAuthenticationRequired`), arming seals a sentinel with it, and
+  the gate opens only when that sentinel decrypts back. There is no method that simply sets the
+  state to open. The earlier revision had one, and CodeQL named it correctly — *insecure local
+  authentication: this authentication callback does not use its result for a cryptographic
+  operation*. A boolean gate is one mis-ordered transition away from opening on its own.
+- [x] Two platform paths, because API 29 cannot do the modern one. **API 30+** uses
+  `setUserAuthenticationParameters(0, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)` — an auth-per-use key,
+  the only kind a `CryptoObject` accepts — so the cipher that decrypts the sentinel is the one the
+  prompt vouched for. **API 29** has no such method and its time-bound key cannot be paired with a
+  `CryptoObject`; the prompt runs without one and the decrypt follows inside a 10-second window. The
+  binding is looser there (a recent authentication rather than *this* one) but still cryptographic:
+  without one the decrypt throws `UserNotAuthenticatedException`.
+- [x] An authentication the platform accepted whose **decrypt still fails does not open the app**
+  (`AppLockViewModelTest`).
+- [x] A new biometric enrolment invalidates the key (`setInvalidatedByBiometricEnrollment`), and
+  that is surfaced as its own state rather than as a failed attempt: retrying can only fail, so the
+  screen drops the unlock button and offers the sign-out that is the documented route back. A
+  `Locked` state with a retry button there would be a loop with no exit.
+- [x] A device that cannot create an auth-bound key does not end up with a switch that looks on and
+  guards nothing.
+- [ ] The lock also gates the **token key**. **Open** — the sentinel proves an authentication
+  happened, which is what makes the gate real, but `KeystoreSecretCipher`'s key is not wrapped by
+  the lock key. So this stops someone holding the phone; it does not stop someone who can read
+  app-private storage. Wrapping the token key touches the app's only secret at rest and can lock a
+  member out of their own session, so it is deliberately a separate change rather than one made
+  under a scanner's deadline. Until then the screen's "Lokale Daten sind geschützt" is true of the
+  threat the lock addresses and overstates the one it does not.
+- [ ] Observed on a device with an enrolled fingerprint and on one with only a PIN. **Open** —
+  emulator verification covers the PIN path only.

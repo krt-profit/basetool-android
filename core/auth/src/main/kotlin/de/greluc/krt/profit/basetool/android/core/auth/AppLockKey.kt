@@ -1,0 +1,263 @@
+/*
+ * Basetool Android — native companion app of the Profit Basetool.
+ * Copyright (C) 2026 Lucas Greuloch
+ *
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+
+package de.greluc.krt.profit.basetool.android.core.auth
+
+import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
+import android.security.keystore.KeyProperties
+import android.security.keystore.StrongBoxUnavailableException
+import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import java.security.GeneralSecurityException
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+
+/**
+ * The Keystore key that makes the app lock real rather than a boolean.
+ *
+ * **Why this exists at all.** A lock implemented as "the prompt said yes, so set `locked = false`"
+ * never uses the authentication for anything — the platform's answer is read and thrown away, and
+ * the gate is one mis-ordered state transition away from opening on its own. CodeQL names this
+ * exactly ("Insecure local authentication: this authentication callback does not use its result for
+ * a cryptographic operation"), and it is right: the fix is not to silence the query but to make the
+ * gate depend on an operation the platform will only permit after a real authentication.
+ *
+ * So the lock owns an AES-256-GCM key created with
+ * [KeyGenParameterSpec.Builder.setUserAuthenticationRequired]. When the member switches the lock on,
+ * a short sentinel is encrypted with it; opening the app requires decrypting that sentinel back.
+ * Keystore refuses the operation unless the user authenticated, so **the gate cannot open without
+ * one**.
+ *
+ * **Two platform paths, because API 29 cannot do the modern one.**
+ *
+ * - **API 30+** uses `setUserAuthenticationParameters(0, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)`,
+ *   which produces an *auth-per-use* key. Such a key works with `BiometricPrompt.CryptoObject`, so
+ *   the cipher that decrypts the sentinel is the very one the prompt vouched for — the tightest
+ *   binding the platform offers.
+ * - **API 29** (minSdk) has no `setUserAuthenticationParameters`, and its
+ *   `setUserAuthenticationValidityDurationSeconds` produces a *time-bound* key, which Android
+ *   refuses to pair with a `CryptoObject`. There the prompt runs without one and the sentinel is
+ *   decrypted immediately afterwards, inside the validity window. The binding is looser — a recent
+ *   authentication rather than *this* authentication — but it is still cryptographic: without one,
+ *   the decrypt throws.
+ *
+ * **What this does NOT do.** It does not wrap [KeystoreSecretCipher]'s key, so the refresh token at
+ * rest is unaffected: this stops someone holding the phone, not someone who can read app-private
+ * storage. That remains the open half of `REQ-APP-AUTH-010`, and conflating the two would be the
+ * dishonest reading of a green scanner.
+ *
+ * @property alias Keystore entry name; separate from the token cipher's so either can be wiped alone
+ */
+class AppLockKey(
+    private val alias: String = DEFAULT_ALIAS,
+) {
+    /**
+     * Whether a lock key exists, i.e. the member has armed the lock.
+     *
+     * @return `true` when the entry is present
+     */
+    fun exists(): Boolean = keyStore().containsAlias(alias)
+
+    /**
+     * Creates the key and seals the sentinel with it.
+     *
+     * Called when the member switches the lock on. A key already present is replaced, so enabling
+     * the lock twice cannot leave a sentinel that no key can open.
+     *
+     * @return the sealed sentinel, to be stored beside the setting
+     * @throws SecretCipherException if the device cannot create or use the key
+     */
+    fun arm(): ByteArray =
+        try {
+            keyStore().deleteEntry(alias)
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.ENCRYPT_MODE, generateKey())
+            val iv = cipher.iv
+            require(iv.size == IV_LENGTH_BYTES) { "unexpected GCM IV length" }
+            iv + cipher.doFinal(SENTINEL)
+        } catch (failure: GeneralSecurityException) {
+            throw SecretCipherException("app-lock key could not be armed", failure)
+        }
+
+    /**
+     * Prepares the decrypt cipher the prompt has to vouch for.
+     *
+     * Handing this to `BiometricPrompt.CryptoObject` is what ties the authentication to the
+     * operation; the caller then passes the **returned** cipher to [open].
+     *
+     * @param sealed the sentinel produced by [arm]
+     * @return the initialised cipher, or `null` when the key is gone or no longer valid — a new
+     *   biometric enrolment invalidates it, and the member then has no way past the lock except
+     *   signing out
+     */
+    fun unlockCipher(sealed: ByteArray): Cipher? =
+        try {
+            require(sealed.size > IV_LENGTH_BYTES) { "sealed sentinel is too short to be valid" }
+            val key = keyStore().getEntry(alias, null) as? KeyStore.SecretKeyEntry ?: return null
+            Cipher.getInstance(TRANSFORMATION).apply {
+                init(
+                    Cipher.DECRYPT_MODE,
+                    key.secretKey,
+                    GCMParameterSpec(TAG_LENGTH_BITS, sealed, 0, IV_LENGTH_BYTES),
+                )
+            }
+        } catch (invalidated: KeyPermanentlyInvalidatedException) {
+            // A new fingerprint was enrolled. The key is gone for good; the app-lock cannot be
+            // satisfied any more and the member's only route is a fresh login (security concept §4).
+            KrtLog.w(LOG_TAG, invalidated) { "app-lock key was invalidated by a new enrolment" }
+            null
+        } catch (failure: GeneralSecurityException) {
+            KrtLog.w(LOG_TAG, failure) { "app-lock cipher could not be prepared" }
+            null
+        } catch (malformed: IllegalArgumentException) {
+            KrtLog.w(LOG_TAG, malformed) { "sealed sentinel is malformed" }
+            null
+        }
+
+    /**
+     * Decrypts the sentinel and reports whether it came back intact.
+     *
+     * **This is the operation the whole lock rests on.** The cipher must be the one the prompt
+     * returned (API 30+) or one prepared immediately after a successful prompt (API 29); either way
+     * Keystore only performs it for an authenticated user, so a `true` here cannot be produced
+     * without one.
+     *
+     * @param cipher the cipher from [unlockCipher], authenticated by the platform
+     * @param sealed the same sentinel that was passed to [unlockCipher]
+     * @return `true` when the sentinel decrypted to its known value
+     */
+    fun open(
+        cipher: Cipher,
+        sealed: ByteArray,
+    ): Boolean =
+        try {
+            cipher.doFinal(sealed, IV_LENGTH_BYTES, sealed.size - IV_LENGTH_BYTES)
+                .contentEquals(SENTINEL)
+        } catch (failure: GeneralSecurityException) {
+            // Includes UserNotAuthenticatedException on the API-29 path: the validity window
+            // expired between the prompt and here. Refusing is correct — it means no authentication
+            // backs this attempt.
+            KrtLog.w(LOG_TAG, failure) { "app-lock sentinel did not open" }
+            false
+        }
+
+    /**
+     * Removes the key, disarming the lock.
+     *
+     * Part of logout as well as of switching the setting off: a device handed on with the app signed
+     * out should carry no key that once guarded it.
+     */
+    fun disarm() {
+        try {
+            keyStore().deleteEntry(alias)
+        } catch (failure: GeneralSecurityException) {
+            KrtLog.w(LOG_TAG, failure) { "app-lock key could not be deleted" }
+        }
+    }
+
+    /**
+     * Generates the key, retrying without StrongBox when the device has no secure element.
+     *
+     * @return the freshly generated key
+     */
+    private fun generateKey(): SecretKey =
+        try {
+            generateKey(useStrongBox = true)
+        } catch (unavailable: StrongBoxUnavailableException) {
+            KrtLog.w(LOG_TAG, unavailable) { "StrongBox unavailable, falling back to a TEE-backed lock key" }
+            generateKey(useStrongBox = false)
+        }
+
+    /**
+     * Generates the auth-bound key for this platform level.
+     *
+     * @param useStrongBox whether to request the secure element
+     * @return the generated key
+     */
+    private fun generateKey(useStrongBox: Boolean): SecretKey {
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER)
+        val builder =
+            KeyGenParameterSpec
+                .Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(KEY_SIZE_BITS)
+                .setUserAuthenticationRequired(true)
+                // A new fingerprint must not inherit the old key's authority. The cost is that the
+                // lock can no longer be opened afterwards, which is why the screen offers a way out.
+                .setInvalidatedByBiometricEnrollment(true)
+                .apply { if (useStrongBox) setIsStrongBoxBacked(true) }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Auth-per-use (timeout 0) — the only kind a CryptoObject accepts.
+            builder.setUserAuthenticationParameters(
+                0,
+                KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL,
+            )
+        } else {
+            // API 29 has no setUserAuthenticationParameters. A time-bound key cannot be paired with
+            // a CryptoObject, so the window has to be long enough for the prompt to finish and the
+            // sentinel to be read, and short enough that it is not a bypass on its own.
+            @Suppress("DEPRECATION")
+            builder.setUserAuthenticationValidityDurationSeconds(LEGACY_VALIDITY_SECONDS)
+        }
+
+        generator.init(builder.build())
+        return generator.generateKey()
+    }
+
+    /**
+     * Opens the Android Keystore.
+     *
+     * @return the loaded keystore
+     */
+    private fun keyStore(): KeyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
+
+    companion object {
+        /** Whether this platform can bind the prompt to the exact cipher. */
+        val SUPPORTS_CRYPTO_OBJECT: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
+        /** Log subsystem; no key material or sentinel ever appears in a message. */
+        private const val LOG_TAG = "lock"
+
+        private const val PROVIDER = "AndroidKeyStore"
+
+        /** Entry name for the lock key; distinct from the token cipher's and the DPoP key's. */
+        private const val DEFAULT_ALIAS = "krt.app-lock"
+
+        private const val TRANSFORMATION = "AES/GCM/NoPadding"
+
+        private const val KEY_SIZE_BITS = 256
+
+        /** GCM's standard IV length; also what the Keystore provider emits. */
+        private const val IV_LENGTH_BYTES = 12
+
+        private const val TAG_LENGTH_BITS = 128
+
+        /**
+         * The API-29 validity window.
+         *
+         * Long enough for the prompt to finish and the sentinel to be read on a slow device, short
+         * enough that a phone put down mid-unlock is not left openable. It exists only because the
+         * platform offers no auth-per-use key below API 30.
+         */
+        private const val LEGACY_VALIDITY_SECONDS = 10
+
+        /**
+         * The known plaintext.
+         *
+         * Its content is irrelevant — what matters is that it round-trips, which it can only do
+         * through a key the platform released after an authentication. It is a constant rather than
+         * random so a decrypt can be *verified* rather than merely not throwing.
+         */
+        private val SENTINEL = "krt.app-lock.v1".toByteArray()
+    }
+}
