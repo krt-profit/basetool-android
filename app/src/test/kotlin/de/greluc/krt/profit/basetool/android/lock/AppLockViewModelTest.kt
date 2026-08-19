@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.lock
 
 import de.greluc.krt.profit.basetool.android.core.auth.AppLock
+import de.greluc.krt.profit.basetool.android.core.auth.AuthenticatedCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SecretCipherException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,32 +56,90 @@ class AppLockViewModelTest {
     private val someMessage = 1_234
 
     /**
+     * **API 29 defers the cipher, and that must not read as a broken lock.**
+     *
+     * The regression this whole type exists for. A time-bound key throws
+     * `UserNotAuthenticatedException` from `Cipher.init` until the member has authenticated, so no
+     * cipher can be produced before the prompt. An earlier revision spelled that as `null` — the
+     * same value that means "this lock can never be opened again" — and the app therefore reported
+     * a perfectly good lock as unsatisfiable and refused to arm one at all, on the entire minSdk
+     * platform. Both unit tests and the emulator's API 37 image stayed green.
+     */
+    @Test
+    fun `a deferred cipher is not an unsatisfiable lock`() =
+        runTest(dispatcher) {
+            val lock = FakeLock(armed = true, deferred = true)
+            val viewModel = AppLockViewModel(lock)
+            viewModel.start()
+            advanceUntilIdle()
+
+            val request = viewModel.prepareUnlock()
+            advanceUntilIdle()
+
+            assertEquals(AuthenticatedCipher.Deferred, request)
+            assertTrue(
+                "a deferral must leave the lock openable, not unsatisfiable",
+                viewModel.state.value is AppLockState.Locked,
+            )
+        }
+
+    /**
+     * Arming on the deferred platform still arms.
+     *
+     * The prompt carries no `CryptoObject` there, so `completeArm` receives `null` and the lock has
+     * to build its own cipher afterwards. If that path were missing, the API-29 switch would look
+     * like it worked and guard nothing.
+     */
+    @Test
+    fun `arming works without a cipher to bind`() =
+        runTest(dispatcher) {
+            val lock = FakeLock(armed = false, deferred = true)
+            val viewModel = AppLockViewModel(lock)
+            viewModel.start()
+            advanceUntilIdle()
+
+            assertEquals(AuthenticatedCipher.Deferred, viewModel.prepareArm())
+            viewModel.completeArm(null)
+            advanceUntilIdle()
+
+            assertTrue("expected the lock to be armed", lock.armed)
+        }
+
+    /**
      * A lock whose answers the test dictates.
      *
      * @property armed what `isArmed()` reports
      * @property cipher what `unlockCipher()` returns; `null` models an invalidated key
      * @property opens what `open()` reports for that cipher
      * @property armThrows whether arming fails, as it does on a device that cannot create the key
+     * @property deferred models the API-29 platform: a time-bound key that cannot be initialised
+     *   into a cipher until the member has authenticated, so both preparation calls answer
+     *   [AuthenticatedCipher.Deferred] rather than handing one over
      */
     private class FakeLock(
         var armed: Boolean,
         private val cipher: Cipher? = null,
         private val opens: Boolean = true,
         private val armThrows: Boolean = false,
+        private val deferred: Boolean = false,
     ) : AppLock {
         var openCalls = 0
             private set
 
         override suspend fun isArmed(): Boolean = armed
 
-        override suspend fun prepareArm(): Cipher {
+        override suspend fun prepareArm(): AuthenticatedCipher {
             if (armThrows) {
                 throw SecretCipherException("no auth-bound key on this device", null)
             }
-            return Cipher.getInstance("AES/GCM/NoPadding")
+            return if (deferred) {
+                AuthenticatedCipher.Deferred
+            } else {
+                AuthenticatedCipher.Bound(Cipher.getInstance("AES/GCM/NoPadding"))
+            }
         }
 
-        override suspend fun completeArm(cipher: Cipher) {
+        override suspend fun completeArm(cipher: Cipher?) {
             armed = true
         }
 
@@ -88,9 +147,14 @@ class AppLockViewModelTest {
             armed = false
         }
 
-        override suspend fun unlockCipher(): Cipher? = cipher
+        override suspend fun unlockCipher(): AuthenticatedCipher? =
+            when {
+                deferred -> AuthenticatedCipher.Deferred
+                cipher != null -> AuthenticatedCipher.Bound(cipher)
+                else -> null
+            }
 
-        override suspend fun open(cipher: Cipher): Boolean {
+        override suspend fun open(cipher: Cipher?): Boolean {
             openCalls++
             return opens
         }
@@ -345,8 +409,8 @@ class AppLockViewModelTest {
             viewModel.start()
             advanceUntilIdle()
 
-            val cipher = viewModel.prepareArm()
-            viewModel.completeArm(requireNotNull(cipher))
+            val request = viewModel.prepareArm()
+            viewModel.completeArm((request as AuthenticatedCipher.Bound).cipher)
             advanceUntilIdle()
 
             assertEquals(AppLockState.Open, viewModel.state.value)

@@ -88,13 +88,36 @@ class AppLockKey(
      * @return the initialised encrypt cipher, to be authenticated before [seal]
      * @throws SecretCipherException if the device cannot create the key at all
      */
-    fun sealCipher(): Cipher =
+    fun sealCipher(): AuthenticatedCipher =
         try {
             keyStore().deleteEntry(alias)
-            Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, generateKey()) }
+            val secret = generateKey()
+            if (SUPPORTS_CRYPTO_OBJECT) {
+                AuthenticatedCipher.Bound(encryptCipher(secret))
+            } else {
+                // API 29's key is time-bound, so Cipher.init throws UserNotAuthenticatedException
+                // until the member has authenticated. The key exists now; the cipher waits.
+                AuthenticatedCipher.Deferred
+            }
         } catch (failure: GeneralSecurityException) {
             throw SecretCipherException("app-lock key could not be created", failure)
         }
+
+    /**
+     * Builds the encrypt cipher from the stored key.
+     *
+     * @param secret the key to use, or `null` to load the stored entry — the API-29 path, where
+     *   this runs *after* the prompt and inside the validity window
+     * @return the initialised cipher
+     * @throws GeneralSecurityException if the key is missing or the authentication has expired
+     */
+    private fun encryptCipher(secret: SecretKey? = null): Cipher {
+        val key =
+            secret
+                ?: (keyStore().getEntry(alias, null) as? KeyStore.SecretKeyEntry)?.secretKey
+                ?: throw SecretCipherException("app-lock key is gone", null)
+        return Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, key) }
+    }
 
     /**
      * Seals [sessionKey] with the cipher the platform authenticated.
@@ -106,13 +129,16 @@ class AppLockKey(
      *   authentication did not actually cover it
      */
     fun seal(
-        cipher: Cipher,
+        cipher: Cipher?,
         sessionKey: ByteArray,
     ): ByteArray =
         try {
-            val iv = cipher.iv
+            // Null is the API-29 path: no cipher could exist before the prompt, so it is built
+            // here, immediately after it, while the authentication still counts.
+            val active = cipher ?: encryptCipher()
+            val iv = active.iv
             require(iv.size == IV_LENGTH_BYTES) { "unexpected GCM IV length" }
-            iv + cipher.doFinal(sessionKey)
+            iv + active.doFinal(sessionKey)
         } catch (failure: GeneralSecurityException) {
             throw SecretCipherException("app-lock key could not be armed", failure)
         }
@@ -128,16 +154,16 @@ class AppLockKey(
      *   biometric enrolment invalidates it, and the member then has no way past the lock except
      *   signing out
      */
-    fun unlockCipher(sealed: ByteArray): Cipher? =
+    fun unlockCipher(sealed: ByteArray): AuthenticatedCipher? =
         try {
             require(sealed.size > IV_LENGTH_BYTES) { "sealed sentinel is too short to be valid" }
             val key = keyStore().getEntry(alias, null) as? KeyStore.SecretKeyEntry ?: return null
-            Cipher.getInstance(TRANSFORMATION).apply {
-                init(
-                    Cipher.DECRYPT_MODE,
-                    key.secretKey,
-                    GCMParameterSpec(TAG_LENGTH_BITS, sealed, 0, IV_LENGTH_BYTES),
-                )
+            if (SUPPORTS_CRYPTO_OBJECT) {
+                AuthenticatedCipher.Bound(decryptCipher(key.secretKey, sealed))
+            } else {
+                // Time-bound key: initialising it now would throw UserNotAuthenticatedException,
+                // and the broad catch below would report a perfectly good lock as unsatisfiable.
+                AuthenticatedCipher.Deferred
             }
         } catch (invalidated: KeyPermanentlyInvalidatedException) {
             // A new fingerprint was enrolled. The key is gone for good; the app-lock cannot be
@@ -166,17 +192,48 @@ class AppLockKey(
      * @return the session key, or `null` when it could not be recovered
      */
     fun open(
-        cipher: Cipher,
+        cipher: Cipher?,
         sealed: ByteArray,
     ): ByteArray? =
         try {
-            cipher.doFinal(sealed, IV_LENGTH_BYTES, sealed.size - IV_LENGTH_BYTES)
+            // Null is the API-29 path: the cipher is built here, right after the prompt.
+            val active =
+                cipher
+                    ?: (keyStore().getEntry(alias, null) as? KeyStore.SecretKeyEntry)
+                        ?.let { decryptCipher(it.secretKey, sealed) }
+                    ?: return null
+            active.doFinal(sealed, IV_LENGTH_BYTES, sealed.size - IV_LENGTH_BYTES)
+        } catch (invalidated: KeyPermanentlyInvalidatedException) {
+            // On API 29 this surfaces here rather than before the prompt: nothing touches the key
+            // until an authentication exists, so a new enrolment is only discovered afterwards.
+            KrtLog.w(LOG_TAG, invalidated) { "app-lock key was invalidated by a new enrolment" }
+            null
         } catch (failure: GeneralSecurityException) {
             // Includes UserNotAuthenticatedException on the API-29 path: the validity window
             // expired between the prompt and here. Refusing is correct — it means no authentication
             // backs this attempt.
             KrtLog.w(LOG_TAG, failure) { "app-lock session key did not open" }
             null
+        }
+
+    /**
+     * Builds the decrypt cipher for a sealed blob.
+     *
+     * @param secret the stored key
+     * @param sealed the sealed session key, whose leading bytes carry the GCM IV
+     * @return the initialised cipher
+     * @throws GeneralSecurityException if the key is unusable or the authentication has expired
+     */
+    private fun decryptCipher(
+        secret: SecretKey,
+        sealed: ByteArray,
+    ): Cipher =
+        Cipher.getInstance(TRANSFORMATION).apply {
+            init(
+                Cipher.DECRYPT_MODE,
+                secret,
+                GCMParameterSpec(TAG_LENGTH_BITS, sealed, 0, IV_LENGTH_BYTES),
+            )
         }
 
     /**

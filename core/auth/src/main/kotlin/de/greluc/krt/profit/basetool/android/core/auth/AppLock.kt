@@ -32,18 +32,20 @@ interface AppLock {
      * an authentication, exactly as it refuses to decrypt. Arming is therefore a prompt, not a
      * silent toggle — which also makes "armed" imply "satisfiable".
      *
-     * @return the cipher to hand to the prompt
+     * @return what the prompt has to authenticate: a cipher to bind (API 30+), or a deferral
+     *   (API 29, where a time-bound key cannot be initialised before the authentication)
      * @throws SecretCipherException if the device cannot create an auth-bound key at all
      */
-    suspend fun prepareArm(): Cipher
+    suspend fun prepareArm(): AuthenticatedCipher
 
     /**
      * Seals a fresh session key with the authenticated cipher and re-seals the stored token.
      *
-     * @param cipher the cipher the platform vouched for
+     * @param cipher the cipher the platform vouched for, or `null` on the API-29 path where the
+     *   prompt carried no `CryptoObject` and the cipher is built here instead
      * @throws SecretCipherException if sealing fails despite the authentication
      */
-    suspend fun completeArm(cipher: Cipher)
+    suspend fun completeArm(cipher: Cipher?)
 
     /**
      * Removes the outer layer from the stored token, then the key and the sealed session key.
@@ -53,19 +55,21 @@ interface AppLock {
     /**
      * Prepares the decrypt cipher a prompt has to authenticate.
      *
-     * @return the initialised cipher, or `null` when the lock can no longer be opened — the key was
-     *   invalidated by a new biometric enrolment, or is gone
+     * @return what the prompt has to authenticate, or `null` when the lock can no longer be
+     *   opened — the key was invalidated by a new biometric enrolment, or is gone. On API 29 the
+     *   answer is [AuthenticatedCipher.Deferred]: the cipher cannot exist yet, and that is **not**
+     *   the same as a lock that cannot be opened
      */
-    suspend fun unlockCipher(): Cipher?
+    suspend fun unlockCipher(): AuthenticatedCipher?
 
     /**
      * Recovers the session key with an authenticated cipher.
      *
-     * @param cipher the cipher the platform vouched for
+     * @param cipher the cipher the platform vouched for, or `null` on the API-29 path
      * @return `true` when the session key came back, which is the only thing that opens the gate
      *   **and** the only thing that makes the stored refresh token readable
      */
-    suspend fun open(cipher: Cipher): Boolean
+    suspend fun open(cipher: Cipher?): Boolean
 }
 
 /**
@@ -108,9 +112,9 @@ class KeystoreAppLock(
      * A token that cannot be read here is not an error to report: the member simply has no usable
      * session, and arming a lock over nothing is perfectly valid.
      */
-    override suspend fun prepareArm(): Cipher = key.sealCipher()
+    override suspend fun prepareArm(): AuthenticatedCipher = key.sealCipher()
 
-    override suspend fun completeArm(cipher: Cipher) {
+    override suspend fun completeArm(cipher: Cipher?) {
         val existing = tokenStore.read()
         val sessionKey = envelope.newSessionKey()
         setting.arm(key.seal(cipher, sessionKey))
@@ -146,9 +150,10 @@ class KeystoreAppLock(
         }
     }
 
-    override suspend fun unlockCipher(): Cipher? = setting.sealedSessionKey()?.let(key::unlockCipher)
+    override suspend fun unlockCipher(): AuthenticatedCipher? =
+        setting.sealedSessionKey()?.let(key::unlockCipher)
 
-    override suspend fun open(cipher: Cipher): Boolean {
+    override suspend fun open(cipher: Cipher?): Boolean {
         val sessionKey = setting.sealedSessionKey()?.let { key.open(cipher, it) }
         sessionKey?.let(envelope::unlocked)
         return sessionKey != null

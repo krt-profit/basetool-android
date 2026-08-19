@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
+import de.greluc.krt.profit.basetool.android.core.auth.AuthenticatedCipher
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import kotlinx.coroutines.launch
 
@@ -63,14 +64,15 @@ fun AppLockGate(
                 messageRes = current.messageRes,
                 onUnlock = {
                     scope.launch {
-                        // Preparing the cipher first is what makes the prompt meaningful: without
-                        // one there is nothing for the platform to authenticate, and a null here
-                        // means the key is gone rather than that the member failed.
-                        viewModel.prepareUnlock()?.let { cipher ->
+                        // Preparing first is what makes the prompt meaningful: a null here
+                        // means the key is gone rather than that the member failed. A Deferred
+                        // answer is neither -- it is API 29 saying its time-bound key cannot be
+                        // initialised until the authentication exists.
+                        viewModel.prepareUnlock()?.let { request ->
                             BiometricGate.prompt(
                                 activity = activity,
-                                cipher = cipher,
-                                useCryptoObject = AppLockKey.SUPPORTS_CRYPTO_OBJECT,
+                                cipher = (request as? AuthenticatedCipher.Bound)?.cipher,
+                                useCryptoObject = request is AuthenticatedCipher.Bound,
                                 onSuccess = viewModel::unlock,
                                 onFailure = viewModel::onUnlockFailed,
                             )

@@ -80,9 +80,9 @@ object BiometricGate {
      */
     fun prompt(
         activity: FragmentActivity,
-        cipher: Cipher,
+        cipher: Cipher?,
         useCryptoObject: Boolean,
-        onSuccess: (Cipher) -> Unit,
+        onSuccess: (Cipher?) -> Unit,
         onFailure: (Int?) -> Unit,
     ) {
         val callback =
@@ -127,7 +127,10 @@ object BiometricGate {
                 .setAllowedAuthenticators(ALLOWED)
                 .build()
 
-        if (useCryptoObject) {
+        // The two are one decision, not two: a CryptoObject is only possible when a cipher exists,
+        // and on API 29 none can, because its time-bound key refuses Cipher.init until the member
+        // has authenticated.
+        if (useCryptoObject && cipher != null) {
             prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
         } else {
             prompt.authenticate(info)

@@ -30,6 +30,7 @@ import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
+import de.greluc.krt.profit.basetool.android.core.auth.AuthenticatedCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -163,16 +164,20 @@ class MainActivity : FragmentActivity() {
                                 appLockAvailable = lockAvailable,
                                 onAppLockChange = { wanted ->
                                     if (wanted) {
-                                        // Arming raises the same prompt as unlocking: the key is
-                                        // auth-per-use, so Keystore will not encrypt with it
-                                        // unattended. It also means a lock is only ever armed by
-                                        // somebody who just proved they can open it.
+                                        // Arming raises the same prompt as unlocking: the key
+                                        // will not encrypt unattended either. It also means a lock
+                                        // is only ever armed by somebody who just proved they can
+                                        // open it. Whether the prompt carries a CryptoObject is the
+                                        // platform's answer, not an assumption.
                                         scope.launch {
-                                            lockViewModel.prepareArm()?.let { cipher ->
+                                            lockViewModel.prepareArm()?.let { request ->
                                                 BiometricGate.prompt(
                                                     activity = this@MainActivity,
-                                                    cipher = cipher,
-                                                    useCryptoObject = AppLockKey.SUPPORTS_CRYPTO_OBJECT,
+                                                    cipher =
+                                                        (request as? AuthenticatedCipher.Bound)
+                                                            ?.cipher,
+                                                    useCryptoObject =
+                                                        request is AuthenticatedCipher.Bound,
                                                     onSuccess = lockViewModel::completeArm,
                                                     onFailure = { },
                                                 )

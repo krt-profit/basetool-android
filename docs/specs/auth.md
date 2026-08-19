@@ -437,6 +437,25 @@ leaks exactly what it is there to withhold.
   `CryptoObject`; the prompt runs without one and the decrypt follows inside a 10-second window. The
   binding is looser there (a recent authentication rather than *this* one) but still cryptographic:
   without one the decrypt throws `UserNotAuthenticatedException`.
+- [x] **The two paths differ in *order*, not only in strength, and the types say so.** On API 30+ a
+  cipher can be initialised before any authentication, so it is created first and bound into the
+  `CryptoObject`. On API 29 `Cipher.init` itself throws `UserNotAuthenticatedException` until an
+  authentication exists, so the cipher can only be built **after** the prompt returns. Both
+  preparation calls therefore answer `AuthenticatedCipher` — `Bound` or `Deferred` — rather than a
+  nullable cipher.
+
+  This is not typing for its own sake. An earlier revision spelled the deferral as `null`, which was
+  already the value meaning *this lock can never be opened again*. On API 29 the init threw, a broad
+  catch turned it into `null`, and the app concluded the lock was unsatisfiable — so **on the entire
+  minSdk platform the lock could neither be armed nor opened**, while every unit test stayed green
+  and the API 37 emulator showed nothing. Found only by running `AppLockKeystoreContractTest` on an
+  API 29 device.
+- [x] The Keystore contract is **exercised on a device**, on both paths
+  (`AppLockKeystoreContractTest`): the key can be created, the shape of the preparation answer
+  follows the API level rather than an assumption, and a key created moments ago does not report
+  itself unsatisfiable. Green on API 29, API 37 phone and API 37 tablet (`tests=4 failures=0
+  skipped=0`, 2026-08-19). The prompt itself stays out of scope — it needs an activity and a human —
+  so what these pin is everything either side of it.
 - [x] An authentication the platform accepted whose **decrypt still fails does not open the app**
   (`AppLockViewModelTest`).
 - [x] A new biometric enrolment invalidates the key (`setInvalidatedByBiometricEnrollment`), and
@@ -488,10 +507,18 @@ leaks exactly what it is there to withhold.
   the sealed token reads as *locked* rather than *broken* (`refresh token is sealed and the app lock
   is not open`); the unlock restores the session into the app rather than the login screen; a
   20-second absence does not re-lock and a six-minute one does.
+- [x] Verified interactively on an **API 37 phone and an API 37 tablet** (2026-08-19): arming
+  prompts and succeeds, a cold start locks, the unlock restores into the app rather than the login
+  screen, a 25-second absence does not re-lock and a 6.5-minute one does. The tablet runs the same
+  flow through its wider navigation rail.
+- [ ] Observed interactively on **API 29**. **Open** — not an app limitation: the API 29 emulator
+  image ships Chrome 74, which predates treating `http://127.0.0.1` as a secure context, so it drops
+  Keycloak's `Secure; SameSite=None` cookies and the login cannot complete against a cleartext test
+  stack. The platform's own lock paths are covered by the device tests above; what is missing is one
+  end-to-end pass. Serving the test stack's Keycloak over TLS would remove the limit for good.
 - [ ] Observed on a device with an **enrolled fingerprint**. **Open** — the runs above cover the
-  device-credential path only, and both defects above were invisible to every unit test because the
-  Keystore is not exercised off a device. Needed **before the first release**: the failure mode is a
-  member unable to reach their own session.
+  device-credential path only. Needed **before the first release**: the failure mode is a member
+  unable to reach their own session.
 
 ### REQ-APP-AUTH-011 — The dev build's TLS relaxations cannot reach a release build
 

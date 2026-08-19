@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.auth.AppLock
+import de.greluc.krt.profit.basetool.android.core.auth.AuthenticatedCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SecretCipherException
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -106,22 +107,22 @@ class AppLockViewModel(
      * failed attempt — it is a lock that can never be satisfied again, so the screen switches to the
      * one action that still works.
      *
-     * @return the initialised cipher, or `null` when the lock can no longer be opened
+     * @return what the prompt must authenticate, or `null` when the lock can no longer be opened
      */
-    suspend fun prepareUnlock(): Cipher? {
-        val cipher = lock.unlockCipher()
-        if (cipher == null) {
+    suspend fun prepareUnlock(): AuthenticatedCipher? {
+        val request = lock.unlockCipher()
+        if (request == null) {
             mutableState.value = AppLockState.Unsatisfiable
         }
-        return cipher
+        return request
     }
 
     /**
      * Opens the app **if** the authenticated cipher really decrypts the sentinel.
      *
-     * @param cipher the cipher the platform vouched for
+     * @param cipher the cipher the platform vouched for, or `null` on the API-29 path
      */
-    fun unlock(cipher: Cipher) {
+    fun unlock(cipher: Cipher?) {
         viewModelScope.launch {
             mutableState.value =
                 if (lock.open(cipher)) {
@@ -172,9 +173,14 @@ class AppLockViewModel(
      * inline here and failed on every device with `Key user not authenticated` while every unit
      * test stayed green — the Keystore is not exercised off a device.
      *
-     * @return the cipher for the prompt, or `null` when the device cannot create the key at all
+     * On API 29 the answer is [AuthenticatedCipher.Deferred]: its key is time-bound, so
+     * `Cipher.init` throws until the member has authenticated and the cipher can only be built
+     * afterwards. That is a deferral, not a failure, and conflating the two left the lock
+     * impossible to arm on the entire minSdk platform.
+     *
+     * @return what the prompt must authenticate, or `null` when the device cannot create the key
      */
-    suspend fun prepareArm(): Cipher? =
+    suspend fun prepareArm(): AuthenticatedCipher? =
         try {
             lock.prepareArm()
         } catch (unusable: SecretCipherException) {
@@ -185,9 +191,9 @@ class AppLockViewModel(
     /**
      * Finishes arming with the authenticated cipher.
      *
-     * @param cipher the cipher the platform vouched for
+     * @param cipher the cipher the platform vouched for, or `null` on the API-29 path
      */
-    fun completeArm(cipher: Cipher) {
+    fun completeArm(cipher: Cipher?) {
         viewModelScope.launch {
             try {
                 lock.completeArm(cipher)
