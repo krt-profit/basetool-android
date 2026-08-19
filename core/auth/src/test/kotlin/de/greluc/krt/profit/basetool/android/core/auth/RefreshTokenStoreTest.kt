@@ -106,6 +106,55 @@ class RefreshTokenStoreTest {
             assertEquals(OTHER_TOKEN, store.read())
         }
 
+    /**
+     * **A token sealed behind an unopened app lock is kept, not wiped.**
+     *
+     * The one failure here that must not behave like the others. Every other unreadable blob is
+     * discarded, because it means the member has to log in again anyway — but a sealed blob is
+     * perfectly good and merely waiting for a fingerprint. Wiping it would log somebody out for not
+     * having authenticated yet, and it would do so silently, on the very first read after they armed
+     * the lock.
+     */
+    @Test
+    fun `a token sealed behind a closed lock is neither read nor destroyed`() =
+        runTest {
+            val envelope = SessionEnvelope()
+            envelope.unlocked(envelope.newSessionKey())
+            val store = storeWith(LockedSecretCipher(FakeSecretCipher(), envelope))
+            store.write(TOKEN)
+
+            // A cold start: same stored bytes, an envelope that has not been unlocked.
+            envelope.close()
+
+            assertNull("a closed lock yields no token", store.read())
+
+            envelope.unlocked(envelope.newSessionKey())
+            assertNull("a different session key cannot open it either", store.read())
+        }
+
+    /**
+     * The same token comes back once the right session key is restored.
+     *
+     * The counterpart to the test above: the blob survived being read while locked, so the member
+     * who unlocks gets their session rather than a login screen.
+     */
+    @Test
+    fun `a sealed token survives a locked read and opens afterwards`() =
+        runTest {
+            val envelope = SessionEnvelope()
+            val sessionKey = envelope.newSessionKey()
+            envelope.unlocked(sessionKey)
+            val store = storeWith(LockedSecretCipher(FakeSecretCipher(), envelope))
+            store.write(TOKEN)
+
+            envelope.close()
+            assertNull(store.read())
+
+            envelope.unlocked(sessionKey)
+
+            assertEquals(TOKEN, store.read())
+        }
+
     private companion object {
         const val TOKEN = "refresh-token-value"
         const val OTHER_TOKEN = "rotated-refresh-token"

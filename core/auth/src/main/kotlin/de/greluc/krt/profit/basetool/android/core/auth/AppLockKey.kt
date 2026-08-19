@@ -32,9 +32,10 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * So the lock owns an AES-256-GCM key created with
  * [KeyGenParameterSpec.Builder.setUserAuthenticationRequired]. When the member switches the lock on,
- * a short sentinel is encrypted with it; opening the app requires decrypting that sentinel back.
- * Keystore refuses the operation unless the user authenticated, so **the gate cannot open without
- * one**.
+ * it seals the **session key** that [SessionEnvelope] wraps the stored refresh token with; opening
+ * the app requires decrypting that session key back. Keystore refuses the operation unless the user
+ * authenticated, so the gate cannot open without one — and neither can the token at rest, which is
+ * what separates this from a lock that only guards the screen.
  *
  * **Two platform paths, because API 29 cannot do the modern one.**
  *
@@ -49,10 +50,11 @@ import javax.crypto.spec.GCMParameterSpec
  *   authentication rather than *this* authentication — but it is still cryptographic: without one,
  *   the decrypt throws.
  *
- * **What this does NOT do.** It does not wrap [KeystoreSecretCipher]'s key, so the refresh token at
- * rest is unaffected: this stops someone holding the phone, not someone who can read app-private
- * storage. That remains the open half of `REQ-APP-AUTH-010`, and conflating the two would be the
- * dishonest reading of a green scanner.
+ * **What this deliberately does not do** is re-key or replace [KeystoreSecretCipher]. Making the
+ * token key itself auth-bound would look tidier and would break the app: an auth-per-use Keystore
+ * key cannot be used unattended, and the refresh token is rewritten whenever the realm issues a new
+ * one — a background refresh cannot raise a fingerprint prompt. The outer layer exists precisely so
+ * the inner key keeps working the way it must.
  *
  * @property alias Keystore entry name; separate from the token cipher's so either can be wiped alone
  */
@@ -67,22 +69,23 @@ class AppLockKey(
     fun exists(): Boolean = keyStore().containsAlias(alias)
 
     /**
-     * Creates the key and seals the sentinel with it.
+     * Creates the key and seals [sessionKey] with it.
      *
      * Called when the member switches the lock on. A key already present is replaced, so enabling
-     * the lock twice cannot leave a sentinel that no key can open.
+     * the lock twice cannot leave a sealed blob that no key can open.
      *
-     * @return the sealed sentinel, to be stored beside the setting
+     * @param sessionKey the freshly minted session key the token store's outer layer is built from
+     * @return the sealed session key, to be stored beside the setting
      * @throws SecretCipherException if the device cannot create or use the key
      */
-    fun arm(): ByteArray =
+    fun seal(sessionKey: ByteArray): ByteArray =
         try {
             keyStore().deleteEntry(alias)
             val cipher = Cipher.getInstance(TRANSFORMATION)
             cipher.init(Cipher.ENCRYPT_MODE, generateKey())
             val iv = cipher.iv
             require(iv.size == IV_LENGTH_BYTES) { "unexpected GCM IV length" }
-            iv + cipher.doFinal(SENTINEL)
+            iv + cipher.doFinal(sessionKey)
         } catch (failure: GeneralSecurityException) {
             throw SecretCipherException("app-lock key could not be armed", failure)
         }
@@ -123,30 +126,30 @@ class AppLockKey(
         }
 
     /**
-     * Decrypts the sentinel and reports whether it came back intact.
+     * Recovers the session key with an authenticated cipher.
      *
-     * **This is the operation the whole lock rests on.** The cipher must be the one the prompt
-     * returned (API 30+) or one prepared immediately after a successful prompt (API 29); either way
-     * Keystore only performs it for an authenticated user, so a `true` here cannot be produced
-     * without one.
+     * **This is the operation the whole lock rests on**, and it is no longer a gesture: what comes
+     * back is the key the refresh token's outer layer is built from, so an app that skipped this
+     * step cannot read the stored session at all. The cipher must be the one the prompt returned
+     * (API 30+) or one prepared immediately after a successful prompt (API 29); either way Keystore
+     * performs it only for an authenticated user.
      *
      * @param cipher the cipher from [unlockCipher], authenticated by the platform
-     * @param sealed the same sentinel that was passed to [unlockCipher]
-     * @return `true` when the sentinel decrypted to its known value
+     * @param sealed the same blob that was passed to [unlockCipher]
+     * @return the session key, or `null` when it could not be recovered
      */
     fun open(
         cipher: Cipher,
         sealed: ByteArray,
-    ): Boolean =
+    ): ByteArray? =
         try {
             cipher.doFinal(sealed, IV_LENGTH_BYTES, sealed.size - IV_LENGTH_BYTES)
-                .contentEquals(SENTINEL)
         } catch (failure: GeneralSecurityException) {
             // Includes UserNotAuthenticatedException on the API-29 path: the validity window
             // expired between the prompt and here. Refusing is correct — it means no authentication
             // backs this attempt.
-            KrtLog.w(LOG_TAG, failure) { "app-lock sentinel did not open" }
-            false
+            KrtLog.w(LOG_TAG, failure) { "app-lock session key did not open" }
+            null
         }
 
     /**
@@ -250,14 +253,5 @@ class AppLockKey(
          * platform offers no auth-per-use key below API 30.
          */
         private const val LEGACY_VALIDITY_SECONDS = 10
-
-        /**
-         * The known plaintext.
-         *
-         * Its content is irrelevant — what matters is that it round-trips, which it can only do
-         * through a key the platform released after an authentication. It is a constant rather than
-         * random so a decrypt can be *verified* rather than merely not throwing.
-         */
-        private val SENTINEL = "krt.app-lock.v1".toByteArray()
     }
 }

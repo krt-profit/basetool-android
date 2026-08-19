@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die App-Sperre schützt jetzt auch die gespeicherte Anmeldung, nicht nur den Bildschirm.** Bisher lag das gespeicherte Sitzungs-Token hinter dem Sperrbildschirm, war aber technisch auch ohne Entsperren lesbar. Es liegt nun zusätzlich unter einem Schlüssel, den das Gerät erst nach Fingerabdruck, Gesicht oder Gerätesperre herausgibt. Wer die Sperre aus- oder einschaltet, bleibt angemeldet; ist die Sperre aktiv und noch nicht geöffnet, bleibt die gespeicherte Anmeldung unangetastet liegen statt gelöscht zu werden (REQ-APP-AUTH-010).
+
 - **Entwickler-Builds erreichen jetzt das Backend des lokalen Teststacks.** Dessen selbstsigniertes Zertifikat scheiterte bisher an der TLS-Prüfung, und zwar ohne erkennbare Ursache: Die App meldete schlicht „keine Verbindung", während der Server auf demselben Rechner lief. Der Entwickler-Build vertraut nun zusätzlich den selbst installierten Zertifikaten des Geräts. Release-Builds sind davon unberührt — die Ausnahme steht in einem Bereich, den Android nur für Debug-Builds beachtet, und existiert im Produktions-Flavour ohnehin nicht (REQ-APP-AUTH-011).
 
 - **Die Nutzungsbedingungen erscheinen jetzt in der App und lassen sich dort annehmen.** Wer noch nicht zugestimmt hat, bekommt nach der Anmeldung den vollständigen Text zu lesen, mit Kästchen zum Bestätigen und einem Weg zum Ablehnen — der meldet ab und sagt das vorher deutlich. Der Text kommt dabei vom Server und steckt nicht in der App: So kann die App nie eine andere Fassung anzeigen als die, für die die Zustimmung gespeichert wird. Lässt sich der Text nicht laden, erscheint eine Fehlermeldung statt einer leeren Seite — einer leeren Seite zuzustimmen wäre keine Zustimmung (REQ-APP-AUTH-009).

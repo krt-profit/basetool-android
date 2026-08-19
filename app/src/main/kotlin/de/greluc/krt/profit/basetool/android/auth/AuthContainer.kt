@@ -19,8 +19,11 @@ import de.greluc.krt.profit.basetool.android.core.auth.DpopProofFactory
 import de.greluc.krt.profit.basetool.android.core.auth.KeystoreAppLock
 import de.greluc.krt.profit.basetool.android.core.auth.KeystoreDpopKeyProvider
 import de.greluc.krt.profit.basetool.android.core.auth.KeystoreSecretCipher
+import de.greluc.krt.profit.basetool.android.core.auth.LockedSecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.PendingAuthorization
 import de.greluc.krt.profit.basetool.android.core.auth.RefreshTokenStore
+import de.greluc.krt.profit.basetool.android.core.auth.SecretCipher
+import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
@@ -50,24 +53,48 @@ class AuthContainer(
     /** Corrected server time, fed by every response and read when a DPoP proof is stamped. */
     val serverClock: ServerClock by lazy { ServerClock() }
 
-    private val cipher by lazy { KeystoreSecretCipher() }
+    /** The Keystore-backed cipher both stores below are built on. */
+    private val keystoreCipher by lazy { KeystoreSecretCipher() }
+
+    /**
+     * The refresh token's cipher, with the app lock's outer layer around it.
+     *
+     * The order is the security property: [KeystoreSecretCipher] keeps every guarantee that makes
+     * storing a refresh token defensible — non-exportable, device-bound, StrongBox where available —
+     * and [LockedSecretCipher] adds a layer the member's authentication removes. Inert while the
+     * lock is off, so the stored form then is byte-identical to a build without any of this.
+     */
+    private val tokenCipher: SecretCipher by lazy { LockedSecretCipher(keystoreCipher, envelope) }
+
+    /** The in-memory session key and the wrap format; empty until an unlock fills it. */
+    private val envelope by lazy { SessionEnvelope() }
 
     private val dpopKeys by lazy { KeystoreDpopKeyProvider() }
 
     private val dataStore by lazy { AuthDataStore.create(appContext) }
 
-    /** The encrypted refresh token at rest. */
-    val refreshTokenStore by lazy { RefreshTokenStore(dataStore, cipher) }
+    /** The encrypted refresh token at rest, sealed by the app lock when one is armed. */
+    val refreshTokenStore by lazy { RefreshTokenStore(dataStore, tokenCipher) }
 
     /**
-     * The app lock: an auth-bound Keystore key plus its sealed sentinel.
+     * The sealed session key, stored beside the refresh token.
      *
-     * The sentinel shares the token DataStore so a logout wipe reaches it too — a device handed on
-     * with the app signed out should not still ask the next person for a fingerprint.
+     * It shares the token DataStore so a logout wipe reaches it too — a device handed on with the
+     * app signed out should not still ask the next person for a fingerprint.
      */
     private val appLockSetting by lazy { AppLockSetting(dataStore) }
 
-    val appLock: AppLock by lazy { KeystoreAppLock(AppLockKey(), appLockSetting) }
+    /**
+     * The app lock.
+     *
+     * It takes [refreshTokenStore] because arming and disarming **rewrite the stored token**: the
+     * blob's form has to match the setting, or a member who armed the lock mid-session would find
+     * an unsealed blob the envelope refuses to open — or, worse, a sealed one after disarming that
+     * nothing can.
+     */
+    val appLock: AppLock by lazy {
+        KeystoreAppLock(AppLockKey(), appLockSetting, envelope, refreshTokenStore)
+    }
 
     /**
      * Whether a lock stands, for the settings row to reflect.
@@ -77,8 +104,18 @@ class AuthContainer(
      */
     val appLockArmed get() = appLockSetting.enabled
 
-    /** The login attempt that is currently out in the browser. */
-    val pendingAuthorization by lazy { PendingAuthorization(dataStore, cipher) }
+    /**
+     * The login attempt that is currently out in the browser.
+     *
+     * **Deliberately NOT behind the app lock's outer layer**, unlike the refresh token. The redirect
+     * is handled in `onCreate`, before a single frame is composed and therefore before the lock gate
+     * has had any chance to run — a sealed attempt would be unreadable at exactly that moment, and
+     * `take()` discards what it cannot read, so an armed lock would silently swallow every login
+     * that survived a process death. Sealing it would also buy nothing: it holds a PKCE verifier for
+     * the length of one browser round trip, not a session, and it is already encrypted by the same
+     * non-exportable Keystore key.
+     */
+    val pendingAuthorization by lazy { PendingAuthorization(dataStore, keystoreCipher) }
 
     /** Realm endpoints and client id for this flavour. */
     val configuration by lazy { AppOidc.configuration() }
@@ -142,7 +179,11 @@ class AuthContainer(
         AuthSession(
             tokenClient = tokenClient,
             refreshTokenStore = refreshTokenStore,
-            cipher = cipher,
+            // The bare Keystore cipher: the session uses it only to destroy the key on logout, and
+            // that key belongs to the inner layer. Handing it the decorated one would work but
+            // would suggest the lock has something to wipe here, which it does not — the lock's own
+            // key is disarmed separately.
+            cipher = keystoreCipher,
             serverClock = serverClock,
         )
     }
@@ -159,7 +200,8 @@ class AuthContainer(
         val endSession = session.logout()
         dpopKeys.deleteKey()
         // The lock key goes with them: a device handed on with the app signed out must not still
-        // hold a key that once guarded it.
+        // hold a key that once guarded it. disarm() also drops the in-memory session key, so the
+        // outer layer cannot be removed again in this process.
         appLock.disarm()
         return endSession
     }

@@ -445,13 +445,37 @@ leaks exactly what it is there to withhold.
   `Locked` state with a retry button there would be a loop with no exit.
 - [x] A device that cannot create an auth-bound key does not end up with a switch that looks on and
   guards nothing.
-- [ ] The lock also gates the **token key**. **Open** — the sentinel proves an authentication
-  happened, which is what makes the gate real, but `KeystoreSecretCipher`'s key is not wrapped by
-  the lock key. So this stops someone holding the phone; it does not stop someone who can read
-  app-private storage. Wrapping the token key touches the app's only secret at rest and can lock a
-  member out of their own session, so it is deliberately a separate change rather than one made
-  under a scanner's deadline. Until then the screen's "Lokale Daten sind geschützt" is true of the
-  threat the lock addresses and overstates the one it does not.
+- [x] **The lock reaches the refresh token at rest.** `SessionEnvelope` wraps the token cipher's
+  output with a random session key, and that session key exists on disk only as ciphertext under the
+  auth-bound Keystore key. So the blob at rest is `lock(token-key(refresh token))` and its outer
+  layer cannot be removed without a user authentication. The screen's "Lokale Daten sind geschützt"
+  is now true of storage, not only of the screen.
+- [x] The **inner key is untouched**: `KeystoreSecretCipher` keeps non-exportable, device-bound,
+  `setUnlockedDeviceRequired` and StrongBox. `LockedSecretCipher` is a decorator, not a re-key.
+  Making the token key itself auth-bound would look tidier and would break the app — an auth-per-use
+  Keystore key cannot be used unattended, and the refresh token is rewritten whenever the realm
+  issues a new one, which a background refresh cannot raise a prompt for.
+- [x] With the lock **off** the envelope passes the blob through byte-identically, so an existing
+  session survives the upgrade (`SessionEnvelopeTest`).
+- [x] **A locked read never destroys the token.** `RefreshTokenStore` discards every blob it cannot
+  decrypt, because that normally means a re-login is due anyway — but a sealed blob is perfectly
+  good and merely unauthenticated, so `AppLockedException` is a distinct subtype and its branch
+  answers `null` without clearing. Conflating the two would log a member out for not yet having
+  touched the sensor, silently, on the first read after arming (`RefreshTokenStoreTest`).
+- [x] Arming and disarming **rewrite the stored token** so its form always matches the setting:
+  armed reads the unsealed blob before opening the envelope, disarmed reads the sealed one before
+  closing it. A disarm without an open envelope clears the token instead of leaving a blob nothing
+  can open — one login beats a locked drawer.
+- [x] The **pending authorization is deliberately not sealed**. It is read in `onCreate`, before the
+  lock gate composes, and `take()` discards what it cannot read — so an armed lock would silently
+  swallow every login that survived a process death. It holds a PKCE verifier for one browser round
+  trip, not a session, and is already encrypted by the same Keystore key.
+- [ ] Verified on a device. **Open** — the Keystore behaviours this rests on (an auth-per-use key
+  refusing use without a prompt, `CryptoObject` binding, invalidation on new enrolment) cannot be
+  exercised on the JVM or under Robolectric, so the tests above cover the format and the failure
+  branches while the platform contract itself is asserted only by reading the documentation. This
+  needs one pass on a real device with a fingerprint enrolled, and one on a device with only a PIN,
+  **before the first release** — the failure mode is a member unable to reach their own session.
 - [ ] Observed on a device with an enrolled fingerprint and on one with only a PIN. **Open** —
   emulator verification covers the PIN path only.
 

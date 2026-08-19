@@ -33,6 +33,12 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * and [read] answers `null` for each rather than throwing, after wiping the unusable blob so the
  * next read is cheap.
  *
+ * **One failure is emphatically not of that kind.** With the app lock armed the blob carries an
+ * outer layer that only an authenticated unlock removes ([SessionEnvelope]), and a read before that
+ * unlock raises [AppLockedException]. That token is perfectly good. Wiping it — which every other
+ * failure here does — would log the member out for not yet having put their finger on the sensor,
+ * so that branch answers `null` and leaves the blob alone.
+ *
  * @property dataStore where the ciphertext lives; the caller owns its file location and lifecycle
  * @property cipher the Keystore-backed cipher in production, a fake in tests
  */
@@ -63,6 +69,18 @@ class RefreshTokenStore(
         val stored = storedCiphertext() ?: return null
         return try {
             cipher.decrypt(Base64.decode(stored)).decodeToString()
+        } catch (locked: AppLockedException) {
+            // MUST come before the SecretCipherException branch, and must NOT clear. The token is
+            // fine; the app lock simply has not been opened yet, and wiping here would log a member
+            // out for the crime of not having authenticated. Answering null is safe because the
+            // only caller reads this to decide whether a session can be restored, and the lock gate
+            // sits ahead of that decision — a read reaching this branch is a caller that got the
+            // order wrong, not a member who lost their session.
+            // The exception carries no detail worth a stack trace — it IS the detail — so its
+            // message goes into the line rather than the throwable channel, which DEBUG has
+            // no overload for anyway.
+            KrtLog.d(LOG_TAG) { "refresh token is sealed and the app lock is not open: ${locked.message}" }
+            null
         } catch (unusable: SecretCipherException) {
             // Key invalidated, device locked, or a blob from another device. Drop it: keeping an
             // undecryptable blob means paying for the failure on every future read, and the member
