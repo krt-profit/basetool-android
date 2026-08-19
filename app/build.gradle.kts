@@ -152,4 +152,12 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // The only instrumented tests in the project, and they exist for one reason: the trust anchor
+    // below cannot be proven anywhere else. Android applies the network security config to the
+    // process, so nothing on the JVM or under Robolectric can tell whether a TLS handshake with
+    // the test stack actually succeeds.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
