@@ -11,15 +11,17 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.util.Date
 
 /**
  * Pins the network posture of both flavours against the one mistake that has no symptom.
  *
- * Every relaxation the dev build needs — cleartext to the emulator's loopback, and the user
- * certificate store as a trust anchor for the test stack's self-signed backend — is a hole in TLS
- * validation. In a release build it would be a serious one, and **nothing about a release build
- * fails if it leaks in**: the APK installs, the requests succeed, and the only difference is that
- * a proxy on the member's network can now read them.
+ * Every relaxation the dev build needs — cleartext to the emulator's loopback, and a trust anchor
+ * for the test stack's backend certificate — is a hole in TLS validation. In a release build it
+ * would be a serious one, and **nothing about a release build fails if it leaks in**: the APK
+ * installs, the requests succeed, and the only difference is that
  *
  * Two mechanisms keep that from happening, and the tests below pin both because either alone can be
  * undone by an ordinary-looking edit:
@@ -37,6 +39,7 @@ import java.io.File
 class NetworkSecurityConfigTest {
     private val releaseConfig = File("src/main/res/xml/network_security_config.xml")
     private val devConfig = File("src/dev/res/xml/network_security_config.xml")
+    private val anchorFile = File("src/dev/res/raw/$ANCHOR_RESOURCE.crt")
 
     /**
      * The release posture forbids cleartext outright.
@@ -71,27 +74,97 @@ class NetworkSecurityConfigTest {
     }
 
     /**
-     * The dev build trusts the user certificate store, which is what lets it reach the test stack.
+     * The dev build trusts the test stack's shared anchor, which is what lets it reach the backend.
      *
      * Without it every API call fails TLS validation and surfaces as `ApiError.Network` — the app
      * tells the developer they are offline while the server is running on their own machine.
      */
     @Test
-    fun `the dev config adds the user store as a trust anchor`() {
+    fun `the dev config adds the shared test anchor and keeps the other stores`() {
         val xml = read(devConfig)
 
         assertTrue(
-            "the trust anchor must sit inside debug-overrides, so a release build ignores it",
+            "the trust anchors must sit inside debug-overrides, so a release build ignores them",
             xml.contains("<debug-overrides>"),
         )
         assertTrue(
-            "the user certificate store must be trusted",
+            "the test stack's shared certificate must be bundled as an anchor",
+            xml.contains("<certificates src=\"@raw/$ANCHOR_RESOURCE\""),
+        )
+        assertTrue(
+            "the user certificate store must stay, so a hand-installed proxy CA still works",
             xml.contains("<certificates src=\"user\""),
         )
         assertTrue(
             "the system anchors must stay — debug-overrides adds to the other configs, and " +
-                "dropping them would make the dev build trust ONLY hand-installed CAs",
+                "dropping them would make the dev build trust ONLY the two above",
             xml.contains("<certificates src=\"system\""),
+        )
+    }
+
+    /**
+     * **The bundled anchor is a certificate and nothing else.**
+     *
+     * The guard that makes committing the anchor defensible at all. `res/raw` takes any bytes, and
+     * the file it is copied from lives beside a keystore in the other repository — one wrong `cp`
+     * and a private key would be committed to a public repository and have to be treated as
+     * disclosed. Asserting the *absence* of key material is cheap and the mistake is silent
+     * otherwise: Android would simply fail to parse it, at runtime, on somebody else's machine.
+     */
+    @Test
+    fun `the bundled anchor carries no private key`() {
+        val pem = read(anchorFile)
+
+        assertTrue("must be a PEM certificate", pem.contains("-----BEGIN CERTIFICATE-----"))
+        listOf("PRIVATE KEY", "ENCRYPTED PRIVATE KEY", "RSA PRIVATE KEY").forEach { marker ->
+            assertFalse("a private key must never be bundled: found $marker", pem.contains(marker))
+        }
+    }
+
+    /**
+     * The bundled anchor is a CA, is current, and says out loud that it is not for production.
+     *
+     * Three separate ways this file could rot into a confusing failure. A non-CA certificate is not
+     * usable as a trust anchor and would fail path validation with a message about the *server*. An
+     * expired one breaks every developer's stack at once, on a date nobody is watching. And a
+     * subject that does not name itself a test artefact is one that somebody eventually mistakes
+     * for a real one.
+     */
+    @Test
+    fun `the bundled anchor is a current, self-describing CA`() {
+        val certificate =
+            anchorFile.inputStream().use {
+                CertificateFactory.getInstance("X.509").generateCertificate(it) as X509Certificate
+            }
+
+        assertTrue(
+            "a trust anchor has to be a CA certificate (basicConstraints CA:TRUE)",
+            certificate.basicConstraints >= 0,
+        )
+        assertTrue(
+            "the anchor has expired, which breaks every test stack at once: " +
+                "regenerate with docker/test-tls/generate-test-tls.sh in the main repository",
+            certificate.notAfter.after(Date()),
+        )
+        assertTrue(
+            "the subject must name it a test artefact, so nobody mistakes it for a real CA: " +
+                certificate.subjectX500Principal.name,
+            certificate.subjectX500Principal.name.contains("NOT FOR PRODUCTION"),
+        )
+    }
+
+    /**
+     * The prod flavour bundles no certificate at all.
+     *
+     * `<debug-overrides>` already makes a leaked anchor inert, but that is the backstop. This is the
+     * intent: the release APK does not even contain the file.
+     */
+    @Test
+    fun `the prod source set bundles no anchor`() {
+        assertFalse(
+            "the shared test anchor must exist only in the dev source set",
+            File("src/main/res/raw/$ANCHOR_RESOURCE.crt").exists() ||
+                File("src/prod/res/raw/$ANCHOR_RESOURCE.crt").exists(),
         )
     }
 
@@ -125,5 +198,15 @@ class NetworkSecurityConfigTest {
     private fun read(file: File): String {
         assertTrue("${file.path} must exist", file.isFile)
         return file.readText()
+    }
+
+    private companion object {
+        /**
+         * The anchor's resource name, without extension.
+         *
+         * Shared between the XML assertion and the file assertions so a rename cannot satisfy one
+         * while breaking the other.
+         */
+        const val ANCHOR_RESOURCE = "basetool_test_ca"
     }
 }

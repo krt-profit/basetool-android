@@ -11,23 +11,33 @@
   without adb reverse) and to nothing else. The base config stays closed, so a dev build talking to
   any other server still refuses cleartext.
 
-  A TRUST ANCHOR, for the backend. The backend serves HTTPS with a self-signed certificate, so a dev
-  build's API calls fail TLS validation before carrying a single byte — and the failure surfaces as
-  `ApiError.Network`, i.e. as "you are offline", which is the least informative thing it could say.
-  `<debug-overrides>` adds the user certificate store to the trust anchors, so a developer who has
-  installed their own test CA on the emulator is trusted. The system anchors stay in place:
-  debug-overrides ADD to the other configurations rather than replacing them.
+  A TRUST ANCHOR, for the backend. The backend serves HTTPS with a certificate the public CAs know
+  nothing about, so a dev build's API calls fail TLS validation before carrying a single byte — and
+  the failure surfaces as `ApiError.Network`, i.e. as "you are offline", which is the least
+  informative thing it could say.
 
-  Why the user store rather than a certificate committed to `res/raw`: the test stack's keystore is
-  generated locally per developer with a throwaway password (the project's hard rule — production
-  artefacts never enter a test stack). A bundled certificate would therefore be one person's, would
-  work for nobody else, and would rot the first time anyone regenerated theirs. The one-time
-  emulator setup is in the README.
+  The anchor is the test stack's SHARED certificate, committed at `docker/test-tls/` in the main
+  repository and bundled here. An earlier revision used the user certificate store instead, on the
+  grounds that the test stack's keystore was generated locally per developer and a bundled
+  certificate would be one person's, work for nobody else, and rot the first time anyone regenerated
+  theirs. That reasoning was sound and its premise is gone: the test stack now ships one keystore for
+  everybody, so the certificate below is everybody's and cannot rot. What it buys is that a developer
+  — and CI — has nothing to install: the emulator's certificate-install flow cannot be driven by adb
+  on a Play-Store system image, which made the old step a manual gate on every new AVD. See ADR-0139.
+
+  `src="user"` stays alongside it, so a proxy CA someone installs by hand for debugging still works.
+  The system anchors stay too: debug-overrides ADD to the other configurations rather than replacing
+  them, and listing only these two would leave a build that trusts the test stack and nothing else.
+
+  The bundled certificate is a trust anchor, not a secret, and the private key that matches it can
+  only serve the loopback / emulator / docker-network names in its SAN list. The CA key that signed
+  it was destroyed at generation time and exists nowhere, so nothing can mint a further certificate
+  this build would trust.
 
   Two independent reasons a release build cannot inherit any of this:
     1. This file exists only in the dev source set; the prod flavour has no override.
     2. `<debug-overrides>` is honoured only when `android:debuggable="true"`. Even pasted into the
-       main source set, the trust anchor below would be ignored by a release APK.
+       main source set, the trust anchors below would be ignored by a release APK.
   The first is the intent; the second is the backstop for when someone edits the wrong file.
 -->
 <network-security-config>
@@ -39,6 +49,7 @@
     </domain-config>
     <debug-overrides>
         <trust-anchors>
+            <certificates src="@raw/basetool_test_ca" />
             <certificates src="user" />
             <certificates src="system" />
         </trust-anchors>

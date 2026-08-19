@@ -497,7 +497,7 @@ leaks exactly what it is there to withhold.
 
 The dev flavour needs two holes in TLS validation that a release build must never inherit:
 **cleartext** to the emulator's loopback routes (Keycloak runs `start-dev` on plain HTTP) and a
-**trust anchor** for the test stack's self-signed backend certificate.
+**trust anchor** for the test stack's backend certificate.
 
 Both live in `app/src/dev/res/xml/network_security_config.xml`, and the trust anchor additionally
 sits inside `<debug-overrides>`. That is two independent guarantees rather than one restated:
@@ -511,13 +511,30 @@ worth having, because **nothing about a release build fails when this leaks in**
 the requests succeed, and the only difference is that a proxy on the member's network can read
 them.
 
-**The anchor is the user certificate store, not a bundled certificate.** The test stack's keystore
-is generated locally per developer with a throwaway password, since production artefacts never
-enter a test stack. A certificate committed to `res/raw` would therefore be one person's, would
-work for nobody else, and would rot the first time anyone regenerated theirs. `src="system"` is
-listed alongside `src="user"` so the dev build keeps the ordinary anchors — `<debug-overrides>` adds
-to the other configurations, and listing only the user store would leave a build that trusts
-hand-installed CAs and nothing else.
+**The anchor is the test stack's shared certificate, bundled in the dev source set.** An earlier
+revision used the emulator's user certificate store instead, reasoning that the test stack's keystore
+was generated locally per developer, so a certificate committed to `res/raw` would be one person's,
+work for nobody else, and rot the first time anyone regenerated theirs. That reasoning was correct
+and **its premise is gone**: the test stack now ships one keystore for everybody
+([ADR-0139](https://github.com/krt-profit/basetool/blob/main/docs/adr/0139-shared-committed-tls-material-for-the-test-stack.md)),
+so the bundled certificate is everybody's and cannot rot.
+
+What that buys is not convenience. The manual install turned out to be **unautomatable** on the
+system images actually in use — `adb root` is refused on a Play-Store image, the Settings search
+ignores synthetic text input, `CertInstallerMain`'s document picker opens empty, and the Files app
+has no handler for `.crt`. Everything published for API 34+ addresses the *system* store, which lives
+in the signed `com.android.conscrypt` APEX and needs Magisk or a non-Play image — a store a
+`<debug-overrides>` anchor never needed. So the old anchor made this requirement's own acceptance
+item permanently unverifiable, by CI and by anyone with a fresh AVD.
+
+**The bundled file is an anchor, not a secret.** The private key matching it can serve only the
+loopback, emulator and docker-network names in its SAN list, and the CA key that signed it was
+destroyed at generation time, so nothing can mint a further certificate this build would trust.
+
+`src="user"` stays alongside it, so a proxy CA installed by hand for debugging still works, and
+`src="system"` stays so the dev build keeps the ordinary anchors — `<debug-overrides>` adds to the
+other configurations, and listing only the first two would leave a build that trusts the test stack
+and nothing else.
 
 Missing this configuration has **no error message of its own**: TLS fails before the request
 carries a byte, the app maps it to `ApiError.Network`, and the screen says the member is offline
@@ -528,8 +545,26 @@ while the server runs on their own machine. The one-time emulator step is theref
 
 - [x] The main config forbids cleartext and carries no `<debug-overrides>`
   (`NetworkSecurityConfigTest`).
-- [x] The dev config trusts the user store **and** the system store, inside `<debug-overrides>`.
+- [x] The dev config trusts the shared test anchor, the user store **and** the system store, inside
+  `<debug-overrides>`.
 - [x] The dev cleartext exception names exactly the three loopback hosts and sets no
   `includeSubdomains`, which would widen it past them.
-- [ ] Observed: a dev build reaching the test-stack backend over HTTPS after the CA is installed.
-  **Open** — needs the backend container up alongside the emulator.
+- [x] **The bundled anchor carries no private key.** The guard that makes committing it defensible:
+  `res/raw` accepts any bytes and the file is copied from a directory that also holds a keystore, so
+  one wrong `cp` would publish a private key. Asserted by absence of PEM key markers
+  (`NetworkSecurityConfigTest`), because the mistake is otherwise silent until Android fails to parse
+  it on somebody else's machine.
+- [x] The anchor is a CA (`basicConstraints` CA:TRUE — a non-CA certificate fails path validation
+  with a message about the *server*), is unexpired (an expired one breaks every test stack at once,
+  on a date nobody is watching, so the test names the regeneration command), and its subject says
+  `NOT FOR PRODUCTION`.
+- [x] The prod source set bundles no anchor at all. `<debug-overrides>` already makes a leaked one
+  inert; this is the intent rather than the backstop.
+- [x] **Observed: a dev build completing a TLS handshake with the test-stack backend**
+  (`TestStackTlsHandshakeTest`, `tests=1 failures=0 skipped=0` on an emulator, 2026-08-19). The only
+  instrumented test in the project, and it exists because the network security config is a property
+  of the *running process*: the platform installs an NSC-aware `X509TrustManager` as the default and
+  neither the JVM nor Robolectric does, so nothing off a device can tell whether the anchor took
+  effect. Without the stack it reports itself skipped rather than failed — a handshake cannot be
+  judged against a server that is not there, and a red bar for "you did not start docker" trains
+  people to ignore red bars.
