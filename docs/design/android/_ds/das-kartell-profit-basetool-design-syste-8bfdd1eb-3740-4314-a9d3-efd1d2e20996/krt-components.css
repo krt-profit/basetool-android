@@ -268,7 +268,8 @@ th {
 td { color: var(--color-gray-1); }
 tbody tr { transition: background-color 0.2s ease; }
 tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
-tbody tr:hover { background-color: var(--color-gray-3); }
+/* hover must out-rank the stripe on even rows too (specificity 0,2,2). */
+tbody tr:hover, tbody tr:nth-child(even):hover { background-color: var(--color-gray-3); }
 
 /* ------------------------------------------------------ TREE TABLE ------- */
 /* Dense, hierarchical "tree table" for nested data (e.g. inventory:
@@ -323,7 +324,7 @@ tbody tr:hover { background-color: var(--color-gray-3); }
    controls (e.g. Auftrag/Einsatz selects) get real width for long labels,
    while the amount + actions stay column-aligned. */
 .tree-leaf-main { grid-column: 1 / 4; display: flex; align-items: center; gap: 0.85rem; padding: 0.4rem 0.8rem 0.4rem 3rem; min-width: 0; }
-.tree-leaf-main .tree-leaf-tag { color: var(--color-gray-2); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; flex: none; }
+.tree-leaf-main .tree-leaf-tag { color: var(--color-gray-2-text); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; flex: none; }
 .tree-fieldset { display: flex; gap: 0.85rem; flex: 1; min-width: 0; }
 .tree-field { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .tree-field .tree-field-cap { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--color-gray-2); }
@@ -349,22 +350,59 @@ tbody tr:hover { background-color: var(--color-gray-3); }
 .assoc-add-wrap { position: relative; display: inline-flex; }
 .assoc-add { all: unset; cursor: pointer; display: inline-flex; align-items: center; padding: 0.12rem 0.5rem; font-family: var(--font-body); font-weight: var(--fw-bold); font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-gray-2); border: 1px dashed var(--color-gray-3); }
 .assoc-add:hover, .assoc-add:focus-visible { color: var(--color-primary); border-color: var(--color-primary); outline: none; }
-.assoc-pop { position: absolute; top: calc(100% + 5px); left: 0; z-index: 60; width: 260px; background-color: var(--color-bg-dark-gray); border: 1px solid var(--color-primary); box-shadow: var(--shadow-dropdown, 0 4px 10px rgb(0 0 0 / 60%)); }
+/* fixed — not absolute — so horizontally-scrollende Vorfahren (overflow-x: auto
+   erzwingt overflow-y: auto) das Popover nicht an ihrer Unterkante beschneiden.
+   Fixed braucht explizite Koordinaten: JS ankert top/left an die Trigger-Rect
+   beim Öffnen und hält sie bei scroll/resize (App: assocPositionPop in
+   inventory-my.js / inventory-admin.js). */
+.assoc-pop { position: fixed; z-index: 60; width: 260px; background-color: var(--color-bg-dark-gray); border: 1px solid var(--color-primary); box-shadow: var(--shadow-dropdown, 0 4px 10px rgb(0 0 0 / 60%)); }
 .assoc-pop .krt-combobox__listbox { position: static; border: none; box-shadow: none; }
 .assoc-pop__menge { padding: 0.6rem; display: grid; gap: 0.5rem; }
 .assoc-pop__menge label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-gray-2); font-weight: var(--fw-bold); }
-.assoc-pop__menge .assoc-menge-row { display: flex; gap: 0.5rem; align-items: center; }
+.assoc-pop__menge .assoc-menge-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+/* Das 260px-Pop fasst Input + "Speichern" + "Entfernen" nie in einer Zeile
+   (Buttons allein ~225px): Input nimmt eine eigene volle Zeile, die Buttons
+   teilen sich die nächste; flex-wrap lässt lange Übersetzungen umbrechen
+   statt rechts auszubrechen. */
+.assoc-pop__menge .assoc-menge-input { flex: 1 0 100%; }
+.assoc-pop__menge .assoc-menge-row .btn { flex: 1 1 auto; }
+
+/* Herkunft-Picker (REQ-INV-027, Variante C) — in den Ausbuchen/Umbuchen-Modals:
+   pro Earmark-Tag und Dimension (Auftrag/Einsatz) bestimmt EIN Mengen-Input,
+   wie viel der Buchung aus dieser Zuordnung kommt; der Rest kommt aus dem
+   unverteilten Anteil. Rest-Chip nutzt die .chip-Töne; .herkunft-warn nennt das
+   Minimum, wenn der freie Rest den Abzug nicht deckt; .herkunft-proceeds (nur
+   SELL) schätzt die Gutschrift je Einsatz. Genau eine belegbare Verteilung →
+   Input gefüllt + gesperrt (--auto), .herkunft-auto erklärt warum. */
+.herkunft-help { margin: 0 0 0.5rem; font-size: var(--fs-2xs); color: var(--color-gray-2-text); }
+.herkunft-body { display: flex; flex-direction: column; gap: 0.75rem; }
+.herkunft-dim { display: flex; flex-direction: column; gap: 0.35rem; }
+.herkunft-dim-cap { font-size: 0.6rem; font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-gray-2-text); }
+.herkunft-tag { display: flex; gap: 0.5rem; align-items: center; }
+.herkunft-tag-name { flex: 1 1 auto; min-width: 0; font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.herkunft-input { flex: 0 0 6rem; width: 6rem; text-align: right; font-variant-numeric: tabular-nums; }
+.herkunft-input--auto { cursor: not-allowed; opacity: 0.75; }
+.herkunft-auto { font-size: var(--fs-2xs); color: var(--color-gray-2-text); }
+.herkunft-tag-max { flex: 0 0 auto; font-size: var(--fs-2xs); color: var(--color-gray-2-text); font-variant-numeric: tabular-nums; }
+.herkunft-restline { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+/* Warntext IST Text → a11y-Tint. (Die App shippt hier noch --color-danger; bei
+   nächster Gelegenheit angleichen.) */
+.herkunft-warn { font-size: var(--fs-2xs); color: var(--color-danger-text); }
+.herkunft-proceeds { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.4rem 0.5rem; border-left: 2px solid var(--color-info); background-color: rgba(53,93,220,0.10); }
+.herkunft-proceeds-title { font-size: 0.6rem; font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-info); }
+.herkunft-proceeds-line { font-size: var(--fs-2xs); color: var(--color-white); font-variant-numeric: tabular-nums; }
+.herkunft-proceeds-personal { color: var(--color-gray-2-text); }
 
 /* Quality gauge (0–1000): number above a thin orange bar. */
 .tree-gauge { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 3px; width: 100%; }
 .tree-gauge .tree-gauge-val { font-variant-numeric: tabular-nums; }
-.tree-gauge .tree-gauge-val .tree-gauge-max { color: var(--color-gray-2); font-size: 0.74rem; }
+.tree-gauge .tree-gauge-val .tree-gauge-max { color: var(--color-gray-2-text); font-size: 0.74rem; }
 .tree-gauge .tree-gauge-track { width: 64px; height: 3px; background-color: var(--color-gray-3); position: relative; }
 .tree-gauge .tree-gauge-track > span { position: absolute; left: 0; top: 0; bottom: 0; background-color: var(--color-primary); }
 
 /* Amount: bright value + dimmed unit. */
 .tree-amount { font-variant-numeric: tabular-nums; color: var(--color-white); }
-.tree-amount .tree-unit { color: var(--color-gray-2); font-size: 0.74rem; }
+.tree-amount .tree-unit { color: var(--color-gray-2-text); font-size: 0.74rem; }
 
 /* Note: rendered ONLY when a note exists. Indented annotation block with room
    for the full text (up to ~80ch), orange label + surface box. */
@@ -378,8 +416,20 @@ tbody tr:hover { background-color: var(--color-gray-3); }
 .tree-note-box .tree-note-label { color: var(--color-primary); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; font-weight: var(--fw-bold); flex: none; }
 .tree-note-box .tree-note-text { color: var(--color-gray-1); font-size: 0.84rem; line-height: 1.45; max-width: 80ch; overflow-wrap: anywhere; }
 
-/* Compact action button size for dense rows. */
-.btn-xs { min-height: 32px; padding: 0.25rem 0.55rem; font-size: 0.68rem; }
+/* Compact action button for dense tree-table rows — the 32px dense-row
+   exception to the 44px touch-target floor (nur diese zwei Klassen).
+   Der .btn-Qualifier ist tragend: ein bloßes .btn-xs (0,1,0) verliert gegen
+   späteres/medienquery-`.btn` und rendert voll groß — .btn.btn-xs (0,2,0)
+   gewinnt überall. Qualifier nie entfernen. */
+.btn.btn-xs { min-height: 32px; padding: 0.25rem 0.55rem; font-size: 0.68rem; }
+/* Icon-only quadratische Aktion (aria-label + title Pflicht, Glyphe aria-hidden).
+   Mit .btn-xs kombiniert → 32×32. Gleiche Spezifität wie .btn.btn-xs, bewusst
+   danach deklariert, damit das Padding gewinnt. */
+.btn-icon { min-width: 32px; }
+.btn.btn-icon { gap: 0; padding: 0.25rem; }
+.btn-icon .krt-icon { width: 1.05rem; height: 1.05rem; }
+/* Dekorative Button-Glyphen dürfen Klicks nie abfangen (event.target-JS). */
+.btn .krt-icon { pointer-events: none; }
 
 
 /* --------------------------------------------------------- FORMS / INPUTS -- */
@@ -499,7 +549,13 @@ input[type="radio"]:checked::after {
 .status-planned   { color: var(--color-info-text); }
 .status-active    { color: var(--color-success-text); }
 .status-completed { color: var(--color-gray-1); }
-.status-cancelled { color: var(--color-danger-text); }
+/* Beide Enum-Schreibweisen existieren: Missionen CANCELLED, Operationen CANCELED. */
+.status-cancelled, .status-canceled { color: var(--color-danger-text); }
+/* JobOrder-Lifecycle (orders-detail Header-Pill): COMPLETED nutzt das neutrale
+   .status-completed oben. */
+.status-open { color: var(--color-info-text); }
+.status-in_progress { color: var(--color-warning); }
+.status-rejected { color: var(--color-danger-text); }
 
 /* Text color helpers — use the accessible tints so semantic colour is legible
    as text on the dark canvas (the canonical hues are reserved for fills). */
@@ -733,6 +789,9 @@ input[type="radio"]:checked::after {
 .krt-modal::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
 .krt-modal::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 .krt-modal--danger { border-top-color: var(--color-danger); box-shadow: var(--glow-danger-lg); }
+/* Breiten-Variante für formularlastige Modals (3+ gestapelte Felder);
+   Confirms und Ein-Feld-Prompts bleiben beim kompakten 440px-Default. */
+.krt-modal--wide { max-width: 600px; }
 .krt-modal--danger::before, .krt-modal--danger::after { border-color: var(--color-danger); }
 .krt-modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: var(--border-hairline); }
 .krt-modal-head h2 { font-family: var(--font-headline); font-weight: var(--fw-bold); font-size: 0.85rem; color: var(--color-white); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
@@ -1004,6 +1063,9 @@ tr.is-inert td { opacity: .5; }
 .krt-combobox__option--active { color: var(--color-bg-black); background-color: var(--color-primary); }
 .krt-combobox__option[aria-selected='true']:not(.krt-combobox__option--active) { color: var(--color-primary); box-shadow: inset 3px 0 0 var(--color-primary); }
 .krt-combobox__option mark { color: inherit; font-weight: var(--fw-bold); background-color: transparent; }
+/* "Zuordnung entfernen"-Option (REQ-FE-011): gedämpft + kursiv = "keine Auswahl";
+   Hover/Active heben sie wie jede Option hervor. */
+.krt-combobox__option--clear { color: var(--color-gray-2-text); font-style: italic; }
 .krt-combobox__option > .krt-combobox__label { min-width: 0; }
 .krt-combobox__notice { padding: 0.75rem; color: var(--color-gray-2); font-family: var(--font-body); font-style: italic; }
 
@@ -1046,3 +1108,79 @@ tr.is-inert td { opacity: .5; }
 .markdown-content hr { border: none; border-top: var(--border-hairline); margin: 0.8em 0; }
 .markdown-content table { border-collapse: collapse; margin: 0 0 0.6em; }
 .markdown-content th, .markdown-content td { border: var(--border-hairline); padding: 0.25em 0.6em; }
+
+
+/* ====================================================================== */
+/* KRT CONFIRM (showKrtConfirm) — JS-generiertes, ephemeres Bestätigungs-  */
+/* Modal (fragments/toast.html). Ersetzt window.confirm() vollständig;     */
+/* Schwester von .krt-modal (das für Form-/Detail-Modals bleibt).          */
+/* ====================================================================== */
+.krt-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: var(--space-4); }
+.krt-confirm-dialog { background: var(--color-bg-dark-gray); border: var(--border-accent); max-width: 480px; width: 100%; padding: var(--space-6); color: var(--color-gray-1); font-family: var(--font-body); box-shadow: 0 0 24px rgba(231,126,35,0.35); }
+.krt-confirm-title { font-family: var(--font-headline); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-primary); margin: 0 0 var(--space-3); font-size: 1.05rem; }
+.krt-confirm-message { margin: 0 0 1.25rem; line-height: 1.4; font-weight: var(--fw-thin); }
+.krt-confirm-actions { display: flex; gap: var(--space-3); justify-content: flex-end; }
+.krt-confirm-actions .btn { min-height: var(--touch-target); min-width: 96px; }
+.krt-confirm-actions .btn-secondary { background: transparent; color: var(--color-gray-1); border: 1px solid var(--color-gray-2); }
+.krt-confirm-actions .btn-secondary:hover { border-color: var(--color-gray-1); color: var(--color-white); }
+.krt-confirm-actions .btn-danger { background: var(--color-primary); color: var(--color-bg-black); border: 1px solid var(--color-primary); }
+.krt-confirm-actions .btn-danger:hover { background: var(--color-accent-light); border-color: var(--color-accent-light); }
+@media (width <= 768px) { .krt-confirm-dialog { padding: var(--space-4); } .krt-confirm-actions { flex-direction: column-reverse; } .krt-confirm-actions .btn { width: 100%; } }
+
+/* ====================================================================== */
+/* FILTERLEISTE (.search-form) — Listenseiten-Filterzeile.                 */
+/* Spalten richten sich via align-items: flex-end an der Unterkante aus;   */
+/* Label-Zeilen sind auf eine Zeile gepinnt (min-height + nowrap), damit   */
+/* jede Spalte identische Höhe beiträgt (Inputs global 2.75rem = 44px).    */
+/* ====================================================================== */
+.search-form { display: flex; align-items: flex-end; gap: var(--space-2); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.search-form > div { gap: 0.2rem; }
+/* Nur Label-tragende Spalten bekommen die deterministische Gesamthöhe —
+   Button-only-Spalten (Filter, "Neuer Einsatz") würden sonst gestreckt. */
+.search-form > div:has(> label) { display: flex; flex-direction: column; justify-content: flex-end; min-height: 3.95rem; }
+.search-form > div > label { min-height: 1.25rem; line-height: 1.25; margin: 0; padding: 0; white-space: nowrap; }
+.search-form > div > input[type='hidden'] { display: none; }
+.search-form-actions { align-self: flex-end; display: flex; gap: var(--space-2); }
+.search-form-flex-1 { flex: 1; min-width: 150px; }
+.search-form-checkbox-col { display: flex; flex-direction: column; gap: 0.2rem; }
+.search-form-checkbox-spacer { height: 1.2rem; }
+.search-form-checkbox-label { display: flex; align-items: center; cursor: pointer; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid transparent; }
+/* Datum + Zeit als getrenntes Paar: feste Breiten — das Datumsfeld braucht
+   Platz für "23.04.2026" + Kalender-Icon, das Zeitfeld bleibt kompakt. */
+.datetime-split-inputs { display: flex; gap: var(--space-2); width: 100%; }
+.datetime-split-inputs input[type='date'] { flex: 0 0 auto; width: 10.5rem; min-width: 10.5rem; max-width: 10.5rem; }
+.datetime-split-inputs input[type='time'] { flex: 0 0 auto; width: 7rem; min-width: 7rem; max-width: 7rem; }
+.search-form > div.datetime-split-group { display: flex; flex-direction: column; gap: 0.2rem; justify-content: flex-end; min-height: 4.2rem; }
+@media (width <= 768px) { .datetime-split-inputs { flex-direction: column; } .search-form > div:has(> label), .search-form > div.datetime-split-group { min-height: 0; } }
+/* Assoziations-Select (Lager, Auftrag/Einsatz): volle Breite, oranger Rahmen,
+   padding-right groß genug, damit der orange ▼ den Text nicht überlagert. */
+select.association-select { width: 100%; min-width: 190px; min-height: var(--touch-target); padding: 0.375rem 2.5rem 0.375rem var(--space-3); background-color: var(--color-bg-dark-gray); border: 1px solid var(--color-primary); color: var(--color-gray-1); box-sizing: border-box; }
+
+/* ====================================================================== */
+/* APP-CHROME — Admin-Modus, fixer Footer, Fan-Kit-Band                    */
+/* ====================================================================== */
+/* Admin-Modus: sidebar-JS setzt body.admin-mode auf /admin/* — die Header-
+   Unterkante wechselt auf Zierfarbe dunkel, der Chip benennt den Kontext. */
+body.admin-mode header { border-bottom-color: var(--color-accent-dark); }
+.admin-mode-chip { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; padding: 0.35rem 0.7rem; background-color: rgba(196,92,0,0.15); border: 1px solid var(--color-accent-dark); color: var(--color-accent-light); font-family: var(--font-headline); font-weight: var(--fw-bold); font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: var(--tracking-overline); }
+body:not(.admin-mode) .admin-mode-chip { display: none; }
+/* Fixer Seiten-Footer (von sidebar.html-JS injiziert). z-index unter Header
+   (1000), Drawer (2000), Modals (3000), Toasts (9999). <main> reserviert Platz
+   via padding-bottom: calc(var(--krt-footer-height, 5rem) + 5rem). */
+.krt-footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; padding: var(--space-4) var(--space-8); background-color: var(--color-bg-dark-gray); border-top: var(--border-hairline); color: var(--color-gray-2-text); font-size: var(--fs-xs); display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between; }
+.krt-footer-links { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.krt-footer-links a, .krt-footer-meta a { color: var(--color-gray-1); text-decoration: none; }
+.krt-footer-links a:hover, .krt-footer-meta a:hover { color: var(--color-primary); }
+.krt-footer-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.krt-footer-github { display: inline-flex; align-items: center; padding: var(--space-1); }
+.krt-footer-github .krt-icon { width: 1.25em; height: 1.25em; }
+/* Version in gray-1, NICHT gray-2: #646464 auf #141414 ist ~3.1:1 und reißt AA
+   bei dieser Größe (#441); sekundär wirkt sie über die kleine Mono-Größe. */
+.krt-footer-version { color: var(--color-gray-1); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.75rem; }
+@media (width <= 768px) { .krt-footer { flex-direction: column; align-items: flex-start; } }
+/* Star-Citizen-Fan-Kit-Band — am Ende des Home-<main> (REQ-UI-018), NICHT im
+   fixen Footer. Logo unverändert rendern (Fan-Kit Guidelines §3); Trademark-
+   Notice ≥ 10pt (§2b) → --fs-sm statt --fs-xs. */
+.krt-fankit-band { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-8); padding-top: var(--space-4); border-top: var(--border-hairline); }
+.krt-fankit-logo { width: 2.25rem; height: 2.25rem; flex-shrink: 0; }
+.krt-fankit-trademark { font-size: var(--fs-sm); color: var(--color-gray-1); line-height: 1.4; }

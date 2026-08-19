@@ -100,13 +100,19 @@ where they exist.
 `Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC`
 — one inseparable component, verbatim ENGLISH in every locale, ≥14 sp #D2D2D2, static,
 no KRT styling. Placements: Login (above version footer) + Einstellungen. Nowhere else.
-**Logo rule:** the KRT mark renders ONLY in #E77E23, white or black.
+**Logo rule:** the app mark renders ONLY in #E77E23, white or black.
 
 ## Assets
 - `assets/krt-icons-mobile.js` — full icon sprite: product set verbatim from
   `fragments/icons.html` + 20 mobile extensions (same contract: 24 dp, stroke 2, round
   caps, currentColor). Export as VectorDrawables per `artifacts/icon-export.md`
-- `assets/krt.webp` — KRT mark (raster; adaptive-icon vector per ch. 14 geometry)
+- `assets/basetool-logo.svg` / `basetool-appicon-512.png` — **the app mark** and its icon
+  raster. This is the "final geometry" ch. 14 defers to; the wedge-through-ring KRT mark drawn
+  in that chapter was the spec approximation. Traced to VectorDrawables as
+  `app/.../ic_launcher_foreground.xml` (+ `ic_launcher_monochrome.xml`) and
+  `core:designsystem`'s `krt_basetool_logo.xml`
+- `assets/krt.webp` — DAS KARTELL org mark (raster). Kept for org-branded surfaces; NOT the
+  app icon
 - `assets/made-by-the-community.png` — official artwork, use unmodified
 - Lato WOFF2/TTF in `_ds/…/fonts/` — bundle as app fonts (Light/Regular/Bold/Black)
 - **Open item:** manufacturer logos (Anvil/Drake/MISC) exist in the repo only as SVGs with
@@ -120,7 +126,7 @@ no KRT styling. Placements: Login (above version footer) + Einstellungen. Nowher
    empty/loading/offline, Fan Kit band
 3. Navigation shell (ch. 03) + auth flow (ch. 04)
 4. Screens 05 → 13 in chapter order; system states (ch. 14) alongside
-5. Adaptive icon + notification channels (ch. 14)
+5. Adaptive icon (**done**) + notification channels (ch. 14)
 
 ## How to hand this to Claude Code
 Place this folder in the repo (suggested: `docs/design/android/` or alongside

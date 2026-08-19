@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Profit Basetool app mark — traced from the design system's assets/basetool-logo.svg
+  (240x240 viewBox, kept 1:1 so the two stay comparable when the source is revised).
+
+  The DAS KARTELL wedge tilted to a rising course line, punching through the orbit ring at
+  both ends as in the parent mark, with the Profit division's four yield bars growing towards
+  it and the Kartell star kept as a quote.
+
+  Single-colour by brand rule: the mark renders only in #E77E23, white or black, so the
+  fill is literal here rather than a theme attribute — a tint applied at the call site would
+  be able to produce a colour the brand does not allow.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <!-- Orbit ring. Stroke-only: two half-arcs make the full circle. -->
+    <path
+        android:pathData="M34,130 a76,76 0 1,0 152,0 a76,76 0 1,0 -152,0"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFE77E23"
+        android:strokeWidth="7" />
+    <!-- Wedge / rising course line: the source polygon with its -38 degree rotation baked in. -->
+    <path
+        android:pathData="M20.46,178.66 L47.54,213.34 L199.48,66.71 Z"
+        android:fillColor="#FFE77E23" />
+    <!-- Yield bars (mining, salvage, hauling, trading), growing towards the wedge. -->
+    <path
+        android:pathData="M96,166 h13 v16 h-13 z M115,152 h13 v30 h-13 z M134,138 h13 v44 h-13 z M153,124 h13 v58 h-13 z"
+        android:fillColor="#FFE77E23" />
+    <!-- Kartell star. -->
+    <path
+        android:pathData="M46,45 L49,53 L57,56 L49,59 L46,67 L43,59 L35,56 L43,53 Z"
+        android:fillColor="#FFE77E23" />
+</vector>

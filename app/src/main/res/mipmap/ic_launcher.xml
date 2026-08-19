@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  minSdk is 29, so every device this app runs on supports adaptive icons (API 26+). Two
+  consequences, both deliberate.
+
+  There are NO density-bucket PNG fallbacks: they could never be resolved and would only be dead
+  weight in the APK.
+
+  And the folder is the unqualified `mipmap/`, not the wizard's `mipmap-anydpi-v26`. That
+  qualifier sits below minSdk, so lint's ObsoleteSdkInt rejects it as an error under this
+  module's warningsAsErrors setting — and `mipmap-anydpi` without the version, which is what
+  that lint message suggests, is not a folder AAPT2 resolves: it links with
+  "resource mipmap/ic_launcher not found". The unqualified folder satisfies both.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+</adaptive-icon>

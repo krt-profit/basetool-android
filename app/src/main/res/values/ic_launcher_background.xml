@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive-icon background layer. Flat brand black, matching the design system's shipped
+  512px app-icon raster (assets/basetool-appicon-512.png) so the launcher tile, the Play
+  listing icon and the in-app mark read as one asset. Kept as a colour rather than a drawable:
+  the background layer is parallaxed and scaled by the launcher, and any texture in it would
+  shimmer during that motion.
+-->
+<resources>
+    <color name="ic_launcher_background">#000000</color>
+</resources>

@@ -78,6 +78,12 @@ Permissions stay minimal: `INTERNET`, `USE_BIOMETRIC` (optional app-lock),
 - All UI is Compose; layouts are `WindowSizeClass`-driven (compact width = phone portrait,
   expanded+ = tablet landscape with list-detail). Orientation may be locked only on
   < sw600dp screens; edge-to-edge and predictive back are on from the start.
+- **The app wears the Basetool mark, not the DAS KARTELL org mark.** The design system ships a
+  dedicated logo family (`assets/basetool-*`); the adaptive launcher icon and the tablet
+  navigation rail draw from it (`app/.../ic_launcher_foreground.xml`, `krt_basetool_logo.xml`).
+  Design chapter 14 deferred the final geometry to exactly this family, so this is the spec being
+  fulfilled, not a deviation. The org mark stays available in `core:designsystem` for surfaces
+  where the organisation — not the tool — is the subject.
 - **The delivered design specification at [`docs/design/android/`](docs/design/android/README.md)
   is the binding UI reference** (high-fidelity: colors, type, spacing, states, and copy are
   final; 1 mockup px = 1 dp). Deviations need an ADR. Read its README before any UI work.
@@ -143,9 +149,10 @@ runner).
   Composable` keeps the standard naming rule from renaming every composable.
 - **Kotlin warnings are errors** (`allWarningsAsErrors`), so a deprecated Compose API breaks the
   build instead of rotting quietly. Fix the call site; do not relax the flag.
-- **Android Lint runs with `warningsAsErrors`.** Exactly two rules are disabled, each with a
-  written reason in the build file (launcher icon pending design chapter 14; design-system
-  resources having no consumer yet). A third needs the same justification.
+- **Android Lint runs with `warningsAsErrors`.** Exactly one rule is disabled, with a written
+  reason in the build file (design-system resources having no consumer yet). A second needs the
+  same justification. `MissingApplicationIcon` was the other one and is enabled again since the
+  adaptive launcher icon landed.
 - Robolectric ships no runtime for API 37, so resource tests pin `@Config(sdk = [34])`.
 
 Local backend = the main repo's isolated test stack (`docker-compose.test.yml`,
@@ -265,7 +272,10 @@ ship with the OFL 1.1 text next to them (missing upstream — add it when the fo
 
 - The DAS KARTELL design-system submodule may still be added in Phase 1, but the raw
   sources the UI work needs (colors/type CSS, component CSS, Lato WOFF2/TTF) are already
-  mirrored in-repo at `docs/design/android/_ds/`.
+  mirrored in-repo at `docs/design/android/_ds/`. **The mirror is refreshed by hand** — when the
+  upstream `krt-profit/design-system` moves, copy the changed files across in the same PR and
+  reconcile any token that has an Android counterpart (e.g. `--color-gray-2-text` ↔
+  `KrtPalette.TextMuted`). Nothing in the build detects the drift.
 - Manufacturer logos (Anvil/Drake/MISC …) exist upstream only as SVGs with embedded
   rasters — clean vectors must be re-exported; until then the design spec's lettermark
   placeholder IS the design (handoff README, Assets).
