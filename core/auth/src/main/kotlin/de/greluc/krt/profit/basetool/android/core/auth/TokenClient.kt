@@ -184,6 +184,10 @@ class TokenClient(
                 first
             }
         } catch (io: IOException) {
+            // Logged, because Unreachable is the one outcome that tells the member nothing useful
+            // ("you are offline") and can just as easily mean a blocked cleartext connection, a
+            // wrong port or a TLS failure. Without this line the difference is invisible on device.
+            KrtLog.w(LOG_TAG, io) { "token request did not reach the realm" }
             TokenResult.Unreachable(io)
         }
 
