@@ -117,6 +117,14 @@ android {
         // checkDependencies pulls :core:designsystem into this run, where its published
         // icon set has no consumer yet — see that module's lint block.
         disable += "UnusedResources"
+        // Version-currency checks, disabled because warningsAsErrors turns them into a time bomb:
+        // they compare the declared version against whatever is newest UPSTREAM, so a release by
+        // Gradle or a library turns every branch red at once, for a change none of them made. That
+        // happened on the Gradle 9.7.1 release. Keeping versions current is Dependabot's job here
+        // and it does it; a check that fails a build for something no commit caused only teaches
+        // people that red is normal.
+        disable += "AndroidGradlePluginVersion"
+        disable += "GradleDependency"
     }
 }
 
