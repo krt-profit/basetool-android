@@ -48,6 +48,23 @@ mirroring this repo's conventions.
   person's and would rot the first time anyone regenerated theirs. One-time setup per emulator,
   after starting the test stack:
 
+  Both local services are reached through **`adb reverse`**, not through `10.0.2.2`. A connection to
+  `10.0.2.2` times out on this setup even with the port published on all interfaces — measured twice,
+  once per service: ICMP answers, the host's own browser loads the URL, and OkHttp still reports
+  `SocketTimeoutException` after 10 s, which the app can only classify as "offline". The root cause
+  is not established; the tunnel routes around it reliably, so the `dev` flavour targets the device's
+  own loopback for both:
+
+  ```bash
+  adb reverse tcp:18080 tcp:18080   # Keycloak
+  adb reverse tcp:11261 tcp:11261   # backend
+  ```
+
+  The throwaway keystore must use the alias **`basetool`** — `application.yml` pins it and does not
+  read it from the environment, so any other alias fails start-up with "Alias name [basetool] does
+  not identify a key entry", which reads like a code fault and is not one. Give it a SAN covering
+  `127.0.0.1` as well, since that is the address the app now connects to.
+
   ```bash
   keytool -exportcert -rfc -alias basetool -keystore keystore.p12 -storetype PKCS12 -storepass <throwaway> -file basetool-dev-ca.crt
   ```
