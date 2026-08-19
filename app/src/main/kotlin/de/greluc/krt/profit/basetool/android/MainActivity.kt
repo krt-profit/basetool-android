@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,6 +30,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
+import kotlinx.coroutines.launch
 
 /**
  * The single activity of the app.
@@ -73,7 +75,19 @@ class MainActivity : ComponentActivity() {
 
                 when (session) {
                     is SessionState.SignedIn -> {
-                        BasetoolApp()
+                        val scope = rememberCoroutineScope()
+                        BasetoolApp(
+                            onLogout = {
+                                scope.launch {
+                                    // The local wipe happens inside logout() and does not depend on
+                                    // the browser; the URL only ends the realm's SSO cookie, without
+                                    // which the next login silently reuses the browser session.
+                                    container.logout()?.let { endSession ->
+                                        CustomTabLauncher.launch(this@MainActivity, endSession)
+                                    }
+                                }
+                            },
+                        )
                     }
 
                     SessionState.Unknown -> {
