@@ -31,6 +31,10 @@ kotlinxCoroutines = "1.11.0"
 hilt = "2.60.1"
 androidxBrowser = "1.10.0"
 androidxDatastore = "1.2.1"
+# 1.1.0 is the newest STABLE; everything after it is 1.2.0-alpha / 1.4.0-alpha. An alpha in the
+# authentication path of a shipped app is a poor trade, and 1.1.0 already carries what the lock
+# needs: canAuthenticate(int) and setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL).
+androidxBiometric = "1.1.0"
 nimbusJose = "10.9.1"
 
 detekt = "2.0.0-alpha.6"
@@ -61,6 +65,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidxBrowser" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidxDatastore" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "androidxBiometric" }
 nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "nimbusJose" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }

@@ -68,4 +68,14 @@
     <string name="terms_decline_cancel">Zurück</string>
     <string name="terms_error">Die Zustimmung konnte nicht gespeichert werden. Bitte erneut versuchen.</string>
     <string name="terms_error_offline">Keine Verbindung. Die Zustimmung konnte nicht gespeichert werden.</string>
+    <!-- App lock (design spec ch. 04, screen 5). Opt-in; the prompt itself is a system surface. -->
+    <string name="lock_title">Gesperrt</string>
+    <string name="lock_body">Lokale Daten sind geschützt. Entsperren, um fortzufahren.</string>
+    <string name="lock_unlock">Entsperren</string>
+    <string name="lock_error_generic">Entsperren fehlgeschlagen. Bitte erneut versuchen.</string>
+    <string name="lock_error_lockout">Zu viele Fehlversuche. Bitte später erneut versuchen oder die Gerätesperre verwenden.</string>
+    <string name="lock_error_invalidated">Ein neuer Fingerabdruck wurde eingerichtet. Die App-Sperre lässt sich damit nicht mehr öffnen — bitte abmelden und neu anmelden.</string>
+    <string name="lock_setting">App-Sperre</string>
+    <string name="lock_setting_hint">Beim Start und nach 5 Minuten im Hintergrund entsperren</string>
+    <string name="lock_setting_unavailable">Keine Gerätesperre eingerichtet</string>
 </resources>

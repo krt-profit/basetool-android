@@ -72,6 +72,9 @@ fun BasetoolApp(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    appLockEnabled: Boolean = false,
+    appLockAvailable: Boolean = true,
+    onAppLockChange: (Boolean) -> Unit = {},
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -144,6 +147,9 @@ fun BasetoolApp(
                     navController = navController,
                     onOpenDestination = { navController.navigateToTopLevel(it.route) },
                     onLogout = onLogout,
+                    appLockEnabled = appLockEnabled,
+                    appLockAvailable = appLockAvailable,
+                    onAppLockChange = onAppLockChange,
                 )
             }
             if (!expanded) {

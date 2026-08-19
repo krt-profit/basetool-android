@@ -38,6 +38,9 @@ fun BasetoolNavHost(
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
+    appLockEnabled: Boolean = false,
+    appLockAvailable: Boolean = true,
+    onAppLockChange: (Boolean) -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -54,8 +57,19 @@ fun BasetoolNavHost(
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) {
                 when (destination) {
-                    KrtDestination.More -> MoreScreen(onOpen = onOpenDestination, onLogout = onLogout)
-                    else -> PlaceholderScreen(destination = destination)
+                    KrtDestination.More -> {
+                        MoreScreen(
+                            onOpen = onOpenDestination,
+                            onLogout = onLogout,
+                            appLockEnabled = appLockEnabled,
+                            appLockAvailable = appLockAvailable,
+                            onAppLockChange = onAppLockChange,
+                        )
+                    }
+
+                    else -> {
+                        PlaceholderScreen(destination = destination)
+                    }
                 }
             }
         }

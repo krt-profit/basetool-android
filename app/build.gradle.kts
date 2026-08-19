@@ -125,6 +125,9 @@ dependencies {
     implementation(project(":core:designsystem"))
 
     implementation(libs.androidx.browser)
+    // Pulls androidx.fragment in with it, which is why MainActivity is a FragmentActivity:
+    // BiometricPrompt attaches to a fragment manager and has no ComponentActivity overload.
+    implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
