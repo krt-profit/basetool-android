@@ -260,7 +260,7 @@ private val RAIL_LABEL_SIZE = 9.5.sp
 private val RAIL_LABEL_TRACKING = 0.3.sp
 
 /**
- * The tablet navigation rail: the KRT mark, up to eight destinations, and a footer slot.
+ * The tablet navigation rail: the Basetool app mark, up to eight destinations, and a footer slot.
  *
  * Wider than the phone bar can carry, which is why the tablet exposes the destinations that sit
  * behind "Mehr" on a phone.
@@ -289,7 +289,7 @@ fun KrtNavigationRail(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
-            painter = painterResource(R.drawable.krt_logo),
+            painter = painterResource(R.drawable.krt_basetool_logo),
             contentDescription = null,
             modifier = Modifier.size(RAIL_LOGO).padding(bottom = KrtSpacing.md),
         )

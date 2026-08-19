@@ -106,9 +106,6 @@ android {
         warningsAsErrors = true
         abortOnError = true
         checkDependencies = true
-        // The adaptive launcher icon is chapter 14 of the design handoff and lands with the
-        // release work; drawing a placeholder KRT mark now would violate the logo rule.
-        disable += "MissingApplicationIcon"
         // checkDependencies pulls :core:designsystem into this run, where its published
         // icon set has no consumer yet — see that module's lint block.
         disable += "UnusedResources"

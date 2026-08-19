@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive-icon foreground: the Profit Basetool mark on the mandated 108x108 canvas.
+
+  The artwork is authored in the design system's 240-unit space (assets/basetool-logo.svg) and
+  placed here by ONE group transform rather than by re-tracing at another scale, so a revised
+  source can be re-traced by swapping the path data and leaving the placement alone.
+
+  Scale 0.292 is not cosmetic. Design spec chapter 14 draws the mark to the 66/108 dp safe zone
+  and leaves every corner to the launcher mask, so the artwork must fit a 33dp radius. The point
+  of the mark furthest from its own centre is the star's outer corner at radius 112.7 source
+  units, and 112.7 * 0.292 = 32.9dp clears it — nothing clips on a circle, squircle, rounded
+  square or square. translateX/Y then centre the artwork's bounding box (its centre sits at
+  110,129.17 in source space, NOT at 120,120 — the source viewBox is padded asymmetrically) on
+  the canvas centre: 54 - 110*0.292 and 54 - 129.17*0.292.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="21.88"
+        android:translateY="16.28"
+        android:scaleX="0.292"
+        android:scaleY="0.292">
+        <path
+            android:pathData="M34,130 a76,76 0 1,0 152,0 a76,76 0 1,0 -152,0"
+            android:fillColor="#00000000"
+            android:strokeColor="#FFE77E23"
+            android:strokeWidth="7" />
+        <path
+            android:pathData="M20.46,178.66 L47.54,213.34 L199.48,66.71 Z"
+            android:fillColor="#FFE77E23" />
+        <path
+            android:pathData="M96,166 h13 v16 h-13 z M115,152 h13 v30 h-13 z M134,138 h13 v44 h-13 z M153,124 h13 v58 h-13 z"
+            android:fillColor="#FFE77E23" />
+        <path
+            android:pathData="M46,45 L49,53 L57,56 L49,59 L46,67 L43,59 L35,56 L43,53 Z"
+            android:fillColor="#FFE77E23" />
+    </group>
+</vector>
