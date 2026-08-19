@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.auth
 
 import android.content.Context
+import de.greluc.krt.profit.basetool.android.BuildConfig
 import de.greluc.krt.profit.basetool.android.core.auth.AuthDataStore
 import de.greluc.krt.profit.basetool.android.core.auth.AuthSession
 import de.greluc.krt.profit.basetool.android.core.auth.AuthorizationRequestFactory
@@ -17,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.KeystoreSecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.PendingAuthorization
 import de.greluc.krt.profit.basetool.android.core.auth.RefreshTokenStore
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
+import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import java.util.Locale
@@ -72,6 +74,17 @@ class AuthContainer(
             languageTagProvider = { Locale.getDefault().toLanguageTag() },
             activeOrgUnitProvider = { null },
         )
+    }
+
+    /**
+     * Reads the approval gate that stands between a valid token and the app.
+     *
+     * Built on [apiClient] rather than on its own client: the bearer token, the correlation id and
+     * the `Accept-Language` header are exactly as required here, and a second client would open a
+     * second connection to the same host for one small request per minute.
+     */
+    val accountGate: AccountGateRepository by lazy {
+        AccountGateRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

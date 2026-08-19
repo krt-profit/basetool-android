@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Wer noch nicht freigegeben ist, sieht das jetzt — statt einer Wand aus Fehlern.** Nach der Anmeldung prüft die App, ob das Konto von der Administration freigeschaltet ist, und zeigt andernfalls einen eigenen Wartebildschirm mit dem Kontonamen, einer Schaltfläche zum Aktualisieren und dem Weg zum Abmelden. Der Status wird alle 60 Sekunden automatisch neu geprüft; sobald die Freigabe kommt, geht es ohne Zutun weiter. Abgelehnte Konten bekommen denselben Bildschirm mit eigener Formulierung. Ist der Status gar nicht abfragbar, sagt die App genau das — und behauptet nicht, das Konto warte auf Freigabe.
+
 - **Die App hat ein Symbol.** Der Startbildschirm zeigt jetzt das Basetool-Zeichen (orange auf schwarz) statt des Android-Platzhalters — als anpassungsfähiges Symbol, das sich jeder Launcher-Form fügt, mit eigener einfarbiger Variante für die Design-Symbole von Android 13+. Auf dem Tablet trägt auch die Seitenleiste das Zeichen statt der Kartell-Marke.
 
 ### Changed

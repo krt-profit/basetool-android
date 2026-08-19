@@ -292,3 +292,61 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
   truth this check used, not the realm itself, and `docs/keycloak/realm-config.reference.json` in
   the main repo predates the client and cannot stand in for it; refreshing that snapshot would make
   the realm's actual state checkable from the repo.
+
+### REQ-APP-AUTH-009 — A session is not admission: the account gate stands between the two
+
+A valid token says who somebody is. It does not say they may use the app. The backend refuses every
+gated endpoint while a registration is unapproved (main repo REQ-SEC-017) and, separately, while the
+Terms of Use in force are unaccepted (REQ-SEC-028) — **both as HTTP 403**, distinguished only by the
+stable problem code. The app therefore **asks before it renders**: `GET
+/api/v1/users/me/registration-status`, whose whole purpose is to be reachable by a caller whose only
+authority is `ROLE_PENDING_APPROVAL`.
+
+**The app screen must not be composed while the gate is closed.** Rendering it underneath an overlay
+would set every one of its loads going against endpoints guaranteed to answer 403, and the member
+would watch a dashboard fill with failures that name nothing. `AccountGate` therefore takes the app
+as a lambda and composes it only once the member is cleared.
+
+**An unrecognised status keeps the gate shut.** A server that adds a fourth approval state must not
+be able to admit a client that predates it, and it must not crash one either — the wire value is
+parsed as a string, an unknown one becomes `ApprovalStatus.UNKNOWN`, and `UNKNOWN` is not cleared.
+
+**A `PENDING_APPROVAL` refusal is the answer, not an error.** Whether the status endpoint is itself
+refused depends on the deployment's filter order, and both outcomes mean the same thing. Reporting
+one of them as a failure would show a connectivity screen to a member who is merely waiting.
+
+**A failed re-read keeps the last known state.** Replacing the waiting screen with an error the
+moment a poll misses would make a lost minute of connectivity look like the account had been reset.
+Only a *first* read with nothing behind it surfaces as unreadable — and that state says the question
+could not be asked, never that the member is waiting.
+
+**Polling, because there is no push.** The design chapter promises "Automatische Prüfung alle 60 s —
+Push bei Freigabe". The second half is struck: the app has no push channel at all (resolved decision
+Q2), so an approval reaches the screen through the poll or not at all, and promising a notification
+that cannot arrive would leave a member waiting on their lock screen. The loop stops the moment the
+member is cleared — otherwise every install would ask once a minute, forever, for an answer that no
+longer changes anything.
+
+Two elements of the design frame are **absent for want of data, not by preference**: the "Eingereicht
+— vor 2 Std. · via Discord" row (`RegistrationStatusDto` carries the status and nothing else) and the
+rejection reason (administrators record one, but no endpoint exposes it to the rejected member). The
+account row survives because `preferred_username` comes from the ID token the app already holds, so
+it renders while every gated endpoint refuses.
+
+**Acceptance**
+
+- [x] An approved account clears the gate; a pending or rejected one does not
+  (`AccountGateRepositoryTest`, `AccountGateViewModelTest`).
+- [x] An unknown status, and a body with no status field at all, keep the gate closed.
+- [x] A `PENDING_APPROVAL` problem body reads as pending; a plain `FORBIDDEN` 403 stays a failure.
+- [x] An unreadable 200 body is reported as a server fault, not as a network one — telling a member
+  to check their connection when the server answered is advice that cannot help.
+- [x] The poll stops once the member is cleared, and a second `start()` does not add a competing
+  loop.
+- [x] An approval that lands mid-wait opens the gate without a manual refresh.
+- [x] A failed re-read keeps the waiting screen; a failed first read surfaces as unreadable.
+- [ ] The terms gate. **Open** — the second half of this requirement, held back because the terms
+  *document* has no endpoint (the text lives in the web frontend's i18n bundle) and the choice
+  between bundling it in the app and linking out to the live page needs an ADR.
+- [ ] Observed against a live backend with a genuinely pending account. **Open** — needs a second
+  test-realm user held in the approval queue.

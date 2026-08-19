@@ -29,6 +29,8 @@ import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.gate.AccountGate
+import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import kotlinx.coroutines.launch
 
@@ -46,12 +48,18 @@ import kotlinx.coroutines.launch
  * for a password (ADR-0004); today it falls to the login screen with its own message, and gets its
  * proper retry surface with the chapter-14 system states.
  *
+ * A session is **not** admission, so [SessionState.SignedIn] hands off to [AccountGate] rather than
+ * straight to the app: the backend refuses every gated endpoint while a registration is unapproved,
+ * and a dashboard composed on top of that would fire a screenful of requests only to paint their
+ * failures. The gate composes the app only once the member is cleared.
+ *
  * Edge-to-edge is enabled before `super.onCreate` so the very first frame already draws behind the
  * system bars; at targetSdk 36 and above the platform enforces it anyway and there is no opt-out.
  */
 class MainActivity : ComponentActivity() {
     private val container by lazy { AuthContainer(this) }
     private val loginViewModel by lazy { LoginViewModel(container) }
+    private val gateViewModel by lazy { AccountGateViewModel(container.accountGate) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -73,21 +81,27 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) { container.session.restore() }
 
-                when (session) {
+                val scope = rememberCoroutineScope()
+                val signOut: () -> Unit = {
+                    scope.launch {
+                        // The local wipe happens inside logout() and does not depend on the
+                        // browser; the URL only ends the realm's SSO cookie, without which the
+                        // next login silently reuses the browser session.
+                        container.logout()?.let { endSession ->
+                            CustomTabLauncher.launch(this@MainActivity, endSession)
+                        }
+                    }
+                }
+
+                when (val current = session) {
                     is SessionState.SignedIn -> {
-                        val scope = rememberCoroutineScope()
-                        BasetoolApp(
-                            onLogout = {
-                                scope.launch {
-                                    // The local wipe happens inside logout() and does not depend on
-                                    // the browser; the URL only ends the realm's SSO cookie, without
-                                    // which the next login silently reuses the browser session.
-                                    container.logout()?.let { endSession ->
-                                        CustomTabLauncher.launch(this@MainActivity, endSession)
-                                    }
-                                }
-                            },
-                        )
+                        AccountGate(
+                            viewModel = gateViewModel,
+                            accountName = current.claims?.preferredUsername,
+                            onLogout = signOut,
+                        ) {
+                            BasetoolApp(onLogout = signOut)
+                        }
                     }
 
                     SessionState.Unknown -> {
