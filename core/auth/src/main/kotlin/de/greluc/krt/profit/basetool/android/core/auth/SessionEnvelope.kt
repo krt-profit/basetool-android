@@ -82,7 +82,7 @@ class SessionEnvelope {
      *
      * @return 32 random bytes, to be sealed with the auth-bound key and adopted here
      */
-    fun newSessionKey(): ByteArray = ByteArray(KEY_LENGTH_BYTES).also { SecureRandom().nextBytes(it) }
+    fun newSessionKey(): ByteArray = ByteArray(KEY_LENGTH_BYTES).also(RANDOM::nextBytes)
 
     /**
      * Adds the outer layer, when there is a session key to add it with.
@@ -168,6 +168,16 @@ class SessionEnvelope {
             MAGIC.indices.all { stored[it] == MAGIC[it] }
 
     private companion object {
+        /**
+         * One instance for the process, rather than one per key.
+         *
+         * Not a predictability fix — a fresh [SecureRandom] seeds from the system entropy source, so
+         * the per-call form was sound, unlike the same pattern with `java.util.Random`. It is simply
+         * the correct shape: constructing one can re-seed, `nextBytes` is thread-safe, and a shared
+         * instance removes a cost paid for nothing.
+         */
+        val RANDOM = SecureRandom()
+
         const val ALGORITHM = "AES"
 
         const val TRANSFORMATION = "AES/GCM/NoPadding"
