@@ -3,7 +3,7 @@
 ## Overview
 Complete UI specification for the native Android companion app of the **Profit Basetool**
 (squadron-management tool of DAS KARTELL / Bereich Profit, Star Citizen). Target stack:
-**Kotlin + Jetpack Compose, Material 3, minSdk 29 / targetSdk 37**, phones portrait,
+**Kotlin + Jetpack Compose, Material 3, minSdk 30 / targetSdk 37**, phones portrait,
 tablets landscape (list-detail). Dark-ONLY — there is no light theme; Material You dynamic
 color is deliberately disabled.
 

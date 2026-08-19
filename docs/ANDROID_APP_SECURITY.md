@@ -270,7 +270,7 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   (API 28+): while the device is locked the refresh token is cryptographically unusable —
   exactly threat (c) — and since the app only refreshes in the foreground (no push, Q2) the
   restriction costs nothing.
-- **Backup exclusion in all three rule sets** (minSdk 29 spans both worlds): legacy
+- **Backup exclusion in all three rule sets** (minSdk 30 still spans both worlds): legacy
   `fullBackupContent` (API ≤ 30 devices) *and* `dataExtractionRules` with explicit excludes in
   **both** `<cloud-backup>` and `<device-transfer>` (API 31+; `allowBackup=false` alone does not
   reliably stop D2D transfers — verified Android 12 behavior-change doc).
@@ -288,8 +288,8 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   `filterTouchesWhenObscured` (tapjacking — complements `setHideOverlayWindows`).
 - **Optional app-lock** (user setting): BiometricPrompt `BIOMETRIC_STRONG` + `CryptoObject`
   gating a second, auth-bound Keystore key that wraps the token key. API-29 caveats honored:
-  `DEVICE_CREDENTIAL` combos only on API 30+ (`setUserAuthenticationParameters`), API 29 uses
-  `setUserAuthenticationValidityDurationSeconds` + `KeyguardManager.isDeviceSecure()`. Keys with
+  `DEVICE_CREDENTIAL` combos via `setUserAuthenticationParameters`, which minSdk 30
+  guarantees — the API-29 time-bound fallback is gone with the floor (ADR-0006).
   `setInvalidatedByBiometricEnrollment` die on new enrollment → re-login path required.
 - **`FLAG_SECURE` app-wide** (fixed by the design spec, ch. 04 — not just authenticated
   screens; blocks screenshots/cast; ~70 % effective ≤ API 30 per Google's own numbers — treat
@@ -299,7 +299,7 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   BiometricPrompt. A user-facing toggle may relax FLAG_SECURE for screenshots if the org
   wants it — default strict (secondary-decision register in the plan).
 - Cached member data: app-private storage under platform FBE (mandatory on devices launched with
-  Android 10+) — the documented baseline; backup-excluded. SQLCipher (`sqlcipher-android` 4.17.0,
+  Android 10+, so every supported device) — the documented baseline; backup-excluded. SQLCipher (`sqlcipher-android` 4.17.0,
   active) only if the org classifies the cache as sensitive — it buys forensic-extraction
   resistance at the cost of key-management failure modes; default: not used, revisit at Phase 5.
 

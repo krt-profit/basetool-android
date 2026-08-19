@@ -86,8 +86,8 @@ data class AuthorizationRequest(
             .filter { it.contains("=") }
             .associate { pair ->
                 val (name, value) = pair.split("=", limit = 2)
-                // The (String, Charset) overload is API 33+ and minSdk is 29 — on an Android 10
-                // device it would be a NoSuchMethodError at the moment of login.
+                // The (String, Charset) overload is API 33+ and minSdk is 30 — on a device at
+                // the floor it would be a NoSuchMethodError at the moment of login.
                 URLDecoder.decode(name, CHARSET_UTF_8) to URLDecoder.decode(value, CHARSET_UTF_8)
             }
 
@@ -101,7 +101,7 @@ data class AuthorizationRequest(
     private companion object {
         const val LOG_TAG = "auth"
 
-        /** Named rather than `Charsets.UTF_8`: only the String overload of `decode` is API 29-safe. */
+        /** Named rather than `Charsets.UTF_8`: the Charset overload of `decode` needs API 33. */
         const val CHARSET_UTF_8 = "UTF-8"
         const val PARAM_STATE = "state"
         const val PARAM_CODE = "code"

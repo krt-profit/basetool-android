@@ -58,13 +58,12 @@ object BiometricGate {
             BiometricManager.BIOMETRIC_SUCCESS
 
     /**
-     * Shows the system sheet, binding it to [cipher] where the platform permits.
+     * Shows the system sheet, bound to [cipher].
      *
-     * On API 30+ the lock key is auth-per-use and the cipher travels in a `CryptoObject`, so
-     * [onSuccess] receives **the very cipher the prompt vouched for**. On API 29 the key is
-     * time-bound, which Android refuses to pair with a `CryptoObject`; the prompt runs without one
-     * and the same cipher comes back for immediate use inside the validity window. Either way the
-     * caller still has to perform the decrypt — a `true` from the callback alone opens nothing.
+     * The lock key is auth-per-use, so the cipher travels in a `CryptoObject` and [onSuccess]
+     * receives **the very cipher the prompt vouched for**. The caller still has to perform the
+     * decrypt — a `true` from the callback alone opens nothing, which is the difference between a
+     * cryptographic gate and a boolean one.
      *
      * Failure is reported as a **string resource rather than the platform's message**: the platform
      * text is written for the general case and its codes include several the member cannot act on.
@@ -74,23 +73,22 @@ object BiometricGate {
      * @param activity the hosting activity; must be a `FragmentActivity`, which `ComponentActivity`
      *   is not — the prompt attaches to the fragment manager
      * @param cipher the initialised decrypt cipher for the lock's sentinel
-     * @param useCryptoObject whether this platform can bind the prompt to [cipher]
      * @param onSuccess invoked on the main thread with the authenticated cipher
      * @param onFailure invoked with a message resource, or `null` when the member simply dismissed
      */
     fun prompt(
         activity: FragmentActivity,
         cipher: Cipher,
-        useCryptoObject: Boolean,
         onSuccess: (Cipher) -> Unit,
         onFailure: (Int?) -> Unit,
     ) {
         val callback =
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    // The CryptoObject's cipher when there is one — that is the instance the
-                    // platform unlocked. Falling back to the caller's is only for the API-29 path,
-                    // where no CryptoObject could be attached in the first place.
+                    // The CryptoObject's cipher is the instance the platform unlocked. The
+                    // fallback cannot happen now that every supported key is auth-per-use, and is
+                    // kept only so a missing CryptoObject degrades to a refused operation rather
+                    // than a crash.
                     onSuccess(result.cryptoObject?.cipher ?: cipher)
                 }
 
@@ -127,10 +125,8 @@ object BiometricGate {
                 .setAllowedAuthenticators(ALLOWED)
                 .build()
 
-        if (useCryptoObject) {
-            prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
-        } else {
-            prompt.authenticate(info)
-        }
+        // Always bound: minSdk 30 guarantees an auth-per-use key, and a prompt without a
+        // CryptoObject would authenticate the member without authorising the operation.
+        prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
     }
 }

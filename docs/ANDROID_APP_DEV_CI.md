@@ -34,8 +34,10 @@ mirroring this repo's conventions.
 
 - **Android Studio** (latest stable) + JDK 17+ toolchain; the Gradle wrapper is the only
   sanctioned build/test path (`./gradlew …`), mirroring this repo's rule.
-- **AVDs**: phone (Pixel-class, portrait, API 29 *and* API 37 images — the two behavioral
-  extremes) and tablet (e.g. Pixel Tablet, landscape, API 37). Compose `@Preview` variants for
+- **AVDs**: phone at **API 30** (the minSdk floor) *and* at the current API — the two
+  behavioral extremes — plus a tablet (landscape, current API). Testing only the newest image
+  is how a lock that could not be armed at all on the floor reached main (ADR-0006), so the
+  floor is not optional. Compose `@Preview` variants for
   compact/expanded window size classes cover most iteration without an emulator.
 - **Backend**: the existing **isolated test stack** from this repo
   (`docker-compose.test.yml`, `--env-file .env.test`, throwaway credentials — the hard rule

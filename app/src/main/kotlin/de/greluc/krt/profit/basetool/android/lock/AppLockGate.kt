@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import de.greluc.krt.profit.basetool.android.R
-import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import kotlinx.coroutines.launch
 
@@ -70,7 +69,6 @@ fun AppLockGate(
                             BiometricGate.prompt(
                                 activity = activity,
                                 cipher = cipher,
-                                useCryptoObject = AppLockKey.SUPPORTS_CRYPTO_OBJECT,
                                 onSuccess = viewModel::unlock,
                                 onFailure = viewModel::onUnlockFailed,
                             )

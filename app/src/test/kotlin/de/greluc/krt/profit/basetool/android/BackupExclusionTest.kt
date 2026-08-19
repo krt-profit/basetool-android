@@ -17,8 +17,8 @@ import java.io.File
  *
  * This is the failure that reports nothing when it happens. Renaming the DataStore file, or
  * excluding a path that turns out not to exist, breaks no build and shows no symptom; it simply
- * starts copying an encrypted refresh token into Google Drive or onto the next phone. minSdk 29
- * spans both worlds, so the app needs `backup_rules.xml` (API ≤ 30) *and*
+ * starts copying an encrypted refresh token into Google Drive or onto the next phone. minSdk 30
+ * still spans both worlds, so the app needs `backup_rules.xml` (API ≤ 30) *and*
  * `data_extraction_rules.xml` (API 31+) — and the second needs the exclusion in both its
  * `cloud-backup` and `device-transfer` sections, because `allowBackup=false` alone does not
  * reliably stop a device-to-device transfer.

@@ -18,7 +18,7 @@ so the design tool needed no repo access.
 ```text
 You are designing the complete UI for "Profit Basetool", the native Android companion app of a
 Star Citizen squadron-management web tool operated by the org DAS KARTELL / IRIDIUM. The app is
-Kotlin + Jetpack Compose (Material 3), Android 10+ (minSdk 29, targetSdk 37), phones used in
+Kotlin + Jetpack Compose (Material 3), Android 11+ (minSdk 30, targetSdk 37), phones used in
 PORTRAIT, tablets used in LANDSCAPE. Produce a design specification with mockups that developers
 can implement 1:1. The DAS KARTELL design system below is BINDING — do not invent colors, fonts,
 radii, or shadows outside it.
