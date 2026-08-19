@@ -54,4 +54,18 @@
     <string name="gate_error_title">Serverfehler</string>
     <string name="gate_error_body">Der Server konnte den Status deines Zugangs nicht beantworten. Bitte später erneut versuchen.</string>
     <string name="gate_retry">Erneut versuchen</string>
+
+    <!-- Terms gate (design spec ch. 04, screen 4). The wording itself comes from the backend. -->
+    <string name="terms_checking">Nutzungsbedingungen werden geprüft …</string>
+    <string name="terms_eyebrow">Vor dem ersten Einsatz</string>
+    <string name="terms_version">Fassung %1$s</string>
+    <string name="terms_checkbox">Ich akzeptiere die Nutzungsbedingungen einschließlich Abschnitt 4 (zugelassene Client-Software).</string>
+    <string name="terms_accept">Akzeptieren</string>
+    <string name="terms_decline">Ablehnen und abmelden</string>
+    <string name="terms_decline_title">Nutzungsbedingungen ablehnen?</string>
+    <string name="terms_decline_body">Ohne Zustimmung kannst du das Basetool nicht nutzen. Du wirst abgemeldet und kannst dich jederzeit erneut anmelden und zustimmen.</string>
+    <string name="terms_decline_confirm">Ablehnen und abmelden</string>
+    <string name="terms_decline_cancel">Zurück</string>
+    <string name="terms_error">Die Zustimmung konnte nicht gespeichert werden. Bitte erneut versuchen.</string>
+    <string name="terms_error_offline">Keine Verbindung. Die Zustimmung konnte nicht gespeichert werden.</string>
 </resources>

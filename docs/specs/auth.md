@@ -345,8 +345,27 @@ it renders while every gated endpoint refuses.
   loop.
 - [x] An approval that lands mid-wait opens the gate without a manual refresh.
 - [x] A failed re-read keeps the waiting screen; a failed first read surfaces as unreadable.
-- [ ] The terms gate. **Open** — the second half of this requirement, held back because the terms
-  *document* has no endpoint (the text lives in the web frontend's i18n bundle) and the choice
-  between bundling it in the app and linking out to the live page needs an ADR.
+- [x] The terms gate, as the second half of this requirement. The wording is **never carried in the
+  APK**: it is read from `GET /api/v1/terms/document` together with the version an acceptance is
+  recorded against (main repo ADR-0138), which the backend grew for exactly this. A bundled copy
+  would show the text this build was compiled with while the server records consent against whatever
+  it currently has in force — and over GitHub Releases that drift is the steady state, not a risk.
+  Reading one wording and agreeing to another is not informed consent.
+- [x] The document is fetched **only when consent is missing** — a member who accepted months ago
+  does not pay for a download to be told so (`TermsGateViewModelTest`).
+- [x] A document that cannot be read is a **hard stop**, never an emptier gate: asking somebody to
+  agree to a blank page is not asking for consent. The status read is tolerant by comparison, and
+  the asymmetry is deliberate.
+- [x] A 200 that still reports no consent keeps the gate closed. Trusting the HTTP status over the
+  payload would wave a member through without their consent on record, and the next API call would
+  bounce them straight back.
+- [x] A failed acceptance keeps the wording on screen with a message rather than replacing it with
+  an error page — the text they just read is what they need in order to try again.
+- [x] The CTA is disabled until the box is ticked, with **no scroll-to-bottom gate** (design ch. 04):
+  a forced scroll measures that a finger moved, not that anything was read.
+- [x] The tick survives rotation (`rememberSaveable`), so a disabled CTA never becomes a mystery.
+- [x] Declining names its consequence in a danger modal before signing out.
+- [ ] Observed end to end against a live backend. **Open** — needs a test-realm user with no
+  acceptance on record, and the main repo's document endpoint merged.
 - [ ] Observed against a live backend with a genuinely pending account. **Open** — needs a second
   test-realm user held in the approval queue.

@@ -32,6 +32,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
+import de.greluc.krt.profit.basetool.android.terms.TermsGate
+import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -60,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private val container by lazy { AuthContainer(this) }
     private val loginViewModel by lazy { LoginViewModel(container) }
     private val gateViewModel by lazy { AccountGateViewModel(container.accountGate) }
+    private val termsViewModel by lazy { TermsGateViewModel(container.terms) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -100,7 +103,12 @@ class MainActivity : ComponentActivity() {
                             accountName = current.claims?.preferredUsername,
                             onLogout = signOut,
                         ) {
-                            BasetoolApp(onLogout = signOut)
+                            // After the approval gate, before the app: the backend enforces the
+                            // same order, and a member still awaiting approval has nothing to
+                            // consent to yet.
+                            TermsGate(viewModel = termsViewModel, onDecline = signOut) {
+                                BasetoolApp(onLogout = signOut)
+                            }
                         }
                     }
 
