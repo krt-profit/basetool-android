@@ -84,9 +84,13 @@ refresh of a session fail intermittently and only in the field.
 - [x] The authorization request carries `dpop_jkt`, the thumbprint of the same key
   (`AuthorizationRequestTest`) — RFC 9449 §10 defence in depth, so an intercepted code cannot be
   redeemed against a different key.
-- [ ] The proof is accepted by the live realm under the refresh-only policy. **Open** — verified
-  against a throwaway Keycloak in the concept (security concept §4), not yet against the app's own
-  request.
+- [x] The proof is accepted by a live realm under the refresh-only policy, from this app's own
+  request — code exchange and refresh both, verified on device. `TokenResult.AccessTokenBound` never
+  fired, so the realm returned `token_type: Bearer`: refresh token bound, access token plain, which
+  is the posture the backend's bearer filter requires.
+- [ ] A refresh **without** the key is refused. **Open** — the positive path is proven; that the
+  binding is load-bearing rather than decorative needs a negative test the app cannot stage on
+  itself.
 
 ### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
 
@@ -128,8 +132,12 @@ entry, in addition to the Keycloak end-session call and the best-effort refresh-
   comes last. A refused revocation does not stop any of it.
 - [x] `deleteKey()` is part of the `SecretCipher` contract rather than an implementation detail — a
   cipher that cannot be wiped cannot back a logout.
-- [ ] The end-session URL is actually opened. **Open** — `logout()` returns it; opening a browser is
-  the UI's half and lands with the chapter-04 screens.
+- [x] The end-session URL is opened, and the realm session really ends — verified on device against
+  a live Keycloak: after signing out, the next login attempt is answered with the credential form
+  rather than a silent redirect, which is the only outward sign that the SSO cookie is gone.
+- [x] The DPoP signing key is destroyed with the rest. It lives outside `AuthSession`'s reach, so
+  `AuthContainer.logout()` deletes it after the session wipe; the refresh token is bound to it and
+  leaving it alive would leave the binding alive.
 
 ### REQ-APP-AUTH-006 — Token requests use their own HTTP client, and every answer is a named state
 

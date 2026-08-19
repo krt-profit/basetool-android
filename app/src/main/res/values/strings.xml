@@ -29,6 +29,11 @@
     <string name="login_error_unreachable">Server nicht erreichbar.</string>
     <string name="login_error_config">Anmeldung derzeit nicht möglich. Die Administration wurde informiert.</string>
 
+    <!-- Session -->
+    <string name="more_section_secondary">Sekundärziele</string>
+    <string name="more_section_session">Sitzung</string>
+    <string name="logout">Abmelden</string>
+
     <!-- Offline state -->
     <string name="login_offline_title">Keine Verbindung</string>
     <string name="login_offline_retry">Erneut verbinden</string>

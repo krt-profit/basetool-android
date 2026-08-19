@@ -36,6 +36,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
 fun BasetoolNavHost(
     navController: NavHostController,
     onOpenDestination: (KrtDestination) -> Unit,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -53,7 +54,7 @@ fun BasetoolNavHost(
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) {
                 when (destination) {
-                    KrtDestination.More -> MoreScreen(onOpen = onOpenDestination)
+                    KrtDestination.More -> MoreScreen(onOpen = onOpenDestination, onLogout = onLogout)
                     else -> PlaceholderScreen(destination = destination)
                 }
             }

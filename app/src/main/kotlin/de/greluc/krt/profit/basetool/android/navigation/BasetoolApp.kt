@@ -69,6 +69,7 @@ private fun isExpandedWindow(): Boolean =
  */
 @Composable
 fun BasetoolApp(
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
@@ -142,6 +143,7 @@ fun BasetoolApp(
                 BasetoolNavHost(
                     navController = navController,
                     onOpenDestination = { navController.navigateToTopLevel(it.route) },
+                    onLogout = onLogout,
                 )
             }
             if (!expanded) {

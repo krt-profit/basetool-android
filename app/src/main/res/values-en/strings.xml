@@ -21,6 +21,10 @@
     <string name="login_error_unreachable">Server unreachable.</string>
     <string name="login_error_config">Sign-in is not possible right now. The administration has been notified.</string>
 
+    <string name="more_section_secondary">Secondary targets</string>
+    <string name="more_section_session">Session</string>
+    <string name="logout">Sign out</string>
+
     <string name="login_offline_title">No connection</string>
     <string name="login_offline_retry">Reconnect</string>
 </resources>
