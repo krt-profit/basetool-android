@@ -2,14 +2,33 @@
 <!--
   dev flavour only. Replaces the strict file in the main source set.
 
-  The local test stack's Keycloak runs `start-dev` on plain HTTP. The emulator reaches it over
-  `adb reverse tcp:18080 tcp:18080`, i.e. through the device's own loopback, so cleartext is
+  Two exceptions live here, for two different servers, and they are deliberately not the same
+  exception.
+
+  CLEARTEXT, for Keycloak. The local test stack runs `start-dev` on plain HTTP. The emulator reaches
+  it over `adb reverse tcp:18080 tcp:18080`, i.e. through the device's own loopback, so cleartext is
   permitted to localhost and to 10.0.2.2 (the documented host route, kept for a stack published
   without adb reverse) and to nothing else. The base config stays closed, so a dev build talking to
   any other server still refuses cleartext.
 
-  This file does not exist in the prod flavour, so a release build structurally cannot carry the
-  exception — that is the point of putting it in a source set rather than behind a build flag.
+  A TRUST ANCHOR, for the backend. The backend serves HTTPS with a self-signed certificate, so a dev
+  build's API calls fail TLS validation before carrying a single byte — and the failure surfaces as
+  `ApiError.Network`, i.e. as "you are offline", which is the least informative thing it could say.
+  `<debug-overrides>` adds the user certificate store to the trust anchors, so a developer who has
+  installed their own test CA on the emulator is trusted. The system anchors stay in place:
+  debug-overrides ADD to the other configurations rather than replacing them.
+
+  Why the user store rather than a certificate committed to `res/raw`: the test stack's keystore is
+  generated locally per developer with a throwaway password (the project's hard rule — production
+  artefacts never enter a test stack). A bundled certificate would therefore be one person's, would
+  work for nobody else, and would rot the first time anyone regenerated theirs. The one-time
+  emulator setup is in the README.
+
+  Two independent reasons a release build cannot inherit any of this:
+    1. This file exists only in the dev source set; the prod flavour has no override.
+    2. `<debug-overrides>` is honoured only when `android:debuggable="true"`. Even pasted into the
+       main source set, the trust anchor below would be ignored by a release APK.
+  The first is the intent; the second is the backstop for when someone edits the wrong file.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
@@ -18,4 +37,10 @@
         <domain includeSubdomains="false">localhost</domain>
         <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides>
 </network-security-config>

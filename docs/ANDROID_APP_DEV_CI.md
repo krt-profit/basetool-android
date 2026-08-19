@@ -43,7 +43,21 @@ mirroring this repo's conventions.
   `down --volumes`). The emulator reaches the host via `https://10.0.2.2:<port>`; the stack's
   self-signed certificate is trusted **only** via Network Security Config
   `<debug-overrides>` (active only in debuggable builds — release builds structurally cannot
-  trust it). A `dev` build flavor pins base URLs to the test stack; `prod` flavor pins the real
+  trust it). The override trusts the **user certificate store**, not a certificate committed to
+  the repo: every developer generates their own throwaway keystore, so a bundled one would be one
+  person's and would rot the first time anyone regenerated theirs. One-time setup per emulator,
+  after starting the test stack:
+
+  ```bash
+  keytool -exportcert -rfc -alias basetool -keystore keystore.p12 -storetype PKCS12 -storepass <throwaway> -file basetool-dev-ca.crt
+  ```
+
+  Then push the file to the device and install it under *Settings → Security → Encryption &
+  credentials → Install a certificate → CA certificate*. Android warns that a third party may
+  monitor traffic; on a throwaway emulator against a local stack that is exactly what is being
+  asked for. Skipping this step does not produce a certificate error in the app — the failure
+  surfaces as `ApiError.Network`, i.e. as "you are offline" while the server runs on the same
+  machine, which is why the step is written down rather than left to be rediscovered. A `dev` build flavor pins base URLs to the test stack; `prod` flavor pins the real
   hosts. No app-side code branches on URLs at runtime.
 - **Keycloak**: the test realm gets the `basetool-android` client (S256, exact redirect URIs,
   DPoP toggle) so the full login/refresh/DPoP path runs locally — this is also where the Phase-0

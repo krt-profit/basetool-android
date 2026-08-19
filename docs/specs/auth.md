@@ -454,3 +454,44 @@ leaks exactly what it is there to withhold.
   threat the lock addresses and overstates the one it does not.
 - [ ] Observed on a device with an enrolled fingerprint and on one with only a PIN. **Open** —
   emulator verification covers the PIN path only.
+
+### REQ-APP-AUTH-011 — The dev build's TLS relaxations cannot reach a release build
+
+The dev flavour needs two holes in TLS validation that a release build must never inherit:
+**cleartext** to the emulator's loopback routes (Keycloak runs `start-dev` on plain HTTP) and a
+**trust anchor** for the test stack's self-signed backend certificate.
+
+Both live in `app/src/dev/res/xml/network_security_config.xml`, and the trust anchor additionally
+sits inside `<debug-overrides>`. That is two independent guarantees rather than one restated:
+
+1. The file exists only in the **dev source set**; the prod flavour has no override at all.
+2. `<debug-overrides>` is honoured only when `android:debuggable="true"`. Pasted into the main
+   source set the anchor would still be ignored by a release APK.
+
+The first is the intent. The second is the backstop for somebody editing the wrong file — which is
+worth having, because **nothing about a release build fails when this leaks in**: the APK installs,
+the requests succeed, and the only difference is that a proxy on the member's network can read
+them.
+
+**The anchor is the user certificate store, not a bundled certificate.** The test stack's keystore
+is generated locally per developer with a throwaway password, since production artefacts never
+enter a test stack. A certificate committed to `res/raw` would therefore be one person's, would
+work for nobody else, and would rot the first time anyone regenerated theirs. `src="system"` is
+listed alongside `src="user"` so the dev build keeps the ordinary anchors — `<debug-overrides>` adds
+to the other configurations, and listing only the user store would leave a build that trusts
+hand-installed CAs and nothing else.
+
+Missing this configuration has **no error message of its own**: TLS fails before the request
+carries a byte, the app maps it to `ApiError.Network`, and the screen says the member is offline
+while the server runs on their own machine. The one-time emulator step is therefore documented in
+`ANDROID_APP_DEV_CI.md` rather than left to be rediscovered.
+
+**Acceptance**
+
+- [x] The main config forbids cleartext and carries no `<debug-overrides>`
+  (`NetworkSecurityConfigTest`).
+- [x] The dev config trusts the user store **and** the system store, inside `<debug-overrides>`.
+- [x] The dev cleartext exception names exactly the three loopback hosts and sets no
+  `includeSubdomains`, which would widen it past them.
+- [ ] Observed: a dev build reaching the test-stack backend over HTTPS after the CA is installed.
+  **Open** — needs the backend container up alongside the emulator.
