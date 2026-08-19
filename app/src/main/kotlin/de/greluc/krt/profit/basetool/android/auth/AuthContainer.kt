@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.PendingAuthorization
 import de.greluc.krt.profit.basetool.android.core.auth.RefreshTokenStore
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
+import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import java.util.Locale
@@ -85,6 +86,16 @@ class AuthContainer(
      */
     val accountGate: AccountGateRepository by lazy {
         AccountGateRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Reads the Terms of Use and records consent.
+     *
+     * Shares [apiClient] with the approval gate: same host, same headers, and one warm TLS
+     * connection instead of two.
+     */
+    val terms: TermsRepository by lazy {
+        TermsRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

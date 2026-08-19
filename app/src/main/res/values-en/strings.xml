@@ -42,4 +42,17 @@
     <string name="gate_error_title">Server error</string>
     <string name="gate_error_body">The server could not answer with your access status. Please try again later.</string>
     <string name="gate_retry">Try again</string>
+
+    <string name="terms_checking">Checking the terms of use …</string>
+    <string name="terms_eyebrow">Before your first mission</string>
+    <string name="terms_version">Version %1$s</string>
+    <string name="terms_checkbox">I accept the terms of use, including section 4 (approved client software).</string>
+    <string name="terms_accept">Accept</string>
+    <string name="terms_decline">Decline and sign out</string>
+    <string name="terms_decline_title">Decline the terms of use?</string>
+    <string name="terms_decline_body">Without your consent you cannot use the Basetool. You will be signed out, and can sign in and accept at any time.</string>
+    <string name="terms_decline_confirm">Decline and sign out</string>
+    <string name="terms_decline_cancel">Back</string>
+    <string name="terms_error">Your consent could not be recorded. Please try again.</string>
+    <string name="terms_error_offline">No connection. Your consent could not be recorded.</string>
 </resources>
