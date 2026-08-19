@@ -73,10 +73,14 @@ class AppLockViewModelTest {
 
         override suspend fun isArmed(): Boolean = armed
 
-        override suspend fun arm() {
+        override suspend fun prepareArm(): Cipher {
             if (armThrows) {
                 throw SecretCipherException("no auth-bound key on this device", null)
             }
+            return Cipher.getInstance("AES/GCM/NoPadding")
+        }
+
+        override suspend fun completeArm(cipher: Cipher) {
             armed = true
         }
 
@@ -341,7 +345,8 @@ class AppLockViewModelTest {
             viewModel.start()
             advanceUntilIdle()
 
-            viewModel.setEnabled(true)
+            val cipher = viewModel.prepareArm()
+            viewModel.completeArm(requireNotNull(cipher))
             advanceUntilIdle()
 
             assertEquals(AppLockState.Open, viewModel.state.value)
@@ -349,13 +354,18 @@ class AppLockViewModelTest {
         }
 
     /**
-     * A device that cannot create an auth-bound key does not end up with a toggle that guards
-     * nothing.
+     * **Arming without an authenticated cipher arms nothing.**
+     *
+     * The regression this whole two-phase shape exists for. An earlier revision sealed the session
+     * key inline while creating the auth-per-use Keystore key, which Keystore refuses with "Key
+     * user not authenticated" — on every device, and invisibly to every unit test, because the
+     * Keystore is not exercised off a device. `setEnabled(true)` therefore does nothing at all now;
+     * the only route in is prepareArm + a prompt + completeArm.
      */
     @Test
-    fun `a device that cannot arm the lock stays open`() =
+    fun `setEnabled cannot arm the lock on its own`() =
         runTest(dispatcher) {
-            val lock = FakeLock(armed = false, armThrows = true)
+            val lock = FakeLock(armed = false)
             val viewModel = AppLockViewModel(lock)
             viewModel.start()
             advanceUntilIdle()
@@ -363,6 +373,25 @@ class AppLockViewModelTest {
             viewModel.setEnabled(true)
             advanceUntilIdle()
 
+            assertTrue("arming must require an authenticated cipher", !lock.armed)
+        }
+
+    /**
+     * A device that cannot create an auth-bound key does not end up with a toggle that guards
+     * nothing.
+     */
+    @Test
+    fun `a device that cannot create the key reports it instead of half-arming`() =
+        runTest(dispatcher) {
+            val lock = FakeLock(armed = false, armThrows = true)
+            val viewModel = AppLockViewModel(lock)
+            viewModel.start()
+            advanceUntilIdle()
+
+            val cipher = viewModel.prepareArm()
+            advanceUntilIdle()
+
+            assertNull("no cipher means no prompt and no arming", cipher)
             assertEquals(AppLockState.Open, viewModel.state.value)
             assertTrue("the lock must not report itself armed", !lock.armed)
         }

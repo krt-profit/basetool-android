@@ -29,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.auth.AuthContainer
 import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
+import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -106,8 +107,6 @@ class MainActivity : FragmentActivity() {
         val login by loginViewModel.state.collectAsState()
         val version = remember { packageManager.getPackageInfo(packageName, 0) }
 
-        LaunchedEffect(Unit) { container.session.restore() }
-
         val scope = rememberCoroutineScope()
         val signOut: () -> Unit = {
             scope.launch {
@@ -132,6 +131,21 @@ class MainActivity : FragmentActivity() {
             activity = this@MainActivity,
             onSignOut = signOut,
         ) {
+            // Inside the gate, not above it: the stored refresh token is sealed by the lock, so a
+            // restore attempted while locked reads nothing and settles the session on "signed out"
+            // — leaving a member with a perfectly good session staring at the login screen after
+            // every unlock. Composed here it runs once the lock is open, and with no lock armed
+            // this content composes immediately, so nothing changes for anyone who has not enabled
+            // it.
+            //
+            // Guarded on Unknown so a background re-lock does not spend a refresh round trip (and
+            // a rotation of the realm's refresh token) every time the member comes back.
+            LaunchedEffect(Unit) {
+                if (container.session.state.value is SessionState.Unknown) {
+                    container.session.restore()
+                }
+            }
+
             when (val current = session) {
                 is SessionState.SignedIn -> {
                     AccountGate(
@@ -147,7 +161,27 @@ class MainActivity : FragmentActivity() {
                                 onLogout = signOut,
                                 appLockEnabled = lockArmed,
                                 appLockAvailable = lockAvailable,
-                                onAppLockChange = lockViewModel::setEnabled,
+                                onAppLockChange = { wanted ->
+                                    if (wanted) {
+                                        // Arming raises the same prompt as unlocking: the key is
+                                        // auth-per-use, so Keystore will not encrypt with it
+                                        // unattended. It also means a lock is only ever armed by
+                                        // somebody who just proved they can open it.
+                                        scope.launch {
+                                            lockViewModel.prepareArm()?.let { cipher ->
+                                                BiometricGate.prompt(
+                                                    activity = this@MainActivity,
+                                                    cipher = cipher,
+                                                    useCryptoObject = AppLockKey.SUPPORTS_CRYPTO_OBJECT,
+                                                    onSuccess = lockViewModel::completeArm,
+                                                    onFailure = { },
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        lockViewModel.setEnabled(false)
+                                    }
+                                },
                             )
                         }
                     }
