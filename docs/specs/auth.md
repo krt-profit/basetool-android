@@ -511,6 +511,13 @@ The dev flavour needs two holes in TLS validation that a release build must neve
 **cleartext** to the emulator's loopback routes (Keycloak runs `start-dev` on plain HTTP) and a
 **trust anchor** for the test stack's backend certificate.
 
+The cleartext half is not laziness about the test stack, and serving that Keycloak over TLS was
+tried and rejected on evidence. It works server-side, but the login runs in the **browser**, and a
+browser does not share this app's `<debug-overrides>` anchor — Chrome answers
+`NET::ERR_CERT_AUTHORITY_INVALID` for the shared test certificate. Fixing that means installing the
+CA into the device's own store, which is the manual step the anchor exists to avoid. Cleartext to
+three loopback hosts, in a config a release build cannot inherit, is the smaller hole.
+
 Both live in `app/src/dev/res/xml/network_security_config.xml`, and the trust anchor additionally
 sits inside `<debug-overrides>`. That is two independent guarantees rather than one restated:
 

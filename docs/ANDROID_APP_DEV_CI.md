@@ -39,6 +39,29 @@ mirroring this repo's conventions.
   is how a lock that could not be armed at all on the floor reached main (ADR-0006), so the
   floor is not optional. Compose `@Preview` variants for
   compact/expanded window size classes cover most iteration without an emulator.
+
+  **Split the two kinds of check between them, because one image cannot do both.**
+
+  *Platform behaviour at the floor* — Keystore contracts, the app lock, TLS trust — belongs in
+  `connectedDevDebugAndroidTest` and runs on the API 30 image. It needs no browser.
+
+  *Interactive end-to-end* (a real login through Keycloak) needs an emulator whose **Chrome is 89
+  or newer**, and that is a property of the image's build date rather than of its API level:
+  the API 30 image ships Chrome 83, the API 29 one Chrome 74, the API 37 one Chrome 149.
+  Keycloak marks its auth session cookies `Secure; SameSite=None`, and Chrome only sends those
+  over `http://127.0.0.1` from version 89 (2021), which treats loopback as a secure context.
+  Below that the login POST arrives without them and Keycloak answers `cookie_not_found`. So run
+  the interactive flow on a current image, and read the floor's coverage from the instrumented
+  tests.
+
+  **Serving the test stack's Keycloak over TLS does not fix this** — measured, not assumed. It
+  works on the server side (Keycloak starts with both connectors, presents the shared test
+  certificate, and the chain verifies), but the login runs in **Chrome**, and Chrome does not use
+  the app's `<debug-overrides>` trust anchor: it answers `NET::ERR_CERT_AUTHORITY_INVALID`. Making
+  Chrome trust the test CA means installing it into the *device's* store, which needs either the
+  unautomatable Settings flow or `adb root` plus `-writable-system` — and that combination left
+  the API 30 AVD permanently offline. TLS would therefore trade a working cleartext flow on
+  current images for a certificate error on all of them.
 - **Backend**: the existing **isolated test stack** from this repo
   (`docker-compose.test.yml`, `--env-file .env.test`, throwaway credentials — the hard rule
   "never production credentials in tests or local stacks" applies unchanged; teardown with
