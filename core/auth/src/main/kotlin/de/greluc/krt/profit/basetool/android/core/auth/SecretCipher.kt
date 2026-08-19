@@ -64,10 +64,14 @@ interface SecretCipher {
  * on this device, or an authentication-tag mismatch. All of them mean the same thing upstream — the
  * stored secret is unusable and the member has to log in again.
  *
+ * `open` so the one failure that is NOT of that kind can be a subtype: [AppLockedException] means
+ * the stored secret is fine and merely sealed behind an app lock nobody has opened yet. Callers that
+ * discard on failure must branch on it first, or they discard a good session.
+ *
  * @param message what failed, never including key or plaintext material
  * @param cause the underlying JCA failure
  */
-class SecretCipherException(
+open class SecretCipherException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
