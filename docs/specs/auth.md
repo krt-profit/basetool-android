@@ -88,9 +88,13 @@ refresh of a session fail intermittently and only in the field.
   request — code exchange and refresh both, verified on device. `TokenResult.AccessTokenBound` never
   fired, so the realm returned `token_type: Bearer`: refresh token bound, access token plain, which
   is the posture the backend's bearer filter requires.
-- [ ] A refresh **without** the key is refused. **Open** — the positive path is proven; that the
-  binding is load-bearing rather than decorative needs a negative test the app cannot stage on
-  itself.
+- [x] A refresh **without** the key is refused, and so is one signed by a different key — measured
+  against a live realm with `scripts/verify-dpop-binding.py` in the main repo: no proof gives
+  `invalid_dpop_proof: DPoP proof is missing`, a foreign key gives `invalid_grant: DPoP confirmation
+  doesn't match DPoP proof`. The same run shows the refresh token carrying `cnf.jkt` and the access
+  token carrying none, which is the split the backend's bearer filter depends on. The binding is
+  therefore load-bearing rather than decorative: a stolen refresh token is useless without the
+  device key.
 
 ### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
 
