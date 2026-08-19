@@ -37,4 +37,21 @@
     <!-- Offline state -->
     <string name="login_offline_title">Keine Verbindung</string>
     <string name="login_offline_retry">Erneut verbinden</string>
+
+    <!-- Account gate (design spec ch. 04, screen 3): shown between sign-in and the app. -->
+    <string name="gate_checking">Zugang wird geprüft …</string>
+    <string name="gate_pending_title">Freigabe ausstehend</string>
+    <string name="gate_pending_body">Dein Zugang wartet auf Freigabe durch die Administration. Sobald dein Konto freigeschaltet ist, geht es hier weiter.</string>
+    <string name="gate_rejected_title">Zugang abgelehnt</string>
+    <string name="gate_rejected_body">Dein Zugang wurde nicht freigegeben. Wende dich an die Administration, wenn du das für einen Irrtum hältst.</string>
+    <string name="gate_account">Konto</string>
+    <string name="gate_refresh">Status aktualisieren</string>
+    <string name="gate_poll_hint">Automatische Prüfung alle 60 Sekunden.</string>
+
+    <!-- Gate could not be read at all. Never claims the account is waiting. -->
+    <string name="gate_offline_title">Keine Verbindung</string>
+    <string name="gate_offline_body">Der Status deines Zugangs lässt sich gerade nicht abfragen.</string>
+    <string name="gate_error_title">Serverfehler</string>
+    <string name="gate_error_body">Der Server konnte den Status deines Zugangs nicht beantworten. Bitte später erneut versuchen.</string>
+    <string name="gate_retry">Erneut versuchen</string>
 </resources>

@@ -27,4 +27,19 @@
 
     <string name="login_offline_title">No connection</string>
     <string name="login_offline_retry">Reconnect</string>
+
+    <string name="gate_checking">Checking access …</string>
+    <string name="gate_pending_title">Approval pending</string>
+    <string name="gate_pending_body">Your access is waiting for an administrator. You will continue here as soon as the account is approved.</string>
+    <string name="gate_rejected_title">Access refused</string>
+    <string name="gate_rejected_body">Your access was not approved. Contact the administration if you believe this is a mistake.</string>
+    <string name="gate_account">Account</string>
+    <string name="gate_refresh">Refresh status</string>
+    <string name="gate_poll_hint">Checked automatically every 60 seconds.</string>
+
+    <string name="gate_offline_title">No connection</string>
+    <string name="gate_offline_body">Your access status cannot be read right now.</string>
+    <string name="gate_error_title">Server error</string>
+    <string name="gate_error_body">The server could not answer with your access status. Please try again later.</string>
+    <string name="gate_retry">Try again</string>
 </resources>
