@@ -55,8 +55,16 @@ android {
             buildConfigField("String", "OIDC_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
             // Same value as the redirect on purpose — see the prod flavour below.
             buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"de.kartell.basetool:/oauth2redirect\"")
-            // The backend keeps its self-signed HTTPS; only Keycloak is plain HTTP locally.
-            buildConfigField("String", "API_BASE_URL", "\"https://10.0.2.2:11261\"")
+            // The device's OWN loopback again, forwarded by `adb reverse tcp:11261 tcp:11261`, for
+            // the same reason the issuer above uses it: a connection to 10.0.2.2 times out on this
+            // setup even with the port published on all interfaces. Measured twice, once per
+            // service — ping answers, the host's browser loads the URL, and OkHttp still reports
+            // SocketTimeoutException after 10 s, which the app can only classify as "offline".
+            // The root cause is not established; adb reverse routes around it reliably.
+            //
+            // The backend keeps its self-signed HTTPS, so this also needs the test stack's CA in the
+            // device's user store (REQ-APP-AUTH-011); only Keycloak is plain HTTP locally.
+            buildConfigField("String", "API_BASE_URL", "\"https://127.0.0.1:11261\"")
         }
         create("prod") {
             dimension = "backend"
