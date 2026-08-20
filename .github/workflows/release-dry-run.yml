@@ -164,30 +164,41 @@ jobs:
           echo "$report"
 
           fail=0
+          # $1 the literal apksigner reports on success, $2 what that means, $3 why it matters.
           check() {
             if printf '%s' "$report" | grep -qF "$1"; then
               echo "  ok      $2"
             else
-              echo "::error::$2"
+              echo "::error::$2 — not true of this APK. $3"
               fail=1
             fi
           }
 
           check "Verifies" \
-            "the APK does not verify at minSdk $APP_MIN_SDK"
+            "the APK verifies at minSdk $APP_MIN_SDK" \
+            "It would not install."
           # v3 carries the rotation lineage. Without it a future key rotation cannot be proven
           # to Android, and that cannot be repaired in APKs already installed.
           check "Verified using v3 scheme (APK Signature Scheme v3): true" \
-            "v3 signing is missing, so no rotation lineage can ever be established"
+            "the APK carries a v3 signature" \
+            "Without one, no key rotation can ever be proven to Android."
           # v1 is JAR signing: unreachable below API 24 and the scheme Janus attacks.
           check "Verified using v1 scheme (JAR signing): false" \
-            "v1 (JAR) signing is enabled, which minSdk $APP_MIN_SDK never uses"
+            "v1 (JAR) signing is off" \
+            "minSdk $APP_MIN_SDK never uses it, and it is the scheme Janus attacks."
           check "Number of signers: 1" \
-            "the APK does not have exactly one signer"
+            "the APK has exactly one signer" \
+            "A second signer is not something this build should produce."
           # The assertion that catches a signing config which silently did nothing: an APK
           # signed by the debug keystore also "verifies", and its certificate is not this one.
-          check "Signer #1 certificate SHA-256 digest: $EXPECTED_FINGERPRINT" \
-            "the APK was signed by a different key than this run generated"
+          #
+          # Matched on the digest alone, deliberately: build-tools 36 labels this line
+          # "Signer #1 certificate SHA-256 digest:" and build-tools 37 "V3.0 Signer:
+          # certificate SHA-256 digest:". The prefix is a build-tools detail that changed
+          # under us; the digest is the assertion.
+          check "certificate SHA-256 digest: $EXPECTED_FINGERPRINT" \
+            "the certificate is the one this run generated" \
+            "The signing config did not take effect, or a different key was used."
 
           exit "$fail"
 
