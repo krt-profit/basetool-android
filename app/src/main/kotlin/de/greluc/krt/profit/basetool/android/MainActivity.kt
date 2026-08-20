@@ -13,6 +13,7 @@ import android.os.SystemClock
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import de.greluc.krt.profit.basetool.android.auth.AuthContainer
 import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
@@ -74,11 +79,28 @@ import kotlinx.coroutines.launch
  * Android 13+ and silently do nothing on the two versions above the minSdk floor (ADR-0007).
  */
 class MainActivity : AppCompatActivity() {
-    private val container by lazy { AuthContainer(this) }
-    private val loginViewModel by lazy { LoginViewModel(container) }
-    private val gateViewModel by lazy { AccountGateViewModel(container.accountGate) }
-    private val lockViewModel by lazy { AppLockViewModel(container.appLock) }
-    private val termsViewModel by lazy { TermsGateViewModel(container.terms) }
+    /**
+     * The process-wide auth graph.
+     *
+     * Read from the application rather than built here: a second [AuthContainer] means a second
+     * DataStore on the token file, which throws, and every activity recreation would build one.
+     */
+    private val container: AuthContainer
+        get() = (application as BasetoolApplication).auth
+
+    /**
+     * The four view models, held by the **ViewModelStore** rather than by the activity instance.
+     *
+     * A configuration change recreates the activity but not its view-model store, so the lock stays
+     * open, a login in flight stays in flight and the approval poll keeps its state. With plain
+     * `by lazy` fields all four were rebuilt from scratch on every recreate — which nothing
+     * exercised while the single activity was never recreated, and which the language switch turned
+     * into an everyday event.
+     */
+    private val loginViewModel: LoginViewModel by viewModels { authViewModels(container) }
+    private val gateViewModel: AccountGateViewModel by viewModels { authViewModels(container) }
+    private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
+    private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -303,6 +325,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
+        /**
+         * Builds the four view models from the process-wide auth graph.
+         *
+         * @param container the auth object graph
+         * @return a factory the `viewModels()` delegates share
+         */
+        fun authViewModels(container: AuthContainer): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { LoginViewModel(container) }
+                initializer { AccountGateViewModel(container.accountGate) }
+                initializer { AppLockViewModel(container.appLock) }
+                initializer { TermsGateViewModel(container.terms) }
+            }
+
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */
         const val PRIVACY_PATH = "/privacy"
 

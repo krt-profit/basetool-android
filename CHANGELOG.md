@@ -28,6 +28,16 @@
   erzeugt, nicht gepflegt — und der Build bricht ab, wenn eine Abhängigkeit unter einer Lizenz
   hereinkommt, die nicht ausdrücklich erlaubt ist (REQ-APP-SET-006).
 
+### Fixed
+
+- **Die App stürzte ab, sobald der Bildschirm neu aufgebaut wurde** — etwa beim Drehen eines
+  Tablets. Sie verschwand dabei kommentarlos zum Startbildschirm. Ursache war, dass die
+  Anmelde-Verwaltung an den Bildschirm statt an die App gebunden war und der gespeicherte
+  Anmelde-Speicher sich nicht zweimal öffnen lässt. Sie gehört jetzt der App: Beim Neuaufbau
+  bleibt man angemeldet, eine offene App-Sperre bleibt offen, und eine laufende Anmeldung läuft
+  weiter. Gefunden beim Umschalten der Sprache, die denselben Neuaufbau auslöst
+  (REQ-APP-SET-008).
+
 ### Changed
 
 - **Die Navigation ist jetzt übersetzbar.** Die Bezeichnungen der Bereiche standen fest im Code

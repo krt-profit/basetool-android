@@ -59,6 +59,14 @@ the store and useless about the app.
 Applying a language recreates the activity — the platform does it above API 33, AppCompat below —
 which is what re-reads every string without the app restarting itself.
 
+**The recreate is the dangerous part, not the locale.** Recreating the activity is what surfaced
+two things that had never run before, because the app's single activity was never recreated in
+anger: `AuthContainer` was built per *activity* despite documenting itself as per *process*, and a
+second one opens a second DataStore on the token file — which throws outright, killing the process
+and dropping the member on their home screen. It is fixed by the Application owning the graph
+(`REQ-APP-SET-008`). Every state that must outlive a recreate now does: the container is
+process-scoped and the four view models are held by the `ViewModelStore`.
+
 **Acceptance**
 
 - [x] A pinned language wins over the device's; with nothing pinned the device decides
@@ -67,9 +75,19 @@ which is what re-reads every string without the app restarting itself.
 - [x] An unsupported device language resolves to German rather than to "no selection".
 - [x] The segment order is pinned by a test, because the screen maps the control's index straight
   onto `AppLanguage.entries` and a reordering would silently swap both segments' meaning.
-- [x] The choice survives a cold start on API 30–32 (`autoStoreLocales` in the manifest).
-- [ ] Verified on a device at the minSdk floor **and** on API 33+, since the two use different
-  mechanisms and only the second appears in Android's system settings. **Open.**
+- [x] **Verified on an API 30 emulator** (the backport path): with nothing pinned the app follows
+  the device's `en-US`; tapping DE switches every label; the choice survives a cold start; tapping
+  EN switches back. 25 of 25 checks.
+- [x] **Verified on an API 37 emulator inside the running app** (the platform path): the whole
+  navigation switches with it, and the member stays signed in across the recreate.
+- [ ] Verified on a device with a **fingerprint enrolled and the app lock armed**, where the
+  recreate must not re-prompt. `AppLockViewModel.start()` is idempotent and unit-tested for it, but
+  the end-to-end case still wants a device. **Open.**
+- [ ] **The navigation back stack does not survive the recreate**: after a language change the app
+  lands on Übersicht rather than staying in Einstellungen. **Open, and pre-existing** — the same
+  happens on a plain rotation on `main`, so it belongs to the chapter-03 shell rather than here.
+  Measured, not assumed: `savedInstanceState` *is* delivered and the session survives, so the cause
+  is inside the navigation restore.
 
 ### REQ-APP-SET-003 — Every user-visible string is a resource, navigation titles included
 
@@ -159,6 +177,35 @@ legal text from drifting out of date inside an APK.
 - [ ] Whether GPL-3.0-only distribution requires the full text **bundled** rather than linked has
   not been reviewed by anyone qualified. **Open** — the current form matches common practice; it is
   recorded here rather than assumed settled.
+
+### REQ-APP-SET-008 — The auth graph is owned by the process, not by the activity
+
+`AuthContainer` is created once by `BasetoolApplication` and read from there. This is not a
+structural preference: the token DataStore refuses a second instance on the same file, so a second
+container throws `IllegalStateException: There are multiple DataStores active for the same file`
+and the process dies — the app simply disappears to the home screen, with no message.
+
+While the app had one activity that was never recreated, "per process" and "per activity" were the
+same thing and the class's own KDoc said the former. They stop being the same the moment anything
+recreates the activity: a rotation on a tablet, a system font-size change, and — routinely — an
+in-app language change.
+
+For the same reason the four view models are held by the `ViewModelStore` (`by viewModels`) rather
+than by the activity instance. A configuration change recreates the activity but not its store, so
+a lock stays open, a login in flight stays in flight, and the approval poll keeps its state.
+`AppLockViewModel.start()` is idempotent for the same reason: `onCreate` running a second time is
+not a cold start, and re-locking there would demand a fingerprint for changing the language.
+
+**Acceptance**
+
+- [x] Only `BasetoolApplication` constructs `AuthContainer`.
+- [x] Observed on a device: before the change, an in-app language change killed the app
+  (`FATAL EXCEPTION … multiple DataStores active`); after it, the member stays signed in and the
+  app keeps running. Rotation likewise.
+- [x] A second `start()` after an unlock leaves the lock open (`AppLockViewModelTest`).
+- [ ] A test that pins the singleton property itself, rather than the symptom. **Open** — an
+  ArchUnit-style rule ("nothing but the Application constructs an `AuthContainer`") would catch the
+  next copy at build time; today only a device run does.
 
 ### REQ-APP-SET-007 — The Fan Kit band appears here, and here is one of exactly two places
 

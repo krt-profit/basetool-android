@@ -67,9 +67,22 @@ AppCompat — every pixel is Compose — but `Theme.Basetool` now has an AppComp
 changing it back would break the activity at runtime rather than at build time. The theme file
 says so.
 
-**The activity is recreated on every language change.** Deliberate, and the reason the screen
-needs no refresh logic: the recreated activity reads the new bundle. The segmented control keeps
-its own state for the frame in between so the tap feels immediate.
+**The activity is recreated on every language change** — and that turned out to be the expensive
+half of this decision, not the dependency. Recreating the single activity had never happened in
+anger before, and it uncovered a defect that was already there: `AuthContainer` was built per
+activity while documenting itself as per process, so the second one opened a second DataStore on
+the token file, which throws. The app died on the first language change and left the member on
+their home screen.
+
+The fix is `BasetoolApplication` owning the graph, plus the four view models moving into the
+`ViewModelStore` so a recreate keeps the session, the lock and any login in flight
+(`REQ-APP-SET-008`). Worth stating plainly: **the same crash was reachable on `main` by rotating a
+tablet.** This decision did not create it; it made it certain enough to find.
+
+One consequence is still open and is recorded rather than fixed here: the navigation back stack
+does not survive the recreate, so a language change returns the member to Übersicht instead of
+leaving them in Einstellungen. It reproduces on `main` with a plain rotation, which is why it
+belongs to the chapter-03 shell and not to this ADR.
 
 **Below API 33 the choice is invisible to the system.** Android's "App languages" screen does not
 list apps that only use the backport, so on Android 11 and 12 Einstellungen is the only place to

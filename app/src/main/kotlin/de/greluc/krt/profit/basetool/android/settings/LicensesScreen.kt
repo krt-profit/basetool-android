@@ -99,7 +99,9 @@ fun LicensesScreen(
                 )
             }
             items(artifacts, key = { "${license.spdxId}-${it.coordinates}" }) { artifact ->
-                KrtHairlineRule(color = KrtPalette.SurfaceInput)
+                // Gray3, not the SurfaceInput hairline the settings groups use: these rows sit on
+                // the page background rather than inside a card, and #1C1C1C on black is invisible.
+                KrtHairlineRule()
                 KrtSettingRow(
                     title = artifact.name,
                     subtitle = "${artifact.coordinates}:${artifact.version}",

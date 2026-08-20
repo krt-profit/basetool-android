@@ -46,6 +46,24 @@
             </intent-filter>
         </activity>
 
+        <!--
+          Einstellungen on a device without a session in front of it. The screen sits behind the
+          login in the running app, and the login cannot be completed on an emulator at the minSdk
+          floor (Chrome below 89 drops Keycloak's SameSite=None auth cookies over loopback) — so
+          without this entry the language switch could only be seen where it is least likely to
+          break. AppCompatActivity, like the real one: see the class KDoc.
+        -->
+        <activity
+            android:name=".SettingsPreviewActivity"
+            android:exported="true"
+            android:label="@string/settings_preview_name"
+            android:theme="@style/Theme.Basetool">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".auth.AuthRedirectActivity"
             android:exported="true">

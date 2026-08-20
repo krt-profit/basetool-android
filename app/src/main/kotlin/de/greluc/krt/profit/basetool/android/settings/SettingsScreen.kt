@@ -8,11 +8,13 @@
 package de.greluc.krt.profit.basetool.android.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -86,9 +88,67 @@ fun SettingsScreen(
     versionCode: Int,
     modifier: Modifier = Modifier,
 ) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        SettingsColumn(
+            accountName = accountName,
+            language = language,
+            onLanguageChange = onLanguageChange,
+            appLockEnabled = appLockEnabled,
+            appLockAvailable = appLockAvailable,
+            onAppLockChange = onAppLockChange,
+            onOpenPrivacy = onOpenPrivacy,
+            onOpenImprint = onOpenImprint,
+            onOpenTerms = onOpenTerms,
+            onOpenLicenses = onOpenLicenses,
+            onLogout = onLogout,
+            versionName = versionName,
+            versionCode = versionCode,
+        )
+    }
+}
+
+/**
+ * The column itself, capped so it does not stretch across a tablet.
+ *
+ * Design chapter 13 lays the tablet out in two columns — Einstellungen beside Beförderung. That
+ * pairing cannot be built yet, because Beförderung reads evaluations from the backend and lands
+ * with the live-parity phase. A single capped, centred column is the honest half of that layout:
+ * settings rows dragged to 1280 dp put a 44 dp toggle a hand's width from its own label.
+ *
+ * @param accountName the signed-in member's username, or `null` while unknown.
+ * @param language the language currently on screen.
+ * @param onLanguageChange pins a language.
+ * @param appLockEnabled whether a lock is armed.
+ * @param appLockAvailable whether the device can prompt at all.
+ * @param onAppLockChange arms or disarms the lock.
+ * @param onOpenPrivacy opens the privacy policy.
+ * @param onOpenImprint opens the imprint.
+ * @param onOpenTerms opens the terms of use.
+ * @param onOpenLicenses opens the open-source notice.
+ * @param onLogout ends the session.
+ * @param versionName the app's version name.
+ * @param versionCode the app's build number.
+ */
+@Composable
+private fun SettingsColumn(
+    accountName: String?,
+    language: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit,
+    appLockEnabled: Boolean,
+    appLockAvailable: Boolean,
+    onAppLockChange: (Boolean) -> Unit,
+    onOpenPrivacy: () -> Unit,
+    onOpenImprint: () -> Unit,
+    onOpenTerms: () -> Unit,
+    onOpenLicenses: () -> Unit,
+    onLogout: () -> Unit,
+    versionName: String,
+    versionCode: Int,
+) {
     Column(
         modifier =
-            modifier
+            Modifier
+                .widthIn(max = COLUMN_MAX_WIDTH)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
@@ -234,6 +294,9 @@ private fun TrailingGlyph(iconRes: Int) {
 
 /** Size of a settings row's trailing glyph. */
 private val TRAILING_ICON = 16.dp
+
+/** Width cap of the settings column; the same figure the login screen uses (design ch. 04). */
+private val COLUMN_MAX_WIDTH = 480.dp
 
 @Preview(name = "Einstellungen", showBackground = true, backgroundColor = 0xFF000000, widthDp = 412)
 @Composable

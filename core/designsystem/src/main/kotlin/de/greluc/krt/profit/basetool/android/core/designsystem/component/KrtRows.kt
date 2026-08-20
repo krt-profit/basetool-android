@@ -231,9 +231,12 @@ fun KrtSettingRow(
                 color = if (enabled) tone else KrtPalette.Gray2,
             )
             if (subtitle != null) {
+                // bodySmall, not labelSmall: the subtitle is a sentence, and labelSmall carries
+                // 1.65 sp of tracking for UPPERCASE labels. On screen that spaced a two-line
+                // explanation out until it read as a heading someone had forgotten to uppercase.
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.Gray2,
                 )
             }
