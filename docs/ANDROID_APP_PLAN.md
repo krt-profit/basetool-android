@@ -244,7 +244,7 @@ per-locale byte-exact string test); (3) navigation shell per ch. 03 for both for
 (4) auth flow per ch. 04 end-to-end (login via Custom Tab, token store, refresh loop,
 logout+revocation, PENDING/terms/409/429/503 problem handling, app-lock) · **settings
 (language, Impressum, Datenschutz, licenses — ch. 13) — done, `docs/specs/settings.md`** ·
-DE/EN bundles · CI green incl. release-signing dry run **(open)**.
+DE/EN bundles · CI green incl. release-signing dry run — **done, `release-dry-run.yml`**.
 
 **Phase 2 — read-only member core**
 Dashboard · missions list/detail · **operations list/detail incl. payout status** · notifications

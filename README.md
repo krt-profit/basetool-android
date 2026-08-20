@@ -53,7 +53,9 @@ Server-side counterpart work lives in the main `basetool` repository.
 Every pull request runs `./gradlew build` — the same command as above plus `assemble`, so the
 gate and the working copy cannot drift apart — together with CodeQL (`java-kotlin` and
 `actions`), a range-scoped secret scan, dependency review, and a DCO sign-off check on every
-commit the PR adds. The workflows themselves are linted by actionlint and zizmor, and every
+commit the PR adds. A **release-signing dry run** builds and verifies a signed release APK with a
+key generated inside the run and shredded with it, so the signing path is exercised continuously
+rather than once per release with the one key that cannot be regenerated. The workflows themselves are linted by actionlint and zizmor, and every
 third-party action is pinned to a full commit SHA. Details and the deliberately-still-open gates:
 [`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) § 4.
 

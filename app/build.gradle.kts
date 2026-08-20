@@ -7,6 +7,53 @@
 
 import com.android.build.api.variant.Variant
 
+/**
+ * Names of the four environment variables that carry the release signing material.
+ *
+ * The key never lives in the repository, in a `keystore.properties`, or in a Gradle property —
+ * it arrives as a base64 secret that the workflow decodes to a runner-local file and shreds
+ * afterwards (DEV_CI § 4, "Release signing"). Reading it from the environment is what keeps a
+ * key out of every file a build could accidentally publish.
+ */
+val signingVariables =
+    listOf(
+        "KRT_SIGNING_KEYSTORE",
+        "KRT_SIGNING_STORE_PASSWORD",
+        "KRT_SIGNING_KEY_ALIAS",
+        "KRT_SIGNING_KEY_PASSWORD",
+    )
+
+/** The values present in this build's environment; `null` for each one that is not set. */
+val signingEnvironment: Map<String, String?> =
+    signingVariables.associateWith { name ->
+        providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
+    }
+
+/**
+ * Whether a release key was supplied at all.
+ *
+ * With none of the four set, the release build stays **unsigned** — which is what a contributor's
+ * `./gradlew build` and the ordinary CI gate produce, and it is a state the project wants rather
+ * than tolerates: nothing on a developer machine or on a PR runner should be able to emit an APK
+ * that installs as the real app.
+ */
+val signingRequested = signingEnvironment.values.any { it != null }
+
+/**
+ * A partial configuration is an error, not a fallback.
+ *
+ * Three of four variables set is exactly how a release day produces an APK nobody can install as
+ * an update — AGP would simply leave it unsigned, the workflow would attach it to the release,
+ * and the first report would come from a member whose Obtainium refuses it. Failing here costs a
+ * red build; the alternative costs a release.
+ */
+val missingSigningVariables = signingEnvironment.filterValues { it == null }.keys
+check(!signingRequested || missingSigningVariables.isEmpty()) {
+    "Release signing is half configured: ${missingSigningVariables.sorted()} " +
+        "${if (missingSigningVariables.size == 1) "is" else "are"} missing. " +
+        "Set all of $signingVariables, or none of them for an unsigned build."
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -92,11 +139,37 @@ android {
         }
     }
 
+    signingConfigs {
+        if (signingRequested) {
+            create("release") {
+                storeFile = file(signingEnvironment.getValue("KRT_SIGNING_KEYSTORE")!!)
+                storePassword = signingEnvironment.getValue("KRT_SIGNING_STORE_PASSWORD")
+                keyAlias = signingEnvironment.getValue("KRT_SIGNING_KEY_ALIAS")
+                keyPassword = signingEnvironment.getValue("KRT_SIGNING_KEY_PASSWORD")
+
+                // v1 is JAR signing, which Android needs only below API 24; the floor is 30
+                // (ADR-0006), so switching it off drops the scheme that Janus (CVE-2017-13156)
+                // attacks and shortens the APK by a signature nothing reads.
+                enableV1Signing = false
+                enableV2Signing = true
+                // v3 carries the rotation lineage the release strategy depends on: a rotated key
+                // is only accepted by Android when the APK's v3 block proves the succession
+                // (DEV_CI § 4). Enabling it at the first signed build means the lineage exists
+                // before it is ever needed — it cannot be added retroactively to shipped APKs.
+                enableV3Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Null when no key was supplied, which leaves the APK unsigned rather than falling
+            // back to the debug keystore — a debug-signed "release" is the one outcome that looks
+            // finished and installs on the wrong lineage.
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

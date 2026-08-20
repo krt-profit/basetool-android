@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Release-Builds lassen sich jetzt signieren, und der Weg dorthin wird bei jeder Änderung
+  geprobt.** Das Signieren passiert sonst genau einmal pro Veröffentlichung — mit dem einen
+  Schlüssel, der sich nicht neu erzeugen lässt. Ein eigener CI-Lauf baut daher bei jedem Pull
+  Request eine signierte Fassung mit einem Wegwerf-Schlüssel und prüft sie nach; für spätere
+  Downloads heißt das, dass sich die Signatur verlässlich überprüfen lässt.
+
 - **Die App hat einen Einstellungen-Bildschirm.** Er versammelt, was die App selbst entscheidet:
   Sprache, App-Sperre, die Rechtstexte, die Open-Source-Lizenzen, die Version und das Abmelden.
   Die App-Sperre ist von „Mehr“ dorthin umgezogen. Rang, aktive Org-Einheit,

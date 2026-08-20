@@ -155,7 +155,8 @@ Baseline posture (all from GitHub's current security docs):
 | `supply-chain.yml` | PR + push + weekly | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning | **built** |
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
 | `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
-| `release.yml` | tag `v*` | build AAB/APK, SBOM, sign, attach to GitHub Release — **environment `release`** | planned — waits for the signing key and the `release` environment (Phase 5) |
+| `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip → `assembleProdRelease` → `apksigner verify` (v3 present, v1 absent, one signer, certificate is the generated one) → shred; no secrets, no cache, nothing published | **built** |
+| `release.yml` | tag `v*` | build APK, SBOM, sign, attach to GitHub Release — **environment `release`** | planned — waits for the signing key and the `release` environment (Phase 5) |
 
 **Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
 `warningsAsErrors = true` and its dependency checks treat an available newer version as a
@@ -172,6 +173,36 @@ platform and a documented refresh flow before it can be turned on; see the open 
 
 ### Release signing (no key leakage)
 
+- **The signing path is rehearsed on every pull request** (`release-dry-run.yml`), with a key
+  generated inside the run and shredded with it. The reason is the shape of the risk rather than
+  the difficulty of the code: signing runs *once per release*, on the day of the release, with a
+  key that cannot be regenerated — and every way it can be wrong produces an APK that looks
+  finished. A signing config that never takes effect leaves AGP writing
+  `app-prod-release-unsigned.apk` while the build stays green; a debug-signed "release" verifies
+  perfectly and installs on the wrong lineage; a missing v3 block means a future key rotation can
+  never be proven to Android, and *that* cannot be repaired in APKs already installed. The dry run
+  therefore asserts the certificate in the APK is the one the run generated, not merely that some
+  signature verifies.
+  - The **base64 round trip is part of the rehearsal**, not scaffolding: it is the exact transport
+    the real secret will use, and a truncated secret otherwise surfaces as a keystore-format error
+    that reads like a corrupt key rather than like a broken transport.
+  - It uses **no secrets**, so it runs on fork PRs too, and **no Gradle cache**, because the real
+    release job restores none either — a rehearsal that runs warm would not rehearse the thing it
+    exists for.
+  - Nothing it builds is published. An APK signed with a throwaway key is good for these checks
+    and for nothing else.
+- The signing material reaches Gradle through four environment variables —
+  `KRT_SIGNING_KEYSTORE`, `KRT_SIGNING_STORE_PASSWORD`, `KRT_SIGNING_KEY_ALIAS`,
+  `KRT_SIGNING_KEY_PASSWORD` — and never through a file in the repository or a Gradle property.
+  **All four or none**: a partial configuration fails the build rather than falling back to an
+  unsigned APK, because three of four set is exactly how a release day ships something nobody can
+  install as an update. With none set the release build is unsigned, which is what a contributor's
+  `./gradlew build` and the ordinary CI gate produce.
+- **Signature schemes: v1 off, v2 on, v3 on.** v1 is JAR signing, unreachable below API 24 (the
+  floor is 30, ADR-0006) and the scheme Janus attacks. v3 carries the rotation lineage the key
+  strategy below depends on and has to be present from the *first* signed build. v2 is inert on
+  API 30+, where Android always uses v3; it stays enabled because it costs a few kilobytes and is
+  what most APK-inspection tooling reports.
 - Signing keys live **only** as environment secrets in a `release` environment protected by:
   required reviewer (@greluc), deployment restricted to `v*` tags. Fork PRs structurally cannot
   reach them (no secrets on fork runs + environment gating).
