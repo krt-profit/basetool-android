@@ -99,6 +99,52 @@ header is advisory, and one odd response must not poison it.
 - [x] A response without a `Date` header leaves the previous offset in place.
 - [ ] Proof `iat` is actually taken from `ServerClock`. **Open** — lands with the token layer.
 
+### REQ-APP-API-006 — The active org unit is a pin the app owns, and it is part of the session
+
+Every request carries `X-Active-Org-Unit-Id` (`REQ-APP-API-001`); this requirement says where the
+value comes from. The backend does not store a "current" org unit for a client — it answers what it
+would pick (`GET /api/v1/me/active-org-unit`) and otherwise honours whatever the client pins. So the
+pin is the app's, and getting it wrong has no error message: it shows a member the wrong scope's
+data, or an empty screen, with nothing on it explaining why.
+
+**The rule, in order:** a pin stored on this device wins; otherwise the server's answer, provided
+the member is actually in that unit; otherwise their first membership. The last step matters for
+the common case — a member with exactly one unit must never see an empty badge for a scope that was
+never in doubt.
+
+**A pin naming a unit the member no longer belongs to is dropped**, not kept. An administrator can
+remove a membership, and a stale pin sends a header the backend refuses — which reads as "everything
+is empty" rather than as "you are not in that unit any more".
+
+**The pin lives in the token store and dies with the session.** It is not a UI preference: a device
+handed on after a sign-out must not leave the next member inside the first one's Staffel, so the
+logout wipe reaches it.
+
+**It is read synchronously.** The header interceptor runs on an OkHttp dispatcher thread and cannot
+suspend, so the store mirrors the value in memory and seeds it once while the object graph is built.
+A miss is not a correctness failure — the header is simply absent and the backend falls back — but
+the app would then show one scope and request another.
+
+**The switcher offers a choice or nothing.** With a single membership there is nothing to switch to,
+so the badge is not tappable — the same rule the web sidebar applies. With no membership at all the
+badge is absent rather than showing a placeholder, because a placeholder would be a claim about a
+scope the app does not have.
+
+**Acceptance**
+
+- [x] The three-step rule, the dropped stale pin and the refusal to pin a foreign unit are covered
+  (`OrgUnitViewModelTest`).
+- [x] The pin is readable synchronously, survives a cold start and is cleared by a wipe
+  (`ActiveOrgUnitStoreTest`).
+- [x] The options come from `GET /api/v1/users/me/memberships` — me-scoped by construction, so the
+  public vhost never has to allow-list a path able to name another member (main repo `REQ-API-009`).
+- [x] An org unit whose `kind` this build does not know is still offered; only its grouping is
+  unknown (`OrgUnitRepositoryTest`).
+- [ ] Verified on a device against a stack that serves the endpoint. **Open** — it lands with
+  basetool#1613; until then the switcher is covered by unit tests only.
+- [ ] A member whose memberships change while the app is open. **Open** — the list is read once per
+  process; a change made by an administrator shows up on the next start.
+
 ### REQ-APP-API-005 — DTOs are generated from the backend's `openapi.json`
 
 Hand-written DTOs let contract drift surface at runtime, on a device, in a version that cannot be

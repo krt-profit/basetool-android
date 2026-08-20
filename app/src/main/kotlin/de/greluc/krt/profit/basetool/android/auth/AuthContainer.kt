@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.auth
 
 import android.content.Context
 import de.greluc.krt.profit.basetool.android.BuildConfig
+import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.auth.AppLock
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockSetting
@@ -26,6 +27,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
@@ -105,6 +107,15 @@ class AuthContainer(
     val appLockArmed get() = appLockSetting.enabled
 
     /**
+     * The org unit every request is scoped to.
+     *
+     * In the token DataStore rather than a settings store: the pin is part of a session, and a
+     * device handed on after a sign-out must not leave the next member in the first one's Staffel.
+     * [logout] wipes it for that reason.
+     */
+    val activeOrgUnit by lazy { ActiveOrgUnitStore(dataStore) }
+
+    /**
      * The login attempt that is currently out in the browser.
      *
      * **Deliberately NOT behind the app lock's outer layer**, unlike the refresh token. The redirect
@@ -132,7 +143,9 @@ class AuthContainer(
             accessTokenProvider = { session.currentAccessToken() },
             correlationIdFactory = { UUID.randomUUID().toString() },
             languageTagProvider = { Locale.getDefault().toLanguageTag() },
-            activeOrgUnitProvider = { null },
+            // Read synchronously off an OkHttp dispatcher thread, which is why the store
+            // mirrors its value in memory rather than being asked to suspend here.
+            activeOrgUnitProvider = { activeOrgUnit.current() },
         )
     }
 
@@ -155,6 +168,15 @@ class AuthContainer(
      */
     val terms: TermsRepository by lazy {
         TermsRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Reads the member's org units for the switcher.
+     *
+     * Shares [apiClient] with the gates: same host, same mandatory headers, one warm connection.
+     */
+    val orgUnits: OrgUnitRepository by lazy {
+        OrgUnitRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }
@@ -199,6 +221,9 @@ class AuthContainer(
     suspend fun logout(): String? {
         val endSession = session.logout()
         dpopKeys.deleteKey()
+        // The scope goes with the session: the next member on this device starts from their own
+        // default rather than inside the previous one's org unit.
+        activeOrgUnit.clear()
         // The lock key goes with them: a device handed on with the app signed out must not still
         // hold a key that once guarded it. disarm() also drops the in-memory session key, so the
         // outer layer cannot be removed again in this process.

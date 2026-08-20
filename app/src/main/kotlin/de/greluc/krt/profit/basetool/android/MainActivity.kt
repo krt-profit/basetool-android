@@ -46,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
+import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
@@ -101,6 +102,7 @@ class MainActivity : AppCompatActivity() {
     private val gateViewModel: AccountGateViewModel by viewModels { authViewModels(container) }
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
+    private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -191,7 +193,14 @@ class MainActivity : AppCompatActivity() {
                         // same order, and a member still awaiting approval has nothing to consent
                         // to yet.
                         TermsGate(viewModel = termsViewModel, onDecline = signOut) {
+                            // Behind the terms gate on purpose: the memberships read needs a
+                            // cleared account, and asking earlier would spend a refused request
+                            // on every start for a member who is still waiting for approval.
+                            LaunchedEffect(Unit) { orgUnitViewModel.load() }
+                            val orgUnit by orgUnitViewModel.state.collectAsState()
                             BasetoolApp(
+                                orgUnit = orgUnit,
+                                onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,
                                 settings =
                                     SettingsBindings(
@@ -337,6 +346,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { AccountGateViewModel(container.accountGate) }
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
+                initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
             }
 
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */
