@@ -5,10 +5,10 @@ the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
 portrait-first, tablets landscape-first, minSdk 30 (Android 11), dark-only DAS KARTELL
 design.
 
-**Status: Phase 1 in progress.** The theme and the component library from chapter 02 of the
-design specification are implemented and building (`./gradlew check` is green); the navigation
-shell, the auth flow and the feature screens follow. The owner-approved concept lives in
-[`docs/`](docs/):
+**Status: Phase 1 in progress.** The theme, the chapter-02 component library, the navigation
+shell, the chapter-04 auth flow (login, approval gate, terms, app lock) and the chapter-13
+settings screen are implemented and building (`./gradlew check` is green); the feature screens
+follow. The owner-approved concept lives in [`docs/`](docs/):
 
 | Document | Content |
 |---|---|
@@ -27,13 +27,12 @@ consent-banner-free by design · admin area stays web-only.
 ## Module layout
 
 ```
-app/                  manifest, flavors, auth redirect + Custom Tab, navigation shell    [built]
+app/                  manifest, flavors, auth flow, navigation shell, settings          [built]
 core/common/          logging facade                                                     [built]
 core/designsystem/    KRT Compose theme, components, icon set, Lato fonts                [built]
 core/network/         OkHttp client, mandatory headers, problem+json → app states        [built]
                       (OpenAPI-generated DTOs, Retrofit services, SSE still planned)
 core/auth/            Keystore token store, DPoP, token client, PKCE login + session     [built]
-                      (the chapter-04 screens still planned)
 core/data/            repositories, Room cache, org-unit context                         [planned]
 feature/…             one module per area (missions, orders, inventory, bank, …)         [planned]
 docs/                 concept docs, binding design spec, ADRs, specs

@@ -2,6 +2,50 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Die App hat einen Einstellungen-Bildschirm.** Er versammelt, was die App selbst entscheidet:
+  Sprache, App-Sperre, die Rechtstexte, die Open-Source-Lizenzen, die Version und das Abmelden.
+  Die App-Sperre ist von „Mehr“ dorthin umgezogen. Rang, aktive Org-Einheit,
+  Auszahlungspräferenz und Blueprint-Freigabe zeigt der Bildschirm noch nicht — diese Werte
+  kommen vom Server, und ein Rang, den niemand gesetzt hat, wäre eine falsche Aussage statt
+  einer fehlenden (REQ-APP-SET-001).
+
+- **Die App lässt sich auf Deutsch oder Englisch stellen, unabhängig vom Gerät.** Die Wahl
+  merkt sich das System; ab Android 13 taucht sie auch in dessen eigener Sprachliste auf, sodass
+  beide Stellen denselben Wert zeigen. Bis zur ersten Wahl steht die Umschaltung auf der Sprache,
+  in der die App gerade erscheint (ADR-0007, REQ-APP-SET-002).
+
+- **Datenschutzerklärung, Impressum und Nutzungsbedingungen sind jetzt erreichbar** — aus den
+  Einstellungen und vom Anmeldebildschirm aus. Die beiden Schaltflächen dort waren bisher ohne
+  Funktion, was gerade beim Datenschutzhinweis nicht bleiben durfte: Er muss vor der ersten
+  Verarbeitung lesbar sein, und die beginnt mit dem Tippen auf „Anmelden“. Geöffnet wird die
+  Seite der Web-Anwendung, damit App und Web nie zwei auseinanderlaufende Fassungen zeigen
+  (REQ-APP-SET-005).
+
+- **Open-Source-Lizenzen als eigene Seite.** Sie listet jede mitgelieferte Fremdsoftware mit
+  genauer Version und Lizenz. Die Liste wird beim Bauen aus den tatsächlichen Abhängigkeiten
+  erzeugt, nicht gepflegt — und der Build bricht ab, wenn eine Abhängigkeit unter einer Lizenz
+  hereinkommt, die nicht ausdrücklich erlaubt ist (REQ-APP-SET-006).
+
+### Fixed
+
+- **Die App stürzte ab, sobald der Bildschirm neu aufgebaut wurde** — etwa beim Drehen eines
+  Tablets. Sie verschwand dabei kommentarlos zum Startbildschirm. Ursache war, dass die
+  Anmelde-Verwaltung an den Bildschirm statt an die App gebunden war und der gespeicherte
+  Anmelde-Speicher sich nicht zweimal öffnen lässt. Sie gehört jetzt der App: Beim Neuaufbau
+  bleibt man angemeldet, eine offene App-Sperre bleibt offen, und eine laufende Anmeldung läuft
+  weiter. Gefunden beim Umschalten der Sprache, die denselben Neuaufbau auslöst
+  (REQ-APP-SET-008).
+
+### Changed
+
+- **Die Navigation ist jetzt übersetzbar.** Die Bezeichnungen der Bereiche standen fest im Code
+  und wären auf Englisch deutsch geblieben — also ausgerechnet auf der größten Fläche der App.
+  Fachbegriffe bleiben auch im Englischen deutsch (Einsätze, Aufträge, Lager, Raffinerie,
+  Materialbörse, Beförderung) — sie sind die Sprache der Staffel, keine zu übersetzenden Wörter
+  (REQ-APP-SET-003).
+
 ### Changed
 
 - **Die App setzt jetzt Android 11 voraus (vorher Android 10).** Android 10 bot für die App-Sperre nur einen schwächeren Schlüsseltyp an, der einen zweiten, kaum benutzten Sonderweg im Code nötig machte — und dieser Sonderweg funktionierte nicht: Auf Android 10 ließ sich die Sperre weder einschalten noch öffnen, und die App meldete sie fälschlich als dauerhaft unbrauchbar. Statt ihn zu reparieren ist er entfallen. Auf Android 11 und neuer bestätigt jede Abfrage jetzt genau den Vorgang, den sie freigibt. Geräte mit Android 10 können die App nicht mehr installieren und nutzen weiterhin die Web-Anwendung.
@@ -13,7 +57,7 @@
 - **Entwickler-Builds erreichen jetzt das Backend des lokalen Teststacks — ohne Einrichtung.** Dessen Zertifikat scheiterte bisher an der TLS-Prüfung, und zwar ohne erkennbare Ursache: Die App meldete schlicht „keine Verbindung", während der Server auf demselben Rechner lief. Der Teststack bringt jetzt ein gemeinsames Zertifikat mit, das der Entwickler-Build kennt; das früher nötige Einrichten eines eigenen Zertifikats im Emulator entfällt — es ließ sich auf den gebräuchlichen Emulator-Abbildern gar nicht automatisieren. Release-Builds sind davon unberührt: Die Ausnahme steht in einem Bereich, den Android nur für Debug-Builds beachtet, und das Zertifikat liegt ausschließlich im Entwickler-Flavour (REQ-APP-AUTH-011).
 
 - **Die Nutzungsbedingungen erscheinen jetzt in der App und lassen sich dort annehmen.** Wer noch nicht zugestimmt hat, bekommt nach der Anmeldung den vollständigen Text zu lesen, mit Kästchen zum Bestätigen und einem Weg zum Ablehnen — der meldet ab und sagt das vorher deutlich. Der Text kommt dabei vom Server und steckt nicht in der App: So kann die App nie eine andere Fassung anzeigen als die, für die die Zustimmung gespeichert wird. Lässt sich der Text nicht laden, erscheint eine Fehlermeldung statt einer leeren Seite — einer leeren Seite zuzustimmen wäre keine Zustimmung (REQ-APP-AUTH-009).
-- **Die App lässt sich jetzt sperren, und Bildschirmfotos sind app-weit unterbunden.** Wer will, schaltet unter „Mehr" eine Sperre ein: Beim Start und nach fünf Minuten im Hintergrund fragt das System per Fingerabdruck, Gesicht oder Gerätesperre nach, bevor die App wieder etwas zeigt. Kurzes Wechseln zu einer anderen App sperrt nicht — sonst wäre die Funktion im Alltag unbrauchbar. Der Sperrbildschirm zeigt bewusst keinerlei Daten, auch keine Zähler. Unabhängig davon verhindert die App ab sofort überall Bildschirmfotos und Bildschirmaufnahmen und hält damit auch die Vorschau in der App-Übersicht leer. Ohne eingerichtete Gerätesperre bleibt die Einstellung sichtbar, aber abgeschaltet.
+- **Die App lässt sich jetzt sperren, und Bildschirmfotos sind app-weit unterbunden.** Wer will, schaltet in den Einstellungen eine Sperre ein: Beim Start und nach fünf Minuten im Hintergrund fragt das System per Fingerabdruck, Gesicht oder Gerätesperre nach, bevor die App wieder etwas zeigt. Kurzes Wechseln zu einer anderen App sperrt nicht — sonst wäre die Funktion im Alltag unbrauchbar. Der Sperrbildschirm zeigt bewusst keinerlei Daten, auch keine Zähler. Unabhängig davon verhindert die App ab sofort überall Bildschirmfotos und Bildschirmaufnahmen und hält damit auch die Vorschau in der App-Übersicht leer. Ohne eingerichtete Gerätesperre bleibt die Einstellung sichtbar, aber abgeschaltet.
 
 - **Wer noch nicht freigegeben ist, sieht das jetzt — statt einer Wand aus Fehlern.** Nach der Anmeldung prüft die App, ob das Konto von der Administration freigeschaltet ist, und zeigt andernfalls einen eigenen Wartebildschirm mit dem Kontonamen, einer Schaltfläche zum Aktualisieren und dem Weg zum Abmelden. Der Status wird alle 60 Sekunden automatisch neu geprüft; sobald die Freigabe kommt, geht es ohne Zutun weiter. Abgelehnte Konten bekommen denselben Bildschirm mit eigener Formulierung. Ist der Status gar nicht abfragbar, sagt die App genau das — und behauptet nicht, das Konto warte auf Freigabe.
 

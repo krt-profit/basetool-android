@@ -57,10 +57,20 @@ class AppLockViewModel(
     /**
      * Reads the armed state and locks if the lock is on.
      *
-     * Called once per process from the activity's `onCreate`, which is what makes the cold-start
-     * half of the rule true: a process that has just started has no unlocked state to inherit.
+     * Called from the activity's `onCreate`, which is what makes the cold-start half of the rule
+     * true: a process that has just started has no unlocked state to inherit.
+     *
+     * **Idempotent, and that is the point.** `onCreate` runs again whenever the activity is
+     * recreated — a rotation, a font-size change, a language change — none of which restarted the
+     * process. Re-reading the setting there would re-lock an app the member unlocked seconds ago
+     * and demand a fingerprint for changing the language, which is neither of the two triggers the
+     * rule names. The guard is on [AppLockState.Unknown], the state only a fresh view model has;
+     * this one survives a recreate, so a second call finds a decision already made.
      */
     fun start() {
+        if (mutableState.value !is AppLockState.Unknown) {
+            return
+        }
         viewModelScope.launch {
             mutableState.value = if (lock.isArmed()) AppLockState.Locked() else AppLockState.Open
         }

@@ -8,8 +8,10 @@
 package de.greluc.krt.profit.basetool.android.navigation
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
-import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** URI scheme the app registers for its own deep links. */
 const val KRT_DEEP_LINK_SCHEME = "basetool"
@@ -20,57 +22,65 @@ const val KRT_DEEP_LINK_SCHEME = "basetool"
  * Routes double as deep-link paths so a notification, a web link and an in-app navigation all end
  * up at the same entry — there is exactly one address per screen.
  *
+ * Titles are **string resources, not literals**. They are the app's most visible copy — the bottom
+ * bar, the rail, the top bar and the "Mehr" list all render them — so a literal here would leave the
+ * whole navigation in German for a member who switched the app to English, which is the one place
+ * the gap is impossible to miss and the easiest to overlook while writing the enum.
+ *
  * @property route navigation route, without a leading slash.
- * @property title German screen title shown in the top bar.
+ * @property titleRes screen title shown in the top bar and beside the glyph.
  * @property iconRes glyph used in the bottom bar, the rail and the "Mehr" list.
  */
 @Immutable
 enum class KrtDestination(
     val route: String,
-    val title: String,
+    @param:StringRes val titleRes: Int,
     @param:DrawableRes val iconRes: Int,
 ) {
     /** The dashboard — the app's home and the target of every "back from a root". */
-    Home("home", "Übersicht", R.drawable.ic_krt_dashboard),
+    Home("home", R.string.nav_home, DesignR.drawable.ic_krt_dashboard),
 
     /** Einsätze — never called "Missionen" in user-visible copy. */
-    Missions("missions", "Einsätze", R.drawable.ic_krt_target),
+    Missions("missions", R.string.nav_missions, DesignR.drawable.ic_krt_target),
 
     /** Operationen — the umbrella records above single Einsätze. */
-    Operations("operations", "Operationen", R.drawable.ic_krt_clipboard_check),
+    Operations("operations", R.string.nav_operations, DesignR.drawable.ic_krt_clipboard_check),
 
     /** Aufträge — the job-order queue. */
-    Orders("orders", "Aufträge", R.drawable.ic_krt_clipboard_list),
+    Orders("orders", R.string.nav_orders, DesignR.drawable.ic_krt_clipboard_list),
 
     /** Lager — the stock tree. */
-    Inventory("inventory", "Lager", R.drawable.ic_krt_crate),
+    Inventory("inventory", R.string.nav_inventory, DesignR.drawable.ic_krt_crate),
 
     /** The overflow list of secondary destinations on phones. */
-    More("more", "Mehr", R.drawable.ic_krt_more_h),
+    More("more", R.string.nav_more, DesignR.drawable.ic_krt_more_h),
 
     /** Hangar — the member's ships. */
-    Hangar("hangar", "Hangar", R.drawable.ic_krt_ship),
+    Hangar("hangar", R.string.nav_hangar, DesignR.drawable.ic_krt_ship),
 
     /** Materialbörse — offers and requests between members. */
-    Exchange("exchange", "Materialbörse", R.drawable.ic_krt_swap),
+    Exchange("exchange", R.string.nav_exchange, DesignR.drawable.ic_krt_swap),
 
     /** Raffinerie — refinery runs and their yields. */
-    Refinery("refinery", "Raffinerie", R.drawable.ic_krt_refinery),
+    Refinery("refinery", R.string.nav_refinery, DesignR.drawable.ic_krt_refinery),
 
     /** Mein Inventar & Blueprints — the member's personal stock. */
-    PersonalInventory("personal-inventory", "Mein Inventar", R.drawable.ic_krt_blueprint),
+    PersonalInventory("personal-inventory", R.string.nav_personal_inventory, DesignR.drawable.ic_krt_blueprint),
 
     /** Bank — org-unit accounts and booking requests. */
-    Bank("bank", "Bank", R.drawable.ic_krt_bank),
+    Bank("bank", R.string.nav_bank, DesignR.drawable.ic_krt_bank),
 
     /** Beförderung — evaluations and eligibility. */
-    Promotion("promotion", "Beförderung", R.drawable.ic_krt_rank),
+    Promotion("promotion", R.string.nav_promotion, DesignR.drawable.ic_krt_rank),
 
     /** Benachrichtigungen — the inbox behind the bell. */
-    Notifications("notifications", "Benachrichtigungen", R.drawable.ic_krt_bell),
+    Notifications("notifications", R.string.nav_notifications, DesignR.drawable.ic_krt_bell),
 
     /** Einstellungen — language, app lock, legal texts. */
-    Settings("settings", "Einstellungen", R.drawable.ic_krt_gear),
+    Settings("settings", R.string.nav_settings, DesignR.drawable.ic_krt_gear),
+
+    /** The open-source notice, pushed from Einstellungen. */
+    Licenses("licenses", R.string.licenses_title, DesignR.drawable.ic_krt_list),
     ;
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
@@ -127,6 +137,26 @@ val MORE_DESTINATIONS =
         KrtDestination.Promotion,
         KrtDestination.Settings,
     )
+
+/**
+ * Destinations that are **pushed from another screen** rather than being reachable on their own,
+ * mapped to the destination they belong to.
+ *
+ * Two things read this. The navigation bar highlights the parent's root while a sub-page is open,
+ * so the bar never claims the member is somewhere they are not; and the top bar shows a back arrow.
+ * Without the mapping the open-source notice would light up "Übersicht" — the fallback for an
+ * unknown destination — while showing a page reached from "Mehr".
+ */
+val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
+    mapOf(KrtDestination.Licenses to KrtDestination.Settings)
+
+/**
+ * Resolves a destination to the navigation root it belongs to.
+ *
+ * @param destination any destination.
+ * @return its parent for a pushed sub-page, otherwise the destination itself.
+ */
+fun rootOf(destination: KrtDestination): KrtDestination = SUB_DESTINATIONS[destination] ?: destination
 
 /**
  * Resolves a route back to its destination.

@@ -31,7 +31,6 @@
 
     <!-- Session -->
     <string name="more_section_secondary">Sekundärziele</string>
-    <string name="more_section_session">Sitzung</string>
     <string name="logout">Abmelden</string>
 
     <!-- Offline state -->
@@ -75,7 +74,42 @@
     <string name="lock_error_generic">Entsperren fehlgeschlagen. Bitte erneut versuchen.</string>
     <string name="lock_error_lockout">Zu viele Fehlversuche. Bitte später erneut versuchen oder die Gerätesperre verwenden.</string>
     <string name="lock_error_invalidated">Ein neuer Fingerabdruck wurde eingerichtet. Die App-Sperre lässt sich damit nicht mehr öffnen — bitte abmelden und neu anmelden.</string>
-    <string name="lock_setting">App-Sperre</string>
-    <string name="lock_setting_hint">Beim Start und nach 5 Minuten im Hintergrund entsperren</string>
-    <string name="lock_setting_unavailable">Keine Gerätesperre eingerichtet</string>
+    <string name="lock_setting">App-Sperre (Biometrie)</string>
+    <string name="lock_setting_on">Aktiv — beim Start und nach 5 Minuten im Hintergrund entsperren</string>
+    <string name="lock_setting_off">Aus — Daten nur durch die Gerätesperre geschützt</string>
+    <string name="lock_setting_unavailable">Keine Gerätesperre eingerichtet — in den Systemeinstellungen einrichten</string>
+
+    <!-- Navigation (design spec ch. 03). Fixed terms: "Einsätze", never "Missionen". -->
+    <string name="nav_home">Übersicht</string>
+    <string name="nav_missions">Einsätze</string>
+    <string name="nav_operations">Operationen</string>
+    <string name="nav_orders">Aufträge</string>
+    <string name="nav_inventory">Lager</string>
+    <string name="nav_more">Mehr</string>
+    <string name="nav_hangar">Hangar</string>
+    <string name="nav_exchange">Materialbörse</string>
+    <string name="nav_refinery">Raffinerie</string>
+    <string name="nav_personal_inventory">Mein Inventar</string>
+    <string name="nav_bank">Bank</string>
+    <string name="nav_promotion">Beförderung</string>
+    <string name="nav_notifications">Benachrichtigungen</string>
+    <string name="nav_settings">Einstellungen</string>
+    <string name="org_switcher_title">Aktive Org-Einheit</string>
+    <string name="placeholder_under_construction">Dieser Bereich wird gerade gebaut.</string>
+
+    <!-- Einstellungen (design spec ch. 13) -->
+    <string name="settings_section_account">Konto</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_legal">Rechtliches &amp; Daten</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_privacy">Datenschutzerklärung</string>
+    <string name="settings_imprint">Impressum</string>
+    <string name="settings_terms">Nutzungsbedingungen</string>
+    <string name="settings_version">v%1$s (%2$d)</string>
+
+    <!-- Open-source notice; the list itself is generated from the build's dependency graph. -->
+    <string name="licenses_title">Open-Source-Lizenzen</string>
+    <string name="licenses_intro">Diese App enthält die folgende Software von Dritten. Es gelten deren Lizenzbedingungen.</string>
+    <string name="licenses_open_text">Lizenztext öffnen</string>
+    <string name="licenses_unavailable">Die Lizenzübersicht konnte nicht gelesen werden.</string>
 </resources>

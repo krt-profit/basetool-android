@@ -148,6 +148,32 @@ class AppLockViewModelTest {
         }
 
     /**
+     * A second `start()` does not re-lock an app the member already opened.
+     *
+     * `onCreate` runs again on every activity recreation — a rotation, a font-size change, an
+     * in-app language change — and none of those restarted the process. Re-reading the setting
+     * there would demand a fingerprint for changing the language, which is neither of the two
+     * triggers the rule names. The view model survives a recreate (it is held by the
+     * `ViewModelStore`), so the guard is what makes the second call a no-op.
+     */
+    @Test
+    fun `a second start after an unlock does not lock again`() =
+        runTest(dispatcher) {
+            val lock = FakeLock(armed = true, cipher = anyCipher(), opens = true)
+            val viewModel = AppLockViewModel(lock)
+            viewModel.start()
+            advanceUntilIdle()
+            viewModel.unlock(anyCipher())
+            advanceUntilIdle()
+            assertEquals(AppLockState.Open, viewModel.state.value)
+
+            viewModel.start()
+            advanceUntilIdle()
+
+            assertEquals(AppLockState.Open, viewModel.state.value)
+        }
+
+    /**
      * Nothing is decided before the armed state has been read.
      *
      * Rendering the app for the instant before the answer arrives would flash its contents past

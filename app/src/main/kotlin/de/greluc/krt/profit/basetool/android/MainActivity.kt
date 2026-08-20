@@ -13,18 +13,25 @@ import android.os.SystemClock
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import de.greluc.krt.profit.basetool.android.auth.AuthContainer
 import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
@@ -38,6 +45,8 @@ import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
+import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
+import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
 import kotlinx.coroutines.launch
@@ -63,13 +72,35 @@ import kotlinx.coroutines.launch
  *
  * Edge-to-edge is enabled before `super.onCreate` so the very first frame already draws behind the
  * system bars; at targetSdk 36 and above the platform enforces it anyway and there is no opt-out.
+ *
+ * It is an `AppCompatActivity` — a `FragmentActivity` (which `BiometricPrompt` needs) with
+ * AppCompat's delegate around it. The delegate is what applies a per-app language below API 33,
+ * where the platform has no `LocaleManager`; without it the Sprache setting would take effect on
+ * Android 13+ and silently do nothing on the two versions above the minSdk floor (ADR-0007).
  */
-class MainActivity : FragmentActivity() {
-    private val container by lazy { AuthContainer(this) }
-    private val loginViewModel by lazy { LoginViewModel(container) }
-    private val gateViewModel by lazy { AccountGateViewModel(container.accountGate) }
-    private val lockViewModel by lazy { AppLockViewModel(container.appLock) }
-    private val termsViewModel by lazy { TermsGateViewModel(container.terms) }
+class MainActivity : AppCompatActivity() {
+    /**
+     * The process-wide auth graph.
+     *
+     * Read from the application rather than built here: a second [AuthContainer] means a second
+     * DataStore on the token file, which throws, and every activity recreation would build one.
+     */
+    private val container: AuthContainer
+        get() = (application as BasetoolApplication).auth
+
+    /**
+     * The four view models, held by the **ViewModelStore** rather than by the activity instance.
+     *
+     * A configuration change recreates the activity but not its view-model store, so the lock stays
+     * open, a login in flight stays in flight and the approval poll keeps its state. With plain
+     * `by lazy` fields all four were rebuilt from scratch on every recreate — which nothing
+     * exercised while the single activity was never recreated, and which the language switch turned
+     * into an everyday event.
+     */
+    private val loginViewModel: LoginViewModel by viewModels { authViewModels(container) }
+    private val gateViewModel: AccountGateViewModel by viewModels { authViewModels(container) }
+    private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
+    private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -118,6 +149,10 @@ class MainActivity : FragmentActivity() {
             }
         }
 
+        // Held in state so the segmented control moves on tap rather than a frame later: the
+        // platform recreates the activity right after, and the recreated one reads the store.
+        var language by remember { mutableStateOf(LanguageSetting.current()) }
+
         val lockArmed by container.appLockArmed.collectAsState(initial = false)
         // Queried once per composition rather than per frame: enrolling a fingerprint
         // takes the member out of the app, so the answer cannot change under them.
@@ -158,28 +193,45 @@ class MainActivity : FragmentActivity() {
                         TermsGate(viewModel = termsViewModel, onDecline = signOut) {
                             BasetoolApp(
                                 onLogout = signOut,
-                                appLockEnabled = lockArmed,
-                                appLockAvailable = lockAvailable,
-                                onAppLockChange = { wanted ->
-                                    if (wanted) {
-                                        // Arming raises the same prompt as unlocking: the key is
-                                        // auth-per-use, so Keystore will not encrypt with it
-                                        // unattended. It also means a lock is only ever armed by
-                                        // somebody who just proved they can open it.
-                                        scope.launch {
-                                            lockViewModel.prepareArm()?.let { cipher ->
-                                                BiometricGate.prompt(
-                                                    activity = this@MainActivity,
-                                                    cipher = cipher,
-                                                    onSuccess = lockViewModel::completeArm,
-                                                    onFailure = { },
-                                                )
+                                settings =
+                                    SettingsBindings(
+                                        accountName = current.claims?.preferredUsername,
+                                        language = language,
+                                        onLanguageChange = { chosen ->
+                                            language = chosen
+                                            LanguageSetting.apply(chosen)
+                                        },
+                                        appLockEnabled = lockArmed,
+                                        appLockAvailable = lockAvailable,
+                                        onAppLockChange = { wanted ->
+                                            if (wanted) {
+                                                // Arming raises the same prompt as unlocking: the
+                                                // key is auth-per-use, so Keystore will not encrypt
+                                                // with it unattended. It also means a lock is only
+                                                // ever armed by somebody who just proved they can
+                                                // open it.
+                                                scope.launch {
+                                                    lockViewModel.prepareArm()?.let { cipher ->
+                                                        BiometricGate.prompt(
+                                                            activity = this@MainActivity,
+                                                            cipher = cipher,
+                                                            onSuccess = lockViewModel::completeArm,
+                                                            onFailure = { },
+                                                        )
+                                                    }
+                                                }
+                                            } else {
+                                                lockViewModel.setEnabled(false)
                                             }
-                                        }
-                                    } else {
-                                        lockViewModel.setEnabled(false)
-                                    }
-                                },
+                                        },
+                                        onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
+                                        onOpenImprint = { openWebPage(IMPRINT_PATH) },
+                                        onOpenTerms = { openWebPage(TERMS_PATH) },
+                                        onOpenUrl = { url ->
+                                            CustomTabLauncher.launch(this@MainActivity, url)
+                                        },
+                                        versionCode = BuildConfig.VERSION_CODE,
+                                    ),
                             )
                         }
                     }
@@ -195,14 +247,32 @@ class MainActivity : FragmentActivity() {
                     LoginScreen(
                         state = login,
                         onSignIn = { loginViewModel.startLogin(this@MainActivity) },
-                        onOpenPrivacy = {},
-                        onOpenImprint = {},
+                        // Both were empty stubs until the settings chapter gave the app a
+                        // place to put the same documents. They matter MORE here than there: the
+                        // privacy notice has to be reachable before any processing starts, and
+                        // processing starts with the sign-in tap.
+                        onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
+                        onOpenImprint = { openWebPage(IMPRINT_PATH) },
                         versionName = version.versionName.orEmpty(),
                         versionCode = BuildConfig.VERSION_CODE,
                     )
                 }
             }
         }
+    }
+
+    /**
+     * Opens one of the web app's public pages in a Custom Tab.
+     *
+     * These three documents are served by the web frontend without a session and are the SAME
+     * texts the web app shows, which is the point: a member reading the privacy notice in the app
+     * and one reading it in a browser must not be reading two different documents that drift apart.
+     * A Custom Tab rather than a WebView, for the reasons in [CustomTabLauncher].
+     *
+     * @param path the page's path, including the leading slash
+     */
+    private fun openWebPage(path: String) {
+        CustomTabLauncher.launch(this, BuildConfig.WEB_BASE_URL + path)
     }
 
     /**
@@ -252,5 +322,30 @@ class MainActivity : FragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         loginViewModel.completeLogin(CustomTabLauncher.redirectOf(intent)?.toString())
+    }
+
+    private companion object {
+        /**
+         * Builds the four view models from the process-wide auth graph.
+         *
+         * @param container the auth object graph
+         * @return a factory the `viewModels()` delegates share
+         */
+        fun authViewModels(container: AuthContainer): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { LoginViewModel(container) }
+                initializer { AccountGateViewModel(container.accountGate) }
+                initializer { AppLockViewModel(container.appLock) }
+                initializer { TermsGateViewModel(container.terms) }
+            }
+
+        /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */
+        const val PRIVACY_PATH = "/privacy"
+
+        /** Path of the imprint. */
+        const val IMPRINT_PATH = "/impressum"
+
+        /** Path of the terms of use. */
+        const val TERMS_PATH = "/terms"
     }
 }

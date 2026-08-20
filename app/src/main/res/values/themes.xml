@@ -4,8 +4,15 @@
       Dark-only platform theme. The real styling lives in Compose (KrtTheme);
       this only paints the window before the first frame so the launch never
       flashes a light background. See docs/design/android/01 Foundations.
+
+      The parent is AppCompat's dark no-action-bar theme rather than the
+      framework's: MainActivity is an AppCompatActivity so that the per-app
+      language backport applies below API 33 (ADR-0007), and AppCompatActivity
+      refuses to start under a theme that is not a Theme.AppCompat descendant.
+      Nothing else about the app's look depends on it — every pixel above the
+      window background is drawn by Compose.
     -->
-    <style name="Theme.Basetool" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.Basetool" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 </resources>

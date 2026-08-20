@@ -22,7 +22,6 @@
     <string name="login_error_config">Sign-in is not possible right now. The administration has been notified.</string>
 
     <string name="more_section_secondary">Secondary targets</string>
-    <string name="more_section_session">Session</string>
     <string name="logout">Sign out</string>
 
     <string name="login_offline_title">No connection</string>
@@ -61,7 +60,39 @@
     <string name="lock_error_generic">Unlock failed. Please try again.</string>
     <string name="lock_error_lockout">Too many failed attempts. Try again later, or use your device credential.</string>
     <string name="lock_error_invalidated">A new fingerprint was enrolled. The app lock can no longer be opened — please sign out and sign in again.</string>
-    <string name="lock_setting">App lock</string>
-    <string name="lock_setting_hint">Unlock on start and after 5 minutes in the background</string>
-    <string name="lock_setting_unavailable">No device lock set up</string>
+    <string name="lock_setting">App lock (biometrics)</string>
+    <string name="lock_setting_on">On — unlock on start and after 5 minutes in the background</string>
+    <string name="lock_setting_off">Off — data is protected by the device lock only</string>
+    <string name="lock_setting_unavailable">No device lock set up — set one up in the system settings</string>
+
+    <string name="nav_home">Overview</string>
+    <string name="nav_missions">Einsätze</string>
+    <string name="nav_operations">Operationen</string>
+    <string name="nav_orders">Aufträge</string>
+    <string name="nav_inventory">Lager</string>
+    <string name="nav_more">More</string>
+    <string name="nav_hangar">Hangar</string>
+    <string name="nav_exchange">Materialbörse</string>
+    <string name="nav_refinery">Raffinerie</string>
+    <string name="nav_personal_inventory">My inventory</string>
+    <string name="nav_bank">Bank</string>
+    <string name="nav_promotion">Beförderung</string>
+    <string name="nav_notifications">Notifications</string>
+    <string name="nav_settings">Settings</string>
+    <string name="org_switcher_title">Active org unit</string>
+    <string name="placeholder_under_construction">This area is still being built.</string>
+
+    <string name="settings_section_account">Account</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_legal">Legal &amp; data</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_privacy">Privacy policy</string>
+    <string name="settings_imprint">Imprint</string>
+    <string name="settings_terms">Terms of use</string>
+    <string name="settings_version">v%1$s (%2$d)</string>
+
+    <string name="licenses_title">Open-source licences</string>
+    <string name="licenses_intro">This app contains the following third-party software. Their licence terms apply.</string>
+    <string name="licenses_open_text">Open the licence text</string>
+    <string name="licenses_unavailable">The licence list could not be read.</string>
 </resources>

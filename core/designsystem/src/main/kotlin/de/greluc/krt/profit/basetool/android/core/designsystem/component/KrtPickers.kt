@@ -7,6 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.core.designsystem.component
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,15 +19,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,10 +42,13 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -473,6 +483,171 @@ fun KrtChipSelect(
     }
 }
 
+/** Track size of the toggle, fixed by design chapter 13. */
+private val TOGGLE_WIDTH = 44.dp
+private val TOGGLE_HEIGHT = 24.dp
+
+/** Edge length of the knob, and its inset from the track edge. */
+private val TOGGLE_KNOB = 18.dp
+private val TOGGLE_KNOB_INSET = 2.dp
+
+/**
+ * The switch of the design system — square, never Material's rounded one.
+ *
+ * Square track, square knob, no ripple halo and no elevation: the whole visual language is built on
+ * hairlines and right angles, and M3's pill-shaped `Switch` is the one control that would announce
+ * itself as stock Android on an otherwise in-fiction screen.
+ *
+ * It carries **no** click handler of its own by default use: settings rows put the toggle in their
+ * trailing slot and make the entire row the target, which is both the design's behaviour and the
+ * only way to reach the 48 dp minimum without inflating a 24 dp control. Pass [onCheckedChange] to
+ * make the toggle itself tappable when it stands alone.
+ *
+ * @param checked current state.
+ * @param modifier layout modifier.
+ * @param enabled whether the control reads as available; a disabled toggle keeps its state but
+ *   renders muted, because hiding it would read as a missing feature.
+ * @param onCheckedChange optional handler; leave it out when an enclosing row owns the gesture.
+ */
+@Composable
+fun KrtToggle(
+    checked: Boolean,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onCheckedChange: ((Boolean) -> Unit)? = null,
+) {
+    val motion = tween<Color>(KRT_MOTION_MS)
+    val track by animateColorAsState(
+        targetValue = if (checked) MaterialTheme.colorScheme.primary else KrtPalette.SurfaceInput,
+        animationSpec = motion,
+        label = "toggleTrack",
+    )
+    val edge by animateColorAsState(
+        targetValue = if (checked) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
+        animationSpec = motion,
+        label = "toggleBorder",
+    )
+    val knobColor by animateColorAsState(
+        targetValue = if (checked) MaterialTheme.colorScheme.onPrimary else KrtPalette.Gray2,
+        animationSpec = motion,
+        label = "toggleKnob",
+    )
+    val knobOffset by animateDpAsState(
+        targetValue = if (checked) TOGGLE_WIDTH - TOGGLE_KNOB - TOGGLE_KNOB_INSET else TOGGLE_KNOB_INSET,
+        animationSpec = tween(KRT_MOTION_MS),
+        label = "toggleKnobOffset",
+    )
+
+    Box(
+        modifier =
+            modifier
+                .size(width = TOGGLE_WIDTH, height = TOGGLE_HEIGHT)
+                .background(if (enabled) track else KrtPalette.SurfaceInput)
+                .border(KrtSpacing.hairline, if (enabled) edge else KrtPalette.Gray3)
+                .then(
+                    if (onCheckedChange == null) {
+                        Modifier
+                    } else {
+                        Modifier.toggleable(
+                            value = checked,
+                            enabled = enabled,
+                            role = Role.Switch,
+                            onValueChange = onCheckedChange,
+                        )
+                    },
+                ),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    // The lambda overload, because the offset is state-backed: the value
+                    // version would recompose the whole toggle on every animation frame.
+                    .offset { IntOffset(knobOffset.roundToPx(), 0) }
+                    .size(TOGGLE_KNOB)
+                    .background(if (enabled) knobColor else KrtPalette.Gray3),
+        )
+    }
+}
+
+/**
+ * A two-or-more-way inline choice, rendered as adjoining square segments.
+ *
+ * Used where the options are few, short and mutually exclusive and a dropdown would be a tap too
+ * many — the language pair on the settings screen is the canonical case. The selected segment is
+ * orange with black text, which is the same "selection = orange, text = black" rule the navigation
+ * indicator and the option sheet follow.
+ *
+ * **48 dp tall, not the 36 px of the web design.** This is the platform correction [KrtSpacing]
+ * already documents for touch targets: on a phone this is a finger target, and a 36 dp one fails
+ * Android's accessibility minimum. Segment width stays as designed.
+ *
+ * @param options the segment labels, in order; each must be short enough not to wrap.
+ * @param selectedIndex index of the active segment.
+ * @param onSelect invoked with the index of the tapped segment.
+ * @param modifier layout modifier.
+ * @param enabled whether the control accepts input.
+ */
+@Composable
+fun KrtSegmentedControl(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier =
+            modifier
+                .height(KrtSpacing.touchTarget)
+                .border(KrtSpacing.hairline, KrtPalette.Gray3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        options.forEachIndexed { index, label ->
+            val active = index == selectedIndex
+            if (index > 0) {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(KrtSpacing.hairline)
+                            .height(KrtSpacing.touchTarget)
+                            .background(KrtPalette.Gray3),
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .width(SEGMENT_WIDTH)
+                        .height(KrtSpacing.touchTarget)
+                        .background(
+                            if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        ).selectable(
+                            selected = active,
+                            enabled = enabled,
+                            role = Role.RadioButton,
+                            onClick = { onSelect(index) },
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color =
+                        when {
+                            active -> MaterialTheme.colorScheme.onPrimary
+                            enabled -> KrtPalette.TextMuted
+                            else -> KrtPalette.Gray3
+                        },
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+/** Width of one segment, from design chapter 13. */
+private val SEGMENT_WIDTH = 52.dp
+
 @Preview(name = "Pickers", showBackground = true, backgroundColor = 0xFF000000, widthDp = 412)
 @Composable
 private fun PickersPreview() {
@@ -505,6 +680,14 @@ private fun PickersPreview() {
             KrtRadioRow(selected = true, onSelect = {}, label = "Auszahlung")
             KrtRadioRow(selected = false, onSelect = {}, label = "Org-Kasse")
             KrtChipSelect(value = "Pilot", onClick = {})
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                KrtToggle(checked = true)
+                KrtToggle(checked = false)
+                KrtSegmentedControl(options = listOf("DE", "EN"), selectedIndex = 0, onSelect = {})
+            }
         }
     }
 }

@@ -3,4 +3,5 @@
     <!-- Launcher label of the dev-only component showcase. -->
     <string name="showcase_name" translatable="false">KRT Design</string>
     <string name="login_preview_name" translatable="false">KRT Login</string>
+    <string name="settings_preview_name" translatable="false">KRT Einstellungen</string>
 </resources>
