@@ -116,7 +116,7 @@ Key decisions (each becomes an ADR in this repo when implemented — see §8):
 
 - **Language/UI**: Kotlin 2.4 (K2), Jetpack Compose + Material 3, dark-only KRT theme (dynamic
   color deliberately disabled — brand rule), edge-to-edge, predictive back.
-- **Pattern**: MVVM + unidirectional data flow. `ViewModel` → `Repository` → (Retrofit API |
+- **Pattern**: MVVM + unidirectional data flow. `ViewModel` → `Repository` → (HTTP client |
   Room cache). Coroutines + Flow everywhere. Paging 3 for the paginated list endpoints
   (`PageResponse<T>` adapter).
 - **Modules** (Gradle, own version catalog `gradle/libs.versions.toml`):

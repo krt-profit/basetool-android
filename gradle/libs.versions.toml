@@ -40,6 +40,7 @@ androidxBiometric = "1.1.0"
 nimbusJose = "10.9.1"
 
 licensee = "1.14.1"
+openapiGenerator = "7.14.0"
 
 detekt = "2.0.0-alpha.6"
 spotless = "8.10.0"
@@ -93,3 +94,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 licensee = { id = "app.cash.licensee", version.ref = "licensee" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapiGenerator" }
