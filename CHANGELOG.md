@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Die App zeigt jetzt die eigene Org-Einheit an und lässt sie umschalten.** Die Kopfzeile trug
+  bisher einen festen Platzhalter; sie nennt jetzt die Einheit, in der man tatsächlich arbeitet,
+  und jede Anfrage an den Server ist auf sie bezogen. Wer mehreren Einheiten angehört, wählt über
+  die Kopfzeile; die Wahl bleibt über Neustarts erhalten und endet mit dem Abmelden. Wer nur einer
+  Einheit angehört, bekommt keine Auswahl angeboten — es gibt nichts zu wählen (REQ-APP-API-006).
+
 - **Release-Builds lassen sich jetzt signieren, und der Weg dorthin wird bei jeder Änderung
   geprobt.** Das Signieren passiert sonst genau einmal pro Veröffentlichung — mit dem einen
   Schlüssel, der sich nicht neu erzeugen lässt. Ein eigener CI-Lauf baut daher bei jedem Pull

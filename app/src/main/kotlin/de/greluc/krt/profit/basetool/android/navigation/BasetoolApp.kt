@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavi
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
+import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
@@ -68,6 +69,8 @@ private fun isExpandedWindow(): Boolean =
  *
  * @param onLogout ends the session; the caller opens the realm's end-session URL.
  * @param settings what the Einstellungen screen needs from the activity.
+ * @param orgUnit the member's org units and the one currently active.
+ * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
  * @param navController the controller driving the graph; injected for tests and previews.
  */
@@ -75,6 +78,8 @@ private fun isExpandedWindow(): Boolean =
 fun BasetoolApp(
     onLogout: () -> Unit,
     settings: SettingsBindings,
+    orgUnit: OrgUnitState,
+    onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
@@ -85,9 +90,7 @@ fun BasetoolApp(
     val expanded = isExpandedWindow()
     var orgSwitcherOpen by rememberSaveable { mutableStateOf(false) }
 
-    // TODO(feature:auth): the active org unit and the unread count come from the backend once
-    // core:network and core:auth land; until then the shell renders with representative values.
-    val activeOrgUnit = "Bereich Profit"
+    // TODO(feature:notifications): the unread count comes from the backend with the inbox.
     val unreadCount = 3
 
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
@@ -140,7 +143,17 @@ fun BasetoolApp(
                 modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                 onBack = if (isDetailRoute(current)) ({ navController.popBackStack() }) else null,
                 orgBadge = {
-                    KrtOrgBadge(text = activeOrgUnit, onClick = { orgSwitcherOpen = true })
+                    // No badge at all until the scope is known. A placeholder would be a claim
+                    // about which unit the member is acting in, and the header that scopes every
+                    // request would disagree with it.
+                    orgUnit.active?.let { active ->
+                        KrtOrgBadge(
+                            text = active.name,
+                            // Not tappable with a single membership: the sheet would offer the
+                            // choice the member is already in. Same rule as the web sidebar.
+                            onClick = if (orgUnit.switchable) ({ orgSwitcherOpen = true }) else null,
+                        )
+                    }
                 },
                 notificationCount = unreadCount,
                 onNotificationsClick = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
@@ -169,12 +182,14 @@ fun BasetoolApp(
             onDismiss = { orgSwitcherOpen = false },
             title = stringResource(R.string.org_switcher_title),
         ) {
-            // TODO(feature:auth): replace with the member's pickable org units from the backend.
-            listOf("Bereich Profit", "SK VANGUARD", "Alle Org-Einheiten").forEach { unit ->
+            orgUnit.units.forEach { unit ->
                 KrtSheetOption(
-                    text = unit,
-                    selected = unit == activeOrgUnit,
-                    onClick = { orgSwitcherOpen = false },
+                    text = unit.name,
+                    selected = unit.id == orgUnit.activeId,
+                    onClick = {
+                        onSelectOrgUnit(unit.id)
+                        orgSwitcherOpen = false
+                    },
                 )
             }
         }

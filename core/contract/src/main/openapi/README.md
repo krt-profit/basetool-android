@@ -7,8 +7,14 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `e46abdaee8147199396f6a0a25bc15b6025eef9a` (2026-08-19) |
-| Document | OpenAPI 3.1.0 · 396 paths · 403 schemas |
+| Copied from commit | `131e1c6f7205e5e51e11daba35799c8bb95a63e3` (2026-08-20) — **PR krt-profit/basetool#1613, not yet on `main`** |
+| Document | OpenAPI 3.1.0 · 397 paths · 403 schemas |
+
+> The copy is ahead of the backend's `main` on purpose: it carries
+> `GET /api/v1/users/me/memberships`, which the org-unit switcher calls and which lands with
+> basetool#1613. **This repository must not release a build that calls it before that PR is
+> merged and deployed** — the endpoint would 404 and the switcher would show nothing.
+> The schemas are unchanged, so nothing generated from this copy depends on the new path.
 
 ## Refreshing it
 

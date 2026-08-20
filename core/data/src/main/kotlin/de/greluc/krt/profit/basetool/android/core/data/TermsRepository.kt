@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.TermsSectionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.TermsStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiErrorMapper
+import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.await
 import kotlinx.serialization.DeserializationStrategy
@@ -68,17 +69,21 @@ interface TermsSource {
  * about to agree to; a cached copy is a copy that can be older than the version consent is recorded
  * against, which is the exact failure this whole design (main repo ADR-0138) exists to remove.
  *
- * @property httpClient the API client, which supplies the bearer token through its interceptor
- * @property baseUrl the flavour's API origin
- * @property errorMapper turns a non-2xx response into a named [ApiError]
- * @property json tolerant reader; the server may add fields this build does not know
+ * @property reader performs the calls and classifies their failures
  */
 class TermsRepository(
-    private val httpClient: OkHttpClient,
-    private val baseUrl: String,
-    private val errorMapper: ApiErrorMapper = ApiErrorMapper(),
-    private val json: Json = KrtJson,
+    private val reader: ApiReader,
 ) : TermsSource {
+    /**
+     * Convenience constructor for the object graph.
+     *
+     * @param httpClient the API client, which supplies the bearer token through its interceptor
+     * @param baseUrl the flavour's API origin
+     */
+    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
+        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = LOG_TAG),
+    )
+
     /**
      * Reads the consent status.
      *
@@ -90,7 +95,7 @@ class TermsRepository(
      * @return the consent status, or a failure the caller can show
      */
     override suspend fun status(): ApiResult<TermsStatus> =
-        when (val result = get(STATUS_PATH, TermsStatusDto.serializer())) {
+        when (val result = reader.get(STATUS_PATH, TermsStatusDto.serializer())) {
             is ApiResult.Success -> {
                 ApiResult.Success(result.value.toModel())
             }
@@ -110,7 +115,7 @@ class TermsRepository(
      * @return the document, or a failure the caller can show
      */
     override suspend fun document(): ApiResult<TermsDocument> =
-        when (val result = get(DOCUMENT_PATH, TermsDocumentDto.serializer())) {
+        when (val result = reader.get(DOCUMENT_PATH, TermsDocumentDto.serializer())) {
             is ApiResult.Success -> ApiResult.Success(result.value.toModel())
             is ApiResult.Failure -> result
         }
@@ -128,9 +133,9 @@ class TermsRepository(
     override suspend fun accept(): ApiResult<TermsStatus> =
         when (
             val result =
-                call(
+                reader.execute(
                     ACCEPTANCE_PATH,
-                    Request.Builder().url("$baseUrl$ACCEPTANCE_PATH".toHttpUrl()).post(EMPTY_BODY),
+                    Request.Builder().post(EMPTY_BODY),
                     TermsStatusDto.serializer(),
                 )
         ) {
@@ -146,42 +151,6 @@ class TermsRepository(
      * @param deserializer the serializer for [T]
      * @return the parsed value, or the classified failure
      */
-    private suspend fun <T> get(
-        path: String,
-        deserializer: DeserializationStrategy<T>,
-    ): ApiResult<T> = call(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).get(), deserializer)
-
-    /**
-     * Executes one request and parses its body.
-     *
-     * @param T the response type
-     * @param path the API path, for the diagnostic only
-     * @param builder the prepared request
-     * @param deserializer the serializer for [T]
-     * @return the parsed value, or the classified failure
-     */
-    private suspend fun <T> call(
-        path: String,
-        builder: Request.Builder,
-        deserializer: DeserializationStrategy<T>,
-    ): ApiResult<T> =
-        try {
-            httpClient.newCall(builder.build()).await().use { response ->
-                if (response.isSuccessful) {
-                    ApiResult.Success(json.decodeFromString(deserializer, response.body.string()))
-                } else {
-                    ApiResult.Failure(errorMapper.map(response))
-                }
-            }
-        } catch (io: IOException) {
-            KrtLog.w(LOG_TAG, io) { "terms request failed before a response arrived: $path" }
-            ApiResult.Failure(ApiError.Network(io))
-        } catch (malformed: SerializationException) {
-            // A 200 whose body cannot be read is a broken server contract, not connectivity.
-            KrtLog.w(LOG_TAG, malformed) { "terms response could not be parsed: $path" }
-            ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
-        }
-
     private companion object {
         /** Log subsystem. The wording is public, but no member identity is ever written here. */
         const val LOG_TAG = "terms"

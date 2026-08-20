@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.RegistrationStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiErrorMapper
+import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.await
 import kotlinx.serialization.DeserializationStrategy
@@ -60,17 +61,21 @@ fun interface AccountGateSource {
  * refresh, and a stale "approved" restored from disk would be the one cached value able to let
  * somebody past a gate the server has since closed.
  *
- * @property httpClient the API client, which supplies the bearer token through its interceptor
- * @property baseUrl the flavour's API origin, e.g. `https://api.profit-base.online`
- * @property errorMapper turns a non-2xx response into a named [ApiError]
- * @property json tolerant reader; the server may add fields this build does not know
+ * @property reader performs the call and classifies its failures
  */
 class AccountGateRepository(
-    private val httpClient: OkHttpClient,
-    private val baseUrl: String,
-    private val errorMapper: ApiErrorMapper = ApiErrorMapper(),
-    private val json: Json = KrtJson,
+    private val reader: ApiReader,
 ) : AccountGateSource {
+    /**
+     * Convenience constructor for the object graph.
+     *
+     * @param httpClient the API client, which supplies the bearer token through its interceptor
+     * @param baseUrl the flavour's API origin, e.g. `https://api.profit-base.online`
+     */
+    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
+        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = LOG_TAG),
+    )
+
     /**
      * Reads the calling member's position in the approval queue.
      *
@@ -83,7 +88,7 @@ class AccountGateRepository(
      * @return the status, or a failure the caller can show
      */
     override suspend fun registrationStatus(): ApiResult<ApprovalStatus> =
-        when (val result = get(REGISTRATION_STATUS_PATH, RegistrationStatusDto.serializer())) {
+        when (val result = reader.get(REGISTRATION_STATUS_PATH, RegistrationStatusDto.serializer())) {
             is ApiResult.Success -> {
                 ApiResult.Success(ApprovalStatus.fromWire(result.value.approvalStatus?.value))
             }
@@ -105,30 +110,6 @@ class AccountGateRepository(
      * @param deserializer the serializer for [T]
      * @return the parsed value, or the classified failure
      */
-    private suspend fun <T> get(
-        path: String,
-        deserializer: DeserializationStrategy<T>,
-    ): ApiResult<T> =
-        try {
-            val request = Request.Builder().url("$baseUrl$path".toHttpUrl()).get().build()
-            httpClient.newCall(request).await().use { response ->
-                if (response.isSuccessful) {
-                    ApiResult.Success(json.decodeFromString(deserializer, response.body.string()))
-                } else {
-                    ApiResult.Failure(errorMapper.map(response))
-                }
-            }
-        } catch (io: IOException) {
-            KrtLog.w(LOG_TAG, io) { "gate read failed before a response arrived: $path" }
-            ApiResult.Failure(ApiError.Network(io))
-        } catch (malformed: SerializationException) {
-            // A 200 whose body cannot be read is a broken server contract, not a connectivity
-            // problem. Reporting it as Network would tell the member to check their connection,
-            // which is advice that cannot possibly help.
-            KrtLog.w(LOG_TAG, malformed) { "gate response could not be parsed: $path" }
-            ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
-        }
-
     private companion object {
         /** Log subsystem. No claim, token or member name is ever written here. */
         const val LOG_TAG = "gate"
