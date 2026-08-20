@@ -59,6 +59,9 @@ dependencies {
     // ApiError, and a transitively-hidden type would force every consumer to depend on
     // :core:network again just to write a `when`.
     api(project(":core:network"))
+    // `api`, not `implementation`: repository results are mapped from the generated wire models,
+    // and a caller that wants to read one would otherwise have to depend on :core:contract itself.
+    api(project(":core:contract"))
     implementation(project(":core:common"))
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)

@@ -31,7 +31,8 @@ app/                  manifest, flavors, auth flow, navigation shell, settings  
 core/common/          logging facade                                                     [built]
 core/designsystem/    KRT Compose theme, components, icon set, Lato fonts                [built]
 core/network/         OkHttp client, mandatory headers, problem+json → app states        [built]
-                      (OpenAPI-generated DTOs, Retrofit services, SSE still planned)
+                      (SSE still planned; DTOs live in core/contract, no Retrofit — ADR-0008)
+core/contract/        the backend's committed openapi.json + the models generated from it  [built]
 core/auth/            Keystore token store, DPoP, token client, PKCE login + session     [built]
 core/data/            repositories, Room cache, org-unit context                         [planned]
 feature/…             one module per area (missions, orders, inventory, bank, …)         [planned]

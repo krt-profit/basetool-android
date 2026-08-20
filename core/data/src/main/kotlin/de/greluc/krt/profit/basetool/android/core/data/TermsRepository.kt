@@ -8,6 +8,11 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.TermsClauseDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.TermsDocumentDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.TermsSectionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.TermsStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiErrorMapper
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -72,7 +77,7 @@ class TermsRepository(
     private val httpClient: OkHttpClient,
     private val baseUrl: String,
     private val errorMapper: ApiErrorMapper = ApiErrorMapper(),
-    private val json: Json = DEFAULT_JSON,
+    private val json: Json = KrtJson,
 ) : TermsSource {
     /**
      * Reads the consent status.
@@ -195,101 +200,50 @@ class TermsRepository(
 
         /** The empty body the acceptance POST sends. */
         val EMPTY_BODY = ByteArray(0).toRequestBody()
-
-        /** Ignores fields this build does not know, so a server addition is not a breaking change. */
-        val DEFAULT_JSON = Json { ignoreUnknownKeys = true }
     }
 }
 
 /**
- * Wire shape of `GET /api/v1/terms/status` and of the acceptance response.
+ * Maps the consent status onto the model.
  *
- * @property accepted whether consent to [currentVersion] is on record
- * @property currentVersion the version in force
+ * `accepted == true` rather than `accepted != false`: the field is nullable in the generated
+ * model, and a status the server did not state is not consent.
+ *
+ * @return the consent status
  */
-@Serializable
-private data class TermsStatusDto(
-    @SerialName("accepted") val accepted: Boolean? = null,
-    @SerialName("currentVersion") val currentVersion: String? = null,
-) {
-    /**
-     * Maps to the model.
-     *
-     * @return the consent status
-     */
-    fun toModel(): TermsStatus = TermsStatus(accepted = accepted == true, version = currentVersion)
-}
+private fun TermsStatusDto.toModel(): TermsStatus =
+    TermsStatus(accepted = accepted == true, version = currentVersion)
 
 /**
- * Wire shape of `GET /api/v1/terms/document` (main repo ADR-0138).
+ * Maps the document onto the model.
  *
- * Every field is nullable although the server always sends them: a DTO that cannot represent a
- * missing field turns an unexpected body into a parse exception, and here that would be a crash on
- * the consent gate instead of an error the member can act on.
+ * Every field is nullable in the generated model because the contract marks nothing required, so
+ * the mapping decides what absent means: empty text rather than a parse failure. A DTO that cannot
+ * represent a missing field would turn an unexpected body into a crash on the consent gate instead
+ * of an error the member can act on.
  *
- * @property version content digest of this wording
- * @property title the document heading
- * @property intro the lead paragraph
- * @property sections the numbered sections
- * @property lastUpdated the "Stand ..." line
+ * @return the document
  */
-@Serializable
-private data class TermsDocumentDto(
-    val version: String? = null,
-    val title: String? = null,
-    val intro: String? = null,
-    val sections: List<TermsSectionDto> = emptyList(),
-    val lastUpdated: String? = null,
-) {
-    /**
-     * Maps to the model.
-     *
-     * @return the document
-     */
-    fun toModel(): TermsDocument =
-        TermsDocument(
-            version = version.orEmpty(),
-            title = title.orEmpty(),
-            intro = intro.orEmpty(),
-            sections = sections.map { it.toModel() },
-            lastUpdated = lastUpdated.orEmpty(),
-        )
-}
+private fun TermsDocumentDto.toModel(): TermsDocument =
+    TermsDocument(
+        version = version.orEmpty(),
+        title = title.orEmpty(),
+        intro = intro.orEmpty(),
+        sections = sections.orEmpty().map { it.toModel() },
+        lastUpdated = lastUpdated.orEmpty(),
+    )
 
 /**
- * Wire shape of one section.
+ * Maps one section onto the model.
  *
- * @property heading the heading including its number
- * @property clauses the paragraphs
+ * @return the section
  */
-@Serializable
-private data class TermsSectionDto(
-    val heading: String? = null,
-    val clauses: List<TermsClauseDto> = emptyList(),
-) {
-    /**
-     * Maps to the model.
-     *
-     * @return the section
-     */
-    fun toModel(): TermsSection = TermsSection(heading.orEmpty(), clauses.map { it.toModel() })
-}
+private fun TermsSectionDto.toModel(): TermsSection =
+    TermsSection(heading.orEmpty(), clauses.orEmpty().map { it.toModel() })
 
 /**
- * Wire shape of one paragraph.
+ * Maps one paragraph onto the model.
  *
- * @property text the paragraph
- * @property bullets the list items under it
+ * @return the clause
  */
-@Serializable
-private data class TermsClauseDto(
-    val text: String? = null,
-    val bullets: List<String> = emptyList(),
-) {
-    /**
-     * Maps to the model.
-     *
-     * @return the clause
-     */
-    fun toModel(): TermsClause = TermsClause(text.orEmpty(), bullets)
-}
+private fun TermsClauseDto.toModel(): TermsClause = TermsClause(text.orEmpty(), bullets.orEmpty())

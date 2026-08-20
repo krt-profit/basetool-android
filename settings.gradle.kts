@@ -32,6 +32,7 @@ rootProject.name = "basetool-android"
 include(":app")
 include(":core:auth")
 include(":core:common")
+include(":core:contract")
 include(":core:data")
 include(":core:designsystem")
 include(":core:network")

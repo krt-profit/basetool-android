@@ -102,11 +102,48 @@ header is advisory, and one odd response must not poison it.
 ### REQ-APP-API-005 — DTOs are generated from the backend's `openapi.json`
 
 Hand-written DTOs let contract drift surface at runtime, on a device, in a version that cannot be
-redeployed. Generated ones make it a compile error. The generator pipeline is not in place yet; the
-only hand-written model today is [`ProblemDetail`], which is the error envelope rather than a
-resource DTO and exists in the layer that must work even when the contract does not.
+redeployed. Generated ones make it a compile error. `:core:contract` holds the backend's committed
+document and the models the generator produces from it (ADR-0008); **models only** — no API
+interfaces, because the repositories classify failures by the backend's stable problem `code`
+rather than by HTTP status (`REQ-APP-API-002`), fold some refusals into successes and page-walk
+catalogs, none of which a generated client does.
+
+The one hand-written model that stays is [`ProblemDetail`] in `:core:network` — the error envelope,
+which has to work when the contract does not, and which the document describes only as six
+untyped fields.
+
+**Generated models are not automatically safe to decode**, and three of the ways they are not were
+found by decoding them:
+
+- **Decimals.** kotlinx.serialization has no serializer for `BigDecimal`, so the generator marks
+  those properties `@Contextual` — which describes the property's own type, never a type argument,
+  and a `Map<String, BigDecimal>` therefore does not compile. `KrtDecimal` carries its own
+  serializer and reads the JSON number's literal text, so a balance keeps every digit the ledger
+  recorded. A `Double` would have compiled and been wrong by a cent.
+- **Enums are strict.** kotlinx.serialization throws on a constant it does not know, and adding a
+  constant is additive change the server is explicitly free to make (main repo `REQ-API-009`). One
+  of those enums is read on the *login* path. `KrtJson` therefore sets `coerceInputValues`, which
+  turns an unknown constant into `null` — restoring exactly the tolerance the hand-written DTOs had
+  by reading the field as a plain `String`.
+- **Almost nothing is `required`**, so every generated property is nullable with a `null` default.
+  Absent is a state each repository has to give a meaning; the type system does not settle it.
+
+**The document is a vendored copy**, refreshed by hand from the main repo together with the
+`REQ-API-009` contract-set change that opens new endpoints to the app. The commit it came from is
+recorded in `core/contract/src/main/openapi/README.md`.
 
 **Acceptance**
 
-- [ ] A generator produces the resource DTOs from the committed `openapi.json`, and drift fails the
-  build. **Open** — own PR, tracked as the DTO pipeline ADR.
+- [x] A generator produces the resource DTOs from the committed `openapi.json`
+  (`:core:contract:openApiGenerate`, 403 models).
+- [x] The two hand-written resource DTO families are gone — the terms document and the registration
+  status now decode into generated models, and the repository tests that covered them still pass
+  unchanged.
+- [x] Decimals keep full precision, in a field and inside a `Map`; an unknown enum constant decodes
+  to `null` rather than throwing; an unknown field is ignored (`ContractDecodingTest`).
+- [ ] Drift against the **live** backend fails something. **Open, and the honest limit of this
+  requirement** — the build compiles against a vendored copy, so it catches drift the moment
+  somebody refreshes that copy, and not before. A check that compares the committed document
+  against the main repo's is the next step; both repositories are public, so it is reachable.
+- [ ] Only the operations in the `REQ-API-009` contract set are consumed. **Open** — nothing
+  enforces it on this side; the generated surface is every schema in the document.

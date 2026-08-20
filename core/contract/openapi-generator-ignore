@@ -1,0 +1,12 @@
+# Files the generator must NOT write, and why. Same syntax as .gitignore.
+#
+# The document is generated from a Spring backend, and a few of its schemas describe the
+# framework rather than the API. Generating them produces types that are strictly worse than
+# the ones this app already has — and worse in a way that is invisible until runtime.
+
+# Spring's RFC 7807 model, whose fields the document declares without types: every property
+# comes out `@Contextual kotlin.Any?`, which compiles and then throws when it is decoded.
+# `core:network` carries the typed one the app actually reads — with the stable `code`, the
+# `correlationId` and the `fieldErrors` array the generated model does not describe at all
+# (REQ-API-004). Two types with the same name, one of them unusable, is worse than one.
+**/ProblemDetail.kt

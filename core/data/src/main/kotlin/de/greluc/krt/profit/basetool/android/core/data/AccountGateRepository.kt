@@ -8,6 +8,8 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.RegistrationStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiErrorMapper
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -67,7 +69,7 @@ class AccountGateRepository(
     private val httpClient: OkHttpClient,
     private val baseUrl: String,
     private val errorMapper: ApiErrorMapper = ApiErrorMapper(),
-    private val json: Json = DEFAULT_JSON,
+    private val json: Json = KrtJson,
 ) : AccountGateSource {
     /**
      * Reads the calling member's position in the approval queue.
@@ -83,7 +85,7 @@ class AccountGateRepository(
     override suspend fun registrationStatus(): ApiResult<ApprovalStatus> =
         when (val result = get(REGISTRATION_STATUS_PATH, RegistrationStatusDto.serializer())) {
             is ApiResult.Success -> {
-                ApiResult.Success(ApprovalStatus.fromWire(result.value.approvalStatus))
+                ApiResult.Success(ApprovalStatus.fromWire(result.value.approvalStatus?.value))
             }
 
             is ApiResult.Failure -> {
@@ -136,22 +138,5 @@ class AccountGateRepository(
 
         /** The status an unreadable body is reported under, since the response itself was fine. */
         const val HTTP_OK = 200
-
-        /** Ignores fields this build does not know, so a server addition is not a breaking change. */
-        val DEFAULT_JSON = Json { ignoreUnknownKeys = true }
     }
 }
-
-/**
- * Wire shape of `GET /api/v1/users/me/registration-status`.
- *
- * The field is nullable although the server always sends it: a DTO that cannot represent a missing
- * field turns an unexpected body into a parse exception, and here that would be a crash instead of
- * a gate.
- *
- * @property approvalStatus `PENDING`, `ACTIVE` or `REJECTED`
- */
-@Serializable
-private data class RegistrationStatusDto(
-    @SerialName("approvalStatus") val approvalStatus: String? = null,
-)
