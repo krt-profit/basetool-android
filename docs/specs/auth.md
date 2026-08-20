@@ -49,9 +49,11 @@ the alternative is a crash loop on start-up where a login prompt belongs.
 
 - [x] Round-trip, overwrite and clear behave as specified (`RefreshTokenStoreTest`).
 - [x] An undecryptable token reads as `null` **and** is cleared, so the failure is paid once.
-- [ ] The Keystore implementation itself is exercised on a device. **Open** — `KeystoreSecretCipher`
-  cannot run on a JVM; the seam is at `SecretCipher` so everything above it is tested, and the key's
-  hardware binding needs the instrumented suite (Gradle Managed Devices).
+- [ ] The Keystore implementation itself is exercised on a device. **Open, and no longer blocked** —
+  `KeystoreSecretCipher` cannot run on a JVM; the seam is at `SecretCipher`, so everything above it
+  is tested. The reason this stayed open was the missing instrumented suite, and that reason is
+  gone: `app/src/androidTest` exists and runs (`AppLockKeystoreContractTest` covers the *lock* key
+  the same way). What is left is to give the token cipher its own case there.
 
 ### REQ-APP-AUTH-003 — DPoP proofs are sent on token requests only, and timed by server clock
 
@@ -178,7 +180,10 @@ subsequent API call 401s, pointing at the wrong component entirely.
 - [x] `token_type` other than `Bearer` is reported as such instead of being handed on.
 - [x] A 2xx that is not a grant — the captive-portal case — is malformed, not an empty session.
 - [x] A transport failure is distinguishable from a refusal, so only it can read as "offline".
-- [ ] The states are rendered by the screens that own them. **Open** — lands with the login flow.
+- [x] The states are rendered by the screens that own them: `LoginScreen` renders the login
+  states, `MainActivity` dispatches on `SessionState`, `AccountGate` renders the approval verdicts
+  and `LockScreen` the lock ones. "Offline" is reachable only from the transport failure above, so
+  the distinction the previous item makes is one a member actually sees.
 
 ### REQ-APP-AUTH-007 — One login attempt, three per-attempt secrets, and a session that survives a tunnel
 
@@ -225,11 +230,14 @@ discard the only way back into the session.
   clears it and yields `SignedOut`.
 - [x] A grant without a `refresh_token` keeps the stored one.
 - [x] The Custom Tab launch and the redirect activity (`REQ-APP-AUTH-008`).
-- [ ] The chapter-04 screens — login, approval-pending, terms, app-lock. **Open** — this
-  requirement covers the flow's logic; the screens that drive it follow.
-- [ ] The ID token's signature is not verified. **Accepted, not open** — OIDC Core §3.1.3.7 permits
-  it when the token comes directly from the token endpoint over TLS, which is the only way this app
-  obtains one (ADR-0004).
+- [x] The chapter-04 screens all exist and drive this flow: `auth/LoginScreen`,
+  `gate/AccountGate` (approval-pending), `terms/TermsGate`, `lock/AppLockGate` + `lock/LockScreen`,
+  each with its view-model test. Verified end to end on an emulator — login through the Custom Tab,
+  the gates in their documented order, the lock across a cold start — on a phone and a tablet
+  (2026-08-19).
+- [x] The ID token's signature is deliberately **not** verified — a decision, not an omission. OIDC
+  Core §3.1.3.7 permits it when the token comes directly from the token endpoint over TLS, which is
+  the only way this app obtains one (ADR-0004).
 
 ### REQ-APP-AUTH-008 — The browser round trip: a Custom Tab, a claimed redirect, and an attempt that outlives the process
 
@@ -285,9 +293,15 @@ build that can be pointed at another server is a gift to whoever gets hold of a 
   `https://profit-base.online/app/callback`, and the test profile adds
   `de.kartell.basetool:/oauth2redirect` plus a loopback.
 - [x] The post-logout URI is one the client accepts, given its `"+"` setting.
-- [ ] The dev issuer's host and port. **Open** — unlike the redirect URIs it is not pinned by the
-  provisioning script; `https://10.0.2.2:18443/realms/iri` follows DEV_CI §6 and is confirmed the
-  first time the app runs against a local stack.
+- [x] The dev issuer's host and port, confirmed by running the app against a local stack:
+  `http://127.0.0.1:18080/realms/iri`. It is **not** the `https://10.0.2.2:18443` this item
+  previously recorded, and both halves of that differ for a reason worth keeping:
+  `adb reverse tcp:18080 tcp:18080` puts the stack on the device's own loopback, which is more
+  reliable than the `10.0.2.2` host alias (measured: the alias answered ping while OkHttp timed out
+  on every attempt); and it is cleartext rather than TLS because the login runs in the browser,
+  which does not share this app's trust anchor — see `REQ-APP-AUTH-011`. Unlike the redirect URIs
+  this is not pinned by the provisioning script, so it stays a value to re-confirm rather than one
+  to assume.
 - [ ] The live client matches the script that provisions it. **Open** — the script is the source of
   truth this check used, not the realm itself, and `docs/keycloak/realm-config.reference.json` in
   the main repo predates the client and cannot stand in for it; refreshing that snapshot would make
