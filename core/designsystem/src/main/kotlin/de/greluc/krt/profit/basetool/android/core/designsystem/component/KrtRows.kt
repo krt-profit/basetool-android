@@ -9,11 +9,13 @@ package de.greluc.krt.profit.basetool.android.core.designsystem.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -159,6 +161,84 @@ fun KrtListRow(
                 tint = KrtPalette.Gray2,
             )
         }
+    }
+}
+
+/** Size of the leading glyph of a settings row — a step smaller than a list row's. */
+private val SETTING_ICON = 20.dp
+
+/**
+ * A row of the settings screen: leading glyph, label, optional explanation, trailing control.
+ *
+ * Distinct from [KrtListRow] on purpose, and not a parameter of it. A list row presents a **record**
+ * — its title is the thing itself, rendered bright, and the row opens a detail. A settings row
+ * presents a **control**: the label is a caption for whatever sits on the right, so it is muted, and
+ * the row's job is to toggle or open that control rather than to navigate. Folding the two together
+ * would mean a component whose title colour and trailing semantics depend on a flag.
+ *
+ * The **whole row** is the touch target when [onClick] is given, which is what lets the trailing
+ * control keep its designed size — a 24 dp toggle is nowhere near tappable on its own, and the row
+ * is 56 dp tall. A trailing control that handles its own gesture (a segmented control, where the row
+ * cannot know which segment was meant) is placed without [onClick].
+ *
+ * @param title the setting's label.
+ * @param modifier layout modifier.
+ * @param subtitle optional second line stating the current effect in words, not the value.
+ * @param leadingIcon optional glyph identifying the setting.
+ * @param enabled whether the row reads as available and accepts taps.
+ * @param tone colour of the label; the danger tone is reserved for destructive rows.
+ * @param onClick invoked on tap; omit when the trailing control owns the gesture.
+ * @param trailing the control on the right — a toggle, a segmented control, a value, a chevron.
+ */
+@Composable
+fun KrtSettingRow(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    @DrawableRes leadingIcon: Int? = null,
+    enabled: Boolean = true,
+    tone: Color = KrtPalette.Gray1,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable (RowScope.() -> Unit)? = null,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = KrtSpacing.denseRow)
+                .then(
+                    if (onClick == null) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                    },
+                ).padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (leadingIcon != null) {
+            KrtIcon(
+                id = leadingIcon,
+                contentDescription = null,
+                size = SETTING_ICON,
+                tint = if (enabled) KrtPalette.TextMuted else KrtPalette.Gray3,
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) tone else KrtPalette.Gray2,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = KrtPalette.Gray2,
+                )
+            }
+        }
+        trailing?.invoke(this)
     }
 }
 

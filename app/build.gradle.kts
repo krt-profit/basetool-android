@@ -5,9 +5,12 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+import com.android.build.api.variant.Variant
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.licensee)
 }
 
 android {
@@ -65,6 +68,10 @@ android {
             // The backend keeps its self-signed HTTPS, so this also needs the test stack's CA in the
             // device's user store (REQ-APP-AUTH-011); only Keycloak is plain HTTP locally.
             buildConfigField("String", "API_BASE_URL", "\"https://127.0.0.1:11261\"")
+            // The web frontend, for the legal pages the app links out to. Forwarded by
+            // `adb reverse tcp:18081 tcp:18081` like the two above, and plain HTTP because these
+            // open in the BROWSER, which does not share this app's debug trust anchor.
+            buildConfigField("String", "WEB_BASE_URL", "\"http://127.0.0.1:18081\"")
         }
         create("prod") {
             dimension = "backend"
@@ -78,6 +85,10 @@ android {
             // "Invalid post logout redirect uri" — the two must stay equal, and a test pins that.
             buildConfigField("String", "OIDC_POST_LOGOUT_REDIRECT_URI", "\"https://profit-base.online/app/callback\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.profit-base.online\"")
+            // The web frontend. Its /privacy, /impressum and /terms are the SAME documents the web
+            // app serves and are reachable without a session, which is what lets the login screen
+            // link to them before anyone has signed in.
+            buildConfigField("String", "WEB_BASE_URL", "\"https://profit-base.online\"")
         }
     }
 
@@ -140,6 +151,11 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
 
+    // Only for AppCompatDelegate.setApplicationLocales: on API 30-32 there is no platform
+    // LocaleManager, and this is the backport (see ADR-0007). It arrives transitively anyway,
+    // pulled in by androidx.biometric — declaring it makes the version a decision rather than a
+    // side effect of another library's dependency graph.
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.browser)
     // Pulls androidx.fragment in with it, which is why MainActivity is a FragmentActivity:
     // BiometricPrompt attaches to a fragment manager and has no ComponentActivity overload.
@@ -168,4 +184,64 @@ dependencies {
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+}
+
+/*
+ * The open-source notice, and the supply-chain gate that keeps it honest.
+ *
+ * `allow` is not a formality: an artifact whose licence is not on this list FAILS the build, and
+ * the task runs as part of `check`, so a transitive dependency that arrives under a copyleft or an
+ * unknown licence is a red build rather than a silent shipping decision. Adding an identifier here
+ * is therefore a deliberate act — read the licence first, and only allow what the app may actually
+ * redistribute under GPL-3.0-only.
+ *
+ * Every identifier listed here must also have a name and a canonical URL in `OssLicense`, because
+ * the screen renders one group per licence; `OssLicensesTest` fails when the two lists disagree.
+ */
+licensee {
+    allow("Apache-2.0")
+    allow("BSD-3-Clause")
+}
+
+/**
+ * Copies the Licensee report into the variant's resources as `raw/oss_licenses.json`.
+ *
+ * A separate task type rather than a `Copy`, because AGP's `addGeneratedSourceDirectory` needs a
+ * task that exposes its output as a `DirectoryProperty` — which is also what makes the wiring
+ * dependency-correct instead of relying on task ordering.
+ */
+abstract class OssLicensesResource : DefaultTask() {
+    /** The `artifacts.json` Licensee writes for this variant. */
+    @get:InputFile
+    abstract val report: RegularFileProperty
+
+    /** The generated resource directory handed to AGP. */
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    /** Writes the report into `raw/` under the output directory. */
+    @TaskAction
+    fun generate() {
+        val raw = outputDirectory.get().asFile.resolve("raw")
+        raw.mkdirs()
+        report.get().asFile.copyTo(raw.resolve("oss_licenses.json"), overwrite = true)
+    }
+}
+
+androidComponents {
+    onVariants { variant: Variant ->
+        val name = variant.name.replaceFirstChar(Char::uppercase)
+        val generate =
+            tasks.register<OssLicensesResource>("generate${name}OssLicenses") {
+                description = "Turns the Licensee report for $name into a bundled resource."
+                // Each variant lists its OWN dependencies: a debug build ships the tooling
+                // libraries a release build shrinks away, and a notice that names artifacts the
+                // binary does not contain is as wrong as one that omits some.
+                report.set(
+                    layout.buildDirectory.file("reports/licensee/android$name/artifacts.json"),
+                )
+                dependsOn("licenseeAndroid$name")
+            }
+        variant.sources.res?.addGeneratedSourceDirectory(generate, OssLicensesResource::outputDirectory)
+    }
 }

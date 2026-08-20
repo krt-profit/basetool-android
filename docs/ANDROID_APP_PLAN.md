@@ -242,9 +242,9 @@ Lato fonts (+ OFL text); (2) the chapter-02 component library (buttons ladder, c
 rows, forms, modal/sheet/toast, empty/loading/offline states, **Fan Kit band** with the
 per-locale byte-exact string test); (3) navigation shell per ch. 03 for both form factors;
 (4) auth flow per ch. 04 end-to-end (login via Custom Tab, token store, refresh loop,
-logout+revocation, PENDING/terms/409/429/503 problem handling, app-lock) · settings
-(language, Impressum, Datenschutz, licenses — ch. 13) · DE/EN bundles · CI green incl.
-release-signing dry run.
+logout+revocation, PENDING/terms/409/429/503 problem handling, app-lock) · **settings
+(language, Impressum, Datenschutz, licenses — ch. 13) — done, `docs/specs/settings.md`** ·
+DE/EN bundles · CI green incl. release-signing dry run **(open)**.
 
 **Phase 2 — read-only member core**
 Dashboard · missions list/detail · **operations list/detail incl. payout status** · notifications
@@ -281,13 +281,18 @@ prior approval by @greluc.** Baseline set (all local-only, none phones home with
 
 | Dependency | Purpose | Data leaves device? |
 |---|---|---|
-| AndroidX / Jetpack (Compose, Room, DataStore, Paging, Navigation, Lifecycle, Biometric, AppCompat, Core-SplashScreen) | UI/persistence/lifecycle | No | DataStore **adopted 2026-08-18** (`core:auth`, encrypted refresh token) |
+| AndroidX / Jetpack (Compose, Room, DataStore, Paging, Navigation, Lifecycle, Biometric, AppCompat, Core-SplashScreen) | UI/persistence/lifecycle | No | DataStore **adopted 2026-08-18** (`core:auth`, encrypted refresh token); AppCompat **adopted 2026-08-20** (per-app language, ADR-0007 — it already arrived transitively with Biometric, so this pins the version rather than adding a library) |
 | OkHttp 5 + Retrofit + kotlinx.serialization | HTTP/SSE to basetool only | Only to basetool |
 | AppAuth-Android (or kotlin-multiplatform-oidc) | OIDC flow against our Keycloak | Only to basetool Keycloak |
 | Hilt, KSP | compile-time DI | No |
 | Coil | images from basetool hosts | Only to basetool |
 | Nimbus JOSE (or equivalent) | DPoP proof JWTs, local signing | No | **adopted 2026-08-18** (`core:auth`) |
 | Lato font files (OFL 1.1, bundled + license text) | typography | No |
+
+Build-time only, no runtime data flow and nothing shipped in the APK but their own output:
+the Gradle plugins (AGP, Compose compiler, detekt, Spotless/ktlint) and **Licensee**
+(**adopted 2026-08-20**), which resolves the dependency graph to generate the open-source notice
+and fails the build on a licence that is not explicitly allowed.
 
 **Requires explicit approval before adoption** (not in the baseline): Firebase Cloud Messaging,
 Play Integrity API, any crash-reporting backend, any analytics of any kind, Google Play Billing

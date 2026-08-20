@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.KrtDestination
@@ -40,8 +42,8 @@ fun PlaceholderScreen(
     ) {
         KrtEmptyState(
             iconRes = destination.iconRes,
-            title = destination.title,
-            message = "Dieser Bereich wird gerade gebaut.",
+            title = stringResource(destination.titleRes),
+            message = stringResource(R.string.placeholder_under_construction),
         )
     }
 }

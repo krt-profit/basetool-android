@@ -395,8 +395,9 @@ it is **hardening, not a guarantee**, and nothing else may be justified by its p
 
 **The lock itself is opt-in and off by default** (design ch. 04). A lock nobody asked for is a daily
 obstacle, and the data behind it is already app-private, backup-excluded and covered by the flag
-above. Until chapter 13's settings screen exists the toggle lives in "Mehr" — a security feature
-that ships with no way to switch it on is dead code.
+above. The switch lives in **Einstellungen**, under "App" (design ch. 13, `REQ-APP-SET-004`); it
+sat in "Mehr" until that screen existed, because a security feature that ships with no way to
+switch it on is dead code.
 
 **Authentication is the platform's, never this app's.** `BiometricPrompt` with `BIOMETRIC_STRONG or
 DEVICE_CREDENTIAL` draws above the process; the lock screen underneath carries no input field,

@@ -26,10 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
+import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
@@ -64,21 +66,22 @@ private fun isExpandedWindow(): Boolean =
  * toast. Per-destination back stacks are preserved through `saveState`/`restoreState`, so switching
  * tabs and coming back keeps the scroll position and the open detail.
  *
+ * @param onLogout ends the session; the caller opens the realm's end-session URL.
+ * @param settings what the Einstellungen screen needs from the activity.
  * @param modifier layout modifier.
  * @param navController the controller driving the graph; injected for tests and previews.
  */
 @Composable
 fun BasetoolApp(
     onLogout: () -> Unit,
+    settings: SettingsBindings,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    appLockEnabled: Boolean = false,
-    appLockAvailable: Boolean = true,
-    onAppLockChange: (Boolean) -> Unit = {},
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val current = destinationOf(currentRoute) ?: KrtDestination.Home
+    val root = rootOf(current)
     val expanded = isExpandedWindow()
     var orgSwitcherOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -88,7 +91,7 @@ fun BasetoolApp(
     val unreadCount = 3
 
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
-    val selectedRoute = selectedTopLevelRoute(current, destinations)
+    val selectedRoute = selectedTopLevelRoute(root, destinations)
 
     val onSelect: (KrtNavItem) -> Unit = { item ->
         if (item.route == selectedRoute) {
@@ -103,7 +106,7 @@ fun BasetoolApp(
         destinations.map { destination ->
             KrtNavItem(
                 route = destination.route,
-                label = destination.title,
+                label = stringResource(destination.titleRes),
                 iconRes = destination.iconRes,
                 badgeCount = if (destination == KrtDestination.Missions) 2 else null,
             )
@@ -125,7 +128,7 @@ fun BasetoolApp(
                 footer = {
                     KrtIconButton(
                         iconRes = DesignR.drawable.ic_krt_gear,
-                        label = KrtDestination.Settings.title,
+                        label = stringResource(KrtDestination.Settings.titleRes),
                         onClick = { navController.navigateToTopLevel(KrtDestination.Settings.route) },
                     )
                 },
@@ -133,7 +136,7 @@ fun BasetoolApp(
         }
         Column(modifier = Modifier.fillMaxSize()) {
             KrtTopBar(
-                title = current.title,
+                title = stringResource(current.titleRes),
                 modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                 onBack = if (isDetailRoute(current)) ({ navController.popBackStack() }) else null,
                 orgBadge = {
@@ -147,9 +150,7 @@ fun BasetoolApp(
                     navController = navController,
                     onOpenDestination = { navController.navigateToTopLevel(it.route) },
                     onLogout = onLogout,
-                    appLockEnabled = appLockEnabled,
-                    appLockAvailable = appLockAvailable,
-                    onAppLockChange = onAppLockChange,
+                    settings = settings,
                 )
             }
             if (!expanded) {
@@ -166,7 +167,7 @@ fun BasetoolApp(
     if (orgSwitcherOpen) {
         KrtBottomSheet(
             onDismiss = { orgSwitcherOpen = false },
-            title = "Aktive Org-Einheit",
+            title = stringResource(R.string.org_switcher_title),
         ) {
             // TODO(feature:auth): replace with the member's pickable org units from the backend.
             listOf("Bereich Profit", "SK VANGUARD", "Alle Org-Einheiten").forEach { unit ->
@@ -187,7 +188,7 @@ fun BasetoolApp(
  * so the bar never claims the user is somewhere they are not. On a tablet the same destination may
  * have its own rail entry, in which case that one lights up instead.
  *
- * @param current the active destination.
+ * @param current the active destination, already resolved to its navigation root.
  * @param destinations the navigation items of the current form factor.
  * @return the route to render as selected.
  */
@@ -211,7 +212,9 @@ private fun selectedTopLevelRoute(
  * @return `true` when the top bar should show the back arrow.
  */
 private fun isDetailRoute(destination: KrtDestination): Boolean =
-    destination == KrtDestination.Notifications || destination == KrtDestination.Settings
+    destination == KrtDestination.Notifications ||
+        destination == KrtDestination.Settings ||
+        destination in SUB_DESTINATIONS
 
 /**
  * Navigates to a top-level destination, preserving each destination's own back stack.
