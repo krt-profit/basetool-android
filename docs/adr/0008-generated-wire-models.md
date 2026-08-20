@@ -96,3 +96,12 @@ a missing transitive model, in exchange for a tidiness the compiler already prov
 **The two existing repositories now decode into generated models**, and their tests passed
 unchanged. That was the point of doing it in the same change rather than landing a pipeline nothing
 consumes.
+
+**A generator bump has to be read as a contract change, not as a dependency bump.** The models are
+build output, so a new generator version can rename a field, change a nullability or restructure an
+enum without a single line of this repository changing — and Dependabot opens that as a routine PR.
+The check that answers it takes a minute: generate with both versions and diff the output **from
+the `package` line down**, ignoring the `@file:Suppress` header the generator rewrites for its own
+reasons. If nothing below that line moves, the bump is inert; if something does, it is an API change
+arriving through the build file. The first bump (7.14 → 7.24) was inert across all 403 models,
+which is the result to expect and not one to assume.

@@ -67,7 +67,9 @@ openApiGenerate {
     // A file: URI, not a path. The generator parses this as a URI, and a Windows path fails its
     // validation with "Illegal character in opaque part at index 2" — the drive-letter colon.
     inputSpec.set(layout.projectDirectory.file("src/main/openapi/openapi.json").asFile.toURI().toString())
-    outputDir.set(generatedSources.map { it.asFile.path })
+    // A directory, not a path string: `outputDir` became a `DirectoryProperty` in generator
+    // 7.24 and no longer accepts the `Provider<String>` that 7.14 wanted.
+    outputDir.set(generatedSources)
     modelPackage.set("de.greluc.krt.profit.basetool.android.core.contract.model")
     apiPackage.set("de.greluc.krt.profit.basetool.android.core.contract.api")
     packageName.set("de.greluc.krt.profit.basetool.android.core.contract")
