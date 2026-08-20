@@ -36,7 +36,7 @@ goal is therefore **raise cost → detect → throttle → revoke**, layered as 
 
 | Item | Value | Source |
 |---|---|---|
-| minSdk | **29** (Android 10) — reaches ≈ 91 % of active devices | apilevels.com (Statcounter 04/2026) |
+| minSdk | **30** (Android 11) — raised from 29; the reach lost is a few percent, the second app-lock key path it removed had already shipped a total failure (ADR-0006) | apilevels.com (Statcounter 04/2026) |
 | targetSdk | **37** (Android 17, owner decision 2026-08-17) — exceeds the Play floor (≥ 36 for new apps/updates by 2026-08-31); the API-37 behavior changes below apply from day one | developer.android.com/google/play/requirements/target-sdk |
 | compileSdk | **37** (Android 17; stable-since-June-2026 date via secondary source, officially corroborated by the Android 17 QPR beta cycle) | developer.android.com/about/versions |
 | Kotlin | **2.4.10** (K2 default) | kotlinlang.org/docs/releases.html |

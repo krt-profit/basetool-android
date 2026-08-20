@@ -7,7 +7,6 @@
 
 package de.greluc.krt.profit.basetool.android.core.auth
 
-import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
@@ -37,18 +36,17 @@ import javax.crypto.spec.GCMParameterSpec
  * authenticated, so the gate cannot open without one — and neither can the token at rest, which is
  * what separates this from a lock that only guards the screen.
  *
- * **Two platform paths, because API 29 cannot do the modern one.**
+ * **One path, and that is the point of the minSdk floor.** The key is created with
+ * `setUserAuthenticationParameters(0, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)`, which produces an
+ * *auth-per-use* key — the only kind `BiometricPrompt.CryptoObject` accepts. The cipher that
+ * decrypts the session key is therefore the very one the prompt vouched for, the tightest binding
+ * the platform offers.
  *
- * - **API 30+** uses `setUserAuthenticationParameters(0, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)`,
- *   which produces an *auth-per-use* key. Such a key works with `BiometricPrompt.CryptoObject`, so
- *   the cipher that decrypts the sentinel is the very one the prompt vouched for — the tightest
- *   binding the platform offers.
- * - **API 29** (minSdk) has no `setUserAuthenticationParameters`, and its
- *   `setUserAuthenticationValidityDurationSeconds` produces a *time-bound* key, which Android
- *   refuses to pair with a `CryptoObject`. There the prompt runs without one and the sentinel is
- *   decrypted immediately afterwards, inside the validity window. The binding is looser — a recent
- *   authentication rather than *this* authentication — but it is still cryptographic: without one,
- *   the decrypt throws.
+ * API 29 needed a second, weaker path: no `setUserAuthenticationParameters`, a *time-bound* key no
+ * `CryptoObject` accepts, and an authentication the operation could only follow rather than be
+ * bound to. It is gone with the floor (ADR-0006), and with it an ordering hazard that had nothing
+ * to do with strength — on a time-bound key `Cipher.init` throws until an authentication exists,
+ * so every call here ran in the opposite order from the one above.
  *
  * **What this deliberately does not do** is re-key or replace [KeystoreSecretCipher]. Making the
  * token key itself auth-bound would look tidier and would break the app: an auth-per-use Keystore
@@ -157,9 +155,8 @@ class AppLockKey(
      *
      * **This is the operation the whole lock rests on**, and it is no longer a gesture: what comes
      * back is the key the refresh token's outer layer is built from, so an app that skipped this
-     * step cannot read the stored session at all. The cipher must be the one the prompt returned
-     * (API 30+) or one prepared immediately after a successful prompt (API 29); either way Keystore
-     * performs it only for an authenticated user.
+     * step cannot read the stored session at all. The cipher must be the one the prompt returned,
+     * so Keystore performs the operation only for an authenticated user.
      *
      * @param cipher the cipher from [unlockCipher], authenticated by the platform
      * @param sealed the same blob that was passed to [unlockCipher]
@@ -172,9 +169,8 @@ class AppLockKey(
         try {
             cipher.doFinal(sealed, IV_LENGTH_BYTES, sealed.size - IV_LENGTH_BYTES)
         } catch (failure: GeneralSecurityException) {
-            // Includes UserNotAuthenticatedException on the API-29 path: the validity window
-            // expired between the prompt and here. Refusing is correct — it means no authentication
-            // backs this attempt.
+            // Includes UserNotAuthenticatedException: whatever the prompt reported, the
+            // authentication did not actually cover this operation. Refusing is correct.
             KrtLog.w(LOG_TAG, failure) { "app-lock session key did not open" }
             null
         }
@@ -226,19 +222,11 @@ class AppLockKey(
                 .setInvalidatedByBiometricEnrollment(true)
                 .apply { if (useStrongBox) setIsStrongBoxBacked(true) }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Auth-per-use (timeout 0) — the only kind a CryptoObject accepts.
-            builder.setUserAuthenticationParameters(
-                0,
-                KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL,
-            )
-        } else {
-            // API 29 has no setUserAuthenticationParameters. A time-bound key cannot be paired with
-            // a CryptoObject, so the window has to be long enough for the prompt to finish and the
-            // sentinel to be read, and short enough that it is not a bypass on its own.
-            @Suppress("DEPRECATION")
-            builder.setUserAuthenticationValidityDurationSeconds(LEGACY_VALIDITY_SECONDS)
-        }
+        // Auth-per-use (timeout 0) — the only kind a CryptoObject accepts.
+        builder.setUserAuthenticationParameters(
+            0,
+            KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL,
+        )
 
         generator.init(builder.build())
         return generator.generateKey()
@@ -251,10 +239,7 @@ class AppLockKey(
      */
     private fun keyStore(): KeyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
 
-    companion object {
-        /** Whether this platform can bind the prompt to the exact cipher. */
-        val SUPPORTS_CRYPTO_OBJECT: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-
+    private companion object {
         /** Log subsystem; no key material or sentinel ever appears in a message. */
         private const val LOG_TAG = "lock"
 
@@ -271,14 +256,5 @@ class AppLockKey(
         private const val IV_LENGTH_BYTES = 12
 
         private const val TAG_LENGTH_BITS = 128
-
-        /**
-         * The API-29 validity window.
-         *
-         * Long enough for the prompt to finish and the sentinel to be read on a slow device, short
-         * enough that a phone put down mid-unlock is not left openable. It exists only because the
-         * platform offers no auth-per-use key below API 30.
-         */
-        private const val LEGACY_VALIDITY_SECONDS = 10
     }
 }

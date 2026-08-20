@@ -35,7 +35,7 @@ lives in a Preferences DataStore. Three key properties carry the protection:
   channel (decision Q2).
 - **StrongBox where available**, falling back to a TEE-backed key when the device has no secure
   element. Requesting it unconditionally and catching `StrongBoxUnavailableException` is the check —
-  an SDK-level guard would be dead code at minSdk 29.
+  an SDK-level guard would be dead code at the minSdk floor.
 
 `androidx.security:security-crypto` is deliberately not used: deprecated, final release 1.1.0, no
 successor.
@@ -98,7 +98,7 @@ refresh of a session fail intermittently and only in the field.
 
 ### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
 
-minSdk 29 spans two backup worlds: `backup_rules.xml` governs API ≤ 30, `data_extraction_rules.xml`
+minSdk 30 still spans two backup worlds: `backup_rules.xml` governs API ≤ 30, `data_extraction_rules.xml`
 governs API 31+, and the latter needs the exclusion in **both** its `cloud-backup` and
 `device-transfer` sections — `allowBackup=false` alone does not reliably stop a device-to-device
 transfer.
@@ -430,13 +430,19 @@ leaks exactly what it is there to withhold.
   state to open. The earlier revision had one, and CodeQL named it correctly — *insecure local
   authentication: this authentication callback does not use its result for a cryptographic
   operation*. A boolean gate is one mis-ordered transition away from opening on its own.
-- [x] Two platform paths, because API 29 cannot do the modern one. **API 30+** uses
-  `setUserAuthenticationParameters(0, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)` — an auth-per-use key,
-  the only kind a `CryptoObject` accepts — so the cipher that decrypts the sentinel is the one the
-  prompt vouched for. **API 29** has no such method and its time-bound key cannot be paired with a
-  `CryptoObject`; the prompt runs without one and the decrypt follows inside a 10-second window. The
-  binding is looser there (a recent authentication rather than *this* one) but still cryptographic:
-  without one the decrypt throws `UserNotAuthenticatedException`.
+- [x] **One key kind, one path.** `setUserAuthenticationParameters(0, BIOMETRIC_STRONG or
+  DEVICE_CREDENTIAL)` produces an auth-per-use key — the only kind a `CryptoObject` accepts — so
+  the cipher that recovers the session key is always the one the prompt vouched for. Every prompt is
+  bound; `BiometricGate` has no unbound branch left to take.
+
+  API 29 forced a second path, and it differed in **order**, not only in strength: its time-bound
+  key throws `UserNotAuthenticatedException` from `Cipher.init` until an authentication exists, so
+  the cipher could only be built *after* the prompt rather than bound into it. Both preparation
+  calls ran before the prompt, so on the entire minSdk platform the lock could neither be armed nor
+  opened — and a broad catch turned the throw into the value already meaning *this lock can never be
+  opened again*. Unit tests were green; so was every run on API 37. Raising the floor to 30 deleted
+  the path rather than fixing it ([ADR-0006](../adr/0006-minsdk-30.md)), because a branch only the
+  oldest supported device exercises is wrong until proven otherwise, and this one was.
 - [x] An authentication the platform accepted whose **decrypt still fails does not open the app**
   (`AppLockViewModelTest`).
 - [x] A new biometric enrolment invalidates the key (`setInvalidatedByBiometricEnrollment`), and
@@ -484,20 +490,33 @@ leaks exactly what it is there to withhold.
   the lock is open; with no lock armed that content composes immediately and nothing changes. It is
   guarded on `Unknown` so a background re-lock does not spend a refresh round trip, and a rotation
   of the realm's refresh token, every time the member comes back.
-- [x] Verified on an emulator with a PIN: arming raises the prompt and succeeds; a cold start locks;
-  the sealed token reads as *locked* rather than *broken* (`refresh token is sealed and the app lock
-  is not open`); the unlock restores the session into the app rather than the login screen; a
-  20-second absence does not re-lock and a six-minute one does.
+- [x] **The Keystore contract is exercised on a device**, which is the only place any of this was
+  ever visible (`AppLockKeystoreContractTest`): the key can be created, the encrypt cipher is
+  obtainable *before* any authentication, a key created moments ago does not report itself
+  unsatisfiable, arming again replaces the entry, and disarming leaves nothing behind. Neither the
+  JVM nor Robolectric exercises the Keystore, so before these tests existed every claim on this page
+  about auth-bound keys was asserted only by reading Android's documentation — and two of them were
+  false.
+- [x] Verified interactively on a phone and a tablet with a PIN: arming raises the prompt and
+  succeeds; a cold start locks; the sealed token reads as *locked* rather than *broken* (`refresh
+  token is sealed and the app lock is not open`); the unlock restores the session into the app
+  rather than the login screen; a 25-second absence does not re-lock and a 6.5-minute one does.
 - [ ] Observed on a device with an **enrolled fingerprint**. **Open** — the runs above cover the
-  device-credential path only, and both defects above were invisible to every unit test because the
-  Keystore is not exercised off a device. Needed **before the first release**: the failure mode is a
-  member unable to reach their own session.
+  device-credential path only. Needed **before the first release**: the failure mode is a member
+  unable to reach their own session.
 
 ### REQ-APP-AUTH-011 — The dev build's TLS relaxations cannot reach a release build
 
 The dev flavour needs two holes in TLS validation that a release build must never inherit:
 **cleartext** to the emulator's loopback routes (Keycloak runs `start-dev` on plain HTTP) and a
 **trust anchor** for the test stack's backend certificate.
+
+The cleartext half is not laziness about the test stack, and serving that Keycloak over TLS was
+tried and rejected on evidence. It works server-side, but the login runs in the **browser**, and a
+browser does not share this app's `<debug-overrides>` anchor — Chrome answers
+`NET::ERR_CERT_AUTHORITY_INVALID` for the shared test certificate. Fixing that means installing the
+CA into the device's own store, which is the manual step the anchor exists to avoid. Cleartext to
+three loopback hosts, in a config a release build cannot inherit, is the smaller hole.
 
 Both live in `app/src/dev/res/xml/network_security_config.xml`, and the trust anchor additionally
 sits inside `<debug-overrides>`. That is two independent guarantees rather than one restated:

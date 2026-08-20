@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Die App setzt jetzt Android 11 voraus (vorher Android 10).** Android 10 bot für die App-Sperre nur einen schwächeren Schlüsseltyp an, der einen zweiten, kaum benutzten Sonderweg im Code nötig machte — und dieser Sonderweg funktionierte nicht: Auf Android 10 ließ sich die Sperre weder einschalten noch öffnen, und die App meldete sie fälschlich als dauerhaft unbrauchbar. Statt ihn zu reparieren ist er entfallen. Auf Android 11 und neuer bestätigt jede Abfrage jetzt genau den Vorgang, den sie freigibt. Geräte mit Android 10 können die App nicht mehr installieren und nutzen weiterhin die Web-Anwendung.
+
 ### Added
 
 - **Die App-Sperre schützt jetzt auch die gespeicherte Anmeldung, nicht nur den Bildschirm.** Bisher lag das gespeicherte Sitzungs-Token hinter dem Sperrbildschirm, war aber technisch auch ohne Entsperren lesbar. Es liegt nun zusätzlich unter einem Schlüssel, den das Gerät erst nach Fingerabdruck, Gesicht oder Gerätesperre herausgibt. Wer die Sperre aus- oder einschaltet, bleibt angemeldet; ist die Sperre aktiv und noch nicht geöffnet, bleibt die gespeicherte Anmeldung unangetastet liegen statt gelöscht zu werden (REQ-APP-AUTH-010).

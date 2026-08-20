@@ -37,6 +37,11 @@ android {
 
     lint {
         warningsAsErrors = true
+        // Version-currency checks: see app/build.gradle.kts. warningsAsErrors would turn an
+        // upstream release into a failing build on every branch at once, for a change no commit
+        // made. Dependabot keeps versions current here.
+        disable += "AndroidGradlePluginVersion"
+        disable += "GradleDependency"
         abortOnError = true
         // The icon set and the Fan Kit artwork are this module's published API: the design
         // handoff defines the complete sprite, and feature modules consume it as they land.

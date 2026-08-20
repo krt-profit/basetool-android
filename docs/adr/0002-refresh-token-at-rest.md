@@ -46,7 +46,7 @@ rules excluded `krt_tokens`, while Preferences DataStore writes
 `datastore/krt_tokens.preferences_pb`, so the exclusion would have matched nothing.
 
 **StrongBox is requested unconditionally.** `StrongBoxUnavailableException` is the check; an SDK
-guard would be dead code at minSdk 29, which Android Lint says out loud.
+guard would be dead code at the minSdk floor, which Android Lint says out loud.
 
 ## Consequences
 

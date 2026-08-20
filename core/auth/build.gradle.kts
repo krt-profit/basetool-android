@@ -32,6 +32,11 @@ android {
 
     lint {
         warningsAsErrors = true
+        // Version-currency checks: see app/build.gradle.kts. warningsAsErrors would turn an
+        // upstream release into a failing build on every branch at once, for a change no commit
+        // made. Dependabot keeps versions current here.
+        disable += "AndroidGradlePluginVersion"
+        disable += "GradleDependency"
         abortOnError = true
         sarifReport = true
     }

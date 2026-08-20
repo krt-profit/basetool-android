@@ -127,9 +127,8 @@ class AppLockViewModel(
                 if (lock.open(cipher)) {
                     AppLockState.Open
                 } else {
-                    // The platform said yes and the sentinel still did not come back. On the API-29
-                    // path that is a validity window that closed in between; anywhere else it means
-                    // the key no longer matches the blob. Neither is something the member did.
+                    // The platform said yes and the session key still did not come back, so
+                    // the key no longer matches the blob. Not something the member did.
                     KrtLog.w(LOG_TAG) { "authentication succeeded but the sentinel did not open" }
                     AppLockState.Locked(R.string.lock_error_generic)
                 }

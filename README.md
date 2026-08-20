@@ -2,7 +2,7 @@
 
 Native Android companion app for the **Profit Basetool** — the squadron-management tool of
 the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
-portrait-first, tablets landscape-first, minSdk 29 (Android 10), dark-only DAS KARTELL
+portrait-first, tablets landscape-first, minSdk 30 (Android 11), dark-only DAS KARTELL
 design.
 
 **Status: Phase 1 in progress.** The theme and the component library from chapter 02 of the

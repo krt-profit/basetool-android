@@ -29,7 +29,6 @@ import de.greluc.krt.profit.basetool.android.auth.AuthContainer
 import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
-import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -172,7 +171,6 @@ class MainActivity : FragmentActivity() {
                                                 BiometricGate.prompt(
                                                     activity = this@MainActivity,
                                                     cipher = cipher,
-                                                    useCryptoObject = AppLockKey.SUPPORTS_CRYPTO_OBJECT,
                                                     onSuccess = lockViewModel::completeArm,
                                                     onFailure = { },
                                                 )
