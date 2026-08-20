@@ -28,6 +28,10 @@ lint-results*.xml
 # Signing material & local secrets — NEVER commit (public repo)
 *.jks
 *.keystore
+# PKCS12, which is the format the release key and every throwaway one actually use — the
+# keytool line in ANDROID_APP_DEV_CI.md writes a .p12, and .jks/.keystore would not have
+# caught it.
+*.p12
 keystore.properties
 signing.properties
 *.pepk

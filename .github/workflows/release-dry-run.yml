@@ -1,0 +1,206 @@
+name: Release signing dry run
+
+# Rehearses the release build's signing path on every pull request, with a key that is
+# generated inside the run and destroyed with it.
+#
+# The point is what it costs to find these failures late. Release signing is exercised
+# exactly once per release, on the day of the release, with the one key that cannot be
+# regenerated if it is lost (DEV_CI § 4: self-managed, offline backup, unrecoverable).
+# Every mistake in that path — a signing config that never takes effect, an alias that does
+# not match, a missing v3 block so the rotation lineage can never be established — produces
+# an APK that looks finished. Some of them even install.
+#
+# So the same path runs continuously against a THROWAWAY key:
+#
+#   generate key -> base64 -> decode to a runner file -> assembleProdRelease -> verify -> shred
+#
+# The base64 round trip is not decoration: it is the exact transport the real workflow will
+# use for the secret, and a keystore that survives it here will survive it there.
+#
+# It needs NO secrets, which is why it can run on every pull request including forks: the key
+# is created in the runner, used once and shredded. Nothing it produces is published — an APK
+# signed with a throwaway key is good for the checks below and for nothing else, and attaching
+# it anywhere would invite somebody to install it.
+#
+# The real `release.yml` (tag `v*`, environment `release`, the actual key) still has to be
+# written for Phase 5. This is its rehearsal, not its replacement.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-dry-run-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    name: Sign and verify a release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+
+    env:
+      KEYSTORE_ALIAS: basetool-dry-run
+      # The APK's own floor. `apksigner verify` judges an APK against an SDK range, and the
+      # range that matters is the one the app actually installs on (ADR-0006).
+      APP_MIN_SDK: '30'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+
+      - name: Validate the Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          # No cache at all, deliberately. The real release job restores none either — a
+          # poisoned cache entry would become a poisoned artifact, and a signed one at that
+          # (DEV_CI § 4). A rehearsal that runs warm would not rehearse the thing it exists
+          # for, so this job pays for a cold build.
+          cache-disabled: true
+
+      - name: Generate a throwaway signing key
+        id: key
+        run: |
+          set -euo pipefail
+          keystore="$RUNNER_TEMP/release-dry-run.p12"
+          echo "KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
+
+          # Generated per run and never reused. openssl rather than $RANDOM: this password
+          # guards a key that signs an APK, and a weak one is a weak one.
+          password="$(openssl rand -base64 33)"
+          echo "::add-mask::$password"
+          echo "password=$password" >> "$GITHUB_OUTPUT"
+
+          keytool -genkeypair \
+            -keystore "$RUNNER_TEMP/source.p12" \
+            -storetype PKCS12 \
+            -alias "$KEYSTORE_ALIAS" \
+            -keyalg RSA -keysize 4096 \
+            -validity 1 \
+            -storepass "$password" -keypass "$password" \
+            -dname "CN=Basetool Release Signing Dry Run, O=DAS KARTELL, C=DE"
+
+          # The certificate this run has to end up with, normalised to the lower-case,
+          # colon-free form apksigner prints.
+          fingerprint="$(keytool -list -v \
+            -keystore "$RUNNER_TEMP/source.p12" -storetype PKCS12 \
+            -storepass "$password" -alias "$KEYSTORE_ALIAS" \
+            | grep -oP 'SHA256:\s*\K[0-9A-Fa-f:]+' \
+            | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test -n "$fingerprint"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          echo "expected certificate SHA-256: $fingerprint"
+
+      - name: Round-trip the keystore through base64, as the real secret will
+        run: |
+          set -euo pipefail
+          base64 -w0 "$RUNNER_TEMP/source.p12" > "$RUNNER_TEMP/keystore.b64"
+          base64 -d "$RUNNER_TEMP/keystore.b64" > "$KEYSTORE_PATH"
+          # A silently truncated secret is the failure this catches: the decode succeeds, the
+          # file is short, and the build fails later with a keystore-format error that reads
+          # like a corrupt key rather than like a broken transport.
+          cmp "$RUNNER_TEMP/source.p12" "$KEYSTORE_PATH"
+          shred -u "$RUNNER_TEMP/source.p12" "$RUNNER_TEMP/keystore.b64"
+
+      - name: Build the signed release APK
+        env:
+          KRT_SIGNING_STORE_PASSWORD: ${{ steps.key.outputs.password }}
+          KRT_SIGNING_KEY_PASSWORD: ${{ steps.key.outputs.password }}
+        run: |
+          set -euo pipefail
+          KRT_SIGNING_KEYSTORE="$KEYSTORE_PATH" \
+          KRT_SIGNING_KEY_ALIAS="$KEYSTORE_ALIAS" \
+            ./gradlew :app:assembleProdRelease --stacktrace
+
+      - name: Verify the signature
+        env:
+          EXPECTED_FINGERPRINT: ${{ steps.key.outputs.fingerprint }}
+        run: |
+          set -euo pipefail
+
+          # The file name is half the assertion: with the signing config not taking effect AGP
+          # writes app-prod-release-UNSIGNED.apk and the build still succeeds.
+          apk="app/build/outputs/apk/prod/release/app-prod-release.apk"
+          if [ ! -f "$apk" ]; then
+            echo "::error::no signed APK was produced; the build wrote:"
+            ls -l app/build/outputs/apk/prod/release/
+            exit 1
+          fi
+
+          # apksigner ships with build-tools, which AGP downloads during the build above.
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          apksigner="$(find "$sdk/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          if [ -z "$apksigner" ]; then
+            echo "::error::apksigner not found under $sdk"
+            exit 1
+          fi
+          echo "using $apksigner"
+
+          report="$("$apksigner" verify --verbose --print-certs \
+            --min-sdk-version "$APP_MIN_SDK" "$apk")"
+          echo "$report"
+
+          fail=0
+          check() {
+            if printf '%s' "$report" | grep -qF "$1"; then
+              echo "  ok      $2"
+            else
+              echo "::error::$2"
+              fail=1
+            fi
+          }
+
+          check "Verifies" \
+            "the APK does not verify at minSdk $APP_MIN_SDK"
+          # v3 carries the rotation lineage. Without it a future key rotation cannot be proven
+          # to Android, and that cannot be repaired in APKs already installed.
+          check "Verified using v3 scheme (APK Signature Scheme v3): true" \
+            "v3 signing is missing, so no rotation lineage can ever be established"
+          # v1 is JAR signing: unreachable below API 24 and the scheme Janus attacks.
+          check "Verified using v1 scheme (JAR signing): false" \
+            "v1 (JAR) signing is enabled, which minSdk $APP_MIN_SDK never uses"
+          check "Number of signers: 1" \
+            "the APK does not have exactly one signer"
+          # The assertion that catches a signing config which silently did nothing: an APK
+          # signed by the debug keystore also "verifies", and its certificate is not this one.
+          check "Signer #1 certificate SHA-256 digest: $EXPECTED_FINGERPRINT" \
+            "the APK was signed by a different key than this run generated"
+
+          exit "$fail"
+
+      - name: Shred the keystore
+        # `always()`: a failed build must not leave key material on a runner, even throwaway
+        # material, and the habit is the point — the real workflow inherits this step verbatim.
+        if: always()
+        run: |
+          set -euo pipefail
+          for f in "$RUNNER_TEMP/release-dry-run.p12" "$RUNNER_TEMP/source.p12" \
+                   "$RUNNER_TEMP/keystore.b64"; do
+            if [ -f "$f" ]; then
+              shred -u "$f"
+              echo "shredded $f"
+            fi
+          done
