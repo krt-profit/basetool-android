@@ -116,14 +116,23 @@ never in doubt.
 remove a membership, and a stale pin sends a header the backend refuses — which reads as "everything
 is empty" rather than as "you are not in that unit any more".
 
-**The pin lives in the token store and dies with the session.** It is not a UI preference: a device
-handed on after a sign-out must not leave the next member inside the first one's Staffel, so the
-logout wipe reaches it.
+**The pin dies with the session.** It is not a UI preference: a device handed on after a sign-out
+must not leave the next member inside the first one's Staffel, so logout clears it and the backup
+rules exclude its file from cloud backup **and** device transfer, alongside the token store.
 
-**It is read synchronously.** The header interceptor runs on an OkHttp dispatcher thread and cannot
-suspend, so the store mirrors the value in memory and seeds it once while the object graph is built.
-A miss is not a correctness failure — the header is simply absent and the backend falls back — but
-the app would then show one scope and request another.
+**It is read synchronously, and that decides the storage.** The header interceptor runs on an OkHttp
+dispatcher thread and cannot suspend, so the pin lives in `SharedPreferences` — the API whose
+contract is a synchronous read — rather than in the token DataStore. Both ways of bridging that gap
+were tried and both failed on a device:
+
+- *Mirroring the DataStore value in memory* left the mirror empty until a suspending `load()` ran,
+  and its only caller ran **after** the first requests of a cold start. Measured with a temporary
+  log in the header provider: the first three requests of every launch went out with no header at
+  all. Nothing visible broke, because every screen on that path is me-scoped — the first scoped read
+  added to start-up would have shown the wrong scope with no error anywhere.
+- *Seeding the mirror with `runBlocking` on first read* closed that hole and opened a worse one: it
+  deadlocks whenever the caller's thread is the one DataStore's scope runs on. The first test
+  written against it hung.
 
 **The switcher offers a choice or nothing.** With a single membership there is nothing to switch to,
 so the badge is not tappable — the same rule the web sidebar applies. With no membership at all the
@@ -134,14 +143,23 @@ scope the app does not have.
 
 - [x] The three-step rule, the dropped stale pin and the refusal to pin a foreign unit are covered
   (`OrgUnitViewModelTest`).
-- [x] The pin is readable synchronously, survives a cold start and is cleared by a wipe
-  (`ActiveOrgUnitStoreTest`).
+- [x] The pin is readable synchronously **from a fresh instance with no priming** — the way the
+  interceptor reads it on the first request of a cold start — survives a restart and is cleared by
+  a wipe (`ActiveOrgUnitStoreTest`).
 - [x] The options come from `GET /api/v1/users/me/memberships` — me-scoped by construction, so the
   public vhost never has to allow-list a path able to name another member (main repo `REQ-API-009`).
 - [x] An org unit whose `kind` this build does not know is still offered; only its grouping is
   unknown (`OrgUnitRepositoryTest`).
-- [ ] Verified on a device against a stack that serves the endpoint. **Open** — it lands with
-  basetool#1613; until then the switcher is covered by unit tests only.
+- [x] Verified on a device against the test stack, with two real memberships in the throwaway DB
+  (IRIDIUM + SK Vanguard): the badge names the member's Staffel, two memberships make it tappable,
+  the sheet lists both, choosing the other one moves the badge, and each choice survives a cold
+  start. 11 of 11 checks.
+- [x] The header itself was measured rather than inferred: before the storage change the provider
+  returned `null` for the first three requests of a cold start; after it, the very first request
+  carries the pinned id.
+- [ ] Verified for an **admin**, whose pin the backend honours differently — for a non-admin the
+  effective scope stays their home Staffel, so the backend's own log cannot confirm the header.
+  **Open.**
 - [ ] A member whose memberships change while the app is open. **Open** — the list is read once per
   process; a change made by an administrator shows up on the next start.
 

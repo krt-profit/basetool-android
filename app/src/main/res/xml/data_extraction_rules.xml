@@ -5,14 +5,16 @@
   device-to-device transfer, and allowBackup=false alone does not reliably stop
   a D2D transfer (docs/ANDROID_APP_SECURITY.md section 4, REQ-APP-AUTH-004).
 
-  The path must stay byte-identical to AuthDataStore.RELATIVE_PATH — see
-  BackupExclusionTest.
+  The paths must stay byte-identical to AuthDataStore.RELATIVE_PATH and
+  ActiveOrgUnitStore.BACKUP_PATH — see BackupExclusionTest.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="file" path="datastore/krt_tokens.preferences_pb" />
+        <exclude domain="sharedpref" path="krt_active_org_unit.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="datastore/krt_tokens.preferences_pb" />
+        <exclude domain="sharedpref" path="krt_active_org_unit.xml" />
     </device-transfer>
 </data-extraction-rules>

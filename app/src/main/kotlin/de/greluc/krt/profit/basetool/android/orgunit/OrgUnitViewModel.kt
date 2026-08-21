@@ -119,10 +119,10 @@ class OrgUnitViewModel(
             KrtLog.w(LOG_TAG) { "ignored a pin for an org unit that is not one of the member's" }
             return
         }
-        viewModelScope.launch {
-            store.pin(orgUnitId)
-            mutableState.value = mutableState.value.copy(activeId = orgUnitId)
-        }
+        // No coroutine: the store is synchronous now, and the badge should move on the tap
+        // rather than a frame later.
+        store.pin(orgUnitId)
+        mutableState.value = mutableState.value.copy(activeId = orgUnitId)
     }
 
     /**
@@ -134,7 +134,7 @@ class OrgUnitViewModel(
     private suspend fun resolveActive(units: List<OrgUnit>): String? {
         val known = units.map { it.id }.toSet()
 
-        val stored = store.load()
+        val stored = store.current()
         if (stored != null) {
             if (stored in known) {
                 return stored

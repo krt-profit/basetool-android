@@ -4,11 +4,19 @@
   Android 12+ devices read data_extraction_rules.xml instead — a minSdk-29 app
   needs BOTH (docs/ANDROID_APP_SECURITY.md section 4, REQ-APP-AUTH-004).
 
-  The excluded path is the Preferences DataStore file the refresh token lives in.
-  It must stay byte-identical to AuthDataStore.RELATIVE_PATH; BackupExclusionTest
-  fails when the two drift, because nothing else would — a stale path here does
-  not break the build, it just starts uploading a refresh token.
+  Two files are excluded, and both are session state rather than settings:
+
+  - the Preferences DataStore the refresh token lives in
+    (AuthDataStore.RELATIVE_PATH);
+  - the preference file holding the active org unit
+    (ActiveOrgUnitStore.BACKUP_PATH) — restoring one member's org scope onto
+    another member's device would silently show them the wrong Staffel.
+
+  Both paths must stay byte-identical to those constants; BackupExclusionTest
+  fails when they drift, because nothing else would — a stale path here does not
+  break the build, it just starts uploading what it was meant to keep back.
 -->
 <full-backup-content>
     <exclude domain="file" path="datastore/krt_tokens.preferences_pb" />
+    <exclude domain="sharedpref" path="krt_active_org_unit.xml" />
 </full-backup-content>
