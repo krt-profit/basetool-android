@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -19,6 +20,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
+import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
+import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -35,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  *
  * @param navController the controller driving the graph.
  * @param onOpenDestination invoked when a list entry opens another destination.
+ * @param missions drives the Einsatz list.
  * @param onLogout ends the session.
  * @param settings everything the Einstellungen screen needs that the graph cannot know.
  * @param modifier layout modifier.
@@ -43,6 +47,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
 fun BasetoolNavHost(
     navController: NavHostController,
     onOpenDestination: (KrtDestination) -> Unit,
+    missions: MissionsViewModel,
     onLogout: () -> Unit,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
@@ -62,6 +67,20 @@ fun BasetoolNavHost(
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) {
                 when (destination) {
+                    KrtDestination.Missions -> {
+                        // Loaded here rather than in `init`: the view model outlives the screen, and
+                        // a member returning to the list expects it to reflect what happened while
+                        // they were away rather than what it held when the app started.
+                        LaunchedEffect(Unit) { missions.load() }
+                        MissionsRoute(
+                            viewModel = missions,
+                            // TODO(feature:missions-detail): opens the Einsatz detail once ch. 06 §2
+                            // ships. Until then a tap is deliberately inert rather than navigating
+                            // to a placeholder that claims to be the Einsatz.
+                            onOpenMission = {},
+                        )
+                    }
+
                     KrtDestination.More -> {
                         MoreScreen(onOpen = onOpenDestination)
                     }

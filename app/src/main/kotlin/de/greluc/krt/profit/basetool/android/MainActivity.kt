@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
+import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
@@ -103,6 +104,7 @@ class MainActivity : AppCompatActivity() {
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
+    private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -200,6 +202,7 @@ class MainActivity : AppCompatActivity() {
                             val orgUnit by orgUnitViewModel.state.collectAsState()
                             BasetoolApp(
                                 orgUnit = orgUnit,
+                                missions = missionsViewModel,
                                 onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,
                                 settings =
@@ -347,6 +350,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
+                initializer { MissionsViewModel(container.missions) }
             }
 
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */

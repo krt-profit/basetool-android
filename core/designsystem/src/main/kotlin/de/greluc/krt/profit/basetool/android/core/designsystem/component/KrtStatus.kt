@@ -44,6 +44,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.PillShape
 /** Alpha of the faint tint fill behind a toned chip. */
 private const val CHIP_TINT_ALPHA = 0.12f
 
+/** How far a disabled filter chip dims. Dimmed rather than hidden, so the row does not reflow. */
+private const val DISABLED_CHIP_ALPHA = 0.45f
+
 /** Edge length of the square status dot. Status dots are squares, only presence dots are round. */
 private val STATUS_DOT = 8.dp
 
@@ -188,6 +191,51 @@ fun KrtChip(
     ) {
         Text(
             text = if (tone == KrtChipTone.Data) text else text.krtUppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = hue,
+        )
+    }
+}
+
+/**
+ * A tappable filter chip — the interactive counterpart to the deliberately inert [KrtChip].
+ *
+ * [KrtChip] labels a record and documents that it "never carries a tap handler"; a filter row needs
+ * the opposite, so it gets its own component rather than an optional handler bolted onto that
+ * contract. Same squared geometry, so a chip row still reads as one family.
+ *
+ * The selected state is carried by **border and text colour**, not by a filled background: a filled
+ * orange chip would claim the visual weight of a primary action, and a row of filters is not a row
+ * of calls to action.
+ *
+ * @param text the filter's label; uppercased for display like every other chip.
+ * @param selected whether this filter is currently applied.
+ * @param onClick invoked on tap.
+ * @param modifier layout modifier.
+ * @param enabled whether the chip responds; a disabled chip dims rather than disappearing, so the
+ *   row does not reflow while a load is in flight.
+ */
+@Composable
+fun KrtFilterChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    val hue = if (selected) MaterialTheme.colorScheme.primary else KrtPalette.TextMuted
+    val borderColor = if (selected) hue else KrtPalette.Gray3
+    Box(
+        modifier =
+            modifier
+                .background(if (selected) hue.copy(alpha = CHIP_TINT_ALPHA) else KrtPalette.SurfaceInput)
+                .border(KrtSpacing.hairline, borderColor)
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs)
+                .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA),
+    ) {
+        Text(
+            text = text.krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = hue,
         )

@@ -95,4 +95,34 @@
     <string name="licenses_intro">This app contains the following third-party software. Their licence terms apply.</string>
     <string name="licenses_open_text">Open the licence text</string>
     <string name="licenses_unavailable">The licence list could not be read.</string>
+
+    <!-- Einsätze, list (design spec ch. 06 §1). The domain term stays German in English. -->
+    <string name="missions_title">Einsätze</string>
+    <string name="missions_search_placeholder">Search Einsatz</string>
+    <string name="missions_filter_status">Status</string>
+    <string name="missions_filter_status_all">Status: all</string>
+    <string name="missions_filter_past">Past hidden</string>
+    <string name="missions_filter_past_on">Past shown</string>
+    <string name="missions_filter_reset">Reset filters</string>
+    <string name="missions_status_planned">Planned</string>
+    <string name="missions_status_active">Active</string>
+    <string name="missions_status_completed">Completed</string>
+    <string name="missions_status_cancelled">Cancelled</string>
+    <string name="missions_day_today">Today</string>
+    <string name="missions_day_tomorrow">Tomorrow</string>
+    <string name="missions_day_undated">No date</string>
+    <string name="missions_meeting_time">TS %1$s</string>
+    <string name="missions_running_since">since %1$s</string>
+    <string name="missions_end_of_list">End of list</string>
+    <plurals name="missions_count">
+        <item quantity="one">%1$d of %2$d Einsatz</item>
+        <item quantity="other">%1$d of %2$d Einsätze</item>
+    </plurals>
+    <string name="missions_empty_title">No Einsätze</string>
+    <string name="missions_empty_message">Nothing is scheduled for this period.</string>
+    <string name="missions_empty_filtered_title">Nothing found</string>
+    <string name="missions_empty_filtered_message">No Einsatz matches these filters.</string>
+    <string name="missions_error_title">Signal Lost</string>
+    <string name="missions_error_message">The Einsätze could not be loaded.</string>
+    <string name="missions_retry">Try again</string>
 </resources>
