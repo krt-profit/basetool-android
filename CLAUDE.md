@@ -240,7 +240,12 @@ Identical rules to the main repo — the short form:
   `push --force*`, `rebase` on shared branches, `clean -fd`, …). Read-only/additive is fine.
 - Run `./gradlew spotlessApply` and the full lint gate before **every** push.
 - **Every commit carries a DCO `Signed-off-by:` trailer** — always `git commit -s` (or
-  `-S -s` when GPG-signing, which is the norm on PR branches).
+  `-S -s` when GPG-signing, which is the norm on PR branches). **The signing identity is
+  `Lucas Greuloch (greluc) <lucas.greuloch@gmail.com>` — that address, not any other, belongs
+  in the trailer.** The owner's contact address (`lucas.greuloch@pm.me`) is a different address
+  and is NOT the git identity; using it fails the DCO gate. Never hand-write the trailer:
+  `-s` derives it from `git config user.name` / `user.email`, which is already correct —
+  typing it out by hand is exactly how the wrong address gets in.
 - **Every commit Claude authors includes a `Co-Authored-By:` trailer naming the model**, e.g.
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` — transparency requirement,
   independent of the DCO sign-off. Substitute the actual model identifier of the session.
