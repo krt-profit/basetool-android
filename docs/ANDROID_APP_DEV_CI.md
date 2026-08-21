@@ -141,6 +141,30 @@ Baseline posture (all from GitHub's current security docs):
 - Caches: `gradle/actions/setup-gradle` (v6.3.0) with default branch-scoped cache semantics
   (writes only on the default branch); **the release/signing job restores no caches at all**
   (poisoned-cache → poisoned-artifact vector).
+- **Robolectric's `android-all` runtime is a declared dependency, not a runtime download.**
+  Left alone, Robolectric fetches the Android framework jar for the SDK under test from Maven
+  Central the first time a test class runs — at test *execution* time, on its own HTTP client,
+  outside Gradle's dependency resolution and therefore outside the cache above (which branch
+  builds only read anyway, so caching alone would not have fixed it). When that one request
+  fails, **every** Robolectric class in the run dies at `classMethod` with a bare
+  `MavenArtifactFetcher` AssertionError, in modules the pull request never touched — a network
+  flake that presents as a red "Build, Test & Lint" with failing tests, which is exactly the shape
+  of a real regression and costs a diagnosis every time (PR #40, run 32477195019: 4 of 44 tests
+  in `:app:testDevDebugUnitTest`, green on a plain re-run). The jar is therefore pinned in
+  `gradle/libs.versions.toml` as `robolectricAndroidAll`, resolved through the root project's
+  `robolectricSdks` configuration, staged into `build/robolectric-sdks` by
+  `:stageRobolectricSdks`, and consumed with `robolectric.offline=true` +
+  `robolectric.dependency.dir`, which the root build script sets on every `Test` task. Gradle
+  resolves and caches it like every other artifact, and a fetch that fails now fails at
+  resolution time with a name attached — the same thing SHA-pinned actions and dependency review
+  already assume of everything else this build consumes.
+  **A `robolectric` bump is a `robolectricAndroidAll` bump in the same commit.** The coordinate
+  is `<androidVersion>-robolectric-<buildId>-i<preinstrumentedVersion>`, all three hardcoded in
+  Robolectric's `DefaultSdkProvider` per release; Dependabot cannot know that. Drift fails
+  loudly rather than randomly — `Unable to locate dependency: '<file>'`, and that file name is
+  the value to put in the catalog. A new `@Config(sdk = …)` level needs its own artifact
+  declared next to the current one; today every Robolectric test in the repo pins API 34,
+  because Robolectric ships no runtime for the app's `targetSdk` 37.
 - Dependency graph via the separate `gradle/actions/dependency-submission` workflow; for fork PRs
   the documented two-workflow pattern (`pull_request` generates, `workflow_run` submits).
 
