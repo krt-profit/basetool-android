@@ -23,6 +23,20 @@ androidxNavigation = "2.9.8"
 
 junit = "4.13.2"
 robolectric = "4.16.1"
+# The `android-all` runtime Robolectric loads for `@Config(sdk = [34])`, which every Robolectric
+# test in this repo pins. Robolectric fetches this jar from Maven at TEST EXECUTION time — outside
+# Gradle's dependency resolution and therefore outside CI's Gradle cache — so one bad HTTP request
+# fails every Robolectric class at `classMethod` with a bare `MavenArtifactFetcher` AssertionError
+# that reads exactly like a real regression. Declaring it here turns that runtime fetch into a
+# resolved, cached, verifiable Gradle dependency; the root build script then runs the tests with
+# `robolectric.offline=true`, so nothing reaches for the network mid-test.
+#
+# The coordinate is `<androidVersion>-robolectric-<buildId>-i<preinstrumentedVersion>`, and all
+# three parts are hardcoded in Robolectric's own `DefaultSdkProvider` — so BUMPING `robolectric`
+# ABOVE MEANS BUMPING THIS TOO (Dependabot cannot know that). When the two drift apart the offline
+# resolver fails with `Unable to locate dependency: '<file>'`, and that file name is the value to
+# put here. Adding a second `@Config(sdk = ...)` level means adding its artifact next to this one.
+robolectricAndroidAll = "14-robolectric-10818077-i7"
 androidxTestExtJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
 
@@ -78,6 +92,7 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+robolectric-android-all-instrumented = { group = "org.robolectric", name = "android-all-instrumented", version.ref = "robolectricAndroidAll" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 

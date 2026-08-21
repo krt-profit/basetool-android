@@ -153,7 +153,12 @@ runner).
   reason in the build file (design-system resources having no consumer yet). A second needs the
   same justification. `MissingApplicationIcon` was the other one and is enabled again since the
   adaptive launcher icon landed.
-- Robolectric ships no runtime for API 37, so resource tests pin `@Config(sdk = [34])`.
+- Robolectric ships no runtime for API 37, so resource tests pin `@Config(sdk = [34])`. That
+  runtime jar is a declared dependency (`robolectricAndroidAll` in the version catalog) and the
+  tests run with `robolectric.offline=true`, so **bumping `robolectric` means bumping
+  `robolectricAndroidAll` in the same commit** — otherwise every Robolectric class fails with
+  `Unable to locate dependency`, and that message names the version to write. Why it is pinned at
+  all: `docs/ANDROID_APP_DEV_CI.md` § 4.
 
 Local backend = the main repo's isolated test stack (`docker-compose.test.yml`,
 `--env-file .env.test`). The emulator reaches it via `https://10.0.2.2:<port>`; its
