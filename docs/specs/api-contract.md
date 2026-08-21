@@ -134,6 +134,13 @@ were tried and both failed on a device:
   deadlocks whenever the caller's thread is the one DataStore's scope runs on. The first test
   written against it hung.
 
+**The app never sends the header as an administrator.** The backend gives an admin a scope rule
+this app has no screen for: no header means *all* org units, and a pin is honoured even for a unit
+the admin does not belong to. Rather than teach the app to avoid that, the role is kept out of its
+tokens entirely (main repo `REQ-SEC-035`) — an administrator using the app is a member in it, with
+their member roles and nothing else. So the admin branch of the header contract is unreachable from
+here by construction.
+
 **The switcher offers a choice or nothing.** With a single membership there is nothing to switch to,
 so the badge is not tappable — the same rule the web sidebar applies. With no membership at all the
 badge is absent rather than showing a placeholder, because a placeholder would be a claim about a
@@ -157,9 +164,15 @@ scope the app does not have.
 - [x] The header itself was measured rather than inferred: before the storage change the provider
   returned `null` for the first three requests of a cold start; after it, the very first request
   carries the pinned id.
-- [ ] Verified for an **admin**, whose pin the backend honours differently — for a non-admin the
-  effective scope stays their home Staffel, so the backend's own log cannot confirm the header.
-  **Open.**
+- [x] The **admin** case is closed as *not applicable by design*, and enforced rather than assumed.
+  The backend does honour an admin's pin differently — without a header it scopes an admin to every
+  org unit at once, and with one it honours a pin to a unit they do not belong to — but no request
+  from this app is ever an admin request. The Keycloak client's scope withholds the `Admin` realm
+  role (main repo `REQ-SEC-035`), the backend derives a request's authorities from the roles the
+  token carried, and its provisioning script fails verification if the role is ever added. Measured
+  against the test stack's realm, Keycloak 26.7, 2026-08-21: the token the client would mint for an
+  account holding `Admin` carries `['KRT Member', 'Officer']`. Building an admin path into the app
+  would need that decision reversed first, which is the point of asserting it.
 - [ ] A member whose memberships change while the app is open. **Open** — the list is read once per
   process; a change made by an administrator shows up on the next start.
 
