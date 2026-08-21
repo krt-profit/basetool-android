@@ -109,11 +109,12 @@ class AuthContainer(
     /**
      * The org unit every request is scoped to.
      *
-     * In the token DataStore rather than a settings store: the pin is part of a session, and a
-     * device handed on after a sign-out must not leave the next member in the first one's Staffel.
-     * [logout] wipes it for that reason.
+     * Its own preference file rather than the token DataStore, because the request interceptor
+     * reads it **synchronously** off an OkHttp thread and DataStore cannot answer that way — see
+     * the store's own documentation for the two attempts that proved it. It is still session
+     * state, so [logout] wipes it and the backup rules exclude it alongside the token store.
      */
-    val activeOrgUnit by lazy { ActiveOrgUnitStore(dataStore) }
+    val activeOrgUnit by lazy { ActiveOrgUnitStore(appContext) }
 
     /**
      * The login attempt that is currently out in the browser.

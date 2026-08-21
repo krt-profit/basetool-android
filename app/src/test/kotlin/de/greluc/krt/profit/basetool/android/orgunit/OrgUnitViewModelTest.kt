@@ -7,19 +7,16 @@
 
 package de.greluc.krt.profit.basetool.android.orgunit
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitKind
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -30,9 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -45,23 +40,19 @@ import java.io.IOException
  * so getting it wrong does not produce an error message: it produces a screen full of somebody
  * else's data, or an empty one, with no indication that the scope is the reason.
  *
- * The store is a **real** DataStore on a temporary file rather than a fake. Its whole job is to
- * survive a restart and to be readable synchronously off an OkHttp thread; a fake would assert the
+ * The store is the **real** one over the app's preference file rather than a fake. Its whole job
+ * is to survive a restart and to answer synchronously off an OkHttp thread; a fake would assert the
  * view model's arithmetic and none of that.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class OrgUnitViewModelTest {
-    @get:Rule
-    val folder = TemporaryFolder()
-
     private val dispatcher = StandardTestDispatcher()
 
     private val staffel = OrgUnit("a1", "Staffel 1", "S1", OrgUnitKind.SQUADRON)
     private val kommando = OrgUnit("b2", "SK Vanguard", "SKV", OrgUnitKind.SPECIAL_COMMAND)
 
-    private lateinit var dataStore: DataStore<Preferences>
     private lateinit var store: ActiveOrgUnitStore
 
     /**
@@ -85,19 +76,8 @@ class OrgUnitViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        // Named, never created: DataStore renames a `.tmp` over the target, and on Windows that
-        // fails when the target exists (see ActiveOrgUnitStoreTest).
-        //
-        // The DataStore runs on the TEST dispatcher, not on Dispatchers.IO. With its default scope
-        // its work happens on real threads while `advanceUntilIdle()` only advances virtual time,
-        // so every assertion here read the state of a coroutine still suspended on a file write —
-        // and every one of them failed with `null` for a reason that had nothing to do with the
-        // rule under test.
-        dataStore =
-            PreferenceDataStoreFactory.create(scope = CoroutineScope(dispatcher + Job())) {
-                java.io.File(folder.root, "org.preferences_pb")
-            }
-        store = ActiveOrgUnitStore(dataStore)
+        store = ActiveOrgUnitStore(ApplicationProvider.getApplicationContext<Application>())
+        store.clear()
     }
 
     @After
@@ -198,7 +178,10 @@ class OrgUnitViewModelTest {
 
             assertEquals(kommando.id, viewModel.state.value.activeId)
             // A fresh store over the same file is what the next cold start does.
-            assertEquals(kommando.id, ActiveOrgUnitStore(dataStore).load())
+            assertEquals(
+                kommando.id,
+                ActiveOrgUnitStore(ApplicationProvider.getApplicationContext<Application>()).current(),
+            )
         }
 
     @Test
