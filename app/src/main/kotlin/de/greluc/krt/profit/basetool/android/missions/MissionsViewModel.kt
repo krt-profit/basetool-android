@@ -55,7 +55,12 @@ sealed interface MissionsPhase {
 /**
  * Everything the Einsatz list draws.
  *
- * @property query what the member has narrowed to
+ * @property query what the member has narrowed to; its `text` is the **debounced** term, i.e.
+ *   the one actually sent to the server
+ * @property searchText what is in the search field **right now**, updated on every keystroke
+ *   ahead of the debounce. Separate from `query.text` because the field is a controlled component:
+ *   binding it to the debounced value discards every character until the debounce elapses, which
+ *   makes the field look broken rather than slow
  * @property missions every row loaded so far, across pages, in server order
  * @property total how many Einsätze the filter matches on the server — stated even when fewer are
  *   loaded, because a paginated list that cannot say what it is not showing is a silent truncation
@@ -67,6 +72,7 @@ sealed interface MissionsPhase {
  */
 data class MissionsState(
     val query: MissionQuery = MissionQuery.NONE,
+    val searchText: String = "",
     val missions: List<Mission> = emptyList(),
     val total: Long = 0,
     val phase: MissionsPhase = MissionsPhase.Loading,
@@ -75,8 +81,13 @@ data class MissionsState(
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
 ) {
-    /** Whether the member has narrowed anything, which is what decides if "zurücksetzen" is offered. */
-    val isNarrowed: Boolean get() = query.isNarrowed
+    /**
+     * Whether the member has narrowed anything, which is what decides if "zurücksetzen" is offered.
+     *
+     * Reads the *typed* term rather than the debounced one, so the reset appears on the first
+     * keystroke instead of 300 ms later.
+     */
+    val isNarrowed: Boolean get() = query.isNarrowed || searchText.isNotBlank()
 
     /** Whether the filter matched nothing — an ordinary result the screen states in its own words. */
     val isEmpty: Boolean get() = phase is MissionsPhase.Ready && missions.isEmpty()
@@ -146,11 +157,15 @@ class MissionsViewModel(
     /**
      * Records a keystroke.
      *
-     * The request is deferred by [SEARCH_DEBOUNCE_MS]; the field updates now.
+     * The state is updated **synchronously** and the request is deferred by
+     * [SEARCH_DEBOUNCE_MS]. Both halves matter: the field is a controlled component, so a state
+     * that lagged the debounce would feed the old value straight back and every character would
+     * vanish as it was typed — measured on a device, the field accepted nothing at all.
      *
      * @param text what the member has typed so far.
      */
     fun onSearchChanged(text: String) {
+        mutableState.value = mutableState.value.copy(searchText = text)
         typedText.value = text
     }
 
@@ -193,7 +208,7 @@ class MissionsViewModel(
      */
     fun onResetFilters() {
         typedText.value = ""
-        mutableState.value = mutableState.value.copy(query = MissionQuery.NONE)
+        mutableState.value = mutableState.value.copy(query = MissionQuery.NONE, searchText = "")
         reload()
     }
 

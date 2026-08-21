@@ -88,6 +88,15 @@ the app being slow rather than as the app being careful.
 Every reload starts at page 0 and **replaces** the rows. Appending would leave the previous filter's
 Einsätze underneath the new filter's, which reads as the filter not having worked.
 
+**The field is a controlled component, so the state must carry the typed value too.** `searchText`
+is updated synchronously on every keystroke; `query.text` is the debounced term that reaches the
+server. Binding the field to the debounced value instead feeds the previous value back on every
+recomposition, so the character the member just typed disappears as they type it — measured on a
+device: the field accepted **nothing at all**, while the view-model tests (which render no field)
+and the screen test (which is handed a static state) were both green. `isNarrowed` reads the typed
+value for the same reason, so the reset chip appears on the first keystroke rather than 300 ms
+later.
+
 Resetting clears the **typed value** as well as the query object. Clearing only the latter leaves
 the old term in the field, and the next keystroke would restore a filter the member believes they
 removed.
@@ -98,6 +107,11 @@ removed.
 - [x] A status chip reloads at once, and setting the same filter twice does not re-fetch.
 - [x] A filter change requests page 0 and replaces the rows.
 - [x] After a reset the next keystroke starts from empty (`MissionsViewModelTest`).
+- [x] A keystroke reaches `searchText` **synchronously**, before anything reaches the server, and
+  a reset clears it — each pinned by a test that fails without its half of the fix.
+- [x] Verified on a device against the test stack: typing narrows the list, the reset chip appears
+  from the first character, a term matching nothing shows the filtered-empty copy, and the reset
+  works from inside that empty state (2026-08-21).
 
 ---
 
@@ -170,6 +184,32 @@ classified `ApiError` is logged by the view model so a report can be matched aga
   replaces the set, so a chip reporting only itself would silently clear every other selection.
 
 ---
+
+## Device verification (2026-08-21)
+
+Run against the isolated test stack with eight seeded Einsätze spanning today, tomorrow, later this
+week, one running, one completed, one cancelled and one with no date. Everything below was read off
+the accessibility tree, because the app sets `FLAG_SECURE` and screenshots come back black.
+
+Confirmed: the day headings (`HEUTE` / `MORGEN` / `DIENSTAG, 25. AUGUST 2026`), the status chip row,
+`VERGANGENE AUS` hiding past Einsätze by default and `VERGANGENE AN` revealing them, `seit 15:57` on
+the running one, the status filter narrowing to a single row, the `IRI` org badge, `ENDE DER LISTE`,
+the search, the filtered-empty copy and the reset — including from inside the empty state.
+
+Also confirmed on this path: the account reconciled to **`KRT Member`**, not `Guest` — the
+main repo's REQ-SEC-035 working end to end through the app.
+
+**One defect found and fixed here:** the search field discarded every keystroke (see
+REQ-APP-MIS-004). No unit test could have caught it; it needed a real field bound to real state.
+
+**One finding fixed where it belonged:** the search field reported `NAF="true"` to the
+accessibility tree and its placeholder did not appear there at all, so a screen-reader user met an
+unlabelled box. Both were properties of `KrtTextField` — a `BasicTextField` supplies neither by
+default — and every caller had them, so the fix went into the design system rather than this screen:
+the placeholder moved into the field's own `decorationBox` (a sibling drawn behind a full-width
+field is obscured, and obscured nodes are pruned), the field gained an accessible name from
+`label ?: placeholder` that survives the member typing, and an error is now attached via the `error`
+semantics instead of merely rendered beneath. Six tests in `KrtTextFieldAccessibilityTest`.
 
 ## Known gaps, stated rather than omitted
 

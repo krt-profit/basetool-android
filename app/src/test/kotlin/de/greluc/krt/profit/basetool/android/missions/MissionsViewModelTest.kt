@@ -191,6 +191,42 @@ class MissionsViewModelTest {
         }
 
     @Test
+    fun `a keystroke reaches the state synchronously, ahead of the debounce`() =
+        runTest(dispatcher) {
+            // The field is a CONTROLLED component: the screen renders whatever the state holds. A
+            // state that lagged the debounce would feed the previous value straight back and the
+            // character the member just typed would vanish as they typed it. Measured on a device
+            // before this existed: the search field accepted nothing at all, while the view model
+            // tests -- which never render a field -- were green.
+            source.queue(page(listOf("a")))
+            val viewModel = MissionsViewModel(source)
+            viewModel.load()
+            advanceUntilIdle()
+
+            viewModel.onSearchChanged("Ly")
+
+            assertEquals("Ly", viewModel.state.value.searchText)
+            assertTrue("the reset must be offered from the first keystroke", viewModel.state.value.isNarrowed)
+            assertEquals("nothing may have reached the server yet", "", viewModel.state.value.query.text)
+        }
+
+    @Test
+    fun `resetting clears the typed value too, not just the query`() =
+        runTest(dispatcher) {
+            source.queue(page(listOf("a")))
+            val viewModel = MissionsViewModel(source)
+            viewModel.load()
+            viewModel.onSearchChanged("Lyria")
+            advanceUntilIdle()
+
+            viewModel.onResetFilters()
+            advanceUntilIdle()
+
+            assertEquals("", viewModel.state.value.searchText)
+            assertFalse(viewModel.state.value.isNarrowed)
+        }
+
+    @Test
     fun `a keystroke does not reach the server before the debounce elapses`() =
         runTest(dispatcher) {
             source.queue(page(listOf("a")))
