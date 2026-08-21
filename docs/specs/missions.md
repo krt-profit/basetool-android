@@ -202,10 +202,14 @@ main repo's REQ-SEC-035 working end to end through the app.
 **One defect found and fixed here:** the search field discarded every keystroke (see
 REQ-APP-MIS-004). No unit test could have caught it; it needed a real field bound to real state.
 
-**One finding left open:** the search field reports `NAF="true"` to the accessibility tree and its
-placeholder does not appear there at all, so a screen-reader user meets an unlabelled field. That is
-a property of `KrtTextField` in the design system rather than of this screen, and every existing
-caller has it; it needs fixing where the component lives, not here.
+**One finding fixed where it belonged:** the search field reported `NAF="true"` to the
+accessibility tree and its placeholder did not appear there at all, so a screen-reader user met an
+unlabelled box. Both were properties of `KrtTextField` — a `BasicTextField` supplies neither by
+default — and every caller had them, so the fix went into the design system rather than this screen:
+the placeholder moved into the field's own `decorationBox` (a sibling drawn behind a full-width
+field is obscured, and obscured nodes are pruned), the field gained an accessible name from
+`label ?: placeholder` that survives the member typing, and an error is now attached via the `error`
+semantics instead of merely rendered beneath. Six tests in `KrtTextFieldAccessibilityTest`.
 
 ## Known gaps, stated rather than omitted
 

@@ -38,6 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -122,11 +125,26 @@ fun KrtFieldError(
  * Built on `BasicTextField` rather than `OutlinedTextField` because Material's field brings a
  * floating label, its own shape and 16 dp of internal padding, none of which match this system.
  *
+ * **Accessibility is wired here rather than left to the caller**, because a field built from
+ * `BasicTextField` has none of it by default and the omission is invisible on screen:
+ *
+ * - The **placeholder lives in the field's own `decorationBox`**, not beside it. A sibling drawn
+ *   *behind* a full-width text field is obscured, and the accessibility layer prunes obscured
+ *   nodes — measured on a device: the hint was legible to the eye and entirely absent from the
+ *   tree, so a screen-reader user met an unlabelled box.
+ * - The field carries an explicit **accessible name** (`label`, else `placeholder`). Without one
+ *   `uiautomator` reports `NAF="true"` and TalkBack announces nothing but "edit box". The name has
+ *   to be a semantic property rather than the visible hint alone, because the hint disappears the
+ *   moment the member types — which is exactly when the field stops saying what it is for.
+ * - An error is attached to the field via the **`error` semantics**, not merely rendered beneath
+ *   it. A message that is only a sibling is read minutes later in traversal order, or never.
+ *
  * @param value current text.
  * @param onValueChange invoked on every edit.
  * @param modifier layout modifier.
  * @param label optional caption rendered above the field.
- * @param placeholder optional hint shown while [value] is empty; rendered italic and muted.
+ * @param placeholder optional hint shown while [value] is empty; rendered italic and muted, and
+ *   used as the field's accessible name when no [label] is given.
  * @param enabled whether the field accepts input.
  * @param isError whether the field currently fails validation.
  * @param errorText optional message rendered below the field when [isError] is `true`.
@@ -150,6 +168,7 @@ fun KrtTextField(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
+    val accessibleName = label ?: placeholder
 
     val borderColor =
         when {
@@ -181,17 +200,13 @@ fun KrtTextField(
                     .padding(horizontal = KrtSpacing.md),
             contentAlignment = Alignment.CenterStart,
         ) {
-            if (value.isEmpty() && placeholder != null) {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-                    color = KrtPalette.Gray2,
-                )
-            }
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .krtFieldSemantics(accessibleName, if (isError) errorText else null),
                 enabled = enabled,
                 textStyle =
                     LocalTextStyle.current
@@ -205,11 +220,72 @@ fun KrtTextField(
                 keyboardOptions = keyboardOptions,
                 interactionSource = interactionSource,
                 singleLine = true,
+                decorationBox = { innerTextField ->
+                    KrtFieldDecoration(
+                        showPlaceholder = value.isEmpty(),
+                        placeholder = placeholder,
+                        innerTextField = innerTextField,
+                    )
+                },
             )
         }
         if (isError && errorText != null) {
             KrtFieldError(text = errorText)
         }
+    }
+}
+
+/**
+ * Everything a screen reader needs from a field, in one place.
+ *
+ * A `BasicTextField` carries none of this by itself, and the absence is invisible on screen — which
+ * is why it is a named modifier rather than three lines inlined somewhere: it is easy to leave out
+ * of the next field and impossible to notice afterwards.
+ *
+ * @param accessibleName what the field is for, read before its content. Applied unconditionally so
+ *   it survives the member typing, which is precisely when a visible hint stops naming the field.
+ * @param errorMessage the validation failure to attach, or `null` when the field is valid. Attached
+ *   to the field rather than left as a sibling below it, which is read minutes later in traversal
+ *   order, or never.
+ * @return the modifier chain.
+ */
+private fun Modifier.krtFieldSemantics(
+    accessibleName: String?,
+    errorMessage: String?,
+): Modifier =
+    this.semantics {
+        accessibleName?.let { contentDescription = it }
+        errorMessage?.let { error(it) }
+    }
+
+/**
+ * The inside of a [KrtTextField]: the hint, and the editable text itself.
+ *
+ * **This is the field's own decoration box, not a sibling of it**, and that placement is the whole
+ * point. A placeholder drawn beside the field — behind a `fillMaxWidth` text field, in the same
+ * `Box` — is obscured, and the accessibility layer prunes obscured nodes: measured on a device, the
+ * hint was plainly legible and entirely absent from the tree. Inside the decoration box it belongs
+ * to the field's node and is both drawn and readable.
+ *
+ * @param showPlaceholder whether the field is empty and the hint should therefore be visible.
+ * @param placeholder the hint, or `null` when the field has none.
+ * @param innerTextField the editable text, supplied by `BasicTextField`.
+ */
+@Composable
+private fun KrtFieldDecoration(
+    showPlaceholder: Boolean,
+    placeholder: String?,
+    innerTextField: @Composable () -> Unit,
+) {
+    Box(contentAlignment = Alignment.CenterStart) {
+        if (showPlaceholder && placeholder != null) {
+            Text(
+                text = placeholder,
+                style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+                color = KrtPalette.Gray2,
+            )
+        }
+        innerTextField()
     }
 }
 
