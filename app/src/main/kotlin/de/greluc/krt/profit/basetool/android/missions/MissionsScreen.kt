@@ -171,7 +171,10 @@ private fun MissionsFilterBar(
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
         KrtTextField(
-            value = state.query.text,
+            // The typed value, not the debounced one. Binding a controlled field to the
+            // debounced term feeds the previous value back on every recomposition and the
+            // character the member just typed disappears (REQ-APP-MIS-004).
+            value = state.searchText,
             onValueChange = onSearchChanged,
             placeholder = stringResource(R.string.missions_search_placeholder),
             modifier = Modifier.fillMaxWidth().testTag(MISSIONS_SEARCH_TAG),

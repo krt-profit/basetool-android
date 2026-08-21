@@ -160,9 +160,30 @@ runner).
   `Unable to locate dependency`, and that message names the version to write. Why it is pinned at
   all: `docs/ANDROID_APP_DEV_CI.md` § 4.
 
-Local backend = the main repo's isolated test stack (`docker-compose.test.yml`,
-`--env-file .env.test`). The emulator reaches it via `https://10.0.2.2:<port>`; its
-self-signed certificate is trusted **only** via Network Security Config `<debug-overrides>`.
+Local backend = the main repo's isolated test stack — and for emulator work it needs **three**
+compose files, not two:
+
+```bash
+docker compose --env-file .env.test -f docker-compose.yml -f docker-compose.test.yml \
+    -f docker-compose.android.yml --profile dev up -d
+```
+
+**Omitting `docker-compose.android.yml` is the single most expensive mistake in this repo's local
+setup.** Without it Keycloak advertises `host.docker.internal`, which containers and the host
+browser resolve and the emulator cannot — Play-store system images cannot be rooted to add a hosts
+entry. The login then fails *after* the Keycloak form with `DNS_PROBE_FINISHED_NXDOMAIN`, which
+reads as a broken realm rather than a topology mismatch. The override pins the issuer to
+`127.0.0.1:18080`, which is exactly what the `dev` flavour's `OIDC_ISSUER` already expects, and
+gives the backend a split-horizon JWKS URL so it can still validate those tokens. While it is in
+effect the **web** frontend's own login does not work; it is an app-work override.
+
+The device reaches the stack through `adb reverse` (`tcp:18080`, `tcp:11261`, `tcp:18081`), not
+through `10.0.2.2` — a direct socket to that address was measured to time out on this machine even
+though the browser loads the same URL. The tunnels do not survive an emulator restart. After a
+`down --volumes`, `adb shell pm clear` the app as well: a refresh token from the previous stack
+fails against the new realm, and `pm clear` also drops the per-app locale, so set German again.
+
+The self-signed certificate is trusted **only** via Network Security Config `<debug-overrides>`.
 The `prod` flavor never trusts custom anchors and has no runtime-switchable endpoints.
 
 ## Linting / static analysis
