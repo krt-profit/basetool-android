@@ -63,6 +63,35 @@ class ApiReader(
     ): ApiResult<T> = call(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).get(), deserializer)
 
     /**
+     * Performs one GET with query parameters and parses its body.
+     *
+     * The parameters are handed to `HttpUrl` as **raw** values and encoded exactly once, by it.
+     * Building the query by string concatenation instead is how a member's search term containing
+     * `&`, `=` or `+` either truncates the request or arrives double-encoded and matches nothing —
+     * a failure that looks like "the server found nothing" rather than like a bug.
+     *
+     * The values never reach the diagnostic: [call] logs the bare path, and a search term is member
+     * input (REQ-OBS-004 in the main repo).
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param query the parameters, unencoded; a name may repeat for a list-valued parameter
+     * @param deserializer the serializer for [T]
+     * @return the parsed value, or the classified failure
+     */
+    suspend fun <T> get(
+        path: String,
+        query: List<Pair<String, String>>,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> {
+        val url =
+            "$baseUrl$path".toHttpUrl().newBuilder()
+                .apply { query.forEach { (name, value) -> addQueryParameter(name, value) } }
+                .build()
+        return call(path, Request.Builder().url(url).get(), deserializer)
+    }
+
+    /**
      * Executes a prepared request and parses its body.
      *
      * The builder arrives without a URL so the caller cannot accidentally address a different host

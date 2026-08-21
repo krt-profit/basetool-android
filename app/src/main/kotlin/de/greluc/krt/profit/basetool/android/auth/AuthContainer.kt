@@ -27,6 +27,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
+import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
@@ -178,6 +179,22 @@ class AuthContainer(
      */
     val orgUnits: OrgUnitRepository by lazy {
         OrgUnitRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Einsatz list.
+     *
+     * Shares [apiClient] with the gates and the switcher, so the org pin the switcher writes is
+     * already on every request this makes. Takes [serverClock] because "hide past Einsätze" is a
+     * lower bound on time, and a phone whose clock runs fast would otherwise hide the one that is
+     * about to start.
+     */
+    val missions: MissionRepository by lazy {
+        MissionRepository(
+            httpClient = apiClient,
+            baseUrl = BuildConfig.API_BASE_URL,
+            clock = serverClock,
+        )
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

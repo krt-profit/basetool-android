@@ -249,6 +249,10 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Compose rendering tests under Robolectric. The same pair `:core:designsystem` already
+    // wires; the app module needs it for the screen tests of the feature slices.
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // The only instrumented tests in the project, and they exist for one reason: the trust anchor
     // below cannot be proven anywhere else. Android applies the network security config to the

@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die Einsatzliste ist da.** Statt des Platzhalters zeigt der Reiter „Einsätze" jetzt die echten Einsätze der aktiven Org-Einheit, nach Tag gruppiert („Heute", „Morgen", sonst Wochentag und Datum), mit Status, Treffzeit und Einheit. Suchen, nach Status filtern, vergangene Einsätze ein- und ausblenden, nachladen und per Ziehen aktualisieren — alles serverseitig gefiltert, damit die angezeigte Anzahl stimmt. Das Antippen eines Eintrags öffnet noch nichts; die Detailansicht folgt (REQ-APP-MIS-001…007).
+
 - **Die App zeigt jetzt die eigene Org-Einheit an und lässt sie umschalten.** Die Kopfzeile trug
   bisher einen festen Platzhalter; sie nennt jetzt die Einheit, in der man tatsächlich arbeitet,
   und jede Anfrage an den Server ist auf sie bezogen. Wer mehreren Einheiten angehört, wählt über
