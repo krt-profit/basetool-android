@@ -34,6 +34,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
@@ -85,6 +87,8 @@ private fun isExpandedWindow(): Boolean =
  * @param notifications drives the inbox and the bell badge.
  * @param dashboard drives the Übersicht.
  * @param hangar drives the Hangar.
+ * @param bank drives the Konten list.
+ * @param bankAccount builds a view model for one account.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -101,6 +105,8 @@ fun BasetoolApp(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
+    bank: BankViewModel,
+    bankAccount: (String) -> BankAccountViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -204,6 +210,8 @@ fun BasetoolApp(
                     notifications = notifications,
                     dashboard = dashboard,
                     hangar = hangar,
+                    bank = bank,
+                    bankAccount = bankAccount,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )

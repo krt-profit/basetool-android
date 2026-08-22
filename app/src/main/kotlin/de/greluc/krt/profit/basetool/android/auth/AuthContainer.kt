@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
+import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
@@ -253,6 +254,16 @@ class AuthContainer(
      */
     val hangar: HangarRepository by lazy {
         HangarRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The org bank a member may see.
+     *
+     * The member-facing paths only; the bank-employee surface that lists every account in the
+     * organisation is not reachable from this app.
+     */
+    val bank: BankRepository by lazy {
+        BankRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

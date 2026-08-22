@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die Bank ist da — Konten und Kontodetail.** Jede für dich sichtbare Kasse mit Kontostand, 30-Tage-Bewegung und gezeichneter Verlaufslinie; im Detail der vollständige Buchungsverlauf zum Nachladen. Einzahlungen stehen grün mit +, Auszahlungen rot mit −, und eine Buchungsart, die diese App nicht kennt, bekommt kein erfundenes Vorzeichen. Buchungen beantragen und freigeben bleibt der Weboberfläche vorbehalten (REQ-APP-BANK-001…005).
+
 - **Der Hangar ist da.** Die eigenen Schiffe als Karten mit Typ, Hersteller, Versicherung, Ort und Fitted-Zustand, dazu die Aggregation über die aktive Org-Einheit — beide nach Schiffstyp filterbar. Was fehlt, sagt die Karte auch: „Keine Versicherung" statt eines leeren Feldes. Schiffe anlegen, ändern und importieren bleibt vorerst der Weboberfläche vorbehalten (REQ-APP-HANGAR-001…005).
 
 - **Die Übersicht zeigt jetzt echte Daten statt eines Platzhalters.** Begrüßung mit Name, Org-Einheit und Datum, die Ankündigung der Organisation (antippen klappt sie auf), die Einsätze der nächsten sieben Tage und eine Vorschau des Ungelesenen. Ankündigung und Einsatzband laden unabhängig: fällt eines aus, bleibt das andere stehen. Ist nichts angekündigt, erscheint kein leeres Band, sondern gar keines (REQ-APP-DASH-001…007).

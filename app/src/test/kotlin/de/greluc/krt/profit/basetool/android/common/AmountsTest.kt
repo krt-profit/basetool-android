@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-package de.greluc.krt.profit.basetool.android.missions
+package de.greluc.krt.profit.basetool.android.common
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -21,7 +21,7 @@ import java.util.Locale
  * The fix must not undo the reason the raw string was kept in the first place: no `Double` ever
  * touches these values.
  */
-class MissionAmountsTest {
+class AmountsTest {
     private val german = Locale.GERMAN
 
     @Test

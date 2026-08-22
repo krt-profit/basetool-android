@@ -320,4 +320,32 @@
     <string name="hangar_empty_filtered_message">Kein Schiffstyp passt zu diesem Filter.</string>
     <string name="hangar_error_title">Signal Lost</string>
     <string name="hangar_error_message">Der Hangar konnte nicht geladen werden.</string>
+    <!-- Bank (design chapter 12) -->
+    <string name="bank_title">Bank</string>
+    <string name="bank_accounts_empty_title">Keine Konten</string>
+    <string name="bank_accounts_empty_message">Für dich ist kein Konto der Org-Einheit sichtbar.</string>
+    <string name="bank_error_title">Signal Lost</string>
+    <string name="bank_error_message">Die Bank konnte nicht geladen werden.</string>
+    <string name="bank_delta_30d">%1$s · 30 Tage</string>
+    <string name="bank_balance">Kontostand</string>
+    <string name="bank_transactions">Transaktionen</string>
+    <string name="bank_transactions_empty">Noch keine Buchungen.</string>
+    <plurals name="bank_transactions_count">
+        <item quantity="one">%1$d von %2$d Buchung</item>
+        <item quantity="other">%1$d von %2$d Buchungen</item>
+    </plurals>
+    <string name="bank_transactions_end">Ende des Verlaufs</string>
+    <string name="bank_account_error_forbidden_title">Access Denied</string>
+    <string name="bank_account_error_forbidden_message">Dieses Konto ist für dich nicht einsehbar.</string>
+    <string name="bank_account_error_missing_title">Signal Lost</string>
+    <string name="bank_account_error_missing_message">Dieses Konto gibt es nicht mehr.</string>
+    <string name="bank_account_error_title">System Malfunction</string>
+    <string name="bank_account_error_message">Das Konto konnte nicht geladen werden.</string>
+    <string name="bank_type_deposit">Einzahlung</string>
+    <string name="bank_type_withdrawal">Auszahlung</string>
+    <string name="bank_type_transfer">Übertrag</string>
+    <string name="bank_type_holder_transfer">Verwahrerwechsel</string>
+    <string name="bank_type_reversal">Storno</string>
+    <string name="bank_type_wipe_reset">Wipe-Zurücksetzung</string>
+    <string name="bank_sparkline_description">Verlauf des Kontostands über 30 Tage</string>
 </resources>

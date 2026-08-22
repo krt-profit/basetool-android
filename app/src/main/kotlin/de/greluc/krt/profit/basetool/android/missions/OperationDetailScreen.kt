@@ -29,6 +29,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.OperationDetail
 import de.greluc.krt.profit.basetool.android.core.data.OperationMissionResult
 import de.greluc.krt.profit.basetool.android.core.data.OperationOverview

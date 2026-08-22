@@ -303,4 +303,32 @@
     <string name="hangar_empty_filtered_message">No ship type matches this filter.</string>
     <string name="hangar_error_title">Signal Lost</string>
     <string name="hangar_error_message">The hangar could not be loaded.</string>
+    <!-- Bank (design chapter 12) -->
+    <string name="bank_title">Bank</string>
+    <string name="bank_accounts_empty_title">No accounts</string>
+    <string name="bank_accounts_empty_message">No account of the org unit is visible to you.</string>
+    <string name="bank_error_title">Signal Lost</string>
+    <string name="bank_error_message">The bank could not be loaded.</string>
+    <string name="bank_delta_30d">%1$s · 30 days</string>
+    <string name="bank_balance">Balance</string>
+    <string name="bank_transactions">Transactions</string>
+    <string name="bank_transactions_empty">No bookings yet.</string>
+    <plurals name="bank_transactions_count">
+        <item quantity="one">%1$d of %2$d booking</item>
+        <item quantity="other">%1$d of %2$d bookings</item>
+    </plurals>
+    <string name="bank_transactions_end">End of the ledger</string>
+    <string name="bank_account_error_forbidden_title">Access Denied</string>
+    <string name="bank_account_error_forbidden_message">This account is not visible to you.</string>
+    <string name="bank_account_error_missing_title">Signal Lost</string>
+    <string name="bank_account_error_missing_message">This account no longer exists.</string>
+    <string name="bank_account_error_title">System Malfunction</string>
+    <string name="bank_account_error_message">The account could not be loaded.</string>
+    <string name="bank_type_deposit">Deposit</string>
+    <string name="bank_type_withdrawal">Withdrawal</string>
+    <string name="bank_type_transfer">Transfer</string>
+    <string name="bank_type_holder_transfer">Holder transfer</string>
+    <string name="bank_type_reversal">Reversal</string>
+    <string name="bank_type_wipe_reset">Wipe reset</string>
+    <string name="bank_sparkline_description">Balance over the last 30 days</string>
 </resources>
