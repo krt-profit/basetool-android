@@ -27,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -44,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -77,6 +80,7 @@ private fun isExpandedWindow(): Boolean =
  * @param missionDetail builds a view model for one Einsatz.
  * @param operations drives the Operationen list.
  * @param operationDetail builds a view model for one Operation.
+ * @param notifications drives the inbox and the bell badge.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -90,6 +94,7 @@ fun BasetoolApp(
     missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
     operationDetail: (String) -> OperationDetailViewModel,
+    notifications: NotificationsViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -102,8 +107,18 @@ fun BasetoolApp(
     val expanded = isExpandedWindow()
     var orgSwitcherOpen by rememberSaveable { mutableStateOf(false) }
 
-    // TODO(feature:notifications): the unread count comes from the backend with the inbox.
-    val unreadCount = 3
+    // The badge and the inbox read one state, so they cannot disagree — a member seeing "3 neu"
+    // over a list whose top rows are already read has been told something false by the app itself.
+    val notificationState by notifications.state.collectAsStateWithLifecycle()
+    val unreadCount = notificationState.unread.toInt()
+
+    // The push stream and the poll behind the badge run only while the app is in the foreground.
+    // Holding a socket open for a screen nobody is looking at spends the member's battery to learn
+    // something they cannot see.
+    LifecycleResumeEffect(notifications) {
+        notifications.onForeground()
+        onPauseOrDispose { notifications.onBackground() }
+    }
 
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
     val selectedRoute = selectedTopLevelRoute(root, destinations)
@@ -180,6 +195,7 @@ fun BasetoolApp(
                     missionDetail = missionDetail,
                     operations = operations,
                     operationDetail = operationDetail,
+                    notifications = notifications,
                 )
             }
             if (!expanded) {

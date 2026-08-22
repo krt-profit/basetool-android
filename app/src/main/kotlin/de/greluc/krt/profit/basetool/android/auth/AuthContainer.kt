@@ -29,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
+import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
@@ -218,6 +219,17 @@ class AuthContainer(
      */
     val identity: IdentityRepository by lazy {
         IdentityRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The notification inbox, its unread count and its push stream.
+     *
+     * Shares [apiClient] like everything else, which matters more here than elsewhere: the stream
+     * derives its own client from it, so the bearer token, the mandatory headers and the connection
+     * pool follow the long-lived SSE connection without a second configuration to keep in sync.
+     */
+    val notifications: NotificationRepository by lazy {
+        NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

@@ -50,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
@@ -110,6 +111,9 @@ class MainActivity : AppCompatActivity() {
     private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
 
     private val operationsViewModel: OperationsViewModel by viewModels { authViewModels(container) }
+
+    private val notificationsViewModel: NotificationsViewModel by
+        viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -210,6 +214,7 @@ class MainActivity : AppCompatActivity() {
                                 missions = missionsViewModel,
                                 missionDetail = { MissionDetailViewModel(container.missions, it) },
                                 operations = operationsViewModel,
+                                notifications = notificationsViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -362,6 +367,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
                 initializer { MissionsViewModel(container.missions) }
                 initializer { OperationsViewModel(container.operations) }
+                initializer { NotificationsViewModel(container.notifications) }
             }
 
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */

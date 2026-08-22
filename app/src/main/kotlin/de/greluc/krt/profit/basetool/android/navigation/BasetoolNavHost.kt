@@ -29,6 +29,9 @@ import de.greluc.krt.profit.basetool.android.missions.OperationDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -50,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  *   knows the dependencies, and this is where the two meet.
  * @param operations drives the Operationen list.
  * @param operationDetail builds a view model for one Operation, the same way [missionDetail] does.
+ * @param notifications drives the inbox and the bell badge.
  * @param onLogout ends the session.
  * @param settings everything the Einstellungen screen needs that the graph cannot know.
  * @param modifier layout modifier.
@@ -62,6 +66,7 @@ fun BasetoolNavHost(
     missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
     operationDetail: (String) -> OperationDetailViewModel,
+    notifications: NotificationsViewModel,
     onLogout: () -> Unit,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
@@ -109,6 +114,18 @@ fun BasetoolNavHost(
                             onOpenOperation = { navController.navigate(operationDetailRoute(it)) },
                             onOpenMissions = {
                                 navController.navigate(KrtDestination.Missions.route)
+                            },
+                        )
+                    }
+
+                    KrtDestination.Notifications -> {
+                        // The badge is already live from the shell, so this only adds the list.
+                        // Once, like the other lists: coming back should show it, not re-read it.
+                        LaunchedEffect(Unit) { notifications.loadOnce() }
+                        NotificationsRoute(
+                            viewModel = notifications,
+                            onOpen = { notification ->
+                                notificationDestination(notification)?.let(navController::navigate)
                             },
                         )
                     }

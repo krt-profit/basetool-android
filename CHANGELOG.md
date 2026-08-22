@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Benachrichtigungen sind da — Posteingang, Zähler an der Glocke und Live-Push.** Der Reiter zeigt die neuesten 50 mit „Mehr laden", ungelesene deutlich abgesetzt, jede Zeile mit dem Symbol ihres Bereichs. Die Zahl an der Glocke stimmt jetzt wirklich: sie kommt vom Server, wird per Push sofort und zusätzlich jede Minute aktualisiert, und bleibt bei einem Fehler stehen, statt fälschlich null zu zeigen. Beides läuft nur, solange die App im Vordergrund ist. Als gelesen markieren und Löschen folgen später (REQ-APP-NOTIF-001…008).
+
 - **Operationen sind da — Liste und Detail.** Über der Einsatzliste steht jetzt der Umschalter „Einsätze / Operationen"; die Operationen-Liste trennt laufende von abgeschlossenen und lässt sich suchen und nach Status filtern. Das Detail zeigt das Finanz-Rollup, das Ergebnis je Einsatz, alle Auszahlungszeilen mit ihrem Stand und den eigenen Anteil. Vorläufige Beträge und eine vom Server gekürzte Einsatzliste werden als solche benannt. Auszahlungen markieren bleibt der Weboberfläche vorbehalten (REQ-APP-OPS-001…011).
 
 - **Ein Einsatz lässt sich jetzt öffnen.** Das Antippen einer Zeile zeigt den Einsatz mit sieben Reitern: Übersicht, Teilnehmer, Einheiten, Ablauf, Ziele, Frequenzen und Finanzen. Die Finanzen werden erst geladen, wenn man den Reiter öffnet — sie brauchen eine eigene Berechtigung, und wer sie nicht hat, sieht den Einsatz trotzdem vollständig. Frequenzen kopiert ein Antippen in die Zwischenablage; Beträge stehen gruppiert und mit Vorzeichen (+86.400 / −11.700). Anmelden, Check-In und Finanz-Einträge folgen später (REQ-APP-MIS-008…012).

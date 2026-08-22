@@ -231,4 +231,33 @@
     <string name="operation_detail_error_missing_message">This Operation no longer exists.</string>
     <string name="operation_detail_error_title">System Malfunction</string>
     <string name="operation_detail_error_message">The Operation could not be loaded.</string>
+    <!-- Benachrichtigungen (design chapter 07) -->
+    <string name="notifications_title">Benachrichtigungen</string>
+    <plurals name="notifications_unread">
+        <item quantity="one">%1$d new</item>
+        <item quantity="other">%1$d new</item>
+    </plurals>
+    <string name="notifications_empty_title">No notifications</string>
+    <string name="notifications_empty_message">New events from Einsätze, Aufträge and the Bank appear here.</string>
+    <string name="notifications_error_title">Signal Lost</string>
+    <string name="notifications_error_message">The notifications could not be loaded.</string>
+    <plurals name="notifications_showing">
+        <item quantity="one">Showing the latest %1$d of %2$d notification</item>
+        <item quantity="other">Showing the latest %1$d of %2$d notifications</item>
+    </plurals>
+    <string name="notifications_end_of_list">End of list</string>
+    <string name="notifications_unread_marker">Unread</string>
+    <!-- One per server-side notification type; mirrors the web app's notifications.type.* keys.
+         Placeholders are NAMED because the two bundles order the values differently. -->
+    <string name="notifications_type_generic">New notification</string>
+    <string name="notifications_type_job_order_created">New job order #{displayId} for {orgUnit}</string>
+    <string name="notifications_type_job_order_updated">Job order #{displayId} for {orgUnit} was changed by requester {requester}</string>
+    <string name="notifications_type_bank_request_created">New deposit/withdrawal request: {accountNo} for {amount} aUEC by {requester}</string>
+    <string name="notifications_type_bank_request_confirmed">Your booking request {accountNo} for {amount} aUEC was confirmed</string>
+    <string name="notifications_type_bank_request_rejected">Your booking request {accountNo} for {amount} aUEC was rejected: {reason}</string>
+    <string name="notifications_type_bank_responsible_confirmed">A request on your account {accountNo} for {amount} aUEC was confirmed</string>
+    <string name="notifications_type_bank_responsible_rejected">A request on your account {accountNo} for {amount} aUEC was rejected: {reason}</string>
+    <string name="notifications_type_registration_pending">New registration awaiting approval: {username}</string>
+    <string name="notifications_type_exchange_interest">{interessent} registered interest in your listing for {material}</string>
+    <string name="notifications_type_exchange_fulfilment">{lieferant} can fulfil your request for {material}</string>
 </resources>

@@ -248,4 +248,33 @@
     <string name="operation_detail_error_missing_message">Diese Operation gibt es nicht mehr.</string>
     <string name="operation_detail_error_title">System Malfunction</string>
     <string name="operation_detail_error_message">Die Operation konnte nicht geladen werden.</string>
+    <!-- Benachrichtigungen (design chapter 07) -->
+    <string name="notifications_title">Benachrichtigungen</string>
+    <plurals name="notifications_unread">
+        <item quantity="one">%1$d neu</item>
+        <item quantity="other">%1$d neu</item>
+    </plurals>
+    <string name="notifications_empty_title">Keine Benachrichtigungen</string>
+    <string name="notifications_empty_message">Neue Ereignisse aus Einsätzen, Aufträgen und Bank erscheinen hier.</string>
+    <string name="notifications_error_title">Signal Lost</string>
+    <string name="notifications_error_message">Die Benachrichtigungen konnten nicht geladen werden.</string>
+    <plurals name="notifications_showing">
+        <item quantity="one">Zeige die neueste %1$d von %2$d Benachrichtigung</item>
+        <item quantity="other">Zeige die neuesten %1$d von %2$d Benachrichtigungen</item>
+    </plurals>
+    <string name="notifications_end_of_list">Ende der Liste</string>
+    <string name="notifications_unread_marker">Ungelesen</string>
+    <!-- One per server-side notification type; mirrors the web app's notifications.type.* keys.
+         Placeholders are NAMED because the two bundles order the values differently. -->
+    <string name="notifications_type_generic">Neue Benachrichtigung</string>
+    <string name="notifications_type_job_order_created">Neuer Auftrag #{displayId} für {orgUnit}</string>
+    <string name="notifications_type_job_order_updated">Auftrag #{displayId} für {orgUnit} vom Auftraggeber {requester} geändert</string>
+    <string name="notifications_type_bank_request_created">Neuer Ein-/Auszahlungsantrag: {accountNo} über {amount} aUEC von {requester}</string>
+    <string name="notifications_type_bank_request_confirmed">Dein Buchungsantrag {accountNo} über {amount} aUEC wurde bestätigt</string>
+    <string name="notifications_type_bank_request_rejected">Dein Buchungsantrag {accountNo} über {amount} aUEC wurde abgelehnt: {reason}</string>
+    <string name="notifications_type_bank_responsible_confirmed">Antrag auf deinem Konto {accountNo} über {amount} aUEC wurde bestätigt</string>
+    <string name="notifications_type_bank_responsible_rejected">Antrag auf deinem Konto {accountNo} über {amount} aUEC wurde abgelehnt: {reason}</string>
+    <string name="notifications_type_registration_pending">Neue Registrierung wartet auf Freigabe: {username}</string>
+    <string name="notifications_type_exchange_interest">{interessent} hat Interesse an deinem Angebot für {material} angemeldet</string>
+    <string name="notifications_type_exchange_fulfilment">{lieferant} kann dein Gesuch für {material} erfüllen</string>
 </resources>
