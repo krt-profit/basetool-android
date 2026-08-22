@@ -42,6 +42,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtShee
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -73,6 +75,8 @@ private fun isExpandedWindow(): Boolean =
  * @param settings what the Einstellungen screen needs from the activity.
  * @param missions drives the Einsatz list.
  * @param missionDetail builds a view model for one Einsatz.
+ * @param operations drives the Operationen list.
+ * @param operationDetail builds a view model for one Operation.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -84,6 +88,8 @@ fun BasetoolApp(
     settings: SettingsBindings,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
+    operations: OperationsViewModel,
+    operationDetail: (String) -> OperationDetailViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -172,6 +178,8 @@ fun BasetoolApp(
                     settings = settings,
                     missions = missions,
                     missionDetail = missionDetail,
+                    operations = operations,
+                    operationDetail = operationDetail,
                 )
             }
             if (!expanded) {

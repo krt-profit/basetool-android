@@ -25,6 +25,10 @@ import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationDetailRoute
+import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationsRoute
+import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -44,6 +48,8 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param missions drives the Einsatz list.
  * @param missionDetail builds a view model for one Einsatz; the graph knows the id, the activity
  *   knows the dependencies, and this is where the two meet.
+ * @param operations drives the Operationen list.
+ * @param operationDetail builds a view model for one Operation, the same way [missionDetail] does.
  * @param onLogout ends the session.
  * @param settings everything the Einstellungen screen needs that the graph cannot know.
  * @param modifier layout modifier.
@@ -54,6 +60,8 @@ fun BasetoolNavHost(
     onOpenDestination: (KrtDestination) -> Unit,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
+    operations: OperationsViewModel,
+    operationDetail: (String) -> OperationDetailViewModel,
     onLogout: () -> Unit,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
@@ -81,6 +89,27 @@ fun BasetoolNavHost(
                         MissionsRoute(
                             viewModel = missions,
                             onOpenMission = { navController.navigate(missionDetailRoute(it)) },
+                            // The segment navigates rather than toggling: both lists are their own
+                            // destination, and a local toggle would leave the navigation bar
+                            // highlighting the one the member is no longer looking at.
+                            onOpenOperations = {
+                                navController.navigate(KrtDestination.Operations.route)
+                            },
+                        )
+                    }
+
+                    KrtDestination.Operations -> {
+                        // Loaded here for the same reason the Einsatz list is, and only once: the
+                        // view model outlives the screen, and switching the segment back and forth
+                        // should show the list rather than re-fetch it. Pull-to-refresh is how a
+                        // member asks for fresh rows.
+                        LaunchedEffect(Unit) { operations.loadOnce() }
+                        OperationsRoute(
+                            viewModel = operations,
+                            onOpenOperation = { navController.navigate(operationDetailRoute(it)) },
+                            onOpenMissions = {
+                                navController.navigate(KrtDestination.Missions.route)
+                            },
                         )
                     }
 
@@ -124,6 +153,18 @@ fun BasetoolNavHost(
                         val viewModel = remember(missionId) { missionDetail(missionId) }
                         LaunchedEffect(missionId) { viewModel.load() }
                         MissionDetailRoute(viewModel = viewModel)
+                    }
+
+                    KrtDestination.OperationDetail -> {
+                        val operationId = backStackEntry.arguments?.getString(OPERATION_ID_ARG).orEmpty()
+                        // Keyed on the id, so opening a second Operation builds a second view model
+                        // rather than showing the first one under the second one's title.
+                        val viewModel = remember(operationId) { operationDetail(operationId) }
+                        LaunchedEffect(operationId) { viewModel.load() }
+                        OperationDetailRoute(
+                            viewModel = viewModel,
+                            onOpenMission = { navController.navigate(missionDetailRoute(it)) },
+                        )
                     }
 
                     else -> {

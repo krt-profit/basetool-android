@@ -580,13 +580,17 @@ fun KrtToggle(
  *
  * **48 dp tall, not the 36 px of the web design.** This is the platform correction [KrtSpacing]
  * already documents for touch targets: on a phone this is a finger target, and a 36 dp one fails
- * Android's accessibility minimum. Segment width stays as designed.
+ * Android's accessibility minimum. Segment width stays as designed unless [stretch] is set.
  *
  * @param options the segment labels, in order; each must be short enough not to wrap.
  * @param selectedIndex index of the active segment.
  * @param onSelect invoked with the index of the tapped segment.
  * @param modifier layout modifier.
  * @param enabled whether the control accepts input.
+ * @param stretch whether the segments divide the available width equally instead of taking the
+ *   fixed 52 dp of design chapter 13. The fixed width is right for a pair like DE/EN that sits
+ *   beside other controls; a segment that *is* the control — the Einsätze/Operationen switch above
+ *   a list (chapter 06 §1) — spans the row, and a word like "Operationen" does not fit 52 dp.
  */
 @Composable
 fun KrtSegmentedControl(
@@ -595,6 +599,7 @@ fun KrtSegmentedControl(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    stretch: Boolean = false,
 ) {
     Row(
         modifier =
@@ -616,8 +621,7 @@ fun KrtSegmentedControl(
             }
             Box(
                 modifier =
-                    Modifier
-                        .width(SEGMENT_WIDTH)
+                    (if (stretch) Modifier.weight(1f) else Modifier.width(SEGMENT_WIDTH))
                         .height(KrtSpacing.touchTarget)
                         .background(
                             if (active) MaterialTheme.colorScheme.primary else Color.Transparent,

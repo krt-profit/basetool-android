@@ -46,6 +46,8 @@ import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
@@ -106,6 +108,8 @@ class MainActivity : AppCompatActivity() {
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
     private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
+
+    private val operationsViewModel: OperationsViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -205,6 +209,10 @@ class MainActivity : AppCompatActivity() {
                                 orgUnit = orgUnit,
                                 missions = missionsViewModel,
                                 missionDetail = { MissionDetailViewModel(container.missions, it) },
+                                operations = operationsViewModel,
+                                operationDetail = {
+                                    OperationDetailViewModel(container.operations, container.identity, it)
+                                },
                                 onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,
                                 settings =
@@ -353,6 +361,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { TermsGateViewModel(container.terms) }
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
                 initializer { MissionsViewModel(container.missions) }
+                initializer { OperationsViewModel(container.operations) }
             }
 
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */

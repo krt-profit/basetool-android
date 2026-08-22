@@ -70,11 +70,13 @@ class MissionsScreenTest {
      * @param state what to draw.
      * @param opened receives the id of a tapped row.
      * @param statuses receives the status set after a chip tap.
+     * @param segmentTaps records a tap on the Operationen half of the segment.
      */
     private fun show(
         state: MissionsState,
         opened: MutableList<String> = mutableListOf(),
         statuses: MutableList<Set<MissionStatus>> = mutableListOf(),
+        segmentTaps: MutableList<Unit> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -87,6 +89,7 @@ class MissionsScreenTest {
                     onRefresh = {},
                     onLoadMore = {},
                     onOpenMission = { opened.add(it) },
+                    onOpenOperations = { segmentTaps.add(Unit) },
                 )
             }
         }
