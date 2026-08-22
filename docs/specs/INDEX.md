@@ -19,6 +19,7 @@ the binding source** (marked `Doc type: living plan`):
 | [`hangar.md`](hangar.md) (`REQ-APP-HANGAR-*`) — **exists** (`001`–`005`) | Hangar: my-ships over the permission-gated all-ships read, two halves with separate state, the flattened card, three distinct empty states, and why the design's three-number band cannot be computed |
 | [`bank.md`](bank.md) (`REQ-APP-BANK-*`) — **exists** (`001`–`005`) | Bank: the member-facing paths over the bank-employee ones, account and ledger failing together, the sign taken from the booking kind, and the balance line drawn rather than charted |
 | [`orders.md`](orders.md) (`REQ-APP-ORDERS-*`) — **exists** (`001`–`007`) | Aufträge: server-side status filter with no client scope, the redacted flag said out loud, the progress bar as a length rather than a figure, no invented "Zugesagt" total, and the notification deep link |
+| [`inventory.md`](inventory.md) (`REQ-APP-INV-*`) — **exists** (`001`–`006`) | Lager: two reads for two tree levels, a group that keeps what it loaded but not across a refresh, a failed group that stays open, and a page-level stock filter that does not overstate itself |
 | `privacy.md` (`REQ-APP-PRIV-*`) | dependency/data-flow gate, § 25 TDDDG storage table, permissions |
 | `ui.md` (`REQ-APP-UI-*`) | KRT design tokens, adaptive layout rules, i18n + copy rules, Fan Kit compliance band (see `core/designsystem/fankit/`) — extracted from the binding design spec at `docs/design/android/` |
 | `offline.md` (`REQ-APP-OFFLINE-*`) | read-cache scope, backup exclusion, wipe semantics |

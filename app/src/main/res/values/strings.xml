@@ -388,4 +388,26 @@
     <string name="order_detail_error_missing_message">Diesen Auftrag gibt es nicht mehr.</string>
     <string name="order_detail_error_title">System Malfunction</string>
     <string name="order_detail_error_message">Der Auftrag konnte nicht geladen werden.</string>
+    <!-- Lager (design chapter 09) -->
+    <string name="inventory_title">Lager</string>
+    <string name="inventory_with_stock_only">Nur mit Bestand</string>
+    <string name="inventory_quality">Q %1$s</string>
+    <string name="inventory_personal">Persönlich</string>
+    <plurals name="inventory_entry_count">
+        <item quantity="one">%1$d Eintrag</item>
+        <item quantity="other">%1$d Einträge</item>
+    </plurals>
+    <plurals name="inventory_group_count">
+        <item quantity="one">%1$d von %2$d Material</item>
+        <item quantity="other">%1$d von %2$d Materialien</item>
+    </plurals>
+    <string name="inventory_end_of_list">Ende der Liste</string>
+    <string name="inventory_stacks_empty">In dieser Gruppe liegt nichts mehr.</string>
+    <string name="inventory_stacks_failed">Die Bestände dieser Gruppe konnten nicht geladen werden.</string>
+    <string name="inventory_empty_title">Leeres Lager</string>
+    <string name="inventory_empty_message">Für diese Org-Einheit ist kein Bestand erfasst.</string>
+    <string name="inventory_empty_filtered_title">Nichts mit Bestand</string>
+    <string name="inventory_empty_filtered_message">Auf dieser Seite hat kein Material einen Bestand.</string>
+    <string name="inventory_error_title">Signal Lost</string>
+    <string name="inventory_error_message">Das Lager konnte nicht geladen werden.</string>
 </resources>

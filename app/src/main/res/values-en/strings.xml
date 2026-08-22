@@ -371,4 +371,26 @@
     <string name="order_detail_error_missing_message">This order no longer exists.</string>
     <string name="order_detail_error_title">System Malfunction</string>
     <string name="order_detail_error_message">The order could not be loaded.</string>
+    <!-- Lager (design chapter 09) -->
+    <string name="inventory_title">Lager</string>
+    <string name="inventory_with_stock_only">In stock only</string>
+    <string name="inventory_quality">Q %1$s</string>
+    <string name="inventory_personal">Personal</string>
+    <plurals name="inventory_entry_count">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
+    <plurals name="inventory_group_count">
+        <item quantity="one">%1$d of %2$d material</item>
+        <item quantity="other">%1$d of %2$d materials</item>
+    </plurals>
+    <string name="inventory_end_of_list">End of list</string>
+    <string name="inventory_stacks_empty">Nothing is left in this group.</string>
+    <string name="inventory_stacks_failed">This group\'s holdings could not be loaded.</string>
+    <string name="inventory_empty_title">Empty Lager</string>
+    <string name="inventory_empty_message">No stock is recorded for this org unit.</string>
+    <string name="inventory_empty_filtered_title">Nothing in stock</string>
+    <string name="inventory_empty_filtered_message">No material on this page holds any stock.</string>
+    <string name="inventory_error_title">Signal Lost</string>
+    <string name="inventory_error_message">The Lager could not be loaded.</string>
 </resources>

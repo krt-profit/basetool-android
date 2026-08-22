@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
+import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
@@ -275,6 +276,16 @@ class AuthContainer(
      */
     val orders: JobOrderRepository by lazy {
         JobOrderRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Lager tree.
+     *
+     * Which org unit's Lager it is follows from the active-org-unit header this client already
+     * carries, so nothing about scope is configured here.
+     */
+    val inventory: InventoryRepository by lazy {
+        InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

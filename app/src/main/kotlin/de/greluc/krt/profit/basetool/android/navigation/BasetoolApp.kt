@@ -46,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtShee
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
@@ -93,6 +94,7 @@ private fun isExpandedWindow(): Boolean =
  * @param bankAccount builds a view model for one account.
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
+ * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -113,6 +115,7 @@ fun BasetoolApp(
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
+    inventory: InventoryViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -220,6 +223,7 @@ fun BasetoolApp(
                     bankAccount = bankAccount,
                     orders = orders,
                     orderDetail = orderDetail,
+                    inventory = inventory,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )

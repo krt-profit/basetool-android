@@ -32,6 +32,8 @@ import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.InventoryRoute
+import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
@@ -75,6 +77,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param bankAccount builds a view model for one account.
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
+ * @param inventory drives the Lager tree.
  * @param memberName the signed-in member's name, for the dashboard greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * @param onLogout ends the session.
@@ -96,6 +99,7 @@ fun BasetoolNavHost(
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
+    inventory: InventoryViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
@@ -132,6 +136,7 @@ fun BasetoolNavHost(
                         hangar = hangar,
                         bank = bank,
                         orders = orders,
+                        inventory = inventory,
                         memberName = memberName,
                         orgUnitName = orgUnitName,
                     )
@@ -171,6 +176,7 @@ fun BasetoolNavHost(
  * @param hangar drives the Hangar.
  * @param bank drives the Konten list.
  * @param orders drives the Auftrag queue.
+ * @param inventory drives the Lager tree.
  * @param memberName the member's name, for the greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * Named in lower case on purpose: it returns a value, and Compose's own naming rule reserves the
@@ -190,6 +196,7 @@ private fun listDestination(
     hangar: HangarViewModel,
     bank: BankViewModel,
     orders: OrdersViewModel,
+    inventory: InventoryViewModel,
     memberName: String?,
     orgUnitName: String?,
 ): Boolean {
@@ -264,6 +271,11 @@ private fun listDestination(
                 viewModel = orders,
                 onOpenOrder = { navController.navigate(orderDetailRoute(it)) },
             )
+        }
+
+        KrtDestination.Inventory -> {
+            LaunchedEffect(Unit) { inventory.loadOnce() }
+            InventoryRoute(viewModel = inventory)
         }
 
         else -> {

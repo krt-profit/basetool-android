@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
@@ -128,6 +129,8 @@ class MainActivity : AppCompatActivity() {
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
 
     private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
+
+    private val inventoryViewModel: InventoryViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -235,6 +238,7 @@ class MainActivity : AppCompatActivity() {
                                 bankAccount = { BankAccountViewModel(container.bank, it) },
                                 orders = ordersViewModel,
                                 orderDetail = { OrderDetailViewModel(container.orders, it) },
+                                inventory = inventoryViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -391,6 +395,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { HangarViewModel(container.hangar) }
                 initializer { BankViewModel(container.bank) }
                 initializer { OrdersViewModel(container.orders) }
+                initializer { InventoryViewModel(container.inventory) }
                 initializer {
                     DashboardViewModel(
                         container.missions,
