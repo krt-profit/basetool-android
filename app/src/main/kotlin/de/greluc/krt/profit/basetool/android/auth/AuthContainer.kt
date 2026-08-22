@@ -27,6 +27,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
+import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
@@ -230,6 +231,17 @@ class AuthContainer(
      */
     val notifications: NotificationRepository by lazy {
         NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The org-wide announcement on the dashboard.
+     *
+     * Its own repository rather than a field on the mission one: the two are unrelated reads behind
+     * unrelated permissions, and the dashboard is built so that one failing does not blank the
+     * other.
+     */
+    val announcements: AnnouncementRepository by lazy {
+        AnnouncementRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

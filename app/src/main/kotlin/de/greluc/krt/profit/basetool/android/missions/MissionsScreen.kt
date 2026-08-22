@@ -308,7 +308,7 @@ private fun MissionRow(
                 color = KrtPalette.White,
                 modifier = Modifier.weight(1f),
             )
-            KrtStatusBadge(text = mission.statusLabel(), tone = mission.statusTone())
+            KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -391,7 +391,7 @@ private fun MissionStatus.labelRes(): Int =
  *   untranslated word beats a missing badge, which would read as "no status".
  */
 @Composable
-private fun Mission.statusLabel(): String =
+internal fun Mission.missionStatusLabel(): String =
     if (status == MissionStatus.UNKNOWN) {
         rawStatus.orEmpty()
     } else {
@@ -404,7 +404,7 @@ private fun Mission.statusLabel(): String =
  * @return the design system's tone for the status; an unknown one is drawn as planned rather than
  *   as a problem, because "this build is older than the server" is not the member's fault.
  */
-private fun Mission.statusTone(): KrtStatusTone =
+internal fun Mission.missionStatusTone(): KrtStatusTone =
     when (status) {
         MissionStatus.PLANNED, MissionStatus.UNKNOWN -> KrtStatusTone.Planned
         MissionStatus.ACTIVE -> KrtStatusTone.Active

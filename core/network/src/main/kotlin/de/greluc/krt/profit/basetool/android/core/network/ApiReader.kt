@@ -63,6 +63,54 @@ class ApiReader(
     ): ApiResult<T> = call(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).get(), deserializer)
 
     /**
+     * Performs one GET whose answer may legitimately have **no body**.
+     *
+     * `GET /api/v1/announcement` is the case this exists for: it answers `204 No Content` when
+     * there is nothing to announce, and that is a result, not a failure. Read through [get] the
+     * empty body would fail to parse and surface as a broken server contract — an error banner
+     * where the correct rendering is no banner at all.
+     *
+     * An empty body on a `200` is treated the same way. A server that answers "nothing" with a
+     * zero-length body rather than a status is being sloppy, not broken, and the distinction is
+     * invisible to the member either way.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param deserializer the serializer for [T]
+     * @return the parsed value, `null` when the answer carried no body, or the classified failure
+     */
+    suspend fun <T> getOptional(
+        path: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T?> =
+        try {
+            httpClient.newCall(Request.Builder().url("$baseUrl$path".toHttpUrl()).get().build())
+                .await()
+                .use { response ->
+                    when {
+                        !response.isSuccessful -> {
+                            ApiResult.Failure(errorMapper.map(response))
+                        }
+
+                        else -> {
+                            val body = response.body.string()
+                            if (body.isBlank()) {
+                                ApiResult.Success(null)
+                            } else {
+                                ApiResult.Success(json.decodeFromString(deserializer, body))
+                            }
+                        }
+                    }
+                }
+        } catch (io: IOException) {
+            KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
+            ApiResult.Failure(ApiError.Network(io))
+        } catch (malformed: SerializationException) {
+            KrtLog.w(logTag, malformed) { "response could not be parsed: $path" }
+            ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
+        }
+
+    /**
      * Performs one GET with query parameters and parses its body.
      *
      * The parameters are handed to `HttpUrl` as **raw** values and encoded exactly once, by it.

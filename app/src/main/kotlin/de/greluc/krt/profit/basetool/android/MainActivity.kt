@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
@@ -114,6 +115,8 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationsViewModel: NotificationsViewModel by
         viewModels { authViewModels(container) }
+
+    private val dashboardViewModel: DashboardViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -215,6 +218,7 @@ class MainActivity : AppCompatActivity() {
                                 missionDetail = { MissionDetailViewModel(container.missions, it) },
                                 operations = operationsViewModel,
                                 notifications = notificationsViewModel,
+                                dashboard = dashboardViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -368,6 +372,13 @@ class MainActivity : AppCompatActivity() {
                 initializer { MissionsViewModel(container.missions) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer { NotificationsViewModel(container.notifications) }
+                initializer {
+                    DashboardViewModel(
+                        container.missions,
+                        container.announcements,
+                        container.serverClock,
+                    )
+                }
             }
 
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */

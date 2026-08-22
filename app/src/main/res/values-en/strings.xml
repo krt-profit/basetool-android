@@ -260,4 +260,18 @@
     <string name="notifications_type_registration_pending">New registration awaiting approval: {username}</string>
     <string name="notifications_type_exchange_interest">{interessent} registered interest in your listing for {material}</string>
     <string name="notifications_type_exchange_fulfilment">{lieferant} can fulfil your request for {material}</string>
+    <!-- Dashboard (design chapter 05) -->
+    <string name="dashboard_greeting">Welcome, %1$s</string>
+    <string name="dashboard_greeting_anonymous">Welcome</string>
+    <string name="dashboard_context">%1$s · %2$s</string>
+    <string name="dashboard_announcement">Information</string>
+    <string name="dashboard_announcement_expand">Show the full announcement</string>
+    <string name="dashboard_announcement_collapse">Collapse the announcement</string>
+    <string name="dashboard_missions">Einsätze in the next 7 days</string>
+    <string name="dashboard_missions_empty">Nothing is scheduled in the next 7 days.</string>
+    <string name="dashboard_missions_failed">The Einsätze could not be loaded.</string>
+    <string name="dashboard_missions_all">All Einsätze</string>
+    <string name="dashboard_notifications">Unread</string>
+    <string name="dashboard_notifications_all">View all</string>
+    <string name="dashboard_notifications_empty">Nothing unread.</string>
 </resources>

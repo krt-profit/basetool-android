@@ -277,4 +277,18 @@
     <string name="notifications_type_registration_pending">Neue Registrierung wartet auf Freigabe: {username}</string>
     <string name="notifications_type_exchange_interest">{interessent} hat Interesse an deinem Angebot für {material} angemeldet</string>
     <string name="notifications_type_exchange_fulfilment">{lieferant} kann dein Gesuch für {material} erfüllen</string>
+    <!-- Dashboard (design chapter 05) -->
+    <string name="dashboard_greeting">Willkommen, %1$s</string>
+    <string name="dashboard_greeting_anonymous">Willkommen</string>
+    <string name="dashboard_context">%1$s · %2$s</string>
+    <string name="dashboard_announcement">Information</string>
+    <string name="dashboard_announcement_expand">Ganze Information anzeigen</string>
+    <string name="dashboard_announcement_collapse">Information einklappen</string>
+    <string name="dashboard_missions">Einsätze der nächsten 7 Tage</string>
+    <string name="dashboard_missions_empty">In den nächsten 7 Tagen ist nichts geplant.</string>
+    <string name="dashboard_missions_failed">Die Einsätze konnten nicht geladen werden.</string>
+    <string name="dashboard_missions_all">Alle Einsätze</string>
+    <string name="dashboard_notifications">Ungelesen</string>
+    <string name="dashboard_notifications_all">Alle ansehen</string>
+    <string name="dashboard_notifications_empty">Nichts Ungelesenes.</string>
 </resources>

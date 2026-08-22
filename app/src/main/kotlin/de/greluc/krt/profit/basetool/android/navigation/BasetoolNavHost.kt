@@ -13,14 +13,18 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
+import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
+import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
@@ -54,6 +58,9 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param operations drives the Operationen list.
  * @param operationDetail builds a view model for one Operation, the same way [missionDetail] does.
  * @param notifications drives the inbox and the bell badge.
+ * @param dashboard drives the Übersicht.
+ * @param memberName the signed-in member's name, for the dashboard greeting.
+ * @param orgUnitName the active org unit's name, for the same line.
  * @param onLogout ends the session.
  * @param settings everything the Einstellungen screen needs that the graph cannot know.
  * @param modifier layout modifier.
@@ -67,6 +74,9 @@ fun BasetoolNavHost(
     operations: OperationsViewModel,
     operationDetail: (String) -> OperationDetailViewModel,
     notifications: NotificationsViewModel,
+    dashboard: DashboardViewModel,
+    memberName: String?,
+    orgUnitName: String?,
     onLogout: () -> Unit,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
@@ -86,6 +96,32 @@ fun BasetoolNavHost(
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) { backStackEntry ->
                 when (destination) {
+                    KrtDestination.Home -> {
+                        // Reloaded on every visit, not once: the dashboard is the screen a member
+                        // returns to between other things, and its whole subject is what changed
+                        // while they were away.
+                        LaunchedEffect(Unit) { dashboard.load() }
+                        val dashboardState by dashboard.state.collectAsStateWithLifecycle()
+                        val notificationState by notifications.state.collectAsStateWithLifecycle()
+                        DashboardScreen(
+                            state = dashboardState,
+                            memberName = memberName,
+                            orgUnitName = orgUnitName,
+                            // The same rows the inbox shows, filtered to the unread ones. Reading
+                            // them from the inbox's state rather than from a second endpoint keeps
+                            // the preview and the list from disagreeing.
+                            unread = notificationState.notifications.filterNot { it.read },
+                            onRefresh = dashboard::onRefresh,
+                            onOpenMission = { navController.navigate(missionDetailRoute(it)) },
+                            onOpenMissions = {
+                                navController.navigate(KrtDestination.Missions.route)
+                            },
+                            onOpenNotifications = {
+                                navController.navigate(KrtDestination.Notifications.route)
+                            },
+                        )
+                    }
+
                     KrtDestination.Missions -> {
                         // Loaded here rather than in `init`: the view model outlives the screen, and
                         // a member returning to the list expects it to reflect what happened while
