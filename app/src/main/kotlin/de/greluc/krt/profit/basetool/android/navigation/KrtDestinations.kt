@@ -90,6 +90,18 @@ enum class KrtDestination(
      * Einsatz rather than the list it happens to be in.
      */
     MissionDetail("mission/{missionId}", R.string.mission_detail_title, DesignR.drawable.ic_krt_target),
+
+    /**
+     * One Operation in full, pushed from the Operationen list.
+     *
+     * Parameterised like the Einsatz detail and for the same reason: a link about one Operation has
+     * to open that Operation, not the list it sits in.
+     */
+    OperationDetail(
+        "operation/{operationId}",
+        R.string.operation_detail_title,
+        DesignR.drawable.ic_krt_clipboard_check,
+    ),
     ;
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
@@ -162,6 +174,9 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // Without this the bar would light up "Übersicht" — the fallback for an unknown
         // destination — while the member is looking at an Einsatz they opened from "Einsätze".
         KrtDestination.MissionDetail to KrtDestination.Missions,
+        // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
+        // behind "Mehr", and the bar has to keep saying so.
+        KrtDestination.OperationDetail to KrtDestination.Operations,
     )
 
 /**
@@ -175,6 +190,18 @@ fun missionDetailRoute(missionId: String): String = "mission/" + missionId
 
 /** The name of the id argument in [KrtDestination.MissionDetail]'s route. */
 const val MISSION_ID_ARG: String = "missionId"
+
+/**
+ * The route that opens one Operation.
+ *
+ * @param operationId the Operation to open.
+ * @return the concrete route, with the id substituted into [KrtDestination.OperationDetail]'s
+ *   pattern. Built here so the pattern and its filling cannot drift.
+ */
+fun operationDetailRoute(operationId: String): String = "operation/" + operationId
+
+/** The name of the id argument in [KrtDestination.OperationDetail]'s route. */
+const val OPERATION_ID_ARG: String = "operationId"
 
 /**
  * Resolves a destination to the navigation root it belongs to.

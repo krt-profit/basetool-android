@@ -62,11 +62,10 @@ const val MISSIONS_SEARCH_TAG: String = "missions-search"
 /**
  * The Einsatz list (design spec ch. 06 §1).
  *
- * **The segment "Einsätze / Operationen" from the design is deliberately not here yet.** Its
- * purpose is switching between two populated lists, and Operationen is still an empty destination —
- * a control that leads to "under construction" is worse than the control arriving with its second
- * half. It ships with the Operationen slice; recorded as an explicit gap in
- * `docs/specs/missions.md`, not as a silent omission.
+ * The segment above the search field switches to the Operationen list. It **navigates** rather than
+ * swapping a local state: both lists are already destinations of their own — Einsätze in the bottom
+ * bar, Operationen behind "Mehr" — so a local toggle would give each list a second address, and the
+ * navigation bar would highlight the wrong root for one of them.
  *
  * @param state what to draw.
  * @param onSearchChanged a keystroke in the search field.
@@ -76,6 +75,7 @@ const val MISSIONS_SEARCH_TAG: String = "missions-search"
  * @param onRefresh pull-to-refresh.
  * @param onLoadMore the "load more" control was tapped.
  * @param onOpenMission a row was tapped.
+ * @param onOpenOperations the Operationen half of the segment was tapped.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,6 +89,7 @@ fun MissionsScreen(
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenMission: (String) -> Unit,
+    onOpenOperations: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val zone = remember { ZoneId.systemDefault() }
@@ -97,6 +98,10 @@ fun MissionsScreen(
     val today = LocalDate.now(zone)
 
     Column(modifier = modifier.fillMaxSize()) {
+        ListSegmentBar(
+            selected = ListSegment.MISSIONS,
+            onSelect = { onOpenOperations() },
+        )
         MissionsFilterBar(
             state = state,
             onSearchChanged = onSearchChanged,
@@ -481,14 +486,15 @@ private fun MissionDay.label(): String =
  * The Einsatz list, bound to its view model.
  *
  * @param viewModel drives the list.
- * @param onOpenMission a row was tapped; the detail screen is not built yet, so the host decides
- *   what happens.
+ * @param onOpenMission a row was tapped.
+ * @param onOpenOperations the Operationen half of the segment was tapped.
  * @param modifier layout modifier.
  */
 @Composable
 fun MissionsRoute(
     viewModel: MissionsViewModel,
     onOpenMission: (String) -> Unit,
+    onOpenOperations: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -501,6 +507,7 @@ fun MissionsRoute(
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,
         onOpenMission = onOpenMission,
+        onOpenOperations = onOpenOperations,
         modifier = modifier,
     )
 }

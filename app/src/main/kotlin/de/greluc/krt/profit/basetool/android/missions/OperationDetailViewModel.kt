@@ -1,0 +1,174 @@
+/*
+ * Basetool Android — native companion app of the Profit Basetool.
+ * Copyright (C) 2026 Lucas Greuloch
+ *
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+
+package de.greluc.krt.profit.basetool.android.missions
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.OperationOverview
+import de.greluc.krt.profit.basetool.android.core.data.OperationPayout
+import de.greluc.krt.profit.basetool.android.core.data.OperationSource
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+/** How far the Operation detail has got. */
+sealed interface OperationDetailPhase {
+    /** The reads are in flight. */
+    data object Loading : OperationDetailPhase
+
+    /** They arrived. */
+    data object Ready : OperationDetailPhase
+
+    /**
+     * They did not.
+     *
+     * @property error what went wrong. `Forbidden` is an ordinary answer — an Operation outside the
+     *   caller's scope — and `NotFound` is a stale link; the screen words them differently.
+     */
+    data class Failed(
+        val error: ApiError,
+    ) : OperationDetailPhase
+}
+
+/**
+ * Everything the Operation detail draws.
+ *
+ * @property operationId which Operation, known before anything has loaded
+ * @property overview the head, roll-up and payouts once they arrive
+ * @property phase how far the read has got
+ * @property myUserId the caller's backend user id, or `null` while unknown or unreadable
+ * @property refreshing whether a pull-to-refresh is running over content already on screen
+ */
+data class OperationDetailState(
+    val operationId: String,
+    val overview: OperationOverview? = null,
+    val phase: OperationDetailPhase = OperationDetailPhase.Loading,
+    val myUserId: String? = null,
+    val refreshing: Boolean = false,
+) {
+    /**
+     * The caller's own payout row, when it can be identified.
+     *
+     * `null` covers three different situations that the screen renders identically and correctly:
+     * the identity read failed, the caller took part in no Einsatz of this Operation, or the rows
+     * are not loaded yet. In all three "Dein Anteil" has nothing truthful to say, and guessing —
+     * by name, say — would show a member someone else's money.
+     */
+    val myPayout: OperationPayout?
+        get() = myUserId?.let { id -> overview?.payouts?.rows?.firstOrNull { it.participantId == id } }
+}
+
+/**
+ * Drives one Operation's detail.
+ *
+ * **One load, three reads, one outcome.** Unlike the Einsatz detail — whose Finanzen tab is behind
+ * a second permission and therefore has its own state — every endpoint here carries the identical
+ * `canSeeOperation` gate. A member who may open the Operation may read all of it, so a split state
+ * would model a case the server cannot produce; and the head itself is built from the payouts,
+ * because the participant count and the per-head share come from there.
+ *
+ * **The identity read is separate and never fatal.** It answers "which of these rows is mine",
+ * which is a nicety on a screen whose subject is the Operation. If it fails, the screen loses one
+ * line and keeps everything else.
+ *
+ * @property source where the Operation comes from
+ * @property identity supplies the caller's backend user id
+ * @property operationId which Operation to load
+ */
+class OperationDetailViewModel(
+    private val source: OperationSource,
+    private val identity: IdentitySource,
+    private val operationId: String,
+) : ViewModel() {
+    private val mutableState = MutableStateFlow(OperationDetailState(operationId = operationId))
+
+    /** What the screen draws. */
+    val state: StateFlow<OperationDetailState> = mutableState.asStateFlow()
+
+    /** Loads the Operation. Safe to call more than once. */
+    fun load() {
+        reload(keepContent = false)
+        resolveIdentity()
+    }
+
+    /**
+     * Re-reads the Operation, keeping what is on screen while it runs.
+     *
+     * The identity is not re-read: it is cached for the process and cannot change without a new
+     * session.
+     */
+    fun onRefresh() {
+        mutableState.value = mutableState.value.copy(refreshing = true)
+        reload(keepContent = true)
+        if (mutableState.value.myUserId == null) {
+            // Only retried when it is still missing — a member whose first attempt failed gets
+            // another chance out of the gesture they already made.
+            resolveIdentity()
+        }
+    }
+
+    /**
+     * Reads the Operation.
+     *
+     * @param keepContent whether what is on screen survives until the answer arrives.
+     */
+    private fun reload(keepContent: Boolean) {
+        if (!keepContent) {
+            mutableState.value = mutableState.value.copy(phase = OperationDetailPhase.Loading)
+        }
+        viewModelScope.launch {
+            when (val result = source.overview(operationId)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            overview = result.value,
+                            phase = OperationDetailPhase.Ready,
+                            refreshing = false,
+                        )
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "Operation could not be read: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(
+                            phase = OperationDetailPhase.Failed(result.error),
+                            refreshing = false,
+                        )
+                }
+            }
+        }
+    }
+
+    /** Reads the caller's own user id, so their payout row can be pointed at. */
+    private fun resolveIdentity() {
+        viewModelScope.launch {
+            when (val result = identity.myUserId()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(myUserId = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    // Deliberately not surfaced. The screen's subject is the Operation; losing the
+                    // "Dein Anteil" line is a smaller failure than an error over content that
+                    // loaded fine.
+                    KrtLog.w(LOG_TAG) { "own user id could not be read: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    private companion object {
+        /** Log subsystem. No member name or amount is ever logged. */
+        const val LOG_TAG = "operations"
+    }
+}

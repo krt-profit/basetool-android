@@ -376,11 +376,9 @@ than by relaxing the no-`Double` rule that kept the raw string in the first plac
 
 ## Known gaps, stated rather than omitted
 
-- **The segment "Einsätze / Operationen" is not built yet.** Its purpose is switching between two
-  populated lists, and Operationen is still an empty destination — a control leading to "under
-  construction" is worse than the control arriving with its second half. It ships with the
-  Operationen slice. Both destinations already exist separately in the navigation (design ch. 03),
-  so nothing is unreachable meanwhile.
+- **The segment "Einsätze / Operationen" now exists** and navigates rather than toggling — see
+  [`operations.md`](operations.md) `REQ-APP-OPS-001` for why, and for the two approved deviations
+  the Operationen half carries.
 - **The design mock shows a fifth status badge, "Briefing".** It has no counterpart anywhere in the
   backend or the web app: `mission.status.*` carries exactly four keys (`PLANNED`, `ACTIVE`,
   `COMPLETED`, `CANCELLED`) and `briefing` appears only as a section heading ("Auftrag"). It is

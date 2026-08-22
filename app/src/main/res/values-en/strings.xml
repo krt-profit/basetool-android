@@ -174,4 +174,61 @@
     <string name="mission_detail_error_missing_message">This Einsatz no longer exists.</string>
     <string name="mission_detail_error_title">System Malfunction</string>
     <string name="mission_detail_error_message">The Einsatz could not be loaded.</string>
+    <!-- Operationen (design chapter 06 section 1 segment + section 5 detail) -->
+    <string name="operations_title">Operationen</string>
+    <string name="operations_segment_missions">Einsätze</string>
+    <string name="operations_segment_operations">Operationen</string>
+    <string name="operations_search_placeholder">Search Operation</string>
+    <string name="operations_status_planned">Planned</string>
+    <string name="operations_status_active">Active</string>
+    <string name="operations_status_completed">Completed</string>
+    <string name="operations_status_canceled">Cancelled</string>
+    <string name="operations_group_running">Running</string>
+    <string name="operations_group_finished">Completed</string>
+    <string name="operations_end_of_list">End of list</string>
+    <plurals name="operations_count">
+        <item quantity="one">%1$d of %2$d Operation</item>
+        <item quantity="other">%1$d of %2$d Operationen</item>
+    </plurals>
+    <string name="operations_empty_title">No Operationen</string>
+    <string name="operations_empty_message">No Operation has been created.</string>
+    <string name="operations_empty_filtered_title">Nothing found</string>
+    <string name="operations_empty_filtered_message">No Operation matches these filters.</string>
+    <string name="operations_error_title">Signal Lost</string>
+    <string name="operations_error_message">The Operationen could not be loaded.</string>
+    <string name="operation_detail_title">Operation</string>
+    <plurals name="operation_detail_missions">
+        <item quantity="one">%1$d Einsatz</item>
+        <item quantity="other">%1$d Einsätze</item>
+    </plurals>
+    <plurals name="operation_detail_participants">
+        <item quantity="one">%1$d participant</item>
+        <item quantity="other">%1$d participants</item>
+    </plurals>
+    <string name="operation_detail_my_share">Your share</string>
+    <string name="operation_detail_my_share_donated">Waived in favour of the org treasury</string>
+    <string name="operation_detail_my_share_unknown">You did not take part in this Operation.</string>
+    <string name="operation_detail_preliminary">Preliminary: at least one Einsatz is still open, so the amounts may still shift.</string>
+    <string name="operation_detail_rollup">Financial roll-up</string>
+    <string name="operation_detail_rollup_net">Net</string>
+    <string name="operation_detail_rollup_donations">Donations to the org treasury</string>
+    <plurals name="operation_detail_rollup_share">
+        <item quantity="one">Share (%1$d)</item>
+        <item quantity="other">Share (%1$d)</item>
+    </plurals>
+    <string name="operation_detail_missions_title">Einsätze in this Operation</string>
+    <string name="operation_detail_missions_truncated">The server capped the Einsatz list. The net figure above still covers all of them.</string>
+    <string name="operation_detail_missions_empty">No settled Einsatz belongs to this Operation yet.</string>
+    <string name="operation_detail_payouts_title">Payouts</string>
+    <string name="operation_detail_payouts_empty">No payout rows yet. They appear once an Einsatz with a real start and end time is finished.</string>
+    <string name="operation_detail_payout_paid">Paid out</string>
+    <string name="operation_detail_payout_open">Open</string>
+    <string name="operation_detail_payout_donated">Waived</string>
+    <string name="operation_detail_description">Description</string>
+    <string name="operation_detail_error_forbidden_title">Access Denied</string>
+    <string name="operation_detail_error_forbidden_message">This Operation is not visible to you.</string>
+    <string name="operation_detail_error_missing_title">Signal Lost</string>
+    <string name="operation_detail_error_missing_message">This Operation no longer exists.</string>
+    <string name="operation_detail_error_title">System Malfunction</string>
+    <string name="operation_detail_error_message">The Operation could not be loaded.</string>
 </resources>

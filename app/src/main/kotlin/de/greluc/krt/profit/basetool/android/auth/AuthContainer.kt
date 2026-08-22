@@ -27,7 +27,9 @@ import de.greluc.krt.profit.basetool.android.core.auth.SecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
+import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
+import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
@@ -195,6 +197,27 @@ class AuthContainer(
             baseUrl = BuildConfig.API_BASE_URL,
             clock = serverClock,
         )
+    }
+
+    /**
+     * The Operationen list and detail.
+     *
+     * No [serverClock]: an Operation has no start time of its own, so nothing here is filtered
+     * against "now" the way the Einsatz list is.
+     */
+    val operations: OperationRepository by lazy {
+        OperationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The caller's own backend user id.
+     *
+     * Its own repository rather than a field on another, because the id is not about any one
+     * screen: an Operation's payout rows are the first thing keyed by it, and the Hangar and the
+     * personal inventory will be the next.
+     */
+    val identity: IdentityRepository by lazy {
+        IdentityRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }
