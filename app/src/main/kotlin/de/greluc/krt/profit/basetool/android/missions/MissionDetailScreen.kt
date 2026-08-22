@@ -518,15 +518,17 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(financ
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
             KrtKeyValueRow(
                 label = stringResource(R.string.mission_detail_finance_income),
-                value = finances.incomeSum.orEmpty(),
+                value = formatSignedAmount(finances.incomeSum.orEmpty(), income = true),
             )
             KrtKeyValueRow(
                 label = stringResource(R.string.mission_detail_finance_expense),
-                value = finances.expenseSum.orEmpty(),
+                value = formatSignedAmount(finances.expenseSum.orEmpty(), income = false),
             )
+            // The net carries no sign of its own: it is a balance, and a leading plus on a positive
+            // result would read as a third booking rather than as the sum of the two above it.
             KrtKeyValueRow(
                 label = stringResource(R.string.mission_detail_finance_net),
-                value = finances.total.orEmpty(),
+                value = formatAmount(finances.total.orEmpty()),
             )
             KrtHairlineRule()
         }
@@ -552,7 +554,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(financ
                 }
             }
             KrtChip(
-                text = entry.amount,
+                text = formatSignedAmount(entry.amount, entry.income),
                 tone = if (entry.income) KrtChipTone.Success else KrtChipTone.Danger,
             )
         }

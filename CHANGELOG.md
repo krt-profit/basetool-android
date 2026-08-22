@@ -4,7 +4,7 @@
 
 ### Added
 
-- **Ein Einsatz lässt sich jetzt öffnen.** Das Antippen einer Zeile zeigt den Einsatz mit sieben Reitern: Übersicht, Teilnehmer, Einheiten, Ablauf, Ziele, Frequenzen und Finanzen. Die Finanzen werden erst geladen, wenn man den Reiter öffnet — sie brauchen eine eigene Berechtigung, und wer sie nicht hat, sieht den Einsatz trotzdem vollständig. Frequenzen kopiert ein Antippen in die Zwischenablage. Anmelden, Check-In und Finanz-Einträge folgen später (REQ-APP-MIS-008…012).
+- **Ein Einsatz lässt sich jetzt öffnen.** Das Antippen einer Zeile zeigt den Einsatz mit sieben Reitern: Übersicht, Teilnehmer, Einheiten, Ablauf, Ziele, Frequenzen und Finanzen. Die Finanzen werden erst geladen, wenn man den Reiter öffnet — sie brauchen eine eigene Berechtigung, und wer sie nicht hat, sieht den Einsatz trotzdem vollständig. Frequenzen kopiert ein Antippen in die Zwischenablage; Beträge stehen gruppiert und mit Vorzeichen (+86.400 / −11.700). Anmelden, Check-In und Finanz-Einträge folgen später (REQ-APP-MIS-008…012).
 
 - **Eingabefelder sind für Screenreader jetzt beschriftet.** Sie meldeten dem Bedienungshilfen-Baum bisher gar keinen Namen, und der Platzhaltertext tauchte dort überhaupt nicht auf — sichtbar war er, vorlesbar nicht. Felder tragen jetzt einen Namen (Beschriftung, sonst Platzhalter), der auch beim Tippen erhalten bleibt, und Fehlermeldungen hängen am Feld statt nur darunter zu stehen.
 

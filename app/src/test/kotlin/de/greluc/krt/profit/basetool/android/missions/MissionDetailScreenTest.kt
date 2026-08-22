@@ -221,10 +221,10 @@ class MissionDetailScreenTest {
                 finances =
                     MissionFinancesPhase.Ready(
                         MissionFinances(
-                            total = "74700",
-                            incomeSum = "86400",
+                            total = "74700.0000",
+                            incomeSum = "86400.0000",
                             incomeCount = 3,
-                            expenseSum = "11700",
+                            expenseSum = "11700.0000",
                             expenseCount = 2,
                             entries = emptyList(),
                             totalEntries = 0,
@@ -233,9 +233,11 @@ class MissionDetailScreenTest {
             ),
         )
 
-        compose.onNodeWithText("86400").assertIsDisplayed()
-        compose.onNodeWithText("11700").assertIsDisplayed()
-        compose.onNodeWithText("74700").assertIsDisplayed()
+        // Grouped and signed, not the raw `86400.0000` the wire carries. The first version showed
+        // exactly that, and a device run is what caught it.
+        compose.onNodeWithText("+86.400").assertIsDisplayed()
+        compose.onNodeWithText("−11.700").assertIsDisplayed()
+        compose.onNodeWithText("74.700").assertIsDisplayed()
     }
 
     @Test

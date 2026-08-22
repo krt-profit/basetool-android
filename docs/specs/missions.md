@@ -276,14 +276,22 @@ Two values are passed through **verbatim** rather than mapped:
 - A **status** this build does not know renders its raw server value with the neutral "planned"
   tone, exactly as the list does (REQ-APP-MIS-003).
 
-Amounts are carried and displayed as **the strings the server rendered**. They are aUEC sums that
-are only ever displayed, never recomputed here, and parsing a decimal into a `Double` to print it
-again is how a total gains a rounding error it did not have on the server.
+Amounts are **carried** as the strings the server rendered and **formatted** for display from
+`BigDecimal` — grouped for the locale, stripped of the zeros a fixed-scale column pads with, and
+signed from the entry's kind rather than from its digits (the server stores both incomes and
+expenses as positive magnitudes). No `Double` is ever involved: parsing a decimal into one to print
+it again is how a total gains a rounding error it did not have on the server.
+
+Displaying the raw string was the first attempt and a device run rejected it — `86400.0000` is
+faithful and unreadable, while the design's figures are `+86.400` / `−11.700` / `74.700`.
 
 **Acceptance**
 
 - [x] An unknown objective kind is displayed (`MissionDetailScreenTest`).
-- [x] `1234567.89` survives the round trip byte for byte (`MissionDetailRepositoryTest`).
+- [x] `1234567.89` survives the repository round trip byte for byte (`MissionDetailRepositoryTest`).
+- [x] The rendered form is grouped, zero-stripped and signed, and a 17-digit value survives
+  formatting — a `Double` would round it, which is what that test exists to catch
+  (`MissionAmountsTest`).
 
 ---
 
@@ -337,6 +345,34 @@ the placeholder moved into the field's own `decorationBox` (a sibling drawn behi
 field is obscured, and obscured nodes are pruned), the field gained an accessible name from
 `label ?: placeholder` that survives the member typing, and an error is now attached via the `error`
 semantics instead of merely rendered beneath. Six tests in `KrtTextFieldAccessibilityTest`.
+
+## Device verification — the detail (2026-08-22)
+
+Run against the isolated test stack with one Einsatz filled out across all seven tabs, plus an
+**internal** one and a terminal one to exercise the outsider rules. Read off the accessibility tree,
+because the app sets `FLAG_SECURE`.
+
+Confirmed as a **member**: the head (title, status, `IRI` badge, "3 angemeldet, davon 2
+eingecheckt", the TS/JOIN/ENDE/ORT fact band), all seven tabs with content — including the seventh,
+which is off-screen in the horizontally scrolling tab row and reachable by scrolling it — the
+check-in marks, the HVU chip and crew count, the Ablauf's "ERLEDIGT", the objective kinds, the
+tap-to-copy frequencies, and the Finanzen tab loading only once its tab was opened.
+
+Confirmed as a **role-less outsider** (achieved by stripping the Keycloak client scope, which is
+what the app's own REQ-SEC-035 provisioning otherwise prevents):
+
+- the internal Einsatz **disappears from the list**;
+- the detail still opens, and says *"Die Beschreibung ist nur für Mitglieder sichtbar."* rather
+  than showing a blank section;
+- the **Finanzen tab alone** refuses, with its own sentence and **no retry**, while the Einsatz
+  around it stays fully rendered — which is the entire reason the two reads have separate load
+  states.
+
+**One defect found and fixed here:** the amounts rendered as `86400.0000`. Faithful to the wire —
+the column is `numeric(_,4)` — and unreadable; the design's own figures are `+86.400` / `−11.700` /
+`74.700`. Fixed by formatting from `BigDecimal` (grouping and zero-stripping are lossless) rather
+than by relaxing the no-`Double` rule that kept the raw string in the first place. Eight tests in
+`MissionAmountsTest`, one of them a 17-digit value that a `Double` would round.
 
 ## Known gaps, stated rather than omitted
 
