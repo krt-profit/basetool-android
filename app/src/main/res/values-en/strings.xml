@@ -274,4 +274,33 @@
     <string name="dashboard_notifications">Unread</string>
     <string name="dashboard_notifications_all">View all</string>
     <string name="dashboard_notifications_empty">Nothing unread.</string>
+    <!-- Hangar (design chapter 08) -->
+    <string name="hangar_title">Hangar</string>
+    <string name="hangar_segment_mine">My ships</string>
+    <string name="hangar_segment_org">Org unit</string>
+    <string name="hangar_search_placeholder">Filter by ship type</string>
+    <string name="hangar_fitted">Fitted</string>
+    <string name="hangar_not_fitted">Not fitted</string>
+    <string name="hangar_no_insurance">No insurance</string>
+    <plurals name="hangar_ship_count">
+        <item quantity="one">%1$d of %2$d ship</item>
+        <item quantity="other">%1$d of %2$d ships</item>
+    </plurals>
+    <plurals name="hangar_type_count">
+        <item quantity="one">%1$d of %2$d ship type</item>
+        <item quantity="other">%1$d of %2$d ship types</item>
+    </plurals>
+    <plurals name="hangar_type_row">
+        <item quantity="one">%1$d ship · %2$d fitted</item>
+        <item quantity="other">%1$d ships · %2$d fitted</item>
+    </plurals>
+    <string name="hangar_end_of_list">End of list</string>
+    <string name="hangar_empty_mine_title">No ship in the hangar</string>
+    <string name="hangar_empty_mine_message">Adding ships is done in the web app for now.</string>
+    <string name="hangar_empty_org_title">No ships</string>
+    <string name="hangar_empty_org_message">No ship is recorded for this org unit.</string>
+    <string name="hangar_empty_filtered_title">Nothing found</string>
+    <string name="hangar_empty_filtered_message">No ship type matches this filter.</string>
+    <string name="hangar_error_title">Signal Lost</string>
+    <string name="hangar_error_message">The hangar could not be loaded.</string>
 </resources>

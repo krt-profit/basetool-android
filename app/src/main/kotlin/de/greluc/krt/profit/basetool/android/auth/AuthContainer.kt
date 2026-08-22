@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
+import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
@@ -242,6 +243,16 @@ class AuthContainer(
      */
     val announcements: AnnouncementRepository by lazy {
         AnnouncementRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The member's hangar and their org unit's ship aggregate.
+     *
+     * Which org unit the aggregate covers follows from the `X-Active-Org-Unit-Id` header the
+     * interceptor already sets, so nothing about scope is configured here.
+     */
+    val hangar: HangarRepository by lazy {
+        HangarRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

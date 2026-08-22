@@ -43,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
@@ -83,6 +84,7 @@ private fun isExpandedWindow(): Boolean =
  * @param operationDetail builds a view model for one Operation.
  * @param notifications drives the inbox and the bell badge.
  * @param dashboard drives the Übersicht.
+ * @param hangar drives the Hangar.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -98,6 +100,7 @@ fun BasetoolApp(
     operationDetail: (String) -> OperationDetailViewModel,
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
+    hangar: HangarViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -200,6 +203,7 @@ fun BasetoolApp(
                     operationDetail = operationDetail,
                     notifications = notifications,
                     dashboard = dashboard,
+                    hangar = hangar,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )

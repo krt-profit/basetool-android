@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
+import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
@@ -117,6 +118,8 @@ class MainActivity : AppCompatActivity() {
         viewModels { authViewModels(container) }
 
     private val dashboardViewModel: DashboardViewModel by viewModels { authViewModels(container) }
+
+    private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -219,6 +222,7 @@ class MainActivity : AppCompatActivity() {
                                 operations = operationsViewModel,
                                 notifications = notificationsViewModel,
                                 dashboard = dashboardViewModel,
+                                hangar = hangarViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -372,6 +376,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { MissionsViewModel(container.missions) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer { NotificationsViewModel(container.notifications) }
+                initializer { HangarViewModel(container.hangar) }
                 initializer {
                     DashboardViewModel(
                         container.missions,

@@ -25,6 +25,8 @@ import androidx.navigation.navDeepLink
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
+import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
@@ -59,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param operationDetail builds a view model for one Operation, the same way [missionDetail] does.
  * @param notifications drives the inbox and the bell badge.
  * @param dashboard drives the Übersicht.
+ * @param hangar drives the Hangar.
  * @param memberName the signed-in member's name, for the dashboard greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * @param onLogout ends the session.
@@ -75,6 +78,7 @@ fun BasetoolNavHost(
     operationDetail: (String) -> OperationDetailViewModel,
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
+    hangar: HangarViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
@@ -164,6 +168,11 @@ fun BasetoolNavHost(
                                 notificationDestination(notification)?.let(navController::navigate)
                             },
                         )
+                    }
+
+                    KrtDestination.Hangar -> {
+                        LaunchedEffect(Unit) { hangar.loadOnce() }
+                        HangarRoute(viewModel = hangar)
                     }
 
                     KrtDestination.More -> {
