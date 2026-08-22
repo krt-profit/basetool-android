@@ -30,6 +30,22 @@ updates:
       kotlinx:
         patterns:
           - "org.jetbrains.kotlinx:*"
+    ignore:
+      # The preinstrumented Robolectric runtime is NOT an ordinary dependency: its coordinate is
+      # `<androidVersion>-robolectric-<buildId>-i<preinstrumentedVersion>`, and which one is
+      # correct is decided by the `robolectric` version's own `DefaultSdkProvider` plus the SDK
+      # level every `@Config(sdk = …)` in the repo pins. Dependabot can see none of that, so it
+      # proposes the newest artifact on Maven and every Robolectric test fails.
+      #
+      # Measured 2026-08-21 on the proposal it opened (#45, closed): the Android 17 runtime needs
+      # Robolectric >= 4.17 (4.16.1 answers `IllegalArgumentException: API level 37 is not
+      # available`), and 4.17 exists only as a beta which cannot run on this toolchain at all --
+      # all 350 tests died with `Failed to interact with raw FileDescriptor internals`.
+      #
+      # Bumping it is therefore a deliberate three-part change (runtime + `robolectric` + every
+      # `@Config` pin), never an automated one. Revisit when 4.17 is stable; `docs/
+      # ANDROID_APP_DEV_CI.md` § 4 carries the full rationale.
+      - dependency-name: "org.robolectric:android-all-instrumented"
 
   - package-ecosystem: github-actions
     directory: /

@@ -163,8 +163,18 @@ Baseline posture (all from GitHub's current security docs):
   Robolectric's `DefaultSdkProvider` per release; Dependabot cannot know that. Drift fails
   loudly rather than randomly — `Unable to locate dependency: '<file>'`, and that file name is
   the value to put in the catalog. A new `@Config(sdk = …)` level needs its own artifact
-  declared next to the current one; today every Robolectric test in the repo pins API 34,
-  because Robolectric ships no runtime for the app's `targetSdk` 37.
+  declared next to the current one; today every Robolectric test in the repo pins API 34.
+
+  **Moving to API 37 was attempted on 2026-08-21 and is blocked upstream, not by us.** The Android
+  17 runtime exists on Maven, and Dependabot duly proposed it (#45, closed). Two walls behind it:
+  Robolectric 4.16.1 answers `IllegalArgumentException: API level 37 is not available` — the
+  coordinate is only half the story, `DefaultSdkProvider` has to know the level — and 4.17, the
+  release that does, exists solely as a beta which cannot run on this toolchain at all: all 350
+  tests failed with `RuntimeException: Failed to interact with raw FileDescriptor internals;
+  perhaps JRE has changed?`. So the pin at 34 is not inertia; it is the only level that works
+  today. Revisit when 4.17 is stable. `android-all-instrumented` is on Dependabot's ignore list
+  until then, because an automated bump of it is always wrong: the runtime, the `robolectric`
+  version and every `@Config` pin have to move in one commit.
 - Dependency graph via the separate `gradle/actions/dependency-submission` workflow; for fork PRs
   the documented two-workflow pattern (`pull_request` generates, `workflow_run` submits).
 
