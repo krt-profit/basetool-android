@@ -43,6 +43,10 @@ import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
+import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -69,6 +73,8 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param hangar drives the Hangar.
  * @param bank drives the Konten list.
  * @param bankAccount builds a view model for one account.
+ * @param orders drives the Auftrag queue.
+ * @param orderDetail builds a view model for one order.
  * @param memberName the signed-in member's name, for the dashboard greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * @param onLogout ends the session.
@@ -88,6 +94,8 @@ fun BasetoolNavHost(
     hangar: HangarViewModel,
     bank: BankViewModel,
     bankAccount: (String) -> BankAccountViewModel,
+    orders: OrdersViewModel,
+    orderDetail: (String) -> OrderDetailViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
@@ -123,6 +131,7 @@ fun BasetoolNavHost(
                         dashboard = dashboard,
                         hangar = hangar,
                         bank = bank,
+                        orders = orders,
                         memberName = memberName,
                         orgUnitName = orgUnitName,
                     )
@@ -134,6 +143,7 @@ fun BasetoolNavHost(
                         missionDetail = missionDetail,
                         operationDetail = operationDetail,
                         bankAccount = bankAccount,
+                        orderDetail = orderDetail,
                         onOpenDestination = onOpenDestination,
                         onLogout = onLogout,
                         settings = settings,
@@ -160,6 +170,7 @@ fun BasetoolNavHost(
  * @param dashboard drives the Übersicht.
  * @param hangar drives the Hangar.
  * @param bank drives the Konten list.
+ * @param orders drives the Auftrag queue.
  * @param memberName the member's name, for the greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * Named in lower case on purpose: it returns a value, and Compose's own naming rule reserves the
@@ -178,6 +189,7 @@ private fun listDestination(
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
     bank: BankViewModel,
+    orders: OrdersViewModel,
     memberName: String?,
     orgUnitName: String?,
 ): Boolean {
@@ -246,6 +258,14 @@ private fun listDestination(
             )
         }
 
+        KrtDestination.Orders -> {
+            LaunchedEffect(Unit) { orders.loadOnce() }
+            OrdersRoute(
+                viewModel = orders,
+                onOpenOrder = { navController.navigate(orderDetailRoute(it)) },
+            )
+        }
+
         else -> {
             return false
         }
@@ -266,6 +286,7 @@ private fun listDestination(
  * @param missionDetail builds a view model for one Einsatz.
  * @param operationDetail builds a view model for one Operation.
  * @param bankAccount builds a view model for one account.
+ * @param orderDetail builds a view model for one order.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -279,6 +300,7 @@ private fun PushedDestination(
     missionDetail: (String) -> MissionDetailViewModel,
     operationDetail: (String) -> OperationDetailViewModel,
     bankAccount: (String) -> BankAccountViewModel,
+    orderDetail: (String) -> OrderDetailViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
     settings: SettingsBindings,
@@ -306,6 +328,13 @@ private fun PushedDestination(
             val viewModel = remember(accountId) { bankAccount(accountId) }
             LaunchedEffect(accountId) { viewModel.load() }
             BankAccountRoute(viewModel = viewModel)
+        }
+
+        KrtDestination.OrderDetail -> {
+            val orderId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
+            val viewModel = remember(orderId) { orderDetail(orderId) }
+            LaunchedEffect(orderId) { viewModel.load() }
+            OrderDetailRoute(viewModel = viewModel)
         }
 
         KrtDestination.More -> {

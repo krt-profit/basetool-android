@@ -105,6 +105,13 @@ enum class KrtDestination(
 
     /** One bank account with its ledger, pushed from the Konten list. */
     BankAccount("bank-account/{accountId}", R.string.bank_title, DesignR.drawable.ic_krt_bank),
+
+    /** One job order in full, pushed from the queue. */
+    OrderDetail(
+        "order/{orderId}",
+        R.string.order_detail_title,
+        DesignR.drawable.ic_krt_clipboard_list,
+    ),
     ;
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
@@ -181,6 +188,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // behind "Mehr", and the bar has to keep saying so.
         KrtDestination.OperationDetail to KrtDestination.Operations,
         KrtDestination.BankAccount to KrtDestination.Bank,
+        KrtDestination.OrderDetail to KrtDestination.Orders,
     )
 
 /**
@@ -217,6 +225,17 @@ fun bankAccountRoute(accountId: String): String = "bank-account/" + accountId
 
 /** The name of the id argument in [KrtDestination.BankAccount]'s route. */
 const val ACCOUNT_ID_ARG: String = "accountId"
+
+/**
+ * The route that opens one job order.
+ *
+ * @param orderId the order to open.
+ * @return the concrete route, with the id substituted into [KrtDestination.OrderDetail]'s pattern.
+ */
+fun orderDetailRoute(orderId: String): String = "order/" + orderId
+
+/** The name of the id argument in [KrtDestination.OrderDetail]'s route. */
+const val ORDER_ID_ARG: String = "orderId"
 
 /**
  * Resolves a destination to the navigation root it belongs to.

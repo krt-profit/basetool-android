@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die Aufträge sind da — Warteschlange und Detail.** Nach Status filtern, je Zeile die Materialliste aufklappen und den Fortschritt sehen, im Detail Anmerkung, Material, Zuständige und Übergaben. Ist ein Auftrag für dich nur teilweise sichtbar, sagt der Bildschirm das jetzt ausdrücklich, statt den Rest als vollständig erscheinen zu lassen. Eine Benachrichtigung zu einem Auftrag öffnet ihn direkt. Anlegen, Priorisieren und Übergaben erfassen bleibt der Weboberfläche vorbehalten (REQ-APP-ORDERS-001…007).
+
 - **Die Bank ist da — Konten und Kontodetail.** Jede für dich sichtbare Kasse mit Kontostand, 30-Tage-Bewegung und gezeichneter Verlaufslinie; im Detail der vollständige Buchungsverlauf zum Nachladen. Einzahlungen stehen grün mit +, Auszahlungen rot mit −, und eine Buchungsart, die diese App nicht kennt, bekommt kein erfundenes Vorzeichen. Buchungen beantragen und freigeben bleibt der Weboberfläche vorbehalten (REQ-APP-BANK-001…005).
 
 - **Der Hangar ist da.** Die eigenen Schiffe als Karten mit Typ, Hersteller, Versicherung, Ort und Fitted-Zustand, dazu die Aggregation über die aktive Org-Einheit — beide nach Schiffstyp filterbar. Was fehlt, sagt die Karte auch: „Keine Versicherung" statt eines leeren Feldes. Schiffe anlegen, ändern und importieren bleibt vorerst der Weboberfläche vorbehalten (REQ-APP-HANGAR-001…005).

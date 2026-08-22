@@ -55,6 +55,8 @@ import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
@@ -124,6 +126,8 @@ class MainActivity : AppCompatActivity() {
     private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
+
+    private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -229,6 +233,8 @@ class MainActivity : AppCompatActivity() {
                                 hangar = hangarViewModel,
                                 bank = bankViewModel,
                                 bankAccount = { BankAccountViewModel(container.bank, it) },
+                                orders = ordersViewModel,
+                                orderDetail = { OrderDetailViewModel(container.orders, it) },
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -384,6 +390,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { NotificationsViewModel(container.notifications) }
                 initializer { HangarViewModel(container.hangar) }
                 initializer { BankViewModel(container.bank) }
+                initializer { OrdersViewModel(container.orders) }
                 initializer {
                     DashboardViewModel(
                         container.missions,

@@ -18,6 +18,7 @@ the binding source** (marked `Doc type: living plan`):
 | [`dashboard.md`](dashboard.md) (`REQ-APP-DASH-*`) — **exists** (`001`–`007`) | Übersicht: the design's reading order, two independently failing reads, the 204 that means "no banner", the server-clocked seven-day window, and one source per greeting fact |
 | [`hangar.md`](hangar.md) (`REQ-APP-HANGAR-*`) — **exists** (`001`–`005`) | Hangar: my-ships over the permission-gated all-ships read, two halves with separate state, the flattened card, three distinct empty states, and why the design's three-number band cannot be computed |
 | [`bank.md`](bank.md) (`REQ-APP-BANK-*`) — **exists** (`001`–`005`) | Bank: the member-facing paths over the bank-employee ones, account and ledger failing together, the sign taken from the booking kind, and the balance line drawn rather than charted |
+| [`orders.md`](orders.md) (`REQ-APP-ORDERS-*`) — **exists** (`001`–`007`) | Aufträge: server-side status filter with no client scope, the redacted flag said out loud, the progress bar as a length rather than a figure, no invented "Zugesagt" total, and the notification deep link |
 | `privacy.md` (`REQ-APP-PRIV-*`) | dependency/data-flow gate, § 25 TDDDG storage table, permissions |
 | `ui.md` (`REQ-APP-UI-*`) | KRT design tokens, adaptive layout rules, i18n + copy rules, Fan Kit compliance band (see `core/designsystem/fankit/`) — extracted from the binding design spec at `docs/design/android/` |
 | `offline.md` (`REQ-APP-OFFLINE-*`) | read-cache scope, backup exclusion, wipe semantics |

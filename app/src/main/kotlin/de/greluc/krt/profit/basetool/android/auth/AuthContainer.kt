@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
@@ -264,6 +265,16 @@ class AuthContainer(
      */
     val bank: BankRepository by lazy {
         BankRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Auftrag queue and one order.
+     *
+     * The org scope is never sent from the client: which orders a member sees follows from their
+     * memberships and the active-org-unit header this client already carries.
+     */
+    val orders: JobOrderRepository by lazy {
+        JobOrderRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

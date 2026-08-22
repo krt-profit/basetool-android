@@ -348,4 +348,44 @@
     <string name="bank_type_reversal">Storno</string>
     <string name="bank_type_wipe_reset">Wipe-Zurücksetzung</string>
     <string name="bank_sparkline_description">Verlauf des Kontostands über 30 Tage</string>
+    <!-- Aufträge (design chapter 10) -->
+    <string name="orders_title">Aufträge</string>
+    <string name="orders_status_open">Offen</string>
+    <string name="orders_status_in_progress">In Bearbeitung</string>
+    <string name="orders_status_rejected">Abgelehnt</string>
+    <string name="orders_status_completed">Abgeschlossen</string>
+    <string name="orders_number">#%1$s</string>
+    <string name="orders_priority">Prio %1$d</string>
+    <string name="orders_for">Für %1$s</string>
+    <string name="orders_by">Durch %1$s</string>
+    <plurals name="orders_material_count">
+        <item quantity="one">%1$d Material</item>
+        <item quantity="other">%1$d Materialien</item>
+    </plurals>
+    <string name="orders_material_progress">%1$s / %2$s</string>
+    <string name="orders_redacted">Teile dieses Auftrags sind für dich ausgeblendet.</string>
+    <plurals name="orders_count">
+        <item quantity="one">%1$d von %2$d Auftrag</item>
+        <item quantity="other">%1$d von %2$d Aufträgen</item>
+    </plurals>
+    <string name="orders_end_of_list">Ende der Liste</string>
+    <string name="orders_empty_title">Keine Aufträge</string>
+    <string name="orders_empty_message">Für diese Auswahl gibt es keinen Auftrag.</string>
+    <string name="orders_error_title">Signal Lost</string>
+    <string name="orders_error_message">Die Aufträge konnten nicht geladen werden.</string>
+    <string name="order_detail_title">Auftrag</string>
+    <string name="order_detail_comment">Anmerkung</string>
+    <string name="order_detail_materials">Material</string>
+    <string name="order_detail_materials_empty">Für diesen Auftrag ist kein Material erfasst.</string>
+    <string name="order_detail_handovers">Übergaben</string>
+    <string name="order_detail_handovers_empty">Noch keine Übergabe erfasst.</string>
+    <string name="order_detail_handover_row">%1$s · %2$s</string>
+    <string name="order_detail_assignees">Zuständig</string>
+    <string name="order_detail_assignees_empty">Noch niemand zuständig.</string>
+    <string name="order_detail_error_forbidden_title">Access Denied</string>
+    <string name="order_detail_error_forbidden_message">Dieser Auftrag ist für dich nicht einsehbar.</string>
+    <string name="order_detail_error_missing_title">Signal Lost</string>
+    <string name="order_detail_error_missing_message">Diesen Auftrag gibt es nicht mehr.</string>
+    <string name="order_detail_error_title">System Malfunction</string>
+    <string name="order_detail_error_message">Der Auftrag konnte nicht geladen werden.</string>
 </resources>

@@ -331,4 +331,44 @@
     <string name="bank_type_reversal">Reversal</string>
     <string name="bank_type_wipe_reset">Wipe reset</string>
     <string name="bank_sparkline_description">Balance over the last 30 days</string>
+    <!-- Aufträge (design chapter 10) -->
+    <string name="orders_title">Aufträge</string>
+    <string name="orders_status_open">Open</string>
+    <string name="orders_status_in_progress">In progress</string>
+    <string name="orders_status_rejected">Rejected</string>
+    <string name="orders_status_completed">Completed</string>
+    <string name="orders_number">#%1$s</string>
+    <string name="orders_priority">Prio %1$d</string>
+    <string name="orders_for">For %1$s</string>
+    <string name="orders_by">By %1$s</string>
+    <plurals name="orders_material_count">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materials</item>
+    </plurals>
+    <string name="orders_material_progress">%1$s / %2$s</string>
+    <string name="orders_redacted">Parts of this order are hidden from you.</string>
+    <plurals name="orders_count">
+        <item quantity="one">%1$d of %2$d order</item>
+        <item quantity="other">%1$d of %2$d orders</item>
+    </plurals>
+    <string name="orders_end_of_list">End of list</string>
+    <string name="orders_empty_title">No orders</string>
+    <string name="orders_empty_message">There is no order for this selection.</string>
+    <string name="orders_error_title">Signal Lost</string>
+    <string name="orders_error_message">The Aufträge could not be loaded.</string>
+    <string name="order_detail_title">Auftrag</string>
+    <string name="order_detail_comment">Note</string>
+    <string name="order_detail_materials">Material</string>
+    <string name="order_detail_materials_empty">No material is recorded for this order.</string>
+    <string name="order_detail_handovers">Handovers</string>
+    <string name="order_detail_handovers_empty">No handover recorded yet.</string>
+    <string name="order_detail_handover_row">%1$s · %2$s</string>
+    <string name="order_detail_assignees">Assigned</string>
+    <string name="order_detail_assignees_empty">Nobody assigned yet.</string>
+    <string name="order_detail_error_forbidden_title">Access Denied</string>
+    <string name="order_detail_error_forbidden_message">This order is not visible to you.</string>
+    <string name="order_detail_error_missing_title">Signal Lost</string>
+    <string name="order_detail_error_missing_message">This order no longer exists.</string>
+    <string name="order_detail_error_title">System Malfunction</string>
+    <string name="order_detail_error_message">The order could not be loaded.</string>
 </resources>

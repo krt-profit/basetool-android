@@ -8,17 +8,18 @@
 package de.greluc.krt.profit.basetool.android.notifications
 
 import de.greluc.krt.profit.basetool.android.core.data.Notification
+import de.greluc.krt.profit.basetool.android.navigation.orderDetailRoute
 
 /**
  * Where a notification's subject lives in the app, when it lives anywhere yet.
  *
- * The backend raises notifications for five entity types — `JOB_ORDER`, `BANK_BOOKING_REQUEST`,
- * `MATERIAL_EXCHANGE_OFFER`, `MATERIAL_EXCHANGE_REQUEST` and `DISCORD_REGISTRATION`. **None of them
- * has a screen in the app yet**: Aufträge and Bank arrive later in this phase, the Materialbörse in
- * phase 4, and the registration queue is admin work that stays on the web permanently.
+ * The backend raises notifications for five entity types. `JOB_ORDER` now opens the order — the
+ * Aufträge slice gave it a screen. The other four still have none: a bank booking **request** is
+ * not the account screen this build has, the Materialbörse arrives in phase 4, and the registration
+ * queue is admin work that stays on the web permanently.
  *
- * Returning `null` is therefore the honest answer today, and the row is drawn unclickable rather
- * than swallowing the tap. A control that reacts to nothing is worse than one that does not offer
+ * Returning `null` is the honest answer for those, and the row is drawn unclickable rather than
+ * swallowing the tap. A control that reacts to nothing is worse than one that does not offer
  * itself: the member repeats the tap, and concludes the app is broken rather than that the screen
  * does not exist.
  *
@@ -31,8 +32,11 @@ fun notificationDestination(notification: Notification): String? {
         // Filled in as each area's read-only screen lands. Written as an exhaustive-looking `when`
         // on purpose: the next slice adds a line here rather than discovering the mapping is
         // missing from a member's bug report.
-        "JOB_ORDER" -> null
+        "JOB_ORDER" -> orderDetailRoute(id)
 
+        // NOT the account screen: the notification is about a booking *request*, which is the
+        // approvals surface this build does not have. Sending a member to the account instead
+        // would answer a question they did not ask.
         "BANK_BOOKING_REQUEST" -> null
 
         "MATERIAL_EXCHANGE_OFFER", "MATERIAL_EXCHANGE_REQUEST" -> null

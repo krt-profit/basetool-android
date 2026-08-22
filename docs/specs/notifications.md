@@ -148,12 +148,13 @@ classification. An unclassifiable type is `SYSTEM`, which is not a failure.
 
 ### REQ-APP-NOTIF-007 — A row that leads nowhere does not pretend otherwise
 
-The backend raises notifications for five entity types (`JOB_ORDER`, `BANK_BOOKING_REQUEST`,
-`MATERIAL_EXCHANGE_OFFER`, `MATERIAL_EXCHANGE_REQUEST`, `DISCORD_REGISTRATION`). None has a screen in
-this build: Aufträge and Bank arrive later in phase 2, the Materialbörse in phase 4, and the
-registration queue is admin work that stays on the web permanently.
+The backend raises notifications for five entity types. **`JOB_ORDER` opens the order** since the
+Aufträge slice gave it a screen (`REQ-APP-ORDERS-007`). The other four lead nowhere: a
+`BANK_BOOKING_REQUEST` is about the approvals surface this build does not have — sending a member to
+the account instead would answer a question they did not ask — the Materialbörse arrives in phase 4,
+and the registration queue is admin work that stays on the web permanently.
 
-`notificationDestination` therefore returns `null` today and the tap does nothing. A control that
+`notificationDestination` returns `null` for those, and the row is drawn unclickable. A control that
 reacts to nothing is worse than one that does not offer itself — the member repeats the tap and
 concludes the app is broken rather than that the screen does not exist yet.
 
@@ -161,6 +162,8 @@ concludes the app is broken rather than that the screen does not exist yet.
 
 - [x] The mapping is written as one `when` over the entity types, so the next area's slice adds a
   line there rather than discovering the mapping is missing from a bug report.
+- [x] Every mapping is asserted, the negatives included (`NotificationDestinationsTest`): a missing
+  id, a blank id and a type this build has never seen all lead nowhere.
 
 **Code:** `NotificationDestinations`
 
@@ -193,6 +196,8 @@ is the main repo's ADR-0104 rule applied to this list.
   channel entirely — the app has no Firebase and will not get one.
 - **The unread preview on the dashboard** is part of the Dashboard slice, which reads this same view
   model.
+- **Only `JOB_ORDER` rows open anything.** The Aufträge slice gave that entity type a screen; the
+  other four still lead nowhere and their rows stay unclickable (`REQ-APP-ORDERS-007`).
 - **A member with five browser tabs open can evict the app's stream**, because the server caps
   concurrent streams at five per user and drops the oldest. The poll covers it, which is one of the
   reasons the poll is unconditional.
