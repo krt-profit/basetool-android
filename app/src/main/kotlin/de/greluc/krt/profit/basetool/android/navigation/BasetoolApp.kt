@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavi
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
+import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -71,6 +72,7 @@ private fun isExpandedWindow(): Boolean =
  * @param onLogout ends the session; the caller opens the realm's end-session URL.
  * @param settings what the Einstellungen screen needs from the activity.
  * @param missions drives the Einsatz list.
+ * @param missionDetail builds a view model for one Einsatz.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -81,6 +83,7 @@ fun BasetoolApp(
     onLogout: () -> Unit,
     settings: SettingsBindings,
     missions: MissionsViewModel,
+    missionDetail: (String) -> MissionDetailViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -168,6 +171,7 @@ fun BasetoolApp(
                     onLogout = onLogout,
                     settings = settings,
                     missions = missions,
+                    missionDetail = missionDetail,
                 )
             }
             if (!expanded) {

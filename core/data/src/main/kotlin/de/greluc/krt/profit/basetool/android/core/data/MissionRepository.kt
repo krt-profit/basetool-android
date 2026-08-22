@@ -8,7 +8,13 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceTotalsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -67,6 +73,25 @@ interface MissionSource {
         page: Int = 0,
         pageSize: Int = MissionRepository.DEFAULT_PAGE_SIZE,
     ): ApiResult<MissionPage>
+
+    /**
+     * Reads one Einsatz in full.
+     *
+     * @param id the Einsatz's id.
+     * @return everything the detail tabs draw, or a failure the caller can show. `NotFound` and
+     *   `Forbidden` are ordinary answers here: the backend refuses an outsider an internal or
+     *   terminal Einsatz with 403, and a stale link is a 404.
+     */
+    suspend fun detail(id: String): ApiResult<MissionDetail>
+
+    /**
+     * Reads an Einsatz's money.
+     *
+     * @param missionId the Einsatz's id.
+     * @return the totals band and the first page of entries, or a failure. Unlike [detail] this
+     *   requires membership: an anonymous caller gets `Unauthenticated`, a guest `Forbidden`.
+     */
+    suspend fun finances(missionId: String): ApiResult<MissionFinances>
 }
 
 /**
@@ -145,6 +170,80 @@ class MissionRepository(
         }
     }
 
+    /**
+     * Reads one Einsatz in full.
+     *
+     * One call, not seven: `GET /missions/{id}` already carries the participants, units, steps,
+     * objectives and frequencies, so a tab switch costs nothing and the seven tabs cannot disagree
+     * with each other about the same Einsatz.
+     *
+     * @param id the Einsatz's id.
+     * @return the Einsatz, or the classified failure.
+     */
+    override suspend fun detail(id: String): ApiResult<MissionDetail> =
+        when (val result = reader.get(missionPath(id), MissionDto.serializer())) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(id))
+        }
+
+    /**
+     * Reads an Einsatz's money.
+     *
+     * **Two calls, and they succeed or fail together.** The totals band and the entries are one
+     * tab; showing a total over an empty list, or a list under a blank total, would read as data
+     * rather than as the partial answer it is. Both are guarded identically server-side
+     * (`isMemberOrAbove` + `canSeeMission`), so in practice they never disagree.
+     *
+     * @param missionId the Einsatz's id.
+     * @return the Finanzen tab's contents, or the first failure.
+     */
+    override suspend fun finances(missionId: String): ApiResult<MissionFinances> =
+        when (val summary = reader.get(financeSummaryPath(missionId), MissionFinanceTotalsDto.serializer())) {
+            is ApiResult.Failure -> summary
+            is ApiResult.Success -> financesWith(missionId, summary.value)
+        }
+
+    /**
+     * Fetches the entries and folds them together with the already-read summary.
+     *
+     * Split out so [finances] reads as the one decision it makes -- either read fails, the tab
+     * fails -- rather than as a chain of early returns.
+     *
+     * @param missionId the Einsatz's id.
+     * @param summary the totals already read.
+     * @return the tab's contents, or the entries' failure.
+     */
+    private suspend fun financesWith(
+        missionId: String,
+        summary: MissionFinanceTotalsDto,
+    ): ApiResult<MissionFinances> =
+        when (
+            val entries =
+                reader.get(
+                    financeEntriesPath(missionId),
+                    listOf(PAGE_PARAM to "0", SIZE_PARAM to FINANCE_PAGE_SIZE.toString()),
+                    PageResponseMissionFinanceEntryDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                entries
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    MissionFinances(
+                        total = summary.total?.toString(),
+                        incomeSum = summary.incomeSum?.toString(),
+                        incomeCount = summary.incomeCount ?: 0L,
+                        expenseSum = summary.expenseSum?.toString(),
+                        expenseCount = summary.expenseCount ?: 0L,
+                        entries = entries.value.content.orEmpty().mapNotNull { it.toModel() },
+                        totalEntries = entries.value.totalElements ?: 0L,
+                    ),
+                )
+            }
+        }
+
     companion object {
         /**
          * Rows per page.
@@ -165,7 +264,41 @@ class MissionRepository(
         /** Log subsystem. Search terms are member input and never reach the log. */
         private const val LOG_TAG = "missions"
 
+        /**
+         * Entries fetched for the Finanzen tab.
+         *
+         * The tab shows a list under a totals band, not a paginated ledger; the band's counts come
+         * from the summary and are correct regardless, so the list states how many of the total it
+         * is showing rather than pretending to be all of them.
+         */
+        const val FINANCE_PAGE_SIZE: Int = 50
+
         private const val SEARCH_PATH = "/api/v1/missions/search"
+
+        /**
+         * The detail path for one Einsatz.
+         *
+         * @param id the Einsatz's id.
+         * @return the path.
+         */
+        private fun missionPath(id: String) = "/api/v1/missions/$id"
+
+        /**
+         * The finance-entries path for one Einsatz.
+         *
+         * @param id the Einsatz's id.
+         * @return the path.
+         */
+        private fun financeEntriesPath(id: String) = "/api/v1/missions/$id/finance-entries"
+
+        /**
+         * The finance-summary path for one Einsatz.
+         *
+         * @param id the Einsatz's id.
+         * @return the path.
+         */
+        private fun financeSummaryPath(id: String) = "/api/v1/missions/$id/finance-entries/summary"
+
         private const val QUERY_PARAM = "query"
         private const val STATUS_PARAM = "status"
         private const val START_PARAM = "start"
@@ -228,3 +361,128 @@ private fun MissionListDto.toModel(): Mission? {
  */
 private fun String.toInstantOrNull(): Instant? =
     runCatching { Instant.parse(this) }.getOrNull()
+
+/**
+ * Maps the full wire DTO onto the detail model.
+ *
+ * @param requestedId the id that was asked for, used when the server omits its own. A detail read
+ *   is addressed by id, so the answer is about that Einsatz whether or not it repeats it — which
+ *   is why this cannot fail for want of one, and why there is no error branch for it.
+ * @return the Einsatz.
+ */
+private fun MissionDto.toModel(requestedId: String): MissionDetail {
+    val missionId = id ?: requestedId
+    return MissionDetail(
+        id = missionId,
+        name = name.takeIf { it.isNotBlank() } ?: missionId,
+        // Absent for an outsider read (ADR-0034) rather than missing — the screen omits the
+        // section instead of showing an empty one.
+        description = description?.takeIf { it.isNotBlank() },
+        status = MissionStatus.from(status),
+        rawStatus = status,
+        meetingTime = meetingTime?.toInstantOrNull(),
+        plannedStartTime = plannedStartTime?.toInstantOrNull(),
+        actualStartTime = actualStartTime?.toInstantOrNull(),
+        plannedEndTime = plannedEndTime?.toInstantOrNull(),
+        isInternal = isInternal ?: false,
+        meetingPoint = meetingPoint?.takeIf { it.isNotBlank() },
+        operationName = operation?.name,
+        orgUnitName = owningSquadron?.name,
+        orgUnitShorthand = owningSquadron?.shorthand,
+        partyLeadName = partyLeadUser?.effectiveName ?: partyLeadUser?.displayName ?: partyLeadGuestName,
+        registeredParticipants = registeredParticipants ?: 0,
+        checkedInParticipants = checkedInParticipants ?: 0,
+        participants = participants.orEmpty().mapNotNull { it.toModel() },
+        units = assignedUnits.orEmpty().mapNotNull { it.toModel() },
+        steps =
+            steps.orEmpty().mapNotNull { step ->
+                val stepId = step.id ?: return@mapNotNull null
+                MissionStep(
+                    id = stepId,
+                    title = step.title.orEmpty(),
+                    meta = step.meta?.takeIf { it.isNotBlank() },
+                    done = step.done ?: false,
+                )
+            },
+        objectives =
+            objectives.orEmpty().mapNotNull { objective ->
+                val objectiveId = objective.id ?: return@mapNotNull null
+                MissionObjective(
+                    id = objectiveId,
+                    title = objective.title.orEmpty(),
+                    kind = objective.kind?.value,
+                )
+            },
+        frequencies =
+            frequencies.orEmpty().mapNotNull { frequency ->
+                val frequencyId = frequency.id ?: return@mapNotNull null
+                MissionFrequency(
+                    id = frequencyId,
+                    type = frequency.frequencyType?.name,
+                    value = frequency.name.orEmpty(),
+                )
+            },
+    )
+}
+
+/**
+ * Maps one participant row.
+ *
+ * @return the participant, or `null` without an id — a row that cannot be keyed cannot be listed
+ *   stably.
+ */
+private fun MissionParticipantDto.toModel(): MissionParticipant? {
+    val participantId = id ?: return null
+    return MissionParticipant(
+        id = participantId,
+        // The server redacts identity for an outsider, so all three can legitimately be absent.
+        name = user?.effectiveName ?: user?.displayName ?: guestName.orEmpty(),
+        role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
+        // A start time is what a check-in writes; there is no separate flag on the wire.
+        checkedIn = startTime != null,
+        comment = comment?.takeIf { it.isNotBlank() },
+    )
+}
+
+/**
+ * Maps one unit and its crew.
+ *
+ * @return the unit, or `null` without an id.
+ */
+private fun MissionUnitDto.toModel(): MissionUnit? {
+    val unitId = id ?: return null
+    return MissionUnit(
+        id = unitId,
+        name = name.orEmpty(),
+        shipName = ship?.name ?: shipType?.name,
+        highValue = highValueUnit ?: false,
+        responsibleName = responsibleUser?.effectiveName ?: responsibleUser?.displayName,
+        crew =
+            crew.orEmpty().mapNotNull { member ->
+                val crewId = member.id ?: return@mapNotNull null
+                MissionCrewMember(
+                    id = crewId,
+                    name = member.participantName.orEmpty(),
+                    roles = member.jobTypes.orEmpty().map { it.name },
+                )
+            },
+    )
+}
+
+/**
+ * Maps one finance entry.
+ *
+ * @return the entry, or `null` without an id.
+ */
+private fun MissionFinanceEntryDto.toModel(): MissionFinanceEntry? {
+    val entryId = id ?: return null
+    return MissionFinanceEntry(
+        id = entryId,
+        // The sign is read once, here, from the server's own classification. Deriving it a second
+        // time from the amount's sign would let the two disagree.
+        income = type?.value.equals("INCOME", ignoreCase = true),
+        amount = amount?.toString().orEmpty(),
+        note = note?.takeIf { it.isNotBlank() },
+        participantName = participant?.user?.effectiveName ?: participant?.guestName,
+    )
+}

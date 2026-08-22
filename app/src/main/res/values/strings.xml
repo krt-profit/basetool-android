@@ -142,4 +142,53 @@
     <string name="missions_error_title">Signal Lost</string>
     <string name="missions_error_message">Die Einsätze konnten nicht geladen werden.</string>
     <string name="missions_retry">Erneut versuchen</string>
+
+    <!-- Einsatz-Detail (design spec ch. 06 §2), read-only. -->
+    <string name="mission_detail_title">Einsatz</string>
+    <string name="mission_detail_tab_overview">Übersicht</string>
+    <string name="mission_detail_tab_participants">Teilnehmer</string>
+    <string name="mission_detail_tab_units">Einheiten</string>
+    <string name="mission_detail_tab_steps">Ablauf</string>
+    <string name="mission_detail_tab_objectives">Ziele</string>
+    <string name="mission_detail_tab_frequencies">Frequenzen</string>
+    <string name="mission_detail_tab_finances">Finanzen</string>
+    <string name="mission_detail_fact_meeting">TS</string>
+    <string name="mission_detail_fact_join">Join</string>
+    <string name="mission_detail_fact_end">Ende</string>
+    <string name="mission_detail_fact_place">Ort</string>
+    <string name="mission_detail_fact_lead">Leiter</string>
+    <string name="mission_detail_fact_operation">Operation</string>
+    <plurals name="mission_detail_signups">
+        <item quantity="one">%1$d angemeldet, davon %2$d eingecheckt</item>
+        <item quantity="other">%1$d angemeldet, davon %2$d eingecheckt</item>
+    </plurals>
+    <string name="mission_detail_briefing">Einsatz auf einen Blick</string>
+    <string name="mission_detail_description">Beschreibung</string>
+    <string name="mission_detail_description_hidden">Die Beschreibung ist nur für Mitglieder sichtbar.</string>
+    <string name="mission_detail_checked_in">Eingecheckt</string>
+    <string name="mission_detail_not_checked_in">Nicht eingecheckt</string>
+    <string name="mission_detail_unit_hvu">HVU</string>
+    <plurals name="mission_detail_unit_crew">
+        <item quantity="one">%1$d an Bord</item>
+        <item quantity="other">%1$d an Bord</item>
+    </plurals>
+    <string name="mission_detail_unit_lead">Verantwortlich: %1$s</string>
+    <string name="mission_detail_step_done">Erledigt</string>
+    <string name="mission_detail_frequency_copied">Wert kopiert</string>
+    <string name="mission_detail_finance_income">Einnahmen</string>
+    <string name="mission_detail_finance_expense">Ausgaben</string>
+    <string name="mission_detail_finance_net">Netto</string>
+    <string name="mission_detail_finance_forbidden">Die Finanzen dieses Einsatzes sind für dich nicht einsehbar.</string>
+    <string name="mission_detail_empty_participants">Noch niemand angemeldet.</string>
+    <string name="mission_detail_empty_units">Keine Einheiten eingeteilt.</string>
+    <string name="mission_detail_empty_steps">Kein Ablauf hinterlegt.</string>
+    <string name="mission_detail_empty_objectives">Keine Ziele hinterlegt.</string>
+    <string name="mission_detail_empty_frequencies">Keine Frequenzen hinterlegt.</string>
+    <string name="mission_detail_empty_finances">Noch keine Einträge.</string>
+    <string name="mission_detail_error_forbidden_title">Access Denied</string>
+    <string name="mission_detail_error_forbidden_message">Dieser Einsatz ist für dich nicht einsehbar.</string>
+    <string name="mission_detail_error_missing_title">Signal Lost</string>
+    <string name="mission_detail_error_missing_message">Diesen Einsatz gibt es nicht mehr.</string>
+    <string name="mission_detail_error_title">System Malfunction</string>
+    <string name="mission_detail_error_message">Der Einsatz konnte nicht geladen werden.</string>
 </resources>

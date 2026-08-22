@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
+import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
@@ -203,6 +204,7 @@ class MainActivity : AppCompatActivity() {
                             BasetoolApp(
                                 orgUnit = orgUnit,
                                 missions = missionsViewModel,
+                                missionDetail = { MissionDetailViewModel(container.missions, it) },
                                 onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,
                                 settings =
