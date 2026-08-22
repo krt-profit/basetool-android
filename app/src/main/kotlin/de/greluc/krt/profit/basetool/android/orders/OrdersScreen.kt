@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
@@ -129,12 +130,14 @@ fun OrdersScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.orders.isEmpty()) {
-                        KrtEmptyState(
-                            iconRes = DesignR.drawable.ic_krt_clipboard_list,
-                            title = stringResource(R.string.orders_empty_title),
-                            message = stringResource(R.string.orders_empty_message),
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                        )
+                        KrtRefreshableFill {
+                            KrtEmptyState(
+                                iconRes = DesignR.drawable.ic_krt_clipboard_list,
+                                title = stringResource(R.string.orders_empty_title),
+                                message = stringResource(R.string.orders_empty_message),
+                                modifier = Modifier.padding(KrtSpacing.lg),
+                            )
+                        }
                     } else {
                         OrdersList(
                             state = state,
@@ -291,11 +294,14 @@ private fun MaterialLine(material: JobOrderMaterial) {
                 modifier = Modifier.weight(1f),
             )
             Text(
+                // A figure the server did not send reads as a dash. Left empty it became " / 500",
+                // which looks like a rendering fault rather than an absent number — found on a
+                // device, on an order for a material nothing is stocked of.
                 text =
                     stringResource(
                         R.string.orders_material_progress,
-                        formatAmount(material.inStock.orEmpty()),
-                        formatAmount(material.needed.orEmpty()),
+                        material.inStock.orDash(),
+                        material.needed.orDash(),
                     ),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
@@ -312,6 +318,13 @@ private fun MaterialLine(material: JobOrderMaterial) {
         }
     }
 }
+
+/**
+ * A quantity, or a dash when the server stated none.
+ *
+ * @return the grouped figure, or `—`.
+ */
+private fun String?.orDash(): String = this?.let { formatAmount(it) }?.takeIf { it.isNotEmpty() } ?: "—"
 
 /**
  * The queue row's second line.

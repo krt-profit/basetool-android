@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
@@ -138,7 +139,12 @@ fun MissionsScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.missions.isEmpty()) {
-                        MissionsEmpty(narrowed = state.isNarrowed, onResetFilters = onResetFilters)
+                        KrtRefreshableFill {
+                            MissionsEmpty(
+                                narrowed = state.isNarrowed,
+                                onResetFilters = onResetFilters,
+                            )
+                        }
                     } else {
                         MissionsList(
                             state = state,
@@ -352,7 +358,7 @@ private fun MissionsEmpty(
             ),
         actionText = if (narrowed) stringResource(R.string.missions_filter_reset) else null,
         onAction = if (narrowed) onResetFilters else null,
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.lg),
     )
 }
 

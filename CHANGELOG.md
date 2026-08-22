@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Die Sitzung hält jetzt länger als eine Stunde.** Bisher lief die Anmeldung nach Ablauf des Zugriffs-Tokens aus, und danach meldete jeder Bildschirm „Signal Lost" — nur ein Neustart der App half. Das Token wird jetzt vor Ablauf und nach einer Ablehnung durch den Server erneuert (REQ-APP-AUTH-012).
+
+- **Ziehen zum Aktualisieren funktioniert jetzt auch auf leeren Listen.** Genau dort, wo man es braucht — leere Auftragsliste, noch kein Konto sichtbar — passierte beim Ziehen bisher nichts (REQ-APP-UI-001).
+
+- **Ein laufender Einsatz verschwand aus der Liste.** „Vergangene aus" hat nach Startzeit gefiltert und damit auch jeden Einsatz ausgeblendet, der gerade läuft. Es filtert jetzt nach Status, wie die Weboberfläche (REQ-APP-MIS-002).
+
+- **Der Posteingang ließ die App abstürzen.** Beim Zusammensetzen des Benachrichtigungstexts brach die App auf dem Gerät ab, sobald eine Benachrichtigung vorlag (REQ-APP-NOTIF-009).
+
+- **„Anteil je Teilnehmer" zeigte 0 aUEC.** Im Finanz-Rollup einer Operation wurde der Anteil eines Verzichtenden gelesen, der serverseitig null ist. Genannt wird jetzt der tatsächlich verdiente Anteil, bei ungleicher Aufteilung als Spanne (REQ-APP-OPS-012).
+
+- **Fehlende Mengen im Auftrag lasen sich wie ein Anzeigefehler.** Eine Materialzeile ohne Bestandsangabe zeigte „ / 500"; jetzt steht dort ein Gedankenstrich, und ohne Bestandsangabe gibt es keinen Fortschrittsbalken statt eines leeren (REQ-APP-ORDERS-008).
+
+- **Die Übersicht behauptete „Nichts Ungelesenes", bevor der Posteingang geantwortet hatte** — auch dann, wenn die Glocke daneben eine 2 zeigte (REQ-APP-DASH-008).
+
+- **Der Reiter „Einsätze" trug eine erfundene Zahl.** Am Symbol klebte fest eine 2, unabhängig davon, was es zu sehen gab.
+
 ### Added
 
 - **Das Lager ist da.** Der Bestand als Baum: je Material eine Zeile mit Menge, Einheit und Qualität, aufklappbar zu den einzelnen Beständen mit Verwahrer, Ort und Anzahl der Einträge. Geladen wird eine Gruppe erst beim Aufklappen. Schlägt das fehl, bleibt die Gruppe offen und sagt es — statt sich wortlos wieder zu schließen. Ein- und Ausbuchen bleibt der Weboberfläche vorbehalten (REQ-APP-INV-001…006).

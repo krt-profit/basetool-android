@@ -9,7 +9,6 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
-import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -114,7 +113,6 @@ class MissionDetailRepositoryTest {
             MissionRepository(
                 httpClient = OkHttpClient(),
                 baseUrl = server.url("/").toString().removeSuffix("/"),
-                clock = ServerClock(),
             )
     }
 

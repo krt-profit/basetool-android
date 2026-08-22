@@ -174,6 +174,13 @@ class JobOrderRepositoryTest {
     }
 
     @Test
+    fun `no stock figure means no bar, because an empty bar claims none in stock`() {
+        val material = JobOrderMaterial("Quantainium", "500", null, 0, null)
+
+        assertNull(material.progress)
+    }
+
+    @Test
     fun `progress never exceeds one`() {
         val material = JobOrderMaterial("Quantainium", "100", "250", 0, null)
 

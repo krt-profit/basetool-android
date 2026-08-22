@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import java.time.Instant
@@ -122,12 +123,14 @@ fun NotificationsScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.notifications.isEmpty()) {
-                        KrtEmptyState(
-                            iconRes = DesignR.drawable.ic_krt_bell,
-                            title = stringResource(R.string.notifications_empty_title),
-                            message = stringResource(R.string.notifications_empty_message),
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                        )
+                        KrtRefreshableFill {
+                            KrtEmptyState(
+                                iconRes = DesignR.drawable.ic_krt_bell,
+                                title = stringResource(R.string.notifications_empty_title),
+                                message = stringResource(R.string.notifications_empty_message),
+                                modifier = Modifier.padding(KrtSpacing.lg),
+                            )
+                        }
                     } else {
                         NotificationsList(state = state, onOpen = onOpen, onLoadMore = onLoadMore)
                     }

@@ -208,3 +208,25 @@ is the main repo's ADR-0104 rule applied to this list.
 the vhost allow-list. The stream's response carries `X-Accel-Buffering: no` so an nginx in front of
 it cannot hold a trickling body in a buffer — without it the events arrive late, in bursts, or not
 at all, and the failure reads as a broken push rather than as a proxy setting.
+
+---
+
+### REQ-APP-NOTIF-009 — The placeholder scanner replaces a regular expression that only works on the JVM
+
+`fillTemplate` walks the template character by character. It must not use a regular expression.
+
+`Regex("\\{([A-Za-z0-9_]+)}")` compiles on the JVM and **throws on Android**, whose ICU engine
+rejects the unescaped closing brace. Every unit test runs on the JVM through Robolectric, so the
+suite stayed green while the app crashed on launch for any member who had a notification — caught
+only on a device. Escaping the brace would fix that one instance; scanning removes the class,
+because there is no second regex dialect left to disagree with.
+
+A brace that encloses no valid name is a literal and is copied through, so wording may contain one.
+
+**Acceptance**
+
+- [x] `Fertig {}` and `50 % von {12}` survive as text (`NotificationTextTest`).
+- [x] An unclosed brace is text, not a swallowed sentence (`NotificationTextTest`).
+- [x] Two adjacent placeholders are both filled (`NotificationTextTest`).
+- [x] **Observed on a device (2026-08-22):** the inbox rendered where it previously crashed the app
+  at launch.

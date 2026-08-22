@@ -74,6 +74,8 @@ private const val PREVIEW_ROWS = 3
  * @param memberName the signed-in member's name, or `null` while unknown.
  * @param orgUnitName the active org unit's name, or `null` while unknown.
  * @param unread the newest unread notifications, already limited by the caller.
+ * @param unreadKnown whether the inbox has answered at all — "nothing unread" is a claim and
+ *   may only be made once it has.
  * @param onRefresh pull-to-refresh.
  * @param onOpenMission an Einsatz row was tapped.
  * @param onOpenMissions the Einsatz band's header action.
@@ -87,6 +89,7 @@ fun DashboardScreen(
     memberName: String?,
     orgUnitName: String?,
     unread: List<Notification>,
+    unreadKnown: Boolean,
     onRefresh: () -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenMissions: () -> Unit,
@@ -145,8 +148,12 @@ fun DashboardScreen(
                 )
             }
             if (unread.isEmpty()) {
-                item(key = "notifications-empty") {
-                    MutedLine(text = stringResource(R.string.dashboard_notifications_empty))
+                // Silence while the inbox is still answering: saying "nothing unread" before it
+                // has is a claim about the member's inbox made out of not knowing yet.
+                if (unreadKnown) {
+                    item(key = "notifications-empty") {
+                        MutedLine(text = stringResource(R.string.dashboard_notifications_empty))
+                    }
                 }
             } else {
                 items(unread.take(PREVIEW_ROWS), key = { it.id }) { notification ->

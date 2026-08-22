@@ -93,6 +93,40 @@ class NotificationTextTest {
     }
 
     @Test
+    fun `a literal brace in the wording is not a placeholder`() {
+        // The scanner replaced a regex that crashed on Android. A brace that encloses no valid name
+        // has to survive as text rather than swallowing the rest of the sentence.
+        assertEquals(
+            "Fertig {}",
+            notificationSentence(notification(), "Fertig {}", GENERIC),
+        )
+        assertEquals(
+            "50 % von {12}",
+            notificationSentence(notification(), "50 % von {12}", GENERIC),
+        )
+    }
+
+    @Test
+    fun `an unclosed brace is text, not a swallowed sentence`() {
+        assertEquals(
+            "Neuer Auftrag #{displayId",
+            notificationSentence(notification(), "Neuer Auftrag #{displayId", GENERIC),
+        )
+    }
+
+    @Test
+    fun `two placeholders in a row are both filled`() {
+        assertEquals(
+            "A-1042/Staffel 1",
+            notificationSentence(
+                notification(params = mapOf("displayId" to "A-1042", "orgUnit" to "Staffel 1")),
+                "{displayId}/{orgUnit}",
+                GENERIC,
+            ),
+        )
+    }
+
+    @Test
     fun `an unknown type resolves to the generic resource`() {
         // The server may add a notification rule at any time; the member must still be told that
         // something happened.

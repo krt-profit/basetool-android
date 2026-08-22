@@ -229,6 +229,7 @@
     <string name="operation_detail_rollup">Finanz-Rollup</string>
     <string name="operation_detail_rollup_net">Netto</string>
     <string name="operation_detail_rollup_donations">Spenden an die Org-Kasse</string>
+    <string name="operation_detail_rollup_share_range">%1$s – %2$s</string>
     <plurals name="operation_detail_rollup_share">
         <item quantity="one">Anteil (%1$d)</item>
         <item quantity="other">Anteil (%1$d)</item>

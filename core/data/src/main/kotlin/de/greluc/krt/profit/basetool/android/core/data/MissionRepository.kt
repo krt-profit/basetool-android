@@ -18,7 +18,6 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMis
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
-import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import okhttp3.OkHttpClient
 import java.time.Instant
 
@@ -30,9 +29,10 @@ import java.time.Instant
  * assignment.
  *
  * @property text the free-text name fragment, blank when the member has not searched
- * @property statuses the statuses to include; empty means "whatever the server offers", which for a
- *   member is all of them and for a role-less outsider is `PLANNED` + `ACTIVE`
- * @property includePast whether Einsätze that already started are shown
+ * @property statuses the statuses the member ticked; empty means "decide from [includePast]"
+ * @property includePast whether Einsätze that are over belong in the list — that is, whether
+ *   `COMPLETED` and `CANCELLED` are asked for. It only has an effect while no status is ticked, in
+ *   which case the ticked ones are the filter (the web app behaves the same way)
  * @property from lower bound on the planned start, or `null`
  * @property until upper bound on the planned start, or `null`
  */
@@ -112,30 +112,31 @@ interface MissionSource {
  * precisely because the answer is expected to change.
  *
  * @property reader performs the calls and classifies their failures
- * @property clock the server-corrected clock, used only to turn "Vergangene aus" into a lower bound
  */
 class MissionRepository(
     private val reader: ApiReader,
-    private val clock: ServerClock,
 ) : MissionSource {
     /**
      * Convenience constructor for the object graph.
      *
      * @param httpClient the API client, which supplies the bearer token and the mandatory headers
      * @param baseUrl the flavour's API origin
-     * @param clock the server-corrected clock
      */
-    constructor(httpClient: OkHttpClient, baseUrl: String, clock: ServerClock) : this(
+    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
         ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = LOG_TAG),
-        clock,
     )
 
     /**
      * Reads one page of Einsätze.
      *
-     * "Vergangene aus" is expressed as a lower bound of **now on the server's clock**, not the
-     * device's. A phone whose clock is a few minutes fast would otherwise hide an Einsatz that is
-     * about to start — the one case where the member most needs to see it.
+     * "Vergangene aus" is a **status** filter, not a time one, exactly as the web app has it: it
+     * asks for `PLANNED` + `ACTIVE` and leaves out what is over. Expressed as a lower bound on the
+     * start instead — which is what this did until a device walk-through caught it — it also hides
+     * every *running* Einsatz, whose gathering time is by definition in the past. That is the row a
+     * member most needs, and the design's own "seit 15:57" wording for it could never appear.
+     *
+     * A ticked status wins: the member has then said which ones they want, and subtracting from
+     * that would answer "show me the finished ones" with an empty list.
      *
      * A row without an id is dropped: it cannot be opened, so offering it would produce a tap that
      * does nothing. The drop is counted into neither total, because the server's total is what the
@@ -154,10 +155,15 @@ class MissionRepository(
         val params =
             buildList {
                 query.text.trim().takeIf { it.isNotEmpty() }?.let { add(QUERY_PARAM to it) }
-                query.statuses.filter { it != MissionStatus.UNKNOWN }
-                    .forEach { add(STATUS_PARAM to it.name) }
-                val lowerBound = query.from ?: clock.now().takeUnless { query.includePast }
-                lowerBound?.let { add(START_PARAM to it.toString()) }
+                val ticked = query.statuses.filter { it != MissionStatus.UNKNOWN }
+                val asked =
+                    when {
+                        ticked.isNotEmpty() -> ticked
+                        query.includePast -> emptyList()
+                        else -> UPCOMING_STATUSES
+                    }
+                asked.forEach { add(STATUS_PARAM to it.name) }
+                query.from?.let { add(START_PARAM to it.toString()) }
                 query.until?.let { add(END_PARAM to it.toString()) }
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
@@ -300,6 +306,15 @@ class MissionRepository(
         private fun financeSummaryPath(id: String) = "/api/v1/missions/$id/finance-entries/summary"
 
         private const val QUERY_PARAM = "query"
+
+        /**
+         * What "Vergangene aus" asks for.
+         *
+         * `ACTIVE` is in it because a running Einsatz is not a past one, however long ago it
+         * gathered.
+         */
+        private val UPCOMING_STATUSES = listOf(MissionStatus.PLANNED, MissionStatus.ACTIVE)
+
         private const val STATUS_PARAM = "status"
         private const val START_PARAM = "start"
         private const val END_PARAM = "end"

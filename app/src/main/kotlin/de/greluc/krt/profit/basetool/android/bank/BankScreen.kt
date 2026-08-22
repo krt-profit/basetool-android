@@ -48,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -113,12 +114,14 @@ fun BankAccountsScreen(
                 modifier = modifier.fillMaxSize(),
             ) {
                 if (state.accounts.isEmpty()) {
-                    KrtEmptyState(
-                        iconRes = DesignR.drawable.ic_krt_bank,
-                        title = stringResource(R.string.bank_accounts_empty_title),
-                        message = stringResource(R.string.bank_accounts_empty_message),
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                    )
+                    KrtRefreshableFill {
+                        KrtEmptyState(
+                            iconRes = DesignR.drawable.ic_krt_bank,
+                            title = stringResource(R.string.bank_accounts_empty_title),
+                            message = stringResource(R.string.bank_accounts_empty_message),
+                            modifier = Modifier.padding(KrtSpacing.lg),
+                        )
+                    }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNTS_TAG)) {
                         items(state.accounts, key = { it.id }) { account ->

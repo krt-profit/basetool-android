@@ -13,7 +13,10 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
@@ -84,6 +87,7 @@ class OrdersScreenTest {
         state: OrdersState,
         opened: MutableList<String> = mutableListOf(),
         toggled: MutableList<String> = mutableListOf(),
+        refreshed: MutableList<Unit> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -91,7 +95,7 @@ class OrdersScreenTest {
                     state = state,
                     onStatusToggled = {},
                     onToggleMaterials = { toggled.add(it) },
-                    onRefresh = {},
+                    onRefresh = { refreshed.add(Unit) },
                     onLoadMore = {},
                     onOpenOrder = { opened.add(it) },
                 )
@@ -149,6 +153,22 @@ class OrdersScreenTest {
     }
 
     @Test
+    fun `a quantity the server did not send reads as a dash`() {
+        // Left empty it rendered as " / 500", which looks like a rendering fault rather than an
+        // absent number — found on a device, on an order for a material nothing is stocked of.
+        showQueue(
+            OrdersState(
+                orders = listOf(order(materials = listOf(material().copy(inStock = null)))),
+                total = 1,
+                phase = OrdersPhase.Ready,
+                expanded = setOf("o1"),
+            ),
+        )
+
+        compose.onNodeWithText("— / 500").assertIsDisplayed()
+    }
+
+    @Test
     fun `tapping a row opens that order`() {
         val opened = mutableListOf<String>()
         showQueue(
@@ -170,6 +190,20 @@ class OrdersScreenTest {
         showQueue(OrdersState(phase = OrdersPhase.Ready))
 
         compose.onNodeWithText("Keine Aufträge").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an empty queue can still be pulled to refresh`() {
+        // PullToRefreshBox hears the gesture through nested scroll, so an empty screen with nothing
+        // to scroll swallowed the pull entirely — on a device the queue looked frozen at exactly the
+        // moment a member wants to re-read it.
+        val refreshed = mutableListOf<Unit>()
+        showQueue(OrdersState(phase = OrdersPhase.Ready), refreshed = refreshed)
+
+        compose.onRoot().performTouchInput { swipeDown() }
+        compose.waitForIdle()
+
+        assertEquals(1, refreshed.size)
     }
 
     @Test

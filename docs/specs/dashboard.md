@@ -153,3 +153,20 @@ A member whose name is not known yet is greeted without one, rather than with a 
 its 204**: a client that reads the empty body as a failure shows an error where "no banner" is
 correct, and no schema can express that. The Einsatz band reuses `GET /api/v1/missions/search`,
 which was frozen with the Einsatz list.
+
+---
+
+### REQ-APP-DASH-008 — "Nichts Ungelesenes" is only said once the inbox has answered
+
+The empty line under `UNGELESEN` is rendered only when the unread read has completed. While it is
+still in flight the band shows nothing at all.
+
+An empty list means two different things — "there is nothing" and "nothing has arrived yet" — and
+the first is a claim about the member's inbox. Made out of not knowing yet, it is wrong for as long
+as the request takes, and on a device that is long enough to read.
+
+**Acceptance**
+
+- [x] `unreadKnown = false` renders neither the line nor the link (`DashboardScreenTest`).
+- [x] `unreadKnown = true` with no unread renders the line (`DashboardScreenTest`).
+- [x] **Observed on a device (2026-08-22).**

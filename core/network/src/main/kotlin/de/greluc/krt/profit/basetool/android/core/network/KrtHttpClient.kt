@@ -21,8 +21,9 @@ import java.time.Duration
  *   settings. A disk cache here would be a second copy of the same data outside every wipe path.
  *   The server mirrors the intent with `no-store` on its sensitive reads (main repo REQ-SEC-031).
  * - **Interceptor order.** [ServerTimeInterceptor] is added first so it observes every response,
- *   including ones a later stage rejects; [MandatoryHeadersInterceptor] follows so the headers it
- *   adds sit on the request that actually goes out.
+ *   including ones a later stage rejects; [TokenRefreshInterceptor] follows, so a token it renews
+ *   is in place before the headers are written and again on its retry; [MandatoryHeadersInterceptor]
+ *   is last, so the headers it adds sit on the request that actually goes out.
  *
  * The timeouts are short on purpose. This is a foreground-only app (no push channel, decision Q2),
  * so a request nobody is waiting for does not exist, and a member watching a spinner is better
@@ -46,7 +47,12 @@ object KrtHttpClient {
      * @param correlationIdFactory mints one correlation id per request
      * @param languageTagProvider decides the language of localised error bodies
      * @param activeOrgUnitProvider supplies the org-unit pin, or `null`
-     * @return a client with no cache, the two app interceptors and the timeouts above
+     * @param refreshIfSpent renews an access token that is at or near expiry, before the call goes
+     *   out; the default does nothing, which is right for a client with no session behind it
+     * @param refreshAfterRejection renews the token the server answered `401` to and returns a
+     *   usable one, or `null` when the session is over; the default gives up, which turns the
+     *   rejection into the ordinary "not signed in" state
+     * @return a client with no cache, the three app interceptors and the timeouts above
      */
     fun create(
         serverClock: ServerClock,
@@ -54,6 +60,8 @@ object KrtHttpClient {
         correlationIdFactory: CorrelationIdFactory,
         languageTagProvider: LanguageTagProvider,
         activeOrgUnitProvider: ActiveOrgUnitProvider,
+        refreshIfSpent: () -> Unit = {},
+        refreshAfterRejection: (String?) -> String? = { null },
     ): OkHttpClient =
         OkHttpClient
             .Builder()
@@ -63,6 +71,12 @@ object KrtHttpClient {
             .retryOnConnectionFailure(true)
             .addInterceptor(ServerTimeInterceptor(serverClock))
             .addInterceptor(
+                TokenRefreshInterceptor(
+                    currentToken = { accessTokenProvider.currentAccessToken() },
+                    refreshIfSpent = refreshIfSpent,
+                    refreshAfterRejection = refreshAfterRejection,
+                ),
+            ).addInterceptor(
                 MandatoryHeadersInterceptor(
                     accessTokenProvider = accessTokenProvider,
                     correlationIdFactory = correlationIdFactory,

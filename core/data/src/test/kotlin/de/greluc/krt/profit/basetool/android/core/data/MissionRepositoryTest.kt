@@ -8,7 +8,6 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
-import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -88,7 +87,6 @@ class MissionRepositoryTest {
             MissionRepository(
                 httpClient = OkHttpClient(),
                 baseUrl = server.url("/").toString().removeSuffix("/"),
-                clock = ServerClock(),
             )
     }
 
@@ -197,34 +195,49 @@ class MissionRepositoryTest {
         }
 
     @Test
-    fun `hiding past Einsaetze sends a lower bound taken from the server clock`() =
+    fun `hiding past Einsaetze asks for the two statuses that are not over`() =
         runTest {
-            // The bound is the SERVER's now, not the device's. A phone running a few minutes fast
-            // would otherwise hide an Einsatz that is about to start -- the one a member most needs
-            // to see.
+            // Not a lower bound on the start: that also hid every RUNNING Einsatz, whose gathering
+            // time is by definition in the past. Found on a device, and the reason the design's
+            // own "seit 15:57" row could never appear.
             respond(ONE_PAGE)
-            val before = Instant.now()
 
             repository.search(MissionQuery(includePast = false))
 
-            val sent = requestedUrl().queryParameter("start")
-            assertNotNull("a lower bound is what hides the past", sent)
-            val bound = Instant.parse(sent)
-            assertFalse("the bound must not predate the call", bound.isBefore(before.minusSeconds(CLOCK_SLACK_SECONDS)))
+            // One takeRequest only: the helper consumes the queue, and a second call blocks.
+            val url = requestedUrl()
+            assertEquals(listOf("PLANNED", "ACTIVE"), url.queryParameterValues("status"))
+            assertNull("the past is hidden by status, not by time", url.queryParameter("start"))
         }
 
     @Test
-    fun `showing past Einsaetze sends no lower bound`() =
+    fun `showing past Einsaetze narrows nothing`() =
         runTest {
+            // No status at all: the server answers with everything the caller may see, which for a
+            // member is all four.
             respond(ONE_PAGE)
 
             repository.search(MissionQuery(includePast = true))
 
-            assertNull(requestedUrl().queryParameter("start"))
+            val url = requestedUrl()
+            assertEquals(emptyList<String>(), url.queryParameterValues("status"))
+            assertNull(url.queryParameter("start"))
         }
 
     @Test
-    fun `an explicit range wins over the past toggle`() =
+    fun `a ticked status wins over the past toggle`() =
+        runTest {
+            // Subtracting the finished ones from an explicit "show me the finished ones" would
+            // answer with an empty list.
+            respond(ONE_PAGE)
+
+            repository.search(MissionQuery(statuses = setOf(MissionStatus.COMPLETED), includePast = false))
+
+            assertEquals(listOf("COMPLETED"), requestedUrl().queryParameterValues("status"))
+        }
+
+    @Test
+    fun `an explicit range is sent as it is`() =
         runTest {
             respond(ONE_PAGE)
             val from = Instant.parse("2026-01-01T00:00:00Z")

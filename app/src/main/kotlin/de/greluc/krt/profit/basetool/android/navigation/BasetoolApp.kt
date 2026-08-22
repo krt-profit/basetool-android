@@ -159,7 +159,12 @@ fun BasetoolApp(
                 route = destination.route,
                 label = stringResource(destination.titleRes),
                 iconRes = destination.iconRes,
-                badgeCount = if (destination == KrtDestination.Missions) 2 else null,
+                // No badge on any navigation entry. The Einsätze one carried a hardcoded 2 from
+                // the shell — a permanent claim that two of something were waiting, which no
+                // endpoint backs and which a device run found still on screen. The one real count
+                // in the app is the unread one, and it lives on the bell in the top bar; nothing in
+                // the API offers a "pending Einsätze" figure for this one to show instead.
+                badgeCount = null,
             )
         }
 

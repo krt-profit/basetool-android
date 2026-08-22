@@ -246,10 +246,30 @@ logout+revocation, PENDING/terms/409/429/503 problem handling, app-lock) · **se
 (language, Impressum, Datenschutz, licenses — ch. 13) — done, `docs/specs/settings.md`** ·
 DE/EN bundles · CI green incl. release-signing dry run — **done, `release-dry-run.yml`**.
 
-**Phase 2 — read-only member core**
-Dashboard · missions list/detail · **operations list/detail incl. payout status** · notifications
-inbox + SSE + unread badge · hangar (my ships) · inventory reads · orders queue/detail reads ·
-org-bank balances/detail reads · org-unit switcher.
+**Phase 2 — read-only member core — done (2026-08-22)**
+Dashboard · missions list/detail · operations list/detail incl. payout status · notifications inbox
++ SSE + unread badge · hangar (my ships) · inventory reads · orders queue/detail reads · org-bank
+balances/detail reads · org-unit switcher. Each area has a spec under
+[`docs/specs/`](specs/INDEX.md) with its own "known gaps" list naming what Phase 3 owns.
+
+Three **approved deviations** from the design were recorded rather than left silent, all of the same
+kind — an aggregate the API does not serve, which a client could only fake by adding up a page:
+the thin Operationen list row (owner decision, 2026-08-22), no income/expense split on an
+Operation's roll-up, and no three-number band on the Hangar's org tab.
+
+Server-side, the reads are frozen in the main repo's `REQ-API-009` contract set and on the API
+vhost's allow-list; the one manual step that opens them in production is that repo's runbook
+Phase H.
+
+**Walked on a device** (Pixel 10a emulator, German, against the isolated test stack) rather than
+declared done from a green suite — every screen, both list and detail. It found **eight** defects
+the 798-test JVM suite could not: the app crashed at launch on any notification (a regular
+expression the JVM accepts and Android's ICU engine rejects), the session died silently after one
+access-token lifespan, pull-to-refresh did nothing on an empty screen, a running Einsatz was hidden
+by the "Vergangene aus" filter, an Operation's roll-up showed a donating member's zero as the share
+per participant, a missing quantity rendered as a gap, the Übersicht claimed "Nichts Ungelesenes"
+before the inbox had answered, and the Einsätze tab carried a hard-coded badge of 2. Each is fixed,
+pinned by a regression test, and written into the area's spec.
 
 **Phase 3 — mutations** (version-echo + 409 UX everywhere)
 Mission signup/check-in/payout/finance entries · hangar CRUD + imports · inventory book-in/out/

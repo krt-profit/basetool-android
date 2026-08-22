@@ -151,3 +151,20 @@ a question they did not ask.
 `GET /api/v1/orders` and `/orders/{id}` are in the `REQ-API-009` contract set and the vhost
 allow-list. The queue path is exact and the vhost's read-only guard covers the family, because the
 **same path** answers a `POST` that is `permitAll` by design — the public request form.
+
+---
+
+### REQ-APP-ORDERS-008 — A quantity the server did not send reads as a dash
+
+An absent `inStock` or `needed` renders as `—`, and a material with no stock figure gets **no
+progress bar at all** rather than an empty one.
+
+Left blank the row read `" / 500"`, which looks like a rendering fault instead of an absent number
+— found on a device, on an order whose materials were served redacted. An empty bar is a different
+claim again: it says "none in stock", which is not what "not stated" means.
+
+**Acceptance**
+
+- [x] A row whose `inStock` is absent renders `— / 500` (`OrdersScreenTest`).
+- [x] `JobOrderMaterial.progress` is `null` without a stock figure (`JobOrderRepositoryTest`).
+- [x] **Observed on a device (2026-08-22)**, before and after.

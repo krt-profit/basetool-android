@@ -10,14 +10,30 @@ package de.greluc.krt.profit.basetool.android.notifications
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Notification
 
+/** Opens a named placeholder such as `{displayId}`. */
+private const val OPEN = '{'
+
+/** Closes it. */
+private const val CLOSE = '}'
+
 /**
- * Matches a named placeholder such as `{displayId}`.
+ * Whether a character may appear inside a placeholder's name.
  *
- * Named, not positional, because the server's parameter map is named and the two bundles order the
- * values differently — "Auftrag #{displayId} für {orgUnit}" and its English twin do not put them in
- * the same places, and a positional format would silently swap them.
+ * @return `true` for the letters, digits and underscore the server's parameter keys use.
  */
-private val PLACEHOLDER = Regex("""\{([A-Za-z0-9_]+)}""")
+private fun Char.isPlaceholderName(): Boolean = isLetterOrDigit() || this == '_'
+
+/**
+ * Whether a brace's contents name a parameter at all.
+ *
+ * A name has to **start** with a letter or an underscore, which every key the server sends does.
+ * That is what keeps `{12}` a literal — wording contains figures in braces far more often than it
+ * contains a parameter called `12`.
+ *
+ * @return `true` when this is a parameter name rather than text that happens to sit in braces.
+ */
+private fun String.isPlaceholder(): Boolean =
+    isNotEmpty() && (this[0].isLetter() || this[0] == '_') && all { it.isPlaceholderName() }
 
 /**
  * The string resource that words a notification type.
@@ -79,6 +95,15 @@ internal fun notificationTypeRes(type: String): Int =
 /**
  * Fills a template with a notification's parameters.
  *
+ * **Scanned, not matched by a regular expression.** `Regex("\\{([A-Za-z0-9_]+)}")` compiles on the
+ * JVM and throws on Android, whose ICU engine rejects the unescaped closing brace — the whole unit
+ * suite runs on the JVM through Robolectric, so it stayed green while the app crashed on launch for
+ * any member with a notification. Escaping the brace would fix that instance; scanning removes the
+ * class, because there is no regex dialect left to disagree with.
+ *
+ * A brace that does not enclose a valid name is a literal and is copied through, so wording may
+ * contain one.
+ *
  * **An unfilled placeholder falls back to the generic wording.** The alternative — printing
  * "Neuer Auftrag #{displayId}" with the braces showing — is a sentence that looks like a bug to the
  * member and hides which notification it was. This happens when the server renames a parameter,
@@ -94,18 +119,26 @@ internal fun fillTemplate(
     params: Map<String, String>,
     fallback: String,
 ): String {
-    var complete = true
-    val filled =
-        PLACEHOLDER.replace(template) { match ->
-            val value = params[match.groupValues[1]]
+    val out = StringBuilder(template.length)
+    var index = 0
+    while (index < template.length) {
+        val char = template[index]
+        val close = if (char == OPEN) template.indexOf(CLOSE, index + 1) else -1
+        val name = if (close > index) template.substring(index + 1, close) else ""
+        if (name.isPlaceholder()) {
+            val value = params[name]
             if (value.isNullOrBlank()) {
-                complete = false
-                match.value
-            } else {
-                value
+                return fallback
             }
+            out.append(value)
+            index = close + 1
+        } else {
+            // Not a placeholder — a literal brace in the wording. Copied through untouched.
+            out.append(char)
+            index++
         }
-    return if (complete) filled else fallback
+    }
+    return out.toString()
 }
 
 /**

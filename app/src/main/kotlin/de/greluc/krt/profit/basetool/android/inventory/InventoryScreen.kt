@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -122,7 +123,11 @@ fun InventoryScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.visibleGroups.isEmpty()) {
-                        InventoryEmpty(filtered = state.withStockOnly && state.groups.isNotEmpty())
+                        KrtRefreshableFill {
+                            InventoryEmpty(
+                                filtered = state.withStockOnly && state.groups.isNotEmpty(),
+                            )
+                        }
                     } else {
                         InventoryTree(
                             state = state,
@@ -390,7 +395,7 @@ private fun InventoryEmpty(filtered: Boolean) {
                     R.string.inventory_empty_message
                 },
             ),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.lg),
     )
 }
 

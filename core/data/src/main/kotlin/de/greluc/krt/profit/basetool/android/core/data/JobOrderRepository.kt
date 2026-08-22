@@ -73,12 +73,15 @@ data class JobOrderMaterial(
      * Computed from stock over need because the server sends no percentage — this is a **bar
      * length**, not a figure the screen states, which is why deriving it here is not the
      * money-arithmetic the rest of this app refuses. A need of zero yields `null` rather than a
-     * full bar: nothing was asked for, so nothing can be complete.
+     * full bar — nothing was asked for, so nothing can be complete — and so does a missing stock
+     * figure, because an empty bar would claim "none in stock" where the server stated nothing.
      */
     val progress: Float?
         get() {
             val need = needed?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: return null
-            val have = inStock?.toDoubleOrNull() ?: 0.0
+            // No stock figure means the server did not state one. Drawing an empty bar would say
+            // "none in stock", which is a different claim from "not stated".
+            val have = inStock?.toDoubleOrNull() ?: return null
             return (have / need).coerceIn(0.0, 1.0).toFloat()
         }
 }

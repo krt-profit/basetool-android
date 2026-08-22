@@ -73,12 +73,14 @@ class DashboardScreenTest {
      *
      * @param state the fetched parts.
      * @param unread the preview rows.
+     * @param unreadKnown whether the inbox has answered.
      * @param opened receives the id of a tapped Einsatz.
      * @param taps records taps on the two band links, by label.
      */
     private fun show(
         state: DashboardState,
         unread: List<Notification> = emptyList(),
+        unreadKnown: Boolean = true,
         opened: MutableList<String> = mutableListOf(),
         taps: MutableList<String> = mutableListOf(),
     ) {
@@ -89,6 +91,7 @@ class DashboardScreenTest {
                     memberName = "GrafRotz",
                     orgUnitName = "Bereich Profit",
                     unread = unread,
+                    unreadKnown = unreadKnown,
                     onRefresh = {},
                     onOpenMission = { opened.add(it) },
                     onOpenMissions = { taps.add("missions") },
@@ -172,6 +175,15 @@ class DashboardScreenTest {
         show(DashboardState(phase = DashboardPhase.Ready))
 
         compose.onNodeWithText("Nichts Ungelesenes.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `nothing unread is not claimed before the inbox has answered`() {
+        // The badge is live from the shell while the list may still be loading. Saying "Nichts
+        // Ungelesenes" in that window contradicted a badge showing 2 — found on a device.
+        show(DashboardState(phase = DashboardPhase.Ready), unreadKnown = false)
+
+        compose.onAllNodesWithText("Nichts Ungelesenes.").assertCountEquals(0)
     }
 
     @Test

@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
+import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.UUID
 
@@ -156,6 +157,11 @@ class AuthContainer(
             // Read synchronously off an OkHttp dispatcher thread, which is why the store
             // mirrors its value in memory rather than being asked to suspend here.
             activeOrgUnitProvider = { activeOrgUnit.current() },
+            // Both run on an OkHttp thread that is about to wait on a socket anyway, and both go
+            // to the token client, which carries none of these interceptors and therefore cannot
+            // re-enter this. Without them the app dies at the realm's access-token lifespan.
+            refreshIfSpent = { runBlocking { session.refreshIfNeeded() } },
+            refreshAfterRejection = { refused -> runBlocking { session.refreshFor(refused) } },
         )
     }
 
@@ -193,16 +199,11 @@ class AuthContainer(
      * The Einsatz list.
      *
      * Shares [apiClient] with the gates and the switcher, so the org pin the switcher writes is
-     * already on every request this makes. Takes [serverClock] because "hide past Einsätze" is a
-     * lower bound on time, and a phone whose clock runs fast would otherwise hide the one that is
-     * about to start.
+     * already on every request this makes. No clock of its own: "Vergangene aus" is a status
+     * filter, and the dashboard's seven-day window brings its own bounds.
      */
     val missions: MissionRepository by lazy {
-        MissionRepository(
-            httpClient = apiClient,
-            baseUrl = BuildConfig.API_BASE_URL,
-            clock = serverClock,
-        )
+        MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

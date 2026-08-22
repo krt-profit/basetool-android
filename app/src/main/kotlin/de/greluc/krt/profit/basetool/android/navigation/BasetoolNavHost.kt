@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.missions.OperationDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsPhase
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
@@ -203,6 +204,12 @@ private fun listDestination(
     when (destination) {
         KrtDestination.Home -> {
             LaunchedEffect(Unit) { dashboard.load() }
+            // The dashboard SHOWS the unread preview, so it is a consumer of the inbox and has to
+            // ask for it. Without this the badge was live while the band beneath it said "Nichts
+            // Ungelesenes" — found on a device, and exactly the disagreement one shared state was
+            // supposed to rule out. `loadOnce` is idempotent, so opening the inbox afterwards
+            // costs nothing.
+            LaunchedEffect(Unit) { notifications.loadOnce() }
             val dashboardState by dashboard.state.collectAsStateWithLifecycle()
             val notificationState by notifications.state.collectAsStateWithLifecycle()
             DashboardScreen(
@@ -213,6 +220,9 @@ private fun listDestination(
                 // inbox's state rather than from a second endpoint keeps the preview and the list
                 // from disagreeing.
                 unread = notificationState.notifications.filterNot { it.read },
+                // "Nichts Ungelesenes" is a claim, and it may only be made once the inbox has
+                // actually answered. Before that the band shows nothing at all.
+                unreadKnown = notificationState.phase is NotificationsPhase.Ready,
                 onRefresh = dashboard::onRefresh,
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },

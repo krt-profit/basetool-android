@@ -147,6 +147,34 @@ class AuthSession(
     }
 
     /**
+     * Renews the access token the server has just refused.
+     *
+     * The freshness check [refreshIfNeeded] makes is deliberately skipped: the server's `401` is a
+     * harder fact than the local expiry estimate, and the two disagree whenever the device clock is
+     * off or the token was revoked early.
+     *
+     * @param refused the token that was rejected. When the session already holds a different one,
+     *   another caller refreshed while this one was in flight and that token is returned unused —
+     *   which is what keeps a burst of parallel 401s to a single refresh.
+     * @return a usable access token, or `null` when the session could not be renewed
+     */
+    suspend fun refreshFor(refused: String?): String? =
+        refreshMutex.withLock {
+            val current = tokens?.accessToken
+            if (current != null && current != refused) {
+                return@withLock current
+            }
+            val stored = tokens?.refreshToken ?: refreshTokenStore.read()
+            if (stored == null) {
+                publish(SessionState.SignedOut)
+                return@withLock null
+            }
+            val result = tokenClient.refresh(stored)
+            publish(stateFor(result, previousRefreshToken = stored))
+            (result as? TokenResult.Granted)?.tokens?.accessToken
+        }
+
+    /**
      * Ends the session and returns the URL that ends it at the realm too.
      *
      * The order is deliberate. The in-memory state is dropped **first**, so "log out" is instant

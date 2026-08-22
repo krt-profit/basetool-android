@@ -212,6 +212,7 @@
     <string name="operation_detail_rollup">Financial roll-up</string>
     <string name="operation_detail_rollup_net">Net</string>
     <string name="operation_detail_rollup_donations">Donations to the org treasury</string>
+    <string name="operation_detail_rollup_share_range">%1$s – %2$s</string>
     <plurals name="operation_detail_rollup_share">
         <item quantity="one">Share (%1$d)</item>
         <item quantity="other">Share (%1$d)</item>

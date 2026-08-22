@@ -259,3 +259,27 @@ will never succeed.
 repo's "freeze the Operationen reads" change. The allow-list lives in the NPM admin database and is
 applied by hand; until the block is pasted, these screens work against the test stack only, and the
 nightly `edge-deny-probe` is what reports that it has not been.
+
+---
+
+### REQ-APP-OPS-012 — The roll-up's "Anteil je Teilnehmer" is what was earned, and a range when the rows differ
+
+The figure beside `Anteil (N)` is each participant's **earned** share: `shareAmount` for a member
+taking the payout, `donatedAmount` for one who waived it. When those differ across the rows — the
+pool is split by how long each member took part — both ends are named (`2.075 – 4.150`) instead of
+one of them.
+
+The server sets `shareAmount` to zero for a donating participant by construction and moves the
+figure to `donatedAmount`. Reading the first payout row's `shareAmount` therefore printed
+`ANTEIL (2): 0` on an Operation whose first row happened to be a donor, directly above a payout
+list showing what everybody actually earned — found on a device. Dividing the net by the head count
+instead would print a different wrong number, since the split is weighted.
+
+**Acceptance**
+
+- [x] A donating first row yields the amount they gave away, not zero (`OperationsScreenTest`).
+- [x] Unequal shares render as `min – max` (`OperationsScreenTest`, `OperationRepositoryTest`).
+- [x] No range at all when any participant has no share figure: one computed from a subset would
+  understate the spread without saying so (`OperationRepositoryTest`).
+- [x] **Observed on a device (2026-08-22)** on an Operation with one donating and one paid-out
+  participant.

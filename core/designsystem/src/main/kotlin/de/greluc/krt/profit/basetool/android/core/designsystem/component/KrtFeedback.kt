@@ -19,13 +19,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -199,6 +203,30 @@ fun KrtOfflineBanner(
             modifier = Modifier.padding(KrtSpacing.sm),
         )
     }
+}
+
+/**
+ * Fills the viewport with a short body that pull-to-refresh can still reach.
+ *
+ * `PullToRefreshBox` hears the gesture through nested scroll, so a child that does not scroll never
+ * forwards one - and the state a member most wants to re-read, an empty list, is exactly the one
+ * with nothing to scroll. The pull then does nothing at all, which reads as a frozen screen. A
+ * scroll container whose content fits consumes no drag and passes the whole of it upwards, which is
+ * what the refresh box is waiting for.
+ *
+ * @param modifier layout modifier.
+ * @param content the body. It must not fill the height: a scrolling column is measured without an
+ *   upper bound, and `fillMaxSize` inside one is an error.
+ */
+@Composable
+fun KrtRefreshableFill(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        content = content,
+    )
 }
 
 /**
