@@ -125,4 +125,53 @@
     <string name="missions_error_title">Signal Lost</string>
     <string name="missions_error_message">The Einsätze could not be loaded.</string>
     <string name="missions_retry">Try again</string>
+
+    <!-- Einsatz detail (design spec ch. 06 §2), read-only. Domain terms stay German. -->
+    <string name="mission_detail_title">Einsatz</string>
+    <string name="mission_detail_tab_overview">Overview</string>
+    <string name="mission_detail_tab_participants">Participants</string>
+    <string name="mission_detail_tab_units">Einheiten</string>
+    <string name="mission_detail_tab_steps">Ablauf</string>
+    <string name="mission_detail_tab_objectives">Objectives</string>
+    <string name="mission_detail_tab_frequencies">Frequencies</string>
+    <string name="mission_detail_tab_finances">Finances</string>
+    <string name="mission_detail_fact_meeting">TS</string>
+    <string name="mission_detail_fact_join">Join</string>
+    <string name="mission_detail_fact_end">End</string>
+    <string name="mission_detail_fact_place">Place</string>
+    <string name="mission_detail_fact_lead">Lead</string>
+    <string name="mission_detail_fact_operation">Operation</string>
+    <plurals name="mission_detail_signups">
+        <item quantity="one">%1$d signed up, %2$d checked in</item>
+        <item quantity="other">%1$d signed up, %2$d checked in</item>
+    </plurals>
+    <string name="mission_detail_briefing">At a glance</string>
+    <string name="mission_detail_description">Description</string>
+    <string name="mission_detail_description_hidden">The description is visible to members only.</string>
+    <string name="mission_detail_checked_in">Checked in</string>
+    <string name="mission_detail_not_checked_in">Not checked in</string>
+    <string name="mission_detail_unit_hvu">HVU</string>
+    <plurals name="mission_detail_unit_crew">
+        <item quantity="one">%1$d aboard</item>
+        <item quantity="other">%1$d aboard</item>
+    </plurals>
+    <string name="mission_detail_unit_lead">Responsible: %1$s</string>
+    <string name="mission_detail_step_done">Done</string>
+    <string name="mission_detail_frequency_copied">Value copied</string>
+    <string name="mission_detail_finance_income">Income</string>
+    <string name="mission_detail_finance_expense">Expenses</string>
+    <string name="mission_detail_finance_net">Net</string>
+    <string name="mission_detail_finance_forbidden">You cannot view this Einsatz\'s finances.</string>
+    <string name="mission_detail_empty_participants">Nobody has signed up yet.</string>
+    <string name="mission_detail_empty_units">No Einheiten assigned.</string>
+    <string name="mission_detail_empty_steps">No Ablauf recorded.</string>
+    <string name="mission_detail_empty_objectives">No objectives recorded.</string>
+    <string name="mission_detail_empty_frequencies">No frequencies recorded.</string>
+    <string name="mission_detail_empty_finances">No entries yet.</string>
+    <string name="mission_detail_error_forbidden_title">Access Denied</string>
+    <string name="mission_detail_error_forbidden_message">You cannot view this Einsatz.</string>
+    <string name="mission_detail_error_missing_title">Signal Lost</string>
+    <string name="mission_detail_error_missing_message">This Einsatz no longer exists.</string>
+    <string name="mission_detail_error_title">System Malfunction</string>
+    <string name="mission_detail_error_message">The Einsatz could not be loaded.</string>
 </resources>

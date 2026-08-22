@@ -8,6 +8,8 @@
 package de.greluc.krt.profit.basetool.android.missions
 
 import de.greluc.krt.profit.basetool.android.core.data.Mission
+import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
@@ -84,6 +86,13 @@ class MissionsViewModelTest {
             calls.add(query to page)
             return if (answers.size > 1) answers.removeAt(0) else answers.first()
         }
+
+        // The list never opens an Einsatz; a stub that throws says so louder than one that returns
+        // something plausible.
+        override suspend fun detail(id: String): ApiResult<MissionDetail> = error("the list never reads a detail")
+
+        override suspend fun finances(missionId: String): ApiResult<MissionFinances> =
+            error("the list never reads finances")
     }
 
     private fun mission(id: String) =

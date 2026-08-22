@@ -1,11 +1,12 @@
-# Einsätze — list
+# Einsätze — list and detail
 
 > **Doc type:** Living spec · **Area:** `REQ-APP-MIS-*` · **Design:** `docs/design/android/06 Missionen.dc.html`
 > **Server contract:** main repo `REQ-API-009` (contract set), `REQ-SEC-035`/`036` (what the app's
 > token carries) · **Related:** [`api-contract.md`](api-contract.md) (`REQ-APP-API-001`, `006`)
 
-The Einsatz list is the app's first real member surface. Everything here is **read-only**; signing
-up, checking in and finance entries are mutations and belong to Phase 3.
+The Einsatz list and the Einsatz detail. Everything here is **read-only**; signing up, checking
+in and finance entries are mutations and belong to Phase 3, which is why the detail deliberately
+carries no call to action.
 
 ---
 
@@ -185,6 +186,132 @@ classified `ApiError` is logged by the view model so a report can be matched aga
 
 ---
 
+---
+
+### REQ-APP-MIS-008 — The detail is one read; the money is a second, later one
+
+Six of the seven tabs come from a single `GET /api/v1/missions/{id}`, which already carries the
+participants, units, steps, objectives and frequencies. Switching tab therefore costs nothing and
+the seven tabs cannot disagree with each other about the same Einsatz.
+
+**The Finanzen tab is fetched lazily, when it is first opened**, and it is two calls — the totals
+summary and the entries. Three reasons it is not folded into the first read:
+
+- It is **differently guarded**. `/missions/{id}` is anonymous-with-redaction; the Finanzen reads
+  require `isAuthenticated() and isMemberOrAbove() and canSeeMission` (main repo REQ-SEC-037). A
+  member may legitimately see the Einsatz and be refused its books.
+- Fetching it up-front would therefore turn an ordinary lack of permission into an error on a
+  screen that is otherwise perfectly fine.
+- Most members opening an Einsatz never look at it, and it would cost two requests every time.
+
+The two finance calls **succeed or fail together**. A total over an empty list, or a list under a
+blank total, reads as data rather than as the partial answer it is.
+
+**Acceptance**
+
+- [x] The money is not fetched until its tab is opened, and then exactly once — switching away and
+  back does not re-fetch (`MissionDetailViewModelTest`).
+- [x] A refused Finanzen tab leaves the Einsatz `Ready`; the tab carries its own failure.
+- [x] The tab can be retried without re-reading the Einsatz around it.
+- [x] A refresh re-reads the money **only** when its tab was already opened — it must neither
+  silently acquire a permission-dependent read the member never asked for, nor skip one they are
+  looking at.
+- [x] A refused summary or a refused entries page fails the whole tab (`MissionDetailRepositoryTest`).
+
+---
+
+### REQ-APP-MIS-009 — The redacted answer is a smaller Einsatz, not a broken one
+
+The backend redacts the detail for anonymous and role-less callers (main repo ADR-0034): no
+description, no owner, no managers, participants without their payout preference or comment. An
+**internal** or **terminal** Einsatz is refused outright with 403.
+
+Every one of those fields is therefore **legitimately absent**, and the app treats it as such. An
+app that required any of them would show "Signal Lost" on an Einsatz the server served without
+complaint.
+
+The description is the one absence the screen **states**: "Die Beschreibung ist nur für Mitglieder
+sichtbar." A blank section reads as an Einsatz nobody bothered to describe, which is a different
+and wrong claim.
+
+**Acceptance**
+
+- [x] A fully redacted payload parses to a `Success` with `description`, `partyLeadName` and the
+  collections empty rather than to a failure (`MissionDetailRepositoryTest`).
+- [x] The screen says the description is members-only instead of rendering an empty section.
+- [x] An id the server omits falls back to the one that was requested — a detail read is addressed
+  by id, so a cosmetic server change must not produce a dead screen.
+
+---
+
+### REQ-APP-MIS-010 — Refused, gone and broken are three different sentences
+
+The detail can fail in three ways a member can act on differently, so it says three different
+things rather than one that covers all of them:
+
+| Failure | Copy | Why |
+|---|---|---|
+| `403` | **Access Denied** — "Dieser Einsatz ist für dich nicht einsehbar." | an outsider's internal or terminal Einsatz; retrying can never help |
+| `404` | **Signal Lost** — "Diesen Einsatz gibt es nicht mehr." | a stale link or a deleted Einsatz |
+| anything else | **System Malfunction** | an outage, and the only one worth retrying |
+
+The Finanzen tab draws the same distinction on its own: a `403` says the books are not visible and
+offers **no** retry, because retrying a permission the member does not have is advice that cannot
+possibly help.
+
+**Acceptance**
+
+- [x] All three render their own copy (`MissionDetailScreenTest`).
+- [x] A refused Finanzen tab offers no retry; any other failure does.
+- [x] A tab with nothing in it says so — a blank tab is indistinguishable from a rendering fault.
+
+---
+
+### REQ-APP-MIS-011 — What the detail deliberately does not interpret
+
+Two values are passed through **verbatim** rather than mapped:
+
+- An **objective kind** this build has never heard of is rendered as it came. A goal with no
+  marking at all is worse than one marked with a word the member has not seen before.
+- A **status** this build does not know renders its raw server value with the neutral "planned"
+  tone, exactly as the list does (REQ-APP-MIS-003).
+
+Amounts are carried and displayed as **the strings the server rendered**. They are aUEC sums that
+are only ever displayed, never recomputed here, and parsing a decimal into a `Double` to print it
+again is how a total gains a rounding error it did not have on the server.
+
+**Acceptance**
+
+- [x] An unknown objective kind is displayed (`MissionDetailScreenTest`).
+- [x] `1234567.89` survives the round trip byte for byte (`MissionDetailRepositoryTest`).
+
+---
+
+### REQ-APP-MIS-012 — A required enum the client does not know costs the whole screen
+
+**This is a known fragility, recorded rather than solved here.** `JobTypeDto.archetype` is a
+non-nullable generated enum, and kotlinx's `coerceInputValues` rescues only nullable ones. A
+constant added server-side therefore makes the **entire detail response** unparseable — every tab
+gone, on an APK in the field that cannot be redeployed — while the list (which reaches no nested
+enum) keeps working. The member would see a list whose every row fails to open.
+
+It is not fixable in the app: openapi-generator's `enumUnknownDefaultCase` is a no-op for
+kotlinx_serialization (measured — the generated enum was unchanged), and the app does not even read
+the field. It is required purely to parse.
+
+The mitigation lives in the main repo: **REQ-API-009 now freezes every required enum reachable from
+a contract operation**, so adding a constant fails the *backend* build and forces the release order
+— an app build that knows it ships first.
+
+**Acceptance**
+
+- [x] The fragility is pinned by a characterisation test that fails, with an instruction, the day
+  the app can survive it (`MissionDetailRepositoryTest`).
+- [x] The backend-side guard exists and was verified by adding a constant (main repo
+  `theContractRequiredEnumsAreFrozen`).
+
+---
+
 ## Device verification (2026-08-21)
 
 Run against the isolated test stack with eight seeded Einsätze spanning today, tomorrow, later this
@@ -228,8 +355,13 @@ semantics instead of merely rendered beneath. Six tests in `KrtTextFieldAccessib
   bottom-sheet pickers of design ch. 02.
 - **The "Einsatz erstellen" FAB is absent.** It is a mutation (Phase 3) and role-gated on
   `MISSION_MANAGER`.
-- **Tapping a row is inert.** The detail screen is ch. 06 §2 and ships next; navigating to a
-  placeholder that claimed to be the Einsatz would be worse than not navigating.
+- **Tapping a row opens the Einsatz** (ch. 06 §2), on the parameterised route
+  `mission/{missionId}` — the only one in the graph, so a notification about one Einsatz can deep
+  link straight to it.
+- **The detail carries no call to action.** "Anmelden", "Check-In" and "Finanz-Eintrag hinzufügen"
+  are the design's bottom-anchored CTA and its sheets; all three are mutations and belong to
+  Phase 3.
+- **The Ablauf checklist is read-only.** Ticking a step is a `PATCH`.
 
 ## Contract-set dependency (main repo)
 

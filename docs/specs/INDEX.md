@@ -12,7 +12,7 @@ the binding source** (marked `Doc type: living plan`):
 | [`auth.md`](auth.md) (`REQ-APP-AUTH-*`) — **exists** (`001`–`011`) | login flow, token storage, DPoP, session states, app-lock |
 | [`api-contract.md`](api-contract.md) (`REQ-APP-API-*`) — **exists** (`001`–`005`) | consumed endpoints, headers, problem-code handling, pagination, version echo |
 | [`settings.md`](settings.md) (`REQ-APP-SET-*`) — **exists** (`001`–`008`) | Einstellungen screen scope, per-app language, string-resource rule, legal links, the generated open-source notice |
-| [`missions.md`](missions.md) (`REQ-APP-MIS-*`) — **exists** (`001`–`007`) | Einsatz list: server-side filtering, the past bound, malformed-row tolerance, debouncing, paging, day grouping, the four list states |
+| [`missions.md`](missions.md) (`REQ-APP-MIS-*`) — **exists** (`001`–`012`) | Einsatz list and detail: server-side filtering, the past bound, malformed-row tolerance, debouncing, paging, day grouping, the four list states; the detail's lazy Finanzen tab, the redacted answer, its three failure sentences and the required-enum fragility |
 | `privacy.md` (`REQ-APP-PRIV-*`) | dependency/data-flow gate, § 25 TDDDG storage table, permissions |
 | `ui.md` (`REQ-APP-UI-*`) | KRT design tokens, adaptive layout rules, i18n + copy rules, Fan Kit compliance band (see `core/designsystem/fankit/`) — extracted from the binding design spec at `docs/design/android/` |
 | `offline.md` (`REQ-APP-OFFLINE-*`) | read-cache scope, backup exclusion, wipe semantics |

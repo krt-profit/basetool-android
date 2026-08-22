@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -20,6 +21,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
+import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
+import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
@@ -39,6 +42,8 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param navController the controller driving the graph.
  * @param onOpenDestination invoked when a list entry opens another destination.
  * @param missions drives the Einsatz list.
+ * @param missionDetail builds a view model for one Einsatz; the graph knows the id, the activity
+ *   knows the dependencies, and this is where the two meet.
  * @param onLogout ends the session.
  * @param settings everything the Einstellungen screen needs that the graph cannot know.
  * @param modifier layout modifier.
@@ -48,6 +53,7 @@ fun BasetoolNavHost(
     navController: NavHostController,
     onOpenDestination: (KrtDestination) -> Unit,
     missions: MissionsViewModel,
+    missionDetail: (String) -> MissionDetailViewModel,
     onLogout: () -> Unit,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
@@ -65,7 +71,7 @@ fun BasetoolNavHost(
             composable(
                 route = destination.route,
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
-            ) {
+            ) { backStackEntry ->
                 when (destination) {
                     KrtDestination.Missions -> {
                         // Loaded here rather than in `init`: the view model outlives the screen, and
@@ -74,10 +80,7 @@ fun BasetoolNavHost(
                         LaunchedEffect(Unit) { missions.load() }
                         MissionsRoute(
                             viewModel = missions,
-                            // TODO(feature:missions-detail): opens the Einsatz detail once ch. 06 §2
-                            // ships. Until then a tap is deliberately inert rather than navigating
-                            // to a placeholder that claims to be the Einsatz.
-                            onOpenMission = {},
+                            onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                         )
                     }
 
@@ -111,6 +114,16 @@ fun BasetoolNavHost(
 
                     KrtDestination.Licenses -> {
                         LicensesScreen(onOpenUrl = settings.onOpenUrl)
+                    }
+
+                    KrtDestination.MissionDetail -> {
+                        val missionId = backStackEntry.arguments?.getString(MISSION_ID_ARG).orEmpty()
+                        // Keyed on the id and scoped to this back-stack entry, so opening a second
+                        // Einsatz builds a second view model rather than showing the first one's
+                        // content under the second one's title.
+                        val viewModel = remember(missionId) { missionDetail(missionId) }
+                        LaunchedEffect(missionId) { viewModel.load() }
+                        MissionDetailRoute(viewModel = viewModel)
                     }
 
                     else -> {

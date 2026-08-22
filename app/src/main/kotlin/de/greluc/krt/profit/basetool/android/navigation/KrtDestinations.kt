@@ -81,6 +81,15 @@ enum class KrtDestination(
 
     /** The open-source notice, pushed from Einstellungen. */
     Licenses("licenses", R.string.licenses_title, DesignR.drawable.ic_krt_list),
+
+    /**
+     * One Einsatz in full, pushed from the Einsatz list.
+     *
+     * The only parameterised route in the graph. Its deep link therefore carries the id too
+     * (`basetool://mission/<id>`), which is what lets a notification about one Einsatz open that
+     * Einsatz rather than the list it happens to be in.
+     */
+    MissionDetail("mission/{missionId}", R.string.mission_detail_title, DesignR.drawable.ic_krt_target),
     ;
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
@@ -148,7 +157,24 @@ val MORE_DESTINATIONS =
  * unknown destination — while showing a page reached from "Mehr".
  */
 val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
-    mapOf(KrtDestination.Licenses to KrtDestination.Settings)
+    mapOf(
+        KrtDestination.Licenses to KrtDestination.Settings,
+        // Without this the bar would light up "Übersicht" — the fallback for an unknown
+        // destination — while the member is looking at an Einsatz they opened from "Einsätze".
+        KrtDestination.MissionDetail to KrtDestination.Missions,
+    )
+
+/**
+ * The route that opens one Einsatz.
+ *
+ * @param missionId the Einsatz to open.
+ * @return the concrete route, with the id substituted into [KrtDestination.MissionDetail]'s
+ *   pattern. Built here rather than at the call site so the pattern and its filling cannot drift.
+ */
+fun missionDetailRoute(missionId: String): String = "mission/" + missionId
+
+/** The name of the id argument in [KrtDestination.MissionDetail]'s route. */
+const val MISSION_ID_ARG: String = "missionId"
 
 /**
  * Resolves a destination to the navigation root it belongs to.
