@@ -33,6 +33,7 @@ import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
@@ -269,6 +270,18 @@ class AuthContainer(
      */
     val notifications: NotificationRepository by lazy {
         NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The live-sync bridge: change signals in, the app's own announcements out (ADR-0143).
+     *
+     * One instance for the whole app rather than one per screen, and shared with [apiClient] for
+     * the reason the notification stream is: the stream derives its own client from it, so the
+     * bearer token, the active org unit and the correlation id follow a connection that outlives
+     * any single request without a second configuration to keep in sync.
+     */
+    val liveSync: LiveSyncRepository by lazy {
+        LiveSyncRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

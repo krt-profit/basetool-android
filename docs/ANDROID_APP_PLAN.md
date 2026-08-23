@@ -315,10 +315,32 @@ every screen — a bottom sheet whose action row sat inside the system gesture b
 down as the requirement it produced.
 
 **Phase 4 — live parity & breadth** (still pre-release per Q6; guest mode dropped per Q8)
-Backend live-sync bridge (SSE or WS, Redis-fed; own ADR) with coalesced re-fetch semantics
-(400 ms detail / 1 500 ms global rooms, mirroring `krt-live-sync.js`) · Materialbörse ·
-Raffinerie · Beförderung · system states + adaptive icon +
-notification channels per design-spec ch. 14. No push channel (decided Q2).
+Backend live-sync bridge — **shipped as SSE, both directions** (owner decision, 2026-08-23;
+main-repo ADR-0143 / REQ-FE-019, app `docs/specs/sync.md`) with ADR-0094's coalescing unchanged
+(400 ms detail / 1500 ms global, full-jittered) · Materialbörse · Raffinerie · Beförderung ·
+system states per design-spec ch. 14. No push channel (decided Q2).
+
+Three decisions the phase rests on, all taken 2026-08-23:
+
+- **The bridge carries both directions, not just receiving.** An app that mutated shared state
+  without emitting a signal would not merely fail to receive live sync — it would *break* it for
+  every browser, on surfaces where it worked. The app therefore announces its own writes the way a
+  tab does, onto the frontend's own Redis channel with the frontend's own payload.
+- **No file imports in phase 4** — not Fleetview, not blueprint files, and **not the Raffinerie's
+  extractor JSON either**, although design chapter 11 puts a scan icon on that screen. The
+  Raffinerie ships without it as a recorded deviation; all three move to phase 5 with the file
+  picker and the permission and privacy work they share.
+- **System states ships all three of its open items**: notification channels plus a system
+  notification while the app runs (a partial benefit without a push channel, and the only one
+  available without FCM), the 429/503 full-screen retry countdown, and the forced-update gate —
+  which needs a *new backend contract*, since nothing today lets the server state a minimum app
+  version.
+
+**Adaptive icon and the 409/offline rules were already done** (#23, phase 1–3), so chapter 14's
+remaining scope is exactly the three items above.
+
+**Editor presence stays web-only, permanently.** It is the one part of the web socket that carries
+cross-user identity data, and the app has no place to show it.
 
 **Phase 5 — hardening & first release**
 Certificate pinning rollout (**CA-pin evaluated first**, else leaf backup-pin + expiration;

@@ -70,14 +70,23 @@ class SseStream(
      * token expired and the caller should stop, not retry in a loop.
      *
      * @param path the stream's path, e.g. `/api/v1/notifications/stream`.
+     * @param query query parameters to append, added through the URL builder so a value carrying a
+     *   colon or a comma — a live-sync topic does both — is encoded rather than pasted.
      * @return a cold flow of events; collecting it opens the connection, cancelling closes it.
      */
-    fun events(path: String): Flow<SseEvent> =
+    fun events(
+        path: String,
+        query: List<Pair<String, String>> = emptyList(),
+    ): Flow<SseEvent> =
         callbackFlow {
+            val url =
+                "$baseUrl$path".toHttpUrl().newBuilder()
+                    .apply { query.forEach { (name, value) -> addQueryParameter(name, value) } }
+                    .build()
             val call =
                 streamClient.newCall(
                     Request.Builder()
-                        .url("$baseUrl$path".toHttpUrl())
+                        .url(url)
                         .header("Accept", "text/event-stream")
                         // A proxy that cached a stream would serve the first member's bytes to the
                         // next one. The backend says so too; saying it here as well costs nothing.

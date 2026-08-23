@@ -10,12 +10,17 @@ package de.greluc.krt.profit.basetool.android.missions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
+import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,6 +113,7 @@ data class MissionsState(
 @OptIn(FlowPreview::class)
 class MissionsViewModel(
     private val source: MissionSource,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(MissionsState())
 
@@ -131,6 +137,14 @@ class MissionsViewModel(
     private var loadJob: Job? = null
 
     init {
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.MISSIONS)) { sections ->
+            // Rows stay on screen while the answer is in flight: a member who did not ask for
+            // anything must not watch the list they are reading empty itself because somebody
+            // created an Einsatz.
+            if (LiveSyncSections.MISSIONS_LIST in sections) {
+                reload(keepRows = true)
+            }
+        }
         viewModelScope.launch {
             typedText
                 // The current value is the empty field the screen starts with; reacting to it would
