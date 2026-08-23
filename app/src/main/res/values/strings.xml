@@ -579,4 +579,7 @@
     <string name="notification_channel_general">Allgemein</string>
     <string name="notification_public_title">Neue Benachrichtigung</string>
     <string name="notification_shade_title">Neues im Basetool</string>
+    <string name="retry_busy_title">Signal instabil</string>
+    <string name="retry_busy_message">Der Server ist ausgelastet. Automatischer Neuversuch in %1$d s.</string>
+    <string name="retry_now">Jetzt erneut versuchen</string>
 </resources>

@@ -562,4 +562,7 @@
     <string name="notification_channel_general">General</string>
     <string name="notification_public_title">New notification</string>
     <string name="notification_shade_title">Something new in the Basetool</string>
+    <string name="retry_busy_title">Signal unstable</string>
+    <string name="retry_busy_message">The server is busy. Retrying automatically in %1$d s.</string>
+    <string name="retry_now">Retry now</string>
 </resources>
