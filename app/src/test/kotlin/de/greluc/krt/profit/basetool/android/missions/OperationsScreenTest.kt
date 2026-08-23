@@ -9,11 +9,16 @@ package de.greluc.krt.profit.basetool.android.missions
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.Operation
 import de.greluc.krt.profit.basetool.android.core.data.OperationDetail
@@ -91,10 +96,12 @@ class OperationsScreenTest {
      *
      * @param state what to draw.
      * @param opened receives the id of a tapped Einsatz row.
+     * @param confirmed receives every payout row whose confirmation was taken.
      */
     private fun showDetail(
         state: OperationDetailState,
         opened: MutableList<String> = mutableListOf(),
+        confirmed: MutableList<OperationPayout> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -102,6 +109,7 @@ class OperationsScreenTest {
                     state = state,
                     onRefresh = {},
                     onOpenMission = { opened.add(it) },
+                    onTogglePaidOut = { confirmed.add(it) },
                 )
             }
         }
@@ -399,6 +407,7 @@ class OperationsScreenTest {
         donating: Boolean = false,
         share: String? = "4150.0000",
         donated: String? = null,
+        paidOut: Boolean = false,
     ) = OperationPayout(
         participantId = id,
         participantName = name,
@@ -406,6 +415,59 @@ class OperationsScreenTest {
         share = share,
         donated = donated,
         payout = "4129.2500",
-        paidOut = false,
+        paidOut = paidOut,
     )
+
+    /**
+     * A loaded Operation with one payout row.
+     *
+     * @param paidOut whether that row is already confirmed.
+     * @param missionManager whether the caller holds the grant.
+     * @return the state.
+     */
+    private fun readyPayouts(
+        paidOut: Boolean,
+        missionManager: Boolean,
+    ) = OperationDetailState(
+        operationId = "o1",
+        overview = overview(payouts = listOf(payoutRow("u1", "Rhea", paidOut = paidOut))),
+        phase = OperationDetailPhase.Ready,
+        myUserId = "u1",
+        missionManager = missionManager,
+    )
+
+    @Test
+    fun `the payout confirmation is absent unless the caller is a mission manager`() {
+        showDetail(readyPayouts(paidOut = false, missionManager = false))
+
+        compose.onAllNodesWithTag(OPERATION_PAID_OUT_TAG).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a mission manager confirms a payout, and can take it back`() {
+        val confirmed = mutableListOf<OperationPayout>()
+        showDetail(readyPayouts(paidOut = false, missionManager = true), confirmed = confirmed)
+
+        compose.onNodeWithTag(OPERATION_DETAIL_CONTENT_TAG)
+            .performScrollToNode(hasTestTag(OPERATION_PAID_OUT_TAG))
+        compose.onNodeWithTag(OPERATION_PAID_OUT_TAG).assertIsEnabled().performClick()
+
+        assertEquals(1, confirmed.size)
+    }
+
+    @Test
+    fun `a confirmed payout offers the way back`() {
+        showDetail(readyPayouts(paidOut = true, missionManager = true))
+
+        compose.onNodeWithTag(OPERATION_DETAIL_CONTENT_TAG)
+            .performScrollToNode(hasText("Zurücknehmen", ignoreCase = true))
+        compose.onNodeWithText("Zurücknehmen", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a refusal on the payout is said in the app's own words`() {
+        showDetail(readyPayouts(paidOut = true, missionManager = true).copy(error = ApiError.Forbidden()))
+
+        compose.onNodeWithText("Für diese Auszahlung fehlt dir die Berechtigung.").assertIsDisplayed()
+    }
 }

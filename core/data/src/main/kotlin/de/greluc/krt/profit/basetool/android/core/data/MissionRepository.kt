@@ -7,9 +7,12 @@
 
 package de.greluc.krt.profit.basetool.android.core.data
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryUpdateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceTotalsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
@@ -21,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import okhttp3.OkHttpClient
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -143,6 +147,50 @@ interface MissionSource {
         participantId: String,
         donating: Boolean,
     ): ApiResult<MissionParticipant>
+
+    /**
+     * Books an income or an expense against an Einsatz.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId whose booking it is — the caller's own sign-up.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude, always positive; the sign lives in [income].
+     * @param note what it was for, or `null`.
+     * @return success, or the classified failure.
+     */
+    suspend fun addFinanceEntry(
+        missionId: String,
+        participantId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit>
+
+    /**
+     * Rewrites one booking.
+     *
+     * @param entryId the entry.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude.
+     * @param note what it was for, or `null`.
+     * @param version the entry's version, echoed from the read.
+     * @return success, or the classified failure.
+     */
+    suspend fun updateFinanceEntry(
+        entryId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<Unit>
+
+    /**
+     * Removes one booking.
+     *
+     * @param entryId the entry.
+     * @return success, or the classified failure.
+     */
+    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
 }
 
 /**
@@ -307,6 +355,78 @@ class MissionRepository(
             ),
         )
 
+    override suspend fun addFinanceEntry(
+        missionId: String,
+        participantId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit> =
+        discarding(
+            reader.post(
+                FINANCE_ENTRIES_PATH,
+                MissionFinanceEntryCreateDto(
+                    missionId = missionId,
+                    participantId = participantId,
+                    type =
+                        if (income) {
+                            MissionFinanceEntryCreateDto.Type.INCOME
+                        } else {
+                            MissionFinanceEntryCreateDto.Type.EXPENSE
+                        },
+                    amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                    note = note,
+                ),
+                MissionFinanceEntryCreateDto.serializer(),
+                MissionFinanceEntryDto.serializer(),
+            ),
+        )
+
+    override suspend fun updateFinanceEntry(
+        entryId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<Unit> =
+        discarding(
+            reader.put(
+                "$FINANCE_ENTRIES_PATH/$entryId",
+                MissionFinanceEntryUpdateDto(
+                    type =
+                        if (income) {
+                            MissionFinanceEntryUpdateDto.Type.INCOME
+                        } else {
+                            MissionFinanceEntryUpdateDto.Type.EXPENSE
+                        },
+                    amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                    version = version ?: 0L,
+                    note = note,
+                ),
+                MissionFinanceEntryUpdateDto.serializer(),
+                MissionFinanceEntryDto.serializer(),
+            ),
+        )
+
+    override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
+        reader.delete("$FINANCE_ENTRIES_PATH/$entryId")
+
+    /**
+     * Keeps the outcome of a write and throws its body away.
+     *
+     * The three finance writes answer with the entry, and the tab is re-read afterwards anyway:
+     * the totals above the list move with every one of them, and patching a row would leave a sum
+     * that disagrees with the rows under it.
+     *
+     * @param result what the write returned.
+     * @return success or the failure, without the body.
+     */
+    private fun discarding(result: ApiResult<MissionFinanceEntryDto>): ApiResult<Unit> =
+        when (result) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
+        }
+
     /**
      * Turns a slim write's answer into the row.
      *
@@ -400,6 +520,15 @@ class MissionRepository(
         const val FINANCE_PAGE_SIZE: Int = 50
 
         private const val SEARCH_PATH = "/api/v1/missions/search"
+
+        /**
+         * Where a booking is written.
+         *
+         * NOT under `/missions`: the write paths of the money live at the API root, which is why
+         * they are their own family on the vhost rather than an exception to the read-only guard
+         * on the Einsatz prefix.
+         */
+        private const val FINANCE_ENTRIES_PATH = "/api/v1/finance-entries"
 
         /**
          * The detail path for one Einsatz.
@@ -643,5 +772,7 @@ private fun MissionFinanceEntryDto.toModel(): MissionFinanceEntry? {
         amount = amount?.toString().orEmpty(),
         note = note?.takeIf { it.isNotBlank() },
         participantName = participant?.user?.effectiveName ?: participant?.guestName,
+        participantId = participant?.id,
+        version = version,
     )
 }

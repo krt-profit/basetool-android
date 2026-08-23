@@ -55,12 +55,17 @@ fun formatAmount(
         }
 
         else -> {
+            // The typographic minus, not the hyphen the platform formatter reaches for: the
+            // signed variant below already uses it, and the same figure printed two ways in one
+            // band — "−2.500" beside "-2.500" — reads as two different kinds of number. Found on a
+            // device, in the Finanzen band, where the expense sum and the net sat one line apart.
             NumberFormat.getNumberInstance(locale)
                 .apply {
                     isGroupingUsed = true
                     maximumFractionDigits = MAX_FRACTION_DIGITS
                 }
                 .format(value.stripTrailingZeros())
+                .replace("-", MINUS)
         }
     }
 }

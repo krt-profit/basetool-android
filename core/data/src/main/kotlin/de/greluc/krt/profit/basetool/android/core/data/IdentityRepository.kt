@@ -55,10 +55,13 @@ interface IdentitySource {
  *   assignee rows are written against
  * @property logistician whether the caller holds the Logistician grant, which is what decides
  *   whether a screen offers a Logistician-only control at all
+ * @property missionManager whether they hold the mission-manager grant, which decides the same
+ *   for the Operation's payout confirmation
  */
 data class Identity(
     val userId: String,
     val logistician: Boolean,
+    val missionManager: Boolean = false,
 )
 
 /**
@@ -69,7 +72,7 @@ data class Identity(
  * whole object graph down. Re-reading it on every screen would spend a round trip to learn
  * something already known.
  *
- * Only the id and the Logistician grant are kept. The response also carries the member's email,
+ * Only the id and the two grants are kept. The response also carries the member's email,
  * roles and rank; holding those would put personal data in memory for the lifetime of the process
  * to answer questions that need an opaque key and one boolean.
  *
@@ -124,7 +127,12 @@ class IdentityRepository(
                         // `isLogistician` absent is read as "not one". The grant decides whether a
                         // control is offered, and the narrower reading is the one that cannot
                         // offer an action the server refuses.
-                        val identity = Identity(id, result.value.isLogistician == true)
+                        val identity =
+                            Identity(
+                                userId = id,
+                                logistician = result.value.isLogistician == true,
+                                missionManager = result.value.isMissionManager == true,
+                            )
                         cached = identity
                         ApiResult.Success(identity)
                     }

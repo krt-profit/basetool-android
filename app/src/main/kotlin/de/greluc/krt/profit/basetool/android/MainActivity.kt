@@ -265,7 +265,12 @@ class MainActivity : AppCompatActivity() {
                                 personalBlueprints = personalBlueprintsViewModel,
                                 booking = bookingViewModel,
                                 operationDetail = {
-                                    OperationDetailViewModel(container.operations, container.identity, it)
+                                    OperationDetailViewModel(
+                                        container.operations,
+                                        container.identity,
+                                        container.connectivity,
+                                        it,
+                                    )
                                 },
                                 onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,

@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Einnahmen und Ausgaben eines Einsatzes lassen sich jetzt in der App buchen.** Betrag, Richtung und ein Wofür — änderbar und löschbar, solange es deine eigene Buchung ist. Buchen setzt voraus, dass du für den Einsatz angemeldet bist. Einsatzleiter können in der Operation außerdem Auszahlungen bestätigen (REQ-APP-MIS-017, REQ-APP-OPS-013).
+
 - **Für Einsätze kannst du dich jetzt in der App an- und abmelden.** Dazu Ein- und Auschecken, sobald der Einsatz läuft, und die Wahl zwischen Auszahlung und Spende. Dein eigener Eintrag ist in der Teilnehmerliste hervorgehoben. Die Einsatzplanung bleibt der Weboberfläche vorbehalten (REQ-APP-MIS-013…016).
 
 - **Aufträge lassen sich jetzt aus der App übernehmen.** „Übernehmen" setzt dich auf den Auftrag, „Abmelden" nimmt dich wieder herunter, und zu deinem Eintrag gehört eine eigene Notiz — wann du arbeitest, welchen Teil du nimmst. Logistiker können zusätzlich den Status ändern. Übergaben und die übrige Bearbeitung bleiben der Weboberfläche vorbehalten (REQ-APP-ORDERS-009…012).
@@ -23,6 +25,8 @@
 - **Gleichzeitige Änderungen sagen es dir, ohne deine Eingabe wegzuwerfen.** Hat jemand anderes denselben Eintrag zwischenzeitlich geändert, bleibt alles Getippte stehen und der Dialog erklärt, was zu tun ist.
 
 ### Fixed
+
+- **Negative Beträge sahen unterschiedlich aus.** In den Einsatz-Finanzen stand „−2.500" bei den Ausgaben und „-2.500" eine Zeile darunter beim Netto — zwei Zeichen für dieselbe Sache.
 
 - **Aktionen in Bottom-Sheets lagen unter der Gestenleiste.** „Buchen" und „Speichern" ließen sich am unteren Bildschirmrand nicht antippen — der Tipp ging ans System statt an den Knopf. Betrifft alle Sheets der App.
 

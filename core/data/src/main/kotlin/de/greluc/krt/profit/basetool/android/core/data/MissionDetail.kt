@@ -175,12 +175,17 @@ data class MissionDetail(
  * @property amount the magnitude, always positive; the sign lives in [income]
  * @property note what it was for, or `null`
  * @property participantName who booked it, or `null`
+ * @property participantId whose sign-up it hangs off, or `null` — the app may only edit its own,
+ *   and a name cannot decide whose that is
+ * @property version the entry's optimistic lock, echoed by an edit
  */
 data class MissionFinanceEntry(
     val id: String,
     val income: Boolean,
     val amount: String,
     val note: String?,
+    val participantId: String?,
+    val version: Long?,
     val participantName: String?,
 )
 

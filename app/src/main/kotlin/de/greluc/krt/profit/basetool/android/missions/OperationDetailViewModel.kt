@@ -16,6 +16,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OperationPayout
 import de.greluc.krt.profit.basetool.android.core.data.OperationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +55,10 @@ data class OperationDetailState(
     val overview: OperationOverview? = null,
     val phase: OperationDetailPhase = OperationDetailPhase.Loading,
     val myUserId: String? = null,
+    val missionManager: Boolean = false,
+    val saving: Boolean = false,
+    val online: Boolean = true,
+    val error: ApiError? = null,
     val refreshing: Boolean = false,
 ) {
     /**
@@ -88,12 +93,58 @@ data class OperationDetailState(
 class OperationDetailViewModel(
     private val source: OperationSource,
     private val identity: IdentitySource,
+    connectivity: Connectivity,
     private val operationId: String,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(OperationDetailState(operationId = operationId))
 
     /** What the screen draws. */
     val state: StateFlow<OperationDetailState> = mutableState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            connectivity.online.collect { online ->
+                mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+    }
+
+    /**
+     * Confirms one participant's payout, or takes that back.
+     *
+     * **The app cannot tell whether the caller may take one back.** Confirming needs the
+     * mission-manager grant, which `/users/me` answers; rescinding needs an officer or an admin on
+     * top, which it does not. So both are offered to a mission manager and a refusal on the second
+     * is named rather than predicted.
+     *
+     * @param payout the row.
+     */
+    fun onTogglePaidOut(payout: OperationPayout) {
+        val current = mutableState.value
+        val key = payout.participantId
+        val writable = current.online && !current.saving
+        if (key == null || !current.missionManager || !writable) {
+            return
+        }
+        mutableState.value = current.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = source.setPaidOut(operationId, key, !payout.paidOut)) {
+                is ApiResult.Success -> {
+                    // The Operation is re-read rather than the row patched: the payout totals move
+                    // with a confirmation, and a patched row under a stale total is two numbers
+                    // that disagree.
+                    mutableState.value = mutableState.value.copy(saving = false, error = null)
+                    reload(keepContent = true)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the payout could not be confirmed: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
+    }
 
     /** Loads the Operation. Safe to call more than once. */
     fun load() {
@@ -152,9 +203,13 @@ class OperationDetailViewModel(
     /** Reads the caller's own user id, so their payout row can be pointed at. */
     private fun resolveIdentity() {
         viewModelScope.launch {
-            when (val result = identity.myUserId()) {
+            when (val result = identity.me()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(myUserId = result.value)
+                    mutableState.value =
+                        mutableState.value.copy(
+                            myUserId = result.value.userId,
+                            missionManager = result.value.missionManager,
+                        )
                 }
 
                 is ApiResult.Failure -> {
