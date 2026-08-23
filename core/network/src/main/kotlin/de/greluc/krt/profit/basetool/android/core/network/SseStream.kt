@@ -46,10 +46,13 @@ data class SseEvent(
  * would tear the connection down as a matter of course. The derived client keeps the connection
  * pool, the interceptors and therefore the bearer token and the mandatory headers of the original.
  *
+ * <p>Open so a test can substitute the reader: the reconnect and give-up policy lives in the
+ * caller, and driving it through a real socket makes a timing question out of a logic one.
+ *
  * @property httpClient the API client; a derived copy without a read timeout is used.
  * @property baseUrl the flavour's API origin.
  */
-class SseStream(
+open class SseStream(
     httpClient: OkHttpClient,
     private val baseUrl: String,
 ) {
@@ -72,11 +75,15 @@ class SseStream(
      * @param path the stream's path, e.g. `/api/v1/notifications/stream`.
      * @param query query parameters to append, added through the URL builder so a value carrying a
      *   colon or a comma — a live-sync topic does both — is encoded rather than pasted.
+     * @param onRefused called with the status when the server answers non-2xx, before the flow
+     *   completes. Without it a refusal and a dropped connection are indistinguishable to the
+     *   caller, and only one of the two is worth reconnecting through.
      * @return a cold flow of events; collecting it opens the connection, cancelling closes it.
      */
-    fun events(
+    open fun events(
         path: String,
         query: List<Pair<String, String>> = emptyList(),
+        onRefused: ((Int) -> Unit)? = null,
     ): Flow<SseEvent> =
         callbackFlow {
             val url =
@@ -95,7 +102,7 @@ class SseStream(
                         .build(),
                 )
 
-            val reader = Thread { runReader(call, this) }
+            val reader = Thread { runReader(call, this, onRefused) }
             reader.isDaemon = true
             reader.start()
 
@@ -116,14 +123,16 @@ class SseStream(
      *
      * @param call the prepared request.
      * @param scope the producer to send events to and to close when the stream ends.
+     * @param onRefused reports a non-2xx answer to the caller.
      */
     @Suppress("TooGenericExceptionCaught")
     private fun runReader(
         call: Call,
         scope: ProducerScope<SseEvent>,
+        onRefused: ((Int) -> Unit)?,
     ) {
         try {
-            readInto(call, scope)
+            readInto(call, scope, onRefused)
         } catch (failure: IOException) {
             // The usual ending: the collector cancelled the call, or the network went.
             KrtLog.d(LOG_TAG) { "stream ended: ${failure.javaClass.simpleName}" }
@@ -147,14 +156,21 @@ class SseStream(
      *
      * @param call the prepared request.
      * @param scope the producer to send events to.
+     * @param onRefused reports a non-2xx answer to the caller.
      */
     private fun readInto(
         call: Call,
         scope: ProducerScope<SseEvent>,
+        onRefused: ((Int) -> Unit)?,
     ) {
         call.execute().use { response ->
             if (!response.isSuccessful) {
                 KrtLog.w(LOG_TAG) { "stream refused with ${response.code}" }
+                // The caller has to be able to tell a refusal from a dropped socket. Both end this
+                // flow the same way, and only one of them is worth retrying: a 403 here means the
+                // caller may not enter the rooms it asked for, which will not change while the
+                // screen is open, and a client that kept asking would do so for the life of the app.
+                onRefused?.invoke(response.code)
                 return
             }
             val source = response.body.source()

@@ -12,19 +12,39 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.SseStream
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -45,6 +65,9 @@ import kotlin.time.Duration.Companion.seconds
  *   connected together would come back together, forever.
  * @property reconnectBase the first backoff step after a failed attempt.
  * @property reconnectCeiling the longest a client waits before trying again.
+ * @property unionSettle how long the room union has to hold still before the connection
+ *   follows it. Screens mount together, and without this each one would tear the shared
+ *   stream down and rebuild it.
  */
 data class LiveSyncTiming(
     val resourceWindow: Duration = 400.milliseconds,
@@ -52,6 +75,7 @@ data class LiveSyncTiming(
     val reconnectSettle: Duration = 1.seconds,
     val reconnectBase: Duration = 1.seconds,
     val reconnectCeiling: Duration = 30.seconds,
+    val unionSettle: Duration = 250.milliseconds,
 )
 
 /** What the live-sync stream tells a screen. */
@@ -111,7 +135,18 @@ interface LiveSyncSource {
 /**
  * The live-sync client: one SSE stream in, one signal out (REQ-APP-SYNC-001…004, server ADR-0143).
  *
- * Three things happen here that a screen must not have to think about.
+ * Four things happen here that a screen must not have to think about.
+ *
+ * **One stream for the whole app.** Every screen calls [observe] with its own rooms, and they all
+ * ride a single connection carrying the union. This is not an optimisation — it is a correction of
+ * an assumption that turned out to be wrong on a device: a phone shows one screen, but its
+ * ViewModels are activity-scoped and several are alive at once, so a stream per caller meant three
+ * or four concurrent TLS connections, three or four reconnect loops, and eviction as soon as a
+ * fifth screen opened (the server caps a member at four). Measured on the emulator before the fix:
+ * three streams and a burst of twelve handshake failures in ten seconds.
+ *
+ * The union is debounced, because mounting three screens at once must open one stream rather than
+ * three in a row, and each caller sees only the rooms it asked for.
  *
  * **Reconnect.** The server closes a stream every thirty minutes by design, and a phone loses its
  * connection far more often than that. [observe] reopens with a full-jittered backoff and keeps
@@ -141,7 +176,32 @@ class LiveSyncRepository(
     private val reader: ApiReader,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val timing: LiveSyncTiming = LiveSyncTiming(),
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : LiveSyncSource {
+    /** How many collectors currently want each room, so a room leaves the union when the last one goes. */
+    private val demand = mutableMapOf<LiveSyncTopic, Int>()
+
+    private val guard = Mutex()
+
+    /** The union of every collector's rooms; the connection follows this and nothing else. */
+    private val union = MutableStateFlow<Set<LiveSyncTopic>>(emptySet())
+
+    /**
+     * The one connection, shared by every collector.
+     *
+     * `flatMapLatest` is what makes a changed union close the old stream and open a new one, and
+     * the debounce in front of it is what stops three screens mounting together from doing that
+     * three times. `WhileSubscribed` keeps the connection tied to actual demand: no screen
+     * listening means no socket held.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    private val shared: SharedFlow<LiveSyncEvent> =
+        union
+            .debounce(timing.unionSettle)
+            .distinctUntilChanged()
+            .flatMapLatest { topics -> if (topics.isEmpty()) emptyFlow() else connection(topics) }
+            .shareIn(scope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 0)
+
     /**
      * Convenience constructor for the object graph.
      *
@@ -158,41 +218,115 @@ class LiveSyncRepository(
 
     /** {@inheritDoc} */
     override fun observe(topics: Set<LiveSyncTopic>): Flow<LiveSyncEvent> =
-        callbackFlow {
+        flow {
             if (topics.isEmpty()) {
-                close()
-                return@callbackFlow
+                return@flow
             }
+            register(topics, +1)
+            try {
+                // Each caller sees only its own rooms. The acceptance list is narrowed the same
+                // way, so a screen is told what IT got rather than what the shared stream got --
+                // otherwise every screen would believe it is live because some other screen's room
+                // was accepted.
+                emitAll(
+                    shared.mapNotNull { event ->
+                        when (event) {
+                            is LiveSyncEvent.Subscribed -> {
+                                LiveSyncEvent.Subscribed(event.topics.intersect(topics))
+                            }
+
+                            is LiveSyncEvent.Changed -> {
+                                event.takeIf { it.topic in topics }
+                            }
+                        }
+                    },
+                )
+            } finally {
+                // Runs on cancellation too, which is the normal way a screen goes away.
+                withContext(NonCancellable) { register(topics, -1) }
+            }
+        }
+
+    /**
+     * Adds or removes one collector's demand and republishes the union.
+     *
+     * Reference-counted rather than a plain set: two screens can want the same room, and the first
+     * of them closing must not take it away from the second.
+     *
+     * @param topics the caller's rooms.
+     * @param delta {@code +1} on subscribe, {@code -1} on teardown.
+     */
+    private suspend fun register(
+        topics: Set<LiveSyncTopic>,
+        delta: Int,
+    ) {
+        guard.withLock {
+            for (topic in topics) {
+                val next = (demand[topic] ?: 0) + delta
+                if (next <= 0) {
+                    demand.remove(topic)
+                } else {
+                    demand[topic] = next
+                }
+            }
+            union.value = demand.keys.toSet()
+        }
+    }
+
+    /**
+     * The reconnecting connection for one topic union.
+     *
+     * @param topics the rooms to ask for.
+     * @return a flow that emits until it is cancelled, reopening the stream as needed.
+     */
+    private fun connection(topics: Set<LiveSyncTopic>): Flow<LiveSyncEvent> =
+        callbackFlow {
             val pending = mutableMapOf<LiveSyncTopic, MutableSet<String>>()
             val timers = mutableMapOf<LiveSyncTopic, Job>()
-            val guard = Mutex()
+            val windows = Mutex()
 
-            val connection =
+            val worker =
                 launch {
                     var attempt = 0
+                    var refusals = 0
                     while (isActive) {
-                        val delivered =
+                        val attempt2 =
                             collectOnce(topics) { event ->
                                 when (event) {
-                                    // The acceptance list is never coalesced: it is the screen's
-                                    // signal that a room is live at all, and delaying it would let
-                                    // the screen believe it is live for a window it is not.
+                                    // Never coalesced: it is the screen's signal that a room is
+                                    // live at all, and delaying it would let the screen believe it
+                                    // is live for a window in which it is not.
                                     is LiveSyncEvent.Subscribed -> {
                                         trySend(event)
                                     }
 
                                     is LiveSyncEvent.Changed -> {
-                                        launch { coalesce(event, pending, timers, guard) { trySend(it) } }
+                                        launch { coalesce(event, pending, timers, windows) { trySend(it) } }
                                     }
                                 }
                             }
+                        if (attempt2.refused == HTTP_FORBIDDEN) {
+                            refusals++
+                            if (refusals >= MAX_REFUSALS) {
+                                // A refusal is a verdict, not a hiccup: this caller may not enter
+                                // any room it asked for, and that will not change while the screen
+                                // is open. Measured on a device before this guard existed: a
+                                // member without the Auftrags-queue capability re-asked every
+                                // thirty seconds for as long as the app ran.
+                                KrtLog.d(LOG_TAG) { "giving up after $refusals refusals" }
+                                trySend(LiveSyncEvent.Subscribed(emptySet()))
+                                break
+                            }
+                        } else {
+                            refusals = 0
+                        }
                         // A stream that delivered something was working, so the next drop starts
                         // over at the shortest wait rather than inheriting an old backoff.
-                        attempt = if (delivered) 0 else attempt + 1
+                        attempt = if (attempt2.delivered) 0 else attempt + 1
                         delay(backoff(attempt))
                     }
                 }
-            awaitClose { connection.cancel() }
+            awaitClose { worker.cancel() }
         }
 
     /**
@@ -283,24 +417,49 @@ class LiveSyncRepository(
      *
      * @param topics the rooms to ask for.
      * @param emit where to put the parsed events.
-     * @return whether the connection delivered anything, which decides the backoff reset.
+     * @return what the attempt came to. The refusal status has to be told apart from a dropped
+     *   socket: one is a verdict to stop asking, the other is a hiccup to retry through, and the
+     *   stream reader ends the flow the same way for both.
      */
     private suspend fun collectOnce(
         topics: Set<LiveSyncTopic>,
         emit: (LiveSyncEvent) -> Unit,
-    ): Boolean {
-        var delivered = false
+    ): Attempt {
+        // Atomics rather than plain vars: the stream reader runs on its own thread and writes
+        // these, while the coroutine below reads them once the flow completes. Without the memory
+        // barrier the refusal is simply not seen, and the client retries a 403 forever — which is
+        // exactly what it did on a device before this line.
+        val refused = AtomicInteger(NO_STATUS)
+        val delivered = AtomicBoolean(false)
         val query = listOf(TOPICS_PARAM to topics.joinToString(",") { it.wire })
-        stream.events(STREAM_PATH, query).collect { event ->
-            delivered = true
-            when (event.name) {
-                SUBSCRIBED_EVENT -> parseSubscribed(event.data)?.let(emit)
-                CHANGED_EVENT -> parseChanged(event.data)?.let(emit)
-                else -> Unit
+        stream
+            .events(STREAM_PATH, query) { status -> refused.set(status) }
+            .collect { event ->
+                // A heartbeat counts: it proves the connection works, which is what the backoff
+                // reset is about. Only the two carrying events are handed on.
+                delivered.set(true)
+                when (event.name) {
+                    SUBSCRIBED_EVENT -> parseSubscribed(event.data)?.let(emit)
+                    CHANGED_EVENT -> parseChanged(event.data)?.let(emit)
+                    else -> Unit
+                }
             }
-        }
-        return delivered
+        return Attempt(
+            refused = refused.get().takeIf { it != NO_STATUS },
+            delivered = delivered.get(),
+        )
     }
+
+    /**
+     * What one connection attempt came to.
+     *
+     * @param refused the HTTP status if the stream was refused outright, else {@code null}.
+     * @param delivered whether anything at all arrived, heartbeats included.
+     */
+    private data class Attempt(
+        val refused: Int?,
+        val delivered: Boolean,
+    )
 
     /**
      * Parses the once-per-stream acceptance list.
@@ -354,7 +513,7 @@ class LiveSyncRepository(
         return Random.nextLong(ceiling + 1).milliseconds
     }
 
-    private companion object {
+    internal companion object {
         const val STREAM_PATH = "/api/v1/live-sync/stream"
         const val CHANGED_PATH = "/api/v1/live-sync/changed"
         const val TOPICS_PARAM = "topics"
@@ -362,6 +521,14 @@ class LiveSyncRepository(
         const val CHANGED_EVENT = "changed"
 
         const val RECONNECT_MAX_SHIFT = 5
+
+        /** Consecutive refusals before the client accepts the verdict and stops asking. */
+        const val MAX_REFUSALS = 2
+
+        const val HTTP_FORBIDDEN = 403
+
+        /** Sentinel for "the stream opened", since the atomic cannot hold a null. */
+        const val NO_STATUS = 0
 
         /** Log subsystem. A topic names a resource id and is logged only at debug. */
         const val LOG_TAG = "livesync"
