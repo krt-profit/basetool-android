@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -38,6 +39,8 @@ import de.greluc.krt.profit.basetool.android.core.data.OperationStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -46,10 +49,15 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the scrolling content of the Operation detail. */
 const val OPERATION_DETAIL_CONTENT_TAG: String = "operation-detail-content"
+
+/** Test handle for a payout row's confirmation. */
+const val OPERATION_PAID_OUT_TAG: String = "operation-paid-out"
 
 /**
  * One Operation in full (design spec ch. 06 §5), read-only.
@@ -73,6 +81,7 @@ fun OperationDetailScreen(
     state: OperationDetailState,
     onRefresh: () -> Unit,
     onOpenMission: (String) -> Unit,
+    onTogglePaidOut: (OperationPayout) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val overview = state.overview
@@ -92,6 +101,8 @@ fun OperationDetailScreen(
                         myPayout = state.myPayout,
                         identityKnown = state.myUserId != null,
                         onOpenMission = onOpenMission,
+                        state = state,
+                        onTogglePaidOut = onTogglePaidOut,
                     )
                 }
             }
@@ -174,6 +185,8 @@ private fun OperationDetailHead(
  * @param identityKnown whether the caller's user id is known at all, which is what tells "you did
  *   not take part" apart from "we could not find out".
  * @param onOpenMission an Einsatz row was tapped.
+ * @param state the screen, for the mission-manager grant and whether a write may be sent.
+ * @param onTogglePaidOut a payout row's confirmation was taken.
  */
 @Composable
 private fun OperationDetailBody(
@@ -181,8 +194,27 @@ private fun OperationDetailBody(
     myPayout: OperationPayout?,
     identityKnown: Boolean,
     onOpenMission: (String) -> Unit,
+    state: OperationDetailState,
+    onTogglePaidOut: (OperationPayout) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(OPERATION_DETAIL_CONTENT_TAG)) {
+        if (!state.online) {
+            item(key = "offline") { OfflineBand() }
+        }
+        state.error?.let { error ->
+            item(key = "write-error") {
+                KrtFieldError(
+                    text =
+                        stringResource(
+                            if (error is ApiError.Forbidden) {
+                                R.string.operation_detail_payout_not_allowed
+                            } else {
+                                R.string.write_failed
+                            },
+                        ),
+                )
+            }
+        }
         item(key = "my-share") {
             MyShareBand(payout = myPayout, identityKnown = identityKnown)
         }
@@ -235,7 +267,7 @@ private fun OperationDetailBody(
             }
         } else {
             items(overview.payouts.rows, key = { it.participantId ?: it.participantName }) { row ->
-                PayoutRow(row = row)
+                PayoutRow(row = row, state = state, onTogglePaidOut = onTogglePaidOut)
             }
         }
     }
@@ -386,10 +418,23 @@ private fun MissionResultRow(
 /**
  * One participant's payout row.
  *
+ * The confirmation is offered to a mission manager alone. Whether they may take one **back** needs
+ * an officer or an admin on top, which `/users/me` does not answer — so both directions are
+ * offered and a refusal on the second is named rather than predicted.
+ *
+ * A row the server sent without a participant key cannot be addressed and is shown without the
+ * action rather than with one that would 400.
+ *
  * @param row the payout.
+ * @param state the screen, for the grant and whether a write may be sent.
+ * @param onTogglePaidOut the confirmation was taken.
  */
 @Composable
-private fun PayoutRow(row: OperationPayout) {
+private fun PayoutRow(
+    row: OperationPayout,
+    state: OperationDetailState,
+    onTogglePaidOut: (OperationPayout) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -407,6 +452,25 @@ private fun PayoutRow(row: OperationPayout) {
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.White,
         )
+        if (state.missionManager && row.participantId != null) {
+            val writable = state.online && !state.saving
+            KrtGhostButton(
+                text =
+                    stringResource(
+                        if (row.paidOut) {
+                            R.string.operation_detail_payout_undo
+                        } else {
+                            R.string.operation_detail_payout_confirm
+                        },
+                    ),
+                onClick = { onTogglePaidOut(row) },
+                modifier =
+                    Modifier
+                        .testTag(OPERATION_PAID_OUT_TAG)
+                        .alpha(if (writable) 1f else DISABLED_WRITE_ALPHA),
+                enabled = writable,
+            )
+        }
     }
 }
 
@@ -518,6 +582,7 @@ fun OperationDetailRoute(
         state = state,
         onRefresh = viewModel::onRefresh,
         onOpenMission = onOpenMission,
+        onTogglePaidOut = viewModel::onTogglePaidOut,
         modifier = modifier,
     )
 }

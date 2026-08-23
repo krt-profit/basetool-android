@@ -114,6 +114,25 @@ class MissionsViewModelTest {
             participantId: String,
             donating: Boolean,
         ): ApiResult<MissionParticipant> = error("this fake never changes a preference")
+
+        override suspend fun addFinanceEntry(
+            missionId: String,
+            participantId: String,
+            income: Boolean,
+            amount: String,
+            note: String?,
+        ): ApiResult<Unit> = error("this fake books nothing")
+
+        override suspend fun updateFinanceEntry(
+            entryId: String,
+            income: Boolean,
+            amount: String,
+            note: String?,
+            version: Long?,
+        ): ApiResult<Unit> = error("this fake books nothing")
+
+        override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
+            error("this fake books nothing")
     }
 
     private fun mission(id: String) =

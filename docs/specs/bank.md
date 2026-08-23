@@ -122,3 +122,62 @@ read the same figure. `BigDecimal` throughout; no `Double` ever touches money.
 `REQ-API-009` contract set and the vhost allow-list. `sparkline` is frozen because the design draws
 it and there is no chart framework to fall back on; `holderHandle` because it is the ledger row's
 "who".
+
+---
+
+### REQ-APP-BANK-006 — The account's own settings, and the server decides who sees them
+
+`GET …/org-units/bank/accounts/{id}/settings` answers with **what the caller may change**:
+`canSetTarget` and `canConfigureVisibility`. The app offers exactly those controls and works out no
+role of its own — which member is responsible for an account is a per-account fact (the
+`STAFFELLEITER` of the owning Staffel, the SK lead of a Spezialkommando, the `BEREICHSLEITER` of an
+Area), and reproducing that ladder in the client would be a second, weaker copy of a server rule.
+
+**A settings read that fails costs the controls, not the screen.** The account and its ledger are
+what the member came for; the flags default to "may not", which is the safe direction. Observed on
+a device: a member with a view grant but no responsibility got `403` on the settings read and the
+account rendered without the action.
+
+Three writes, all answering with the whole snapshot — the version moves with each one, and so does
+what the caller may do next, so nothing is patched:
+
+- `PUT …/balance-target`, version-echoed. **An emptied field clears the target** rather than setting
+  one of zero: those are different instructions and the screen never offers the second. The editor
+  opens on the whole-number form, because the wire carries `250000.0000` and the field takes digits.
+- `POST` / `DELETE …/visibility/role/{roleCode}` per bucket.
+- `PUT …/visibility/all-members/{enabled}`.
+
+**An account type whose visibility is fixed says so** rather than showing an empty section: "cannot
+be configured" and "you may not configure it" are different sentences, and `visibilityConfigurable`
+is the field that tells them apart.
+
+**Acceptance**
+
+- [x] Nothing is written when the server's flags say the caller may not (`BankViewModelTest`).
+- [x] The target write echoes the version, and an emptied field clears (`BankViewModelTest`).
+- [x] A role bucket toggles against what the account already grants (`BankViewModelTest`).
+- [x] A failed settings read leaves the screen intact and the controls away (`BankViewModelTest`).
+- [x] A fixed-visibility account says so (`BankScreenTest`).
+- [x] **Observed on a device (2026-08-23):** without responsibility the settings read answered
+  `403` and no control appeared; as the Staffelleiter the target was set (`200`, persisted as
+  `250000.0000`), a role bucket granted (`200`) and the all-members switch flipped (`200`).
+
+**Code:** `BankRepository.settings` / `.setBalanceTarget` / `.setRoleVisibility` /
+`.setAllMembersVisibility`, `BankAccountViewModel`
+
+---
+
+### REQ-APP-BANK-007 — The bank-employee surface stays out
+
+`/api/v1/bank/**` — deposits, withdrawals, transfers, the request queue, the reversal — is
+`hasRole(BANK_EMPLOYEE)` throughout and is **not** on the app's allow-list. This is the same
+decision as [`REQ-APP-BANK-001`](bank.md), restated because phase 3 is when it would have been easy
+to slip: the member-facing `/org-units/bank/**` paths gained writes, and the employee ones sit one
+prefix away.
+
+A bank employee uses the web app. The app carries what a member has.
+
+**Acceptance**
+
+- [x] No `/api/v1/bank/**` path is in the contract set or the vhost allow-list (main repo
+  `ExternalContractTest`, `docs/API_VHOST_ROLLOUT_RUNBOOK.md`).

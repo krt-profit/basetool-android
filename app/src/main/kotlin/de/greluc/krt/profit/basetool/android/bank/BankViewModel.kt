@@ -11,11 +11,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountDetail
+import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,7 +78,17 @@ data class BankAccountState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
-)
+    val settings: BankAccountSettings? = null,
+    val settingsOpen: Boolean = false,
+    val targetDraft: String? = null,
+    val saving: Boolean = false,
+    val online: Boolean = true,
+    val error: ApiError? = null,
+) {
+    /** Whether a settings write may be sent at all. */
+    val writable: Boolean
+        get() = online && !saving
+}
 
 /**
  * Drives the Konten list.
@@ -156,9 +168,18 @@ class BankViewModel(
  */
 class BankAccountViewModel(
     private val source: BankSource,
+    connectivity: Connectivity,
     private val accountId: String,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BankAccountState(accountId = accountId))
+
+    init {
+        viewModelScope.launch {
+            connectivity.online.collect { online ->
+                mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+    }
 
     /** What the screen draws. */
     val state: StateFlow<BankAccountState> = mutableState.asStateFlow()
@@ -166,12 +187,138 @@ class BankAccountViewModel(
     /** Loads the account and its first ledger page. */
     fun load() {
         reload(keepContent = false)
+        readSettings()
     }
 
     /** Re-reads both, keeping what is on screen while it runs. */
     fun onRefresh() {
         mutableState.value = mutableState.value.copy(refreshing = true)
         reload(keepContent = true)
+        readSettings()
+    }
+
+    /**
+     * Reads what the caller may change about this account.
+     *
+     * A failure is not surfaced: the account and its ledger are the screen's subject, and losing
+     * the settings costs the holder their controls, not the member their page. The controls then
+     * stay away, which is the safe direction — the flags default to "may not".
+     */
+    private fun readSettings() {
+        viewModelScope.launch {
+            when (val result = source.settings(accountId)) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(settings = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the account settings could not be read: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    /** Opens the settings sheet. */
+    fun onOpenSettings() {
+        val current = mutableState.value
+        current.settings?.let {
+            mutableState.value =
+                current.copy(
+                    settingsOpen = true,
+                    // The wire carries `250000.0000`, and the field takes digits.
+                    targetDraft = it.balanceTarget?.substringBefore('.')?.filter(Char::isDigit).orEmpty(),
+                    error = null,
+                )
+        }
+    }
+
+    /** Closes it, discarding what was typed. */
+    fun onDismissSettings() {
+        mutableState.value = mutableState.value.copy(settingsOpen = false, targetDraft = null, error = null)
+    }
+
+    /**
+     * Sets the target as typed.
+     *
+     * @param value what the member typed, unparsed.
+     */
+    fun onTargetChanged(value: String) {
+        mutableState.value =
+            mutableState.value.copy(targetDraft = value.filter(Char::isDigit), error = null)
+    }
+
+    /**
+     * Saves the target.
+     *
+     * An emptied field **clears** the target rather than setting it to zero: a target of nothing is
+     * a different instruction from having none, and the screen never offers the first.
+     */
+    fun onSaveTarget() {
+        val current = mutableState.value
+        val settings = current.settings
+        if (settings == null || !settings.canSetTarget || !current.writable) {
+            return
+        }
+        write { source.setBalanceTarget(accountId, current.targetDraft?.takeIf { it.isNotEmpty() }, settings.version) }
+    }
+
+    /**
+     * Grants or revokes one role bucket's view.
+     *
+     * @param roleCode the bucket.
+     */
+    fun onToggleRole(roleCode: String) {
+        val current = mutableState.value
+        val settings = current.settings
+        if (settings == null || !settings.canConfigureVisibility || !current.writable) {
+            return
+        }
+        write { source.setRoleVisibility(accountId, roleCode, roleCode !in settings.grantedRoleCodes) }
+    }
+
+    /** Opens the account to every member of its org unit, or closes it again. */
+    fun onToggleAllMembers() {
+        val current = mutableState.value
+        val settings = current.settings
+        if (settings == null || !settings.canConfigureVisibility || !current.writable) {
+            return
+        }
+        write { source.setAllMembersVisibility(accountId, !settings.allMembersGranted) }
+    }
+
+    /**
+     * Runs one settings write and redraws from the answer.
+     *
+     * Every one of them answers with the whole snapshot — the version moves, and so does what the
+     * caller may do next — so nothing here is patched.
+     *
+     * @param request the call.
+     */
+    private fun write(request: suspend () -> ApiResult<BankAccountSettings>) {
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = request()) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            settings = result.value,
+                            targetDraft =
+                                result.value.balanceTarget
+                                    ?.substringBefore('.')
+                                    ?.filter(Char::isDigit)
+                                    .orEmpty(),
+                            saving = false,
+                            error = null,
+                        )
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the account settings could not be written: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
     }
 
     /** Appends the next ledger page. */

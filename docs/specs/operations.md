@@ -283,3 +283,34 @@ instead would print a different wrong number, since the split is weighted.
   understate the spread without saying so (`OperationRepositoryTest`).
 - [x] **Observed on a device (2026-08-22)** on an Operation with one donating and one paid-out
   participant.
+
+---
+
+### REQ-APP-OPS-013 — The payout confirmation is a mission manager's, and the rescind is not predicted
+
+`PUT /api/v1/operations/{id}/payouts/paid-out`. The gate carries **two** roles in one expression:
+confirming needs `MISSION_MANAGER`, and taking a confirmation back needs `OFFICER` or `ADMIN` on
+top. `/users/me` answers the first and not the second.
+
+So the app offers the control to a mission manager, in **both** directions, and names the refusal
+when the second one comes back — *"Für diese Auszahlung fehlt dir die Berechtigung."* Hiding the
+rescind from every mission manager would hide it from the officers who may use it; offering it
+without naming the refusal would read as the app being broken.
+
+A payout row the server sent without a participant key carries no action: it cannot be addressed,
+and a control that can only 400 is not a control.
+
+**The Operation is re-read after a confirmation, not patched.** The payout totals move with it.
+
+**Acceptance**
+
+- [x] A non-mission-manager is offered no confirmation (`OperationDetailViewModelTest`,
+  `OperationsScreenTest`).
+- [x] A row without a participant key is offered none either (`OperationDetailViewModelTest`).
+- [x] A confirmation re-reads the Operation (`OperationDetailViewModelTest`).
+- [x] A `403` is worded as this payout's refusal (`OperationsScreenTest`).
+- [x] **Observed on a device (2026-08-23):** confirmed (`200`, `OFFEN` → `AUSGEZAHLT`), then the
+  rescind refused with `403` and the sentence shown — the caller being a mission manager and not an
+  officer.
+
+**Code:** `OperationRepository.setPaidOut`, `OperationDetailViewModel.onTogglePaidOut`

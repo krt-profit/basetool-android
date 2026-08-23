@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
@@ -53,6 +54,11 @@ import java.time.Instant
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class MissionDetailViewModelTest {
+    private companion object {
+        /** The booking's optimistic lock. */
+        const val ENTRY_VERSION = 4L
+    }
+
     private val dispatcher = StandardTestDispatcher()
 
     /**
@@ -149,6 +155,38 @@ class MissionDetailViewModelTest {
             preferences.add(participantId to donating)
             return writeAnswer ?: ApiResult.Success(row(donating = donating))
         }
+
+        val booked = mutableListOf<List<Any?>>()
+        val rewritten = mutableListOf<List<Any?>>()
+        val removed = mutableListOf<String>()
+        var bookAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun addFinanceEntry(
+            missionId: String,
+            participantId: String,
+            income: Boolean,
+            amount: String,
+            note: String?,
+        ): ApiResult<Unit> {
+            booked.add(listOf(missionId, participantId, income, amount, note))
+            return bookAnswer
+        }
+
+        override suspend fun updateFinanceEntry(
+            entryId: String,
+            income: Boolean,
+            amount: String,
+            note: String?,
+            version: Long?,
+        ): ApiResult<Unit> {
+            rewritten.add(listOf(entryId, income, amount, note, version))
+            return bookAnswer
+        }
+
+        override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> {
+            removed.add(entryId)
+            return bookAnswer
+        }
     }
 
     private fun detail(
@@ -189,6 +227,22 @@ class MissionDetailViewModelTest {
             expenseCount = 2,
             entries = emptyList(),
             totalEntries = 0,
+        )
+
+    /**
+     * One booking, as the caller's own.
+     *
+     * @return the entry.
+     */
+    private fun entry() =
+        MissionFinanceEntry(
+            id = "e1",
+            income = true,
+            amount = "12000",
+            note = "Erlös",
+            participantName = "Rhea",
+            participantId = "p1",
+            version = ENTRY_VERSION,
         )
 
     private lateinit var source: RecordingSource
@@ -540,5 +594,124 @@ class MissionDetailViewModelTest {
 
             assertTrue(source.joins.isEmpty())
             assertEquals(false, model.state.value.online)
+        }
+
+    @Test
+    fun `booking needs a sign-up to book against`() =
+        runTest(dispatcher) {
+            // The create names a participant, and the only one the app may name is the caller's
+            // own. Without a sign-up there is nothing to name.
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            assertEquals(false, model.state.value.bookingPossible)
+
+            model.onAddEntry()
+
+            assertNull(model.state.value.entryDraft)
+        }
+
+    @Test
+    fun `a booking carries the direction, the amount and the caller's own row`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueFinances(ApiResult.Success(finances()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onAddEntry()
+            model.onEntryIncomeChanged(false)
+            model.onEntryAmountChanged("2500")
+            model.onEntryNoteChanged("Treibstoff")
+
+            model.onSaveEntry()
+            advanceUntilIdle()
+
+            assertEquals(listOf("m1", "p1", false, "2500", "Treibstoff"), source.booked.single())
+            assertNull(model.state.value.entryDraft)
+        }
+
+    @Test
+    fun `an amount of nothing is not a booking`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onAddEntry()
+
+            model.onEntryAmountChanged("0")
+
+            assertEquals(false, model.state.value.entryDraft?.submittable)
+        }
+
+    @Test
+    fun `editing a booking echoes its version`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueFinances(ApiResult.Success(finances()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onEditEntry(entry())
+            model.onEntryAmountChanged("40")
+
+            model.onSaveEntry()
+            advanceUntilIdle()
+
+            assertEquals(listOf("e1", true, "40", "Erlös", ENTRY_VERSION), source.rewritten.single())
+        }
+
+    @Test
+    fun `the editor opens on a number the field can hold`() =
+        runTest(dispatcher) {
+            // The wire carries `12000.0000` and the field takes digits alone.
+            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onEditEntry(entry().copy(amount = "12000.0000"))
+
+            assertEquals("12000", model.state.value.entryDraft?.amount)
+        }
+
+    @Test
+    fun `a refused booking keeps the editor open with what was typed`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.bookAnswer = ApiResult.Failure(ApiError.OptimisticLock())
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onAddEntry()
+            model.onEntryAmountChanged("30")
+
+            model.onSaveEntry()
+            advanceUntilIdle()
+
+            assertEquals("30", model.state.value.entryDraft?.amount)
+            assertTrue(model.state.value.error is ApiError.OptimisticLock)
+        }
+
+    @Test
+    fun `a booking re-reads the tab, because the totals moved with it`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueFinances(ApiResult.Success(finances()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onTabSelected(MissionTab.FINANCES)
+            advanceUntilIdle()
+            val before = source.financeCalls
+
+            model.onDeleteEntry(entry())
+            advanceUntilIdle()
+
+            assertEquals(listOf("e1"), source.removed)
+            assertEquals(before + 1, source.financeCalls)
         }
 }

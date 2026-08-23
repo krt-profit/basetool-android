@@ -11,6 +11,8 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationFinanceSummaryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutStatusDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutStatusUpdateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutSummaryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseOperationDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -97,6 +99,22 @@ interface OperationSource {
      *   ordinary answer for an Operation outside the caller's scope, `NotFound` for a stale link.
      */
     suspend fun overview(id: String): ApiResult<OperationOverview>
+
+    /**
+     * Confirms that one participant's share has been paid out, or takes that back.
+     *
+     * @param operationId the Operation.
+     * @param participantKey the payout row's key, unique within the Operation.
+     * @param paidOut whether it should end up confirmed.
+     * @return success, or the classified failure. `403` is ordinary rather than exceptional:
+     *   confirming needs the mission-manager grant, and **taking a confirmation back** needs an
+     *   officer or an admin on top — a distinction the app cannot make for itself.
+     */
+    suspend fun setPaidOut(
+        operationId: String,
+        participantKey: String,
+        paidOut: Boolean,
+    ): ApiResult<Unit>
 }
 
 /**
@@ -188,6 +206,27 @@ class OperationRepository(
         when (val rollup = reader.get(financeSummaryPath(id), OperationFinanceSummaryDto.serializer())) {
             is ApiResult.Failure -> rollup
             is ApiResult.Success -> payoutsWith(id, detail, rollup.value.toModel())
+        }
+
+    override suspend fun setPaidOut(
+        operationId: String,
+        participantKey: String,
+        paidOut: Boolean,
+    ): ApiResult<Unit> =
+        when (
+            val result =
+                reader.put(
+                    "${payoutsPath(operationId)}/paid-out",
+                    OperationPayoutStatusUpdateDto(
+                        participantKey = participantKey,
+                        paidOut = paidOut,
+                    ),
+                    OperationPayoutStatusUpdateDto.serializer(),
+                    OperationPayoutStatusDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
         }
 
     /**

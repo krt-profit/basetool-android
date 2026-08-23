@@ -20,8 +20,11 @@ import de.greluc.krt.profit.basetool.android.core.data.OperationSource
 import de.greluc.krt.profit.basetool.android.core.data.OperationStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -74,6 +77,18 @@ class OperationDetailViewModelTest {
             overviewCalls++
             return if (answers.size > 1) answers.removeAt(0) else answers.first()
         }
+
+        val confirmations = mutableListOf<Pair<String, Boolean>>()
+        var confirmAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun setPaidOut(
+            operationId: String,
+            participantKey: String,
+            paidOut: Boolean,
+        ): ApiResult<Unit> {
+            confirmations.add(participantKey to paidOut)
+            return confirmAnswer
+        }
     }
 
     /**
@@ -83,6 +98,7 @@ class OperationDetailViewModelTest {
      */
     private class FixedIdentity(
         private val answer: ApiResult<String>,
+        private val missionManager: Boolean = false,
     ) : IdentitySource {
         var calls = 0
 
@@ -93,13 +109,20 @@ class OperationDetailViewModelTest {
 
         override suspend fun me(): ApiResult<Identity> =
             when (val result = myUserId()) {
-                is ApiResult.Failure -> result
-                is ApiResult.Success -> ApiResult.Success(Identity(result.value, logistician = false))
+                is ApiResult.Failure -> {
+                    result
+                }
+
+                is ApiResult.Success -> {
+                    ApiResult.Success(
+                        Identity(result.value, logistician = false, missionManager = missionManager),
+                    )
+                }
             }
     }
 
     private fun payout(
-        id: String,
+        id: String?,
         name: String,
         donating: Boolean = false,
         paid: Boolean = false,
@@ -141,7 +164,17 @@ class OperationDetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(identity: IdentitySource) = OperationDetailViewModel(source, identity, "o1")
+    private class FakeConnectivity(
+        initial: Boolean = true,
+    ) : Connectivity {
+        val state = MutableStateFlow(initial)
+        override val online: Flow<Boolean> get() = state
+    }
+
+    private fun viewModel(
+        identity: IdentitySource,
+        connectivity: Connectivity = FakeConnectivity(),
+    ) = OperationDetailViewModel(source, identity, connectivity, "o1")
 
     @Test
     fun `the Operation loads`() =
@@ -262,5 +295,92 @@ class OperationDetailViewModelTest {
             advanceUntilIdle()
 
             assertEquals(2, identity.calls)
+        }
+
+    @Test
+    fun `the payout confirmation belongs to a mission manager alone`() =
+        runTest(dispatcher) {
+            source.queue(ApiResult.Success(overview()))
+            val model = viewModel(FixedIdentity(ApiResult.Success("u1")))
+            model.load()
+            advanceUntilIdle()
+
+            assertEquals(false, model.state.value.missionManager)
+
+            model.onTogglePaidOut(payout(id = "p1", name = "Rhea"))
+            advanceUntilIdle()
+
+            assertTrue(source.confirmations.isEmpty())
+        }
+
+    @Test
+    fun `a mission manager confirms a payout, and the Operation is re-read`() =
+        runTest(dispatcher) {
+            // The payout totals move with a confirmation, so a patched row under a stale total
+            // would be two numbers that disagree.
+            source.queue(ApiResult.Success(overview()))
+            val model =
+                viewModel(FixedIdentity(ApiResult.Success("u1"), missionManager = true))
+            model.load()
+            advanceUntilIdle()
+            val before = source.overviewCalls
+
+            model.onTogglePaidOut(payout(id = "p1", name = "Rhea"))
+            advanceUntilIdle()
+
+            assertEquals(listOf("p1" to true), source.confirmations)
+            assertEquals(before + 1, source.overviewCalls)
+        }
+
+    @Test
+    fun `a row without a participant key cannot be confirmed`() =
+        runTest(dispatcher) {
+            source.queue(ApiResult.Success(overview()))
+            val model =
+                viewModel(FixedIdentity(ApiResult.Success("u1"), missionManager = true))
+            model.load()
+            advanceUntilIdle()
+
+            model.onTogglePaidOut(payout(id = null, name = "Rhea"))
+            advanceUntilIdle()
+
+            assertTrue(source.confirmations.isEmpty())
+        }
+
+    @Test
+    fun `a refusal on the confirmation is kept rather than swallowed`() =
+        runTest(dispatcher) {
+            // Confirming needs the grant; taking one BACK needs an officer or admin on top, which
+            // the app cannot know. The refusal is named instead of predicted.
+            source.queue(ApiResult.Success(overview()))
+            source.confirmAnswer = ApiResult.Failure(ApiError.Forbidden())
+            val model =
+                viewModel(FixedIdentity(ApiResult.Success("u1"), missionManager = true))
+            model.load()
+            advanceUntilIdle()
+
+            model.onTogglePaidOut(payout(id = "p1", name = "Rhea", paid = true))
+            advanceUntilIdle()
+
+            assertEquals(listOf("p1" to false), source.confirmations)
+            assertTrue(model.state.value.error is ApiError.Forbidden)
+        }
+
+    @Test
+    fun `nothing is confirmed while the device has no network`() =
+        runTest(dispatcher) {
+            source.queue(ApiResult.Success(overview()))
+            val model =
+                viewModel(
+                    FixedIdentity(ApiResult.Success("u1"), missionManager = true),
+                    FakeConnectivity(initial = false),
+                )
+            model.load()
+            advanceUntilIdle()
+
+            model.onTogglePaidOut(payout(id = "p1", name = "Rhea"))
+            advanceUntilIdle()
+
+            assertTrue(source.confirmations.isEmpty())
         }
 }
