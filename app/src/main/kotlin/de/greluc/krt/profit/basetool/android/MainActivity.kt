@@ -250,7 +250,7 @@ class MainActivity : AppCompatActivity() {
                                 dashboard = dashboardViewModel,
                                 hangar = hangarViewModel,
                                 bank = bankViewModel,
-                                bankAccount = { BankAccountViewModel(container.bank, it) },
+                                bankAccount = { BankAccountViewModel(container.bank, container.connectivity, it) },
                                 orders = ordersViewModel,
                                 orderDetail = {
                                     OrderDetailViewModel(

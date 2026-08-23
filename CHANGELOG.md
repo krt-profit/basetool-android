@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Konten der Kartellbank lassen sich jetzt in der App einstellen.** Zielsaldo setzen und regeln, wer das Konto sieht — sichtbar nur für die Person, die für das Konto verantwortlich ist. Ein- und Auszahlungen bleiben der Weboberfläche vorbehalten (REQ-APP-BANK-006, REQ-APP-BANK-007).
+
 - **Einnahmen und Ausgaben eines Einsatzes lassen sich jetzt in der App buchen.** Betrag, Richtung und ein Wofür — änderbar und löschbar, solange es deine eigene Buchung ist. Buchen setzt voraus, dass du für den Einsatz angemeldet bist. Einsatzleiter können in der Operation außerdem Auszahlungen bestätigen (REQ-APP-MIS-017, REQ-APP-OPS-013).
 
 - **Für Einsätze kannst du dich jetzt in der App an- und abmelden.** Dazu Ein- und Auschecken, sobald der Einsatz läuft, und die Wahl zwischen Auszahlung und Spende. Dein eigener Eintrag ist in der Teilnehmerliste hervorgehoben. Die Einsatzplanung bleibt der Weboberfläche vorbehalten (REQ-APP-MIS-013…016).
