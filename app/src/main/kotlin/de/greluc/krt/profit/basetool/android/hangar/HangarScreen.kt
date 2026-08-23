@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.hangar
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -33,8 +35,10 @@ import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
@@ -52,6 +56,12 @@ const val HANGAR_SEARCH_TAG: String = "hangar-search"
 /** Test handle for the Meine Schiffe / Org-Einheit segment. */
 const val HANGAR_SEGMENT_TAG: String = "hangar-segment"
 
+/** Test handle for the add action. */
+const val HANGAR_ADD_TAG: String = "hangar-add"
+
+/** How faded a write action is while there is no network (design ch. 14). */
+private const val DISABLED_WRITE_ALPHA = 0.45f
+
 /**
  * The Hangar (design spec ch. 08 §1), read-only.
  *
@@ -60,14 +70,18 @@ const val HANGAR_SEGMENT_TAG: String = "hangar-segment"
  * adding up what is loaded would state a number the page cannot know. The per-type rows carry their
  * own counts, which are the server's.
  *
- * Adding, editing and importing ships are mutations and belong to Phase 3, so there is no FAB and
- * no overflow menu.
+ * **Only the member's own half is writable.** The org aggregate is a count per hull, not a list of
+ * ships, and the ships behind it belong to other members — so the create action and the row taps
+ * exist on `Meine Schiffe` and nowhere else. Importing stays in phase 4.
  *
  * @param state what to draw.
  * @param onSegmentSelected the segment was switched.
  * @param onSearchChanged a keystroke in the filter field.
  * @param onRefresh pull-to-refresh.
  * @param onLoadMore the load-more control was tapped.
+ * @param onCreate the add action was taken.
+ * @param onEdit a ship was tapped.
+ * @param onDelete a ship's delete action was taken.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,9 +92,23 @@ fun HangarScreen(
     onSearchChanged: (String) -> Unit,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
+    onCreate: () -> Unit,
+    onEdit: (Ship) -> Unit,
+    onDelete: (Ship) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        if (!state.online) {
+            Text(
+                text = stringResource(R.string.offline_writes_disabled),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            )
+        }
         KrtSegmentedControl(
             options =
                 listOf(
@@ -96,6 +124,25 @@ fun HangarScreen(
                     .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.md)
                     .testTag(HANGAR_SEGMENT_TAG),
         )
+        if (state.segment == HangarSegment.MINE) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.sm),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                KrtCtaButton(
+                    text = stringResource(R.string.hangar_add),
+                    onClick = onCreate,
+                    modifier =
+                        Modifier
+                            .testTag(HANGAR_ADD_TAG)
+                            .alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
+                    enabled = state.online,
+                )
+            }
+        }
         KrtTextField(
             // The typed value, not the debounced one (REQ-APP-MIS-004).
             value = state.searchText,
@@ -129,10 +176,31 @@ fun HangarScreen(
                     onRefresh = onRefresh,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    HangarBody(state = state, onLoadMore = onLoadMore)
+                    HangarBody(state = state, onLoadMore = onLoadMore, onEdit = onEdit, onDelete = onDelete)
                 }
             }
         }
+    }
+}
+
+/**
+ * The card's delete affordance.
+ *
+ * @param online whether writes are possible.
+ * @param onDelete asks to delete.
+ */
+@Composable
+private fun ShipCardActions(
+    online: Boolean,
+    onDelete: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+        KrtGhostButton(
+            text = stringResource(R.string.hangar_delete),
+            onClick = onDelete,
+            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            enabled = online,
+        )
     }
 }
 
@@ -141,11 +209,15 @@ fun HangarScreen(
  *
  * @param state what to draw.
  * @param onLoadMore the next page was asked for.
+ * @param onEdit a ship was tapped.
+ * @param onDelete a ship's delete action was taken.
  */
 @Composable
 private fun HangarBody(
     state: HangarState,
     onLoadMore: () -> Unit,
+    onEdit: (Ship) -> Unit,
+    onDelete: (Ship) -> Unit,
 ) {
     val empty =
         if (state.segment == HangarSegment.MINE) state.ships.isEmpty() else state.types.isEmpty()
@@ -155,7 +227,14 @@ private fun HangarBody(
     }
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(HANGAR_LIST_TAG)) {
         if (state.segment == HangarSegment.MINE) {
-            items(state.ships, key = { it.id }) { ship -> ShipCard(ship = ship) }
+            items(state.ships, key = { it.id }) { ship ->
+                ShipCard(
+                    ship = ship,
+                    online = state.online,
+                    onEdit = { onEdit(ship) },
+                    onDelete = { onDelete(ship) },
+                )
+            }
         } else {
             items(state.types, key = { it.typeName }) { type -> ShipTypeRow(type = type) }
         }
@@ -196,12 +275,27 @@ private fun HangarState.countLabel(): String =
  * The type is the headline because it is what identifies a ship at a glance; the member's own name
  * for it, when they gave one, sits beside it in quotes as the web app writes it.
  *
+ * The card opens the editor; deleting has its own action, because a mis-tap that edits is
+ * recoverable and a mis-tap that deletes is not.
+ *
  * @param ship the ship.
+ * @param online whether writes are possible.
+ * @param onEdit opens the editor.
+ * @param onDelete asks to delete.
  */
 @Composable
-private fun ShipCard(ship: Ship) {
+private fun ShipCard(
+    ship: Ship,
+    online: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = online, onClick = onEdit)
+                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
     ) {
         Text(
@@ -243,6 +337,7 @@ private fun ShipCard(ship: Ship) {
                 )
             }
         }
+        ShipCardActions(online = online, onDelete = onDelete)
     }
 }
 
@@ -337,6 +432,34 @@ fun HangarRoute(
         onSearchChanged = viewModel::onSearchChanged,
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,
+        onCreate = viewModel::onCreate,
+        onEdit = viewModel::onEdit,
+        onDelete = viewModel::onDeleteRequested,
         modifier = modifier,
     )
+
+    (state.editor as? ShipEditor.Open)?.let { editor ->
+        ShipEditorSheet(
+            editor = editor,
+            hulls = state.hulls,
+            places = state.places,
+            onName = viewModel::onShipNameChanged,
+            onHullQuery = viewModel::onHullQueryChanged,
+            onHull = viewModel::onHullChosen,
+            onLti = viewModel::onInsuranceLtiChanged,
+            onMonths = viewModel::onInsuranceMonthsChanged,
+            onPlace = viewModel::onPlaceChosen,
+            onFitted = viewModel::onFittedChanged,
+            onSave = viewModel::onSave,
+            onDismiss = viewModel::onEditorDismissed,
+        )
+    }
+    state.pendingDelete?.let { ship ->
+        ShipDeleteModal(
+            ship = ship,
+            deleting = state.deleting,
+            onConfirm = viewModel::onDeleteConfirmed,
+            onDismiss = viewModel::onDeleteDismissed,
+        )
+    }
 }

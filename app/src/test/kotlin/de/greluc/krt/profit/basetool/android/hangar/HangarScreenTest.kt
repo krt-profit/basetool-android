@@ -7,15 +7,21 @@
 
 package de.greluc.krt.profit.basetool.android.hangar
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.Ship
+import de.greluc.krt.profit.basetool.android.core.data.ShipTypeOption
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,7 +61,12 @@ class HangarScreenTest {
      *
      * @param state what to draw.
      */
-    private fun show(state: HangarState) {
+    private fun show(
+        state: HangarState,
+        created: MutableList<Unit> = mutableListOf(),
+        edited: MutableList<Ship> = mutableListOf(),
+        deleted: MutableList<Ship> = mutableListOf(),
+    ) {
         compose.setContent {
             KrtTheme {
                 HangarScreen(
@@ -64,6 +75,9 @@ class HangarScreenTest {
                     onSearchChanged = {},
                     onRefresh = {},
                     onLoadMore = {},
+                    onCreate = { created.add(Unit) },
+                    onEdit = { edited.add(it) },
+                    onDelete = { deleted.add(it) },
                 )
             }
         }
@@ -109,11 +123,14 @@ class HangarScreenTest {
     }
 
     @Test
-    fun `an empty own hangar says where ships are added`() {
+    fun `an empty own hangar invites the first ship`() {
+        // It used to send the member to the web app. That stopped being true the moment the app
+        // could add a ship itself, and an empty state that lies is worse than none.
         show(HangarState(phase = HangarPhase.Ready))
 
         compose.onNodeWithText("Kein Schiff im Hangar").assertIsDisplayed()
-        compose.onNodeWithText("Schiffe hinzufügen geht derzeit über die Weboberfläche.").assertIsDisplayed()
+        compose.onNodeWithText("Leg dein erstes Schiff an — Typ, Versicherung und wo es steht.")
+            .assertIsDisplayed()
     }
 
     @Test
@@ -152,5 +169,119 @@ class HangarScreenTest {
 
         /** How many of them are fitted. */
         const val FITTED = 2L
+    }
+
+    @Test
+    fun `the add action is offered on the member's own half`() {
+        show(HangarState(segment = HangarSegment.MINE, phase = HangarPhase.Ready))
+
+        compose.onNodeWithTag(HANGAR_ADD_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the add action is absent on the org aggregate`() {
+        // It is a count per hull, and the ships behind it belong to other members. One setContent
+        // per test: the rule refuses a second.
+        show(HangarState(segment = HangarSegment.ORG, phase = HangarPhase.Ready))
+
+        compose.onAllNodesWithTag(HANGAR_ADD_TAG).assertCountEquals(0)
+    }
+
+    @Test
+    fun `offline, the write actions are shown and disabled`() {
+        show(
+            HangarState(
+                segment = HangarSegment.MINE,
+                ships = listOf(ship("s1")),
+                phase = HangarPhase.Ready,
+                online = false,
+            ),
+        )
+
+        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+            .assertIsDisplayed()
+        compose.onNodeWithTag(HANGAR_ADD_TAG).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `tapping a ship opens it`() {
+        val edited = mutableListOf<Ship>()
+        show(
+            HangarState(
+                segment = HangarSegment.MINE,
+                ships = listOf(ship("s1")),
+                phase = HangarPhase.Ready,
+            ),
+            edited = edited,
+        )
+
+        compose.onNodeWithText("Carrack „Meridian\"").performClick()
+
+        assertEquals("s1", edited.single().id)
+    }
+
+    @Test
+    fun `an insurance the server would refuse cannot be saved`() {
+        // LTI or 0..120 months, nothing else. The editor offers exactly those two shapes.
+        compose.setContent {
+            KrtTheme {
+                ShipEditorSheet(
+                    editor =
+                        ShipEditor.Open(
+                            hull = ShipTypeOption("t1", "Carrack", "Anvil Aerospace"),
+                            insuranceLti = false,
+                            insuranceMonths = "121",
+                        ),
+                    hulls = emptyList(),
+                    places = emptyList(),
+                    onName = {},
+                    onHullQuery = {},
+                    onHull = {},
+                    onLti = {},
+                    onMonths = {},
+                    onPlace = {},
+                    onFitted = {},
+                    onSave = {},
+                    onDismiss = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag(SHIP_SAVE_TAG).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the editor cannot be saved without a hull`() {
+        compose.setContent {
+            KrtTheme {
+                ShipEditorSheet(
+                    editor = ShipEditor.Open(),
+                    hulls = emptyList(),
+                    places = emptyList(),
+                    onName = {},
+                    onHullQuery = {},
+                    onHull = {},
+                    onLti = {},
+                    onMonths = {},
+                    onPlace = {},
+                    onFitted = {},
+                    onSave = {},
+                    onDismiss = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag(SHIP_SAVE_TAG).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the delete confirmation names the ship`() {
+        compose.setContent {
+            KrtTheme {
+                ShipDeleteModal(ship = ship("s1"), deleting = false, onConfirm = {}, onDismiss = {})
+            }
+        }
+
+        compose.onNodeWithText("„Meridian“ wird aus deinem Hangar gelöscht.").assertIsDisplayed()
     }
 }
