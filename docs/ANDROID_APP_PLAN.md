@@ -342,6 +342,14 @@ remaining scope is exactly the three items above.
 **Editor presence stays web-only, permanently.** It is the one part of the web socket that carries
 cross-user identity data, and the app has no place to show it.
 
+**Where the phase stands.** The bridge shipped in both repos; the four remaining slices are tracked
+so none of them lives only in a plan paragraph: Materialboerse (#64), Raffinerie (#65),
+Befoerderung (#66) and system states (#67). Two of them carry a dependency worth naming here rather
+than only in the issue -- the forced-update gate needs a **new backend contract** (nothing today
+lets the server state a minimum app version), and the notification channels are blocked on
+krt-profit/basetool#1653, an SSE delivery fault found while device-verifying the bridge that
+reproduces on the shipped notification stream and may mean the push channel is dead in production.
+
 **Phase 5 — hardening & first release**
 Certificate pinning rollout (**CA-pin evaluated first**, else leaf backup-pin + expiration;
 documented rotation runbook — security doc §5) · MASVS-based security review + red-team pass per
