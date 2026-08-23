@@ -27,13 +27,20 @@ import de.greluc.krt.profit.basetool.android.core.auth.SecretCipher
 import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
+import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
+import de.greluc.krt.profit.basetool.android.core.data.BankRepository
+import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
+import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
+import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
+import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.UUID
 
@@ -150,6 +157,11 @@ class AuthContainer(
             // Read synchronously off an OkHttp dispatcher thread, which is why the store
             // mirrors its value in memory rather than being asked to suspend here.
             activeOrgUnitProvider = { activeOrgUnit.current() },
+            // Both run on an OkHttp thread that is about to wait on a socket anyway, and both go
+            // to the token client, which carries none of these interceptors and therefore cannot
+            // re-enter this. Without them the app dies at the realm's access-token lifespan.
+            refreshIfSpent = { runBlocking { session.refreshIfNeeded() } },
+            refreshAfterRejection = { refused -> runBlocking { session.refreshFor(refused) } },
         )
     }
 
@@ -187,16 +199,11 @@ class AuthContainer(
      * The Einsatz list.
      *
      * Shares [apiClient] with the gates and the switcher, so the org pin the switcher writes is
-     * already on every request this makes. Takes [serverClock] because "hide past Einsätze" is a
-     * lower bound on time, and a phone whose clock runs fast would otherwise hide the one that is
-     * about to start.
+     * already on every request this makes. No clock of its own: "Vergangene aus" is a status
+     * filter, and the dashboard's seven-day window brings its own bounds.
      */
     val missions: MissionRepository by lazy {
-        MissionRepository(
-            httpClient = apiClient,
-            baseUrl = BuildConfig.API_BASE_URL,
-            clock = serverClock,
-        )
+        MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**
@@ -218,6 +225,68 @@ class AuthContainer(
      */
     val identity: IdentityRepository by lazy {
         IdentityRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The notification inbox, its unread count and its push stream.
+     *
+     * Shares [apiClient] like everything else, which matters more here than elsewhere: the stream
+     * derives its own client from it, so the bearer token, the mandatory headers and the connection
+     * pool follow the long-lived SSE connection without a second configuration to keep in sync.
+     */
+    val notifications: NotificationRepository by lazy {
+        NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The org-wide announcement on the dashboard.
+     *
+     * Its own repository rather than a field on the mission one: the two are unrelated reads behind
+     * unrelated permissions, and the dashboard is built so that one failing does not blank the
+     * other.
+     */
+    val announcements: AnnouncementRepository by lazy {
+        AnnouncementRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The member's hangar and their org unit's ship aggregate.
+     *
+     * Which org unit the aggregate covers follows from the `X-Active-Org-Unit-Id` header the
+     * interceptor already sets, so nothing about scope is configured here.
+     */
+    val hangar: HangarRepository by lazy {
+        HangarRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The org bank a member may see.
+     *
+     * The member-facing paths only; the bank-employee surface that lists every account in the
+     * organisation is not reachable from this app.
+     */
+    val bank: BankRepository by lazy {
+        BankRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Auftrag queue and one order.
+     *
+     * The org scope is never sent from the client: which orders a member sees follows from their
+     * memberships and the active-org-unit header this client already carries.
+     */
+    val orders: JobOrderRepository by lazy {
+        JobOrderRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Lager tree.
+     *
+     * Which org unit's Lager it is follows from the active-org-unit header this client already
+     * carries, so nothing about scope is configured here.
+     */
+    val inventory: InventoryRepository by lazy {
+        InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

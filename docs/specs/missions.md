@@ -41,20 +41,32 @@ a rule that already exists server-side.
 
 ---
 
-### REQ-APP-MIS-002 — "Vergangene aus" is a bound on the server's clock
+### REQ-APP-MIS-002 — "Vergangene aus" is a status filter, not a time bound
 
-Hiding past Einsätze is expressed as a `start` lower bound of **now as the server sees it**
-(`ServerClock`), not as the device's `Instant.now()`.
+Hiding past Einsätze is expressed as `status=PLANNED&status=ACTIVE`. With the toggle on, no status
+is sent and the server answers with everything the caller may see. A status the member ticked wins
+over the toggle entirely.
 
-A phone running a few minutes fast would otherwise hide an Einsatz that is about to start — the one
-a member most needs to see, at exactly the moment they are looking for it. An explicit date range
-wins over the toggle, because the member asked for it by name.
+**Amended 2026-08-22 (owner decision), after a device walk-through.** It was a `start` lower bound
+of now on the server's clock — which also hides every **running** Einsatz, because a running one
+gathered in the past by definition. That is the row a member most needs, the design's own
+`seit 15:57` wording for it could then never appear, and the web app never behaved that way: its
+`showPast` flips the same two statuses. The clock argument the old wording rested on (a phone
+running fast hiding an Einsatz about to start) disappears with the bound.
+
+A ticked status wins because subtracting the finished ones from an explicit "show me the finished
+ones" answers with an empty list. An explicit date range is still sent as it is: the member asked
+for it by name.
 
 **Acceptance**
 
-- [x] With the toggle off, a `start` bound is sent and is not earlier than the moment of the call.
-- [x] With the toggle on, no `start` bound is sent at all.
-- [x] An explicit `from` overrides the toggle (`MissionRepositoryTest`).
+- [x] With the toggle off, `status=PLANNED&status=ACTIVE` is sent and no `start` bound is.
+- [x] With the toggle on, neither a status nor a `start` bound is sent.
+- [x] A ticked status is sent instead of the toggle's pair (`MissionRepositoryTest`).
+- [x] An explicit `from` is sent unchanged (`MissionRepositoryTest`).
+- [x] **Observed on a device (2026-08-22):** with the toggle in its default position, a running
+  Einsatz whose gathering time had passed was absent from the list before the change and present
+  after it.
 
 ---
 

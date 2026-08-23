@@ -229,6 +229,7 @@
     <string name="operation_detail_rollup">Finanz-Rollup</string>
     <string name="operation_detail_rollup_net">Netto</string>
     <string name="operation_detail_rollup_donations">Spenden an die Org-Kasse</string>
+    <string name="operation_detail_rollup_share_range">%1$s – %2$s</string>
     <plurals name="operation_detail_rollup_share">
         <item quantity="one">Anteil (%1$d)</item>
         <item quantity="other">Anteil (%1$d)</item>
@@ -248,4 +249,166 @@
     <string name="operation_detail_error_missing_message">Diese Operation gibt es nicht mehr.</string>
     <string name="operation_detail_error_title">System Malfunction</string>
     <string name="operation_detail_error_message">Die Operation konnte nicht geladen werden.</string>
+    <!-- Benachrichtigungen (design chapter 07) -->
+    <string name="notifications_title">Benachrichtigungen</string>
+    <plurals name="notifications_unread">
+        <item quantity="one">%1$d neu</item>
+        <item quantity="other">%1$d neu</item>
+    </plurals>
+    <string name="notifications_empty_title">Keine Benachrichtigungen</string>
+    <string name="notifications_empty_message">Neue Ereignisse aus Einsätzen, Aufträgen und Bank erscheinen hier.</string>
+    <string name="notifications_error_title">Signal Lost</string>
+    <string name="notifications_error_message">Die Benachrichtigungen konnten nicht geladen werden.</string>
+    <plurals name="notifications_showing">
+        <item quantity="one">Zeige die neueste %1$d von %2$d Benachrichtigung</item>
+        <item quantity="other">Zeige die neuesten %1$d von %2$d Benachrichtigungen</item>
+    </plurals>
+    <string name="notifications_end_of_list">Ende der Liste</string>
+    <string name="notifications_unread_marker">Ungelesen</string>
+    <!-- One per server-side notification type; mirrors the web app's notifications.type.* keys.
+         Placeholders are NAMED because the two bundles order the values differently. -->
+    <string name="notifications_type_generic">Neue Benachrichtigung</string>
+    <string name="notifications_type_job_order_created">Neuer Auftrag #{displayId} für {orgUnit}</string>
+    <string name="notifications_type_job_order_updated">Auftrag #{displayId} für {orgUnit} vom Auftraggeber {requester} geändert</string>
+    <string name="notifications_type_bank_request_created">Neuer Ein-/Auszahlungsantrag: {accountNo} über {amount} aUEC von {requester}</string>
+    <string name="notifications_type_bank_request_confirmed">Dein Buchungsantrag {accountNo} über {amount} aUEC wurde bestätigt</string>
+    <string name="notifications_type_bank_request_rejected">Dein Buchungsantrag {accountNo} über {amount} aUEC wurde abgelehnt: {reason}</string>
+    <string name="notifications_type_bank_responsible_confirmed">Antrag auf deinem Konto {accountNo} über {amount} aUEC wurde bestätigt</string>
+    <string name="notifications_type_bank_responsible_rejected">Antrag auf deinem Konto {accountNo} über {amount} aUEC wurde abgelehnt: {reason}</string>
+    <string name="notifications_type_registration_pending">Neue Registrierung wartet auf Freigabe: {username}</string>
+    <string name="notifications_type_exchange_interest">{interessent} hat Interesse an deinem Angebot für {material} angemeldet</string>
+    <string name="notifications_type_exchange_fulfilment">{lieferant} kann dein Gesuch für {material} erfüllen</string>
+    <!-- Dashboard (design chapter 05) -->
+    <string name="dashboard_greeting">Willkommen, %1$s</string>
+    <string name="dashboard_greeting_anonymous">Willkommen</string>
+    <string name="dashboard_context">%1$s · %2$s</string>
+    <string name="dashboard_announcement">Information</string>
+    <string name="dashboard_announcement_expand">Ganze Information anzeigen</string>
+    <string name="dashboard_announcement_collapse">Information einklappen</string>
+    <string name="dashboard_missions">Einsätze der nächsten 7 Tage</string>
+    <string name="dashboard_missions_empty">In den nächsten 7 Tagen ist nichts geplant.</string>
+    <string name="dashboard_missions_failed">Die Einsätze konnten nicht geladen werden.</string>
+    <string name="dashboard_missions_all">Alle Einsätze</string>
+    <string name="dashboard_notifications">Ungelesen</string>
+    <string name="dashboard_notifications_all">Alle ansehen</string>
+    <string name="dashboard_notifications_empty">Nichts Ungelesenes.</string>
+    <!-- Hangar (design chapter 08) -->
+    <string name="hangar_title">Hangar</string>
+    <string name="hangar_segment_mine">Meine Schiffe</string>
+    <string name="hangar_segment_org">Org-Einheit</string>
+    <string name="hangar_search_placeholder">Nach Schiffstyp filtern</string>
+    <string name="hangar_fitted">Fitted</string>
+    <string name="hangar_not_fitted">Nicht fitted</string>
+    <string name="hangar_no_insurance">Keine Versicherung</string>
+    <plurals name="hangar_ship_count">
+        <item quantity="one">%1$d von %2$d Schiff</item>
+        <item quantity="other">%1$d von %2$d Schiffen</item>
+    </plurals>
+    <plurals name="hangar_type_count">
+        <item quantity="one">%1$d von %2$d Schiffstyp</item>
+        <item quantity="other">%1$d von %2$d Schiffstypen</item>
+    </plurals>
+    <plurals name="hangar_type_row">
+        <item quantity="one">%1$d Schiff · %2$d fitted</item>
+        <item quantity="other">%1$d Schiffe · %2$d fitted</item>
+    </plurals>
+    <string name="hangar_end_of_list">Ende der Liste</string>
+    <string name="hangar_empty_mine_title">Kein Schiff im Hangar</string>
+    <string name="hangar_empty_mine_message">Schiffe hinzufügen geht derzeit über die Weboberfläche.</string>
+    <string name="hangar_empty_org_title">Keine Schiffe</string>
+    <string name="hangar_empty_org_message">Für diese Org-Einheit ist kein Schiff erfasst.</string>
+    <string name="hangar_empty_filtered_title">Nichts gefunden</string>
+    <string name="hangar_empty_filtered_message">Kein Schiffstyp passt zu diesem Filter.</string>
+    <string name="hangar_error_title">Signal Lost</string>
+    <string name="hangar_error_message">Der Hangar konnte nicht geladen werden.</string>
+    <!-- Bank (design chapter 12) -->
+    <string name="bank_title">Bank</string>
+    <string name="bank_accounts_empty_title">Keine Konten</string>
+    <string name="bank_accounts_empty_message">Für dich ist kein Konto der Org-Einheit sichtbar.</string>
+    <string name="bank_error_title">Signal Lost</string>
+    <string name="bank_error_message">Die Bank konnte nicht geladen werden.</string>
+    <string name="bank_delta_30d">%1$s · 30 Tage</string>
+    <string name="bank_balance">Kontostand</string>
+    <string name="bank_transactions">Transaktionen</string>
+    <string name="bank_transactions_empty">Noch keine Buchungen.</string>
+    <plurals name="bank_transactions_count">
+        <item quantity="one">%1$d von %2$d Buchung</item>
+        <item quantity="other">%1$d von %2$d Buchungen</item>
+    </plurals>
+    <string name="bank_transactions_end">Ende des Verlaufs</string>
+    <string name="bank_account_error_forbidden_title">Access Denied</string>
+    <string name="bank_account_error_forbidden_message">Dieses Konto ist für dich nicht einsehbar.</string>
+    <string name="bank_account_error_missing_title">Signal Lost</string>
+    <string name="bank_account_error_missing_message">Dieses Konto gibt es nicht mehr.</string>
+    <string name="bank_account_error_title">System Malfunction</string>
+    <string name="bank_account_error_message">Das Konto konnte nicht geladen werden.</string>
+    <string name="bank_type_deposit">Einzahlung</string>
+    <string name="bank_type_withdrawal">Auszahlung</string>
+    <string name="bank_type_transfer">Übertrag</string>
+    <string name="bank_type_holder_transfer">Verwahrerwechsel</string>
+    <string name="bank_type_reversal">Storno</string>
+    <string name="bank_type_wipe_reset">Wipe-Zurücksetzung</string>
+    <string name="bank_sparkline_description">Verlauf des Kontostands über 30 Tage</string>
+    <!-- Aufträge (design chapter 10) -->
+    <string name="orders_title">Aufträge</string>
+    <string name="orders_status_open">Offen</string>
+    <string name="orders_status_in_progress">In Bearbeitung</string>
+    <string name="orders_status_rejected">Abgelehnt</string>
+    <string name="orders_status_completed">Abgeschlossen</string>
+    <string name="orders_number">#%1$s</string>
+    <string name="orders_priority">Prio %1$d</string>
+    <string name="orders_for">Für %1$s</string>
+    <string name="orders_by">Durch %1$s</string>
+    <plurals name="orders_material_count">
+        <item quantity="one">%1$d Material</item>
+        <item quantity="other">%1$d Materialien</item>
+    </plurals>
+    <string name="orders_material_progress">%1$s / %2$s</string>
+    <string name="orders_redacted">Teile dieses Auftrags sind für dich ausgeblendet.</string>
+    <plurals name="orders_count">
+        <item quantity="one">%1$d von %2$d Auftrag</item>
+        <item quantity="other">%1$d von %2$d Aufträgen</item>
+    </plurals>
+    <string name="orders_end_of_list">Ende der Liste</string>
+    <string name="orders_empty_title">Keine Aufträge</string>
+    <string name="orders_empty_message">Für diese Auswahl gibt es keinen Auftrag.</string>
+    <string name="orders_error_title">Signal Lost</string>
+    <string name="orders_error_message">Die Aufträge konnten nicht geladen werden.</string>
+    <string name="order_detail_title">Auftrag</string>
+    <string name="order_detail_comment">Anmerkung</string>
+    <string name="order_detail_materials">Material</string>
+    <string name="order_detail_materials_empty">Für diesen Auftrag ist kein Material erfasst.</string>
+    <string name="order_detail_handovers">Übergaben</string>
+    <string name="order_detail_handovers_empty">Noch keine Übergabe erfasst.</string>
+    <string name="order_detail_handover_row">%1$s · %2$s</string>
+    <string name="order_detail_assignees">Zuständig</string>
+    <string name="order_detail_assignees_empty">Noch niemand zuständig.</string>
+    <string name="order_detail_error_forbidden_title">Access Denied</string>
+    <string name="order_detail_error_forbidden_message">Dieser Auftrag ist für dich nicht einsehbar.</string>
+    <string name="order_detail_error_missing_title">Signal Lost</string>
+    <string name="order_detail_error_missing_message">Diesen Auftrag gibt es nicht mehr.</string>
+    <string name="order_detail_error_title">System Malfunction</string>
+    <string name="order_detail_error_message">Der Auftrag konnte nicht geladen werden.</string>
+    <!-- Lager (design chapter 09) -->
+    <string name="inventory_title">Lager</string>
+    <string name="inventory_with_stock_only">Nur mit Bestand</string>
+    <string name="inventory_quality">Q %1$s</string>
+    <string name="inventory_personal">Persönlich</string>
+    <plurals name="inventory_entry_count">
+        <item quantity="one">%1$d Eintrag</item>
+        <item quantity="other">%1$d Einträge</item>
+    </plurals>
+    <plurals name="inventory_group_count">
+        <item quantity="one">%1$d von %2$d Material</item>
+        <item quantity="other">%1$d von %2$d Materialien</item>
+    </plurals>
+    <string name="inventory_end_of_list">Ende der Liste</string>
+    <string name="inventory_stacks_empty">In dieser Gruppe liegt nichts mehr.</string>
+    <string name="inventory_stacks_failed">Die Bestände dieser Gruppe konnten nicht geladen werden.</string>
+    <string name="inventory_empty_title">Leeres Lager</string>
+    <string name="inventory_empty_message">Für diese Org-Einheit ist kein Bestand erfasst.</string>
+    <string name="inventory_empty_filtered_title">Nichts mit Bestand</string>
+    <string name="inventory_empty_filtered_message">Auf dieser Seite hat kein Material einen Bestand.</string>
+    <string name="inventory_error_title">Signal Lost</string>
+    <string name="inventory_error_message">Das Lager konnte nicht geladen werden.</string>
 </resources>

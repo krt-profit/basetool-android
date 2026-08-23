@@ -27,11 +27,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
@@ -40,10 +44,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavi
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
+import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -77,6 +87,14 @@ private fun isExpandedWindow(): Boolean =
  * @param missionDetail builds a view model for one Einsatz.
  * @param operations drives the Operationen list.
  * @param operationDetail builds a view model for one Operation.
+ * @param notifications drives the inbox and the bell badge.
+ * @param dashboard drives the Übersicht.
+ * @param hangar drives the Hangar.
+ * @param bank drives the Konten list.
+ * @param bankAccount builds a view model for one account.
+ * @param orders drives the Auftrag queue.
+ * @param orderDetail builds a view model for one order.
+ * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
  * @param modifier layout modifier.
@@ -90,6 +108,14 @@ fun BasetoolApp(
     missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
     operationDetail: (String) -> OperationDetailViewModel,
+    notifications: NotificationsViewModel,
+    dashboard: DashboardViewModel,
+    hangar: HangarViewModel,
+    bank: BankViewModel,
+    bankAccount: (String) -> BankAccountViewModel,
+    orders: OrdersViewModel,
+    orderDetail: (String) -> OrderDetailViewModel,
+    inventory: InventoryViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -102,8 +128,18 @@ fun BasetoolApp(
     val expanded = isExpandedWindow()
     var orgSwitcherOpen by rememberSaveable { mutableStateOf(false) }
 
-    // TODO(feature:notifications): the unread count comes from the backend with the inbox.
-    val unreadCount = 3
+    // The badge and the inbox read one state, so they cannot disagree — a member seeing "3 neu"
+    // over a list whose top rows are already read has been told something false by the app itself.
+    val notificationState by notifications.state.collectAsStateWithLifecycle()
+    val unreadCount = notificationState.unread.toInt()
+
+    // The push stream and the poll behind the badge run only while the app is in the foreground.
+    // Holding a socket open for a screen nobody is looking at spends the member's battery to learn
+    // something they cannot see.
+    LifecycleResumeEffect(notifications) {
+        notifications.onForeground()
+        onPauseOrDispose { notifications.onBackground() }
+    }
 
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
     val selectedRoute = selectedTopLevelRoute(root, destinations)
@@ -123,7 +159,12 @@ fun BasetoolApp(
                 route = destination.route,
                 label = stringResource(destination.titleRes),
                 iconRes = destination.iconRes,
-                badgeCount = if (destination == KrtDestination.Missions) 2 else null,
+                // No badge on any navigation entry. The Einsätze one carried a hardcoded 2 from
+                // the shell — a permanent claim that two of something were waiting, which no
+                // endpoint backs and which a device run found still on screen. The one real count
+                // in the app is the unread one, and it lives on the bell in the top bar; nothing in
+                // the API offers a "pending Einsätze" figure for this one to show instead.
+                badgeCount = null,
             )
         }
 
@@ -180,6 +221,16 @@ fun BasetoolApp(
                     missionDetail = missionDetail,
                     operations = operations,
                     operationDetail = operationDetail,
+                    notifications = notifications,
+                    dashboard = dashboard,
+                    hangar = hangar,
+                    bank = bank,
+                    bankAccount = bankAccount,
+                    orders = orders,
+                    orderDetail = orderDetail,
+                    inventory = inventory,
+                    memberName = settings.accountName,
+                    orgUnitName = orgUnit.active?.name,
                 )
             }
             if (!expanded) {

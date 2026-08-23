@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
@@ -138,7 +139,12 @@ fun MissionsScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.missions.isEmpty()) {
-                        MissionsEmpty(narrowed = state.isNarrowed, onResetFilters = onResetFilters)
+                        KrtRefreshableFill {
+                            MissionsEmpty(
+                                narrowed = state.isNarrowed,
+                                onResetFilters = onResetFilters,
+                            )
+                        }
                     } else {
                         MissionsList(
                             state = state,
@@ -308,7 +314,7 @@ private fun MissionRow(
                 color = KrtPalette.White,
                 modifier = Modifier.weight(1f),
             )
-            KrtStatusBadge(text = mission.statusLabel(), tone = mission.statusTone())
+            KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -352,7 +358,7 @@ private fun MissionsEmpty(
             ),
         actionText = if (narrowed) stringResource(R.string.missions_filter_reset) else null,
         onAction = if (narrowed) onResetFilters else null,
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.lg),
     )
 }
 
@@ -391,7 +397,7 @@ private fun MissionStatus.labelRes(): Int =
  *   untranslated word beats a missing badge, which would read as "no status".
  */
 @Composable
-private fun Mission.statusLabel(): String =
+internal fun Mission.missionStatusLabel(): String =
     if (status == MissionStatus.UNKNOWN) {
         rawStatus.orEmpty()
     } else {
@@ -404,7 +410,7 @@ private fun Mission.statusLabel(): String =
  * @return the design system's tone for the status; an unknown one is drawn as planned rather than
  *   as a problem, because "this build is older than the server" is not the member's fault.
  */
-private fun Mission.statusTone(): KrtStatusTone =
+internal fun Mission.missionStatusTone(): KrtStatusTone =
     when (status) {
         MissionStatus.PLANNED, MissionStatus.UNKNOWN -> KrtStatusTone.Planned
         MissionStatus.ACTIVE -> KrtStatusTone.Active

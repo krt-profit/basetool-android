@@ -29,6 +29,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.OperationDetail
 import de.greluc.krt.profit.basetool.android.core.data.OperationMissionResult
 import de.greluc.krt.profit.basetool.android.core.data.OperationOverview
@@ -321,10 +322,10 @@ private fun RollupBlock(overview: OperationOverview) {
             label = stringResource(R.string.operation_detail_rollup_donations),
             value = formatAmount(overview.payouts.totalDonations.orEmpty()),
         )
-        // The share is the server's own per-row figure, not the net divided by the head count:
-        // the split is weighted by how long each member actually took part, and dividing here
-        // would print a number the payout list contradicts row by row.
-        overview.payouts.rows.firstOrNull()?.let { first ->
+        // The server's own per-row figures, not the net divided by the head count: the split is
+        // weighted by how long each member actually took part. When the rows disagree the two ends
+        // are named, because one number would be contradicted by the payout list below it.
+        overview.payouts.shareRange?.let { (lowest, highest) ->
             KrtKeyValueRow(
                 label =
                     pluralStringResource(
@@ -332,7 +333,16 @@ private fun RollupBlock(overview: OperationOverview) {
                         overview.payouts.participants,
                         overview.payouts.participants,
                     ),
-                value = formatAmount(first.share.orEmpty()),
+                value =
+                    if (lowest == highest) {
+                        formatAmount(lowest)
+                    } else {
+                        stringResource(
+                            R.string.operation_detail_rollup_share_range,
+                            formatAmount(lowest),
+                            formatAmount(highest),
+                        )
+                    },
             )
         }
     }

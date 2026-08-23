@@ -80,7 +80,17 @@ data class OperationPayout(
     val donated: String?,
     val payout: String?,
     val paidOut: Boolean,
-)
+) {
+    /**
+     * What attendance earned this participant, before they decided where it goes.
+     *
+     * The server sets `shareAmount` to zero for a donating participant by construction and moves
+     * the same figure to `donatedAmount`, so `share` alone answers "what is transferred to them",
+     * not "what did they earn". Reading it as the latter prints a nought against a member who
+     * earned as much as everyone else.
+     */
+    val earnedShare: String? get() = if (donating) donated else share
+}
 
 /**
  * The Auszahlungen tab.
@@ -102,4 +112,24 @@ data class OperationPayouts(
      * counts would count them twice.
      */
     val participants: Int get() = rows.size
+
+    /**
+     * The smallest and the largest share earned, as the server wrote them.
+     *
+     * The Operation's pool is split by how long each member took part, so one "Anteil je
+     * Teilnehmer" figure is only true when attendance was equal; where it is not, the two ends are
+     * what can honestly be stated. Both are equal when everybody earned the same, which is the
+     * ordinary case and the one the design mock shows.
+     *
+     * `null` when there are no participants, or when any one of them has no share figure at all —
+     * a range computed from a subset would understate the spread without saying so.
+     */
+    val shareRange: Pair<String, String>?
+        get() {
+            val amounts = rows.mapNotNull { it.earnedShare?.toBigDecimalOrNull() }
+            if (amounts.isEmpty() || amounts.size != rows.size) {
+                return null
+            }
+            return amounts.min().toPlainString() to amounts.max().toPlainString()
+        }
 }

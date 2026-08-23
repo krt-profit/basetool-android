@@ -223,6 +223,55 @@ class OperationsScreenTest {
     }
 
     @Test
+    fun `the roll-up share is what a donating member earned, not the nought they receive`() {
+        // The server zeroes shareAmount for a donating participant and moves the figure to
+        // donatedAmount. Reading the first row's share printed "0" against members who had earned
+        // as much as everyone else — found on a device, on an Operation whose first row donates.
+        showDetail(
+            OperationDetailState(
+                operationId = "o1",
+                overview =
+                    overview(
+                        payouts =
+                            listOf(
+                                payoutRow("p1", "Dorn", donating = true, share = "0.0000", donated = "4150.0000"),
+                                payoutRow("p2", "Vex"),
+                            ),
+                    ),
+                phase = OperationDetailPhase.Ready,
+            ),
+        )
+
+        // The label is uppercased by the key-value row. Two nodes read 4.150: the donations total
+        // and the share — reading the donor's zeroed shareAmount would leave only the first.
+        compose.onNodeWithText("ANTEIL (2)").assertIsDisplayed()
+        compose.onAllNodesWithText("4.150").assertCountEquals(2)
+    }
+
+    @Test
+    fun `unequal shares are stated as the range they span`() {
+        // The pool is split by how long each member took part, so one figure is only true when
+        // attendance was equal. Naming both ends says what a single number could not.
+        showDetail(
+            OperationDetailState(
+                operationId = "o1",
+                overview =
+                    overview(
+                        payouts =
+                            listOf(
+                                payoutRow("p1", "Dorn", share = "4150.0000"),
+                                payoutRow("p2", "Vex", share = "2075.0000"),
+                            ),
+                    ),
+                phase = OperationDetailPhase.Ready,
+            ),
+        )
+
+        compose.onNodeWithText("ANTEIL (2)").assertIsDisplayed()
+        compose.onNodeWithText("2.075 – 4.150").assertIsDisplayed()
+    }
+
+    @Test
     fun `a truncated roll-up says so`() {
         // ADR-0104 in the main repo: a capped list may never look complete.
         showDetail(
@@ -347,12 +396,15 @@ class OperationsScreenTest {
     private fun payoutRow(
         id: String,
         name: String,
+        donating: Boolean = false,
+        share: String? = "4150.0000",
+        donated: String? = null,
     ) = OperationPayout(
         participantId = id,
         participantName = name,
-        donating = false,
-        share = "4150.0000",
-        donated = null,
+        donating = donating,
+        share = share,
+        donated = donated,
         payout = "4129.2500",
         paidOut = false,
     )

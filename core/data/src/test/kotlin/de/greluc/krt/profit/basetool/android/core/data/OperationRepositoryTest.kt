@@ -294,4 +294,57 @@ class OperationRepositoryTest {
             assertNull(overview.payouts.totalDonations)
             assertEquals(0, overview.payouts.participants)
         }
+
+    @Test
+    fun `a donating participant's earned share is the amount they gave away`() {
+        val donor =
+            OperationPayout(
+                participantId = "p1",
+                participantName = "Dorn",
+                donating = true,
+                share = "0.00",
+                donated = "4150.00",
+                payout = "0.00",
+                paidOut = false,
+            )
+
+        assertEquals("4150.00", donor.earnedShare)
+    }
+
+    @Test
+    fun `the share range spans the smallest and the largest earned`() {
+        val equal =
+            OperationPayouts(
+                totalDonations = "4150.00",
+                rows =
+                    listOf(
+                        OperationPayout("p1", "Dorn", true, "0.00", "4150.00", "0.00", false),
+                        OperationPayout("p2", "Vex", false, "4150.00", null, "4129.25", false),
+                    ),
+            )
+        val unequal =
+            OperationPayouts(
+                totalDonations = null,
+                rows =
+                    listOf(
+                        OperationPayout("p1", "Dorn", false, "4150.00", null, "4129.25", false),
+                        OperationPayout("p2", "Vex", false, "2075.00", null, "2064.63", false),
+                    ),
+            )
+
+        assertEquals("4150.00" to "4150.00", equal.shareRange)
+        assertEquals("2075.00" to "4150.00", unequal.shareRange)
+        assertNull(OperationPayouts(totalDonations = null, rows = emptyList()).shareRange)
+        assertNull(
+            "a range from a subset would understate the spread without saying so",
+            OperationPayouts(
+                totalDonations = null,
+                rows =
+                    listOf(
+                        OperationPayout("p1", "Dorn", false, "4150.00", null, "4129.25", false),
+                        OperationPayout("p2", "Vex", false, null, null, null, false),
+                    ),
+            ).shareRange,
+        )
+    }
 }

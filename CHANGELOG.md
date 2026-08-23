@@ -2,7 +2,37 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Die Sitzung hält jetzt länger als eine Stunde.** Bisher lief die Anmeldung nach Ablauf des Zugriffs-Tokens aus, und danach meldete jeder Bildschirm „Signal Lost" — nur ein Neustart der App half. Das Token wird jetzt vor Ablauf und nach einer Ablehnung durch den Server erneuert (REQ-APP-AUTH-012).
+
+- **Ziehen zum Aktualisieren funktioniert jetzt auch auf leeren Listen.** Genau dort, wo man es braucht — leere Auftragsliste, noch kein Konto sichtbar — passierte beim Ziehen bisher nichts (REQ-APP-UI-001).
+
+- **Ein laufender Einsatz verschwand aus der Liste.** „Vergangene aus" hat nach Startzeit gefiltert und damit auch jeden Einsatz ausgeblendet, der gerade läuft. Es filtert jetzt nach Status, wie die Weboberfläche (REQ-APP-MIS-002).
+
+- **Der Posteingang ließ die App abstürzen.** Beim Zusammensetzen des Benachrichtigungstexts brach die App auf dem Gerät ab, sobald eine Benachrichtigung vorlag (REQ-APP-NOTIF-009).
+
+- **„Anteil je Teilnehmer" zeigte 0 aUEC.** Im Finanz-Rollup einer Operation wurde der Anteil eines Verzichtenden gelesen, der serverseitig null ist. Genannt wird jetzt der tatsächlich verdiente Anteil, bei ungleicher Aufteilung als Spanne (REQ-APP-OPS-012).
+
+- **Fehlende Mengen im Auftrag lasen sich wie ein Anzeigefehler.** Eine Materialzeile ohne Bestandsangabe zeigte „ / 500"; jetzt steht dort ein Gedankenstrich, und ohne Bestandsangabe gibt es keinen Fortschrittsbalken statt eines leeren (REQ-APP-ORDERS-008).
+
+- **Die Übersicht behauptete „Nichts Ungelesenes", bevor der Posteingang geantwortet hatte** — auch dann, wenn die Glocke daneben eine 2 zeigte (REQ-APP-DASH-008).
+
+- **Der Reiter „Einsätze" trug eine erfundene Zahl.** Am Symbol klebte fest eine 2, unabhängig davon, was es zu sehen gab.
+
 ### Added
+
+- **Das Lager ist da.** Der Bestand als Baum: je Material eine Zeile mit Menge, Einheit und Qualität, aufklappbar zu den einzelnen Beständen mit Verwahrer, Ort und Anzahl der Einträge. Geladen wird eine Gruppe erst beim Aufklappen. Schlägt das fehl, bleibt die Gruppe offen und sagt es — statt sich wortlos wieder zu schließen. Ein- und Ausbuchen bleibt der Weboberfläche vorbehalten (REQ-APP-INV-001…006).
+
+- **Die Aufträge sind da — Warteschlange und Detail.** Nach Status filtern, je Zeile die Materialliste aufklappen und den Fortschritt sehen, im Detail Anmerkung, Material, Zuständige und Übergaben. Ist ein Auftrag für dich nur teilweise sichtbar, sagt der Bildschirm das jetzt ausdrücklich, statt den Rest als vollständig erscheinen zu lassen. Eine Benachrichtigung zu einem Auftrag öffnet ihn direkt. Anlegen, Priorisieren und Übergaben erfassen bleibt der Weboberfläche vorbehalten (REQ-APP-ORDERS-001…007).
+
+- **Die Bank ist da — Konten und Kontodetail.** Jede für dich sichtbare Kasse mit Kontostand, 30-Tage-Bewegung und gezeichneter Verlaufslinie; im Detail der vollständige Buchungsverlauf zum Nachladen. Einzahlungen stehen grün mit +, Auszahlungen rot mit −, und eine Buchungsart, die diese App nicht kennt, bekommt kein erfundenes Vorzeichen. Buchungen beantragen und freigeben bleibt der Weboberfläche vorbehalten (REQ-APP-BANK-001…005).
+
+- **Der Hangar ist da.** Die eigenen Schiffe als Karten mit Typ, Hersteller, Versicherung, Ort und Fitted-Zustand, dazu die Aggregation über die aktive Org-Einheit — beide nach Schiffstyp filterbar. Was fehlt, sagt die Karte auch: „Keine Versicherung" statt eines leeren Feldes. Schiffe anlegen, ändern und importieren bleibt vorerst der Weboberfläche vorbehalten (REQ-APP-HANGAR-001…005).
+
+- **Die Übersicht zeigt jetzt echte Daten statt eines Platzhalters.** Begrüßung mit Name, Org-Einheit und Datum, die Ankündigung der Organisation (antippen klappt sie auf), die Einsätze der nächsten sieben Tage und eine Vorschau des Ungelesenen. Ankündigung und Einsatzband laden unabhängig: fällt eines aus, bleibt das andere stehen. Ist nichts angekündigt, erscheint kein leeres Band, sondern gar keines (REQ-APP-DASH-001…007).
+
+- **Benachrichtigungen sind da — Posteingang, Zähler an der Glocke und Live-Push.** Der Reiter zeigt die neuesten 50 mit „Mehr laden", ungelesene deutlich abgesetzt, jede Zeile mit dem Symbol ihres Bereichs. Die Zahl an der Glocke stimmt jetzt wirklich: sie kommt vom Server, wird per Push sofort und zusätzlich jede Minute aktualisiert, und bleibt bei einem Fehler stehen, statt fälschlich null zu zeigen. Beides läuft nur, solange die App im Vordergrund ist. Als gelesen markieren und Löschen folgen später (REQ-APP-NOTIF-001…008).
 
 - **Operationen sind da — Liste und Detail.** Über der Einsatzliste steht jetzt der Umschalter „Einsätze / Operationen"; die Operationen-Liste trennt laufende von abgeschlossenen und lässt sich suchen und nach Status filtern. Das Detail zeigt das Finanz-Rollup, das Ergebnis je Einsatz, alle Auszahlungszeilen mit ihrem Stand und den eigenen Anteil. Vorläufige Beträge und eine vom Server gekürzte Einsatzliste werden als solche benannt. Auszahlungen markieren bleibt der Weboberfläche vorbehalten (REQ-APP-OPS-001…011).
 

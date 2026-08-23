@@ -36,11 +36,16 @@ import de.greluc.krt.profit.basetool.android.auth.AuthContainer
 import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
+import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
@@ -50,6 +55,9 @@ import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
+import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
@@ -110,6 +118,19 @@ class MainActivity : AppCompatActivity() {
     private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
 
     private val operationsViewModel: OperationsViewModel by viewModels { authViewModels(container) }
+
+    private val notificationsViewModel: NotificationsViewModel by
+        viewModels { authViewModels(container) }
+
+    private val dashboardViewModel: DashboardViewModel by viewModels { authViewModels(container) }
+
+    private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
+
+    private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
+
+    private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
+
+    private val inventoryViewModel: InventoryViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -210,6 +231,14 @@ class MainActivity : AppCompatActivity() {
                                 missions = missionsViewModel,
                                 missionDetail = { MissionDetailViewModel(container.missions, it) },
                                 operations = operationsViewModel,
+                                notifications = notificationsViewModel,
+                                dashboard = dashboardViewModel,
+                                hangar = hangarViewModel,
+                                bank = bankViewModel,
+                                bankAccount = { BankAccountViewModel(container.bank, it) },
+                                orders = ordersViewModel,
+                                orderDetail = { OrderDetailViewModel(container.orders, it) },
+                                inventory = inventoryViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -362,6 +391,18 @@ class MainActivity : AppCompatActivity() {
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
                 initializer { MissionsViewModel(container.missions) }
                 initializer { OperationsViewModel(container.operations) }
+                initializer { NotificationsViewModel(container.notifications) }
+                initializer { HangarViewModel(container.hangar) }
+                initializer { BankViewModel(container.bank) }
+                initializer { OrdersViewModel(container.orders) }
+                initializer { InventoryViewModel(container.inventory) }
+                initializer {
+                    DashboardViewModel(
+                        container.missions,
+                        container.announcements,
+                        container.serverClock,
+                    )
+                }
             }
 
         /** Path of the privacy notice on the web frontend; `permitAll` there, hence linkable. */

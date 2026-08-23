@@ -160,6 +160,38 @@ class AuthSessionTest {
         }
 
     @Test
+    fun `a refused token is exchanged even when it has not expired yet`() =
+        runTest {
+            // The server's 401 outranks the local expiry estimate: the device clock can be wrong
+            // and a token can be revoked long before it runs out. refreshIfNeeded would do nothing
+            // here, which is what left the app stuck on "Signal Lost" until it was restarted.
+            store.write(STORED_REFRESH)
+            server.enqueue(grant())
+            session.restore()
+            server.enqueue(grant())
+
+            val renewed = session.refreshFor("access-value")
+
+            assertEquals("access-value", renewed)
+            assertEquals(2, server.requestCount)
+        }
+
+    @Test
+    fun `a token another caller already renewed is handed back unspent`() =
+        runTest {
+            // Every screen hits the 401 at the same moment. Only the first may spend the refresh
+            // token; the rest must be given the result rather than each starting an exchange.
+            store.write(STORED_REFRESH)
+            server.enqueue(grant())
+            session.restore()
+
+            val renewed = session.refreshFor("a-token-from-before-the-refresh")
+
+            assertEquals("access-value", renewed)
+            assertEquals("no second exchange may be sent", 1, server.requestCount)
+        }
+
+    @Test
     fun `a refresh without a new refresh token keeps the stored one`() =
         runTest {
             // The realm does not rotate refresh tokens, so a response may legitimately omit it.

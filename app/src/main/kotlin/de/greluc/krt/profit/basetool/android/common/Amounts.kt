@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-package de.greluc.krt.profit.basetool.android.missions
+package de.greluc.krt.profit.basetool.android.common
 
 import java.math.BigDecimal
 import java.text.NumberFormat
@@ -30,6 +30,9 @@ private const val MAX_FRACTION_DIGITS = 2
  * grouped for [locale]. No arithmetic happens: `stripTrailingZeros` and grouping are lossless, while
  * a `Double` round trip is exactly how a total gains a rounding error the server never had
  * (REQ-APP-MIS-011).
+ *
+ * Shared by every area that shows money — the Einsatz Finanzen tab, an Operation's roll-up and the
+ * bank ledger — because a member reading the same figure on two screens must read the same figure.
  *
  * Displaying the raw string instead was the first attempt and is what a device run rejected:
  * `86400.0000` is faithful and unreadable, and the design's own figures are grouped (`86.400`).

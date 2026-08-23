@@ -36,6 +36,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
@@ -178,7 +179,12 @@ fun OperationsScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.operations.isEmpty()) {
-                        OperationsEmpty(narrowed = state.isNarrowed, onResetFilters = onResetFilters)
+                        KrtRefreshableFill {
+                            OperationsEmpty(
+                                narrowed = state.isNarrowed,
+                                onResetFilters = onResetFilters,
+                            )
+                        }
                     } else {
                         OperationsList(
                             state = state,
@@ -377,7 +383,7 @@ private fun OperationsEmpty(
             ),
         actionText = if (narrowed) stringResource(R.string.missions_filter_reset) else null,
         onAction = if (narrowed) onResetFilters else null,
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.lg),
     )
 }
 

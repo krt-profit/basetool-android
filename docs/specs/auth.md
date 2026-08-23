@@ -602,3 +602,44 @@ while the server runs on their own machine. The one-time emulator step is theref
   effect. Without the stack it reports itself skipped rather than failed — a handshake cannot be
   judged against a server that is not there, and a red bar for "you did not start docker" trains
   people to ignore red bars.
+
+---
+
+### REQ-APP-AUTH-012 — The access token is exchanged before it is spent, and again when the server refuses it
+
+Every API call passes through `TokenRefreshInterceptor`, which renews a token that is at or near
+expiry **before** the call and renews it once more, retrying the call, on a `401`.
+
+Without it nothing ever called `AuthSession.refreshIfNeeded()`: the app worked for exactly one
+access-token lifespan — an hour on the `iri` realm — and then every screen turned into "Signal Lost"
+at once, with no way back short of restarting the app. It reads as a total outage and is nothing of
+the kind: the session is still valid, only its short-lived half has expired. Nothing in the unit
+suite could see it, because no test runs for an hour.
+
+Both halves are needed. The proactive one keeps the ordinary case free of a failed request; the
+reactive one covers the cases the local expiry cannot know about — a device clock that is wrong and
+a token revoked before its time. `refreshFor(refused)` deliberately skips the freshness check that
+`refreshIfNeeded` makes, and hands back the token another caller has already fetched, so a burst of
+parallel `401`s costs one refresh.
+
+Exactly one retry. A second `401` means the server is refusing a token it has just minted, which no
+amount of retrying repairs, and a loop would hammer the realm from every screen at once. An
+anonymous call is never retried at all: nothing was signed, so the rejection is about the request.
+
+The interceptor sits **before** `MandatoryHeadersInterceptor` (so the renewed token is what gets
+written) and is dropped from the token client along with every other interceptor
+(`REQ-APP-AUTH-006`), which is what keeps a refresh from re-entering itself.
+
+**Acceptance**
+
+- [x] A rejected call is retried once, the retry carrying the renewed token
+  (`TokenRefreshInterceptorTest`).
+- [x] A session that cannot be renewed keeps its `401` (`TokenRefreshInterceptorTest`).
+- [x] A second `401` is not retried again; an anonymous call is not retried at all
+  (`TokenRefreshInterceptorTest`).
+- [x] A spent token is exchanged before the call goes out (`TokenRefreshInterceptorTest`).
+- [x] A refused token is exchanged even when it has not expired locally, and one another caller has
+  already renewed is handed back unspent (`AuthSessionTest`).
+- [x] **Observed on a device (2026-08-22):** with the test realm's `accessTokenLifespan` lowered to
+  60 s, screens kept loading three minutes and several expiries later, where the same walk-through
+  had failed on every screen an hour into the previous session.
