@@ -64,6 +64,11 @@ is information; a failure after a filled-in form is a waste of their time.
 
 Disabled rather than hidden: a missing button cannot explain itself.
 
+**The band and the 0.45 fade are one shared composable** (`ui/OfflineWrites.kt`), used by every
+write surface — Mein Inventar, Blueprints, Hangar and the Lager's bookings
+([`REQ-APP-INV-010`](inventory.md)). Four private copies of the same rule is how one of them ends up
+saying something different.
+
 The signal is `ACCESS_NETWORK_STATE` (owner decision, 2026-08-23) — a normal permission, no runtime
 prompt, nothing leaves the device. It answers "is there a network", not "does the backend answer";
 a captive portal or a backend outage still fails at the request, with the request's own message.

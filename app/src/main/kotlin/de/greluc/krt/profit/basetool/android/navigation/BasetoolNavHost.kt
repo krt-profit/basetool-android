@@ -32,6 +32,9 @@ import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.BookingHost
+import de.greluc.krt.profit.basetool.android.inventory.BookingMode
+import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryRoute
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
@@ -106,6 +109,7 @@ fun BasetoolNavHost(
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
+    booking: BookingViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
@@ -145,6 +149,7 @@ fun BasetoolNavHost(
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
+                        booking = booking,
                         memberName = memberName,
                         orgUnitName = orgUnitName,
                     )
@@ -207,6 +212,7 @@ private fun listDestination(
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
+    booking: BookingViewModel,
     memberName: String?,
     orgUnitName: String?,
 ): Boolean {
@@ -298,7 +304,14 @@ private fun listDestination(
 
         KrtDestination.Inventory -> {
             LaunchedEffect(Unit) { inventory.loadOnce() }
-            InventoryRoute(viewModel = inventory)
+            InventoryRoute(
+                viewModel = inventory,
+                onBookIn = { booking.openBookIn(inventory::onBookingSaved) },
+                onBookOut = { entry ->
+                    booking.openForEntry(entry, BookingMode.OUT, inventory::onBookingSaved)
+                },
+            )
+            BookingHost(viewModel = booking)
         }
 
         else -> {

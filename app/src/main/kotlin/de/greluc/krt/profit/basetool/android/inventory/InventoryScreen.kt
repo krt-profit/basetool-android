@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -35,18 +37,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the tree. */
@@ -61,6 +68,12 @@ private val STACK_RAIL = 2.dp
 /** How far a stack is inset from its group. */
 private val STACK_INSET = 16.dp
 
+/** How far an entry row is inset, one level deeper than a stack. */
+private val ENTRY_INSET = 32.dp
+
+/** Test handle for the booking action. */
+const val INVENTORY_BOOK_TAG: String = "inventory-book"
+
 /** Height of a rail segment, matching a two-line row. */
 private val RAIL_HEIGHT = 44.dp
 
@@ -73,6 +86,9 @@ private val RAIL_HEIGHT = 44.dp
  *
  * @param state what to draw.
  * @param onToggleGroup a group row was tapped.
+ * @param onToggleStack a stack row was tapped.
+ * @param onBookIn the booking action was taken.
+ * @param onBookOut an entry's booking action was taken.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onLoadMore the load-more control was tapped.
@@ -83,17 +99,41 @@ private val RAIL_HEIGHT = 44.dp
 fun InventoryScreen(
     state: InventoryState,
     onToggleGroup: (String) -> Unit,
+    onToggleStack: (String, InventoryStack) -> Unit,
+    onBookIn: () -> Unit,
+    onBookOut: (InventoryEntry) -> Unit,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        if (!state.online) {
+            OfflineBand()
+        }
         Row(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md)) {
             KrtFilterChip(
                 text = stringResource(R.string.inventory_with_stock_only),
                 selected = state.withStockOnly,
                 onClick = { onWithStockOnlyChanged(!state.withStockOnly) },
+            )
+        }
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = KrtSpacing.md, end = KrtSpacing.md, bottom = KrtSpacing.sm),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            KrtCtaButton(
+                text = stringResource(R.string.booking_mode_in),
+                onClick = onBookIn,
+                modifier =
+                    Modifier
+                        .testTag(INVENTORY_BOOK_TAG)
+                        .alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
+                enabled = state.online,
             )
         }
 
@@ -132,6 +172,9 @@ fun InventoryScreen(
                         InventoryTree(
                             state = state,
                             onToggleGroup = onToggleGroup,
+                            onToggleStack = onToggleStack,
+                            onBookOut = onBookOut,
+                            online = state.online,
                             onLoadMore = onLoadMore,
                         )
                     }
@@ -146,12 +189,18 @@ fun InventoryScreen(
  *
  * @param state what to draw.
  * @param onToggleGroup a group was tapped.
+ * @param onToggleStack a stack was tapped.
+ * @param onBookOut an entry's booking action was taken.
+ * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
  */
 @Composable
 private fun InventoryTree(
     state: InventoryState,
     onToggleGroup: (String) -> Unit,
+    onToggleStack: (String, InventoryStack) -> Unit,
+    onBookOut: (InventoryEntry) -> Unit,
+    online: Boolean,
     onLoadMore: () -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG)) {
@@ -190,8 +239,19 @@ private fun InventoryTree(
                         } else {
                             opened.stacks.forEachIndexed { index, stack ->
                                 item(key = "stack-$materialId-$index") {
-                                    StackRow(stack = stack, unit = group.unit)
+                                    StackRow(
+                                        stack = stack,
+                                        unit = group.unit,
+                                        onClick = { onToggleStack(materialId, stack) },
+                                    )
                                 }
+                                entryRows(
+                                    phase = state.openedStacks[stackKey(materialId, stack)],
+                                    keyPrefix = "$materialId-$index",
+                                    unit = group.unit,
+                                    online = online,
+                                    onBookOut = onBookOut,
+                                )
                             }
                         }
                     }
@@ -257,20 +317,134 @@ private fun GroupRow(
 }
 
 /**
- * One stack inside a group.
+ * The entries of one open stack.
  *
- * @param stack the stack.
- * @param unit the group's quantity unit, since a stack carries none of its own.
+ * A `LazyListScope` extension rather than a composable, so the rows stay siblings of the stack they
+ * belong to: nesting a second list inside a lazy item is what makes a tree scroll like two.
+ *
+ * @param phase how far the read has got, or `null` when the stack is closed.
+ * @param keyPrefix what makes the item keys unique within the tree.
+ * @param unit the group's quantity unit.
+ * @param online whether a booking can be sent at all.
+ * @param onBookOut an entry's booking action was taken.
+ */
+private fun LazyListScope.entryRows(
+    phase: EntriesPhase?,
+    keyPrefix: String,
+    unit: String?,
+    online: Boolean,
+    onBookOut: (InventoryEntry) -> Unit,
+) {
+    when (phase) {
+        // A closed stack contributes no rows at all.
+        null -> {
+            return
+        }
+
+        is EntriesPhase.Loading -> {
+            item(key = "entries-loading-$keyPrefix") {
+                StackNote(text = stringResource(R.string.inventory_entries_title))
+            }
+        }
+
+        is EntriesPhase.Failed -> {
+            item(key = "entries-failed-$keyPrefix") {
+                StackNote(text = stringResource(R.string.inventory_stacks_failed))
+            }
+        }
+
+        is EntriesPhase.Ready -> {
+            if (phase.entries.isEmpty()) {
+                item(key = "entries-empty-$keyPrefix") {
+                    StackNote(text = stringResource(R.string.inventory_entries_none))
+                }
+            } else {
+                phase.entries.forEachIndexed { index, entry ->
+                    item(key = "entry-$keyPrefix-$index") {
+                        EntryRow(
+                            entry = entry,
+                            unit = unit,
+                            online = online,
+                            onBookOut = { onBookOut(entry) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One entry — the thing a booking actually moves.
+ *
+ * @param entry the entry.
+ * @param unit the group's quantity unit.
+ * @param online whether a booking can be sent at all.
+ * @param onBookOut opens the booking form on it.
  */
 @Composable
-private fun StackRow(
-    stack: InventoryStack,
+private fun EntryRow(
+    entry: InventoryEntry,
     unit: String?,
+    online: Boolean,
+    onBookOut: () -> Unit,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .padding(
+                    start = ENTRY_INSET,
+                    end = KrtSpacing.md,
+                    top = KrtSpacing.xs,
+                    bottom = KrtSpacing.xs,
+                ),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
+        Column(modifier = Modifier.weight(1f)) {
+            Amount(value = entry.amount, unit = entry.unit ?: unit)
+            entry.note?.let { note ->
+                Text(
+                    text = note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        entry.quality?.let { quality ->
+            KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(quality)))
+        }
+        KrtGhostButton(
+            text = stringResource(R.string.booking_open),
+            onClick = onBookOut,
+            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            enabled = online,
+        )
+    }
+}
+
+/**
+ * One stack inside a group.
+ *
+ * @param stack the stack.
+ * @param unit the group's quantity unit, since a stack carries none of its own.
+ * @param onClick opens its entries.
+ */
+@Composable
+private fun StackRow(
+    stack: InventoryStack,
+    unit: String?,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
                 .padding(start = STACK_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -408,12 +582,17 @@ private fun InventoryEmpty(filtered: Boolean) {
 @Composable
 fun InventoryRoute(
     viewModel: InventoryViewModel,
+    onBookIn: () -> Unit,
+    onBookOut: (InventoryEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     InventoryScreen(
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
+        onToggleStack = viewModel::onToggleStack,
+        onBookIn = onBookIn,
+        onBookOut = onBookOut,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,

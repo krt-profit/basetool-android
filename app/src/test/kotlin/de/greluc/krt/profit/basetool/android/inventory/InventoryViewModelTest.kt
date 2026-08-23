@@ -7,14 +7,24 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
+import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
+import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
+import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -41,6 +51,11 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class InventoryViewModelTest {
+    /** The device has a network; the offline rule has its own tests on the booking form. */
+    private object AlwaysOnline : Connectivity {
+        override val online: Flow<Boolean> = flowOf(true)
+    }
+
     private val dispatcher = StandardTestDispatcher()
 
     /**
@@ -68,6 +83,66 @@ class InventoryViewModelTest {
             stackRequests.add(materialId)
             return if (stackAnswers.size > 1) stackAnswers.removeAt(0) else stackAnswers.first()
         }
+
+        val entryAnswers = mutableListOf<ApiResult<List<InventoryEntry>>>()
+        val entryQueries = mutableListOf<Pair<String, InventoryStack>>()
+
+        override suspend fun entries(
+            materialId: String,
+            stack: InventoryStack,
+        ): ApiResult<List<InventoryEntry>> {
+            entryQueries.add(materialId to stack)
+            return if (entryAnswers.size > 1) {
+                entryAnswers.removeAt(0)
+            } else {
+                entryAnswers.firstOrNull() ?: ApiResult.Success(emptyList())
+            }
+        }
+
+        val bookedIn = mutableListOf<BookInDraft>()
+        val bookedOut = mutableListOf<Triple<String, Long?, BookOutDraft>>()
+        val notes = mutableListOf<Triple<String, Long?, String?>>()
+        var writeAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun bookIn(draft: BookInDraft): ApiResult<Unit> {
+            bookedIn.add(draft)
+            return writeAnswer
+        }
+
+        override suspend fun bookOut(
+            id: String,
+            version: Long?,
+            draft: BookOutDraft,
+        ): ApiResult<Unit> {
+            bookedOut.add(Triple(id, version, draft))
+            return writeAnswer
+        }
+
+        override suspend fun updateNote(
+            id: String,
+            version: Long?,
+            note: String?,
+        ): ApiResult<Unit> {
+            notes.add(Triple(id, version, note))
+            return writeAnswer
+        }
+
+        var materialAnswer: List<MaterialOption> = emptyList()
+        var locationAnswer: List<LocationOption> = emptyList()
+        var memberAnswer: List<MemberOption> = emptyList()
+        var terminalAnswer: List<TerminalOption> = emptyList()
+
+        override suspend fun materials(query: String): ApiResult<List<MaterialOption>> =
+            ApiResult.Success(materialAnswer)
+
+        override suspend fun locations(query: String): ApiResult<List<LocationOption>> =
+            ApiResult.Success(locationAnswer)
+
+        override suspend fun members(query: String): ApiResult<List<MemberOption>> =
+            ApiResult.Success(memberAnswer)
+
+        override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
+            ApiResult.Success(terminalAnswer)
     }
 
     private fun group(
@@ -113,9 +188,30 @@ class InventoryViewModelTest {
     }
 
     @Test
+    fun `a booking re-reads the open path and leaves it open`() =
+        runTest(dispatcher) {
+            // Collapsing the tree after every booking would make the member re-open the group and
+            // the stack to see what their own booking just did (found on a device, 2026-08-23).
+            val model = InventoryViewModel(source, AlwaysOnline)
+            model.loadOnce()
+            advanceUntilIdle()
+            model.onToggleGroup("m1")
+            advanceUntilIdle()
+            val stack = (model.state.value.opened.getValue("m1") as StackPhase.Ready).stacks.first()
+            model.onToggleStack("m1", stack)
+            advanceUntilIdle()
+
+            model.onBookingSaved()
+            advanceUntilIdle()
+
+            assertTrue(model.state.value.opened.containsKey("m1"))
+            assertTrue(model.state.value.openedStacks.containsKey(stackKey("m1", stack)))
+        }
+
+    @Test
     fun `the tree loads its first level only`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source)
+            val model = InventoryViewModel(source, AlwaysOnline)
 
             model.loadOnce()
             advanceUntilIdle()
@@ -127,7 +223,7 @@ class InventoryViewModelTest {
     @Test
     fun `opening a group fetches exactly that group`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source)
+            val model = InventoryViewModel(source, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -143,7 +239,7 @@ class InventoryViewModelTest {
         runTest(dispatcher) {
             // The Lager changes slowly enough that a member re-opening a group within one visit
             // expects what they just saw; pull-to-refresh is how they ask for more.
-            val model = InventoryViewModel(source)
+            val model = InventoryViewModel(source, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
             model.onToggleGroup("m1")
@@ -159,7 +255,7 @@ class InventoryViewModelTest {
     @Test
     fun `a group closed while its read is in flight does not spring open`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source)
+            val model = InventoryViewModel(source, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -179,7 +275,7 @@ class InventoryViewModelTest {
                     mutableListOf(ApiResult.Success(page(group("m1")))),
                     mutableListOf(ApiResult.Failure(ApiError.Network(IOException("x")))),
                 )
-            val model = InventoryViewModel(failing)
+            val model = InventoryViewModel(failing, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -192,7 +288,7 @@ class InventoryViewModelTest {
     @Test
     fun `a refresh drops what was loaded, because the holdings may have moved`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source)
+            val model = InventoryViewModel(source, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
             model.onToggleGroup("m1")
@@ -214,7 +310,7 @@ class InventoryViewModelTest {
                     mutableListOf(ApiResult.Success(page(group("m1"), group("m2", amount = "0")))),
                     mutableListOf(ApiResult.Success(emptyList())),
                 )
-            val model = InventoryViewModel(mixed)
+            val model = InventoryViewModel(mixed, AlwaysOnline)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -232,7 +328,7 @@ class InventoryViewModelTest {
                     mutableListOf(ApiResult.Failure(ApiError.Network(IOException("x")))),
                     mutableListOf(ApiResult.Success(emptyList())),
                 )
-            val model = InventoryViewModel(failing)
+            val model = InventoryViewModel(failing, AlwaysOnline)
 
             model.loadOnce()
             advanceUntilIdle()

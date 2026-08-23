@@ -9,12 +9,14 @@ package de.greluc.krt.profit.basetool.android.inventory
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -36,6 +38,11 @@ import java.io.IOException
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class InventoryScreenTest {
+    private companion object {
+        /** The group, the stack and the entry — three rows, each stating the same quality. */
+        const val QUALITY_ROWS = 3
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
@@ -52,6 +59,23 @@ class InventoryScreenTest {
         maxQuality = "940",
     )
 
+    private fun entry(note: String? = null) =
+        InventoryEntry(
+            id = "e1",
+            materialName = "Quantainium",
+            materialId = "m1",
+            unit = "SCU",
+            locationName = "ARC-L1",
+            locationId = "l1",
+            holder = "Rhea",
+            holderId = "u1",
+            amount = "12,5",
+            quality = "880",
+            personal = false,
+            note = note,
+            version = 5L,
+        )
+
     private fun stack() =
         InventoryStack(
             holder = "Rhea",
@@ -67,16 +91,25 @@ class InventoryScreenTest {
      *
      * @param state what to draw.
      * @param toggled receives the material id of a tapped group.
+     * @param stacksToggled receives a tapped stack.
+     * @param booked records that the booking action was taken.
+     * @param bookedOut receives an entry whose booking action was taken.
      */
     private fun show(
         state: InventoryState,
         toggled: MutableList<String> = mutableListOf(),
+        stacksToggled: MutableList<InventoryStack> = mutableListOf(),
+        booked: MutableList<Unit> = mutableListOf(),
+        bookedOut: MutableList<InventoryEntry> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
                 InventoryScreen(
                     state = state,
                     onToggleGroup = { toggled.add(it) },
+                    onToggleStack = { _, stack -> stacksToggled.add(stack) },
+                    onBookIn = { booked.add(Unit) },
+                    onBookOut = { bookedOut.add(it) },
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
                     onLoadMore = {},
@@ -84,6 +117,22 @@ class InventoryScreenTest {
             }
         }
     }
+
+    /**
+     * A tree with one group open on one stack.
+     *
+     * @param entries how far that stack's entries have got, or `null` while it is closed.
+     * @return the state.
+     */
+    private fun readyWithStack(entries: EntriesPhase? = null) =
+        InventoryState(
+            groups = listOf(group()),
+            total = 1,
+            phase = InventoryPhase.Ready,
+            opened = mapOf("m1" to StackPhase.Ready(listOf(stack()))),
+            openedStacks =
+                entries?.let { mapOf(stackKey("m1", stack()) to it) } ?: emptyMap(),
+        )
 
     @Test
     fun `a group states its material, its amount and its unit`() {
@@ -182,6 +231,83 @@ class InventoryScreenTest {
     fun `an empty Lager and a filtered-out page are different sentences`() {
         show(InventoryState(phase = InventoryPhase.Ready))
         compose.onNodeWithText("Leeres Lager").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a closed stack shows none of its entries`() {
+        show(readyWithStack())
+
+        compose.onAllNodesWithText("12,5").assertCountEquals(0)
+    }
+
+    @Test
+    fun `tapping a stack reports it`() {
+        val tapped = mutableListOf<InventoryStack>()
+        show(readyWithStack(), stacksToggled = tapped)
+
+        compose.onNodeWithText("Rhea · ARC-L1").performClick()
+
+        assertEquals(listOf(stack()), tapped)
+    }
+
+    @Test
+    fun `an opened stack lists its entries with their notes`() {
+        show(readyWithStack(entries = EntriesPhase.Ready(listOf(entry(note = "Reserviert")))))
+
+        compose.onAllNodesWithText("12,5").assertCountEquals(1)
+        compose.onNodeWithText("Reserviert").assertIsDisplayed()
+        // The group, the stack and now the entry each state it.
+        compose.onAllNodesWithText("Q 880").assertCountEquals(QUALITY_ROWS)
+    }
+
+    @Test
+    fun `an entry offers the booking form`() {
+        val booked = mutableListOf<InventoryEntry>()
+        show(
+            readyWithStack(entries = EntriesPhase.Ready(listOf(entry()))),
+            bookedOut = booked,
+        )
+
+        compose.onNodeWithText("Buchen", ignoreCase = true).performClick()
+
+        assertEquals(listOf(entry()), booked)
+    }
+
+    @Test
+    fun `an emptied stack says so rather than looking closed`() {
+        show(readyWithStack(entries = EntriesPhase.Ready(emptyList())))
+
+        compose.onNodeWithText("Keine Einträge.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a stack whose entries failed stays open and says so`() {
+        show(readyWithStack(entries = EntriesPhase.Failed))
+
+        compose.onNodeWithText("Die Bestände dieser Gruppe konnten nicht geladen werden.")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun `the screen's own action books material in`() {
+        val booked = mutableListOf<Unit>()
+        show(InventoryState(groups = listOf(group()), total = 1, phase = InventoryPhase.Ready), booked = booked)
+
+        compose.onNodeWithTag(INVENTORY_BOOK_TAG).performClick()
+
+        assertEquals(1, booked.size)
+    }
+
+    @Test
+    fun `offline the tree says so and offers no booking`() {
+        show(
+            readyWithStack(entries = EntriesPhase.Ready(listOf(entry()))).copy(online = false),
+        )
+
+        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+            .assertIsDisplayed()
+        compose.onNodeWithTag(INVENTORY_BOOK_TAG).assertIsNotEnabled()
+        compose.onNodeWithText("Buchen", ignoreCase = true).assertIsNotEnabled()
     }
 
     @Test

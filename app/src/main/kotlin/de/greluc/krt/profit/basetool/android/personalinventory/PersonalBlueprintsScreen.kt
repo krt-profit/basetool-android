@@ -44,6 +44,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the blueprint list. */
@@ -51,9 +53,6 @@ const val BLUEPRINTS_LIST_TAG: String = "blueprints-list"
 
 /** Test handle for the "add" action. */
 const val BLUEPRINTS_ADD_TAG: String = "blueprints-add"
-
-/** How faded a write action is while there is no network (design ch. 14). */
-private const val DISABLED_WRITE_ALPHA = 0.45f
 
 /**
  * The Blueprints tab of "Mein Inventar" (design ch. 09 § 4).
@@ -83,15 +82,7 @@ fun PersonalBlueprintsScreen(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         if (!state.online) {
-            Text(
-                text = stringResource(R.string.offline_writes_disabled),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-            )
+            OfflineBand()
         }
         KrtTextField(
             value = state.query,
