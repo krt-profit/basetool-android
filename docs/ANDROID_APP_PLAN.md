@@ -271,10 +271,25 @@ per participant, a missing quantity rendered as a gap, the Übersicht claimed "N
 before the inbox had answered, and the Einsätze tab carried a hard-coded badge of 2. Each is fixed,
 pinned by a regression test, and written into the area's spec.
 
-**Phase 3 — mutations** (version-echo + 409 UX everywhere)
-Mission signup/check-in/payout/finance entries · hangar CRUD · inventory book-in/out/rebook · order
-assignee/note/status (role-gated) · bank booking requests + owner approvals · personal
-inventory/blueprints.
+**Phase 3 — mutations** (version-echo + 409 UX everywhere) — **complete, 2026-08-23**
+Mission signup/check-in/payout-preference/finance entries · hangar CRUD · inventory book-in/out ·
+order assignee/note/status (role-gated) · bank account settings · personal inventory/blueprints.
+
+**Two things this line promised and the phase did not ship, each for the same reason — the server
+would have refused them:**
+
+- **Inventory *rebook*.** Turning private stock into shared stock exists as an endpoint, and the
+  Lager reads exclude private stock in both directions (`i.personal = false` in the grouped and the
+  entry query alike). So no entry that could be rebooked ever reaches the app's screen, and material
+  booked in as private would land where nothing in the app can show it again. Both the mode and the
+  "Persönlich" switch were built, walked on a device and then removed; `personal-rebook` stays in
+  the contract set for the `my-inventory` slice that would make it reachable
+  ([`docs/specs/inventory.md`](specs/inventory.md), REQ-APP-INV-008).
+- **Bank *booking requests + owner approvals*.** Every booking path — deposits, withdrawals,
+  transfers, the request queue — is `hasRole(BANK_EMPLOYEE)`: that is the bank-employee surface, and
+  REQ-APP-BANK-001 keeps the app on the member-facing one. What a member actually owns on the bank
+  is their **account's settings**, and that is what slice 7 shipped
+  ([`docs/specs/bank.md`](specs/bank.md), REQ-APP-BANK-006/007).
 
 **Ordered by ascending risk** (owner decision, 2026-08-23), so the write plumbing — request verbs,
 version echo, conflict dialog, offline rule — is built where a mistake reaches nobody but the member
@@ -288,7 +303,16 @@ write action can be **disabled** while the device is offline rather than queued 
 carries a `version` that ages while it waits, which is precisely the write the server must refuse.
 And the production vhost opens the write paths in **one paste at the end of the phase** (runbook
 Phase I), not once per slice; the nightly probe is extended in that same change, so it never reports
-a state nobody intends to fix yet.
+a state nobody intends to fix yet. Both landed with the phase; the paste itself is the owner's, and
+until it is applied the app reaches its own write paths only from inside the network.
+
+**What the phase cost in defects, all found by walking a device and none by a test:** an entry read
+keyed on the wrong quality *and* sent in the wrong type, an omitted pool id the server reads as a
+different question, a sale that could never list a terminal, a transfer the server refuses because
+it changes nothing, a check-in offered before the Einsatz had started, an editor opening on a number
+its own field could not hold, two different minus signs one line apart, and — the one that affects
+every screen — a bottom sheet whose action row sat inside the system gesture bar. Each is written
+down as the requirement it produced.
 
 **Phase 4 — live parity & breadth** (still pre-release per Q6; guest mode dropped per Q8)
 Backend live-sync bridge (SSE or WS, Redis-fed; own ADR) with coalesced re-fetch semantics
