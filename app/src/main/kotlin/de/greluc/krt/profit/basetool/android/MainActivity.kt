@@ -62,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
@@ -130,6 +131,9 @@ class MainActivity : AppCompatActivity() {
     private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
+
+    /** Beförderung — the member's own assessments and rank standings (#66). */
+    private val promotionViewModel: PromotionViewModel by viewModels { authViewModels(container) }
 
     private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
 
@@ -284,6 +288,7 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,
+                                promotion = promotionViewModel,
                                 settings =
                                     SettingsBindings(
                                         accountName = current.claims?.preferredUsername,
@@ -434,6 +439,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { NotificationsViewModel(container.notifications) }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
+                initializer { PromotionViewModel(container.promotion) }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer {
                     InventoryViewModel(container.inventory, container.connectivity, container.liveSync)

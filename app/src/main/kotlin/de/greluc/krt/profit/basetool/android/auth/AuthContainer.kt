@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalInventoryRepository
+import de.greluc.krt.profit.basetool.android.core.data.PromotionRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
@@ -270,6 +271,16 @@ class AuthContainer(
      */
     val notifications: NotificationRepository by lazy {
         NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The member's own Beförderung record.
+     *
+     * Its own repository because it answers a question nothing else on the app asks, and both its
+     * paths are me-scoped: there is no id to pass and no way to reach anybody else's record.
+     */
+    val promotion: PromotionRepository by lazy {
+        PromotionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

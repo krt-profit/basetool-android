@@ -58,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
@@ -106,6 +107,7 @@ private fun isExpandedWindow(): Boolean =
 @Composable
 fun BasetoolApp(
     onLogout: () -> Unit,
+    promotion: PromotionViewModel,
     settings: SettingsBindings,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
@@ -238,6 +240,7 @@ fun BasetoolApp(
                     personalInventory = personalInventory,
                     personalBlueprints = personalBlueprints,
                     booking = booking,
+                    promotion = promotion,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )

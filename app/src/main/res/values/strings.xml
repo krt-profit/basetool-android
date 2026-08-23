@@ -560,4 +560,19 @@
     <string name="bank_settings_visibility">Sichtbarkeit</string>
     <string name="bank_settings_visibility_fixed">Für diesen Kontotyp ist die Sichtbarkeit fest vorgegeben.</string>
     <string name="bank_settings_all_members">Alle Mitglieder der Einheit</string>
+    <string name="promotion_evaluations_title">MEINE BEWERTUNGEN</string>
+    <string name="promotion_standings_title">EIGNUNG</string>
+    <string name="promotion_category_unnamed">Ohne Kategorie</string>
+    <string name="promotion_evaluations_empty_title">Noch nichts bewertet</string>
+    <string name="promotion_evaluations_empty_message">Sobald ein Offizier dich bewertet, steht es hier.</string>
+    <string name="promotion_standings_empty_title">Keine Rangstufe offen</string>
+    <string name="promotion_standings_empty_message">Für dich ist derzeit keine Beförderungsstufe hinterlegt.</string>
+    <string name="promotion_error_title">Nicht geladen</string>
+    <string name="promotion_evaluations_error_message">Deine Bewertungen konnten nicht geladen werden.</string>
+    <string name="promotion_standings_error_message">Deine Eignung konnte nicht geladen werden.</string>
+    <string name="promotion_eligible">ERFÜLLT</string>
+    <string name="promotion_not_eligible">NOCH NICHT</string>
+    <string name="promotion_no_rules">Für diese Stufe sind keine Anforderungen hinterlegt.</string>
+    <string name="promotion_rank_step">Rang %1$d → %2$d</string>
+    <string name="promotion_check_progress">%1$d / %2$d · mind. %3$s</string>
 </resources>

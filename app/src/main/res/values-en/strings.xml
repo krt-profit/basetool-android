@@ -543,4 +543,19 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
+    <string name="promotion_evaluations_title">MY ASSESSMENTS</string>
+    <string name="promotion_standings_title">ELIGIBILITY</string>
+    <string name="promotion_category_unnamed">Uncategorised</string>
+    <string name="promotion_evaluations_empty_title">Nothing assessed yet</string>
+    <string name="promotion_evaluations_empty_message">Once an officer assesses you, it appears here.</string>
+    <string name="promotion_standings_empty_title">No rank step open</string>
+    <string name="promotion_standings_empty_message">No promotion step is currently on file for you.</string>
+    <string name="promotion_error_title">Not loaded</string>
+    <string name="promotion_evaluations_error_message">Your assessments could not be loaded.</string>
+    <string name="promotion_standings_error_message">Your eligibility could not be loaded.</string>
+    <string name="promotion_eligible">MET</string>
+    <string name="promotion_not_eligible">NOT YET</string>
+    <string name="promotion_no_rules">No requirements are configured for this step.</string>
+    <string name="promotion_rank_step">Rank %1$d → %2$d</string>
+    <string name="promotion_check_progress">%1$d / %2$d · min. %3$s</string>
 </resources>
