@@ -521,4 +521,12 @@
     <string name="order_detail_note_hint">For this order only: when you work, which part you take.</string>
     <string name="order_detail_assignee_unnamed">Unknown</string>
     <string name="order_detail_not_allowed">You are not allowed to change this order.</string>
+    <string name="mission_detail_sign_up">Sign up</string>
+    <string name="mission_detail_withdraw">Withdraw</string>
+    <string name="mission_detail_check_in">Check in</string>
+    <string name="mission_detail_check_out">Check out</string>
+    <string name="mission_detail_donate">Donate</string>
+    <string name="mission_detail_take_payout">Take payout</string>
+    <string name="mission_detail_not_allowed">You are not allowed to change this Einsatz.</string>
+    <string name="mission_detail_check_in_not_yet">Checking in works once the Einsatz has started.</string>
 </resources>

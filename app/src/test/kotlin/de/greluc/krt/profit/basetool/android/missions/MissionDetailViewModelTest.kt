@@ -7,16 +7,22 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import de.greluc.krt.profit.basetool.android.core.data.Identity
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
+import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -24,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -31,6 +38,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.time.Instant
 
 /**
  * The detail screen's own rules, and the one that matters most: the Einsatz and its money load on
@@ -79,33 +87,98 @@ class MissionDetailViewModelTest {
             financeCalls++
             return if (financeAnswers.size > 1) financeAnswers.removeAt(0) else financeAnswers.first()
         }
+
+        /**
+         * The caller's own row as this fake hands it back.
+         *
+         * Defined on the fake rather than on the test class: a nested class cannot reach the
+         * outer one's helpers, and the row is the fake's own answer anyway.
+         *
+         * @param checkedIn whether it is checked in.
+         * @param donating whether the share is donated.
+         * @return the row.
+         */
+        fun row(
+            checkedIn: Boolean = false,
+            donating: Boolean? = null,
+        ) = MissionParticipant(
+            id = "p1",
+            userId = "u1",
+            name = "Rhea",
+            role = null,
+            checkedIn = checkedIn,
+            comment = null,
+            donating = donating,
+        )
+
+        val joins = mutableListOf<String>()
+        val leaves = mutableListOf<Pair<String, String>>()
+        val checkIns = mutableListOf<Pair<String, Boolean>>()
+        val preferences = mutableListOf<Pair<String, Boolean>>()
+        var writeAnswer: ApiResult<MissionParticipant>? = null
+        var joinAnswer: ApiResult<MissionDetail>? = null
+        var leaveAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun join(missionId: String): ApiResult<MissionDetail> {
+            joins.add(missionId)
+            return joinAnswer ?: detail(missionId)
+        }
+
+        override suspend fun leave(
+            missionId: String,
+            participantId: String,
+        ): ApiResult<Unit> {
+            leaves.add(missionId to participantId)
+            return leaveAnswer
+        }
+
+        override suspend fun setCheckedIn(
+            missionId: String,
+            participantId: String,
+            checkedIn: Boolean,
+        ): ApiResult<MissionParticipant> {
+            checkIns.add(participantId to checkedIn)
+            return writeAnswer ?: ApiResult.Success(row(checkedIn = checkedIn))
+        }
+
+        override suspend fun setDonating(
+            missionId: String,
+            participantId: String,
+            donating: Boolean,
+        ): ApiResult<MissionParticipant> {
+            preferences.add(participantId to donating)
+            return writeAnswer ?: ApiResult.Success(row(donating = donating))
+        }
     }
 
-    private fun detail(name: String = "Vertikaler Abbau") =
-        MissionDetail(
-            id = "m1",
-            name = name,
-            description = null,
-            status = MissionStatus.PLANNED,
-            rawStatus = "PLANNED",
-            meetingTime = null,
-            plannedStartTime = null,
-            actualStartTime = null,
-            plannedEndTime = null,
-            isInternal = false,
-            meetingPoint = null,
-            operationName = null,
-            orgUnitName = null,
-            orgUnitShorthand = null,
-            partyLeadName = null,
-            registeredParticipants = 0,
-            checkedInParticipants = 0,
-            participants = emptyList(),
-            units = emptyList(),
-            steps = emptyList(),
-            objectives = emptyList(),
-            frequencies = emptyList(),
-        )
+    private fun detail(
+        name: String = "Vertikaler Abbau",
+        started: Boolean = true,
+        vararg roster: MissionParticipant,
+    ) = MissionDetail(
+        id = "m1",
+        name = name,
+        description = null,
+        status = MissionStatus.PLANNED,
+        rawStatus = "PLANNED",
+        meetingTime = null,
+        plannedStartTime = null,
+        actualStartTime = if (started) Instant.parse("2026-08-23T12:00:00Z") else null,
+        plannedEndTime = null,
+        isInternal = false,
+        meetingPoint = null,
+        operationName = null,
+        orgUnitName = null,
+        orgUnitShorthand = null,
+        partyLeadName = null,
+        registeredParticipants = roster.size,
+        checkedInParticipants = roster.count { it.checkedIn },
+        participants = roster.toList(),
+        units = emptyList(),
+        steps = emptyList(),
+        objectives = emptyList(),
+        frequencies = emptyList(),
+    )
 
     private fun finances() =
         MissionFinances(
@@ -131,7 +204,54 @@ class MissionDetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = MissionDetailViewModel(source, "m1")
+    /**
+     * The caller, as the identity read answers.
+     *
+     * @property answer what to return.
+     */
+    private class FakeIdentity(
+        private val answer: ApiResult<Identity>,
+    ) : IdentitySource {
+        override suspend fun myUserId(): ApiResult<String> =
+            when (answer) {
+                is ApiResult.Failure -> answer
+                is ApiResult.Success -> ApiResult.Success(answer.value.userId)
+            }
+
+        override suspend fun me(): ApiResult<Identity> = answer
+    }
+
+    private class FakeConnectivity(
+        initial: Boolean = true,
+    ) : Connectivity {
+        val state = MutableStateFlow(initial)
+        override val online: Flow<Boolean> get() = state
+    }
+
+    private fun viewModel(
+        identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
+        connectivity: Connectivity = FakeConnectivity(),
+    ) = MissionDetailViewModel(source, FakeIdentity(identity), connectivity, "m1")
+
+    /**
+     * One participant row, the caller's own.
+     *
+     * @param checkedIn whether it is checked in.
+     * @param donating whether the share is donated.
+     * @return the row.
+     */
+    private fun mine(
+        checkedIn: Boolean = false,
+        donating: Boolean? = null,
+    ) = MissionParticipant(
+        id = "p1",
+        userId = "u1",
+        name = "Rhea",
+        role = null,
+        checkedIn = checkedIn,
+        comment = null,
+        donating = donating,
+    )
 
     @Test
     fun `the Einsatz loads and the Uebersicht tab is the one showing`() =
@@ -273,5 +393,152 @@ class MissionDetailViewModelTest {
             model.onRefresh()
             advanceUntilIdle()
             assertEquals("opened, so refreshed with the rest", 2, source.financeCalls)
+        }
+
+    @Test
+    fun `an Einsatz the caller is not on offers to sign up`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            assertNull(model.state.value.mySignUp)
+
+            model.onToggleSignUp()
+            advanceUntilIdle()
+
+            assertEquals(listOf("m1"), source.joins)
+        }
+
+    @Test
+    fun `withdrawing removes the caller's own row and re-reads the roster`() =
+        runTest(dispatcher) {
+            // The withdrawal answers 204, so the counts above the roster would otherwise be the
+            // app's guess rather than the server's.
+            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onToggleSignUp()
+            advanceUntilIdle()
+
+            assertEquals(listOf("m1" to "p1"), source.leaves)
+            assertNull(model.state.value.mySignUp)
+        }
+
+    @Test
+    fun `nothing is offered while the app does not know who the caller is`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            val model = viewModel(identity = ApiResult.Failure(ApiError.NotFound()))
+            model.load()
+            advanceUntilIdle()
+
+            assertEquals(false, model.state.value.writable)
+            assertNull(model.state.value.mySignUp)
+        }
+
+    @Test
+    fun `checking in patches the caller's row and the count above it`() =
+        runTest(dispatcher) {
+            // The slim endpoint answers with the row alone. Re-reading the whole Einsatz for one
+            // timestamp would make a check-in cost what opening the screen costs.
+            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onToggleCheckIn()
+            advanceUntilIdle()
+
+            assertEquals(listOf("p1" to true), source.checkIns)
+            assertEquals(true, model.state.value.mySignUp?.checkedIn)
+            assertEquals(1, model.state.value.detail?.checkedInParticipants)
+            assertEquals("no second read for one row", 1, source.detailCalls)
+        }
+
+    @Test
+    fun `checking out is the same action once checked in`() =
+        runTest(dispatcher) {
+            source.queueDetail(
+                ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row(checkedIn = true)))),
+            )
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onToggleCheckIn()
+            advanceUntilIdle()
+
+            assertEquals(listOf("p1" to false), source.checkIns)
+        }
+
+    @Test
+    fun `the payout preference flips between paid out and donated`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onTogglePayoutPreference()
+            advanceUntilIdle()
+
+            assertEquals(listOf("p1" to true), source.preferences)
+            assertEquals(true, model.state.value.mySignUp?.donating)
+        }
+
+    @Test
+    fun `a refusal is kept and the row is left as it was`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.writeAnswer = ApiResult.Failure(ApiError.Forbidden())
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onToggleCheckIn()
+            advanceUntilIdle()
+
+            assertTrue(model.state.value.error is ApiError.Forbidden)
+            assertEquals(false, model.state.value.mySignUp?.checkedIn)
+        }
+
+    @Test
+    fun `checking in is not offered before the Einsatz has started`() =
+        runTest(dispatcher) {
+            // The server refuses it — "Cannot check in before mission actual start time is set",
+            // found on a device — so the control is absent rather than returning a 400.
+            source.queueDetail(
+                ApiResult.Success(detail("Vertikaler Abbau", started = false, roster = arrayOf(source.row()))),
+            )
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            assertEquals(false, model.state.value.checkInPossible)
+
+            model.onToggleCheckIn()
+            advanceUntilIdle()
+
+            assertTrue(source.checkIns.isEmpty())
+        }
+
+    @Test
+    fun `nothing is written while the device has no network`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel(connectivity = FakeConnectivity(initial = false))
+            model.load()
+            advanceUntilIdle()
+
+            model.onToggleSignUp()
+            advanceUntilIdle()
+
+            assertTrue(source.joins.isEmpty())
+            assertEquals(false, model.state.value.online)
         }
 }

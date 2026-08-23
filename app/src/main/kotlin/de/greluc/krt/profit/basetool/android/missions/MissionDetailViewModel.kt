@@ -10,11 +10,15 @@ package de.greluc.krt.profit.basetool.android.missions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.Identity
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,7 +124,34 @@ data class MissionDetailState(
     val tab: MissionTab = MissionTab.OVERVIEW,
     val finances: MissionFinancesPhase = MissionFinancesPhase.Idle,
     val refreshing: Boolean = false,
-)
+    val me: Identity? = null,
+    val saving: Boolean = false,
+    val online: Boolean = true,
+    val error: ApiError? = null,
+) {
+    /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
+    val mySignUp: MissionParticipant?
+        get() = me?.let { identity -> detail?.participants?.firstOrNull { it.userId == identity.userId } }
+
+    /**
+     * Whether a write may be offered at all.
+     *
+     * Not knowing who the caller is disables every one of them: each write addresses a
+     * participant row, and there is no way to tell which row is theirs.
+     */
+    val writable: Boolean
+        get() = online && !saving && me != null
+
+    /**
+     * Whether checking in is possible at all yet.
+     *
+     * The server refuses a check-in before the Einsatz has actually started — "Cannot check in
+     * before mission actual start time is set", found on a device — and `actualStartTime` is the
+     * same fact the refusal is about. Offering the control before then is offering a 400.
+     */
+    val checkInPossible: Boolean
+        get() = detail?.actualStartTime != null
+}
 
 /**
  * Drives one Einsatz's detail.
@@ -132,10 +163,14 @@ data class MissionDetailState(
  * on a screen that is otherwise fine.
  *
  * @property source where the Einsatz comes from
+ * @property identity who the caller is — which decides which sign-up on the roster is theirs
+ * @property connectivity whether the device has a network
  * @property missionId which Einsatz to load
  */
 class MissionDetailViewModel(
     private val source: MissionSource,
+    private val identity: IdentitySource,
+    connectivity: Connectivity,
     private val missionId: String,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(MissionDetailState(missionId = missionId))
@@ -143,9 +178,143 @@ class MissionDetailViewModel(
     /** What the screen draws. */
     val state: StateFlow<MissionDetailState> = mutableState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            connectivity.online.collect { online ->
+                mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+    }
+
     /** Loads the Einsatz. Safe to call more than once. */
     fun load() {
+        readIdentity()
         reload(keepContent = false)
+    }
+
+    /**
+     * Reads who the caller is, once.
+     *
+     * A failure costs the writes, not the screen: the Einsatz still reads, and what is lost is
+     * knowing which row on the roster is the caller's.
+     */
+    private fun readIdentity() {
+        if (mutableState.value.me != null) {
+            return
+        }
+        viewModelScope.launch {
+            when (val result = identity.me()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(me = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the caller could not be identified: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    /** Signs the caller up, or withdraws them. */
+    fun onToggleSignUp() {
+        val current = mutableState.value
+        if (!current.writable) {
+            return
+        }
+        val mine = current.mySignUp
+        mutableState.value = current.copy(saving = true, error = null)
+        viewModelScope.launch {
+            val result =
+                if (mine == null) {
+                    source.join(missionId)
+                } else {
+                    // The withdrawal answers 204, so the roster is re-read rather than patched:
+                    // the counts above it move too, and inventing them here would put two numbers
+                    // on screen that disagree.
+                    when (val left = source.leave(missionId, mine.id)) {
+                        is ApiResult.Failure -> left
+                        is ApiResult.Success -> source.detail(missionId)
+                    }
+                }
+            settle(result)
+        }
+    }
+
+    /** Stamps the caller's own check-in, or takes it back. */
+    fun onToggleCheckIn() {
+        val current = mutableState.value
+        val mine = current.mySignUp
+        if (mine == null || !current.writable || !current.checkInPossible) {
+            return
+        }
+        writeRow { source.setCheckedIn(missionId, mine.id, checkedIn = !mine.checkedIn) }
+    }
+
+    /** Switches the caller's own share between paid out and donated. */
+    fun onTogglePayoutPreference() {
+        val current = mutableState.value
+        val mine = current.mySignUp
+        if (mine == null || !current.writable) {
+            return
+        }
+        writeRow { source.setDonating(missionId, mine.id, donating = mine.donating != true) }
+    }
+
+    /**
+     * Runs a write that answers with one row, and patches that row in place.
+     *
+     * The slim endpoints answer with the participant alone, so the roster around it is left as it
+     * was rather than re-read: nothing else on the Einsatz changed, and a second full read would
+     * make a check-in cost what opening the screen costs.
+     *
+     * @param request the call.
+     */
+    private fun writeRow(request: suspend () -> ApiResult<MissionParticipant>) {
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = request()) {
+                is ApiResult.Success -> {
+                    val current = mutableState.value
+                    val detail = current.detail
+                    mutableState.value =
+                        current.copy(
+                            detail = detail?.withRow(result.value),
+                            saving = false,
+                            error = null,
+                        )
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the sign-up could not be changed: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
+    }
+
+    /**
+     * Files what a whole-Einsatz write returned.
+     *
+     * @param result the answer.
+     */
+    private fun settle(result: ApiResult<MissionDetail>) {
+        when (result) {
+            is ApiResult.Success -> {
+                mutableState.value =
+                    mutableState.value.copy(
+                        detail = result.value,
+                        phase = MissionDetailPhase.Ready,
+                        saving = false,
+                        error = null,
+                    )
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "the sign-up could not be changed: ${result.error}" }
+                mutableState.value = mutableState.value.copy(saving = false, error = result.error)
+            }
+        }
     }
 
     /**
@@ -233,4 +402,22 @@ class MissionDetailViewModel(
         /** Log subsystem. No member name or amount is ever logged. */
         const val LOG_TAG = "missions"
     }
+}
+
+/**
+ * The Einsatz with one participant row replaced by a newer copy of itself.
+ *
+ * The counts above the roster are recomputed from it rather than taken from the write's answer:
+ * the slim endpoints answer with the row alone, and a screen that showed "3 angemeldet, davon 2
+ * eingecheckt" from a stale header would contradict the list right under it.
+ *
+ * @param row the row as the server now has it.
+ * @return the Einsatz, or itself unchanged when the row is not on this one.
+ */
+private fun MissionDetail.withRow(row: MissionParticipant): MissionDetail {
+    if (participants.none { it.id == row.id }) {
+        return this
+    }
+    val updated = participants.map { if (it.id == row.id) row else it }
+    return copy(participants = updated, checkedInParticipants = updated.count { it.checkedIn })
 }

@@ -538,4 +538,12 @@
     <string name="order_detail_note_hint">Nur für diesen Auftrag: wann du arbeitest, welchen Teil du nimmst.</string>
     <string name="order_detail_assignee_unnamed">Unbekannt</string>
     <string name="order_detail_not_allowed">Für diesen Auftrag fehlt dir die Berechtigung.</string>
+    <string name="mission_detail_sign_up">Anmelden</string>
+    <string name="mission_detail_withdraw">Abmelden</string>
+    <string name="mission_detail_check_in">Einchecken</string>
+    <string name="mission_detail_check_out">Auschecken</string>
+    <string name="mission_detail_donate">Spenden</string>
+    <string name="mission_detail_take_payout">Auszahlen</string>
+    <string name="mission_detail_not_allowed">Für diesen Einsatz fehlt dir die Berechtigung.</string>
+    <string name="mission_detail_check_in_not_yet">Einchecken geht, sobald der Einsatz gestartet ist.</string>
 </resources>
