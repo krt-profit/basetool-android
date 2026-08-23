@@ -76,4 +76,16 @@ class AmountsTest {
         // minus is the same width as the plus above it.
         assertEquals('−', formatSignedAmount("11700", income = false, locale = german).first())
     }
+
+    @Test
+    fun `a negative figure uses the same minus as a signed one`() {
+        // The band prints the expense sum through formatSignedAmount and the net through
+        // formatAmount. Two glyphs for the same idea, one line apart, reads as two different kinds
+        // of number — seen on a device in the Finanzen band.
+        assertEquals("−2.500", formatAmount("-2500", Locale.GERMANY))
+        assertEquals(
+            formatSignedAmount("2500", income = false, locale = Locale.GERMANY),
+            formatAmount("-2500", Locale.GERMANY),
+        )
+    }
 }

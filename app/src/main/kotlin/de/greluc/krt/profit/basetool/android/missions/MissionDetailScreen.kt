@@ -37,9 +37,11 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
@@ -52,8 +54,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyV
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -80,6 +84,21 @@ const val MISSION_CHECK_IN_TAG: String = "mission-check-in"
 /** Test handle for the payout-preference action. */
 const val MISSION_PAYOUT_TAG: String = "mission-payout"
 
+/** Test handle for the Finanzen tab's add action. */
+const val MISSION_FINANCE_ADD_TAG: String = "mission-finance-add"
+
+/** Test handle for a booking's edit action. */
+const val MISSION_FINANCE_EDIT_TAG: String = "mission-finance-edit"
+
+/** Test handle for a booking's delete action. */
+const val MISSION_FINANCE_DELETE_TAG: String = "mission-finance-delete"
+
+/** Test handle for the booking form. */
+const val MISSION_FINANCE_SHEET_TAG: String = "mission-finance-sheet"
+
+/** Test handle for the booking form's save action. */
+const val MISSION_FINANCE_SAVE_TAG: String = "mission-finance-save"
+
 /**
  * One Einsatz in full (design spec ch. 06 §2), read-only.
  *
@@ -92,6 +111,7 @@ const val MISSION_PAYOUT_TAG: String = "mission-payout"
  * @param onRefresh pull-to-refresh.
  * @param onRetryFinances the Finanzen tab's retry.
  * @param actions what the caller may do to their own sign-up.
+ * @param finances what they may do to the Einsatz's money.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,6 +122,7 @@ fun MissionDetailScreen(
     onRefresh: () -> Unit,
     onRetryFinances: () -> Unit,
     actions: MissionSignUpActions,
+    finances: MissionFinanceActions,
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
@@ -126,7 +147,11 @@ fun MissionDetailScreen(
                         state = state,
                         detail = detail,
                         onRetryFinances = onRetryFinances,
+                        finances = finances,
                     )
+                }
+                state.entryDraft?.let { draft ->
+                    FinanceEntrySheet(draft = draft, state = state, actions = finances)
                 }
             }
 
@@ -155,6 +180,29 @@ data class MissionSignUpActions(
     val onToggleSignUp: () -> Unit,
     val onToggleCheckIn: () -> Unit,
     val onTogglePayoutPreference: () -> Unit,
+)
+
+/**
+ * What the Finanzen tab reports back.
+ *
+ * @property onAdd a new booking was started.
+ * @property onEdit a booking was opened.
+ * @property onDelete a booking was removed.
+ * @property onIncome the direction changed.
+ * @property onAmount the amount changed.
+ * @property onNote the note changed.
+ * @property onSave the booking was saved.
+ * @property onDismiss the editor was closed.
+ */
+data class MissionFinanceActions(
+    val onAdd: () -> Unit,
+    val onEdit: (MissionFinanceEntry) -> Unit,
+    val onDelete: (MissionFinanceEntry) -> Unit,
+    val onIncome: (Boolean) -> Unit,
+    val onAmount: (String) -> Unit,
+    val onNote: (String) -> Unit,
+    val onSave: () -> Unit,
+    val onDismiss: () -> Unit,
 )
 
 /**
@@ -387,6 +435,7 @@ private fun MissionTabContent(
     state: MissionDetailState,
     detail: MissionDetail,
     onRetryFinances: () -> Unit,
+    finances: MissionFinanceActions,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
@@ -400,7 +449,7 @@ private fun MissionTabContent(
             MissionTab.STEPS -> stepsTab(detail)
             MissionTab.OBJECTIVES -> objectivesTab(detail)
             MissionTab.FREQUENCIES -> frequenciesTab(detail)
-            MissionTab.FINANCES -> financesTab(state.finances, onRetryFinances)
+            MissionTab.FINANCES -> financesTab(state, onRetryFinances, finances)
         }
     }
 }
@@ -645,10 +694,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(detail
  * @param onRetry retries just this tab.
  */
 private fun androidx.compose.foundation.lazy.LazyListScope.financesTab(
-    phase: MissionFinancesPhase,
+    state: MissionDetailState,
     onRetry: () -> Unit,
+    actions: MissionFinanceActions,
 ) {
-    when (phase) {
+    when (val phase = state.finances) {
         is MissionFinancesPhase.Idle, is MissionFinancesPhase.Loading -> {
             item { KrtLoadingIndicator(text = stringResource(R.string.mission_detail_tab_finances)) }
         }
@@ -676,7 +726,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financesTab(
         }
 
         is MissionFinancesPhase.Ready -> {
-            financeContent(phase.finances)
+            financeContent(phase.finances, state, actions)
         }
     }
 }
@@ -685,8 +735,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financesTab(
  * The Finanzen tab once it has loaded.
  *
  * @param finances the totals and the entries.
+ * @param state the screen, for who the caller is and whether a write may be offered.
+ * @param actions what the tab reports back.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(finances: MissionFinances) {
+private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(
+    finances: MissionFinances,
+    state: MissionDetailState,
+    actions: MissionFinanceActions,
+) {
     item {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
             KrtKeyValueRow(
@@ -704,6 +760,27 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(financ
                 value = formatAmount(finances.total.orEmpty()),
             )
             KrtHairlineRule()
+            // Booking needs a participant to book against, and the only one the app may name is
+            // the caller's own. A member who has not signed up is told that rather than shown a
+            // button that answers 403.
+            if (state.mySignUp == null) {
+                Text(
+                    text = stringResource(R.string.mission_detail_finance_needs_signup),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            } else {
+                KrtCtaButton(
+                    text = stringResource(R.string.mission_detail_finance_add),
+                    onClick = actions.onAdd,
+                    modifier =
+                        Modifier
+                            .testTag(MISSION_FINANCE_ADD_TAG)
+                            .writeAlpha(state.bookingPossible),
+                    enabled = state.bookingPossible,
+                )
+            }
+            state.error?.let { error -> SignUpError(error = error) }
         }
     }
     if (finances.entries.isEmpty()) {
@@ -711,25 +788,132 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(financ
         return
     }
     items(finances.entries, key = { it.id }) { entry ->
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.note.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = KrtPalette.White,
-                )
-                entry.participantName?.let {
-                    Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-                }
-            }
-            KrtChip(
-                text = formatSignedAmount(entry.amount, entry.income),
-                tone = if (entry.income) KrtChipTone.Success else KrtChipTone.Danger,
+        FinanceEntryRow(
+            entry = entry,
+            mine = entry.participantId != null && entry.participantId == state.mySignUp?.id,
+            writable = state.writable,
+            actions = actions,
+        )
+    }
+}
+
+/**
+ * One booking, with the two actions the caller has on their own.
+ *
+ * Someone else's booking is theirs to change: the server refuses an edit by anyone but the owner
+ * or an admin, and the app does not offer what it knows will be refused.
+ *
+ * @param entry the booking.
+ * @param mine whether it hangs off the caller's own sign-up.
+ * @param writable whether a write may be offered at all.
+ * @param actions what the row reports back.
+ */
+@Composable
+private fun FinanceEntryRow(
+    entry: MissionFinanceEntry,
+    mine: Boolean,
+    writable: Boolean,
+    actions: MissionFinanceActions,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.note.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
             )
+            entry.participantName?.let {
+                Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
+            }
+        }
+        KrtChip(
+            text = formatSignedAmount(entry.amount, entry.income),
+            tone = if (entry.income) KrtChipTone.Success else KrtChipTone.Danger,
+        )
+        if (mine) {
+            KrtGhostButton(
+                text = stringResource(R.string.mission_detail_finance_edit),
+                onClick = { actions.onEdit(entry) },
+                modifier = Modifier.testTag(MISSION_FINANCE_EDIT_TAG).writeAlpha(writable),
+                enabled = writable,
+            )
+            KrtGhostButton(
+                text = stringResource(R.string.mission_detail_finance_delete),
+                onClick = { actions.onDelete(entry) },
+                modifier = Modifier.testTag(MISSION_FINANCE_DELETE_TAG).writeAlpha(writable),
+                enabled = writable,
+            )
+        }
+    }
+}
+
+/**
+ * The booking form.
+ *
+ * The direction is a segment rather than a signed amount: a minus typed into a number field is a
+ * character a member can lose, and the sign is what decides whether the Einsatz earned or spent.
+ *
+ * @param draft what the form holds.
+ * @param state the screen, for the save gate and the last refusal.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun FinanceEntrySheet(
+    draft: FinanceEntryDraft,
+    state: MissionDetailState,
+    actions: MissionFinanceActions,
+) {
+    KrtBottomSheet(
+        onDismiss = actions.onDismiss,
+        modifier = Modifier.testTag(MISSION_FINANCE_SHEET_TAG),
+        title = stringResource(R.string.mission_detail_finance_add),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            KrtSegmentedControl(
+                options =
+                    listOf(
+                        stringResource(R.string.mission_detail_finance_income),
+                        stringResource(R.string.mission_detail_finance_expense),
+                    ),
+                selectedIndex = if (draft.income) 0 else 1,
+                onSelect = { actions.onIncome(it == 0) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.saving,
+                stretch = true,
+            )
+            KrtTextField(
+                value = draft.amount,
+                onValueChange = actions.onAmount,
+                label = stringResource(R.string.mission_detail_finance_amount),
+                enabled = !state.saving,
+            )
+            KrtTextField(
+                value = draft.note,
+                onValueChange = actions.onNote,
+                label = stringResource(R.string.mission_detail_finance_note),
+                enabled = !state.saving,
+            )
+            state.error?.let { error -> SignUpError(error = error) }
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_cancel),
+                    onClick = actions.onDismiss,
+                    enabled = !state.saving,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.personal_inventory_save),
+                    onClick = actions.onSave,
+                    modifier = Modifier.testTag(MISSION_FINANCE_SAVE_TAG),
+                    enabled = draft.submittable && state.writable,
+                )
+            }
         }
     }
 }
@@ -854,6 +1038,17 @@ fun MissionDetailRoute(
                 onToggleSignUp = viewModel::onToggleSignUp,
                 onToggleCheckIn = viewModel::onToggleCheckIn,
                 onTogglePayoutPreference = viewModel::onTogglePayoutPreference,
+            ),
+        finances =
+            MissionFinanceActions(
+                onAdd = viewModel::onAddEntry,
+                onEdit = viewModel::onEditEntry,
+                onDelete = viewModel::onDeleteEntry,
+                onIncome = viewModel::onEntryIncomeChanged,
+                onAmount = viewModel::onEntryAmountChanged,
+                onNote = viewModel::onEntryNoteChanged,
+                onSave = viewModel::onSaveEntry,
+                onDismiss = viewModel::onDismissEntry,
             ),
         modifier = modifier,
     )

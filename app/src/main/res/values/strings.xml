@@ -546,4 +546,13 @@
     <string name="mission_detail_take_payout">Auszahlen</string>
     <string name="mission_detail_not_allowed">Für diesen Einsatz fehlt dir die Berechtigung.</string>
     <string name="mission_detail_check_in_not_yet">Einchecken geht, sobald der Einsatz gestartet ist.</string>
+    <string name="mission_detail_finance_add">Buchen</string>
+    <string name="mission_detail_finance_edit">Ändern</string>
+    <string name="mission_detail_finance_delete">Löschen</string>
+    <string name="mission_detail_finance_amount">Betrag (aUEC)</string>
+    <string name="mission_detail_finance_note">Wofür?</string>
+    <string name="mission_detail_finance_needs_signup">Buchen geht, sobald du für den Einsatz angemeldet bist.</string>
+    <string name="operation_detail_payout_confirm">Bestätigen</string>
+    <string name="operation_detail_payout_undo">Zurücknehmen</string>
+    <string name="operation_detail_payout_not_allowed">Für diese Auszahlung fehlt dir die Berechtigung.</string>
 </resources>

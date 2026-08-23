@@ -11,15 +11,20 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.MissionCrewMember
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionFrequency
 import de.greluc.krt.profit.basetool.android.core.data.MissionObjective
@@ -93,6 +98,7 @@ class MissionDetailScreenTest {
      * @param signUps receives the sign-up action.
      * @param checkIns receives the check-in action.
      * @param payouts receives the payout-preference action.
+     * @param bookings receives every money action, by name.
      */
     private fun show(
         state: MissionDetailState,
@@ -100,6 +106,7 @@ class MissionDetailScreenTest {
         signUps: MutableList<Unit> = mutableListOf(),
         checkIns: MutableList<Unit> = mutableListOf(),
         payouts: MutableList<Unit> = mutableListOf(),
+        bookings: MutableList<String> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -113,6 +120,17 @@ class MissionDetailScreenTest {
                             onToggleSignUp = { signUps.add(Unit) },
                             onToggleCheckIn = { checkIns.add(Unit) },
                             onTogglePayoutPreference = { payouts.add(Unit) },
+                        ),
+                    finances =
+                        MissionFinanceActions(
+                            onAdd = { bookings.add("add") },
+                            onEdit = { bookings.add("edit") },
+                            onDelete = { bookings.add("delete") },
+                            onIncome = {},
+                            onAmount = {},
+                            onNote = {},
+                            onSave = { bookings.add("save") },
+                            onDismiss = {},
                         ),
                 )
             }
@@ -428,4 +446,121 @@ class MissionDetailScreenTest {
         compose.onNodeWithText("Einchecken geht, sobald der Einsatz gestartet ist.")
             .assertIsDisplayed()
     }
+
+    @Test
+    fun `the Finanzen tab offers a booking once the caller has signed up`() {
+        val actions = mutableListOf<String>()
+        show(
+            readyForMe(mine()).copy(
+                tab = MissionTab.FINANCES,
+                finances = MissionFinancesPhase.Ready(finances()),
+            ),
+            bookings = actions,
+        )
+
+        compose.onNodeWithTag(MISSION_FINANCE_ADD_TAG)
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
+
+        assertEquals(listOf("add"), actions)
+    }
+
+    @Test
+    fun `without a sign-up the tab says why it cannot book`() {
+        show(
+            readyForMe().copy(
+                tab = MissionTab.FINANCES,
+                finances = MissionFinancesPhase.Ready(finances()),
+            ),
+        )
+
+        compose.onAllNodesWithTag(MISSION_FINANCE_ADD_TAG).assertCountEquals(0)
+        compose.onNodeWithText("Buchen geht, sobald du für den Einsatz angemeldet bist.")
+            .assertExists()
+    }
+
+    @Test
+    fun `the caller's own booking offers a change and a delete`() {
+        show(
+            readyForMe(mine()).copy(
+                tab = MissionTab.FINANCES,
+                finances = MissionFinancesPhase.Ready(finances(entry(participantId = "p1"))),
+            ),
+        )
+
+        // The rows sit below the fold of a lazy list, so they are not composed until it is
+        // scrolled to them.
+        compose.onNodeWithTag(MISSION_DETAIL_CONTENT_TAG)
+            .performScrollToNode(hasTestTag(MISSION_FINANCE_EDIT_TAG))
+        compose.onNodeWithTag(MISSION_FINANCE_EDIT_TAG).assertIsEnabled()
+        compose.onNodeWithTag(MISSION_FINANCE_DELETE_TAG).assertIsEnabled()
+    }
+
+    @Test
+    fun `somebody else's booking offers neither`() {
+        // The server refuses an edit by anyone but the owner or an admin. Offering it anyway is
+        // offering a refusal.
+        show(
+            readyForMe(mine()).copy(
+                tab = MissionTab.FINANCES,
+                finances = MissionFinancesPhase.Ready(finances(entry(participantId = "p9"))),
+            ),
+        )
+
+        compose.onNodeWithTag(MISSION_DETAIL_CONTENT_TAG).performScrollToNode(hasText("Erlös"))
+        compose.onNodeWithText("Erlös").assertIsDisplayed()
+        compose.onAllNodesWithTag(MISSION_FINANCE_EDIT_TAG).assertCountEquals(0)
+    }
+
+    @Test
+    fun `the booking form opens on what the entry holds`() {
+        show(
+            readyForMe(mine()).copy(
+                tab = MissionTab.FINANCES,
+                finances = MissionFinancesPhase.Ready(finances()),
+                entryDraft = FinanceEntryDraft(entryId = "e1", income = false, amount = "2500"),
+            ),
+        )
+
+        compose.onNodeWithTag(MISSION_FINANCE_SHEET_TAG).assertIsDisplayed()
+        compose.onNodeWithText("2500").assertIsDisplayed()
+    }
+
+    /**
+     * The Finanzen tab's contents.
+     *
+     * @param entries the bookings.
+     * @return the totals and the list.
+     */
+    private fun finances(vararg entries: MissionFinanceEntry) =
+        MissionFinances(
+            total = "74700",
+            incomeSum = "86400",
+            incomeCount = 3,
+            expenseSum = "11700",
+            expenseCount = 2,
+            entries = entries.toList(),
+            totalEntries = entries.size.toLong(),
+        )
+
+    /**
+     * One booking.
+     *
+     * @param id the entry's id.
+     * @param participantId whose sign-up it hangs off.
+     * @return the entry.
+     */
+    private fun entry(
+        id: String = "e1",
+        participantId: String? = "p1",
+    ) = MissionFinanceEntry(
+        id = id,
+        income = true,
+        amount = "12000",
+        note = "Erlös",
+        participantName = "Rhea",
+        participantId = participantId,
+        version = 4L,
+    )
 }

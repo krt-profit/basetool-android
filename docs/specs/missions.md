@@ -504,3 +504,57 @@ Same rule and the same shared band as [`REQ-APP-INV-010`](inventory.md),
 - [x] The band renders and the sign-up is disabled (`MissionDetailScreenTest`).
 
 **Code:** `ui/OfflineWrites.kt`, `MissionDetailViewModel`
+
+---
+
+### REQ-APP-MIS-017 — A booking needs a sign-up to book against, and only its owner may change it
+
+`POST /api/v1/finance-entries` names a participant, and the only one the app may name is the
+caller's own sign-up. A member who has not signed up is told that — *"Buchen geht, sobald du für
+den Einsatz angemeldet bist."* — rather than shown a button that answers `403`.
+
+**Edit and delete are offered on the caller's own bookings alone.** The server refuses either by
+anyone but the owner or an admin, and the app does not offer what it knows will be refused.
+Ownership is decided by the entry's `participant.id` against the caller's own sign-up id, never by
+a name.
+
+The direction is a **segment**, not a signed amount: a minus typed into a number field is a
+character a member can lose, and the sign is what decides whether the Einsatz earned or spent. The
+editor opens on the whole-number form of the amount — the wire carries `2500.0000` and the field
+takes digits alone, so the raw form would change shape under the member as soon as they typed
+(found on a device).
+
+**Every booking re-reads the tab.** The three totals above the list move with each one, and
+patching a row would leave a sum that disagrees with the rows under it.
+
+**Acceptance**
+
+- [x] Booking is offered only with a sign-up, and the reason is stated
+  (`MissionDetailViewModelTest`, `MissionDetailScreenTest`).
+- [x] Only the caller's own booking offers a change and a delete (`MissionDetailScreenTest`).
+- [x] The editor opens on a number the field can hold (`MissionDetailViewModelTest`).
+- [x] An amount of nothing is not submittable (`MissionDetailViewModelTest`).
+- [x] Each write re-reads the tab (`MissionDetailViewModelTest`).
+- [x] **Observed on a device (2026-08-23):** an expense booked (`201`), changed (`200`) and removed
+  (`204`), the band moving to `−2.500`, `−3.000` and back to `0`.
+
+**Code:** `MissionRepository.addFinanceEntry` / `.updateFinanceEntry` / `.deleteFinanceEntry`,
+`MissionDetailViewModel.onSaveEntry`
+
+---
+
+### REQ-APP-MIS-018 — Negative figures use one minus, everywhere
+
+`formatAmount` prints the typographic minus (`−`, U+2212) rather than the hyphen the platform
+formatter reaches for, which is what `formatSignedAmount` already used.
+
+Found on a device in the Finanzen band: the expense sum read `−2.500` and the net one line below it
+read `-2.500`. The same figure printed two ways, one line apart, reads as two different kinds of
+number.
+
+**Acceptance**
+
+- [x] A negative amount formats identically through both helpers (`AmountsTest`).
+- [x] **Observed on a device (2026-08-23)**, before and after.
+
+**Code:** `common/Amounts.kt`

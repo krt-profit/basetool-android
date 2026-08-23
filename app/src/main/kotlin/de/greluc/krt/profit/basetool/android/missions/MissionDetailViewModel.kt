@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
@@ -127,6 +128,7 @@ data class MissionDetailState(
     val me: Identity? = null,
     val saving: Boolean = false,
     val online: Boolean = true,
+    val entryDraft: FinanceEntryDraft? = null,
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -151,6 +153,37 @@ data class MissionDetailState(
      */
     val checkInPossible: Boolean
         get() = detail?.actualStartTime != null
+
+    /**
+     * Whether a booking can be made at all.
+     *
+     * The create names a participant, and the only one the app may name is the caller's own. A
+     * member who has not signed up therefore has nothing to book against — which is the server's
+     * rule, not a shortcut.
+     */
+    val bookingPossible: Boolean
+        get() = writable && mySignUp != null
+}
+
+/**
+ * The booking being written.
+ *
+ * @property entryId the entry being changed, or `null` for a new one
+ * @property income whether it is money in rather than money out
+ * @property amount the magnitude as typed; the sign lives in [income]
+ * @property note what it was for, as typed
+ * @property version the entry's version when changing one, echoed back on save
+ */
+data class FinanceEntryDraft(
+    val entryId: String? = null,
+    val income: Boolean = true,
+    val amount: String = "",
+    val note: String = "",
+    val version: Long? = null,
+) {
+    /** Whether the form holds something the server will accept. */
+    val submittable: Boolean
+        get() = amount.toDoubleOrNull()?.let { it > 0 } == true
 }
 
 /**
@@ -258,6 +291,149 @@ class MissionDetailViewModel(
             return
         }
         writeRow { source.setDonating(missionId, mine.id, donating = mine.donating != true) }
+    }
+
+    /** Opens the editor on a new booking. */
+    fun onAddEntry() {
+        val current = mutableState.value
+        if (current.bookingPossible) {
+            mutableState.value = current.copy(entryDraft = FinanceEntryDraft(), error = null)
+        }
+    }
+
+    /**
+     * Opens the editor on a booking that exists.
+     *
+     * @param entry the booking.
+     */
+    fun onEditEntry(entry: MissionFinanceEntry) {
+        val current = mutableState.value
+        if (!current.writable) {
+            return
+        }
+        mutableState.value =
+            current.copy(
+                entryDraft =
+                    FinanceEntryDraft(
+                        entryId = entry.id,
+                        income = entry.income,
+                        // The wire carries `2500.0000`, and the field takes digits alone: opening
+                        // the editor on the raw form shows a number the member cannot edit without
+                        // it changing shape under them (found on a device, 2026-08-23). Money here
+                        // is whole aUEC — the server's own `@WholeNumber` — so the fraction is
+                        // nothing to keep.
+                        amount = entry.amount.substringBefore('.').filter(Char::isDigit),
+                        note = entry.note.orEmpty(),
+                        version = entry.version,
+                    ),
+                error = null,
+            )
+    }
+
+    /**
+     * Changes what the editor holds.
+     *
+     * @param transform how it changes.
+     */
+    private fun updateDraft(transform: (FinanceEntryDraft) -> FinanceEntryDraft) {
+        val current = mutableState.value
+        current.entryDraft?.let {
+            mutableState.value = current.copy(entryDraft = transform(it), error = null)
+        }
+    }
+
+    /**
+     * Sets whether the booking is money in.
+     *
+     * @param income `true` for an income.
+     */
+    fun onEntryIncomeChanged(income: Boolean) = updateDraft { it.copy(income = income) }
+
+    /**
+     * Sets the amount.
+     *
+     * @param value what the member typed, unparsed.
+     */
+    fun onEntryAmountChanged(value: String) =
+        updateDraft { it.copy(amount = value.filter(Char::isDigit)) }
+
+    /**
+     * Sets the note.
+     *
+     * @param value what the member typed.
+     */
+    fun onEntryNoteChanged(value: String) = updateDraft { it.copy(note = value.take(NOTE_LENGTH)) }
+
+    /** Closes the editor, discarding what was typed. */
+    fun onDismissEntry() {
+        mutableState.value = mutableState.value.copy(entryDraft = null, error = null)
+    }
+
+    /** Sends the booking. */
+    fun onSaveEntry() {
+        val current = mutableState.value
+        val draft = current.entryDraft
+        val mine = current.mySignUp
+        val ready = draft != null && mine != null && draft.submittable
+        if (!ready || !current.writable) {
+            return
+        }
+        requireNotNull(draft)
+        requireNotNull(mine)
+        val note = draft.note.trim().takeIf { it.isNotEmpty() }
+        bookkeeping {
+            if (draft.entryId == null) {
+                source.addFinanceEntry(missionId, mine.id, draft.income, draft.amount, note)
+            } else {
+                source.updateFinanceEntry(
+                    draft.entryId,
+                    draft.income,
+                    draft.amount,
+                    note,
+                    draft.version,
+                )
+            }
+        }
+    }
+
+    /**
+     * Removes one booking.
+     *
+     * @param entry the booking.
+     */
+    fun onDeleteEntry(entry: MissionFinanceEntry) {
+        if (!mutableState.value.writable) {
+            return
+        }
+        bookkeeping { source.deleteFinanceEntry(entry.id) }
+    }
+
+    /**
+     * Runs a money write and re-reads the tab.
+     *
+     * Always a re-read: the three totals above the list move with every booking, and patching one
+     * row would leave a sum that disagrees with the rows under it.
+     *
+     * @param request the call.
+     */
+    private fun bookkeeping(request: suspend () -> ApiResult<Unit>) {
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = request()) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(entryDraft = null, saving = false, error = null)
+                    loadFinances()
+                }
+
+                // The editor stays open with what was typed.
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the booking could not be written: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
     }
 
     /**
@@ -399,6 +575,9 @@ class MissionDetailViewModel(
     }
 
     private companion object {
+        /** What the server's note column takes. */
+        const val NOTE_LENGTH = 2000
+
         /** Log subsystem. No member name or amount is ever logged. */
         const val LOG_TAG = "missions"
     }
