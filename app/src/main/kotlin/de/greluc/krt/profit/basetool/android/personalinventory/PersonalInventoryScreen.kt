@@ -23,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -31,7 +30,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.PersonalItem
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
@@ -303,57 +301,4 @@ private fun ItemRow(
 private fun PersonalItem.subtitle(): String {
     val place = locationName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.value_absent)
     return note?.takeIf { it.isNotBlank() }?.let { "$place · $it" } ?: place
-}
-
-/**
- * "Mein Inventar", bound to its view model.
- *
- * The three overlays live here rather than inside [PersonalInventoryScreen] so the screen itself
- * stays a pure function of its state and can be rendered in a test without a view model.
- *
- * @param viewModel drives the screen.
- * @param modifier layout modifier.
- */
-@Composable
-fun PersonalInventoryRoute(
-    viewModel: PersonalInventoryViewModel,
-    modifier: Modifier = Modifier,
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { viewModel.loadOnce() }
-
-    PersonalInventoryScreen(
-        state = state,
-        onQueryChanged = viewModel::onQueryChanged,
-        onRefresh = viewModel::onRefresh,
-        onLoadMore = viewModel::onLoadMore,
-        onCreate = viewModel::onCreate,
-        onEdit = viewModel::onEdit,
-        onDelete = viewModel::onDeleteRequested,
-        modifier = modifier,
-    )
-
-    (state.editor as? EditorState.Open)?.let { editor ->
-        PersonalInventoryEditor(
-            editor = editor,
-            locations = state.locations,
-            onName = viewModel::onNameChanged,
-            onQuantity = viewModel::onQuantityChanged,
-            onStep = viewModel::onQuantityStepped,
-            onNote = viewModel::onNoteChanged,
-            onLocationQuery = viewModel::onLocationQueryChanged,
-            onLocationChosen = viewModel::onLocationChosen,
-            onSave = viewModel::onSave,
-            onDismiss = viewModel::onEditorDismissed,
-        )
-    }
-
-    state.pendingDelete?.let { item ->
-        PersonalInventoryDeleteModal(
-            item = item,
-            deleting = state.deleting,
-            onConfirm = viewModel::onDeleteConfirmed,
-            onDismiss = viewModel::onDeleteDismissed,
-        )
-    }
 }

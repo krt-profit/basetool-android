@@ -430,4 +430,37 @@
         <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>
         <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
     </plurals>
+
+    <!-- Blueprints (phase 3) -->
+    <string name="blueprints_title">Blueprints</string>
+    <string name="blueprints_tab_items">Items</string>
+    <string name="blueprints_tab_blueprints">Blueprints</string>
+    <string name="blueprints_search">Search blueprint</string>
+    <string name="blueprints_add">Add</string>
+    <string name="blueprints_remove">Remove</string>
+    <string name="blueprints_with_refinery">With refinery</string>
+    <string name="blueprints_craftable">Craftable</string>
+    <string name="blueprints_recipe_unknown">Recipe unknown</string>
+    <string name="blueprints_end_of_list">End of list</string>
+    <string name="blueprints_empty_title">No blueprints</string>
+    <string name="blueprints_empty_message">The blueprints you own go here. Visible only to you.</string>
+    <string name="blueprints_empty_filtered_message">No blueprint matches this search.</string>
+    <string name="blueprints_error_title">Signal Lost</string>
+    <string name="blueprints_error_message">Your blueprints could not be loaded.</string>
+    <string name="blueprints_product_search">Search product</string>
+    <string name="blueprints_product_hint">At least two characters.</string>
+    <string name="blueprints_product_none">No product found.</string>
+    <string name="blueprints_product_owned">Already owned</string>
+    <string name="blueprints_add_title">Add blueprint</string>
+    <string name="blueprints_edit_title">Change note</string>
+    <string name="blueprints_remove_title">Remove blueprint</string>
+    <string name="blueprints_remove_body">“%1$s” will be removed from your list.</string>
+    <plurals name="blueprints_missing">
+        <item quantity="one">%1$d material missing</item>
+        <item quantity="other">%1$d materials missing</item>
+    </plurals>
+    <plurals name="blueprints_product_capped">
+        <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>
+        <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
+    </plurals>
 </resources>

@@ -37,6 +37,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
+import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalInventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -218,6 +219,16 @@ class AuthContainer(
      */
     val personalInventory: PersonalInventoryRepository by lazy {
         PersonalInventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The member's own blueprints — the second half of the same screen.
+     *
+     * Its own repository rather than a method on the inventory one: the two read different
+     * endpoints and fail independently, which is exactly how the screen renders them.
+     */
+    val personalBlueprints: PersonalBlueprintRepository by lazy {
+        PersonalBlueprintRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

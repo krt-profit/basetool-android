@@ -59,6 +59,7 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewMode
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
+import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
@@ -133,6 +134,8 @@ class MainActivity : AppCompatActivity() {
 
     private val inventoryViewModel: InventoryViewModel by viewModels { authViewModels(container) }
     private val personalInventoryViewModel: PersonalInventoryViewModel by
+        viewModels { authViewModels(container) }
+    private val personalBlueprintsViewModel: PersonalBlueprintsViewModel by
         viewModels { authViewModels(container) }
 
     /**
@@ -243,6 +246,7 @@ class MainActivity : AppCompatActivity() {
                                 orderDetail = { OrderDetailViewModel(container.orders, it) },
                                 inventory = inventoryViewModel,
                                 personalInventory = personalInventoryViewModel,
+                                personalBlueprints = personalBlueprintsViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -402,6 +406,9 @@ class MainActivity : AppCompatActivity() {
                 initializer { InventoryViewModel(container.inventory) }
                 initializer {
                     PersonalInventoryViewModel(container.personalInventory, container.connectivity)
+                }
+                initializer {
+                    PersonalBlueprintsViewModel(container.personalBlueprints, container.connectivity)
                 }
                 initializer {
                     DashboardViewModel(

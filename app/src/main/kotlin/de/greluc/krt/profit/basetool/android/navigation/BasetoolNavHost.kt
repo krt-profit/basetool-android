@@ -50,7 +50,8 @@ import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
-import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryRoute
+import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
+import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
@@ -104,6 +105,7 @@ fun BasetoolNavHost(
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
+    personalBlueprints: PersonalBlueprintsViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
@@ -142,6 +144,7 @@ fun BasetoolNavHost(
                         orders = orders,
                         inventory = inventory,
                         personalInventory = personalInventory,
+                        personalBlueprints = personalBlueprints,
                         memberName = memberName,
                         orgUnitName = orgUnitName,
                     )
@@ -203,6 +206,7 @@ private fun listDestination(
     orders: OrdersViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
+    personalBlueprints: PersonalBlueprintsViewModel,
     memberName: String?,
     orgUnitName: String?,
 ): Boolean {
@@ -273,7 +277,7 @@ private fun listDestination(
         }
 
         KrtDestination.PersonalInventory -> {
-            PersonalInventoryRoute(viewModel = personalInventory)
+            MeinInventarRoute(items = personalInventory, blueprints = personalBlueprints)
         }
 
         KrtDestination.Bank -> {
