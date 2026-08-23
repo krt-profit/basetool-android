@@ -7,18 +7,24 @@
 
 package de.greluc.krt.profit.basetool.android.core.data
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryUpdateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceTotalsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import okhttp3.OkHttpClient
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -92,6 +98,99 @@ interface MissionSource {
      *   requires membership: an anonymous caller gets `Unauthenticated`, a guest `Forbidden`.
      */
     suspend fun finances(missionId: String): ApiResult<MissionFinances>
+
+    /**
+     * Signs the caller up for an Einsatz.
+     *
+     * @param missionId the Einsatz.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun join(missionId: String): ApiResult<MissionDetail>
+
+    /**
+     * Withdraws one sign-up.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId the row to remove — the caller's own; the server refuses anyone else's
+     *   unless the caller manages the Einsatz.
+     * @return success, or the classified failure.
+     */
+    suspend fun leave(
+        missionId: String,
+        participantId: String,
+    ): ApiResult<Unit>
+
+    /**
+     * Stamps a check-in or a check-out on one row.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId the row.
+     * @param checkedIn whether they should end up checked in.
+     * @return the row as it now stands, or the classified failure.
+     */
+    suspend fun setCheckedIn(
+        missionId: String,
+        participantId: String,
+        checkedIn: Boolean,
+    ): ApiResult<MissionParticipant>
+
+    /**
+     * Sets what happens to the row's share of the payout.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId the row.
+     * @param donating whether the share is donated rather than paid out.
+     * @return the row as it now stands, or the classified failure.
+     */
+    suspend fun setDonating(
+        missionId: String,
+        participantId: String,
+        donating: Boolean,
+    ): ApiResult<MissionParticipant>
+
+    /**
+     * Books an income or an expense against an Einsatz.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId whose booking it is — the caller's own sign-up.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude, always positive; the sign lives in [income].
+     * @param note what it was for, or `null`.
+     * @return success, or the classified failure.
+     */
+    suspend fun addFinanceEntry(
+        missionId: String,
+        participantId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit>
+
+    /**
+     * Rewrites one booking.
+     *
+     * @param entryId the entry.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude.
+     * @param note what it was for, or `null`.
+     * @param version the entry's version, echoed from the read.
+     * @return success, or the classified failure.
+     */
+    suspend fun updateFinanceEntry(
+        entryId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<Unit>
+
+    /**
+     * Removes one booking.
+     *
+     * @param entryId the entry.
+     * @return success, or the classified failure.
+     */
+    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
 }
 
 /**
@@ -209,6 +308,147 @@ class MissionRepository(
             is ApiResult.Success -> financesWith(missionId, summary.value)
         }
 
+    override suspend fun join(missionId: String): ApiResult<MissionDetail> =
+        when (
+            val result =
+                reader.post("${missionPath(missionId)}/join", MissionDto.serializer())
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
+        }
+
+    override suspend fun leave(
+        missionId: String,
+        participantId: String,
+    ): ApiResult<Unit> = reader.delete(participantPath(missionId, participantId))
+
+    override suspend fun setCheckedIn(
+        missionId: String,
+        participantId: String,
+        checkedIn: Boolean,
+    ): ApiResult<MissionParticipant> =
+        oneRow(
+            reader.post(
+                participantPath(missionId, participantId, if (checkedIn) "check-in" else "check-out"),
+                MissionParticipantDto.serializer(),
+            ),
+        )
+
+    override suspend fun setDonating(
+        missionId: String,
+        participantId: String,
+        donating: Boolean,
+    ): ApiResult<MissionParticipant> =
+        oneRow(
+            reader.put(
+                participantPath(missionId, participantId, "payout-preference"),
+                UpdatePayoutPreferenceRequest(
+                    preference =
+                        if (donating) {
+                            UpdatePayoutPreferenceRequest.Preference.DONATE
+                        } else {
+                            UpdatePayoutPreferenceRequest.Preference.PAYOUT
+                        },
+                ),
+                UpdatePayoutPreferenceRequest.serializer(),
+                MissionParticipantDto.serializer(),
+            ),
+        )
+
+    override suspend fun addFinanceEntry(
+        missionId: String,
+        participantId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit> =
+        discarding(
+            reader.post(
+                FINANCE_ENTRIES_PATH,
+                MissionFinanceEntryCreateDto(
+                    missionId = missionId,
+                    participantId = participantId,
+                    type =
+                        if (income) {
+                            MissionFinanceEntryCreateDto.Type.INCOME
+                        } else {
+                            MissionFinanceEntryCreateDto.Type.EXPENSE
+                        },
+                    amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                    note = note,
+                ),
+                MissionFinanceEntryCreateDto.serializer(),
+                MissionFinanceEntryDto.serializer(),
+            ),
+        )
+
+    override suspend fun updateFinanceEntry(
+        entryId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<Unit> =
+        discarding(
+            reader.put(
+                "$FINANCE_ENTRIES_PATH/$entryId",
+                MissionFinanceEntryUpdateDto(
+                    type =
+                        if (income) {
+                            MissionFinanceEntryUpdateDto.Type.INCOME
+                        } else {
+                            MissionFinanceEntryUpdateDto.Type.EXPENSE
+                        },
+                    amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                    version = version ?: 0L,
+                    note = note,
+                ),
+                MissionFinanceEntryUpdateDto.serializer(),
+                MissionFinanceEntryDto.serializer(),
+            ),
+        )
+
+    override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
+        reader.delete("$FINANCE_ENTRIES_PATH/$entryId")
+
+    /**
+     * Keeps the outcome of a write and throws its body away.
+     *
+     * The three finance writes answer with the entry, and the tab is re-read afterwards anyway:
+     * the totals above the list move with every one of them, and patching a row would leave a sum
+     * that disagrees with the rows under it.
+     *
+     * @param result what the write returned.
+     * @return success or the failure, without the body.
+     */
+    private fun discarding(result: ApiResult<MissionFinanceEntryDto>): ApiResult<Unit> =
+        when (result) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
+        }
+
+    /**
+     * Turns a slim write's answer into the row.
+     *
+     * The slim endpoints answer with the participant alone rather than the whole Einsatz, which is
+     * the point of them: a check-in changes one timestamp and the detail is large.
+     *
+     * @param result what the write returned.
+     * @return the row, or the failure — including an answer with no id, which no row can be built
+     *   from.
+     */
+    private fun oneRow(result: ApiResult<MissionParticipantDto>): ApiResult<MissionParticipant> =
+        when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toModel()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.NotFound())
+            }
+        }
+
     /**
      * Fetches the entries and folds them together with the already-read summary.
      *
@@ -282,12 +522,41 @@ class MissionRepository(
         private const val SEARCH_PATH = "/api/v1/missions/search"
 
         /**
+         * Where a booking is written.
+         *
+         * NOT under `/missions`: the write paths of the money live at the API root, which is why
+         * they are their own family on the vhost rather than an exception to the read-only guard
+         * on the Einsatz prefix.
+         */
+        private const val FINANCE_ENTRIES_PATH = "/api/v1/finance-entries"
+
+        /**
          * The detail path for one Einsatz.
          *
          * @param id the Einsatz's id.
          * @return the path.
          */
         private fun missionPath(id: String) = "/api/v1/missions/$id"
+
+        /**
+         * One participant row's slim path.
+         *
+         * The slim pair throughout: the legacy full-DTO endpoints are `@ApiDeprecation`-marked
+         * with a sunset, and they answer with the whole Einsatz for a change to one row.
+         *
+         * @param missionId the Einsatz's id.
+         * @param participantId the row's id.
+         * @param action the sub-resource, or `null` for the row itself.
+         * @return the path.
+         */
+        private fun participantPath(
+            missionId: String,
+            participantId: String,
+            action: String? = null,
+        ): String {
+            val row = "${missionPath(missionId)}/participants/$participantId"
+            return if (action == null) "$row/slim" else "$row/$action/slim"
+        }
 
         /**
          * The finance-entries path for one Einsatz.
@@ -450,12 +719,16 @@ private fun MissionParticipantDto.toModel(): MissionParticipant? {
     val participantId = id ?: return null
     return MissionParticipant(
         id = participantId,
+        userId = user?.id,
         // The server redacts identity for an outsider, so all three can legitimately be absent.
         name = user?.effectiveName ?: user?.displayName ?: guestName.orEmpty(),
         role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
         // A start time is what a check-in writes; there is no separate flag on the wire.
         checkedIn = startTime != null,
         comment = comment?.takeIf { it.isNotBlank() },
+        // Absent means the server stated no preference, which is a different thing from "pays
+        // out": the screen shows nothing rather than claiming one of the two.
+        donating = payoutPreference?.let { it == MissionParticipantDto.PayoutPreference.DONATE },
     )
 }
 
@@ -499,5 +772,7 @@ private fun MissionFinanceEntryDto.toModel(): MissionFinanceEntry? {
         amount = amount?.toString().orEmpty(),
         note = note?.takeIf { it.isNotBlank() },
         participantName = participant?.user?.effectiveName ?: participant?.guestName,
+        participantId = participant?.id,
+        version = version,
     )
 }

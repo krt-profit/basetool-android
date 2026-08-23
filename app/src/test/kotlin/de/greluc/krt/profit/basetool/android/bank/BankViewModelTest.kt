@@ -8,14 +8,18 @@
 package de.greluc.krt.profit.basetool.android.bank
 
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountDetail
+import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingPage
 import de.greluc.krt.profit.basetool.android.core.data.BankSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -43,6 +47,11 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class BankViewModelTest {
+    /** The device has a network; the offline rule has its own test. */
+    private object AlwaysOnline : Connectivity {
+        override val online: Flow<Boolean> = flowOf(true)
+    }
+
     private val dispatcher = StandardTestDispatcher()
 
     /**
@@ -75,6 +84,45 @@ class BankViewModelTest {
         ): ApiResult<BankBookingPage> {
             ledgerPages.add(page)
             return if (ledgerAnswers.size > 1) ledgerAnswers.removeAt(0) else ledgerAnswers.first()
+        }
+
+        val settingsAnswers = mutableListOf<ApiResult<BankAccountSettings>>()
+        val targets = mutableListOf<Pair<String?, Long?>>()
+        val roles = mutableListOf<Pair<String, Boolean>>()
+        val allMembers = mutableListOf<Boolean>()
+        var writeAnswer: ApiResult<BankAccountSettings>? = null
+
+        override suspend fun settings(id: String): ApiResult<BankAccountSettings> =
+            if (settingsAnswers.size > 1) {
+                settingsAnswers.removeAt(0)
+            } else {
+                settingsAnswers.firstOrNull() ?: ApiResult.Failure(ApiError.NotFound())
+            }
+
+        override suspend fun setBalanceTarget(
+            id: String,
+            target: String?,
+            version: Long?,
+        ): ApiResult<BankAccountSettings> {
+            targets.add(target to version)
+            return writeAnswer ?: settings(id)
+        }
+
+        override suspend fun setRoleVisibility(
+            id: String,
+            roleCode: String,
+            granted: Boolean,
+        ): ApiResult<BankAccountSettings> {
+            roles.add(roleCode to granted)
+            return writeAnswer ?: settings(id)
+        }
+
+        override suspend fun setAllMembersVisibility(
+            id: String,
+            granted: Boolean,
+        ): ApiResult<BankAccountSettings> {
+            allMembers.add(granted)
+            return writeAnswer ?: settings(id)
         }
     }
 
@@ -151,7 +199,7 @@ class BankViewModelTest {
                     mutableListOf(ApiResult.Success(detail())),
                     mutableListOf(ApiResult.Success(ledger(booking("p1")))),
                 )
-            val model = BankAccountViewModel(source, "a1")
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
 
             model.load()
             advanceUntilIdle()
@@ -172,7 +220,7 @@ class BankViewModelTest {
                     mutableListOf(ApiResult.Success(detail())),
                     mutableListOf(ApiResult.Failure(ApiError.Network(IOException("x")))),
                 )
-            val model = BankAccountViewModel(source, "a1")
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
 
             model.load()
             advanceUntilIdle()
@@ -190,7 +238,7 @@ class BankViewModelTest {
                     mutableListOf(ApiResult.Failure(ApiError.Forbidden())),
                     mutableListOf(ApiResult.Success(ledger())),
                 )
-            val model = BankAccountViewModel(source, "a1")
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
 
             model.load()
             advanceUntilIdle()
@@ -212,7 +260,7 @@ class BankViewModelTest {
                         ApiResult.Success(ledger(booking("p2"), page = 1, totalPages = TWO_PAGES)),
                     ),
                 )
-            val model = BankAccountViewModel(source, "a1")
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
             model.load()
             advanceUntilIdle()
 
@@ -235,7 +283,7 @@ class BankViewModelTest {
                         ApiResult.Failure(ApiError.Network(IOException("x"))),
                     ),
                 )
-            val model = BankAccountViewModel(source, "a1")
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
             model.load()
             advanceUntilIdle()
 
@@ -247,10 +295,182 @@ class BankViewModelTest {
         }
 
     private companion object {
+        /** The settings snapshot's optimistic lock. */
+        const val SETTINGS_VERSION = 9L
+
         /** A two-line ledger. */
         const val TWO = 2L
 
         /** Its page count. */
         const val TWO_PAGES = 2
     }
+
+    /**
+     * A source with an account and one ledger page, ready for a settings test.
+     *
+     * @return the fake.
+     */
+    private fun accountSource() =
+        RecordingSource(
+            mutableListOf(ApiResult.Success(emptyList())),
+            mutableListOf(ApiResult.Success(detail())),
+            mutableListOf(ApiResult.Success(ledger(booking("p1")))),
+        )
+
+    /**
+     * The settings snapshot the server sends.
+     *
+     * @param canSetTarget whether the caller may change the target.
+     * @param canConfigureVisibility whether they may change who sees the account.
+     * @param target the current target.
+     * @param granted the role buckets already granted.
+     * @param allMembers whether every member already sees it.
+     * @return the settings.
+     */
+    private fun settings(
+        canSetTarget: Boolean = true,
+        canConfigureVisibility: Boolean = true,
+        target: String? = "250000.0000",
+        granted: List<String> = emptyList(),
+        allMembers: Boolean = false,
+    ) = BankAccountSettings(
+        accountId = "a1",
+        accountName = "Einsatzkasse",
+        balanceTarget = target,
+        version = SETTINGS_VERSION,
+        canSetTarget = canSetTarget,
+        canConfigureVisibility = canConfigureVisibility,
+        visibilityConfigurable = true,
+        allMembersSupported = true,
+        allMembersGranted = allMembers,
+        availableRoleCodes = listOf("OFFICER", "LOGISTICIAN"),
+        grantedRoleCodes = granted,
+    )
+
+    @Test
+    fun `the settings editor opens on a target the field can hold`() =
+        runTest(dispatcher) {
+            // The wire carries `250000.0000` and the field takes digits alone.
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            model.onOpenSettings()
+
+            assertEquals("250000", model.state.value.targetDraft)
+        }
+
+    @Test
+    fun `a target write echoes the version it read`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+            model.onOpenSettings()
+            model.onTargetChanged("300000")
+
+            model.onSaveTarget()
+            advanceUntilIdle()
+
+            assertEquals("300000" to SETTINGS_VERSION, source.targets.single())
+        }
+
+    @Test
+    fun `an emptied target clears it rather than setting a target of nothing`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+            model.onOpenSettings()
+            model.onTargetChanged("")
+
+            model.onSaveTarget()
+            advanceUntilIdle()
+
+            assertNull(source.targets.single().first)
+        }
+
+    @Test
+    fun `nothing is written when the server says the caller may not`() =
+        runTest(dispatcher) {
+            // The flags are per-account facts the server states. The app works out no role of its
+            // own, and a member who is not the responsible holder writes nothing.
+            val source = accountSource()
+            source.settingsAnswers.add(
+                ApiResult.Success(settings(canSetTarget = false, canConfigureVisibility = false)),
+            )
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            model.onSaveTarget()
+            advanceUntilIdle()
+            model.onToggleRole("OFFICER")
+            advanceUntilIdle()
+            model.onToggleAllMembers()
+            advanceUntilIdle()
+
+            assertTrue(source.targets.isEmpty())
+            assertTrue(source.roles.isEmpty())
+            assertTrue(source.allMembers.isEmpty())
+        }
+
+    @Test
+    fun `a role bucket toggles against what the account already grants`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings(granted = listOf("OFFICER"))))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            // One at a time: a second write while the first is in flight is dropped, which is
+            // the same guard that keeps a double tap from booking twice.
+            model.onToggleRole("OFFICER")
+            advanceUntilIdle()
+            model.onToggleRole("LOGISTICIAN")
+            advanceUntilIdle()
+
+            assertEquals(listOf("OFFICER" to false, "LOGISTICIAN" to true), source.roles)
+        }
+
+    @Test
+    fun `a refused settings write is kept and named`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            source.writeAnswer = ApiResult.Failure(ApiError.OptimisticLock())
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+            model.onOpenSettings()
+            model.onTargetChanged("300000")
+
+            model.onSaveTarget()
+            advanceUntilIdle()
+
+            assertEquals("300000", model.state.value.targetDraft)
+            assertTrue(model.state.value.error is ApiError.OptimisticLock)
+        }
+
+    @Test
+    fun `a settings read that fails costs the controls, not the screen`() =
+        runTest(dispatcher) {
+            // The account and its ledger are the screen's subject. Losing the settings leaves the
+            // flags at "may not", which is the safe direction.
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Failure(ApiError.Forbidden()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            assertNull(model.state.value.settings)
+            assertEquals(BankPhase.Ready, model.state.value.phase)
+        }
 }

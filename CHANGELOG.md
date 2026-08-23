@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Konten der Kartellbank lassen sich jetzt in der App einstellen.** Zielsaldo setzen und regeln, wer das Konto sieht — sichtbar nur für die Person, die für das Konto verantwortlich ist. Ein- und Auszahlungen bleiben der Weboberfläche vorbehalten (REQ-APP-BANK-006, REQ-APP-BANK-007).
+
+- **Einnahmen und Ausgaben eines Einsatzes lassen sich jetzt in der App buchen.** Betrag, Richtung und ein Wofür — änderbar und löschbar, solange es deine eigene Buchung ist. Buchen setzt voraus, dass du für den Einsatz angemeldet bist. Einsatzleiter können in der Operation außerdem Auszahlungen bestätigen (REQ-APP-MIS-017, REQ-APP-OPS-013).
+
+- **Für Einsätze kannst du dich jetzt in der App an- und abmelden.** Dazu Ein- und Auschecken, sobald der Einsatz läuft, und die Wahl zwischen Auszahlung und Spende. Dein eigener Eintrag ist in der Teilnehmerliste hervorgehoben. Die Einsatzplanung bleibt der Weboberfläche vorbehalten (REQ-APP-MIS-013…016).
+
+- **Aufträge lassen sich jetzt aus der App übernehmen.** „Übernehmen" setzt dich auf den Auftrag, „Abmelden" nimmt dich wieder herunter, und zu deinem Eintrag gehört eine eigene Notiz — wann du arbeitest, welchen Teil du nimmst. Logistiker können zusätzlich den Status ändern. Übergaben und die übrige Bearbeitung bleiben der Weboberfläche vorbehalten (REQ-APP-ORDERS-009…012).
+
 - **Das Lager lässt sich jetzt aus der App buchen.** Die Bestände einer Gruppe öffnen sich bis zum einzelnen Eintrag; von dort geht Einbuchen, Ausbuchen (verwerfen, übergeben, verkaufen) und Notiz ändern. Beim Verkaufen zeigt die App die Terminals des Materials mit ihrem Preis. Nach jeder Buchung bleibt der geöffnete Pfad offen und zeigt das Ergebnis. Persönliche Bestände, Mehrfachauswahl und Sammel-Umbuchung bleiben der Weboberfläche vorbehalten (REQ-APP-INV-007…012).
 
 - **Der Hangar lässt sich jetzt aus der App pflegen.** Schiffe anlegen, ändern und löschen: Typ über eine Suche, Versicherung als LTI oder Monatszahl, Ort und Fitted-Zustand. Nur die eigenen Schiffe — die Org-Ansicht bleibt eine Übersicht. Der Import bleibt Phase 4 (REQ-APP-HANGAR-006…009).
@@ -19,6 +27,8 @@
 - **Gleichzeitige Änderungen sagen es dir, ohne deine Eingabe wegzuwerfen.** Hat jemand anderes denselben Eintrag zwischenzeitlich geändert, bleibt alles Getippte stehen und der Dialog erklärt, was zu tun ist.
 
 ### Fixed
+
+- **Negative Beträge sahen unterschiedlich aus.** In den Einsatz-Finanzen stand „−2.500" bei den Ausgaben und „-2.500" eine Zeile darunter beim Netto — zwei Zeichen für dieselbe Sache.
 
 - **Aktionen in Bottom-Sheets lagen unter der Gestenleiste.** „Buchen" und „Speichern" ließen sich am unteren Bildschirmrand nicht antippen — der Tipp ging ans System statt an den Knopf. Betrifft alle Sheets der App.
 

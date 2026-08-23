@@ -416,3 +416,145 @@ than by relaxing the no-`Double` rule that kept the raw string in the first plac
 it in production — the allow-list grows one app phase at a time, and opening a family to the app and
 freezing its shape are the same decision seen from two sides (main repo ADR-0135). Until then the
 list works against the test stack only.
+
+---
+
+### REQ-APP-MIS-013 — A member signs themselves up, and finds themselves in the roster
+
+`POST /api/v1/missions/{id}/join` and the **slim** `DELETE …/participants/{pid}/slim`. The band
+sits under the head rather than inside the Teilnehmer tab: it is about the caller and not about the
+list, and a member opening an Einsatz to sign up should not have to find the right tab first.
+
+**Which row is the caller's is decided by `user.id`, never by a name.** The server sends
+`displayName` when a member set one and `username` otherwise, so a name match would work for some
+members and silently fail for exactly those who personalised their profile. A failed `/users/me`
+therefore disables every write rather than guessing — the Einsatz still reads.
+
+The caller's own row is drawn in the brand colour, so they can find themselves in a roster of
+thirty.
+
+**The withdrawal re-reads the Einsatz; the other three do not.** It answers `204`, and the counts
+above the roster move with it — inventing them here would put two numbers on screen that disagree.
+
+**Acceptance**
+
+- [x] Sign-up and withdrawal address the caller's own row (`MissionDetailViewModelTest`).
+- [x] Nothing is writable while the caller is unknown (`MissionDetailViewModelTest`).
+- [x] The withdrawal re-reads the roster (`MissionDetailViewModelTest`).
+- [x] **Observed on a device (2026-08-23):** „Anmelden" flipped to „Abmelden", the header moved to
+  „1 angemeldet", and back again.
+
+**Code:** `MissionRepository.join` / `.leave`, `MissionDetailViewModel.onToggleSignUp`
+
+---
+
+### REQ-APP-MIS-014 — Checking in is offered only once the Einsatz has started
+
+The server refuses it before then — *"Cannot check in before mission actual start time is set"* —
+and `actualStartTime` is the same fact that refusal is about. The control is therefore absent until
+the Einsatz is running, and a muted line says why rather than leaving a member wondering where the
+action went.
+
+**The slim endpoints answer with the row alone, and the screen patches that row in place.** The
+count above the roster is recomputed from the patched list, not taken from the answer: re-reading
+the whole Einsatz for one timestamp would make a check-in cost what opening the screen costs, and
+a stale header would contradict the list right under it.
+
+**Acceptance**
+
+- [x] No check-in control before the Einsatz has started, and the line says why
+  (`MissionDetailViewModelTest`, `MissionDetailScreenTest`).
+- [x] A check-in patches the row and the count, with no second read
+  (`MissionDetailViewModelTest`).
+- [x] **Observed on a device (2026-08-23):** the control was absent while the Einsatz was
+  `PLANNED`, appeared once it went `ACTIVE`, and moved the header to „davon 1 eingecheckt".
+
+**Code:** `MissionDetailState.checkInPossible`, `MissionRepository.setCheckedIn`
+
+---
+
+### REQ-APP-MIS-015 — The payout preference is a toggle, and it says what the other option is
+
+`PUT …/payout-preference/slim` with `PAYOUT` / `DONATE`. The button names the **other** state —
+„Spenden" while the share is being paid out, „Auszahlen" while it is being donated — because a
+two-state control labelled with its current state is one a member has to press to find out what it
+does.
+
+An absent preference is read as "paid out" for the label but is **not** claimed as a fact anywhere:
+the server stating nothing is different from the server stating `PAYOUT`.
+
+**Acceptance**
+
+- [x] The toggle sends the opposite of what the row holds (`MissionDetailViewModelTest`).
+- [x] The label follows the row (`MissionDetailScreenTest`).
+- [x] **Observed on a device (2026-08-23).**
+
+**Code:** `MissionRepository.setDonating`, `MissionDetailViewModel.onTogglePayoutPreference`
+
+---
+
+### REQ-APP-MIS-016 — Offline disables the Einsatz's writes; it never queues them
+
+Same rule and the same shared band as [`REQ-APP-INV-010`](inventory.md),
+[`REQ-APP-ORDERS-012`](orders.md) and [`REQ-APP-PI-003`](personal-inventory.md).
+
+**Acceptance**
+
+- [x] Nothing is sent while offline, and the state follows the device (`MissionDetailViewModelTest`).
+- [x] The band renders and the sign-up is disabled (`MissionDetailScreenTest`).
+
+**Code:** `ui/OfflineWrites.kt`, `MissionDetailViewModel`
+
+---
+
+### REQ-APP-MIS-017 — A booking needs a sign-up to book against, and only its owner may change it
+
+`POST /api/v1/finance-entries` names a participant, and the only one the app may name is the
+caller's own sign-up. A member who has not signed up is told that — *"Buchen geht, sobald du für
+den Einsatz angemeldet bist."* — rather than shown a button that answers `403`.
+
+**Edit and delete are offered on the caller's own bookings alone.** The server refuses either by
+anyone but the owner or an admin, and the app does not offer what it knows will be refused.
+Ownership is decided by the entry's `participant.id` against the caller's own sign-up id, never by
+a name.
+
+The direction is a **segment**, not a signed amount: a minus typed into a number field is a
+character a member can lose, and the sign is what decides whether the Einsatz earned or spent. The
+editor opens on the whole-number form of the amount — the wire carries `2500.0000` and the field
+takes digits alone, so the raw form would change shape under the member as soon as they typed
+(found on a device).
+
+**Every booking re-reads the tab.** The three totals above the list move with each one, and
+patching a row would leave a sum that disagrees with the rows under it.
+
+**Acceptance**
+
+- [x] Booking is offered only with a sign-up, and the reason is stated
+  (`MissionDetailViewModelTest`, `MissionDetailScreenTest`).
+- [x] Only the caller's own booking offers a change and a delete (`MissionDetailScreenTest`).
+- [x] The editor opens on a number the field can hold (`MissionDetailViewModelTest`).
+- [x] An amount of nothing is not submittable (`MissionDetailViewModelTest`).
+- [x] Each write re-reads the tab (`MissionDetailViewModelTest`).
+- [x] **Observed on a device (2026-08-23):** an expense booked (`201`), changed (`200`) and removed
+  (`204`), the band moving to `−2.500`, `−3.000` and back to `0`.
+
+**Code:** `MissionRepository.addFinanceEntry` / `.updateFinanceEntry` / `.deleteFinanceEntry`,
+`MissionDetailViewModel.onSaveEntry`
+
+---
+
+### REQ-APP-MIS-018 — Negative figures use one minus, everywhere
+
+`formatAmount` prints the typographic minus (`−`, U+2212) rather than the hyphen the platform
+formatter reaches for, which is what `formatSignedAmount` already used.
+
+Found on a device in the Finanzen band: the expense sum read `−2.500` and the net one line below it
+read `-2.500`. The same figure printed two ways, one line apart, reads as two different kinds of
+number.
+
+**Acceptance**
+
+- [x] A negative amount formats identically through both helpers (`AmountsTest`).
+- [x] **Observed on a device (2026-08-23)**, before and after.
+
+**Code:** `common/Amounts.kt`

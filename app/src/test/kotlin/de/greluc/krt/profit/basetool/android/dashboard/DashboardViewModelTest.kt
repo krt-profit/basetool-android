@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
+import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
@@ -75,6 +76,45 @@ class DashboardViewModelTest {
         override suspend fun detail(id: String): ApiResult<MissionDetail> = error("not used")
 
         override suspend fun finances(missionId: String): ApiResult<MissionFinances> = error("not used")
+
+        override suspend fun join(missionId: String): ApiResult<MissionDetail> =
+            error("this fake never signs anybody up")
+
+        override suspend fun leave(
+            missionId: String,
+            participantId: String,
+        ): ApiResult<Unit> = error("this fake never withdraws anybody")
+
+        override suspend fun setCheckedIn(
+            missionId: String,
+            participantId: String,
+            checkedIn: Boolean,
+        ): ApiResult<MissionParticipant> = error("this fake never checks anybody in")
+
+        override suspend fun setDonating(
+            missionId: String,
+            participantId: String,
+            donating: Boolean,
+        ): ApiResult<MissionParticipant> = error("this fake never changes a preference")
+
+        override suspend fun addFinanceEntry(
+            missionId: String,
+            participantId: String,
+            income: Boolean,
+            amount: String,
+            note: String?,
+        ): ApiResult<Unit> = error("this fake books nothing")
+
+        override suspend fun updateFinanceEntry(
+            entryId: String,
+            income: Boolean,
+            amount: String,
+            note: String?,
+            version: Long?,
+        ): ApiResult<Unit> = error("this fake books nothing")
+
+        override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> =
+            error("this fake books nothing")
     }
 
     /**

@@ -10,11 +10,15 @@ package de.greluc.krt.profit.basetool.android.orders
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.Identity
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -231,22 +235,57 @@ sealed interface OrderDetailPhase {
  * @property order the order once it arrives
  * @property phase how far the read has got
  * @property refreshing whether a pull-to-refresh is running
+ * @property me who the caller is, once known; `null` while the read is out or after it failed
+ * @property noteDraft the caller's note while they are editing it, or `null` when the editor is
+ *   closed. Empty string is an open editor holding nothing, which is how a note is cleared
+ * @property statusPickerOpen whether the status picker is showing
+ * @property saving whether a write is in flight
+ * @property online whether a write can be sent at all
+ * @property error what the last write returned, or `null`
  */
 data class OrderDetailState(
     val orderId: String,
     val order: JobOrder? = null,
     val phase: OrderDetailPhase = OrderDetailPhase.Loading,
     val refreshing: Boolean = false,
-)
+    val me: Identity? = null,
+    val noteDraft: String? = null,
+    val statusPickerOpen: Boolean = false,
+    val saving: Boolean = false,
+    val online: Boolean = true,
+    val error: ApiError? = null,
+) {
+    /** The caller's own row on this order, or `null` when they are not on it. */
+    val myAssignment: JobOrderAssignee?
+        get() = me?.let { identity -> order?.assignees?.firstOrNull { it.userId == identity.userId } }
+
+    /**
+     * Whether a write may be offered at all.
+     *
+     * Not knowing who the caller is disables every one of them: an assignment addresses a member
+     * by id, and there is no id to address.
+     */
+    val writable: Boolean
+        get() = online && !saving && me != null
+
+    /** Whether the status control belongs on this screen. */
+    val statusChangeable: Boolean
+        get() = me?.logistician == true
+}
 
 /**
  * Drives one order.
  *
  * @property source where the order comes from
+ * @property identity who the caller is — which decides whose row on this order is theirs, and
+ *   whether the status control is offered at all
+ * @property connectivity whether the device has a network
  * @property orderId which order to load
  */
 class OrderDetailViewModel(
     private val source: JobOrderSource,
+    private val identity: IdentitySource,
+    connectivity: Connectivity,
     private val orderId: String,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(OrderDetailState(orderId = orderId))
@@ -254,9 +293,158 @@ class OrderDetailViewModel(
     /** What the screen draws. */
     val state: StateFlow<OrderDetailState> = mutableState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            connectivity.online.collect { online ->
+                mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+    }
+
     /** Loads the order. */
     fun load() {
+        readIdentity()
         reload(keepContent = false)
+    }
+
+    /**
+     * Reads who the caller is, once.
+     *
+     * A failure is not fatal to the screen: the order still reads, and what is lost is the ability
+     * to tell which assignee row is the caller's — so no write is offered rather than one offered
+     * against a guess.
+     */
+    private fun readIdentity() {
+        if (mutableState.value.me != null) {
+            return
+        }
+        viewModelScope.launch {
+            when (val result = identity.me()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(me = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the caller could not be identified: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    /** Puts the caller on the order, or takes them off it. */
+    fun onToggleAssignment() {
+        val current = mutableState.value
+        val me = current.me ?: return
+        if (!current.writable) {
+            return
+        }
+        write { source.setAssigned(orderId, me.userId, assigned = current.myAssignment == null) }
+    }
+
+    /** Opens the note editor on the caller's own row. */
+    fun onEditNote() {
+        val current = mutableState.value
+        if (current.writable) {
+            mutableState.value = current.copy(noteDraft = current.myAssignment?.note.orEmpty(), error = null)
+        }
+    }
+
+    /**
+     * Updates what the editor holds.
+     *
+     * @param value what the member typed.
+     */
+    fun onNoteChanged(value: String) {
+        mutableState.value = mutableState.value.copy(noteDraft = value.take(NOTE_LENGTH), error = null)
+    }
+
+    /** Closes the editor, discarding what was typed. */
+    fun onDismissNote() {
+        mutableState.value = mutableState.value.copy(noteDraft = null, error = null)
+    }
+
+    /**
+     * Saves the note.
+     *
+     * An emptied editor clears the note rather than writing a blank one: those are the same
+     * intention, and the server has a verb for it.
+     */
+    fun onSaveNote() {
+        val current = mutableState.value
+        val me = current.me
+        val draft = current.noteDraft
+        if (me == null || draft == null || !current.writable) {
+            return
+        }
+        val note = draft.trim().takeIf { it.isNotEmpty() }
+        write {
+            source.setAssigneeNote(orderId, me.userId, note, current.myAssignment?.version)
+        }
+    }
+
+    /** Shows the status picker. */
+    fun onOpenStatusPicker() {
+        val current = mutableState.value
+        if (current.statusChangeable && current.writable) {
+            mutableState.value = current.copy(statusPickerOpen = true, error = null)
+        }
+    }
+
+    /** Closes the status picker. */
+    fun onDismissStatusPicker() {
+        mutableState.value = mutableState.value.copy(statusPickerOpen = false)
+    }
+
+    /**
+     * Moves the order.
+     *
+     * @param status where it should stand.
+     */
+    fun onStatusChosen(status: JobOrderStatus) {
+        val current = mutableState.value
+        if (!current.statusChangeable || !current.writable) {
+            return
+        }
+        write { source.setStatus(orderId, status, current.order?.version) }
+    }
+
+    /**
+     * Runs one write and files what comes back.
+     *
+     * Every write answers with the whole order, so the screen is redrawn from the answer rather
+     * than patched: the version and the assignee order are the server's to decide.
+     *
+     * @param request the call.
+     */
+    private fun write(request: suspend () -> ApiResult<JobOrder>) {
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = request()) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            order = result.value,
+                            phase = OrderDetailPhase.Ready,
+                            noteDraft = null,
+                            statusPickerOpen = false,
+                            saving = false,
+                            error = null,
+                        )
+                }
+
+                // The editor stays open with what was typed: a conflict or a refusal is not a
+                // reason to make the member write their note again.
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the order could not be changed: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(
+                            saving = false,
+                            statusPickerOpen = false,
+                            error = result.error,
+                        )
+                }
+            }
+        }
     }
 
     /** Re-reads it, keeping what is on screen while it runs. */
@@ -298,6 +486,9 @@ class OrderDetailViewModel(
     }
 
     private companion object {
+        /** What the server's note column takes. */
+        const val NOTE_LENGTH = 500
+
         /** Log subsystem. */
         const val LOG_TAG = "orders"
     }

@@ -8,9 +8,12 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.AssigneeNoteRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateJobOrderStatusDto
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import okhttp3.OkHttpClient
@@ -102,6 +105,24 @@ data class JobOrderHandover(
 )
 
 /**
+ * One member on an order.
+ *
+ * @property userId who they are, by id — a name cannot be compared against the caller's own, and
+ *   the two writes on this edge address the member by id
+ * @property name how they read, or `null` for a row the server did not attribute
+ * @property note their own note: when they work on it, which part they take
+ * @property version the edge's **own** optimistic lock. Not the order's: a note edit that echoed
+ *   the order's version would 409 against any unrelated change to it, and bumping the order's
+ *   would 409 everyone else's screen for a note nobody else reads
+ */
+data class JobOrderAssignee(
+    val userId: String,
+    val name: String?,
+    val note: String?,
+    val version: Long?,
+)
+
+/**
  * One job order.
  *
  * @property id the order's id
@@ -116,8 +137,9 @@ data class JobOrderHandover(
  * @property comment the requester's note, or `null`
  * @property materials the material lines
  * @property handovers what has already been handed over
- * @property assignees who is on it, by name
+ * @property assignees who is on it
  * @property createdAt when it was raised, in UTC
+ * @property version the order's optimistic lock, echoed by the status write
  * @property redacted whether the server removed parts of this order for the caller — a requester
  *   sees their own order without what is not theirs (REQ-ORDERS-023), and the screen has to say so
  */
@@ -133,8 +155,9 @@ data class JobOrder(
     val comment: String?,
     val materials: List<JobOrderMaterial>,
     val handovers: List<JobOrderHandover>,
-    val assignees: List<String>,
+    val assignees: List<JobOrderAssignee>,
     val createdAt: Instant?,
+    val version: Long?,
     val redacted: Boolean,
 )
 
@@ -181,6 +204,55 @@ interface JobOrderSource {
      * @return the order, or a failure.
      */
     suspend fun detail(id: String): ApiResult<JobOrder>
+
+    /**
+     * Puts a member on the order, or takes them off it.
+     *
+     * The app only ever passes the caller's own id: assigning anyone else needs LOGISTICIAN, and
+     * the app has no surface that names another member here.
+     *
+     * @param id the order.
+     * @param userId the member.
+     * @param assigned whether they should end up on it.
+     * @return the refreshed order, or the classified failure.
+     */
+    suspend fun setAssigned(
+        id: String,
+        userId: String,
+        assigned: Boolean,
+    ): ApiResult<JobOrder>
+
+    /**
+     * Writes or clears one assignee's note.
+     *
+     * @param id the order.
+     * @param userId whose note.
+     * @param note the new text, or `null` to clear it.
+     * @param version the **assignee edge's** version, echoed from the read.
+     * @return the refreshed order, or the classified failure.
+     */
+    suspend fun setAssigneeNote(
+        id: String,
+        userId: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<JobOrder>
+
+    /**
+     * Moves the order to another status.
+     *
+     * @param id the order.
+     * @param status where it should stand.
+     * @param version the order's version, echoed from the read.
+     * @return the refreshed order, or the classified failure. `403` here is ordinary rather than
+     *   exceptional: the grant is per order, so a Logistician outside this order's slice is
+     *   refused exactly like a member without the grant.
+     */
+    suspend fun setStatus(
+        id: String,
+        status: JobOrderStatus,
+        version: Long?,
+    ): ApiResult<JobOrder>
 }
 
 /**
@@ -248,12 +320,89 @@ class JobOrderRepository(
                 val order = result.value.toModel()
                 if (order == null) {
                     // A payload with no id is not something a detail screen can be built from.
-                    ApiResult.Failure(
-                        de.greluc.krt.profit.basetool.android.core.network.ApiError.NotFound(),
-                    )
+                    ApiResult.Failure(ApiError.NotFound())
                 } else {
                     ApiResult.Success(order)
                 }
+            }
+        }
+
+    override suspend fun setAssigned(
+        id: String,
+        userId: String,
+        assigned: Boolean,
+    ): ApiResult<JobOrder> {
+        val path = assigneePath(id, userId)
+        return refreshed(
+            if (assigned) {
+                reader.post(path, JobOrderDto.serializer())
+            } else {
+                reader.delete(path, JobOrderDto.serializer())
+            },
+        )
+    }
+
+    override suspend fun setAssigneeNote(
+        id: String,
+        userId: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<JobOrder> {
+        val path = assigneePath(id, userId) + "/note"
+        return refreshed(
+            if (note == null) {
+                reader.delete(
+                    path,
+                    version?.let { listOf(VERSION_PARAM to it.toString()) }.orEmpty(),
+                    JobOrderDto.serializer(),
+                )
+            } else {
+                reader.put(
+                    path,
+                    AssigneeNoteRequest(note = note, version = version),
+                    AssigneeNoteRequest.serializer(),
+                    JobOrderDto.serializer(),
+                )
+            },
+        )
+    }
+
+    override suspend fun setStatus(
+        id: String,
+        status: JobOrderStatus,
+        version: Long?,
+    ): ApiResult<JobOrder> {
+        val wire = status.toWire() ?: return ApiResult.Failure(ApiError.Validation())
+        return refreshed(
+            reader.put(
+                orderPath(id) + "/status",
+                UpdateJobOrderStatusDto(status = wire, version = version ?: 0L),
+                UpdateJobOrderStatusDto.serializer(),
+                JobOrderDto.serializer(),
+            ),
+        )
+    }
+
+    /**
+     * Turns a write's answer into the refreshed order.
+     *
+     * Every one of these writes answers with the whole order, and the screen redraws from it
+     * rather than patching what it holds: the server decides the assignee order and the version,
+     * and guessing at either is how two screens start disagreeing.
+     *
+     * @param result what the write returned.
+     * @return the order, or the failure — including the answer that carries no id, which a detail
+     *   screen cannot be rebuilt from.
+     */
+    private fun refreshed(result: ApiResult<JobOrderDto>): ApiResult<JobOrder> =
+        when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toModel()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.NotFound())
             }
         }
 
@@ -268,6 +417,7 @@ class JobOrderRepository(
         private const val STATUS_PARAM = "status"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
+        private const val VERSION_PARAM = "version"
 
         /**
          * One order's path.
@@ -276,8 +426,37 @@ class JobOrderRepository(
          * @return the path.
          */
         private fun orderPath(id: String) = "/api/v1/orders/$id"
+
+        /**
+         * One member's edge on one order.
+         *
+         * @param id the order's id.
+         * @param userId the member's id.
+         * @return the path.
+         */
+        private fun assigneePath(
+            id: String,
+            userId: String,
+        ) = "${orderPath(id)}/assignees/$userId"
     }
 }
+
+/**
+ * Maps the app's status onto the wire enum.
+ *
+ * @return the wire constant, or `null` for [JobOrderStatus.UNKNOWN]. That one exists to carry a
+ *   status this build does not know, so asking the server to move an order into it is not a
+ *   request that means anything — and folding it into one of the four would move the order
+ *   somewhere nobody asked for.
+ */
+private fun JobOrderStatus.toWire(): UpdateJobOrderStatusDto.Status? =
+    when (this) {
+        JobOrderStatus.OPEN -> UpdateJobOrderStatusDto.Status.OPEN
+        JobOrderStatus.IN_PROGRESS -> UpdateJobOrderStatusDto.Status.IN_PROGRESS
+        JobOrderStatus.REJECTED -> UpdateJobOrderStatusDto.Status.REJECTED
+        JobOrderStatus.COMPLETED -> UpdateJobOrderStatusDto.Status.COMPLETED
+        JobOrderStatus.UNKNOWN -> null
+    }
 
 /**
  * Maps a page of orders onto the model.
@@ -322,8 +501,21 @@ private fun JobOrderDto.toModel(): JobOrder? {
                     )
                 }
             },
-        assignees = assignees.orEmpty().mapNotNull { it.user?.effectiveName },
+        assignees =
+            assignees.orEmpty().mapNotNull { assignee ->
+                // No id, no row: the two writes on this edge address the member by id, and a row
+                // that cannot be addressed would offer actions that always fail.
+                assignee.user?.id?.let {
+                    JobOrderAssignee(
+                        userId = it,
+                        name = assignee.user?.effectiveName,
+                        note = assignee.note?.trim()?.takeIf { note -> note.isNotEmpty() },
+                        version = assignee.version,
+                    )
+                }
+            },
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
+        version = version,
         // `null` is read as not redacted: the flag is an addition, and treating its absence as
         // "something is missing" would put a caveat on every order an older server sends.
         redacted = redacted == true,

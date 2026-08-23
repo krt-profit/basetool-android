@@ -197,6 +197,88 @@ class ApiReader(
         withoutBody(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).delete())
 
     /**
+     * Sends a `POST` that carries no body and parses what comes back.
+     *
+     * Some writes are entirely addressed by their path — "put this member on this order" names
+     * both in the URL and has nothing left to say in a payload. Sending `{}` instead would work
+     * and would be a lie about the shape of the request.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    suspend fun <T> post(
+        path: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> =
+        call(
+            path,
+            Request.Builder().url("$baseUrl$path".toHttpUrl()).post(EMPTY_BODY),
+            deserializer,
+        )
+
+    /**
+     * Sends a `PUT` that carries no body and parses what comes back.
+     *
+     * The sibling of the body-less `POST` above, for a write whose whole instruction is its path —
+     * an account's all-members switch is `.../all-members/true`, and there is nothing left to put
+     * in a payload.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    suspend fun <T> put(
+        path: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> =
+        call(
+            path,
+            Request.Builder().url("$baseUrl$path".toHttpUrl()).put(EMPTY_BODY),
+            deserializer,
+        )
+
+    /**
+     * Deletes a row and parses the answer.
+     *
+     * The `Unit` variant above is for the `204` case. This one is for a delete that answers with
+     * the parent it just changed — the assignee edge does, and the screen redraws the whole order
+     * from it rather than guessing at the new version.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param query the parameters, unencoded; empty for a delete addressed entirely by its path
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    suspend fun <T> delete(
+        path: String,
+        query: List<Pair<String, String>>,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> {
+        val url =
+            "$baseUrl$path".toHttpUrl().newBuilder()
+                .apply { query.forEach { (name, value) -> addQueryParameter(name, value) } }
+                .build()
+        return call(path, Request.Builder().url(url).delete(), deserializer)
+    }
+
+    /**
+     * Deletes a row and parses the answer, with nothing in the query.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    suspend fun <T> delete(
+        path: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> = delete(path, emptyList(), deserializer)
+
+    /**
      * Builds and runs one body-carrying request.
      *
      * @param B the request type
@@ -304,5 +386,8 @@ class ApiReader(
 
         /** What every write on this API sends and receives. */
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+
+        /** What a body-less write sends: nothing, with the length header OkHttp requires. */
+        val EMPTY_BODY = ByteArray(0).toRequestBody(null, 0, 0)
     }
 }

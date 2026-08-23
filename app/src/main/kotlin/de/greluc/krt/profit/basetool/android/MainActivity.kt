@@ -237,21 +237,40 @@ class MainActivity : AppCompatActivity() {
                             BasetoolApp(
                                 orgUnit = orgUnit,
                                 missions = missionsViewModel,
-                                missionDetail = { MissionDetailViewModel(container.missions, it) },
+                                missionDetail = {
+                                    MissionDetailViewModel(
+                                        container.missions,
+                                        container.identity,
+                                        container.connectivity,
+                                        it,
+                                    )
+                                },
                                 operations = operationsViewModel,
                                 notifications = notificationsViewModel,
                                 dashboard = dashboardViewModel,
                                 hangar = hangarViewModel,
                                 bank = bankViewModel,
-                                bankAccount = { BankAccountViewModel(container.bank, it) },
+                                bankAccount = { BankAccountViewModel(container.bank, container.connectivity, it) },
                                 orders = ordersViewModel,
-                                orderDetail = { OrderDetailViewModel(container.orders, it) },
+                                orderDetail = {
+                                    OrderDetailViewModel(
+                                        container.orders,
+                                        container.identity,
+                                        container.connectivity,
+                                        it,
+                                    )
+                                },
                                 inventory = inventoryViewModel,
                                 personalInventory = personalInventoryViewModel,
                                 personalBlueprints = personalBlueprintsViewModel,
                                 booking = bookingViewModel,
                                 operationDetail = {
-                                    OperationDetailViewModel(container.operations, container.identity, it)
+                                    OperationDetailViewModel(
+                                        container.operations,
+                                        container.identity,
+                                        container.connectivity,
+                                        it,
+                                    )
                                 },
                                 onSelectOrgUnit = orgUnitViewModel::select,
                                 onLogout = signOut,

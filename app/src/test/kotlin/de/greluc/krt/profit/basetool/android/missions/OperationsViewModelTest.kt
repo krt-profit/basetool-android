@@ -71,6 +71,12 @@ class OperationsViewModelTest {
 
         override suspend fun overview(id: String): ApiResult<OperationOverview> =
             error("the list never opens an overview")
+
+        override suspend fun setPaidOut(
+            operationId: String,
+            participantKey: String,
+            paidOut: Boolean,
+        ): ApiResult<Unit> = error("this fake confirms nothing")
     }
 
     private fun operation(
