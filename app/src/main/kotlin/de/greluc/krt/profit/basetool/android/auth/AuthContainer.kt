@@ -37,9 +37,12 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
+import de.greluc.krt.profit.basetool.android.core.data.PersonalInventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
+import de.greluc.krt.profit.basetool.android.core.network.SystemConnectivity
 import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.UUID
@@ -205,6 +208,25 @@ class AuthContainer(
     val missions: MissionRepository by lazy {
         MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
+
+    /**
+     * The member's own stock — phase 3's first writes.
+     *
+     * Shares [apiClient] like every other repository: the bearer token, the correlation id and the
+     * org pin are already on each request, and a second client would open a second connection to
+     * the same host.
+     */
+    val personalInventory: PersonalInventoryRepository by lazy {
+        PersonalInventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Whether the device has a network at all.
+     *
+     * Held here rather than created per screen: the callback registration is a system call, and
+     * every write screen from phase 3 on asks the same question.
+     */
+    val connectivity: Connectivity by lazy { SystemConnectivity(appContext) }
 
     /**
      * The Operationen list and detail.

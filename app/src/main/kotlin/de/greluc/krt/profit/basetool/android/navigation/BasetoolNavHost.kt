@@ -50,6 +50,8 @@ import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
+import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryRoute
+import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -101,6 +103,7 @@ fun BasetoolNavHost(
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
+    personalInventory: PersonalInventoryViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
@@ -138,6 +141,7 @@ fun BasetoolNavHost(
                         bank = bank,
                         orders = orders,
                         inventory = inventory,
+                        personalInventory = personalInventory,
                         memberName = memberName,
                         orgUnitName = orgUnitName,
                     )
@@ -198,6 +202,7 @@ private fun listDestination(
     bank: BankViewModel,
     orders: OrdersViewModel,
     inventory: InventoryViewModel,
+    personalInventory: PersonalInventoryViewModel,
     memberName: String?,
     orgUnitName: String?,
 ): Boolean {
@@ -265,6 +270,10 @@ private fun listDestination(
         KrtDestination.Hangar -> {
             LaunchedEffect(Unit) { hangar.loadOnce() }
             HangarRoute(viewModel = hangar)
+        }
+
+        KrtDestination.PersonalInventory -> {
+            PersonalInventoryRoute(viewModel = personalInventory)
         }
 
         KrtDestination.Bank -> {

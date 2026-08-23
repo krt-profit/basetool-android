@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Basetool Android — native companion app of the Profit Basetool.
+  Copyright (C) 2026 Lucas Greuloch
+  SPDX-License-Identifier: GPL-3.0-only
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Declared here, in the module whose code needs it, so the requirement travels with the class
+      that makes the call: Connectivity reads whether a network exists, for the rule that offline
+      DISABLES writes rather than queueing them. Repeated in the app manifest, which is where the
+      permission inventory is reviewed against the plan and the TDDDG analysis; the merger folds
+      the two into one entry. Normal permission, no runtime prompt, nothing leaves the device.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+</manifest>

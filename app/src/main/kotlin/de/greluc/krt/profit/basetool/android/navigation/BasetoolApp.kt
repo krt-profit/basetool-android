@@ -55,6 +55,7 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewMode
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
+import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
@@ -116,6 +117,7 @@ fun BasetoolApp(
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
+    personalInventory: PersonalInventoryViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -229,6 +231,7 @@ fun BasetoolApp(
                     orders = orders,
                     orderDetail = orderDetail,
                     inventory = inventory,
+                    personalInventory = personalInventory,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )

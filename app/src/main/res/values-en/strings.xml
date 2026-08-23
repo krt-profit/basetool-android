@@ -394,4 +394,40 @@
     <string name="inventory_empty_filtered_message">No material on this page holds any stock.</string>
     <string name="inventory_error_title">Signal Lost</string>
     <string name="inventory_error_message">The Lager could not be loaded.</string>
+
+    <!-- Mein Inventar (phase 3) -->
+    <string name="personal_inventory_title">My inventory</string>
+    <string name="personal_inventory_search">Search entry</string>
+    <string name="personal_inventory_create">New entry</string>
+    <string name="personal_inventory_edit">Edit entry</string>
+    <string name="personal_inventory_delete">Delete</string>
+    <string name="personal_inventory_end_of_list">End of list</string>
+    <string name="personal_inventory_empty_title">Nothing recorded</string>
+    <string name="personal_inventory_empty_message">What you keep yourself goes here. Visible only to you.</string>
+    <string name="personal_inventory_empty_filtered_message">No entry matches this search.</string>
+    <string name="personal_inventory_error_title">Signal Lost</string>
+    <string name="personal_inventory_error_message">Your inventory could not be loaded.</string>
+    <string name="personal_inventory_field_name">Name</string>
+    <string name="personal_inventory_field_quantity">Quantity</string>
+    <string name="personal_inventory_field_location">Location</string>
+    <string name="personal_inventory_field_note">Note (optional)</string>
+    <string name="personal_inventory_location_search">Search location</string>
+    <string name="personal_inventory_location_hint">At least two characters.</string>
+    <string name="personal_inventory_location_none">No location found.</string>
+    <string name="personal_inventory_location_missing">Pick a location.</string>
+    <string name="personal_inventory_save">Save</string>
+    <string name="personal_inventory_cancel">Cancel</string>
+    <string name="personal_inventory_delete_title">Delete entry</string>
+    <string name="personal_inventory_delete_body">“%1$s” will be deleted. This cannot be undone.</string>
+    <string name="personal_inventory_visible_only_to_you">Visible only to you.</string>
+    <string name="offline_writes_disabled">No network — editing is disabled until the connection is back.</string>
+    <string name="value_absent">—</string>
+    <string name="conflict_title">Changed at the same time</string>
+    <string name="conflict_body">Someone else changed this entry in the meantime. What you typed is still here — reload and save again.</string>
+    <string name="conflict_reload">Reload</string>
+    <string name="write_failed">Could not be saved.</string>
+    <plurals name="personal_inventory_location_capped">
+        <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>
+        <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
+    </plurals>
 </resources>

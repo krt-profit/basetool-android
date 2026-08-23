@@ -411,4 +411,40 @@
     <string name="inventory_empty_filtered_message">Auf dieser Seite hat kein Material einen Bestand.</string>
     <string name="inventory_error_title">Signal Lost</string>
     <string name="inventory_error_message">Das Lager konnte nicht geladen werden.</string>
+
+    <!-- Mein Inventar (phase 3) -->
+    <string name="personal_inventory_title">Mein Inventar</string>
+    <string name="personal_inventory_search">Eintrag suchen</string>
+    <string name="personal_inventory_create">Eintrag anlegen</string>
+    <string name="personal_inventory_edit">Eintrag ändern</string>
+    <string name="personal_inventory_delete">Löschen</string>
+    <string name="personal_inventory_end_of_list">Ende der Liste</string>
+    <string name="personal_inventory_empty_title">Nichts erfasst</string>
+    <string name="personal_inventory_empty_message">Hier steht, was du selbst gelagert hast. Nur für dich sichtbar.</string>
+    <string name="personal_inventory_empty_filtered_message">Für diese Suche gibt es keinen Eintrag.</string>
+    <string name="personal_inventory_error_title">Signal Lost</string>
+    <string name="personal_inventory_error_message">Dein Inventar konnte nicht geladen werden.</string>
+    <string name="personal_inventory_field_name">Bezeichnung</string>
+    <string name="personal_inventory_field_quantity">Menge</string>
+    <string name="personal_inventory_field_location">Ort</string>
+    <string name="personal_inventory_field_note">Notiz (optional)</string>
+    <string name="personal_inventory_location_search">Ort suchen</string>
+    <string name="personal_inventory_location_hint">Mindestens zwei Zeichen.</string>
+    <string name="personal_inventory_location_none">Kein Ort gefunden.</string>
+    <string name="personal_inventory_location_missing">Wähle einen Ort.</string>
+    <string name="personal_inventory_save">Speichern</string>
+    <string name="personal_inventory_cancel">Abbrechen</string>
+    <string name="personal_inventory_delete_title">Eintrag löschen</string>
+    <string name="personal_inventory_delete_body">„%1$s“ wird gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="personal_inventory_visible_only_to_you">Nur für dich sichtbar.</string>
+    <string name="offline_writes_disabled">Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.</string>
+    <string name="value_absent">—</string>
+    <string name="conflict_title">Gleichzeitig geändert</string>
+    <string name="conflict_body">Jemand anderes hat diesen Eintrag inzwischen geändert. Deine Eingabe bleibt stehen — lade neu und speichere erneut.</string>
+    <string name="conflict_reload">Neu laden</string>
+    <string name="write_failed">Konnte nicht gespeichert werden.</string>
+    <plurals name="personal_inventory_location_capped">
+        <item quantity="one">Nur der erste Treffer. Suche genauer, wenn dein Ort fehlt.</item>
+        <item quantity="other">Nur die ersten %1$d Treffer. Suche genauer, wenn dein Ort fehlt.</item>
+    </plurals>
 </resources>

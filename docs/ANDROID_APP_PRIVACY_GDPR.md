@@ -141,11 +141,21 @@ optional.)
 - Cache only what the member's screens need; TTL-bound; wiped on logout and via a settings
   action ("Lokale Daten löschen"). Backup/D2D excluded (see security doc §4).
 - No device identifiers collected or transmitted; no advertising ID (declare
-  `AD_ID`-permission-free build if Play is chosen). Permissions: `INTERNET`; `USE_BIOMETRIC`
-  (optional app-lock, on-device only); `DETECT_SCREEN_RECORDING` (API 35+, normal install-time
-  permission for the capture warning); `POST_NOTIFICATIONS` only if a push/notification
-  decision lands; the `dev` flavor additionally declares `ACCESS_LOCAL_NETWORK` (API 37
-  enforcement) — never the release build.
+  `AD_ID`-permission-free build if Play is chosen). Permissions: `INTERNET`;
+  **`ACCESS_NETWORK_STATE`** (normal install-time permission, added 2026-08-23 by owner decision —
+  reads whether a network exists so phase 3 can *disable* write actions instead of queueing them,
+  which the optimistic-locking contract makes unsafe; the callback reports the local link's state,
+  **no request is made and nothing leaves the device**, and it observes no identifier, SSID or
+  address); `USE_BIOMETRIC` (optional app-lock, on-device only); `DETECT_SCREEN_RECORDING`
+  (API 35+, normal install-time permission for the capture warning); `POST_NOTIFICATIONS` only if
+  a push/notification decision lands; the `dev` flavor additionally declares
+  `ACCESS_LOCAL_NETWORK` (API 37 enforcement) — never the release build.
+- **§ 25 TDDDG for `ACCESS_NETWORK_STATE`: not applicable.** The provision governs storing
+  information on, or reading information from, a member's terminal equipment. This permission
+  stores nothing and reads no information *about the member* — it reads a property of the device's
+  own connectivity, which is neither personal data nor an identifier, and it is used solely to
+  render the app's own controls. No consent is required and none is asked for; the app stays
+  banner-free.
 - App logs: local ring buffer, no names/emails/tokens (mirrors REQ-OBS-004), export only by
   explicit user action (relevant to crash-reporting decision Q4).
 - Data subject rights are served by the existing server-side processes (the app adds a
