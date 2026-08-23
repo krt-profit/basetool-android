@@ -5,10 +5,14 @@ the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
 portrait-first, tablets landscape-first, minSdk 30 (Android 11), dark-only DAS KARTELL
 design.
 
-**Status: Phase 1 in progress.** The theme, the chapter-02 component library, the navigation
-shell, the chapter-04 auth flow (login, approval gate, terms, app lock) and the chapter-13
-settings screen are implemented and building (`./gradlew check` is green); the feature screens
-follow. The owner-approved concept lives in [`docs/`](docs/):
+**Status: phase 3 complete (2026-08-23).** The theme, the component library, the navigation shell,
+the auth flow (login, approval gate, terms, app lock) and the settings screen ship from phase 1; the
+member's read surface — Übersicht, Einsätze, Operationen, Aufträge, Lager, Bank, Hangar, Posteingang
+— from phase 2; and the app now **writes**: Mein Inventar and the Blueprints, the Hangar's own
+ships, the Lager's bookings, an Auftrag's assignment and status, an Einsatz's participation and
+money, and a bank account's settings. `./gradlew check` is green. Live parity, the Materialbörse,
+the Raffinerie and the file imports are phase 4. The owner-approved concept lives in
+[`docs/`](docs/):
 
 | Document | Content |
 |---|---|
