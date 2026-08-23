@@ -61,3 +61,52 @@ fold instead of being lifted clear.
   row moved from y 2362–2404 to y 2331–2373 and a tap on its centre reached the button.
 - [x] Every sheet in the app inherits it — the org switcher, the booking form, the ship editor and
   the personal-inventory editor all go through `KrtBottomSheet`.
+
+---
+
+### REQ-APP-UI-003 — A busy server counts down; a refused one does not
+
+Design chapter 14 gives a busy server its own full screen: the seconds left inside the orange ring,
+a backoff of 3 → 6 → 12 → 30, and `429` using the server's `Retry-After`. Three parts, and the value
+is in what each of them refuses to do.
+
+**The ladder** ([`RetryBackoff`](../../core/common/src/main/kotlin/de/greluc/krt/profit/basetool/android/core/common/RetryBackoff.kt))
+holds at thirty seconds rather than growing, because a screen the member is still looking at has to
+keep trying at a rate they can perceive as trying. A `Retry-After` of zero or less is **ignored** —
+"retry immediately" from a server that just rate-limited you is not an instruction worth following —
+and an unreasonably long one is capped back onto the ladder, because a live countdown running for an
+hour is a frozen app in the member's eyes. Only the delta-seconds form of the header is parsed: the
+HTTP-date form would mean trusting the device clock against the server's, and a skew turns three
+seconds into hours or into none.
+
+**The ring** (`KrtRetryCountdown`) is handed the number rather than ticking itself. The waiting
+belongs to whoever owns the retry, and a composable counting on its own would keep going through a
+configuration change while the real timer did something else. A negative value renders as zero: an
+overrun timer is our defect, and `-2` hands it to the member.
+
+**The adoption rule, which only a screen can honour.** The countdown replaces the screen **only when
+the first load failed and there is nothing on it**. A screen with content keeps it and shows its
+banner — replacing loaded data would take away what the member was reading in order to tell them
+something the banner says without costing them their place.
+
+**A screen adopts it with four pieces**, and the Bank accounts list is the worked example:
+
+1. a `retryIn: Int?` on its state, set only while a countdown runs;
+2. a `scheduleRetry(error, keepContent)` on the failure branch, which starts nothing unless the
+   error is `ServiceUnavailable` or `RateLimited`, the screen is empty, and no timer is already
+   running;
+3. an `onRetry()` that cancels the timer and **resets the attempt count** — the member pressing the
+   button is new information, and inheriting a thirty-second wait from an automatic attempt they did
+   not make would punish them for having waited;
+4. an `onRetryNow` callback on the composable, kept **separate from `onRefresh`**. A pull-to-refresh
+   does not carry the reset, and collapsing the two would lose it silently.
+
+**Acceptance**
+
+- [x] The ladder, the `Retry-After` precedence and all three refusals (`RetryBackoffTest`, 6 tests).
+- [x] The ring shows the number, clamps a negative one and reports the press
+  (`KrtRetryCountdownTest`, 4 tests).
+- [x] The Bank shows the countdown for a busy server and the ordinary empty state otherwise
+  (`BankViewModel`, `BankScreen`).
+- [ ] **The remaining screens' first-load paths** — outstanding (#67).
+- [ ] **Walked on a device** — outstanding (#67).
