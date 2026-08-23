@@ -219,6 +219,28 @@ class ApiReader(
         )
 
     /**
+     * Sends a `PUT` that carries no body and parses what comes back.
+     *
+     * The sibling of the body-less `POST` above, for a write whose whole instruction is its path —
+     * an account's all-members switch is `.../all-members/true`, and there is nothing left to put
+     * in a payload.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    suspend fun <T> put(
+        path: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> =
+        call(
+            path,
+            Request.Builder().url("$baseUrl$path".toHttpUrl()).put(EMPTY_BODY),
+            deserializer,
+        )
+
+    /**
      * Deletes a row and parses the answer.
      *
      * The `Unit` variant above is for the `204` case. This one is for a delete that answers with

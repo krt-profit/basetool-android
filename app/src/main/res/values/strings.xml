@@ -555,4 +555,10 @@
     <string name="operation_detail_payout_confirm">Bestätigen</string>
     <string name="operation_detail_payout_undo">Zurücknehmen</string>
     <string name="operation_detail_payout_not_allowed">Für diese Auszahlung fehlt dir die Berechtigung.</string>
+    <string name="bank_settings">Einstellungen</string>
+    <string name="bank_settings_target">Zielsaldo (aUEC)</string>
+    <string name="bank_settings_target_hint">Leer lassen, um kein Ziel zu setzen.</string>
+    <string name="bank_settings_visibility">Sichtbarkeit</string>
+    <string name="bank_settings_visibility_fixed">Für diesen Kontotyp ist die Sichtbarkeit fest vorgegeben.</string>
+    <string name="bank_settings_all_members">Alle Mitglieder der Einheit</string>
 </resources>

@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -41,23 +44,48 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Konten list. */
 const val BANK_ACCOUNTS_TAG: String = "bank-accounts"
+
+/** Test handle for the account-settings action. */
+const val BANK_SETTINGS_TAG: String = "bank-settings"
+
+/** Test handle for the settings sheet. */
+const val BANK_SETTINGS_SHEET_TAG: String = "bank-settings-sheet"
+
+/** Test handle for the target's save action. */
+const val BANK_TARGET_SAVE_TAG: String = "bank-target-save"
+
+/** Test handle for the all-members switch. */
+const val BANK_ALL_MEMBERS_TAG: String = "bank-all-members"
+
+/** Test handle for one role-bucket chip. */
+const val BANK_ROLE_TAG: String = "bank-role"
 
 /** Test handle for one account's screen. */
 const val BANK_ACCOUNT_TAG: String = "bank-account"
@@ -245,10 +273,16 @@ fun BankAccountScreen(
     state: BankAccountState,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
+    actions: BankSettingsActions,
     modifier: Modifier = Modifier,
 ) {
     val account = state.account
     val phase = state.phase
+    if (state.settingsOpen) {
+        state.settings?.let { settings ->
+            BankSettingsSheet(settings = settings, state = state, actions = actions)
+        }
+    }
     when {
         account != null -> {
             PullToRefreshBox(
@@ -257,6 +291,9 @@ fun BankAccountScreen(
                 modifier = modifier.fillMaxSize(),
             ) {
                 LazyColumn(modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNT_TAG)) {
+                    if (!state.online) {
+                        item(key = "offline") { OfflineBand() }
+                    }
                     item(key = "head") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
@@ -277,6 +314,21 @@ fun BankAccountScreen(
                                 style = MaterialTheme.typography.titleLarge,
                                 color = KrtPalette.White,
                             )
+                            // Only for the member responsible for this account, and only because
+                            // the server said so in the settings answer: the app works out no role
+                            // of its own here.
+                            state.settings?.takeIf { it.canSetTarget || it.canConfigureVisibility }
+                                ?.let {
+                                    KrtGhostButton(
+                                        text = stringResource(R.string.bank_settings),
+                                        onClick = actions.onOpen,
+                                        modifier =
+                                            Modifier
+                                                .testTag(BANK_SETTINGS_TAG)
+                                                .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
+                                        enabled = state.writable,
+                                    )
+                                }
                             account.delta30d?.let { delta ->
                                 Text(
                                     text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
@@ -537,6 +589,158 @@ fun BankAccountRoute(
         state = state,
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,
+        actions =
+            BankSettingsActions(
+                onOpen = viewModel::onOpenSettings,
+                onDismiss = viewModel::onDismissSettings,
+                onTargetChanged = viewModel::onTargetChanged,
+                onSaveTarget = viewModel::onSaveTarget,
+                onToggleRole = viewModel::onToggleRole,
+                onToggleAllMembers = viewModel::onToggleAllMembers,
+            ),
         modifier = modifier,
     )
+}
+
+/**
+ * What the account settings report back.
+ *
+ * @property onOpen the settings were opened.
+ * @property onDismiss they were closed.
+ * @property onTargetChanged the target changed.
+ * @property onSaveTarget the target was saved.
+ * @property onToggleRole a role bucket was granted or revoked.
+ * @property onToggleAllMembers the all-members switch was flipped.
+ */
+data class BankSettingsActions(
+    val onOpen: () -> Unit,
+    val onDismiss: () -> Unit,
+    val onTargetChanged: (String) -> Unit,
+    val onSaveTarget: () -> Unit,
+    val onToggleRole: (String) -> Unit,
+    val onToggleAllMembers: () -> Unit,
+)
+
+/**
+ * What the account's responsible holder may change about it.
+ *
+ * Every control here is drawn from a flag the **server** sent: `canSetTarget` and
+ * `canConfigureVisibility` are per-account facts, and the app works out no role of its own. An
+ * account type that does not support visibility at all says so rather than showing an empty
+ * section — "cannot be configured" and "you may not configure it" are different sentences.
+ *
+ * @param settings what the account says.
+ * @param state the screen, for the save gate and the last refusal.
+ * @param actions what the sheet reports back.
+ */
+@Composable
+private fun BankSettingsSheet(
+    settings: BankAccountSettings,
+    state: BankAccountState,
+    actions: BankSettingsActions,
+) {
+    KrtBottomSheet(
+        onDismiss = actions.onDismiss,
+        modifier = Modifier.testTag(BANK_SETTINGS_SHEET_TAG),
+        title = stringResource(R.string.bank_settings),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            if (settings.canSetTarget) {
+                KrtTextField(
+                    value = state.targetDraft.orEmpty(),
+                    onValueChange = actions.onTargetChanged,
+                    label = stringResource(R.string.bank_settings_target),
+                    enabled = !state.saving,
+                )
+                Text(
+                    text = stringResource(R.string.bank_settings_target_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.personal_inventory_save),
+                    onClick = actions.onSaveTarget,
+                    modifier = Modifier.testTag(BANK_TARGET_SAVE_TAG),
+                    enabled = state.writable,
+                )
+            }
+            if (settings.canConfigureVisibility) {
+                BankVisibilitySection(settings = settings, state = state, actions = actions)
+            }
+            state.error?.let { error ->
+                KrtFieldError(
+                    text =
+                        stringResource(
+                            if (error is ApiError.OptimisticLock) {
+                                R.string.conflict_body
+                            } else {
+                                R.string.write_failed
+                            },
+                        ),
+                )
+            }
+            KrtGhostButton(
+                text = stringResource(R.string.personal_inventory_cancel),
+                onClick = actions.onDismiss,
+                enabled = !state.saving,
+            )
+        }
+    }
+}
+
+/**
+ * Who may see the account.
+ *
+ * @param settings what it says.
+ * @param state the screen.
+ * @param actions what the section reports back.
+ */
+@Composable
+private fun BankVisibilitySection(
+    settings: BankAccountSettings,
+    state: BankAccountState,
+    actions: BankSettingsActions,
+) {
+    KrtSectionTitle(text = stringResource(R.string.bank_settings_visibility))
+    if (!settings.visibilityConfigurable) {
+        Text(
+            text = stringResource(R.string.bank_settings_visibility_fixed),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+        return
+    }
+    if (settings.allMembersSupported) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            KrtToggle(
+                checked = settings.allMembersGranted,
+                onCheckedChange = { actions.onToggleAllMembers() },
+                enabled = state.writable,
+                modifier = Modifier.testTag(BANK_ALL_MEMBERS_TAG),
+            )
+            Text(
+                text = stringResource(R.string.bank_settings_all_members),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+        }
+    }
+    settings.availableRoleCodes.forEach { code ->
+        KrtFilterChip(
+            text = code,
+            selected = code in settings.grantedRoleCodes,
+            onClick = { actions.onToggleRole(code) },
+            modifier = Modifier.testTag(BANK_ROLE_TAG),
+        )
+    }
 }

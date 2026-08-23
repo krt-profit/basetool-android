@@ -7,9 +7,12 @@
 
 package de.greluc.krt.profit.basetool.android.core.data
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBalanceTargetRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountDetailDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountSettingsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -111,6 +114,40 @@ data class BankBookingPage(
 }
 
 /**
+ * What the holder of an account may change about it, and what it currently says.
+ *
+ * **The two `can*` flags come from the server, not from a role the app worked out.** Which member
+ * is responsible for an account is a per-account fact, and the settings answer states it — so the
+ * screen offers exactly the controls the server would accept and guesses at nothing.
+ *
+ * @property accountId which account
+ * @property accountName how it reads
+ * @property balanceTarget the target balance, or `null` when none is set
+ * @property version the optimistic lock, echoed by the target write
+ * @property canSetTarget whether the caller may change the target
+ * @property canConfigureVisibility whether they may change who sees the account
+ * @property visibilityConfigurable whether this account type supports it at all — a different fact
+ *   from whether the caller may
+ * @property allMembersSupported whether the all-members switch applies to this account
+ * @property allMembersGranted whether it is on
+ * @property availableRoleCodes the role buckets that can be granted, in server order
+ * @property grantedRoleCodes the ones that are
+ */
+data class BankAccountSettings(
+    val accountId: String,
+    val accountName: String?,
+    val balanceTarget: String?,
+    val version: Long?,
+    val canSetTarget: Boolean,
+    val canConfigureVisibility: Boolean,
+    val visibilityConfigurable: Boolean,
+    val allMembersSupported: Boolean,
+    val allMembersGranted: Boolean,
+    val availableRoleCodes: List<String>,
+    val grantedRoleCodes: List<String>,
+)
+
+/**
  * The org bank reads a member may make, as a seam.
  */
 interface BankSource {
@@ -130,6 +167,54 @@ interface BankSource {
      *   caller has no grant for.
      */
     suspend fun account(id: String): ApiResult<BankAccountDetail>
+
+    /**
+     * Reads what the caller may change about one account.
+     *
+     * @param id the account.
+     * @return the settings, or the classified failure.
+     */
+    suspend fun settings(id: String): ApiResult<BankAccountSettings>
+
+    /**
+     * Sets or clears the account's target balance.
+     *
+     * @param id the account.
+     * @param target the new target, or `null` to clear it.
+     * @param version the version echoed from the read.
+     * @return the refreshed settings, or the classified failure.
+     */
+    suspend fun setBalanceTarget(
+        id: String,
+        target: String?,
+        version: Long?,
+    ): ApiResult<BankAccountSettings>
+
+    /**
+     * Grants or revokes one role bucket's view of the account.
+     *
+     * @param id the account.
+     * @param roleCode the bucket.
+     * @param granted whether it should end up granted.
+     * @return the refreshed settings, or the classified failure.
+     */
+    suspend fun setRoleVisibility(
+        id: String,
+        roleCode: String,
+        granted: Boolean,
+    ): ApiResult<BankAccountSettings>
+
+    /**
+     * Opens the account to every member of its org unit, or closes it again.
+     *
+     * @param id the account.
+     * @param granted whether every member should see it.
+     * @return the refreshed settings, or the classified failure.
+     */
+    suspend fun setAllMembersVisibility(
+        id: String,
+        granted: Boolean,
+    ): ApiResult<BankAccountSettings>
 
     /**
      * Reads one page of an account's ledger.
@@ -205,6 +290,76 @@ class BankRepository(
      * @param pageSize how many lines to ask for.
      * @return the page, or the classified failure.
      */
+    override suspend fun settings(id: String): ApiResult<BankAccountSettings> =
+        mapped(
+            reader.get(
+                "${accountPath(id)}/settings",
+                OrgUnitBankAccountSettingsDto.serializer(),
+            ),
+        )
+
+    override suspend fun setBalanceTarget(
+        id: String,
+        target: String?,
+        version: Long?,
+    ): ApiResult<BankAccountSettings> =
+        mapped(
+            reader.put(
+                "${accountPath(id)}/balance-target",
+                OrgUnitBalanceTargetRequest(
+                    // No target IS the clear. Sending zero would set a target of nothing, which is
+                    // a different instruction and one the screen never offers.
+                    target = target?.toBigDecimalOrNull()?.let(::KrtDecimal),
+                    version = version ?: 0L,
+                ),
+                OrgUnitBalanceTargetRequest.serializer(),
+                OrgUnitBankAccountSettingsDto.serializer(),
+            ),
+        )
+
+    override suspend fun setRoleVisibility(
+        id: String,
+        roleCode: String,
+        granted: Boolean,
+    ): ApiResult<BankAccountSettings> {
+        val path = "${accountPath(id)}/visibility/role/$roleCode"
+        return mapped(
+            if (granted) {
+                reader.post(path, OrgUnitBankAccountSettingsDto.serializer())
+            } else {
+                reader.delete(path, OrgUnitBankAccountSettingsDto.serializer())
+            },
+        )
+    }
+
+    override suspend fun setAllMembersVisibility(
+        id: String,
+        granted: Boolean,
+    ): ApiResult<BankAccountSettings> =
+        mapped(
+            reader.put(
+                "${accountPath(id)}/visibility/all-members/$granted",
+                OrgUnitBankAccountSettingsDto.serializer(),
+            ),
+        )
+
+    /**
+     * Maps a settings answer onto the model.
+     *
+     * Every one of these calls answers with the whole settings snapshot, and the screen redraws
+     * from it: the version moves with each write, and so does what the caller may do next.
+     *
+     * @param result what the call returned.
+     * @return the settings, or the failure.
+     */
+    private fun mapped(
+        result: ApiResult<OrgUnitBankAccountSettingsDto>,
+    ): ApiResult<BankAccountSettings> =
+        when (result) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
     override suspend fun bookings(
         id: String,
         page: Int,
@@ -315,3 +470,24 @@ private fun BankBookingDto.toModel(): BankBooking? {
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
     )
 }
+
+/**
+ * Maps the settings snapshot onto the model.
+ *
+ * @return the settings; an id the server did not send would make every write unaddressable, so it
+ *   falls back to the empty string and the screen's flags keep every control off.
+ */
+private fun OrgUnitBankAccountSettingsDto.toModel(): BankAccountSettings =
+    BankAccountSettings(
+        accountId = accountId.orEmpty(),
+        accountName = accountName,
+        balanceTarget = balanceTarget?.toString(),
+        version = version,
+        canSetTarget = canSetTarget == true,
+        canConfigureVisibility = canConfigureVisibility == true,
+        visibilityConfigurable = visibilityConfigurable == true,
+        allMembersSupported = allMembersSupported == true,
+        allMembersGranted = allMembersGranted == true,
+        availableRoleCodes = availableRoleCodes.orEmpty(),
+        grantedRoleCodes = grantedRoleCodes.orEmpty(),
+    )
