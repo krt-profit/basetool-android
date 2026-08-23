@@ -291,6 +291,11 @@ fingerprint in the README (DEV_CI doc) · Datenschutzerklärung finalized in-app
 testers) → **first public release via GitHub Releases + Obtainium** (Q1). Play Integrity/store
 work only if a Play channel is ever added (Q3).
 
+**The German wiki page for the app ships here, not earlier** (owner decision, 2026-08-23). The
+`basetool.wiki` handbook is written for members, and until there is an APK to install it would
+describe something that does not exist for them. The page belongs with the release: how to install
+it through Obtainium, what the app does, and what stays in the browser.
+
 Each phase lands with the binding repo obligations of §8. Phases 2–4 slice vertically (a feature
 ships UI + repository + tests + i18n together), so the cut lines can shift after Q6.
 
