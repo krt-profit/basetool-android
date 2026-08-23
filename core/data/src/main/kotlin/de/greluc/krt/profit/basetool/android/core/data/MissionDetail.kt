@@ -13,19 +13,27 @@ import java.time.Instant
  * One member (or guest) signed up for an Einsatz.
  *
  * @property id the participant row's id
+ * @property userId which member this row belongs to, or `null` for a guest sign-up and for an
+ *   outsider read the server redacted. It is the only thing that says whether a row is the
+ *   caller's — a name cannot decide it, since the server sends `displayName` when a member set one
+ *   and `username` otherwise
  * @property name what to show: the member's effective name, else the guest's name, else empty —
  *   the server redacts identity for outsiders, so an anonymous read can legitimately yield neither
  * @property role the planned job, falling back to the desired one when nothing is assigned yet
  * @property checkedIn whether they have checked in, which the design draws as the "davon N
  *   eingecheckt" count and a per-row mark
  * @property comment their free-text note; **absent for an outsider read** (ADR-0034 strips it)
+ * @property donating whether their share is donated rather than paid out, or `null` when the
+ *   server stated no preference
  */
 data class MissionParticipant(
     val id: String,
+    val userId: String?,
     val name: String,
     val role: String?,
     val checkedIn: Boolean,
     val comment: String?,
+    val donating: Boolean?,
 )
 
 /**

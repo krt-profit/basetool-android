@@ -7,12 +7,17 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.MissionCrewMember
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
@@ -30,6 +35,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.time.Instant
 
 /**
  * What the seven tabs actually render, and how the screen words the answers it did not want.
@@ -48,6 +54,7 @@ class MissionDetailScreenTest {
 
     private fun detail(
         description: String? = "Quantainium-Abbau an der Lyria-Südwand.",
+        started: Boolean = true,
         participants: List<MissionParticipant> = emptyList(),
         units: List<MissionUnit> = emptyList(),
         steps: List<MissionStep> = emptyList(),
@@ -61,7 +68,7 @@ class MissionDetailScreenTest {
         rawStatus = "PLANNED",
         meetingTime = null,
         plannedStartTime = null,
-        actualStartTime = null,
+        actualStartTime = if (started) Instant.parse("2026-08-23T12:00:00Z") else null,
         plannedEndTime = null,
         isInternal = false,
         meetingPoint = "ARC-L1",
@@ -83,10 +90,16 @@ class MissionDetailScreenTest {
      *
      * @param state what to draw.
      * @param tabs receives every tab the member picked.
+     * @param signUps receives the sign-up action.
+     * @param checkIns receives the check-in action.
+     * @param payouts receives the payout-preference action.
      */
     private fun show(
         state: MissionDetailState,
         tabs: MutableList<MissionTab> = mutableListOf(),
+        signUps: MutableList<Unit> = mutableListOf(),
+        checkIns: MutableList<Unit> = mutableListOf(),
+        payouts: MutableList<Unit> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -95,6 +108,12 @@ class MissionDetailScreenTest {
                     onTabSelected = { tabs.add(it) },
                     onRefresh = {},
                     onRetryFinances = {},
+                    actions =
+                        MissionSignUpActions(
+                            onToggleSignUp = { signUps.add(Unit) },
+                            onToggleCheckIn = { checkIns.add(Unit) },
+                            onTogglePayoutPreference = { payouts.add(Unit) },
+                        ),
                 )
             }
         }
@@ -152,8 +171,24 @@ class MissionDetailScreenTest {
                                 // Deliberately not "Rhea": she is the party lead in the head, so
                                 // the name would match two nodes and the assertion would say
                                 // nothing about the roster.
-                                MissionParticipant("p1", "Kestrel", "Pilot", checkedIn = true, comment = null),
-                                MissionParticipant("p2", "Dorn", null, checkedIn = false, comment = null),
+                                MissionParticipant(
+                                    "p1",
+                                    "u1",
+                                    "Kestrel",
+                                    "Pilot",
+                                    checkedIn = true,
+                                    comment = null,
+                                    donating = null,
+                                ),
+                                MissionParticipant(
+                                    "p2",
+                                    "u2",
+                                    "Dorn",
+                                    null,
+                                    checkedIn = false,
+                                    comment = null,
+                                    donating = null,
+                                ),
                             ),
                     ),
                 tab = MissionTab.PARTICIPANTS,
@@ -190,7 +225,9 @@ class MissionDetailScreenTest {
         compose.onNodeWithText("Einheit Alpha").assertIsDisplayed()
         compose.onNodeWithText("Carrack Meridian").assertIsDisplayed()
         compose.onNodeWithText("HVU").assertIsDisplayed()
-        compose.onNodeWithText("Dorn — Turret").assertIsDisplayed()
+        // The sign-up band above the tabs costs a row of height, so the crew line can sit below
+        // the fold on a compact screen. That it is drawn is the assertion.
+        compose.onNodeWithText("Dorn — Turret").assertExists()
     }
 
     @Test
@@ -282,5 +319,113 @@ class MissionDetailScreenTest {
         )
 
         compose.onNodeWithText("System Malfunction").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an Einsatz the caller is not on offers to sign up, and nothing else`() {
+        // Check-in and the payout preference act on a row. Offering them before there is one
+        // would be offering a 404.
+        val signed = mutableListOf<Unit>()
+        show(readyForMe(), signUps = signed)
+
+        compose.onNodeWithTag(MISSION_SIGN_UP_TAG).assertIsEnabled().performClick()
+        compose.onAllNodesWithTag(MISSION_CHECK_IN_TAG).assertCountEquals(0)
+        compose.onAllNodesWithTag(MISSION_PAYOUT_TAG).assertCountEquals(0)
+
+        assertEquals(1, signed.size)
+    }
+
+    @Test
+    fun `a signed-up caller is offered the withdrawal, the check-in and the preference`() {
+        val checked = mutableListOf<Unit>()
+        val paid = mutableListOf<Unit>()
+        show(readyForMe(mine()), checkIns = checked, payouts = paid)
+
+        compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithTag(MISSION_CHECK_IN_TAG).performClick()
+        compose.onNodeWithTag(MISSION_PAYOUT_TAG).performClick()
+
+        assertEquals(1, checked.size)
+        assertEquals(1, paid.size)
+    }
+
+    @Test
+    fun `a checked-in caller is offered the way back out`() {
+        show(readyForMe(mine(checkedIn = true)))
+
+        compose.onNodeWithText("Auschecken", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a donating caller is offered the payout instead`() {
+        show(readyForMe(mine(donating = true)))
+
+        compose.onNodeWithText("Auszahlen", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a refusal on this Einsatz is said in the app's own words`() {
+        show(readyForMe(mine()).copy(error = ApiError.Forbidden()))
+
+        compose.onNodeWithText("Für diesen Einsatz fehlt dir die Berechtigung.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `offline the Einsatz says so and offers no write`() {
+        show(readyForMe().copy(online = false))
+
+        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+            .assertIsDisplayed()
+        compose.onNodeWithTag(MISSION_SIGN_UP_TAG).assertIsNotEnabled()
+    }
+
+    /**
+     * The caller's own sign-up.
+     *
+     * @param checkedIn whether it is checked in.
+     * @param donating whether the share is donated.
+     * @return the row.
+     */
+    private fun mine(
+        checkedIn: Boolean = false,
+        donating: Boolean? = null,
+    ) = MissionParticipant(
+        id = "p1",
+        userId = "u1",
+        name = "Rhea",
+        role = null,
+        checkedIn = checkedIn,
+        comment = null,
+        donating = donating,
+    )
+
+    /**
+     * A loaded Einsatz with the caller known.
+     *
+     * @param roster who is signed up.
+     * @return the state.
+     */
+    private fun readyForMe(vararg roster: MissionParticipant) =
+        MissionDetailState(
+            missionId = "m1",
+            detail = detail(participants = roster.toList()),
+            phase = MissionDetailPhase.Ready,
+            me = Identity("u1", logistician = false),
+        )
+
+    @Test
+    fun `an Einsatz that has not started offers no check-in, and says why`() {
+        show(
+            MissionDetailState(
+                missionId = "m1",
+                detail = detail(started = false, participants = listOf(mine())),
+                phase = MissionDetailPhase.Ready,
+                me = Identity("u1", logistician = false),
+            ),
+        )
+
+        compose.onAllNodesWithTag(MISSION_CHECK_IN_TAG).assertCountEquals(0)
+        compose.onNodeWithText("Einchecken geht, sobald der Einsatz gestartet ist.")
+            .assertIsDisplayed()
     }
 }
