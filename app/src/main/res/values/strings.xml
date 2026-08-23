@@ -431,7 +431,6 @@
     <string name="personal_inventory_location_search">Ort suchen</string>
     <string name="personal_inventory_location_hint">Mindestens zwei Zeichen.</string>
     <string name="personal_inventory_location_none">Kein Ort gefunden.</string>
-    <string name="personal_inventory_location_missing">Wähle einen Ort.</string>
     <string name="personal_inventory_save">Speichern</string>
     <string name="personal_inventory_cancel">Abbrechen</string>
     <string name="personal_inventory_delete_title">Eintrag löschen</string>

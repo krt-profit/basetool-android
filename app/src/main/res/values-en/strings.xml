@@ -414,7 +414,6 @@
     <string name="personal_inventory_location_search">Search location</string>
     <string name="personal_inventory_location_hint">At least two characters.</string>
     <string name="personal_inventory_location_none">No location found.</string>
-    <string name="personal_inventory_location_missing">Pick a location.</string>
     <string name="personal_inventory_save">Save</string>
     <string name="personal_inventory_cancel">Cancel</string>
     <string name="personal_inventory_delete_title">Delete entry</string>
