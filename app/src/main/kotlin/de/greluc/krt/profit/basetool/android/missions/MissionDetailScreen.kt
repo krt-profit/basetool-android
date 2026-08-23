@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -37,11 +38,15 @@ import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -52,6 +57,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -64,6 +71,15 @@ const val MISSION_DETAIL_TABS_TAG: String = "mission-detail-tabs"
 /** Test handle for the scrolling content beneath the tabs. */
 const val MISSION_DETAIL_CONTENT_TAG: String = "mission-detail-content"
 
+/** Test handle for the sign-up action. */
+const val MISSION_SIGN_UP_TAG: String = "mission-sign-up"
+
+/** Test handle for the check-in action. */
+const val MISSION_CHECK_IN_TAG: String = "mission-check-in"
+
+/** Test handle for the payout-preference action. */
+const val MISSION_PAYOUT_TAG: String = "mission-payout"
+
 /**
  * One Einsatz in full (design spec ch. 06 §2), read-only.
  *
@@ -75,6 +91,7 @@ const val MISSION_DETAIL_CONTENT_TAG: String = "mission-detail-content"
  * @param onTabSelected a tab was picked.
  * @param onRefresh pull-to-refresh.
  * @param onRetryFinances the Finanzen tab's retry.
+ * @param actions what the caller may do to their own sign-up.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,6 +101,7 @@ fun MissionDetailScreen(
     onTabSelected: (MissionTab) -> Unit,
     onRefresh: () -> Unit,
     onRetryFinances: () -> Unit,
+    actions: MissionSignUpActions,
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
@@ -93,7 +111,11 @@ fun MissionDetailScreen(
     Column(modifier = modifier.fillMaxSize()) {
         when {
             detail != null -> {
+                if (!state.online) {
+                    OfflineBand()
+                }
                 MissionDetailHead(detail = detail)
+                SignUpBar(state = state, actions = actions)
                 MissionTabRow(selected = state.tab, onTabSelected = onTabSelected)
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
@@ -121,6 +143,145 @@ fun MissionDetailScreen(
         }
     }
 }
+
+/**
+ * Everything the Einsatz screen reports about the caller's own sign-up.
+ *
+ * @property onToggleSignUp they signed up, or withdrew.
+ * @property onToggleCheckIn they checked in, or back out.
+ * @property onTogglePayoutPreference they switched their share between paid out and donated.
+ */
+data class MissionSignUpActions(
+    val onToggleSignUp: () -> Unit,
+    val onToggleCheckIn: () -> Unit,
+    val onTogglePayoutPreference: () -> Unit,
+)
+
+/**
+ * The band under the head: what the caller may do to their own participation.
+ *
+ * It sits above the tabs rather than inside the roster because it is about the caller and not
+ * about the list — and because a member opening an Einsatz to sign up should not have to find the
+ * right tab first.
+ *
+ * Check-in and the payout preference appear only once there is a sign-up to apply them to. An
+ * action that would 404 for want of a row is not an action.
+ *
+ * @param state the screen.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun SignUpBar(
+    state: MissionDetailState,
+    actions: MissionSignUpActions,
+) {
+    val mine = state.mySignUp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        state.error?.let { error -> SignUpError(error = error) }
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            KrtCtaButton(
+                text =
+                    stringResource(
+                        if (mine == null) {
+                            R.string.mission_detail_sign_up
+                        } else {
+                            R.string.mission_detail_withdraw
+                        },
+                    ),
+                onClick = actions.onToggleSignUp,
+                modifier = Modifier.testTag(MISSION_SIGN_UP_TAG).writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+            if (mine != null) {
+                SignUpRowActions(mine = mine, state = state, actions = actions)
+            }
+        }
+        // Only once the Einsatz has actually started: the server refuses a check-in before then,
+        // and a control that can only return a refusal is a control that lies. Saying why beats
+        // an action that is simply absent.
+        if (mine != null && !state.checkInPossible) {
+            Text(
+                text = stringResource(R.string.mission_detail_check_in_not_yet),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
+    }
+}
+
+/**
+ * The two actions that need a sign-up to act on.
+ *
+ * @param mine the caller's own row.
+ * @param state the screen.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun SignUpRowActions(
+    mine: MissionParticipant,
+    state: MissionDetailState,
+    actions: MissionSignUpActions,
+) {
+    if (state.checkInPossible) {
+        KrtGhostButton(
+            text =
+                stringResource(
+                    if (mine.checkedIn) {
+                        R.string.mission_detail_check_out
+                    } else {
+                        R.string.mission_detail_check_in
+                    },
+                ),
+            onClick = actions.onToggleCheckIn,
+            modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
+            enabled = state.writable,
+        )
+    }
+    KrtGhostButton(
+        text =
+            stringResource(
+                if (mine.donating == true) {
+                    R.string.mission_detail_take_payout
+                } else {
+                    R.string.mission_detail_donate
+                },
+            ),
+        onClick = actions.onTogglePayoutPreference,
+        modifier = Modifier.testTag(MISSION_PAYOUT_TAG).writeAlpha(state.writable),
+        enabled = state.writable,
+    )
+}
+
+/**
+ * What the last write returned, in the app's own words.
+ *
+ * @param error the refusal.
+ */
+@Composable
+private fun SignUpError(error: ApiError) {
+    KrtFieldError(
+        text =
+            stringResource(
+                when (error) {
+                    is ApiError.OptimisticLock -> R.string.conflict_body
+                    is ApiError.Forbidden -> R.string.mission_detail_not_allowed
+                    else -> R.string.write_failed
+                },
+            ),
+    )
+}
+
+/**
+ * Fades a control that cannot be used right now.
+ *
+ * @param writable whether a write may be offered.
+ * @return the modifier.
+ */
+private fun Modifier.writeAlpha(writable: Boolean): Modifier =
+    alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
  * The sticky head: title, status, org badge and the fact band.
@@ -234,7 +395,7 @@ private fun MissionTabContent(
     ) {
         when (state.tab) {
             MissionTab.OVERVIEW -> overviewTab(detail)
-            MissionTab.PARTICIPANTS -> participantsTab(detail)
+            MissionTab.PARTICIPANTS -> participantsTab(detail, state.mySignUp)
             MissionTab.UNITS -> unitsTab(detail)
             MissionTab.STEPS -> stepsTab(detail)
             MissionTab.OBJECTIVES -> objectivesTab(detail)
@@ -268,8 +429,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.overviewTab(detail: M
  * Teilnehmer: the roster with its check-in marks.
  *
  * @param detail the Einsatz.
+ * @param mine the caller's own row, drawn in the brand colour so they can find themselves in a
+ *   roster of thirty.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.participantsTab(detail: MissionDetail) {
+private fun androidx.compose.foundation.lazy.LazyListScope.participantsTab(
+    detail: MissionDetail,
+    mine: MissionParticipant?,
+) {
     if (detail.participants.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_participants) }
         return
@@ -284,7 +450,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.participantsTab(detai
                 Text(
                     text = participant.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = KrtPalette.White,
+                    color =
+                        if (participant.id == mine?.id) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            KrtPalette.White
+                        },
                     modifier = Modifier.weight(1f),
                 )
                 KrtChip(
@@ -678,6 +849,12 @@ fun MissionDetailRoute(
         onTabSelected = viewModel::onTabSelected,
         onRefresh = viewModel::onRefresh,
         onRetryFinances = viewModel::onRetryFinances,
+        actions =
+            MissionSignUpActions(
+                onToggleSignUp = viewModel::onToggleSignUp,
+                onToggleCheckIn = viewModel::onToggleCheckIn,
+                onTogglePayoutPreference = viewModel::onTogglePayoutPreference,
+            ),
         modifier = modifier,
     )
 }

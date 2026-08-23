@@ -237,7 +237,14 @@ class MainActivity : AppCompatActivity() {
                             BasetoolApp(
                                 orgUnit = orgUnit,
                                 missions = missionsViewModel,
-                                missionDetail = { MissionDetailViewModel(container.missions, it) },
+                                missionDetail = {
+                                    MissionDetailViewModel(
+                                        container.missions,
+                                        container.identity,
+                                        container.connectivity,
+                                        it,
+                                    )
+                                },
                                 operations = operationsViewModel,
                                 notifications = notificationsViewModel,
                                 dashboard = dashboardViewModel,
