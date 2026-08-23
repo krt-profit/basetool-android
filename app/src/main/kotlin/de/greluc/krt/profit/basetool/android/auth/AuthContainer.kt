@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.auth
 
 import android.content.Context
 import de.greluc.krt.profit.basetool.android.BuildConfig
+import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.auth.AppLock
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
@@ -46,6 +47,8 @@ import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import de.greluc.krt.profit.basetool.android.core.network.SystemConnectivity
+import de.greluc.krt.profit.basetool.android.notifications.SystemNotifications
+import de.greluc.krt.profit.basetool.android.notifications.SystemNotifier
 import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.UUID
@@ -272,6 +275,23 @@ class AuthContainer(
     val notifications: NotificationRepository by lazy {
         NotificationRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
+
+    /**
+     * The shade, for something the running app's own stream delivered (chapter 14).
+     *
+     * In the container rather than built at the call site so the application context is the one
+     * used — an Activity context here would keep the Activity alive behind a PendingIntent.
+     */
+    val systemNotifications: SystemNotifications by lazy { SystemNotifier(appContext) }
+
+    /**
+     * The shade headline.
+     *
+     * Resolved here so the notification carries no free text from anywhere else: chapter 14's rule
+     * is that the shade says something fixed, and a title threaded in from a caller is a title a
+     * caller can make say anything.
+     */
+    val shadeTitle: String by lazy { appContext.getString(R.string.notification_shade_title) }
 
     /**
      * The member's own Beförderung record.

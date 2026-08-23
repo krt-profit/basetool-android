@@ -575,4 +575,8 @@
     <string name="promotion_no_rules">Für diese Stufe sind keine Anforderungen hinterlegt.</string>
     <string name="promotion_rank_step">Rang %1$d → %2$d</string>
     <string name="promotion_check_progress">%1$d / %2$d · mind. %3$s</string>
+    <string name="notification_channel_operations">Einsätze &amp; System</string>
+    <string name="notification_channel_general">Allgemein</string>
+    <string name="notification_public_title">Neue Benachrichtigung</string>
+    <string name="notification_shade_title">Neues im Basetool</string>
 </resources>

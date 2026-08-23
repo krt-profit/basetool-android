@@ -558,4 +558,8 @@
     <string name="promotion_no_rules">No requirements are configured for this step.</string>
     <string name="promotion_rank_step">Rank %1$d → %2$d</string>
     <string name="promotion_check_progress">%1$d / %2$d · min. %3$s</string>
+    <string name="notification_channel_operations">Operations &amp; system</string>
+    <string name="notification_channel_general">General</string>
+    <string name="notification_public_title">New notification</string>
+    <string name="notification_shade_title">Something new in the Basetool</string>
 </resources>

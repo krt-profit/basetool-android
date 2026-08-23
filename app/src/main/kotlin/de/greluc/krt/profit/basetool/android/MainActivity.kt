@@ -436,7 +436,13 @@ class MainActivity : AppCompatActivity() {
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
-                initializer { NotificationsViewModel(container.notifications) }
+                initializer {
+                    NotificationsViewModel(
+                        container.notifications,
+                        container.systemNotifications,
+                        container.shadeTitle,
+                    )
+                }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
                 initializer { PromotionViewModel(container.promotion) }

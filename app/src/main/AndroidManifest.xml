@@ -16,6 +16,14 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      Posting to the shade for something the running app's own SSE stream delivered (chapter 14).
+      There is NO push channel (plan Q2), so this never wakes a closed app; it reaches a member who
+      switched screens or locked the device. Kept in the permission inventory of the plan's privacy
+      gate alongside the other three.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".BasetoolApplication"
         android:allowBackup="true"

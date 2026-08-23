@@ -82,6 +82,8 @@ data class NotificationsState(
  */
 class NotificationsViewModel(
     private val source: NotificationSource,
+    private val notifier: SystemNotifications? = null,
+    private val notificationTitle: String = "",
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(NotificationsState())
 
@@ -196,6 +198,15 @@ class NotificationsViewModel(
                 if (inboxLoaded) {
                     reload(keepRows = true)
                 }
+                // The shade half of chapter 14. Posted here rather than from the screen, because
+                // the point is to reach a member who is NOT looking at the inbox; a screen-level
+                // hook would fire exactly when it is least needed. Nothing sensitive travels: the
+                // headline is a fixed string and the lock-screen version is fixed too.
+                notifier?.notify(
+                    title = notificationTitle,
+                    body = null,
+                    deepLinkRoute = null,
+                )
             }
             // A stream that carried at least one event was working, so the next attempt starts
             // from the short delay; one that carried none may be refused outright — a 401 after a
