@@ -65,6 +65,25 @@ class OrdersViewModelTest {
         }
 
         override suspend fun detail(id: String): ApiResult<JobOrder> = error("the queue never opens one")
+
+        override suspend fun setAssigned(
+            id: String,
+            userId: String,
+            assigned: Boolean,
+        ): ApiResult<JobOrder> = error("the queue writes nothing")
+
+        override suspend fun setAssigneeNote(
+            id: String,
+            userId: String,
+            note: String?,
+            version: Long?,
+        ): ApiResult<JobOrder> = error("the queue writes nothing")
+
+        override suspend fun setStatus(
+            id: String,
+            status: JobOrderStatus,
+            version: Long?,
+        ): ApiResult<JobOrder> = error("the queue writes nothing")
     }
 
     private fun order(id: String) =
@@ -82,6 +101,7 @@ class OrdersViewModelTest {
             handovers = emptyList(),
             assignees = emptyList(),
             createdAt = null,
+            version = 1L,
             redacted = false,
         )
 

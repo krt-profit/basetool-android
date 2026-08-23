@@ -245,7 +245,14 @@ class MainActivity : AppCompatActivity() {
                                 bank = bankViewModel,
                                 bankAccount = { BankAccountViewModel(container.bank, it) },
                                 orders = ordersViewModel,
-                                orderDetail = { OrderDetailViewModel(container.orders, it) },
+                                orderDetail = {
+                                    OrderDetailViewModel(
+                                        container.orders,
+                                        container.identity,
+                                        container.connectivity,
+                                        it,
+                                    )
+                                },
                                 inventory = inventoryViewModel,
                                 personalInventory = personalInventoryViewModel,
                                 personalBlueprints = personalBlueprintsViewModel,

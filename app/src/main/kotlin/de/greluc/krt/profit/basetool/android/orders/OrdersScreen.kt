@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -35,22 +36,30 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -59,6 +68,33 @@ const val ORDERS_LIST_TAG: String = "orders-list"
 
 /** Test handle for one order's screen. */
 const val ORDER_DETAIL_TAG: String = "order-detail"
+
+/** Test handle for the order's assign action. */
+const val ORDER_ASSIGN_TAG: String = "order-assign"
+
+/** Test handle for the order's status action. */
+const val ORDER_STATUS_TAG: String = "order-status"
+
+/** Test handle for an assignee's note action. */
+const val ORDER_NOTE_TAG: String = "order-note"
+
+/** Test handle for the note sheet. */
+const val ORDER_NOTE_SHEET_TAG: String = "order-note-sheet"
+
+/** Test handle for the note sheet's save action. */
+const val ORDER_NOTE_SAVE_TAG: String = "order-note-save"
+
+/** Test handle for the status sheet. */
+const val ORDER_STATUS_SHEET_TAG: String = "order-status-sheet"
+
+/** The statuses an order can be moved to from the app, in the order the picker draws them. */
+private val STATUS_CHOICES =
+    listOf(
+        JobOrderStatus.OPEN,
+        JobOrderStatus.IN_PROGRESS,
+        JobOrderStatus.COMPLETED,
+        JobOrderStatus.REJECTED,
+    )
 
 /**
  * The Auftrag queue (design spec ch. 10 §1), read-only.
@@ -414,6 +450,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
 fun OrderDetailScreen(
     state: OrderDetailState,
     onRefresh: () -> Unit,
+    actions: OrderDetailActions,
     modifier: Modifier = Modifier,
 ) {
     val order = state.order
@@ -425,7 +462,13 @@ fun OrderDetailScreen(
                 onRefresh = onRefresh,
                 modifier = modifier.fillMaxSize(),
             ) {
-                OrderDetailBody(order = order)
+                OrderDetailBody(state = state, order = order, actions = actions)
+            }
+            state.noteDraft?.let { draft ->
+                NoteSheet(draft = draft, state = state, actions = actions)
+            }
+            if (state.statusPickerOpen) {
+                StatusSheet(current = order.status, state = state, actions = actions)
             }
         }
 
@@ -443,13 +486,45 @@ fun OrderDetailScreen(
 }
 
 /**
+ * Everything the detail screen reports back.
+ *
+ * @property onToggleAssignment the caller put themselves on the order, or took themselves off.
+ * @property onEditNote the caller opened their own note.
+ * @property onNoteChanged the note text changed.
+ * @property onSaveNote the note was saved.
+ * @property onDismissNote the note editor was closed.
+ * @property onOpenStatusPicker the status control was taken.
+ * @property onStatusChosen a status was picked.
+ * @property onDismissStatusPicker the status picker was closed.
+ */
+data class OrderDetailActions(
+    val onToggleAssignment: () -> Unit,
+    val onEditNote: () -> Unit,
+    val onNoteChanged: (String) -> Unit,
+    val onSaveNote: () -> Unit,
+    val onDismissNote: () -> Unit,
+    val onOpenStatusPicker: () -> Unit,
+    val onStatusChosen: (JobOrderStatus) -> Unit,
+    val onDismissStatusPicker: () -> Unit,
+)
+
+/**
  * The order's head and its three sections.
  *
+ * @param state what to draw.
  * @param order the order.
+ * @param actions what the screen reports back.
  */
 @Composable
-private fun OrderDetailBody(order: JobOrder) {
+private fun OrderDetailBody(
+    state: OrderDetailState,
+    order: JobOrder,
+    actions: OrderDetailActions,
+) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(ORDER_DETAIL_TAG)) {
+        if (!state.online) {
+            item(key = "offline") { OfflineBand() }
+        }
         item(key = "head") {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
@@ -481,6 +556,39 @@ private fun OrderDetailBody(order: JobOrder) {
                         style = MaterialTheme.typography.bodySmall,
                         color = KrtPalette.Warning,
                     )
+                }
+                state.error?.let { error -> WriteError(error = error) }
+                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                    KrtCtaButton(
+                        text =
+                            stringResource(
+                                if (state.myAssignment == null) {
+                                    R.string.order_detail_assign_me
+                                } else {
+                                    R.string.order_detail_unassign_me
+                                },
+                            ),
+                        onClick = actions.onToggleAssignment,
+                        modifier =
+                            Modifier
+                                .testTag(ORDER_ASSIGN_TAG)
+                                .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
+                        enabled = state.writable,
+                    )
+                    // Only a Logistician is offered this, and only because the app can ask whether
+                    // the caller is one. The grant is also per order, so the refusal is named
+                    // rather than assumed away.
+                    if (state.statusChangeable) {
+                        KrtGhostButton(
+                            text = stringResource(R.string.order_detail_change_status),
+                            onClick = actions.onOpenStatusPicker,
+                            modifier =
+                                Modifier
+                                    .testTag(ORDER_STATUS_TAG)
+                                    .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
+                            enabled = state.writable,
+                        )
+                    }
                 }
             }
         }
@@ -514,12 +622,19 @@ private fun OrderDetailBody(order: JobOrder) {
                 modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
             )
         }
-        item(key = "assignees") {
-            Body(
-                text =
-                    order.assignees.takeIf { it.isNotEmpty() }?.joinToString(", ")
-                        ?: stringResource(R.string.order_detail_assignees_empty),
-            )
+        if (order.assignees.isEmpty()) {
+            item(key = "assignees-empty") {
+                Body(text = stringResource(R.string.order_detail_assignees_empty))
+            }
+        } else {
+            items(order.assignees, key = { it.userId }) { assignee ->
+                AssigneeRow(
+                    assignee = assignee,
+                    mine = assignee.userId == state.me?.userId,
+                    writable = state.writable,
+                    onEditNote = actions.onEditNote,
+                )
+            }
         }
         item(key = "handovers-title") {
             KrtSectionTitle(
@@ -544,6 +659,176 @@ private fun OrderDetailBody(order: JobOrder) {
             }
         }
     }
+}
+
+/**
+ * One member on the order, with their own note under their name.
+ *
+ * The caller's own row is the only one that offers anything: the note is theirs to write, and
+ * putting someone else on an order is a Logistician action this app does not carry.
+ *
+ * @param assignee the row.
+ * @param mine whether it is the caller's own.
+ * @param writable whether a write may be offered at all.
+ * @param onEditNote the note action was taken.
+ */
+@Composable
+private fun AssigneeRow(
+    assignee: JobOrderAssignee,
+    mine: Boolean,
+    writable: Boolean,
+    onEditNote: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text =
+                    assignee.name?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.order_detail_assignee_unnamed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (mine) MaterialTheme.colorScheme.primary else KrtPalette.White,
+            )
+            assignee.note?.let { note ->
+                Text(
+                    text = note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        }
+        if (mine) {
+            KrtGhostButton(
+                text = stringResource(R.string.order_detail_note),
+                onClick = onEditNote,
+                modifier =
+                    Modifier
+                        .testTag(ORDER_NOTE_TAG)
+                        .alpha(if (writable) 1f else DISABLED_WRITE_ALPHA),
+                enabled = writable,
+            )
+        }
+    }
+}
+
+/**
+ * The caller's own note on this order.
+ *
+ * @param draft what the editor holds.
+ * @param state the screen, for the save gate and the last refusal.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun NoteSheet(
+    draft: String,
+    state: OrderDetailState,
+    actions: OrderDetailActions,
+) {
+    KrtBottomSheet(
+        onDismiss = actions.onDismissNote,
+        modifier = Modifier.testTag(ORDER_NOTE_SHEET_TAG),
+        title = stringResource(R.string.order_detail_note),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            Text(
+                text = stringResource(R.string.order_detail_note_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            KrtTextField(
+                value = draft,
+                onValueChange = actions.onNoteChanged,
+                label = stringResource(R.string.order_detail_note),
+                enabled = !state.saving,
+            )
+            state.error?.let { error -> WriteError(error = error) }
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_cancel),
+                    onClick = actions.onDismissNote,
+                    enabled = !state.saving,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.personal_inventory_save),
+                    onClick = actions.onSaveNote,
+                    modifier = Modifier.testTag(ORDER_NOTE_SAVE_TAG),
+                    enabled = state.writable,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Where the order should stand.
+ *
+ * The current status is shown as chosen rather than left out: a picker that hides where the order
+ * is now reads as if it had no status at all.
+ *
+ * @param current where it stands.
+ * @param state the screen, for the save gate.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun StatusSheet(
+    current: JobOrderStatus,
+    state: OrderDetailState,
+    actions: OrderDetailActions,
+) {
+    KrtBottomSheet(
+        onDismiss = actions.onDismissStatusPicker,
+        modifier = Modifier.testTag(ORDER_STATUS_SHEET_TAG),
+        title = stringResource(R.string.order_detail_change_status),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
+            // UNKNOWN is absent on purpose: it carries a status this build has never seen, and
+            // asking the server to move an order into one is not a request that means anything.
+            STATUS_CHOICES.forEach { status ->
+                Text(
+                    text = stringResource(status.labelRes()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color =
+                        if (status == current) MaterialTheme.colorScheme.primary else KrtPalette.White,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = state.writable) { actions.onStatusChosen(status) }
+                            .padding(vertical = KrtSpacing.sm),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * What the last write returned, in the app's own words.
+ *
+ * A `403` is ordinary here rather than exceptional: the Logistician grant is per order, so a
+ * Logistician outside this order's slice is refused exactly like a member without it.
+ *
+ * @param error the refusal.
+ */
+@Composable
+private fun WriteError(error: ApiError) {
+    KrtFieldError(
+        text =
+            stringResource(
+                when (error) {
+                    is ApiError.OptimisticLock -> R.string.conflict_body
+                    is ApiError.Forbidden -> R.string.order_detail_not_allowed
+                    else -> R.string.write_failed
+                },
+            ),
+    )
 }
 
 /**
@@ -653,5 +938,20 @@ fun OrderDetailRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    OrderDetailScreen(state = state, onRefresh = viewModel::onRefresh, modifier = modifier)
+    OrderDetailScreen(
+        state = state,
+        onRefresh = viewModel::onRefresh,
+        actions =
+            OrderDetailActions(
+                onToggleAssignment = viewModel::onToggleAssignment,
+                onEditNote = viewModel::onEditNote,
+                onNoteChanged = viewModel::onNoteChanged,
+                onSaveNote = viewModel::onSaveNote,
+                onDismissNote = viewModel::onDismissNote,
+                onOpenStatusPicker = viewModel::onOpenStatusPicker,
+                onStatusChosen = viewModel::onStatusChosen,
+                onDismissStatusPicker = viewModel::onDismissStatusPicker,
+            ),
+        modifier = modifier,
+    )
 }

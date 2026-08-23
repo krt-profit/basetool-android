@@ -9,8 +9,12 @@ package de.greluc.krt.profit.basetool.android.orders
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -18,7 +22,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -41,6 +47,14 @@ import java.time.Instant
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class OrdersScreenTest {
+    private companion object {
+        /** The order's optimistic lock, as the fixtures carry it. */
+        const val ORDER_VERSION = 3L
+
+        /** The assignee edge's own version, deliberately a different number. */
+        const val EDGE_VERSION = 7L
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
@@ -62,8 +76,9 @@ class OrdersScreenTest {
         comment = "Qualität ist zweitrangig.",
         materials = materials,
         handovers = emptyList(),
-        assignees = listOf("Vex"),
+        assignees = emptyList(),
         createdAt = Instant.parse("2026-08-01T10:00:00Z"),
+        version = ORDER_VERSION,
         redacted = redacted,
     )
 
@@ -108,9 +123,44 @@ class OrdersScreenTest {
      *
      * @param state what to draw.
      */
-    private fun showDetail(state: OrderDetailState) {
-        compose.setContent { KrtTheme { OrderDetailScreen(state = state, onRefresh = {}) } }
+    private fun showDetail(
+        state: OrderDetailState,
+        assigned: MutableList<Unit> = mutableListOf(),
+        statuses: MutableList<JobOrderStatus> = mutableListOf(),
+        notes: MutableList<String> = mutableListOf(),
+    ) {
+        compose.setContent {
+            KrtTheme {
+                OrderDetailScreen(
+                    state = state,
+                    onRefresh = {},
+                    actions =
+                        OrderDetailActions(
+                            onToggleAssignment = { assigned.add(Unit) },
+                            onEditNote = { notes.add("open") },
+                            onNoteChanged = { notes.add(it) },
+                            onSaveNote = { notes.add("save") },
+                            onDismissNote = {},
+                            onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
+                            onStatusChosen = { statuses.add(it) },
+                            onDismissStatusPicker = {},
+                        ),
+                )
+            }
+        }
     }
+
+    /**
+     * One member on an order.
+     *
+     * @param userId who, by id.
+     * @param note their note, or `null`.
+     * @return the row.
+     */
+    private fun assignee(
+        userId: String = "u1",
+        note: String? = null,
+    ) = JobOrderAssignee(userId = userId, name = "Rhea", note = note, version = EDGE_VERSION)
 
     @Test
     fun `a queue row leads with its number and its parties`() {
@@ -241,12 +291,17 @@ class OrdersScreenTest {
     @Test
     fun `the detail shows the comment, the materials and who is on it`() {
         showDetail(
-            OrderDetailState(orderId = "o1", order = order(), phase = OrderDetailPhase.Ready),
+            OrderDetailState(
+                orderId = "o1",
+                order = order().copy(assignees = listOf(assignee(note = "Nachtschicht"))),
+                phase = OrderDetailPhase.Ready,
+            ),
         )
 
         compose.onNodeWithText("Qualität ist zweitrangig.").assertIsDisplayed()
         compose.onNodeWithText("Quantainium").assertIsDisplayed()
-        compose.onNodeWithText("Vex").assertIsDisplayed()
+        compose.onNodeWithText("Rhea").assertIsDisplayed()
+        compose.onNodeWithText("Nachtschicht").assertIsDisplayed()
         compose.onNodeWithTag(ORDER_DETAIL_TAG).assertIsDisplayed()
     }
 
@@ -266,4 +321,122 @@ class OrdersScreenTest {
         compose.onNodeWithText("Access Denied").assertIsDisplayed()
         compose.onNodeWithText("Dieser Auftrag ist für dich nicht einsehbar.").assertIsDisplayed()
     }
+
+    @Test
+    fun `an order the caller is not on offers to take it on`() {
+        val taken = mutableListOf<Unit>()
+        showDetail(ready(), assigned = taken)
+
+        compose.onNodeWithTag(ORDER_ASSIGN_TAG).assertIsEnabled().performClick()
+
+        assertEquals(1, taken.size)
+        compose.onNodeWithText("Übernehmen", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `an order the caller is on offers to step off`() {
+        showDetail(ready(assignees = listOf(assignee())))
+
+        compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `only the caller's own row offers the note`() {
+        // Someone else's note is theirs to write. Offering an action that would be refused is how
+        // a member concludes the app is unreliable.
+        showDetail(
+            ready(assignees = listOf(assignee(), JobOrderAssignee("u2", "Kell", "Frühschicht", 1L))),
+        )
+
+        compose.onAllNodesWithTag(ORDER_NOTE_TAG).assertCountEquals(1)
+    }
+
+    @Test
+    fun `the status control is absent unless the caller is a Logistician`() {
+        showDetail(ready())
+
+        compose.onAllNodesWithTag(ORDER_STATUS_TAG).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a Logistician is offered the status control`() {
+        val picked = mutableListOf<JobOrderStatus>()
+        showDetail(ready(logistician = true), statuses = picked)
+
+        compose.onNodeWithTag(ORDER_STATUS_TAG).assertIsEnabled().performClick()
+
+        assertEquals(listOf(JobOrderStatus.UNKNOWN), picked)
+    }
+
+    @Test
+    fun `the status picker marks where the order stands and reports a choice`() {
+        val picked = mutableListOf<JobOrderStatus>()
+        showDetail(ready(logistician = true).copy(statusPickerOpen = true), statuses = picked)
+
+        compose.onNodeWithTag(ORDER_STATUS_SHEET_TAG).assertIsDisplayed()
+        compose.onNodeWithText("Abgeschlossen", ignoreCase = true).performClick()
+
+        assertEquals(listOf(JobOrderStatus.COMPLETED), picked)
+    }
+
+    @Test
+    fun `the note editor opens on what the row already says`() {
+        showDetail(
+            ready(assignees = listOf(assignee(note = "alt"))).copy(noteDraft = "alt"),
+        )
+
+        compose.onNodeWithTag(ORDER_NOTE_SHEET_TAG).assertIsDisplayed()
+        // The row behind the sheet says it too, which is the point: the editor opens on what is
+        // already there rather than on nothing.
+        compose.onAllNodesWithText("alt").assertCountEquals(2)
+    }
+
+    @Test
+    fun `a conflict is named and the editor keeps what was typed`() {
+        showDetail(
+            ready(assignees = listOf(assignee())).copy(
+                noteDraft = "Nachtschicht",
+                error = ApiError.OptimisticLock(),
+            ),
+        )
+
+        compose.onNodeWithText("Nachtschicht").assertIsDisplayed()
+        compose.onAllNodesWithText(
+            "Jemand anderes hat diesen Eintrag inzwischen geändert. Deine Eingabe bleibt stehen — " +
+                "lade neu und speichere erneut.",
+        ).onFirst().assertExists()
+    }
+
+    @Test
+    fun `a refusal on this order is said in the app's own words`() {
+        showDetail(ready(logistician = true).copy(error = ApiError.Forbidden()))
+
+        compose.onNodeWithText("Für diesen Auftrag fehlt dir die Berechtigung.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `offline the detail says so and offers no write`() {
+        showDetail(ready().copy(online = false))
+
+        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+            .assertIsDisplayed()
+        compose.onNodeWithTag(ORDER_ASSIGN_TAG).assertIsNotEnabled()
+    }
+
+    /**
+     * A loaded detail with the caller known.
+     *
+     * @param assignees who is on the order.
+     * @param logistician whether the caller holds the grant.
+     * @return the state.
+     */
+    private fun ready(
+        assignees: List<JobOrderAssignee> = emptyList(),
+        logistician: Boolean = false,
+    ) = OrderDetailState(
+        orderId = "o1",
+        order = order().copy(assignees = assignees),
+        phase = OrderDetailPhase.Ready,
+        me = Identity("u1", logistician = logistician),
+    )
 }

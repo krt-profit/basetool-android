@@ -514,4 +514,11 @@
     <string name="inventory_entries_title">Entries</string>
     <string name="inventory_entry_note">Note</string>
     <string name="inventory_entries_none">No entries.</string>
+    <string name="order_detail_assign_me">Take it on</string>
+    <string name="order_detail_unassign_me">Step off</string>
+    <string name="order_detail_change_status">Change status</string>
+    <string name="order_detail_note">Note</string>
+    <string name="order_detail_note_hint">For this order only: when you work, which part you take.</string>
+    <string name="order_detail_assignee_unnamed">Unknown</string>
+    <string name="order_detail_not_allowed">You are not allowed to change this order.</string>
 </resources>
