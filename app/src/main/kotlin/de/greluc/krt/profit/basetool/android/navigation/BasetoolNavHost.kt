@@ -56,7 +56,6 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
-import de.greluc.krt.profit.basetool.android.promotion.PromotionScreen
 import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
@@ -115,7 +114,7 @@ fun BasetoolNavHost(
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
-    promotion: PromotionViewModel,
+    @Suppress("UnusedParameter") promotion: PromotionViewModel,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
 ) {
@@ -355,7 +354,7 @@ private fun PushedDestination(
     orderDetail: (String) -> OrderDetailViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
-    promotion: PromotionViewModel,
+    @Suppress("UnusedParameter") promotion: PromotionViewModel,
     settings: SettingsBindings,
 ) {
     when (destination) {
@@ -420,10 +419,6 @@ private fun PushedDestination(
 
         KrtDestination.Licenses -> {
             LicensesScreen(onOpenUrl = settings.onOpenUrl)
-        }
-
-        KrtDestination.Promotion -> {
-            PromotionScreen(viewModel = promotion)
         }
 
         else -> {

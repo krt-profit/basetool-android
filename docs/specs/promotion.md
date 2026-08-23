@@ -12,7 +12,12 @@ from the next rank. Both are me-scoped reads. The officers' matrix (`/promotion/
 (plan Q7), so this screen is read-only by nature — nobody assesses themselves, and there is no
 write, no version echo and nothing to disable when the device is offline.
 
-**Recorded deviation, standing:** the design handoff has **no Beförderung chapter**. The screen is
+> **Status: withheld from the navigation** (owner decision, 2026-08-23). The repository, the
+> requirements and the tests below are live and green; the **screen is not reachable** and the
+> destination still renders its placeholder. It is released when a design chapter for this area
+> exists and the screen has been checked against it (#66).
+
+**Why it is withheld:** the design handoff has **no Beförderung chapter**. The screen is
 built from the DAS KARTELL design system's own components and from what the web page shows. That is
 derivation, not a chapter being followed, and it is written into the screen's own Javadoc as well as
 here so it cannot be discovered later as a surprise. If a chapter is authored, this screen is
@@ -81,6 +86,8 @@ has its own sentence for it.
 
 ## Known gaps
 
+- **The screen is not reachable**, by the decision above. Nothing about the data layer waits on it:
+  the repository is wired into the object graph and its requirements hold as written.
 - **No device walk yet.** The slice is covered by JVM tests and the lint gate; it has not been
   walked on the emulator, which is where every previous slice found the defects the suite could not
   (#66).
