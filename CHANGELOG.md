@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **„Mein Inventar" ist da — und die App kann zum ersten Mal schreiben.** Eigene Bestände anlegen, ändern und löschen, mit Ortssuche, Mengen-Stepper und Notiz. Nur für dich sichtbar; niemand sonst sieht diese Liste. Blueprints folgen im nächsten Schnitt, der Datei-Import in Phase 4 (REQ-APP-PI-001…006).
+
+- **Ohne Netz sind Schreib-Aktionen gesperrt statt in einer Warteschlange.** Die Knöpfe bleiben sichtbar und ausgegraut, mit einer Zeile, die sagt warum — eine später abgeschickte Änderung würde der Server ohnehin ablehnen, weil ihr Stand veraltet ist. Dafür kommt die Berechtigung „Netzwerkstatus lesen" dazu; sie liest nur, ob überhaupt eine Verbindung besteht, und schickt nichts.
+
+- **Der Eintrags-Dialog lässt sich scrollen.** Mit gewähltem Ort und offener Tastatur lagen „Abbrechen" und „Speichern" sonst unter dem Bildschirmrand — der Eintrag ließ sich nicht speichern.
+
+- **Gleichzeitige Änderungen sagen es dir, ohne deine Eingabe wegzuwerfen.** Hat jemand anderes denselben Eintrag zwischenzeitlich geändert, bleibt alles Getippte stehen und der Dialog erklärt, was zu tun ist.
+
 ### Fixed
 
 - **Die Sitzung hält jetzt länger als eine Stunde.** Bisher lief die Anmeldung nach Ablauf des Zugriffs-Tokens aus, und danach meldete jeder Bildschirm „Signal Lost" — nur ein Neustart der App half. Das Token wird jetzt vor Ablauf und nach einer Ablehnung durch den Server erneuert (REQ-APP-AUTH-012).

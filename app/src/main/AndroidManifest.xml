@@ -7,6 +7,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      Reads whether a network exists at all, for one rule: offline DISABLES writes rather than
+      queueing them (design ch. 14 — the optimistic-locking contract makes a queued mutation a
+      conflict factory). Normal permission, granted at install, no runtime prompt, and nothing
+      leaves the device: the callback reports the local link. Owner decision 2026-08-23; the
+      plan's permission inventory and the TDDDG analysis carry it.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".BasetoolApplication"

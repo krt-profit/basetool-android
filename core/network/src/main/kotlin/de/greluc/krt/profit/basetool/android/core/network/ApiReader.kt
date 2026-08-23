@@ -10,10 +10,13 @@ package de.greluc.krt.profit.basetool.android.core.network
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 /**
@@ -140,6 +143,111 @@ class ApiReader(
     }
 
     /**
+     * Sends a body and parses what comes back.
+     *
+     * The server answers a write with the saved row, and that answer is not a courtesy: it carries
+     * the **new `version`**, which the next edit has to echo. A client that ignored the response
+     * and kept its old version would 409 on its own second save.
+     *
+     * @param B the request type
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param body the payload
+     * @param bodySerializer the serializer for [B]
+     * @param deserializer the serializer for [T]
+     * @return the saved value, or the classified failure
+     */
+    suspend fun <B, T> post(
+        path: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> = send(path, "POST", body, bodySerializer, deserializer)
+
+    /**
+     * Replaces a row and parses what comes back.
+     *
+     * @param B the request type
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param body the payload, including the `version` read from the server
+     * @param bodySerializer the serializer for [B]
+     * @param deserializer the serializer for [T]
+     * @return the saved value, or the classified failure — [ApiError.OptimisticLock] when somebody
+     *   else saved first
+     */
+    suspend fun <B, T> put(
+        path: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> = send(path, "PUT", body, bodySerializer, deserializer)
+
+    /**
+     * Deletes a row.
+     *
+     * Separate from the three above because the answer is `204 No Content`: there is no body to
+     * parse, and running it through the parser would turn every successful delete into a reported
+     * server error.
+     *
+     * @param path the API path, beginning with a slash
+     * @return success, or the classified failure
+     */
+    suspend fun delete(path: String): ApiResult<Unit> =
+        withoutBody(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).delete())
+
+    /**
+     * Builds and runs one body-carrying request.
+     *
+     * @param B the request type
+     * @param T the response type
+     * @param path the API path
+     * @param method the verb
+     * @param body the payload
+     * @param bodySerializer the serializer for [B]
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    private suspend fun <B, T> send(
+        path: String,
+        method: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> =
+        call(
+            path,
+            Request.Builder()
+                .url("$baseUrl$path".toHttpUrl())
+                .method(method, json.encodeToString(bodySerializer, body).toRequestBody(JSON_MEDIA_TYPE)),
+            deserializer,
+        )
+
+    /**
+     * Runs a request whose success carries no body.
+     *
+     * @param path the API path, used only in the diagnostic
+     * @param builder the prepared request
+     * @return success, or the classified failure
+     */
+    private suspend fun withoutBody(
+        path: String,
+        builder: Request.Builder,
+    ): ApiResult<Unit> =
+        try {
+            httpClient.newCall(builder.build()).await().use { response ->
+                if (response.isSuccessful) {
+                    ApiResult.Success(Unit)
+                } else {
+                    ApiResult.Failure(errorMapper.map(response))
+                }
+            }
+        } catch (io: IOException) {
+            KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
+            ApiResult.Failure(ApiError.Network(io))
+        }
+
+    /**
      * Executes a prepared request and parses its body.
      *
      * The builder arrives without a URL so the caller cannot accidentally address a different host
@@ -193,5 +301,8 @@ class ApiReader(
     private companion object {
         /** The status an unreadable body is reported under, since the response itself was fine. */
         const val HTTP_OK = 200
+
+        /** What every write on this API sends and receives. */
+        val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
 }

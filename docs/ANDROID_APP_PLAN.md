@@ -272,9 +272,23 @@ before the inbox had answered, and the Einsätze tab carried a hard-coded badge 
 pinned by a regression test, and written into the area's spec.
 
 **Phase 3 — mutations** (version-echo + 409 UX everywhere)
-Mission signup/check-in/payout/finance entries · hangar CRUD + imports · inventory book-in/out/
-rebook · order assignee/note/status (role-gated) · bank booking requests + owner approvals ·
-personal inventory/blueprints.
+Mission signup/check-in/payout/finance entries · hangar CRUD · inventory book-in/out/rebook · order
+assignee/note/status (role-gated) · bank booking requests + owner approvals · personal
+inventory/blueprints.
+
+**Ordered by ascending risk** (owner decision, 2026-08-23), so the write plumbing — request verbs,
+version echo, conflict dialog, offline rule — is built where a mistake reaches nobody but the member
+making it: **1.** Mein Inventar · **2.** Blueprints · **3.** Hangar-CRUD · **4.** Lager · **5.**
+Aufträge · **6.** Einsatz · **7.** Bank. The **imports** (Fleetview, P4K, blueprint files) move to
+phase 4 with the other file flows, and each area ships as its own PR with tests, spec and a device
+walk-through.
+
+Two decisions the whole phase rests on. `ACCESS_NETWORK_STATE` joins the permission inventory, so a
+write action can be **disabled** while the device is offline rather than queued — a held mutation
+carries a `version` that ages while it waits, which is precisely the write the server must refuse.
+And the production vhost opens the write paths in **one paste at the end of the phase** (runbook
+Phase I), not once per slice; the nightly probe is extended in that same change, so it never reports
+a state nobody intends to fix yet.
 
 **Phase 4 — live parity & breadth** (still pre-release per Q6; guest mode dropped per Q8)
 Backend live-sync bridge (SSE or WS, Redis-fed; own ADR) with coalesced re-fetch semantics
