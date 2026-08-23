@@ -14,9 +14,14 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
+import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -146,10 +151,14 @@ data class InventoryState(
  * @property source where the Lager comes from
  * @property connectivity whether the device has a network, which is what decides whether the
  *   booking actions are offered at all
+ * @property liveSync the live-sync bridge, or `null` in a test or a preview. The shared Lager is
+ *   the surface where a peer's booking matters most — two members moving the same stock is the
+ *   ordinary case, not the exception — so this screen re-reads what is open when the room speaks.
  */
 class InventoryViewModel(
     private val source: InventorySource,
     connectivity: Connectivity,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(InventoryState())
 
@@ -160,6 +169,16 @@ class InventoryViewModel(
         viewModelScope.launch {
             connectivity.online.collect { online ->
                 mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.INVENTORY)) { sections ->
+            if (LiveSyncSections.INVENTORY_STOCK in sections) {
+                // Only once the screen has something to refresh. Before that the member has not
+                // loaded the Lager yet, and re-reading it in the background would spend a request
+                // on a screen nobody is looking at.
+                if (loadedOnce) {
+                    reReadOpenPath()
+                }
             }
         }
     }
@@ -303,6 +322,21 @@ class InventoryViewModel(
      * which is the one thing they are looking at.
      */
     fun onBookingSaved() {
+        // The member's own booking is the one that has to reach everybody else. A peer's change
+        // arrives through the room and must NOT be re-announced, or two clients would keep
+        // bouncing one booking off each other.
+        publishLiveSync(liveSync, LiveSyncTopic.INVENTORY, LiveSyncSections.INVENTORY_STOCK)
+        reReadOpenPath()
+    }
+
+    /**
+     * Re-reads the open path in place, whether the change was the member's own or a peer's.
+     *
+     * In place is the whole point: no spinner over the tree, no collapse, no emptied list. A
+     * member who did not ask for anything must not watch their screen blank itself because
+     * somebody on the other side of the organisation booked something out.
+     */
+    private fun reReadOpenPath() {
         val openGroups = mutableState.value.opened.keys.toList()
         val openStacks = mutableState.value.openedStacks.keys.toSet()
         mutableState.value = mutableState.value.copy(refreshing = true)

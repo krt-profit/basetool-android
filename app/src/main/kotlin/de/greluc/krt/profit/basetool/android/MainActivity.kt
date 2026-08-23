@@ -243,6 +243,7 @@ class MainActivity : AppCompatActivity() {
                                         container.identity,
                                         container.connectivity,
                                         it,
+                                        container.liveSync,
                                     )
                                 },
                                 operations = operationsViewModel,
@@ -250,7 +251,14 @@ class MainActivity : AppCompatActivity() {
                                 dashboard = dashboardViewModel,
                                 hangar = hangarViewModel,
                                 bank = bankViewModel,
-                                bankAccount = { BankAccountViewModel(container.bank, container.connectivity, it) },
+                                bankAccount = {
+                                    BankAccountViewModel(
+                                        container.bank,
+                                        container.connectivity,
+                                        it,
+                                        container.liveSync,
+                                    )
+                                },
                                 orders = ordersViewModel,
                                 orderDetail = {
                                     OrderDetailViewModel(
@@ -258,6 +266,7 @@ class MainActivity : AppCompatActivity() {
                                         container.identity,
                                         container.connectivity,
                                         it,
+                                        container.liveSync,
                                     )
                                 },
                                 inventory = inventoryViewModel,
@@ -270,6 +279,7 @@ class MainActivity : AppCompatActivity() {
                                         container.identity,
                                         container.connectivity,
                                         it,
+                                        container.liveSync,
                                     )
                                 },
                                 onSelectOrgUnit = orgUnitViewModel::select,
@@ -419,13 +429,15 @@ class MainActivity : AppCompatActivity() {
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
-                initializer { MissionsViewModel(container.missions) }
+                initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer { NotificationsViewModel(container.notifications) }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
-                initializer { BankViewModel(container.bank) }
-                initializer { OrdersViewModel(container.orders) }
-                initializer { InventoryViewModel(container.inventory, container.connectivity) }
+                initializer { BankViewModel(container.bank, container.liveSync) }
+                initializer { OrdersViewModel(container.orders, container.liveSync) }
+                initializer {
+                    InventoryViewModel(container.inventory, container.connectivity, container.liveSync)
+                }
                 initializer { BookingViewModel(container.inventory, container.connectivity) }
                 initializer {
                     PersonalInventoryViewModel(container.personalInventory, container.connectivity)

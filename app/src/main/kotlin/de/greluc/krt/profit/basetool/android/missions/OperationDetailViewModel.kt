@@ -11,12 +11,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.OperationOverview
 import de.greluc.krt.profit.basetool.android.core.data.OperationPayout
 import de.greluc.krt.profit.basetool.android.core.data.OperationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
+import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -95,6 +100,7 @@ class OperationDetailViewModel(
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val operationId: String,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(OperationDetailState(operationId = operationId))
 
@@ -106,6 +112,12 @@ class OperationDetailViewModel(
             connectivity.online.collect { online ->
                 mutableState.value = mutableState.value.copy(online = online)
             }
+        }
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.operation(operationId))) { _ ->
+            // The Operation is one read, and every section of its room feeds it — including the two
+            // that are cross-published from an Einsatz underneath it, which is exactly the case a
+            // member on this screen cannot otherwise see happening.
+            reload(keepContent = true)
         }
     }
 
@@ -135,6 +147,12 @@ class OperationDetailViewModel(
                     // that disagree.
                     mutableState.value = mutableState.value.copy(saving = false, error = null)
                     reload(keepContent = true)
+                    publishLiveSync(
+                        liveSync,
+                        LiveSyncTopic.operation(operationId),
+                        LiveSyncSections.OPERATION_PAYOUT,
+                        LiveSyncSections.OPERATION_FINANCE,
+                    )
                 }
 
                 is ApiResult.Failure -> {

@@ -15,9 +15,14 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
+import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -97,11 +102,22 @@ data class BankAccountState(
  */
 class BankViewModel(
     private val source: BankSource,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BankAccountsState())
 
     /** What the screen draws. */
     val state: StateFlow<BankAccountsState> = mutableState.asStateFlow()
+
+    init {
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.ORGUNIT_BANK)) { _ ->
+            // Every section of this room ends in the same read, so the keys are not inspected:
+            // a balance moving and a setting changing both mean the overview is out of date.
+            if (loadedOnce) {
+                reload(keepContent = true)
+            }
+        }
+    }
 
     private var loadedOnce = false
 
@@ -170,6 +186,7 @@ class BankAccountViewModel(
     private val source: BankSource,
     connectivity: Connectivity,
     private val accountId: String,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BankAccountState(accountId = accountId))
 
@@ -178,6 +195,15 @@ class BankAccountViewModel(
             connectivity.online.collect { online ->
                 mutableState.value = mutableState.value.copy(online = online)
             }
+        }
+        observeLiveSync(
+            liveSync,
+            setOf(LiveSyncTopic.bankAccount(accountId), LiveSyncTopic.ORGUNIT_BANK),
+        ) { _ ->
+            // A booking lands in the account's own room, a settings change in the org-unit one,
+            // and the screen shows both — so either re-reads both, in place.
+            reload(keepContent = true)
+            readSettings()
         }
     }
 
@@ -310,6 +336,13 @@ class BankAccountViewModel(
                             saving = false,
                             error = null,
                         )
+                    // The settings region lives in the org-unit room, not the account's: it is what
+                    // the overview renders, and a peer looking at the list is who needs to know.
+                    publishLiveSync(
+                        liveSync,
+                        LiveSyncTopic.ORGUNIT_BANK,
+                        LiveSyncSections.ORGUNIT_BANK_SETTINGS,
+                    )
                 }
 
                 is ApiResult.Failure -> {

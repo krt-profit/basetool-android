@@ -12,6 +12,9 @@ import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
@@ -20,6 +23,8 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
+import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -199,12 +204,16 @@ data class FinanceEntryDraft(
  * @property identity who the caller is — which decides which sign-up on the roster is theirs
  * @property connectivity whether the device has a network
  * @property missionId which Einsatz to load
+ * @property liveSync the live-sync bridge, or `null` in a test or a preview. An Einsatz is the
+ *   surface several people work on at once — one signs up while another books the money — so this
+ *   screen listens to its own room and announces its own writes into it.
  */
 class MissionDetailViewModel(
     private val source: MissionSource,
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val missionId: String,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(MissionDetailState(missionId = missionId))
 
@@ -215,6 +224,21 @@ class MissionDetailViewModel(
         viewModelScope.launch {
             connectivity.online.collect { online ->
                 mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.mission(missionId))) { sections ->
+            // Each section costs only the read it names. The roster and the money are separate
+            // requests, and refreshing both because one moved would double what a peer's check-in
+            // costs every viewer.
+            if (sections.any { it in ROSTER_SECTIONS }) {
+                reload(keepContent = true)
+            }
+            // Only when the member has actually opened the Finanzen tab. Loading it because a peer
+            // booked would fetch a tab nobody is looking at, and the tab is lazy on purpose.
+            if (LiveSyncSections.MISSION_FINANCE in sections &&
+                mutableState.value.finances !is MissionFinancesPhase.Idle
+            ) {
+                loadFinances()
             }
         }
     }
@@ -424,6 +448,7 @@ class MissionDetailViewModel(
                     mutableState.value =
                         mutableState.value.copy(entryDraft = null, saving = false, error = null)
                     loadFinances()
+                    announce(LiveSyncSections.MISSION_FINANCE)
                 }
 
                 // The editor stays open with what was typed.
@@ -458,6 +483,7 @@ class MissionDetailViewModel(
                             saving = false,
                             error = null,
                         )
+                    announce(LiveSyncSections.MISSION_CREW)
                 }
 
                 is ApiResult.Failure -> {
@@ -467,6 +493,18 @@ class MissionDetailViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Tells the other viewers of this Einsatz that one of its regions moved.
+     *
+     * Only the member's own writes reach here. A change that arrived through the room is applied
+     * and never re-announced, or two clients would bounce one check-in off each other forever.
+     *
+     * @param section the region that changed.
+     */
+    private fun announce(section: String) {
+        publishLiveSync(liveSync, LiveSyncTopic.mission(missionId), section)
     }
 
     /**
@@ -484,6 +522,7 @@ class MissionDetailViewModel(
                         saving = false,
                         error = null,
                     )
+                announce(LiveSyncSections.MISSION_CREW)
             }
 
             is ApiResult.Failure -> {
@@ -575,6 +614,15 @@ class MissionDetailViewModel(
     }
 
     private companion object {
+        /**
+         * Sections whose change means the Einsatz itself has to be re-read.
+         *
+         * The roster and the core fields ride the same read, so they fold into one refresh; the
+         * money does not, and has its own branch.
+         */
+        val ROSTER_SECTIONS =
+            setOf(LiveSyncSections.MISSION_CREW, LiveSyncSections.MISSION_OVERVIEW)
+
         /** What the server's note column takes. */
         const val NOTE_LENGTH = 2000
 

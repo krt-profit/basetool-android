@@ -184,6 +184,31 @@ class ApiReader(
     ): ApiResult<T> = send(path, "PUT", body, bodySerializer, deserializer)
 
     /**
+     * Sends a body and expects no answer.
+     *
+     * For an endpoint that acknowledges rather than replies — `202 Accepted` with an empty body,
+     * which is what the live-sync signal gets. Distinct from [post] for the reason [delete] is:
+     * handing an empty body to the parser would turn every success into a reported server error.
+     *
+     * @param B the request type
+     * @param path the API path, beginning with a slash
+     * @param body the payload
+     * @param bodySerializer the serializer for [B]
+     * @return success, or the classified failure
+     */
+    suspend fun <B> postAccepted(
+        path: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+    ): ApiResult<Unit> =
+        withoutBody(
+            path,
+            Request.Builder()
+                .url("$baseUrl$path".toHttpUrl())
+                .post(json.encodeToString(bodySerializer, body).toRequestBody(JSON_MEDIA_TYPE)),
+        )
+
+    /**
      * Deletes a row.
      *
      * Separate from the three above because the answer is `204 No Content`: there is no body to

@@ -16,9 +16,14 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
+import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
+import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,7 +88,19 @@ data class OrdersState(
  */
 class OrdersViewModel(
     private val source: JobOrderSource,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
+    init {
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.ORDERS)) { sections ->
+            // The queue room is refused outright to a requester who only sees their own Aufträge,
+            // so a screen that never hears from it is correct rather than broken — the server said
+            // so in the subscribed list.
+            if (LiveSyncSections.ORDERS_QUEUE in sections) {
+                reload(keepRows = true)
+            }
+        }
+    }
+
     private val mutableState = MutableStateFlow(OrdersState())
 
     /** What the screen draws. */
@@ -287,6 +304,7 @@ class OrderDetailViewModel(
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val orderId: String,
+    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(OrderDetailState(orderId = orderId))
 
@@ -297,6 +315,13 @@ class OrderDetailViewModel(
         viewModelScope.launch {
             connectivity.online.collect { online ->
                 mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+        observeLiveSync(liveSync, setOf(LiveSyncTopic.order(orderId))) { sections ->
+            // Both regions the app can move ride the one detail read, so either one re-reads the
+            // order — in place, because the member may be part-way through typing a note.
+            if (sections.any { it in WATCHED_SECTIONS }) {
+                reload(keepContent = true)
             }
         }
     }
@@ -430,6 +455,14 @@ class OrderDetailViewModel(
                             saving = false,
                             error = null,
                         )
+                    // Both write paths land here, and both move what another viewer of this order
+                    // is looking at: the assignee list and the status in the header.
+                    publishLiveSync(
+                        liveSync,
+                        LiveSyncTopic.order(orderId),
+                        LiveSyncSections.ORDER_ASSIGNEES,
+                        LiveSyncSections.ORDER_HEADER,
+                    )
                 }
 
                 // The editor stays open with what was typed: a conflict or a refusal is not a
@@ -486,6 +519,14 @@ class OrderDetailViewModel(
     }
 
     private companion object {
+        /**
+         * Sections of this order's room that cost a re-read.
+         *
+         * Both ride the one detail read, so they fold into a single refresh rather than two.
+         */
+        val WATCHED_SECTIONS =
+            setOf(LiveSyncSections.ORDER_ASSIGNEES, LiveSyncSections.ORDER_HEADER)
+
         /** What the server's note column takes. */
         const val NOTE_LENGTH = 500
 

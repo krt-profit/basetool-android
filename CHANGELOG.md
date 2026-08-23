@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die App aktualisiert sich jetzt live, und andere sehen deine Änderungen sofort.** Ändert jemand im Browser einen Einsatz, einen Auftrag oder das Lager, zieht die App den betroffenen Bereich nach — ohne Neuladen und ohne dass die Anzeige leer blinkt. Umgekehrt aktualisiert eine Buchung aus der App jede offene Browser-Ansicht. Lager, Einsatz-Detail, Einsatz- und Auftragsliste, Auftrags-Detail, Operationen und die Bank sind angebunden; Materialbörse, Raffinerie und Beförderung folgen mit ihren Screens (REQ-APP-SYNC-001…005).
+
 - **Konten der Kartellbank lassen sich jetzt in der App einstellen.** Zielsaldo setzen und regeln, wer das Konto sieht — sichtbar nur für die Person, die für das Konto verantwortlich ist. Ein- und Auszahlungen bleiben der Weboberfläche vorbehalten (REQ-APP-BANK-006, REQ-APP-BANK-007).
 
 - **Einnahmen und Ausgaben eines Einsatzes lassen sich jetzt in der App buchen.** Betrag, Richtung und ein Wofür — änderbar und löschbar, solange es deine eigene Buchung ist. Buchen setzt voraus, dass du für den Einsatz angemeldet bist. Einsatzleiter können in der Operation außerdem Auszahlungen bestätigen (REQ-APP-MIS-017, REQ-APP-OPS-013).
