@@ -1,7 +1,7 @@
 # Mein Inventar (`REQ-APP-PI-*`)
 
-The member's own stock: what they keep themselves, where, and how much of it. Phase 3's first
-slice, and the app's first writes.
+The member's own stock and their own blueprints — one screen, two halves (design ch. 09 § 4).
+Phase 3's first two slices, and the app's first writes.
 
 Upstream contract: `REQ-API-009` in the main repo freezes `GET/POST /api/v1/personal-inventory`,
 `GET/PUT/DELETE /api/v1/personal-inventory/{id}` and `GET /api/v1/uex/locations/search`, including
@@ -109,8 +109,7 @@ design assumes does not exist in the API, and a client could only fake it. The f
 the design system's own field components, so it looks like the rest of the app; only the fields
 differ, and they differ because the data does.
 
-The Blueprints half of the design's segment is its own slice (owner decision, 2026-08-23), so the
-screen carries **no segment** yet: a control with one reachable tab does nothing.
+The Blueprints half arrived in the slice immediately after, and the segment with it.
 
 **Acceptance**
 
@@ -161,11 +160,108 @@ editor costs a dismissal, a mis-tap that deletes costs the entry.
 
 ---
 
+---
+
+### REQ-APP-PI-008 — One screen, two halves, two view models
+
+The segment (`Items` / `Blueprints`) belongs to the screen; each half keeps its own view model and
+its own state.
+
+They read different endpoints and fail independently: a Blueprints outage must not empty the Items
+list a member was reading. Switching tabs keeps what each half already loaded, and the chosen tab
+survives process death — coming back to the wrong half is the kind of small wrongness that is hard
+to name and easy to feel.
+
+The Blueprints half loads on **first display**, not on first composition: it costs two requests, and
+a member who never opens the tab should never pay for them.
+
+**Acceptance**
+
+- [x] Each half has its own view model, and the route wires both (`MeinInventarRoute`).
+- [x] **Observed on a device (2026-08-23):** the segment switches, and each half keeps its list.
+
+---
+
+### REQ-APP-PI-009 — The craftability chip says nothing rather than guessing
+
+Craftability is a **second, independent read**. While it has not answered — or after it failed —
+the row carries **no chip at all**.
+
+A chip reading "nicht baubar" because a request did not come back would be a claim about the
+member's stock made out of an outage. The list itself is still true and stays on screen.
+
+Three states when it does answer: `Baubar`, `N Materialien fehlen`, and `Rezept unbekannt` for a
+recipe the server could not resolve — the last one because a blueprint whose recipe is unknown is
+not the same as one that cannot be built.
+
+**Acceptance**
+
+- [x] A failed craftability read leaves the list standing and the chips absent
+  (`PersonalBlueprintsViewModelTest`, `PersonalBlueprintsScreenTest`).
+- [x] The three answered states render as themselves (`PersonalBlueprintsScreenTest`).
+- [x] **Observed on a device (2026-08-23)** against eight owned blueprints.
+
+---
+
+### REQ-APP-PI-010 — Refining is a second answer to the same question, not a second request
+
+The `Mit Raffinerie` toggle switches the chip between what is reachable now and what is reachable
+once refining counts. Both numbers come from the **same** call, which asks for them together
+(`includeRefinery=true`).
+
+Re-reading on a toggle would make a display preference cost a round trip, and the two answers could
+then disagree because they were taken at different moments.
+
+**Acceptance**
+
+- [x] The toggle changes no request (`PersonalBlueprintsViewModelTest`).
+- [x] The shortfall count follows the toggle, per material (`PersonalBlueprintRepositoryTest`).
+- [x] **Observed on a device (2026-08-23).**
+
+---
+
+### REQ-APP-PI-011 — Only what the server calls removable is offered a remove action
+
+A row is offered `Entfernen` **only** when the server sets `removable`. When the field is absent the
+app assumes `false`.
+
+Default-granted blueprints are not removable, and the rule is invisible from the row itself. A
+button that answers `409` reads as a broken button rather than as a rule; assuming the permissive
+value is how that happens.
+
+**Acceptance**
+
+- [x] An entry without the flag renders no remove action (`PersonalBlueprintsScreenTest`).
+- [x] An absent flag maps to `false` (`PersonalBlueprintRepositoryTest`).
+- [x] **Observed on a device (2026-08-23):** the eight default-granted blueprints carry no remove
+  action; the one added by hand does.
+
+---
+
+### REQ-APP-PI-012 — The catalogue picker will not offer what the member already owns
+
+A product with `ownedByCurrentUser` is listed — greyed, labelled "Hast du schon" — and **cannot be
+picked**.
+
+Hiding it would answer the member's actual question ("do I have this one?") with silence and send
+them looking. Offering it would set up a create the server refuses.
+
+**Acceptance**
+
+- [x] An owned product cannot be submitted (`PersonalBlueprintsViewModelTest`), and the picker says
+  why (`PersonalBlueprintsScreenTest`).
+- [x] A product row without a key never reaches the picker (`PersonalBlueprintRepositoryTest`).
+- [x] The search is capped, debounced, and needs two characters, like the place picker
+  (`PersonalBlueprintsViewModelTest`).
+- [x] **Observed on a device (2026-08-23):** added "9-Series Longsword Cannon", changed its note,
+  removed it again — `201`, `200`, `204`.
+
 ## Known gaps
 
-- **Blueprints.** The design's second tab, with the craftability chip and the missing-material
-  breakdown. Its own slice, immediately after this one (owner decision, 2026-08-23). The file
-  import behind it (`/personal-blueprints/import/*`) belongs to phase 4 with the other imports.
+- **The blueprint file import** (`/personal-blueprints/import/*`) and the bulk delete. Phase 4,
+  with the other file flows.
+- **`acquiredAt`.** The API accepts it on create and update; the app offers no field for it and
+  deliberately never sends it, so a save cannot rewrite a value the member cannot see.
 - **Sorting.** The list arrives in the server's default order; the web app offers no sort either.
 - **The admin surface** (`/api/v1/admin/personal-inventory/**`) stays web-only, permanently, like
   the rest of the admin area.

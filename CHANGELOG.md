@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die Blueprints sind da — der zweite Reiter von „Mein Inventar".** Was dir gehört, mit einem Chip, der sagt, ob es baubar ist oder welche Materialien fehlen; ein Schalter rechnet die Raffinerie mit. Hinzufügen über die Produktsuche, Notiz ändern, entfernen. Was du schon hast, bietet die Suche nicht noch einmal an, und was der Server nicht freigibt, bekommt keinen Entfernen-Knopf (REQ-APP-PI-008…012).
+
 - **„Mein Inventar" ist da — und die App kann zum ersten Mal schreiben.** Eigene Bestände anlegen, ändern und löschen, mit Ortssuche, Mengen-Stepper und Notiz. Nur für dich sichtbar; niemand sonst sieht diese Liste. Blueprints folgen im nächsten Schnitt, der Datei-Import in Phase 4 (REQ-APP-PI-001…006).
 
 - **Ohne Netz sind Schreib-Aktionen gesperrt statt in einer Warteschlange.** Die Knöpfe bleiben sichtbar und ausgegraut, mit einer Zeile, die sagt warum — eine später abgeschickte Änderung würde der Server ohnehin ablehnen, weil ihr Stand veraltet ist. Dafür kommt die Berechtigung „Netzwerkstatus lesen" dazu; sie liest nur, ob überhaupt eine Verbindung besteht, und schickt nichts.
