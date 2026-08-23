@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Beförderung in der App.** Deine eigenen Bewertungen nach Kategorien und deine Eignung für die nächste Rangstufe, mit den Anforderungen und wie weit du bist. Nur Lesen — bewertet wird weiterhin in der Weboberfläche (REQ-APP-PROMO-001…003).
+
+- **Benachrichtigungen erscheinen jetzt auch in der Statusleiste** — solange die App läuft. Auf dem Sperrbildschirm steht dabei nie mehr als „Neue Benachrichtigung". Ohne Push-Dienst erreicht dich das nicht bei geschlossener App (REQ-APP-NOTIF-010).
+
 - **Die App aktualisiert sich jetzt live, und andere sehen deine Änderungen sofort.** Ändert jemand im Browser einen Einsatz, einen Auftrag oder das Lager, zieht die App den betroffenen Bereich nach — ohne Neuladen und ohne dass die Anzeige leer blinkt. Umgekehrt aktualisiert eine Buchung aus der App jede offene Browser-Ansicht. Lager, Einsatz-Detail, Einsatz- und Auftragsliste, Auftrags-Detail, Operationen und die Bank sind angebunden; Materialbörse, Raffinerie und Beförderung folgen mit ihren Screens (REQ-APP-SYNC-001…005).
 
 - **Konten der Kartellbank lassen sich jetzt in der App einstellen.** Zielsaldo setzen und regeln, wer das Konto sieht — sichtbar nur für die Person, die für das Konto verantwortlich ist. Ein- und Auszahlungen bleiben der Weboberfläche vorbehalten (REQ-APP-BANK-006, REQ-APP-BANK-007).
