@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.OperationDetail
 import de.greluc.krt.profit.basetool.android.core.data.OperationOverview
@@ -89,6 +90,12 @@ class OperationDetailViewModelTest {
             calls++
             return answer
         }
+
+        override suspend fun me(): ApiResult<Identity> =
+            when (val result = myUserId()) {
+                is ApiResult.Failure -> result
+                is ApiResult.Success -> ApiResult.Success(Identity(result.value, logistician = false))
+            }
     }
 
     private fun payout(

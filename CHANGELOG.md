@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Aufträge lassen sich jetzt aus der App übernehmen.** „Übernehmen" setzt dich auf den Auftrag, „Abmelden" nimmt dich wieder herunter, und zu deinem Eintrag gehört eine eigene Notiz — wann du arbeitest, welchen Teil du nimmst. Logistiker können zusätzlich den Status ändern. Übergaben und die übrige Bearbeitung bleiben der Weboberfläche vorbehalten (REQ-APP-ORDERS-009…012).
+
 - **Das Lager lässt sich jetzt aus der App buchen.** Die Bestände einer Gruppe öffnen sich bis zum einzelnen Eintrag; von dort geht Einbuchen, Ausbuchen (verwerfen, übergeben, verkaufen) und Notiz ändern. Beim Verkaufen zeigt die App die Terminals des Materials mit ihrem Preis. Nach jeder Buchung bleibt der geöffnete Pfad offen und zeigt das Ergebnis. Persönliche Bestände, Mehrfachauswahl und Sammel-Umbuchung bleiben der Weboberfläche vorbehalten (REQ-APP-INV-007…012).
 
 - **Der Hangar lässt sich jetzt aus der App pflegen.** Schiffe anlegen, ändern und löschen: Typ über eine Suche, Versicherung als LTI oder Monatszahl, Ort und Fitted-Zustand. Nur die eigenen Schiffe — die Org-Ansicht bleibt eine Übersicht. Der Import bleibt Phase 4 (REQ-APP-HANGAR-006…009).

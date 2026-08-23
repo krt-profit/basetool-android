@@ -35,7 +35,31 @@ interface IdentitySource {
      *   yours" cannot be answered, not that the screen has no content.
      */
     suspend fun myUserId(): ApiResult<String>
+
+    /**
+     * Reads who the caller is: their id, and whether they hold the Logistician grant.
+     *
+     * @return the caller, or a failure. A failure means a screen cannot tell which row is the
+     *   caller's and must assume the narrower of the two roles, never the wider.
+     */
+    suspend fun me(): ApiResult<Identity>
 }
+
+/**
+ * The caller, as far as any screen needs to know them.
+ *
+ * No name, no email and no role list: two facts answer every question the app asks of this record,
+ * and holding the rest would put personal data in memory for the lifetime of the process.
+ *
+ * @property userId the backend user id — the key an Operation's payout rows and an order's
+ *   assignee rows are written against
+ * @property logistician whether the caller holds the Logistician grant, which is what decides
+ *   whether a screen offers a Logistician-only control at all
+ */
+data class Identity(
+    val userId: String,
+    val logistician: Boolean,
+)
 
 /**
  * Reads the caller's own record and keeps its id for the process.
@@ -45,9 +69,9 @@ interface IdentitySource {
  * whole object graph down. Re-reading it on every screen would spend a round trip to learn
  * something already known.
  *
- * Only the id is kept. The response also carries the member's email, roles and rank; holding those
- * would put personal data in memory for the lifetime of the process to answer a question that only
- * needs an opaque key.
+ * Only the id and the Logistician grant are kept. The response also carries the member's email,
+ * roles and rank; holding those would put personal data in memory for the lifetime of the process
+ * to answer questions that need an opaque key and one boolean.
  *
  * @property reader performs the call and classifies its failure
  */
@@ -55,7 +79,7 @@ class IdentityRepository(
     private val reader: ApiReader,
 ) : IdentitySource {
     private val mutex = Mutex()
-    private var cached: String? = null
+    private var cached: Identity? = null
 
     /**
      * Convenience constructor for the object graph.
@@ -76,6 +100,12 @@ class IdentityRepository(
      * @return the id, or the classified failure.
      */
     override suspend fun myUserId(): ApiResult<String> =
+        when (val result = me()) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.userId)
+        }
+
+    override suspend fun me(): ApiResult<Identity> =
         mutex.withLock {
             cached?.let { return@withLock ApiResult.Success(it) }
             when (val result = reader.get(ME_PATH, UserDto.serializer())) {
@@ -91,8 +121,12 @@ class IdentityRepository(
                         // the same "cannot tell which row is yours" path as a 404.
                         ApiResult.Failure(ApiError.NotFound())
                     } else {
-                        cached = id
-                        ApiResult.Success(id)
+                        // `isLogistician` absent is read as "not one". The grant decides whether a
+                        // control is offered, and the narrower reading is the one that cannot
+                        // offer an action the server refuses.
+                        val identity = Identity(id, result.value.isLogistician == true)
+                        cached = identity
+                        ApiResult.Success(identity)
                     }
                 }
             }

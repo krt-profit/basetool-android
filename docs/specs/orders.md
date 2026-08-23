@@ -152,6 +152,11 @@ a question they did not ask.
 allow-list. The queue path is exact and the vhost's read-only guard covers the family, because the
 **same path** answers a `POST` that is `permitAll` by design — the public request form.
 
+The five writes phase 3 adds are named exceptions to that guard:
+`POST`/`DELETE /orders/{id}/assignees/{userId}`, `PUT`/`DELETE` on its `/note`, and
+`PUT /orders/{id}/status`. The handovers, the production reports and the rest of the Logistician
+edit surface stay behind it and keep answering `405`.
+
 ---
 
 ### REQ-APP-ORDERS-008 — A quantity the server did not send reads as a dash
@@ -168,3 +173,98 @@ claim again: it says "none in stock", which is not what "not stated" means.
 - [x] A row whose `inStock` is absent renders `— / 500` (`OrdersScreenTest`).
 - [x] `JobOrderMaterial.progress` is `null` without a stock figure (`JobOrderRepositoryTest`).
 - [x] **Observed on a device (2026-08-22)**, before and after.
+
+---
+
+### REQ-APP-ORDERS-009 — A member puts their own name on an order, and nobody else's
+
+`POST` / `DELETE /api/v1/orders/{id}/assignees/{userId}` with the **caller's own** id. Assigning
+anybody else needs LOGISTICIAN, and the app carries no surface that names another member here:
+one CTA that reads „Übernehmen" or „Abmelden" depending on whether the caller is already on it.
+
+**Nothing is offered until the app knows who the caller is.** The write addresses a member by id,
+so a failed `/users/me` disables it rather than guessing — the order still reads, and what is lost
+is only the ability to act on it. An assignee row the server sent without a user id is dropped for
+the same reason: it could only offer actions that fail.
+
+Each write answers with the whole order, and the screen redraws from that answer rather than
+patching what it holds. The server decides the order of the assignee list and the new version.
+
+**Acceptance**
+
+- [x] The caller's own row is the one that offers anything (`OrderDetailViewModelTest`,
+  `OrdersScreenTest`).
+- [x] Nothing is writable while the caller is unknown (`OrderDetailViewModelTest`).
+- [x] An assignee without a user id never reaches the screen (`JobOrderRepositoryTest`).
+- [x] **Observed on a device (2026-08-23):** „Übernehmen" flipped to „Abmelden" with the row
+  appearing under Zuständig, and back again.
+
+**Code:** `JobOrderRepository.setAssigned`, `OrderDetailViewModel.onToggleAssignment`
+
+---
+
+### REQ-APP-ORDERS-010 — The assignee note is locked on its own version, never the order's
+
+The note is the assignee's own context — when they work on it, which part they take — and it hangs
+off the **assignee edge**, which carries a version of its own.
+
+**Echoing the order's version would be wrong in both directions.** Sending it would 409 the note
+against any unrelated change to the order; bumping it would 409 everyone else's screen for a note
+nobody else reads. The edge's version is what the read hands over and what the write echoes.
+
+An emptied editor **clears** the note rather than saving a blank one: those are the same intention
+and the server has a verb for each. A refusal keeps the editor open with what was typed.
+
+**Acceptance**
+
+- [x] The write carries the edge's version, not the order's (`OrderDetailViewModelTest`,
+  `JobOrderRepositoryTest`).
+- [x] An emptied editor sends the clear, with the version in the query (`JobOrderRepositoryTest`).
+- [x] A conflict keeps the draft and says so (`OrderDetailViewModelTest`, `OrdersScreenTest`).
+- [x] **Observed on a device (2026-08-23):** the note appeared under the name without a reload.
+
+**Code:** `JobOrderRepository.setAssigneeNote`, `OrderDetailViewModel.onSaveNote`
+
+---
+
+### REQ-APP-ORDERS-011 — The status control is a Logistician's, and the app asks before offering it
+
+`PUT /api/v1/orders/{id}/status` needs `LOGISTICIAN` **and** per-order scope. The app reads
+`isLogistician` from `/users/me` and offers the control only to a Logistician — the alternative is
+either hiding a control they are entitled to, or offering one that answers 403.
+
+**The per-order half cannot be predicted, so the refusal is named.** A Logistician outside this
+order's slice gets a 403 that the app words as „Für diesen Auftrag fehlt dir die Berechtigung."
+rather than the generic write failure — the same wording it would use for a member without the
+grant, because from the member's side it is the same fact.
+
+The picker offers the four statuses the server knows and marks the current one.
+`JobOrderStatus.UNKNOWN` is absent by construction: it carries a constant this build has never
+seen, and the repository refuses it rather than folding it into one of the four.
+
+**Acceptance**
+
+- [x] A non-Logistician is offered no status control (`OrderDetailViewModelTest`,
+  `OrdersScreenTest`).
+- [x] A Logistician's write echoes the order's version (`OrderDetailViewModelTest`).
+- [x] A `403` is worded as this order's refusal (`OrdersScreenTest`).
+- [x] `UNKNOWN` is refused before a request goes out (`JobOrderRepositoryTest`).
+- [x] **Observed on a device (2026-08-23):** the control appeared only after the Logistician grant
+  was given, and moved the order to „In Bearbeitung" in place.
+
+**Code:** `JobOrderRepository.setStatus`, `OrderDetailViewModel.onStatusChosen`, `IdentityRepository`
+
+---
+
+### REQ-APP-ORDERS-012 — Offline disables the order's writes; it never queues them
+
+Same rule and the same shared band as [`REQ-APP-INV-010`](inventory.md) and
+[`REQ-APP-PI-003`](personal-inventory.md): the assign CTA, the status control and the note editor's
+save are disabled and faded under a line saying why.
+
+**Acceptance**
+
+- [x] Nothing is sent while offline, and the state follows the device (`OrderDetailViewModelTest`).
+- [x] The band renders and the CTA is disabled (`OrdersScreenTest`).
+
+**Code:** `ui/OfflineWrites.kt`, `OrderDetailViewModel`
