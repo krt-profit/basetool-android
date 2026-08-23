@@ -30,3 +30,34 @@ bound.
   wrap their empty state in `KrtRefreshableFill`.
 - [x] **Observed on a device (2026-08-22):** the Bank's "Keine Konten" state was pulled and picked
   up an account granted seconds earlier.
+
+---
+
+### REQ-APP-UI-002 — A bottom sheet keeps its actions out of the gesture bar
+
+`KrtBottomSheet` is padded at the bottom by the system's own inset, so the sheet's action row — the
+last thing in every sheet, and the one control the member came for — sits above the navigation
+gesture area rather than under it.
+
+Measured on a device (2026-08-23): the Lager's booking sheet drew to the very bottom edge, its
+`BUCHEN` button spanning y 2320–2424 on a 2424 px screen with a 63 px bottom inset. A tap on the
+button's own label at y 2383 went to the system and never reached the button; the same tap 45 px
+higher booked. Nothing was broken in the app's own logic, which is why no test caught it and why
+the fix belongs to the design system rather than to one screen.
+
+**The inset is read at the app root and handed down** (`LocalKrtBottomBarInset`, provided by
+`KrtTheme`). Inside the sheet every inset API — `navigationBarsPadding()`, the raw
+`WindowInsets.navigationBars`, `consumeWindowInsets(WindowInsets(0))`, the sheet's own
+`contentWindowInsets` — resolves to zero, because the sheet's window reports no navigation bar.
+Each of those was tried on the device before the composition local was introduced.
+
+**It pads the sheet, not the sheet's content.** Padding the content only makes the content taller:
+the sheet is bottom-anchored and its body scrolls, so the action row is pushed further past the
+fold instead of being lifted clear.
+
+**Acceptance**
+
+- [x] **Observed on a device (2026-08-23):** with the padding in place the booking sheet's action
+  row moved from y 2362–2404 to y 2331–2373 and a tap on its centre reached the button.
+- [x] Every sheet in the app inherits it — the org switcher, the booking form, the ship editor and
+  the personal-inventory editor all go through `KrtBottomSheet`.

@@ -10,13 +10,20 @@ package de.greluc.krt.profit.basetool.android.core.designsystem.theme
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * The theme every Basetool screen is wrapped in.
@@ -33,6 +40,8 @@ fun KrtTheme(content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalKrtColors provides KrtExtendedColors(),
         LocalIndication provides ripple(color = KrtPalette.White),
+        LocalKrtBottomBarInset provides
+            WindowInsets.systemBars.asPaddingValues().calculateBottomPadding(),
     ) {
         MaterialTheme(
             colorScheme = KrtColorScheme,
@@ -42,6 +51,17 @@ fun KrtTheme(content: @Composable () -> Unit) {
         )
     }
 }
+
+/**
+ * How tall the system's bottom bar is, measured at the app root.
+ *
+ * A bottom sheet cannot read this for itself: it is drawn in a window that reports no
+ * navigation-bar inset, so `navigationBarsPadding()` inside one resolves to nothing while the sheet
+ * still paints under the gesture bar. Its action row then ends up in the system's gesture region,
+ * where a tap never reaches the button — measured on a device, 2026-08-23. Captured here, at the
+ * one place that is inside the activity window and above every screen that consumes insets.
+ */
+val LocalKrtBottomBarInset: ProvidableCompositionLocal<Dp> = staticCompositionLocalOf { 0.dp }
 
 /**
  * Accessors for the parts of the theme that Material 3 has no slot for.

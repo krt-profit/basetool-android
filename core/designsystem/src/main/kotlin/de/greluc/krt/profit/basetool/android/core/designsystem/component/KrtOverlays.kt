@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -43,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.PillShape
 
 /** Opacity of the modal scrim. */
@@ -258,7 +260,13 @@ fun KrtBottomSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        modifier = modifier,
+        // The sheet is bottom-anchored and draws to the very edge of the screen, which puts its
+        // action row inside the system's gesture region: the tap goes to the system, not to the
+        // save button (found on a device, 2026-08-23). The padding goes on the sheet itself —
+        // padding its content only makes the content taller and scrolls the row out of reach
+        // instead of lifting it. [LocalKrtBottomBarInset] rather than `navigationBarsPadding()`,
+        // because the sheet's own window reports no navigation-bar inset at all.
+        modifier = modifier.padding(bottom = LocalKrtBottomBarInset.current),
         sheetState = rememberModalBottomSheetState(),
         shape = MaterialTheme.shapes.large,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -283,15 +291,25 @@ fun KrtBottomSheet(
             }
         },
     ) {
-        if (title != null) {
-            Text(
-                text = title.krtUppercase(),
-                modifier = Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-                style = MaterialTheme.typography.labelLarge,
-                color = KrtPalette.White,
-            )
+        // The sheet draws to the bottom edge of the screen and the last thing in it is usually
+        // the save action, so without this the action row lands in the system's gesture region and
+        // the tap never reaches the button (found on a device, 2026-08-23).
+        //
+        // [LocalKrtBottomBarInset] rather than `navigationBarsPadding()`: the sheet's own window
+        // reports no navigation-bar inset at all, so the modifier — and every variant of it —
+        // resolves to zero here.
+        Column(modifier = Modifier.imePadding()) {
+            if (title != null) {
+                Text(
+                    text = title.krtUppercase(),
+                    modifier =
+                        Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = KrtPalette.White,
+                )
+            }
+            content()
         }
-        content()
     }
 }
 

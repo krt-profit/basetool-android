@@ -42,6 +42,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefr
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the list. */
@@ -49,9 +51,6 @@ const val PERSONAL_INVENTORY_LIST_TAG: String = "personal-inventory-list"
 
 /** Test handle for the "new entry" action. */
 const val PERSONAL_INVENTORY_CREATE_TAG: String = "personal-inventory-create"
-
-/** How faded a write action is while there is no network (design ch. 14). */
-private const val DISABLED_WRITE_ALPHA = 0.45f
 
 /**
  * "Mein Inventar" — the member's own stock, read and written (design ch. 09 § 4).
@@ -167,19 +166,6 @@ fun PersonalInventoryScreen(
             }
         }
     }
-}
-
-/**
- * The band that says why the write actions are greyed out.
- */
-@Composable
-private fun OfflineBand() {
-    Text(
-        text = stringResource(R.string.offline_writes_disabled),
-        style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.TextMuted,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-    )
 }
 
 /**

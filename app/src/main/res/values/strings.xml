@@ -504,4 +504,31 @@
         <item quantity="one">Ein weiterer. Suche genauer.</item>
         <item quantity="other">%1$d weitere. Suche genauer.</item>
     </plurals>
+
+    <!-- Lager bookings (phase 3) -->
+    <string name="booking_mode_in">Einbuchen</string>
+    <string name="booking_mode_out">Ausbuchen</string>
+    <string name="booking_mode_note">Notiz</string>
+    <string name="booking_field_material">Material</string>
+    <string name="booking_field_amount">Menge (%1$s)</string>
+    <string name="booking_unit_unknown">Einheit</string>
+    <string name="booking_amount_hint">Teilmengen erlaubt: cSCU (0,01) und µSCU (0,001).</string>
+    <string name="booking_available">Im Eintrag: %1$s</string>
+    <string name="booking_field_quality">Qualität (0–1000)</string>
+    <string name="booking_field_place">Ort</string>
+    <string name="booking_field_out_kind">Was passiert damit?</string>
+    <string name="booking_out_discard">Verwerfen</string>
+    <string name="booking_out_transfer">Übergeben</string>
+    <string name="booking_out_sell">Verkaufen</string>
+    <string name="booking_out_discard_note">Ausbuchen ist endgültig. Der Verlauf bleibt nachvollziehbar.</string>
+    <string name="booking_transfer_note">Nutzer, Ort oder beides — was du angibst, wird geändert.</string>
+    <string name="booking_transfer_unchanged">So bleibt alles, wo es ist — wähle einen anderen Nutzer oder einen anderen Ort.</string>
+    <string name="booking_terminals_none">Für dieses Material sind keine Terminals hinterlegt.</string>
+    <string name="booking_field_member">Nutzer</string>
+    <string name="booking_field_sell_amount">Erlös (aUEC)</string>
+    <string name="booking_save">Buchen</string>
+    <string name="booking_open">Buchen</string>
+    <string name="inventory_entries_title">Einträge</string>
+    <string name="inventory_entry_note">Notiz</string>
+    <string name="inventory_entries_none">Keine Einträge.</string>
 </resources>

@@ -487,4 +487,31 @@
         <item quantity="one">One more. Search more precisely.</item>
         <item quantity="other">%1$d more. Search more precisely.</item>
     </plurals>
+
+    <!-- Lager bookings (phase 3) -->
+    <string name="booking_mode_in">Book in</string>
+    <string name="booking_mode_out">Book out</string>
+    <string name="booking_mode_note">Note</string>
+    <string name="booking_field_material">Material</string>
+    <string name="booking_field_amount">Amount (%1$s)</string>
+    <string name="booking_unit_unknown">unit</string>
+    <string name="booking_amount_hint">Fractions allowed: cSCU (0.01) and µSCU (0.001).</string>
+    <string name="booking_available">In this entry: %1$s</string>
+    <string name="booking_field_quality">Quality (0–1000)</string>
+    <string name="booking_field_place">Location</string>
+    <string name="booking_field_out_kind">What happens to it?</string>
+    <string name="booking_out_discard">Discard</string>
+    <string name="booking_out_transfer">Hand over</string>
+    <string name="booking_out_sell">Sell</string>
+    <string name="booking_out_discard_note">Booking out is final. The history stays traceable.</string>
+    <string name="booking_transfer_note">Member, location or both — whatever you give is changed.</string>
+    <string name="booking_transfer_unchanged">That leaves everything where it is — pick a different member or a different location.</string>
+    <string name="booking_terminals_none">No terminals are recorded for this material.</string>
+    <string name="booking_field_member">Member</string>
+    <string name="booking_field_sell_amount">Proceeds (aUEC)</string>
+    <string name="booking_save">Book</string>
+    <string name="booking_open">Book</string>
+    <string name="inventory_entries_title">Entries</string>
+    <string name="inventory_entry_note">Note</string>
+    <string name="inventory_entries_none">No entries.</string>
 </resources>

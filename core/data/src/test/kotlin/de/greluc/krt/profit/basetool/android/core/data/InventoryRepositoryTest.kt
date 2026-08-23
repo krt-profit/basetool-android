@@ -9,6 +9,9 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.HttpUrl
@@ -37,6 +40,37 @@ class InventoryRepositoryTest {
         /** Entries summed into one stack in the fixture. */
         const val ENTRIES = 4
 
+        const val VERSION = 5L
+
+        val ENTRY_ROWS =
+            """
+            {"content": [
+               {"id": "e1", "material": {"id": "m1", "name": "Quantainium", "quantityType": "SCU"},
+                "location": {"id": "l1", "name": "ARC-L1"}, "user": {"effectiveName": "Rhea"},
+                "amount": 12.5, "quality": 880, "personal": false, "note": "aus dem Halo",
+                "version": $VERSION},
+               {"material": {"name": "ohne id"}}
+             ],
+             "page": 0, "totalElements": 2, "totalPages": 1}
+            """.trimIndent()
+
+        val SAVED_ENTRY = """{"id": "e1", "amount": 12.5, "version": ${VERSION + 1}}"""
+
+        val MATERIALS =
+            """
+            {"content": [{"id": "m1", "name": "Quantainium", "quantityType": "SCU"},
+                         {"name": "ohne id"}],
+             "page": 0, "totalElements": 2, "totalPages": 1}
+            """.trimIndent()
+
+        val MEMBERS =
+            """
+            {"content": [{"id": "u1", "username": "rhea", "effectiveName": "Rhea"}],
+             "page": 0, "totalElements": 1, "totalPages": 1}
+            """.trimIndent()
+
+        const val TERMINALS = """[{"terminalId": "t1", "terminalName": "Area18 TDD", "priceSell": 5.75}]"""
+
         val GROUPS =
             """
             {"content": [
@@ -51,9 +85,11 @@ class InventoryRepositoryTest {
             """
             [{"material": {"id": "m1", "name": "Quantainium"}, "totalAmount": 1250.5,
               "stacks": [
-                {"user": {"effectiveName": "Rhea"}, "location": {"name": "ARC-L1"},
-                 "personal": false, "totalAmount": 1000.0, "averageQuality": 880.0,
-                 "entryCount": $ENTRIES},
+                {"user": {"id": "u1", "effectiveName": "Rhea"},
+                 "location": {"id": "l1", "name": "ARC-L1"},
+                 "owningSquadron": {"id": "o1", "name": "IRIDIUM"},
+                 "personal": false, "totalAmount": 1000.0, "quality": 880,
+                 "averageQuality": 879.4, "entryCount": $ENTRIES},
                 {"personal": true, "totalAmount": 250.5}
               ]}]
             """.trimIndent()
@@ -100,97 +136,71 @@ class InventoryRepositoryTest {
      */
     private fun requestedUrl(): HttpUrl = ("http://localhost" + server.takeRequest().target).toHttpUrl()
 
+    /**
+     * A stack row as the grouped read hands it over.
+     *
+     * @param quality the stack's quality key, as the server rendered it.
+     * @param owningOrgUnitId which pool it belongs to, or `null` for an unpooled holding.
+     * @return the stack.
+     */
+    private fun stack(
+        quality: String? = "880",
+        owningOrgUnitId: String? = null,
+    ) = InventoryStack(
+        holder = "Rhea",
+        location = "ARC-L1",
+        personal = false,
+        amount = "12.5",
+        quality = quality,
+        entryCount = 1,
+        holderId = "u1",
+        locationId = "l1",
+        owningOrgUnitId = owningOrgUnitId,
+    )
+
     @Test
-    fun `a group row maps onto the model`() =
+    fun `a note is its own request, and echoes the version too`() =
         runTest {
-            respond(GROUPS)
+            respond(SAVED_ENTRY)
 
-            val page = (repository.groups() as ApiResult.Success).value
+            repository.updateNote(id = "e1", version = VERSION, note = "neu")
 
-            val first = page.groups.first()
-            assertEquals("m1", first.materialId)
-            assertEquals("Quantainium", first.name)
-            assertEquals("SCU", first.unit)
-            assertEquals("1250.5", first.amount)
-            // "880.0": the repository keeps the Double's own rendering and lets the screen's
-            // formatter decide how many digits a member sees.
-            assertEquals("880.0", first.quality)
+            val request = server.takeRequest()
+            assertEquals("PUT", request.method)
+            assertEquals("/api/v1/inventory/e1/note", request.target.substringBefore('?'))
         }
 
     @Test
-    fun `a group without a material id is kept, because it still holds something`() =
+    fun `the material picker keeps the unit, because a number without one is not a quantity`() =
         runTest {
-            // Dropping it would quietly lower what the tree adds up to. It simply cannot be opened,
-            // and the screen reflects that by not offering the tap.
-            respond(GROUPS)
+            respond(MATERIALS)
 
-            val page = (repository.groups() as ApiResult.Success).value
+            val materials = (repository.materials("quant") as ApiResult.Success).value
 
-            assertEquals(2, page.groups.size)
-            assertNull(page.groups[1].materialId)
+            assertEquals(1, materials.size)
+            assertEquals("SCU", materials.single().unit)
         }
 
     @Test
-    fun `an amount never reaches the screen in scientific notation`() =
+    fun `the member picker uses the name the member recognises`() =
         runTest {
-            // A Double prints as 1.0E7 past seven digits, and a warehouse figure that reads like a
-            // physics constant is one a member cannot check.
-            respond(
-                """{"content": [{"material": {"id": "m1", "name": "Q"}, "amount": 12500000.0}],
-                        "page": 0, "totalElements": 1, "totalPages": 1}""",
-            )
+            // effectiveName, not username: it is what the web app renders.
+            respond(MEMBERS)
 
-            // Kotlin renders this Double as "1.25E7"; the plain form is what a member can read.
-            assertEquals("12500000", (repository.groups() as ApiResult.Success).value.groups.first().amount)
+            val members = (repository.members("rh") as ApiResult.Success).value
+
+            assertEquals("Rhea", members.single().name)
+            assertEquals("rh", requestedUrl().queryParameter("query"))
         }
 
     @Test
-    fun `a stack maps onto the model`() =
+    fun `a terminal carries what it pays`() =
         runTest {
-            respond(STACKS)
+            respond(TERMINALS)
 
-            val stacks = (repository.stacks("m1") as ApiResult.Success).value
+            val terminals = (repository.terminals("m1") as ApiResult.Success).value
 
-            assertEquals(2, stacks.size)
-            val first = stacks.first()
-            assertEquals("Rhea", first.holder)
-            assertEquals("ARC-L1", first.location)
-            assertFalse(first.personal)
-            assertEquals("1000.0", first.amount)
-            assertEquals(ENTRIES, first.entryCount)
-            assertTrue(stacks[1].personal)
-        }
-
-    @Test
-    fun `the stacks are asked for by material id`() =
-        runTest {
-            respond(STACKS)
-
-            repository.stacks("m1")
-
-            val url = requestedUrl()
-            assertEquals("/api/v1/inventory/all/grouped", url.encodedPath)
-            assertEquals("m1", url.queryParameter("materialIds"))
-        }
-
-    @Test
-    fun `an answer with no group yields no stacks rather than a failure`() =
-        runTest {
-            // A group emptied between the tree loading and the tap is an ordinary race, not an
-            // error to put on screen.
-            respond("[]")
-
-            assertTrue((repository.stacks("m1") as ApiResult.Success).value.isEmpty())
-        }
-
-    @Test
-    fun `the tree's first level is read from the aggregate, never from the flat list`() =
-        runTest {
-            // `/inventory/all` would pull every entry in the warehouse to draw a dozen headings.
-            respond(GROUPS)
-
-            repository.groups()
-
-            assertEquals("/api/v1/inventory/aggregated", requestedUrl().encodedPath)
+            assertEquals("Area18 TDD", terminals.single().name)
+            assertEquals("5.75", terminals.single().price)
         }
 }

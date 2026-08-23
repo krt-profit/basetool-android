@@ -45,6 +45,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegm
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the hangar list. */
@@ -58,9 +60,6 @@ const val HANGAR_SEGMENT_TAG: String = "hangar-segment"
 
 /** Test handle for the add action. */
 const val HANGAR_ADD_TAG: String = "hangar-add"
-
-/** How faded a write action is while there is no network (design ch. 14). */
-private const val DISABLED_WRITE_ALPHA = 0.45f
 
 /**
  * The Hangar (design spec ch. 08 §1), read-only.
@@ -99,15 +98,7 @@ fun HangarScreen(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         if (!state.online) {
-            Text(
-                text = stringResource(R.string.offline_writes_disabled),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-            )
+            OfflineBand()
         }
         KrtSegmentedControl(
             options =

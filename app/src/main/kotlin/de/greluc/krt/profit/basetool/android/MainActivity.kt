@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
@@ -137,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         viewModels { authViewModels(container) }
     private val personalBlueprintsViewModel: PersonalBlueprintsViewModel by
         viewModels { authViewModels(container) }
+    private val bookingViewModel: BookingViewModel by viewModels { authViewModels(container) }
 
     /**
      * Enables edge-to-edge drawing and installs the Compose content.
@@ -247,6 +249,7 @@ class MainActivity : AppCompatActivity() {
                                 inventory = inventoryViewModel,
                                 personalInventory = personalInventoryViewModel,
                                 personalBlueprints = personalBlueprintsViewModel,
+                                booking = bookingViewModel,
                                 operationDetail = {
                                     OperationDetailViewModel(container.operations, container.identity, it)
                                 },
@@ -403,7 +406,8 @@ class MainActivity : AppCompatActivity() {
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank) }
                 initializer { OrdersViewModel(container.orders) }
-                initializer { InventoryViewModel(container.inventory) }
+                initializer { InventoryViewModel(container.inventory, container.connectivity) }
+                initializer { BookingViewModel(container.inventory, container.connectivity) }
                 initializer {
                     PersonalInventoryViewModel(container.personalInventory, container.connectivity)
                 }

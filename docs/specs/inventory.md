@@ -4,8 +4,9 @@
 > **Server contract:** main repo `REQ-API-009`
 > **Related:** [`api-contract.md`](api-contract.md)
 
-The org unit's stock, as a two-level tree. **Read-only**: booking in, out and across, the bulk
-re-book and the quality slider are all mutations and belong to Phase 3.
+The org unit's stock, as a three-level tree — material, holding, entry — and the bookings that move
+it. Phase 2 shipped the two read levels; phase 3 added the entry level and the booking form
+(`007`–`012`). The bulk re-book and the quality slider remain out.
 
 ---
 
@@ -116,13 +117,159 @@ form and the screen's shared formatter groups it.
 
 ---
 
+### REQ-APP-INV-007 — The third level is read on the tap that opens it, like the second
+
+`/inventory/all/stack/entries?materialId=…&locationId=…&userId=…&quality=…` fills one **stack**,
+not one group:
+the four parameters are exactly the fields the stack row aggregates, so what comes back is the
+entries that row sums up and nothing else.
+
+A stack keeps what it loaded and a second tap closes it, matching the group level above it — and a
+stack **closed while its read is in flight must not spring open** when the answer lands.
+
+An entry the server sent without an id is dropped by the repository rather than drawn: a row that
+cannot be addressed cannot be booked, and one that offers a booking action that always fails is
+worse than one that is absent.
+
+**Acceptance**
+
+- [x] Opening a stack requests the four fields it aggregates (`InventoryRepositoryTest`).
+- [x] A closed stack draws no entries; an opened one draws them (`InventoryScreenTest`).
+- [x] A late answer for a closed stack is discarded (`InventoryViewModelTest`).
+- [x] An entry without an id never reaches the screen (`InventoryRepositoryTest`).
+
+**Code:** `InventoryRepository.entries`, `InventoryViewModel.onToggleStack`, `InventoryScreen`
+
+---
+
+### REQ-APP-INV-008 — One form for every booking, and a mode is only offered when it can be used
+
+Booking in, booking out and editing an entry's note are one bottom sheet with a segment, not three
+sheets. The amount is the field the moving modes share, and a member who typed it before changing
+their mind must not type it again.
+
+**The segment lists only the modes that apply to what the sheet was opened on.** The tree's own
+action names no entry, so it shows booking in alone; an entry shows booking out and its note. A
+segment half that can only ever return a refusal is a control that lies.
+
+**Private stock is absent from this screen in both directions.** The Lager reads exclude it
+(`i.personal = false` in the grouped and the entry query alike), so an entry that could be rebooked
+never reaches the sheet, and material booked in as private would land where no screen of this app
+can show it again. The rebooking mode and the "Persönlich" switch were both built, walked on a
+device and then removed for exactly that reason.
+
+Each mode's save is offered only once the form holds something the server will accept — the
+transfer needs a recipient or a place *it does not already have*, the sale needs a terminal, a move
+needs an amount above zero.
+
+**Acceptance**
+
+- [x] An entry is offered booking out and its note, and no rebooking (`BookingSheetTest`).
+- [x] The amount survives a change of mode (`BookingViewModelTest`).
+- [x] Each mode's minimum gates the save (`BookingViewModelTest`).
+- [x] A transfer to the entry's own holder, changing no place, is not submittable
+  (`BookingViewModelTest`, `BookingSheetTest`).
+
+**Code:** `BookingViewModel`, `BookingSheet`, `BookingHost`
+
+---
+
+### REQ-APP-INV-009 — Every booking echoes the entry's version, and a refusal keeps the typing
+
+The write DTOs carry the `version` the entry was read with; a concurrent change comes back as
+`409 OPTIMISTIC_LOCK` and is shown in the app's own wording, not the server's.
+
+**The form stays open with every field as typed.** A conflict is not a reason to make a member
+re-pick a material, a place and an amount — and the reload they need is the tree's, not the form's.
+
+**A booking that lands re-reads the whole open path and leaves it open.** The group's total, the
+stack's total and the entry list can all have changed at once, so all three are re-read rather than
+patched; collapsing the tree instead would make the member re-open the group and the stack to see
+what their own booking just did.
+
+**Acceptance**
+
+- [x] A book-out sends the version it read (`BookingViewModelTest`).
+- [x] A refused booking keeps the amount and shows the conflict copy
+  (`BookingViewModelTest`, `BookingSheetTest`).
+- [x] A booking that lands closes the form and re-reads the tree (`BookingViewModelTest`).
+- [x] The open group and the open stack are still open afterwards (`InventoryViewModelTest`).
+
+**Code:** `BookingViewModel.onSave`, `InventoryViewModel.onBookingSaved`
+
+---
+
+### REQ-APP-INV-010 — Offline disables the bookings; it never queues them
+
+Both booking affordances — the screen's own action and an entry's — and the form's save are
+**disabled and faded** while the device has no network, under a band saying why.
+
+A booking taken offline and sent minutes later would land against a Lager that has moved on, and
+the member would never see the conflict it caused. This is the same rule as
+[`REQ-APP-PI-003`](personal-inventory.md); the band and the fade are now one shared composable so
+the four write surfaces cannot drift apart.
+
+**The band and the fade sit in one shared composable** (`ui/OfflineWrites.kt`) rather than a copy
+per screen: four private copies of the same rule is how one of them ends up saying something else.
+
+**Acceptance**
+
+- [x] Offline, neither booking action is enabled and the band is shown (`InventoryScreenTest`).
+- [x] Offline, the form's save is disabled and the band is shown (`BookingSheetTest`).
+- [x] A save attempted offline sends nothing (`BookingViewModelTest`).
+
+**Code:** `ui/OfflineWrites.kt`, `InventoryScreen`, `BookingSheet`, `BookingViewModel`
+
+---
+
+### REQ-APP-INV-011 — A sale offers the terminals of the entry's own material
+
+`/materials/{id}/terminals` is read when the sale mode is chosen, and it is read by the **entry's**
+material id — which is why the entry model carries one. Reading it from the picked material would
+work for booking in and never for a sale, which is the only mode that can sell.
+
+Without terminals the sheet **says so** rather than showing an empty list that reads as a failed
+load. The wire field is a free terminal name, so a sale is still possible without the catalogue.
+
+**Acceptance**
+
+- [x] Choosing "Verkaufen" on an entry lists that material's terminals (`BookingViewModelTest`).
+- [x] With none recorded the sheet says so (`BookingSheetTest`).
+
+**Code:** `BookingViewModel.loadTerminals`, `InventoryRepository.terminals`
+
+---
+
+### REQ-APP-INV-012 — A note is its own mode, and emptying one is a change
+
+The note is a separate `PUT` that moves no material, so it needs no amount — requiring one would
+make the mode unusable. It opens with what the entry already says.
+
+**An emptied note is a deliberate edit, not an incomplete form**, and saves as no note at all. A
+member who cannot clear a note has to overwrite it with a space.
+
+**Acceptance**
+
+- [x] The note mode opens with the entry's note and offers no amount field
+  (`BookingViewModelTest`, `BookingSheetTest`).
+- [x] Clearing the note is submittable and sends `null` (`BookingViewModelTest`).
+- [x] An unchanged note is not submittable (`BookingViewModelTest`).
+
+**Code:** `BookingViewModel`, `BookingSheet`
+
+---
+
 ## Known gaps, stated rather than omitted
 
-- **The third level — the individual entry — is not drawn.** It is where booking happens, and
-  booking is Phase 3. The stack row states how many entries it sums up instead.
 - **No Material and no Ort filter.** Both need pickers (design ch. 02 bottom sheets) and a catalog
   read; they ship with the shared picker work, together with the Einsatz list's date range.
-- **No long-press selection and no bulk re-book.** Mutations.
+- **No long-press selection and no bulk re-book.** The single-entry bookings ship; the multi-select
+  and the bulk re-book behind it do not.
+- **Private stock is not reachable from the app at all.** It needs the `my-inventory` read, which is
+  its own screen in the web app and its own slice here. `POST /inventory/{id}/personal-rebook` is in
+  the contract set and on the vhost allow-list ready for it, and no app code calls it today.
+- **The quality of an existing entry cannot be corrected.** The correction endpoint is not in the
+  contract set, and booking in is the only place a quality is set.
 - **The quality mini-gauge is a chip, not a gauge.** The 44 dp 0–1000 gauge of the design is a
   drawn control; the value is shown as `Q 880` until it exists.
 - **Collapse state is not persisted.** The web app keeps it in `localStorage`; here it lives for the
@@ -130,6 +277,9 @@ form and the screen's shared formatter groups it.
 
 ## Contract-set dependency (main repo)
 
-`GET /api/v1/inventory/aggregated` and `/inventory/all/grouped` are in the `REQ-API-009` contract set
-and the vhost allow-list, as exact paths. The booking endpoints beside them are not, and the vhost's
-read-only guard covers the family.
+`GET /api/v1/inventory/aggregated`, `/inventory/all/grouped`, `/inventory/all/stack/entries`, `/materials/search`, `/materials/{id}/terminals`,
+`/locations/search` and `/users/search` are in the `REQ-API-009` contract set and the vhost
+allow-list. So are the writes — `POST /inventory`, `POST /inventory/{id}/book-out`,
+`POST /inventory/{id}/personal-rebook` and `PUT /inventory/{id}/note` — as named exceptions to the
+vhost's read-only guard on the family; every other verb on it still answers `405`. Three of the four
+are sent by this screen; `personal-rebook` waits for the `my-inventory` slice (see the gaps above).

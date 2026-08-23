@@ -46,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtShee
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
+import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
@@ -120,6 +121,7 @@ fun BasetoolApp(
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
+    booking: BookingViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -235,6 +237,7 @@ fun BasetoolApp(
                     inventory = inventory,
                     personalInventory = personalInventory,
                     personalBlueprints = personalBlueprints,
+                    booking = booking,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )
