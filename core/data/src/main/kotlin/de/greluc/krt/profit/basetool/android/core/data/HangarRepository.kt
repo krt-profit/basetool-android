@@ -8,12 +8,18 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.LocationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseShipDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseShipTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseSquadronShipOverviewDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.ShipDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.ShipRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.ShipTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.SquadronShipOverviewDto
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
 /**
@@ -30,6 +36,9 @@ import okhttp3.OkHttpClient
  * @property insurance the insurance as the server words it, e.g. "LTI", or `null`
  * @property locationName where it is parked, or `null`
  * @property fitted whether it is equipped and ready for an Einsatz
+ * @property typeId the ship type's id — carried since phase 3 because an edit has to send it back
+ * @property locationId the place's id, or `null`; likewise
+ * @property version the optimistic lock, echoed on the next save
  */
 data class Ship(
     val id: String,
@@ -38,6 +47,50 @@ data class Ship(
     val manufacturerName: String?,
     val insurance: String?,
     val locationName: String?,
+    val fitted: Boolean,
+    val typeId: String? = null,
+    val locationId: String? = null,
+    val version: Long? = null,
+)
+
+/**
+ * A hull the member can pick when adding a ship.
+ *
+ * @property id what a write sends
+ * @property name the hull
+ * @property manufacturerName the maker, or `null` — what tells two similar hulls apart
+ */
+data class ShipTypeOption(
+    val id: String,
+    val name: String,
+    val manufacturerName: String?,
+)
+
+/**
+ * A place a ship can be parked.
+ *
+ * @property id what a write sends
+ * @property name the place
+ */
+data class HomeLocation(
+    val id: String,
+    val name: String,
+)
+
+/**
+ * What a ship save carries.
+ *
+ * @property name the member's own name for it, or `null`
+ * @property typeId the hull
+ * @property insurance `LTI`, or a whole number of months as text — the server accepts nothing else
+ * @property locationId where it is parked, or `null`
+ * @property fitted whether it is ready
+ */
+data class ShipDraft(
+    val name: String?,
+    val typeId: String,
+    val insurance: String,
+    val locationId: String?,
     val fitted: Boolean,
 )
 
@@ -123,6 +176,52 @@ interface HangarSource {
         page: Int = 0,
         pageSize: Int = HangarRepository.DEFAULT_PAGE_SIZE,
     ): ApiResult<ShipTypePage>
+
+    /**
+     * Adds a ship to the member's own hangar.
+     *
+     * @param draft what the member entered.
+     * @return the saved ship, or the classified failure.
+     */
+    suspend fun create(draft: ShipDraft): ApiResult<Ship>
+
+    /**
+     * Changes one of the member's own ships.
+     *
+     * @param id the ship.
+     * @param version the version the row was read at.
+     * @param draft what the member entered.
+     * @return the saved ship, or [de.greluc.krt.profit.basetool.android.core.network.ApiError
+     *   .OptimisticLock] when somebody else saved first.
+     */
+    suspend fun update(
+        id: String,
+        version: Long?,
+        draft: ShipDraft,
+    ): ApiResult<Ship>
+
+    /**
+     * Removes one of the member's own ships.
+     *
+     * @param id the ship.
+     * @return success, or the classified failure.
+     */
+    suspend fun delete(id: String): ApiResult<Unit>
+
+    /**
+     * Reads the hull catalogue for the editor's picker.
+     *
+     * @param query a name fragment, or blank for the first page.
+     * @return the hulls, capped by the page size.
+     */
+    suspend fun shipTypes(query: String): ApiResult<List<ShipTypeOption>>
+
+    /**
+     * Reads the places a ship can be parked.
+     *
+     * @return the places; the server returns the whole list, which is short.
+     */
+    suspend fun homeLocations(): ApiResult<List<HomeLocation>>
 }
 
 /**
@@ -218,6 +317,82 @@ class HangarRepository(
             add(SIZE_PARAM to pageSize.toString())
         }
 
+    override suspend fun create(draft: ShipDraft): ApiResult<Ship> =
+        save(SHIPS_PATH, draft.toRequest(version = null), post = true)
+
+    override suspend fun update(
+        id: String,
+        version: Long?,
+        draft: ShipDraft,
+    ): ApiResult<Ship> = save("$SHIPS_PATH/$id", draft.toRequest(version), post = false)
+
+    override suspend fun delete(id: String): ApiResult<Unit> = reader.delete("$SHIPS_PATH/$id")
+
+    override suspend fun shipTypes(query: String): ApiResult<List<ShipTypeOption>> {
+        // The catalogue endpoint has no search parameter of its own — the app asks for one page and
+        // narrows it here. That is honest only because the page is the whole visible catalogue at
+        // this size; when it stops being, the screen has to say so rather than filter silently.
+        val params =
+            listOf(PAGE_PARAM to "0", SIZE_PARAM to SHIP_TYPE_PAGE_SIZE.toString(), SORT_PARAM to TYPE_SORT)
+        return when (
+            val result = reader.get(SHIP_TYPES_PATH, params, PageResponseShipTypeDto.serializer())
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                val term = query.trim()
+                val all = result.value.content.orEmpty().mapNotNull { it.toOption() }
+                ApiResult.Success(
+                    if (term.isEmpty()) all else all.filter { it.matches(term) },
+                )
+            }
+        }
+    }
+
+    override suspend fun homeLocations(): ApiResult<List<HomeLocation>> =
+        when (
+            val result =
+                reader.get(HOME_LOCATIONS_PATH, ListSerializer(LocationDto.serializer()))
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
+        }
+
+    /**
+     * Sends one ship payload.
+     *
+     * @param path where to send it.
+     * @param body the payload.
+     * @param post whether this is a create; an update is a `PUT`.
+     * @return the saved ship, or the classified failure.
+     */
+    private suspend fun save(
+        path: String,
+        body: ShipRequestDto,
+        post: Boolean,
+    ): ApiResult<Ship> {
+        val result =
+            if (post) {
+                reader.post(path, body, ShipRequestDto.serializer(), ShipDto.serializer())
+            } else {
+                reader.put(path, body, ShipRequestDto.serializer(), ShipDto.serializer())
+            }
+        return when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toModel()?.let { ApiResult.Success(it) }
+                    // A saved ship with no id is a server that answered something this client
+                    // cannot key a list by. Reported as a broken contract, not silently dropped.
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK_STATUS, problem = null))
+            }
+        }
+    }
+
     companion object {
         /** Rows per page, sized for a phone like the other lists. */
         const val DEFAULT_PAGE_SIZE: Int = 25
@@ -226,6 +401,17 @@ class HangarRepository(
         private const val LOG_TAG = "hangar"
 
         private const val MY_SHIPS_PATH = "/api/v1/hangar/my-ships"
+        private const val SHIPS_PATH = "/api/v1/hangar/ships"
+        private const val SHIP_TYPES_PATH = "/api/v1/ship-types"
+        private const val HOME_LOCATIONS_PATH = "/api/v1/locations/home-locations"
+        private const val SORT_PARAM = "sort"
+        private const val TYPE_SORT = "name,asc"
+
+        /** How much of the hull catalogue the picker reads in one go. */
+        private const val SHIP_TYPE_PAGE_SIZE = 500
+
+        /** The status a successful-but-unusable answer is reported under. */
+        private const val HTTP_OK_STATUS = 200
         private const val OVERVIEW_PATH = "/api/v1/hangar/squadron-overview"
         private const val SEARCH_PARAM = "search"
         private const val PAGE_PARAM = "page"
@@ -262,6 +448,9 @@ private fun ShipDto.toModel(): Ship? {
         insurance = insurance?.trim()?.takeIf { it.isNotEmpty() },
         locationName = location?.name,
         fitted = fitted == true,
+        typeId = shipType?.id,
+        locationId = location?.id,
+        version = version,
     )
 }
 
@@ -294,3 +483,55 @@ private fun SquadronShipOverviewDto.toModel(): ShipTypeSummary =
         count = count ?: 0L,
         fittedCount = fittedCount ?: 0L,
     )
+
+/**
+ * Builds the wire payload.
+ *
+ * @param version the version read from the server, or `null` on a create.
+ * @return the request.
+ */
+private fun ShipDraft.toRequest(version: Long?): ShipRequestDto =
+    ShipRequestDto(
+        insurance = insurance,
+        shipTypeId = typeId,
+        name = name,
+        locationId = locationId,
+        fitted = fitted,
+        version = version,
+    )
+
+/**
+ * Maps one hull onto the picker's model.
+ *
+ * @return the option, or `null` without an id — a hull that cannot be sent is not worth offering.
+ */
+private fun ShipTypeDto.toOption(): ShipTypeOption? {
+    val typeId = id ?: return null
+    return ShipTypeOption(
+        id = typeId,
+        name = name.orEmpty(),
+        manufacturerName = manufacturer?.name,
+    )
+}
+
+/**
+ * Whether a hull matches what the member typed.
+ *
+ * Matched on the hull and its maker together, because "Anvil" is how somebody looks for a Carrack
+ * they cannot spell.
+ *
+ * @param term what they typed.
+ * @return whether to offer it.
+ */
+private fun ShipTypeOption.matches(term: String): Boolean =
+    name.contains(term, ignoreCase = true) || manufacturerName?.contains(term, ignoreCase = true) == true
+
+/**
+ * Maps one place onto the picker's model.
+ *
+ * @return the place, or `null` without an id.
+ */
+private fun LocationDto.toModel(): HomeLocation? {
+    val placeId = id ?: return null
+    return HomeLocation(id = placeId, name = name.orEmpty())
+}

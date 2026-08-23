@@ -400,7 +400,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { MissionsViewModel(container.missions) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer { NotificationsViewModel(container.notifications) }
-                initializer { HangarViewModel(container.hangar) }
+                initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank) }
                 initializer { OrdersViewModel(container.orders) }
                 initializer { InventoryViewModel(container.inventory) }

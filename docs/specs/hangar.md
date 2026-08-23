@@ -108,6 +108,74 @@ An aggregate endpoint would close this; it is a backend change and has not been 
 
 ---
 
+---
+
+### REQ-APP-HANGAR-006 — Only the member's own half is writable
+
+The create action and the row taps exist on `Meine Schiffe` and nowhere else. The org aggregate is
+a count per hull, not a list of ships, and the ships behind it belong to other people.
+
+The write path is `POST/PUT/DELETE /api/v1/hangar/ships`, never `/hangar/users/{id}/ships`: the
+second names a member, is the admin surface, and is not on the vhost at all.
+
+**Acceptance**
+
+- [x] The add action renders on the own half and not on the aggregate
+  (`HangarScreenTest`, two cases — the compose rule accepts one `setContent` per test).
+- [x] No request ever carries `/users/` (`HangarRepositoryTest`).
+- [x] **Observed on a device (2026-08-23).**
+
+---
+
+### REQ-APP-HANGAR-007 — Insurance is a choice plus a number, never free text
+
+The editor offers a segment — `LTI` or `Monate` — and, for the second, a numeric field bounded at
+0–120. Nothing else can be entered, and the save action stays disabled until what is entered is
+something the server accepts.
+
+The server's rule is `^(0|[1-9]|…|120|LTI)$`. A free-text field would let a member type "lifetime",
+or 240, and learn it was wrong only after the save — which teaches them the app is unreliable when
+in fact it simply passed on something it could have refused itself.
+
+**Acceptance**
+
+- [x] 121 cannot be submitted, 120 can (`HangarViewModelTest`, `HangarScreenTest`).
+- [x] An edit seeds the segment from the stored value — a month count means the second half
+  (`HangarViewModelTest`).
+- [x] **Observed on a device (2026-08-23):** a ship saved with `LTI`, then changed to 35 months.
+
+---
+
+### REQ-APP-HANGAR-008 — The editor is seeded from the row, hull and place included
+
+Opening a ship fills every field from what the row already carries, which is why `Ship` gained
+`typeId`, `locationId` and `version` in phase 3.
+
+A member who only flips `Fitted` must not have to search for the hull again — and a form that
+re-sends a hull the member re-picked by hand is a form that can lose it.
+
+**Acceptance**
+
+- [x] The hull, the place, the insurance kind and the fitted flag are all seeded
+  (`HangarViewModelTest`).
+- [x] The edit echoes the version the row was read at (`HangarViewModelTest`,
+  `HangarRepositoryTest`).
+- [x] A conflict keeps the editor exactly as it was (`HangarViewModelTest`).
+
+---
+
+### REQ-APP-HANGAR-009 — The hull picker admits what it is not showing
+
+The catalogue runs to hundreds of hulls; the picker matches on the hull **and its maker** — "Anvil"
+is how somebody looks for a Carrack they cannot spell — and shows the first eight matches with a
+line saying how many more there are.
+
+**Acceptance**
+
+- [x] A maker matches (`HangarRepositoryTest`).
+- [x] The overflow line states the remainder (`ShipEditorSheet`, plural resource).
+- [x] A hull without an id never reaches the picker (`HangarRepositoryTest`).
+
 ## Known gaps, stated rather than omitted
 
 - **No FAB, no overflow, no import.** Adding, editing, deleting, "Home-Location setzen", "Hangar

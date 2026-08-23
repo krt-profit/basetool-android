@@ -314,7 +314,7 @@
     </plurals>
     <string name="hangar_end_of_list">Ende der Liste</string>
     <string name="hangar_empty_mine_title">Kein Schiff im Hangar</string>
-    <string name="hangar_empty_mine_message">Schiffe hinzufügen geht derzeit über die Weboberfläche.</string>
+    <string name="hangar_empty_mine_message">Leg dein erstes Schiff an — Typ, Versicherung und wo es steht.</string>
     <string name="hangar_empty_org_title">Keine Schiffe</string>
     <string name="hangar_empty_org_message">Für diese Org-Einheit ist kein Schiff erfasst.</string>
     <string name="hangar_empty_filtered_title">Nichts gefunden</string>
@@ -479,5 +479,29 @@
     <plurals name="blueprints_product_capped">
         <item quantity="one">Nur der erste Treffer. Suche genauer, wenn dein Produkt fehlt.</item>
         <item quantity="other">Nur die ersten %1$d Treffer. Suche genauer, wenn dein Produkt fehlt.</item>
+    </plurals>
+
+    <!-- Hangar writes (phase 3) -->
+    <string name="hangar_ship_create">Schiff anlegen</string>
+    <string name="hangar_ship_edit">Schiff ändern</string>
+    <string name="hangar_field_name">Name (optional)</string>
+    <string name="hangar_field_type">Schiffstyp</string>
+    <string name="hangar_type_search">Typ suchen</string>
+    <string name="hangar_type_none">Kein Schiffstyp gefunden.</string>
+    <string name="hangar_field_insurance">Versicherung</string>
+    <string name="hangar_insurance_lti">LTI</string>
+    <string name="hangar_insurance_months">Monate</string>
+    <string name="hangar_insurance_months_placeholder">Monate (0–120)</string>
+    <string name="hangar_insurance_months_range">0 bis 120 Monate.</string>
+    <string name="hangar_field_location">Ort</string>
+    <string name="hangar_location_none">Kein Ort</string>
+    <string name="hangar_field_fitted">Fitted</string>
+    <string name="hangar_ship_delete_title">Schiff löschen</string>
+    <string name="hangar_ship_delete_body">„%1$s“ wird aus deinem Hangar gelöscht.</string>
+    <string name="hangar_add">Schiff anlegen</string>
+    <string name="hangar_delete">Löschen</string>
+    <plurals name="hangar_type_more">
+        <item quantity="one">Ein weiterer. Suche genauer.</item>
+        <item quantity="other">%1$d weitere. Suche genauer.</item>
     </plurals>
 </resources>

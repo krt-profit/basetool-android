@@ -11,10 +11,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.HangarSource
+import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
+import de.greluc.krt.profit.basetool.android.core.data.ShipDraft
+import de.greluc.krt.profit.basetool.android.core.data.ShipTypeOption
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +57,68 @@ sealed interface HangarPhase {
 }
 
 /**
+ * What the ship editor holds.
+ *
+ * The draft lives in the state rather than in the composable so a 409 can hand it back unchanged —
+ * the same rule the rest of phase 3 follows.
+ */
+sealed interface ShipEditor {
+    /** No editor is open. */
+    data object Closed : ShipEditor
+
+    /**
+     * The editor is open.
+     *
+     * @property editing the ship being changed, or `null` for a new one.
+     * @property name the member's own name for it.
+     * @property hull the chosen ship type, or `null` while none is.
+     * @property hullQuery what is in the hull search.
+     * @property insuranceLti whether the ship carries lifetime insurance.
+     * @property insuranceMonths the month count, as typed, when it does not.
+     * @property place where it is parked, or `null`.
+     * @property fitted whether it is ready.
+     * @property saving whether a save is in flight.
+     * @property error what the last attempt returned, or `null`.
+     */
+    data class Open(
+        val editing: Ship? = null,
+        val name: String = "",
+        val hull: ShipTypeOption? = null,
+        val hullQuery: String = "",
+        val insuranceLti: Boolean = true,
+        val insuranceMonths: String = "",
+        val place: HomeLocation? = null,
+        val fitted: Boolean = false,
+        val saving: Boolean = false,
+        val error: ApiError? = null,
+    ) : ShipEditor {
+        /**
+         * What the insurance field will send.
+         *
+         * The server accepts `LTI` or a whole number of months from 0 to 120 and nothing else, so
+         * the app offers exactly those two shapes rather than a free-text field that fails
+         * validation after the save.
+         */
+        val insurance: String? get() =
+            if (insuranceLti) {
+                LTI
+            } else {
+                insuranceMonths.toIntOrNull()
+                    ?.takeIf { it in 0..MAX_INSURANCE_MONTHS }
+                    ?.toString()
+            }
+
+        /** Whether there is something the server will accept. */
+        val submittable: Boolean get() = hull != null && insurance != null
+
+        private companion object {
+            const val LTI = "LTI"
+            const val MAX_INSURANCE_MONTHS = 120
+        }
+    }
+}
+
+/**
  * Everything the Hangar screen draws.
  *
  * The two halves keep **separate** rows, totals and phases. Sharing them would make switching the
@@ -83,6 +149,13 @@ data class HangarState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val online: Boolean = true,
+    val editor: ShipEditor = ShipEditor.Closed,
+    val hulls: List<ShipTypeOption> = emptyList(),
+    val places: List<HomeLocation> = emptyList(),
+    val pendingDelete: Ship? = null,
+    val deleting: Boolean = false,
+    val lastFailure: ApiError? = null,
 ) {
     /** Whether the member has narrowed anything. */
     val isNarrowed: Boolean get() = searchText.isNotBlank()
@@ -106,6 +179,7 @@ data class HangarState(
 @OptIn(FlowPreview::class)
 class HangarViewModel(
     private val source: HangarSource,
+    connectivity: Connectivity,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(HangarState())
 
@@ -113,6 +187,15 @@ class HangarViewModel(
     val state: StateFlow<HangarState> = mutableState.asStateFlow()
 
     private val typedText = MutableStateFlow("")
+
+    init {
+        viewModelScope.launch {
+            connectivity.online.collect { online ->
+                mutableState.value = mutableState.value.copy(online = online)
+            }
+        }
+    }
+
     private var loadJob: Job? = null
     private var loadedOnce = false
 
@@ -330,9 +413,217 @@ class HangarViewModel(
         }
     }
 
+    /** Opens the editor for a new ship. */
+    fun onCreate() {
+        mutableState.value = mutableState.value.copy(editor = ShipEditor.Open())
+        loadPickers()
+    }
+
+    /**
+     * Opens the editor for one of the member's ships.
+     *
+     * Seeded from what the row already carries, including the hull and the place, so a member who
+     * only flips "fitted" does not have to pick them again.
+     *
+     * @param ship the row.
+     */
+    fun onEdit(ship: Ship) {
+        val months = ship.insurance?.takeIf { it != INSURANCE_LTI }
+        mutableState.value =
+            mutableState.value.copy(
+                editor =
+                    ShipEditor.Open(
+                        editing = ship,
+                        name = ship.name.orEmpty(),
+                        hull = ship.typeId?.let { ShipTypeOption(it, ship.typeName, ship.manufacturerName) },
+                        insuranceLti = months == null,
+                        insuranceMonths = months.orEmpty(),
+                        place = ship.locationId?.let { HomeLocation(it, ship.locationName.orEmpty()) },
+                        fitted = ship.fitted,
+                    ),
+            )
+        loadPickers()
+    }
+
+    /** Closes the editor, discarding what was entered. */
+    fun onEditorDismissed() {
+        mutableState.value = mutableState.value.copy(editor = ShipEditor.Closed)
+    }
+
+    /**
+     * Updates the open editor.
+     *
+     * @param transform how it changes.
+     */
+    private fun editor(transform: (ShipEditor.Open) -> ShipEditor.Open) {
+        val open = mutableState.value.editor as? ShipEditor.Open ?: return
+        mutableState.value = mutableState.value.copy(editor = transform(open))
+    }
+
+    /**
+     * Sets the ship's name.
+     *
+     * @param value what the member typed.
+     */
+    fun onShipNameChanged(value: String) = editor { it.copy(name = value, error = null) }
+
+    /**
+     * Narrows the hull picker.
+     *
+     * @param value what the member typed.
+     */
+    fun onHullQueryChanged(value: String) = editor { it.copy(hullQuery = value, error = null) }
+
+    /**
+     * Picks a hull.
+     *
+     * @param hull the ship type.
+     */
+    fun onHullChosen(hull: ShipTypeOption) = editor { it.copy(hull = hull, error = null) }
+
+    /**
+     * Switches between lifetime insurance and a month count.
+     *
+     * @param lti whether the ship carries LTI.
+     */
+    fun onInsuranceLtiChanged(lti: Boolean) = editor { it.copy(insuranceLti = lti, error = null) }
+
+    /**
+     * Sets the month count.
+     *
+     * @param value what the member typed, unparsed.
+     */
+    fun onInsuranceMonthsChanged(value: String) =
+        editor { it.copy(insuranceMonths = value.filter(Char::isDigit).take(MONTH_DIGITS), error = null) }
+
+    /**
+     * Picks where the ship is parked.
+     *
+     * @param place the location, or `null` to clear it.
+     */
+    fun onPlaceChosen(place: HomeLocation?) = editor { it.copy(place = place, error = null) }
+
+    /**
+     * Sets whether the ship is fitted.
+     *
+     * @param fitted whether it is ready.
+     */
+    fun onFittedChanged(fitted: Boolean) = editor { it.copy(fitted = fitted, error = null) }
+
+    /** Saves what the editor holds. */
+    fun onSave() {
+        val open = mutableState.value.editor as? ShipEditor.Open
+        val hull = open?.hull
+        val insurance = open?.insurance
+        val sendable = open != null && hull != null && insurance != null
+        if (!sendable || !mutableState.value.online) {
+            return
+        }
+        val draft =
+            ShipDraft(
+                name = open.name.trim().takeIf { it.isNotEmpty() },
+                typeId = hull.id,
+                insurance = insurance,
+                locationId = open.place?.id,
+                fitted = open.fitted,
+            )
+        editor { it.copy(saving = true, error = null) }
+        viewModelScope.launch {
+            val editing = open.editing
+            val result =
+                if (editing == null) {
+                    source.create(draft)
+                } else {
+                    source.update(editing.id, editing.version, draft)
+                }
+            when (result) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(editor = ShipEditor.Closed)
+                    onRefresh()
+                }
+
+                // The draft stays as entered: a conflict is nobody's fault, and clearing the form
+                // would make the member pay for somebody else's edit.
+                is ApiResult.Failure -> {
+                    editor { it.copy(saving = false, error = result.error) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Asks before removing a ship.
+     *
+     * @param ship the row.
+     */
+    fun onDeleteRequested(ship: Ship) {
+        mutableState.value = mutableState.value.copy(pendingDelete = ship)
+    }
+
+    /** Abandons the removal. */
+    fun onDeleteDismissed() {
+        mutableState.value = mutableState.value.copy(pendingDelete = null)
+    }
+
+    /** Removes the ship the member confirmed. */
+    fun onDeleteConfirmed() {
+        val ship = mutableState.value.pendingDelete ?: return
+        if (!mutableState.value.online) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(deleting = true)
+        viewModelScope.launch {
+            when (val result = source.delete(ship.id)) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(pendingDelete = null, deleting = false)
+                    onRefresh()
+                }
+
+                is ApiResult.Failure -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            pendingDelete = null,
+                            deleting = false,
+                            lastFailure = result.error,
+                        )
+                }
+            }
+        }
+    }
+
+    /** Acknowledges the last write failure. */
+    fun onFailureShown() {
+        mutableState.value = mutableState.value.copy(lastFailure = null)
+    }
+
+    /**
+     * Reads the two pickers, once per editor opening.
+     *
+     * Both are catalogues that change on the scale of game patches, so they are re-read when the
+     * editor opens and not on every keystroke. A failure is silent: the member can still save a
+     * ship whose hull they already picked, and an error banner over an editor they just opened
+     * would be about something they have not asked for yet.
+     */
+    private fun loadPickers() {
+        viewModelScope.launch {
+            (source.shipTypes("") as? ApiResult.Success)?.let {
+                mutableState.value = mutableState.value.copy(hulls = it.value)
+            }
+            (source.homeLocations() as? ApiResult.Success)?.let {
+                mutableState.value = mutableState.value.copy(places = it.value)
+            }
+        }
+    }
+
     private companion object {
         /** The design spec's 300 ms, the same figure every other search field uses. */
         const val SEARCH_DEBOUNCE_MS = 300L
+
+        /** What the server calls lifetime insurance. */
+        const val INSURANCE_LTI = "LTI"
+
+        /** A month count longer than this is a typo, not a number. */
+        const val MONTH_DIGITS = 3
 
         /** Log subsystem. A ship's name is member input and never reaches the log. */
         const val LOG_TAG = "hangar"

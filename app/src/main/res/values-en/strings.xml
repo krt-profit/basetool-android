@@ -297,7 +297,7 @@
     </plurals>
     <string name="hangar_end_of_list">End of list</string>
     <string name="hangar_empty_mine_title">No ship in the hangar</string>
-    <string name="hangar_empty_mine_message">Adding ships is done in the web app for now.</string>
+    <string name="hangar_empty_mine_message">Add your first ship — its hull, its insurance and where it is parked.</string>
     <string name="hangar_empty_org_title">No ships</string>
     <string name="hangar_empty_org_message">No ship is recorded for this org unit.</string>
     <string name="hangar_empty_filtered_title">Nothing found</string>
@@ -462,5 +462,29 @@
     <plurals name="blueprints_product_capped">
         <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>
         <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
+    </plurals>
+
+    <!-- Hangar writes (phase 3) -->
+    <string name="hangar_ship_create">Add ship</string>
+    <string name="hangar_ship_edit">Edit ship</string>
+    <string name="hangar_field_name">Name (optional)</string>
+    <string name="hangar_field_type">Ship type</string>
+    <string name="hangar_type_search">Search type</string>
+    <string name="hangar_type_none">No ship type found.</string>
+    <string name="hangar_field_insurance">Insurance</string>
+    <string name="hangar_insurance_lti">LTI</string>
+    <string name="hangar_insurance_months">Months</string>
+    <string name="hangar_insurance_months_placeholder">Months (0–120)</string>
+    <string name="hangar_insurance_months_range">0 to 120 months.</string>
+    <string name="hangar_field_location">Location</string>
+    <string name="hangar_location_none">No location</string>
+    <string name="hangar_field_fitted">Fitted</string>
+    <string name="hangar_ship_delete_title">Delete ship</string>
+    <string name="hangar_ship_delete_body">“%1$s” will be deleted from your hangar.</string>
+    <string name="hangar_add">Add ship</string>
+    <string name="hangar_delete">Delete</string>
+    <plurals name="hangar_type_more">
+        <item quantity="one">One more. Search more precisely.</item>
+        <item quantity="other">%1$d more. Search more precisely.</item>
     </plurals>
 </resources>

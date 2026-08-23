@@ -8,14 +8,20 @@
 package de.greluc.krt.profit.basetool.android.hangar
 
 import de.greluc.krt.profit.basetool.android.core.data.HangarSource
+import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
+import de.greluc.krt.profit.basetool.android.core.data.ShipDraft
 import de.greluc.krt.profit.basetool.android.core.data.ShipPage
+import de.greluc.krt.profit.basetool.android.core.data.ShipTypeOption
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypePage
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -77,6 +83,48 @@ class HangarViewModelTest {
             typeSearches.add(search)
             return if (typeAnswers.size > 1) typeAnswers.removeAt(0) else typeAnswers.first()
         }
+
+        val created = mutableListOf<ShipDraft>()
+        val updated = mutableListOf<Pair<String, Long?>>()
+        val deleted = mutableListOf<String>()
+        var saveAnswer: ApiResult<Ship> = ApiResult.Success(SAVED)
+
+        override suspend fun create(draft: ShipDraft): ApiResult<Ship> {
+            created.add(draft)
+            return saveAnswer
+        }
+
+        override suspend fun update(
+            id: String,
+            version: Long?,
+            draft: ShipDraft,
+        ): ApiResult<Ship> {
+            updated.add(id to version)
+            return saveAnswer
+        }
+
+        override suspend fun delete(id: String): ApiResult<Unit> {
+            deleted.add(id)
+            return ApiResult.Success(Unit)
+        }
+
+        override suspend fun shipTypes(query: String): ApiResult<List<ShipTypeOption>> =
+            ApiResult.Success(listOf(ShipTypeOption("t1", "Carrack", "Anvil Aerospace")))
+
+        override suspend fun homeLocations(): ApiResult<List<HomeLocation>> =
+            ApiResult.Success(listOf(HomeLocation("l1", "ARC-L1")))
+    }
+
+    /**
+     * A network that is there unless a case says otherwise.
+     *
+     * @property state what the flow reports.
+     */
+    private class FakeConnectivity(
+        initial: Boolean = true,
+    ) : Connectivity {
+        val state = MutableStateFlow(initial)
+        override val online: Flow<Boolean> get() = state
     }
 
     private fun ship(id: String) =
@@ -88,6 +136,9 @@ class HangarViewModelTest {
             insurance = "LTI",
             locationName = "ARC-L1",
             fitted = true,
+            typeId = "t1",
+            locationId = "l1",
+            version = VERSION,
         )
 
     private fun shipPage(
@@ -119,7 +170,7 @@ class HangarViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = HangarViewModel(source)
+    private fun viewModel() = HangarViewModel(source, FakeConnectivity())
 
     @Test
     fun `the screen opens on the member's own ships`() =
@@ -223,7 +274,7 @@ class HangarViewModelTest {
                     mutableListOf(ApiResult.Failure(ApiError.Network(IOException("offline")))),
                     mutableListOf(ApiResult.Success(typePage())),
                 )
-            val model = HangarViewModel(failing)
+            val model = HangarViewModel(failing, FakeConnectivity())
 
             model.loadOnce()
             advanceUntilIdle()
@@ -242,7 +293,7 @@ class HangarViewModelTest {
                     ),
                     mutableListOf(ApiResult.Success(typePage())),
                 )
-            val model = HangarViewModel(paged)
+            val model = HangarViewModel(paged, FakeConnectivity())
             model.loadOnce()
             advanceUntilIdle()
 
@@ -253,10 +304,146 @@ class HangarViewModelTest {
         }
 
     private companion object {
+        /** The version the fixture's ship was read at. */
+        const val VERSION = 4L
+
+        /** The most months the server accepts, and one more. */
+        const val MAX_MONTHS = "120"
+        const val TOO_MANY_MONTHS = "121"
+
+        val SAVED =
+            Ship(
+                id = "s1",
+                name = "Meridian",
+                typeName = "Carrack",
+                manufacturerName = "Anvil Aerospace",
+                insurance = "LTI",
+                locationName = "ARC-L1",
+                fitted = true,
+                typeId = "t1",
+                locationId = "l1",
+                version = VERSION + 1,
+            )
+
         /** Comfortably past the 300 ms debounce. */
         const val DEBOUNCE_SETTLE_MS = 400L
 
         /** A two-page result. */
         const val TWO_PAGES = 2
     }
+
+    @Test
+    fun `an edit is seeded from the row, hull and place included`() =
+        runTest(dispatcher) {
+            // A member who only flips "fitted" must not have to pick the hull again.
+            val model = viewModel()
+            advanceUntilIdle()
+
+            model.onEdit(ship("s1"))
+            advanceUntilIdle()
+
+            val editor = model.state.value.editor as ShipEditor.Open
+            assertEquals("t1", editor.hull?.id)
+            assertEquals("l1", editor.place?.id)
+            assertEquals(true, editor.insuranceLti)
+        }
+
+    @Test
+    fun `a month count outside the server's range cannot be submitted`() =
+        runTest(dispatcher) {
+            // The server accepts LTI or 0..120 and refuses everything else. Offering a save it will
+            // reject teaches the member that the app is unreliable.
+            val model = viewModel()
+            model.onCreate()
+            model.onHullChosen(ShipTypeOption("t1", "Carrack", "Anvil Aerospace"))
+            model.onInsuranceLtiChanged(false)
+
+            model.onInsuranceMonthsChanged(TOO_MANY_MONTHS)
+            assertEquals(false, (model.state.value.editor as ShipEditor.Open).submittable)
+
+            model.onInsuranceMonthsChanged(MAX_MONTHS)
+            assertEquals(true, (model.state.value.editor as ShipEditor.Open).submittable)
+        }
+
+    @Test
+    fun `a save sends what the editor holds`() =
+        runTest(dispatcher) {
+            val model = viewModel()
+            advanceUntilIdle()
+
+            model.onCreate()
+            model.onShipNameChanged("  Meridian  ")
+            model.onHullChosen(ShipTypeOption("t1", "Carrack", "Anvil Aerospace"))
+            model.onFittedChanged(true)
+            model.onSave()
+            advanceUntilIdle()
+
+            val draft = source.created.single()
+            assertEquals("Meridian", draft.name)
+            assertEquals("t1", draft.typeId)
+            assertEquals("LTI", draft.insurance)
+            assertEquals(true, draft.fitted)
+        }
+
+    @Test
+    fun `an edit echoes the version the row was read at`() =
+        runTest(dispatcher) {
+            val model = viewModel()
+            advanceUntilIdle()
+
+            model.onEdit(ship("s1"))
+            model.onSave()
+            advanceUntilIdle()
+
+            assertEquals("s1" to VERSION, source.updated.single())
+        }
+
+    @Test
+    fun `a conflict keeps the editor as it was`() =
+        runTest(dispatcher) {
+            source.saveAnswer = ApiResult.Failure(ApiError.OptimisticLock())
+            val model = viewModel()
+            advanceUntilIdle()
+
+            model.onEdit(ship("s1"))
+            model.onShipNameChanged("Meridian II")
+            model.onSave()
+            advanceUntilIdle()
+
+            val editor = model.state.value.editor as ShipEditor.Open
+            assertEquals("Meridian II", editor.name)
+            assertTrue(editor.error is ApiError.OptimisticLock)
+        }
+
+    @Test
+    fun `nothing is written while the device has no network`() =
+        runTest(dispatcher) {
+            val model = HangarViewModel(source, FakeConnectivity(initial = false))
+            advanceUntilIdle()
+
+            model.onEdit(ship("s1"))
+            model.onSave()
+            model.onDeleteRequested(ship("s1"))
+            model.onDeleteConfirmed()
+            advanceUntilIdle()
+
+            assertTrue(source.updated.isEmpty())
+            assertTrue(source.deleted.isEmpty())
+        }
+
+    @Test
+    fun `a delete asks first`() =
+        runTest(dispatcher) {
+            val model = viewModel()
+            advanceUntilIdle()
+
+            model.onDeleteRequested(ship("s1"))
+            advanceUntilIdle()
+            assertTrue(source.deleted.isEmpty())
+
+            model.onDeleteConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(listOf("s1"), source.deleted)
+        }
 }

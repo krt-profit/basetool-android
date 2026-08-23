@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Der Hangar lässt sich jetzt aus der App pflegen.** Schiffe anlegen, ändern und löschen: Typ über eine Suche, Versicherung als LTI oder Monatszahl, Ort und Fitted-Zustand. Nur die eigenen Schiffe — die Org-Ansicht bleibt eine Übersicht. Der Import bleibt Phase 4 (REQ-APP-HANGAR-006…009).
+
 - **Die Blueprints sind da — der zweite Reiter von „Mein Inventar".** Was dir gehört, mit einem Chip, der sagt, ob es baubar ist oder welche Materialien fehlen; ein Schalter rechnet die Raffinerie mit. Hinzufügen über die Produktsuche, Notiz ändern, entfernen. Was du schon hast, bietet die Suche nicht noch einmal an, und was der Server nicht freigibt, bekommt keinen Entfernen-Knopf (REQ-APP-PI-008…012).
 
 - **„Mein Inventar" ist da — und die App kann zum ersten Mal schreiben.** Eigene Bestände anlegen, ändern und löschen, mit Ortssuche, Mengen-Stepper und Notiz. Nur für dich sichtbar; niemand sonst sieht diese Liste. Blueprints folgen im nächsten Schnitt, der Datei-Import in Phase 4 (REQ-APP-PI-001…006).
@@ -15,6 +17,8 @@
 - **Gleichzeitige Änderungen sagen es dir, ohne deine Eingabe wegzuwerfen.** Hat jemand anderes denselben Eintrag zwischenzeitlich geändert, bleibt alles Getippte stehen und der Dialog erklärt, was zu tun ist.
 
 ### Fixed
+
+- **Der leere Hangar verwies noch auf die Weboberfläche.** „Schiffe hinzufügen geht derzeit über die Weboberfläche" stimmte nicht mehr, sobald die App es selbst kann.
 
 - **Die Sitzung hält jetzt länger als eine Stunde.** Bisher lief die Anmeldung nach Ablauf des Zugriffs-Tokens aus, und danach meldete jeder Bildschirm „Signal Lost" — nur ein Neustart der App half. Das Token wird jetzt vor Ablauf und nach einer Ablehnung durch den Server erneuert (REQ-APP-AUTH-012).
 
