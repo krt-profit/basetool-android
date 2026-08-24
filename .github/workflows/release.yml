@@ -1,0 +1,257 @@
+name: Release
+
+# Builds, signs, attests and publishes the APK for a `v*` tag.
+#
+# The dry run (`release-dry-run.yml`) rehearses the signing path on every pull request with a
+# throwaway key. This is the real thing: the `release` environment's key, a published artifact, and
+# the two numbers a member needs to check what they installed.
+#
+# ── What a reader can verify afterwards, and why each piece is here ──────────────────────────────
+#
+# Distribution is GitHub Releases plus Obtainium (plan Q1). There is no store review, no Play App
+# Signing and no channel that can pull a bad build back — so everything that would normally be
+# somebody else's check has to be produced here and published beside the file:
+#
+#   * an **artifact attestation** (`actions/attest-build-provenance`), which binds this APK to this
+#     workflow, this commit and this runner. `gh attestation verify` checks it offline against the
+#     repository, so "I downloaded an APK from a link" becomes "I downloaded the APK this tag
+#     built".
+#   * the **APK's SHA-256**, in the release notes. It is what somebody compares after an Obtainium
+#     update, and it is the only check available to a member who will not install the GitHub CLI.
+#   * the **signing certificate's SHA-256**, also in the notes and in the README. Android refuses an
+#     update signed by a different key, so a changed fingerprint is either a rotation the owner
+#     performed or an APK that did not come from us. Publishing it is what makes that distinction
+#     checkable rather than a matter of trust.
+#
+# ── The parts that are deliberately awkward ─────────────────────────────────────────────────────
+#
+# No Gradle cache. A poisoned cache entry would become a poisoned artifact, and a signed one — the
+# same reasoning as the dry run, which pays for a cold build for exactly this reason (DEV_CI § 4).
+#
+# The keystore is shredded in an `always()` step. Key material must not survive a failed run on a
+# runner, and the habit matters more than the individual case.
+#
+# The release is created as a **draft**. The owner publishes it after reading the notes and, if they
+# want, installing the APK — a tag push should not be able to hand every member a build nobody
+# looked at.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build (e.g. v0.1.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build, sign and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    # Tag-restricted, with a required reviewer. The signing secrets live here and nowhere else
+    # (DEV_CI § 4), so a workflow on a branch cannot reach them however it is triggered.
+    environment: release
+
+    permissions:
+      contents: write
+      # Both are what `attest-build-provenance` needs to mint and store the attestation.
+      id-token: write
+      attestations: write
+
+    env:
+      # The APK's own floor. `apksigner verify` judges an APK against an SDK range, and the range
+      # that matters is the one the app actually installs on (ADR-0006).
+      APP_MIN_SDK: '30'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+
+      - name: Validate the Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          # See the header: a signed artifact must not be able to inherit a poisoned cache entry.
+          cache-disabled: true
+
+      - name: Decode the signing keystore
+        run: |
+          set -euo pipefail
+          keystore="$RUNNER_TEMP/release.p12"
+          printf '%s' "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "$keystore"
+          # A silently truncated secret decodes fine and fails much later with an error that reads
+          # like a corrupt key rather than a broken transport. PKCS#12 starts with an ASN.1
+          # SEQUENCE, so a two-byte look is enough to tell the two apart here.
+          if [ ! -s "$keystore" ] || [ "$(head -c 2 "$keystore" | xxd -p)" != "3082" ]; then
+            echo "::error::RELEASE_KEYSTORE_BASE64 did not decode to a PKCS#12 keystore."
+            exit 1
+          fi
+          echo "KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
+
+      - name: Read the signing certificate's fingerprint
+        id: cert
+        env:
+          KRT_SIGNING_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          fingerprint="$(keytool -list -v \
+            -keystore "$KEYSTORE_PATH" -storetype PKCS12 \
+            -storepass "$KRT_SIGNING_STORE_PASSWORD" \
+            -alias "${{ secrets.RELEASE_KEY_ALIAS }}" \
+            | grep -oP 'SHA256:\s*\K[0-9A-Fa-f:]+' \
+            | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test -n "$fingerprint"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+
+      - name: Build the signed release APK
+        env:
+          KRT_SIGNING_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KRT_SIGNING_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KRT_SIGNING_KEYSTORE="$KEYSTORE_PATH" \
+          KRT_SIGNING_KEY_ALIAS="${{ secrets.RELEASE_KEY_ALIAS }}" \
+            ./gradlew :app:assembleProdRelease --stacktrace
+
+      - name: Verify the signature
+        id: verify
+        env:
+          EXPECTED_FINGERPRINT: ${{ steps.cert.outputs.fingerprint }}
+        run: |
+          set -euo pipefail
+
+          # The file name is half the assertion: with the signing config not taking effect AGP
+          # writes app-prod-release-UNSIGNED.apk and the build still succeeds.
+          apk="app/build/outputs/apk/prod/release/app-prod-release.apk"
+          if [ ! -f "$apk" ]; then
+            echo "::error::no signed APK was produced; the build wrote:"
+            ls -l app/build/outputs/apk/prod/release/
+            exit 1
+          fi
+
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          apksigner="$(find "$sdk/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -n "$apksigner"
+
+          report="$("$apksigner" verify --verbose --print-certs \
+            --min-sdk-version "$APP_MIN_SDK" "$apk")"
+          echo "$report"
+
+          fail=0
+          check() {
+            if printf '%s' "$report" | grep -qF "$1"; then
+              echo "  ok      $2"
+            else
+              echo "::error::$2 — not true of this APK. $3"
+              fail=1
+            fi
+          }
+
+          check "Verifies" \
+            "the APK verifies at minSdk $APP_MIN_SDK" \
+            "It would not install."
+          check "Verified using v3 scheme (APK Signature Scheme v3): true" \
+            "the APK carries a v3 signature" \
+            "Without one, no key rotation can ever be proven to Android."
+          check "Verified using v1 scheme (JAR signing): false" \
+            "v1 (JAR) signing is off" \
+            "minSdk $APP_MIN_SDK never uses it, and it is the scheme Janus attacks."
+          check "Number of signers: 1" \
+            "the APK has exactly one signer" \
+            "A second signer is not something this build should produce."
+          # The assertion that catches a signing config which silently did nothing: an APK signed
+          # by the debug keystore also "verifies", and its certificate is not this one. Matched on
+          # the digest alone, because the label around it is a build-tools detail that has changed.
+          check "certificate SHA-256 digest: $EXPECTED_FINGERPRINT" \
+            "the certificate is the release key" \
+            "The signing config did not take effect, or a different key was used."
+          test "$fail" -eq 0
+
+          # Named after the tag so a downloaded file says which release it is. Obtainium reads the
+          # release, not the file name, but a member's Downloads folder does not.
+          version="${GITHUB_REF_NAME#refs/tags/}"
+          out="basetool-${version}.apk"
+          cp "$apk" "$out"
+          echo "apk=$out" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(sha256sum "$out" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Shred the keystore
+        # `always()`: a failed build must not leave key material on a runner.
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_PATH:-}" ] && [ -f "$KEYSTORE_PATH" ]; then
+            shred -u "$KEYSTORE_PATH"
+            echo "shredded $KEYSTORE_PATH"
+          fi
+
+      - name: Attest the build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+        with:
+          subject-path: ${{ steps.verify.outputs.apk }}
+
+      - name: Publish the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK: ${{ steps.verify.outputs.apk }}
+          APK_SHA256: ${{ steps.verify.outputs.sha256 }}
+          CERT_SHA256: ${{ steps.cert.outputs.fingerprint }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          cat > notes.md <<EOF
+          ## Installation
+
+          Über [Obtainium](https://github.com/ImranR98/Obtainium) mit dieser Repository-URL, oder
+          die APK unten direkt herunterladen. Es gibt keinen Play-Store-Eintrag.
+
+          ## Prüfsummen
+
+          Beide Werte lassen sich vor dem Installieren vergleichen.
+
+          | | |
+          |---|---|
+          | APK SHA-256 | \`$APK_SHA256\` |
+          | Signaturzertifikat SHA-256 | \`$CERT_SHA256\` |
+
+          Der Zertifikats-Fingerabdruck ändert sich **nie** ohne einen angekündigten
+          Schlüsselwechsel. Ein anderer Wert bedeutet, dass die Datei nicht von uns stammt —
+          Android verweigert dann ohnehin das Update über eine bestehende Installation.
+
+          ## Herkunft
+
+          Dieses Release trägt eine GitHub-Build-Attestierung. Mit installierter \`gh\`-CLI:
+
+          \`\`\`
+          gh attestation verify $APK --repo ${{ github.repository }}
+          \`\`\`
+          EOF
+
+          gh release create "$TAG" "$APK" \
+            --draft \
+            --title "$TAG" \
+            --notes-file notes.md
