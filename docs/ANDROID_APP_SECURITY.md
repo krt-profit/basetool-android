@@ -486,11 +486,23 @@ more than the fix.
 excluded from all three rule sets, so a restore produced an empty app — backup bought a member
 nothing and cost a standing invariant that every future file be remembered in three places.
 
-**One finding fixed itself twice, and that is worth recording.** The `PendingIntent` was first made
-explicit with `setClass` inside an `apply` block, which binds the same component at runtime and left
-the CodeQL alert standing, because the query does not follow a mutation there. An alert that
-survives its own fix is a defect of its own: the next reader has to re-derive whether it is real. It
-is built from the `Intent(Context, Class)` constructor now.
+**One finding took four attempts, and that is worth recording.** The `PendingIntent` was explicit
+after the first one and stayed explicit through all of them — `setPackage`, then `setClass` inside
+an `apply` block, then the `Intent(Context, Class)` constructor. Each binds the component at
+runtime; none satisfied the query, which tracks the `component` field through straight-line
+assignment and follows neither a builder block nor a constructor argument. What closed it was
+`intent.component = ComponentName(context, MainActivity::class.java)` as a plain statement.
+
+The lesson is not about this rule. **An alert that survives a correct fix costs more than the
+finding did** — the next reader has to re-derive whether the code or the query is wrong, and the
+honest-looking move at that point is to dismiss it as a false positive. It was not one: the original
+intent really was implicit. When a fix is right and the alert stays, change the *shape* the analysis
+can see before reaching for a dismissal.
+
+**The `dev` flavor manifest carries `allowBackup="false"` too**, though the merge already resolved
+it there. `java/android/backup-enabled` reads each manifest as written, so the flavor file said
+nothing while the artifact was correct — and a flavor that declares `<application>` with no
+attribute reads, to a person as much as to the query, as a place where backup is fine.
 
 **What the review confirmed rather than found** — recorded so the next pass knows what was already
 looked at: AES-256-GCM with a provider IV and `setRandomizedEncryptionRequired`, an auth-per-use

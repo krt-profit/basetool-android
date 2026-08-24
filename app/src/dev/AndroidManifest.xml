@@ -8,7 +8,17 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application>
+    <!--
+      Repeated from the main manifest rather than inherited.
+
+      The merge already resolves `allowBackup` to false for every build, so this changes no
+      artifact — it changes what a reader of *this* file sees. A flavor manifest that declares
+      `<application>` without the attribute reads as "backup is fine here", and CodeQL says so
+      too (java/android/backup-enabled, open since 2026-08-18): the analysis reads the file, not
+      the merge. The dev flavor writes an encrypted refresh token to DataStore exactly as prod
+      does, so it is the last place to leave that implicit.
+    -->
+    <application android:allowBackup="false">
         <activity
             android:name=".ShowcaseActivity"
             android:exported="true"
