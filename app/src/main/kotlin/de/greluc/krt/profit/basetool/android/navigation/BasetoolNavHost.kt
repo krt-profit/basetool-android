@@ -30,6 +30,8 @@ import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
@@ -56,6 +58,11 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryOrderDetailRoute
+import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
+import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -85,6 +92,9 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
+ * @param exchange drives the Materialbörse.
+ * @param refinery drives the member's own Raffinerie orders.
+ * @param refineryOrder builds a view model for one Raffinerie order.
  * @param memberName the signed-in member's name, for the dashboard greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * @param onLogout ends the session.
@@ -107,12 +117,16 @@ fun BasetoolNavHost(
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
+    exchange: MaterialBoardViewModel,
+    refinery: RefineryViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
+    @Suppress("UnusedParameter") promotion: PromotionViewModel,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
 ) {
@@ -147,6 +161,8 @@ fun BasetoolNavHost(
                         bank = bank,
                         orders = orders,
                         inventory = inventory,
+                        exchange = exchange,
+                        refinery = refinery,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
                         booking = booking,
@@ -162,8 +178,10 @@ fun BasetoolNavHost(
                         operationDetail = operationDetail,
                         bankAccount = bankAccount,
                         orderDetail = orderDetail,
+                        refineryOrder = refineryOrder,
                         onOpenDestination = onOpenDestination,
                         onLogout = onLogout,
+                        promotion = promotion,
                         settings = settings,
                     )
                 }
@@ -210,6 +228,8 @@ private fun listDestination(
     bank: BankViewModel,
     orders: OrdersViewModel,
     inventory: InventoryViewModel,
+    exchange: MaterialBoardViewModel,
+    refinery: RefineryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -302,6 +322,19 @@ private fun listDestination(
             )
         }
 
+        KrtDestination.Exchange -> {
+            LaunchedEffect(Unit) { exchange.loadOnce() }
+            MaterialBoardRoute(viewModel = exchange)
+        }
+
+        KrtDestination.Refinery -> {
+            LaunchedEffect(Unit) { refinery.loadOnce() }
+            RefineryOrdersRoute(
+                viewModel = refinery,
+                onOpenOrder = { navController.navigate(refineryOrderRoute(it)) },
+            )
+        }
+
         KrtDestination.Inventory -> {
             LaunchedEffect(Unit) { inventory.loadOnce() }
             InventoryRoute(
@@ -349,8 +382,10 @@ private fun PushedDestination(
     operationDetail: (String) -> OperationDetailViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
+    @Suppress("UnusedParameter") promotion: PromotionViewModel,
     settings: SettingsBindings,
 ) {
     when (destination) {
@@ -383,6 +418,12 @@ private fun PushedDestination(
             val viewModel = remember(orderId) { orderDetail(orderId) }
             LaunchedEffect(orderId) { viewModel.load() }
             OrderDetailRoute(viewModel = viewModel)
+        }
+
+        KrtDestination.RefineryOrder -> {
+            val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
+            val viewModel = remember(orderId) { refineryOrder(orderId) }
+            RefineryOrderDetailRoute(viewModel = viewModel)
         }
 
         KrtDestination.More -> {

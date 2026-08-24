@@ -51,6 +51,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
@@ -106,6 +107,8 @@ private val STATUS_CHOICES =
  * @param onStatusToggled a status chip was tapped; the screen sends the resulting whole set.
  * @param onToggleMaterials a row's material list was opened or closed.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onOpenOrder a row was tapped.
  * @param modifier layout modifier.
@@ -117,6 +120,7 @@ fun OrdersScreen(
     onStatusToggled: (Set<JobOrderStatus>) -> Unit,
     onToggleMaterials: (String) -> Unit,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenOrder: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -149,14 +153,29 @@ fun OrdersScreen(
             }
 
             is OrdersPhase.Failed -> {
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_clipboard_list,
-                    title = stringResource(R.string.orders_error_title),
-                    message = stringResource(R.string.orders_error_message),
-                    actionText = stringResource(R.string.missions_retry),
-                    onAction = onRefresh,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                )
+                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                // empty state, because a countdown in front of a 403 promises a retry that will
+                // answer exactly the same.
+                val retryIn = state.retryIn
+                if (retryIn != null) {
+                    KrtRetryCountdown(
+                        secondsLeft = retryIn,
+                        title = stringResource(R.string.retry_busy_title),
+                        message = stringResource(R.string.retry_busy_message, retryIn),
+                        retryLabel = stringResource(R.string.retry_now),
+                        onRetry = onRetryNow,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                } else {
+                    KrtEmptyState(
+                        iconRes = DesignR.drawable.ic_krt_clipboard_list,
+                        title = stringResource(R.string.orders_error_title),
+                        message = stringResource(R.string.orders_error_message),
+                        actionText = stringResource(R.string.missions_retry),
+                        onAction = onRefresh,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                }
             }
 
             is OrdersPhase.Ready -> {
@@ -450,6 +469,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
 fun OrderDetailScreen(
     state: OrderDetailState,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     actions: OrderDetailActions,
     modifier: Modifier = Modifier,
 ) {
@@ -473,7 +493,22 @@ fun OrderDetailScreen(
         }
 
         phase is OrderDetailPhase.Failed -> {
-            OrderDetailFailure(error = phase.error, modifier = modifier)
+            // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+            // failure state, because a countdown in front of a 403 promises a retry that will
+            // answer exactly the same.
+            val retryIn = state.retryIn
+            if (retryIn != null) {
+                KrtRetryCountdown(
+                    secondsLeft = retryIn,
+                    title = stringResource(R.string.retry_busy_title),
+                    message = stringResource(R.string.retry_busy_message, retryIn),
+                    retryLabel = stringResource(R.string.retry_now),
+                    onRetry = onRetryNow,
+                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                )
+            } else {
+                OrderDetailFailure(error = phase.error, modifier = modifier)
+            }
         }
 
         else -> {
@@ -920,6 +955,7 @@ fun OrdersRoute(
         onStatusToggled = viewModel::onStatusesChanged,
         onToggleMaterials = viewModel::onToggleMaterials,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpenOrder = onOpenOrder,
         modifier = modifier,
@@ -941,6 +977,7 @@ fun OrderDetailRoute(
     OrderDetailScreen(
         state = state,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         actions =
             OrderDetailActions(
                 onToggleAssignment = viewModel::onToggleAssignment,

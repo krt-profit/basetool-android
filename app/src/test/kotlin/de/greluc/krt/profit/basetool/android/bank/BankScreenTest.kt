@@ -80,7 +80,7 @@ class BankScreenTest {
     ) {
         compose.setContent {
             KrtTheme {
-                BankAccountsScreen(state = state, onRefresh = {}, onOpenAccount = { opened.add(it) })
+                BankAccountsScreen(state = state, onRefresh = {}, onRetryNow = {}, onOpenAccount = { opened.add(it) })
             }
         }
     }

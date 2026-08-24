@@ -1,14 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Release posture: no cleartext, anywhere, ever.
+  Release posture: no cleartext, anywhere, ever — and the three production hosts are pinned to the
+  Let's Encrypt roots.
 
-  Android's default already forbids it at targetSdk 28+, but stating it explicitly is what makes it
-  a decision rather than an inherited default — and what keeps a future library that quietly opts
-  itself back in from succeeding (security concept §4).
+  Android's default already forbids cleartext at targetSdk 28+, but stating it explicitly is what
+  makes it a decision rather than an inherited default — and what keeps a future library that
+  quietly opts itself back in from succeeding (security concept §4).
 
   The dev flavour overrides this file to allow cleartext to the emulator's host loopback alone; a
-  release build cannot inherit that, because the override lives in the dev source set.
+  release build cannot inherit that, because the override lives in the dev source set. The dev
+  override also carries NO pins, deliberately: the test stack's certificate is a throwaway signed
+  by a CA that no longer exists, and pinning it would tie a debug build to a file in another repo.
+
+  ── Why the CA and not the leaf ────────────────────────────────────────────────────────────────
+
+  Security concept §5 names the leaf-plus-backup-pin pattern as the stricter option and the CA pin
+  as the one to evaluate first. This is that evaluation, and the CA pin wins on the property that
+  actually matters here: it cannot brick the app.
+
+  A leaf pin has to be rotated in an APK BEFORE the server rotates its key, and Let's Encrypt
+  renews every sixty days with a fresh keypair unless the CSR is deliberately reused. That makes
+  every renewal a release deadline, on a distribution channel (GitHub Releases plus Obtainium)
+  where nothing forces a member to update. The first missed deadline takes the app away from
+  everyone who has not updated, with no way to reach them — and OkHttp's own documentation says it
+  plainly: "Certificate Pinning is Dangerous!".
+
+  A root pin survives every renewal, needs no keypair reuse, and still excludes every other CA in
+  the device's trust store — which is the attack it is there for: a mis-issued or coerced
+  certificate from some other public CA. What it does NOT protect against is a mis-issuance by
+  Let's Encrypt itself, and that is the honest limit of this choice rather than a gap to paper
+  over.
+
+  BOTH roots are pinned, and the second one is not decoration. ISRG Root X2 is the ECDSA root;
+  Let's Encrypt has been issuing from its intermediates since 2024, and a certificate that chains
+  to X2 with only X1 pinned fails to validate. Pinning one root would turn an ordinary CA-side
+  change into an outage.
+
+  ── The pins ──────────────────────────────────────────────────────────────────────────────────
+
+  Computed from the JDK trust store's own copies of the two roots rather than transcribed from a
+  web page: a pin typed from memory is exactly how an app gets bricked, and these two values are
+  the ones the rotation runbook tells the owner to recompute before touching this file.
+
+    C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=   ISRG Root X1 (RSA)
+    diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=   ISRG Root X2 (ECDSA)
+
+  `expiration` is set on every pin-set. Android stops enforcing an expired pin-set rather than
+  failing the connection, which is the one safety valve this design has: if both roots were ever
+  replaced and nobody shipped an update, the app degrades to ordinary system trust instead of going
+  dark. The date is deliberately inside X1's own validity (2035) — it is a deadline for us, not for
+  the certificate.
+
+  Rotation runbook: docs/ANDROID_APP_SECURITY.md §5.1.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
+
+    <!-- The API host the app reads and writes through. -->
+    <domain-config>
+        <domain includeSubdomains="false">api.profit-base.online</domain>
+        <pin-set expiration="2028-08-24">
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!-- Keycloak: the token endpoint, the JWKS and the login the Custom Tab opens. -->
+    <domain-config>
+        <domain includeSubdomains="false">keycloak.profit-base.online</domain>
+        <pin-set expiration="2028-08-24">
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!--
+      The web frontend, which the app opens in a Custom Tab for the three public documents.
+
+      Pinned for completeness, and with one limit written down: a Custom Tab runs in the browser's
+      process, so this pin-set governs the app's own connections to the host and not the tab's.
+      Chrome does its own validation there.
+    -->
+    <domain-config>
+        <domain includeSubdomains="false">profit-base.online</domain>
+        <pin-set expiration="2028-08-24">
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+        </pin-set>
+    </domain-config>
 </network-security-config>

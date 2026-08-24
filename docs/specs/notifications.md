@@ -188,6 +188,48 @@ is the main repo's ADR-0104 rule applied to this list.
 
 ---
 
+---
+
+### REQ-APP-NOTIF-010 — The shade, for what the running app itself received
+
+Design chapter 14 mocks up notifications in the system shade. Without a push channel (plan Q2) that
+cannot mean what it means in most apps, and the honest scope is worth stating rather than implying:
+**this reaches a member whose app is running** — one who switched screens or locked the device — and
+nobody else. When the app is closed there is no FCM and nothing arrives. That is the whole of what
+is available, and it is real: the inbox's own SSE stream is what triggers it.
+
+It was unbuildable until the ETag fault (main repo #1653) was found, because until then the stream
+delivered no bytes at all and there was nothing to post about.
+
+**Two channels**, per chapter 14: `krt_operations` (Einsätze and system messages, high importance)
+and `krt_general`. Created idempotently on every post — Android keeps a channel's user-chosen
+importance once it exists, so re-creating changes nothing a member configured.
+
+**Nothing sensitive reaches a locked screen, by construction rather than by convention.** The
+channels carry `VISIBILITY_PRIVATE` and the builder attaches the public replacement chapter 14
+dictates — „Neue Benachrichtigung" and nothing else — **unconditionally**. A builder that added it
+only for notifications it judged sensitive would be one judgement call away from putting a member's
+amounts on a locked screen, and nothing in the app would flag it. The headline is resolved in the
+object graph, so no caller can thread free text into the shade.
+
+**Two gates before posting**: the runtime permission on API 33+ *and* the member's own switch for
+the app. Checking only the first posts into a void while believing somebody was told. The permission
+is referenced by name, because the constant is API 33 and this app starts at 30.
+
+**One notification id, reused.** The app cannot clear entries it posted before a restart, so a
+growing stack would outlive its own truth; one entry saying the inbox has something new is what it
+can honestly maintain.
+
+**Acceptance**
+
+- [x] The channels exist with the importances chapter 14 names, and are private on the lock screen
+  (`KrtNotificationChannels`).
+- [x] Every posted notification carries the fixed public version (`SystemNotifier`).
+- [x] Nothing is posted without both gates (`KrtNotificationChannels.canPost`).
+- [ ] **Walked on a device** — outstanding (#67).
+
+**Code:** `app/…/notifications/KrtNotificationChannels.kt`, `SystemNotifier.kt`
+
 ## Known gaps, stated rather than omitted
 
 - **No mark-read, no delete, no swipe, no "Alle gelesen".** All are mutations (Phase 3). The design's

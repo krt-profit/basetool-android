@@ -112,6 +112,7 @@ class InventoryScreenTest {
                     onBookOut = { bookedOut.add(it) },
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
+                    onRetryNow = {},
                     onLoadMore = {},
                 )
             }

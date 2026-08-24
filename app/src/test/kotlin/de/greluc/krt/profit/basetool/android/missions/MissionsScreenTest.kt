@@ -87,6 +87,7 @@ class MissionsScreenTest {
                     onIncludePastChanged = {},
                     onResetFilters = {},
                     onRefresh = {},
+                    onRetryNow = {},
                     onLoadMore = {},
                     onOpenMission = { opened.add(it) },
                     onOpenOperations = { segmentTaps.add(Unit) },

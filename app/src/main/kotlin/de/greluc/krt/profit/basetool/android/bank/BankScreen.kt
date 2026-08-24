@@ -58,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHair
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
@@ -113,6 +114,7 @@ private const val SPARKLINE_STROKE = 3f
 fun BankAccountsScreen(
     state: BankAccountsState,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onOpenAccount: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -125,6 +127,21 @@ fun BankAccountsScreen(
         }
 
         is BankPhase.Failed -> {
+            // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+            // empty state, because a countdown in front of a 403 promises a retry that will
+            // answer exactly the same.
+            val retryIn = state.retryIn
+            if (retryIn != null) {
+                KrtRetryCountdown(
+                    secondsLeft = retryIn,
+                    title = stringResource(R.string.retry_busy_title),
+                    message = stringResource(R.string.retry_busy_message, retryIn),
+                    retryLabel = stringResource(R.string.retry_now),
+                    onRetry = onRetryNow,
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                )
+                return
+            }
             KrtEmptyState(
                 iconRes = DesignR.drawable.ic_krt_bank,
                 title = stringResource(R.string.bank_error_title),
@@ -568,6 +585,7 @@ fun BankAccountsRoute(
     BankAccountsScreen(
         state = state,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         onOpenAccount = onOpenAccount,
         modifier = modifier,
     )

@@ -147,6 +147,18 @@ abstract class OpenApiSources : DefaultTask() {
     }
 }
 
+// The generator takes its spec as a URI STRING, so Gradle never sees the file -- the task's cache
+// key does not include the contract at all. On this machine that is invisible, because a local
+// build regenerates anyway; on CI it served a FROM-CACHE result that predated a new endpoint and
+// the compile failed on a model that should have existed. Any contract change could have gone the
+// same way. Declaring the file as an input is what makes the cache key honest.
+tasks.openApiGenerate.configure {
+    inputs
+        .file(layout.projectDirectory.file("src/main/openapi/openapi.json"))
+        .withPropertyName("openapiSpecFile")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 val openApiSources =
     tasks.register<OpenApiSources>("openApiSources") {
         description = "Mirrors the generated wire models into a source root AGP accepts."

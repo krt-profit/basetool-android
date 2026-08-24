@@ -71,7 +71,7 @@ class PendingAuthorizationTest {
             // instance over the same file has to find the state, nonce and verifier.
             store().save(request)
 
-            val restored = store().take()
+            val restored = store().peek()
 
             assertNotNull("the attempt must survive a process restart", restored)
             assertEquals(request.state, restored!!.state)
@@ -89,14 +89,20 @@ class PendingAuthorizationTest {
             val store = store()
             store.save(request)
 
-            assertNotNull(store.take())
-            assertNull("a second redirect must find nothing", store.take())
+            assertNotNull(store.peek())
+            // peek() no longer consumes: reading is what an exported activity can be made to do by
+            // any installed app, and consuming on read let one of them end a login in flight. The
+            // single-use property now belongs to clear(), which the caller runs once the redirect
+            // has been judged to be this attempt's.
+            assertNotNull("a peek must not consume the attempt", store.peek())
+            store.clear()
+            assertNull("a second redirect must find nothing", store.peek())
         }
 
     @Test
     fun `there is nothing to take when no login was started`() =
         runTest {
-            assertNull(store().take())
+            assertNull(store().peek())
         }
 
     @Test
@@ -108,7 +114,7 @@ class PendingAuthorizationTest {
             store().save(request)
             cipher.failDecryption = true
 
-            assertNull(store().take())
+            assertNull(store().peek())
         }
 
     @Test
@@ -119,7 +125,7 @@ class PendingAuthorizationTest {
 
             store.clear()
 
-            assertNull(store.take())
+            assertNull(store.peek())
         }
 
     /**

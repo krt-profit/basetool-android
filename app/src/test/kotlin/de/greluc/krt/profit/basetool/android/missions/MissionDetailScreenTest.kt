@@ -114,6 +114,7 @@ class MissionDetailScreenTest {
                     state = state,
                     onTabSelected = { tabs.add(it) },
                     onRefresh = {},
+                    onRetryNow = {},
                     onRetryFinances = {},
                     actions =
                         MissionSignUpActions(

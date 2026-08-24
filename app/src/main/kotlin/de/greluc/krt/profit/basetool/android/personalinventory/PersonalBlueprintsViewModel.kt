@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -105,6 +106,7 @@ sealed interface BlueprintEditor {
  * @property withRefinery whether refining counts towards what is reachable.
  * @property phase how far the read has got.
  * @property refreshing whether a pull-to-refresh is running.
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property hasMore whether another page exists.
  * @property online whether writes are possible at all.
  * @property editor the editor's state.
@@ -120,6 +122,7 @@ data class BlueprintsState(
     val withRefinery: Boolean = false,
     val phase: BlueprintsPhase = BlueprintsPhase.Loading,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val hasMore: Boolean = false,
     val online: Boolean = true,
     val editor: BlueprintEditor = BlueprintEditor.Closed,
@@ -146,6 +149,24 @@ class PersonalBlueprintsViewModel(
 
     /** What the tab renders. */
     val state: StateFlow<BlueprintsState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     private var loadJob: Job? = null
     private var searchJob: Job? = null
@@ -449,6 +470,7 @@ class PersonalBlueprintsViewModel(
                         refreshing = false,
                     )
                 loadCraftability()
+                retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
@@ -457,6 +479,7 @@ class PersonalBlueprintsViewModel(
                         phase = BlueprintsPhase.Failed(result.error),
                         refreshing = false,
                     )
+                retry.onFailure(result.error, hasContent = false)
             }
         }
     }

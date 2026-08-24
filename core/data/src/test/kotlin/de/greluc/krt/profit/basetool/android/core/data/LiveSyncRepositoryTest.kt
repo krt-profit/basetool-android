@@ -10,11 +10,18 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.SseEvent
 import de.greluc.krt.profit.basetool.android.core.network.SseStream
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
@@ -47,14 +54,7 @@ class LiveSyncRepositoryTest {
                 reader = ApiReader(httpClient = client, baseUrl = baseUrl, json = KrtJson, logTag = "test"),
                 // Collapsed so the coalescing assertions cost milliseconds rather than the real
                 // 1500 ms of a global window each.
-                timing =
-                    LiveSyncTiming(
-                        resourceWindow = 20.milliseconds,
-                        globalWindow = 20.milliseconds,
-                        reconnectSettle = 5.milliseconds,
-                        reconnectBase = 5.milliseconds,
-                        reconnectCeiling = 20.milliseconds,
-                    ),
+                timing = collapsedTiming(),
             )
     }
 
@@ -222,6 +222,129 @@ class LiveSyncRepositoryTest {
             assertFalse(result is ApiResult.Success)
         }
 
+    @Test
+    fun `two screens share one connection instead of opening one each`() =
+        runBlocking {
+            // Found on a device: the app's ViewModels are activity-scoped, so several are alive at
+            // once. A stream per caller meant three concurrent TLS connections, three reconnect
+            // loops, and eviction at the server's per-member cap of four.
+            val reader = CountingStream(subscribed("inventory", "materialboard"))
+            val shared = repositoryWith(reader)
+
+            val first = async { shared.observe(setOf(LiveSyncTopic.INVENTORY)).first() }
+            val second = async { shared.observe(setOf(LiveSyncTopic.MATERIALBOARD)).first() }
+            first.await()
+            second.await()
+
+            assertEquals("connections opened while both screens listened", 1, reader.opened)
+            assertEquals(
+                "the one connection asks for the union",
+                setOf("inventory", "materialboard"),
+                reader.lastTopics,
+            )
+        }
+
+    @Test
+    fun `a refused stream is not retried for the life of the app`() =
+        runBlocking {
+            // Measured on a device: a member without the Auftrags-queue capability re-asked every
+            // thirty seconds for as long as the app ran. A 403 is a verdict, not a hiccup — the
+            // caller's rights will not change while the screen is open.
+            val reader = RefusingStream()
+            val shared = repositoryWith(reader)
+
+            withTimeoutOrNull(SETTLE_MS) { shared.observe(setOf(LiveSyncTopic.ORDERS)).first() }
+
+            assertTrue(
+                "expected the client to stop asking, saw ${reader.attempts} attempts",
+                reader.attempts <= LiveSyncRepository.MAX_REFUSALS,
+            )
+        }
+
+    @Test
+    fun `a screen whose rooms were all refused is told so, rather than left waiting`() =
+        runBlocking {
+            val shared = repositoryWith(RefusingStream())
+
+            val verdict =
+                withTimeoutOrNull(SETTLE_MS) {
+                    shared.observe(setOf(LiveSyncTopic.ORDERS)).first()
+                } as? LiveSyncEvent.Subscribed
+
+            // An empty acceptance list is the screen's cue to fall back to polling. Silence would
+            // be indistinguishable from a live but quiet room.
+            assertEquals(emptySet<LiveSyncTopic>(), verdict?.topics)
+        }
+
+    /**
+     * Builds a repository over a substituted reader, with the same collapsed timings.
+     *
+     * @param reader the stream double.
+     * @return the repository under test.
+     */
+    private fun collapsedTiming() =
+        LiveSyncTiming(
+            resourceWindow = 20.milliseconds,
+            globalWindow = 20.milliseconds,
+            reconnectSettle = 5.milliseconds,
+            reconnectBase = 5.milliseconds,
+            reconnectCeiling = 20.milliseconds,
+            unionSettle = 30.milliseconds,
+        )
+
+    private fun repositoryWith(reader: SseStream): LiveSyncRepository =
+        LiveSyncRepository(
+            stream = reader,
+            reader =
+                ApiReader(
+                    httpClient = OkHttpClient(),
+                    baseUrl = "http://localhost",
+                    json = KrtJson,
+                    logTag = "test",
+                ),
+            timing = collapsedTiming(),
+        )
+
+    /** A reader that answers one canned body and counts how often it was opened. */
+    private class CountingStream(
+        private val body: String,
+    ) : SseStream(OkHttpClient(), "http://localhost") {
+        @Volatile var opened: Int = 0
+
+        @Volatile var lastTopics: Set<String> = emptySet()
+
+        override fun events(
+            path: String,
+            query: List<Pair<String, String>>,
+            onRefused: ((Int) -> Unit)?,
+        ): Flow<SseEvent> {
+            opened++
+            lastTopics =
+                query.firstOrNull { it.first == "topics" }?.second?.split(",")?.toSet().orEmpty()
+            return flow {
+                for (event in parseFrames(body)) {
+                    emit(event)
+                }
+                awaitCancellation()
+            }
+        }
+    }
+
+    /** A reader that always refuses, and counts the attempts. */
+    private class RefusingStream : SseStream(OkHttpClient(), "http://localhost") {
+        @Volatile var attempts: Int = 0
+
+        override fun events(
+            path: String,
+            query: List<Pair<String, String>>,
+            onRefused: ((Int) -> Unit)?,
+        ): Flow<SseEvent> =
+            flow {
+                attempts++
+                onRefused?.invoke(HTTP_FORBIDDEN)
+            }
+    }
+
     /**
      * Collects the first [count] events and lets the flow go.
      *
@@ -269,5 +392,31 @@ class LiveSyncRepositoryTest {
     private companion object {
         const val MISSION_ID = "8f14e45f-ceea-467a-9c5b-5f1f52a3a1c2"
         const val HTTP_OK = 200
+        const val HTTP_FORBIDDEN = 403
+
+        /** Long enough for the loop to have retried if it were going to. */
+        const val SETTLE_MS = 2_000L
     }
 }
+
+/**
+ * Splits a canned SSE body into events, so a substituted reader replays the same fixtures the
+ * socket-backed tests use.
+ *
+ * File scope rather than the test's companion: the reader doubles are nested classes, and a nested
+ * class cannot reach its outer class's companion.
+ *
+ * @param body the framed text.
+ * @return the events it contains.
+ */
+private fun parseFrames(body: String): List<SseEvent> =
+    body.split(FRAME_SEPARATOR).filter { it.isNotBlank() }.map { frame ->
+        val lines = frame.lineSequence()
+        SseEvent(
+            name = lines.first { it.startsWith("event:") }.removePrefix("event:").trim(),
+            data = frame.lineSequence().first { it.startsWith("data:") }.removePrefix("data:").trim(),
+        )
+    }
+
+/** Blank line between two SSE events, per the format. */
+private const val FRAME_SEPARATOR = "\n\n"

@@ -20,6 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,6 +102,7 @@ sealed interface EntriesPhase {
  * @property hasMore whether the server has another page
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property opened the state of each opened group, keyed by material id
  * @property withStockOnly whether groups holding nothing are hidden
  * @property openedStacks the state of each opened stack, keyed by [stackKey]
@@ -114,6 +116,7 @@ data class InventoryState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val opened: Map<String, StackPhase> = emptyMap(),
     val withStockOnly: Boolean = false,
     val openedStacks: Map<String, EntriesPhase> = emptyMap(),
@@ -164,6 +167,24 @@ class InventoryViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<InventoryState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     init {
         viewModelScope.launch {
@@ -417,6 +438,7 @@ class InventoryViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
@@ -427,6 +449,7 @@ class InventoryViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                retry.onFailure(result.error, hasContent = false)
             }
         }
     }

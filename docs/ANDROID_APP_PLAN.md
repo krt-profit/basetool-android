@@ -342,6 +342,29 @@ remaining scope is exactly the three items above.
 **Editor presence stays web-only, permanently.** It is the one part of the web socket that carries
 cross-user identity data, and the app has no place to show it.
 
+**Where the phase stands (2026-08-24).** The bridge shipped in both repos. Of the four slices that
+followed it, three are done and one is deliberately withheld:
+
+- **Materialboerse (#64)** — shipped. Both halves, the pledge toggle, Zurueckziehen and both create
+  sheets. Item *creates* are not in it: they address a P4K `productKey` the app has no picker for.
+- **Raffinerie (#65)** — shipped, without the extractor import as decided. Its two recorded
+  deviations from chapter 11 are in `docs/specs/refinery.md`.
+- **System states (#67)** — shipped. The notification channels' blocker resolved itself: the SSE
+  fault (krt-profit/basetool#1653) turned out to be a `ShallowEtagHeaderFilter` registered on `/*`,
+  buffering every stream and never writing the buffer back. **The notification push had been dead
+  the whole time** and nothing said so. Fixed, and guarded by a test that reads a socket, because no
+  server-side metric can tell a delivering stream from a silent one. The forced-update gate's new
+  backend contract shipped as REQ-API-010.
+- **Befoerderung (#66)** — **built and withheld**, and the phase closes without it. The screen has
+  no chapter in the design handoff and a derived layout is not a followed one (owner decision,
+  2026-08-23, reaffirmed 2026-08-24). Everything behind it stays wired: the repository, the tests,
+  the contract freeze and the allow-list lines. The issue stays open until a chapter exists.
+
+**The vhost paste is the one thing left, and it is the owner's** (runbook Phase J). Until it is
+applied the nightly `edge-deny-probe` reports the phase-3 and phase-4 paths as `404`, which is
+production being read correctly rather than a defect — see the runbook's note before investigating
+that run again.
+
 **Phase 5 — hardening & first release**
 Certificate pinning rollout (**CA-pin evaluated first**, else leaf backup-pin + expiration;
 documented rotation runbook — security doc §5) · MASVS-based security review + red-team pass per
@@ -355,6 +378,35 @@ work only if a Play channel is ever added (Q3).
 `basetool.wiki` handbook is written for members, and until there is an APK to install it would
 describe something that does not exist for them. The page belongs with the release: how to install
 it through Obtainium, what the app does, and what stays in the browser.
+
+**Where phase 5 stands (2026-08-24).** Everything that can be done without a production key or
+production access is done; what is left is in [`OWNER_RUNBOOK.md`](OWNER_RUNBOOK.md), one step per
+section.
+
+- **Certificate pinning — shipped.** The § 5 evaluation came out for the **CA pin**: all three
+  production hosts are pinned to both Let's Encrypt roots, with expirations, and the rotation
+  runbook is § 5.1 of the security doc. The leaf+backup variant was rejected on the property that
+  actually decides it here — it cannot brick the app. The pins were computed from certificates in a
+  trust store, never transcribed, and a test asserts both roots on all three hosts as real `<pin>`
+  elements.
+- **MASVS review — performed and recorded** (security doc § 7.1). Four low findings, all fixed:
+  server prose reaching logcat, a wire string becoming an implicit intent, a login any co-installed
+  app could end, and a backup guard three comments claimed existed. `allowBackup` went off outright.
+- **Release provenance — shipped.** `release.yml` builds, signs, verifies the certificate against
+  the configured key, attests the build, exports the dependency SBOM and creates a **draft**
+  release carrying the APK's SHA-256 and the signing certificate's. The README documents both
+  checks and the `gh attestation verify` command.
+- **Datenschutzerklärung — finalised.** The app has its own section in the policy the app itself
+  links to (main repo, `privacy.h2_3_9`), covering what it stores, that both files are excluded
+  from backup and device transfer, and the absences: no analytics, no ads, no tracking, no
+  automatic crash reporting, no push service.
+- **The wiki page — drafted** at `docs/wiki/App.md`, ready to commit into `basetool.wiki` with the
+  release.
+
+**Still outstanding, and all of it the owner's:** the vhost paste, the signing key, the `release`
+environment, the first tag. The four drills § 7 lists — red-team against the exposure package,
+pin rotation, assetlinks/key rotation, kill-switch — need the production key and the paste; the
+min-version half of the kill switch is built and device-verified.
 
 Each phase lands with the binding repo obligations of §8. Phases 2–4 slice vertically (a feature
 ships UI + repository + tests + i18n together), so the cut lines can shift after Q6.

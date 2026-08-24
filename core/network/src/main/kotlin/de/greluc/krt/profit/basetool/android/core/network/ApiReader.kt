@@ -8,6 +8,8 @@
 package de.greluc.krt.profit.basetool.android.core.network
 
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
@@ -341,17 +343,19 @@ class ApiReader(
         path: String,
         builder: Request.Builder,
     ): ApiResult<Unit> =
-        try {
-            httpClient.newCall(builder.build()).await().use { response ->
-                if (response.isSuccessful) {
-                    ApiResult.Success(Unit)
-                } else {
-                    ApiResult.Failure(errorMapper.map(response))
+        withContext(Dispatchers.IO) {
+            try {
+                httpClient.newCall(builder.build()).await().use { response ->
+                    if (response.isSuccessful) {
+                        ApiResult.Success(Unit)
+                    } else {
+                        ApiResult.Failure(errorMapper.map(response))
+                    }
                 }
+            } catch (io: IOException) {
+                KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
+                ApiResult.Failure(ApiError.Network(io))
             }
-        } catch (io: IOException) {
-            KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
-            ApiResult.Failure(ApiError.Network(io))
         }
 
     /**
@@ -386,23 +390,27 @@ class ApiReader(
         builder: Request.Builder,
         deserializer: DeserializationStrategy<T>,
     ): ApiResult<T> =
-        try {
-            httpClient.newCall(builder.build()).await().use { response ->
-                if (response.isSuccessful) {
-                    ApiResult.Success(json.decodeFromString(deserializer, response.body.string()))
-                } else {
-                    ApiResult.Failure(errorMapper.map(response))
+        withContext(Dispatchers.IO) {
+            try {
+                httpClient.newCall(builder.build()).await().use { response ->
+                    if (response.isSuccessful) {
+                        ApiResult.Success(
+                            json.decodeFromString(deserializer, response.body.string()),
+                        )
+                    } else {
+                        ApiResult.Failure(errorMapper.map(response))
+                    }
                 }
+            } catch (io: IOException) {
+                KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
+                ApiResult.Failure(ApiError.Network(io))
+            } catch (malformed: SerializationException) {
+                // A 200 whose body cannot be read is a broken server contract, not a connectivity
+                // problem. Reporting it as Network would tell the member to check their
+                // connection, which is advice that cannot possibly help.
+                KrtLog.w(logTag, malformed) { "response could not be parsed: $path" }
+                ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
             }
-        } catch (io: IOException) {
-            KrtLog.w(logTag, io) { "request failed before a response arrived: $path" }
-            ApiResult.Failure(ApiError.Network(io))
-        } catch (malformed: SerializationException) {
-            // A 200 whose body cannot be read is a broken server contract, not a connectivity
-            // problem. Reporting it as Network would tell the member to check their connection,
-            // which is advice that cannot possibly help.
-            KrtLog.w(logTag, malformed) { "response could not be parsed: $path" }
-            ApiResult.Failure(ApiError.Server(status = HTTP_OK, problem = null))
         }
 
     private companion object {

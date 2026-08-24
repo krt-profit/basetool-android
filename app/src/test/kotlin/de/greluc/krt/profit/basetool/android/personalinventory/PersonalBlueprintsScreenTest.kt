@@ -118,6 +118,7 @@ class PersonalBlueprintsScreenTest {
                     onQueryChanged = {},
                     onRefineryChanged = {},
                     onRefresh = {},
+                    onRetryNow = {},
                     onLoadMore = {},
                     onAdd = {},
                     onEdit = { edited.add(it) },

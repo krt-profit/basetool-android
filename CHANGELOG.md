@@ -4,6 +4,16 @@
 
 ### Added
 
+- **Die App erfährt jetzt, wenn ihre Version nicht mehr bedient wird.** Ist der Build zu alt, erscheint „Update erforderlich" mit dem Weg zur Download-Seite statt eines unverständlichen Fehlers. Ohne Antwort vom Server läuft die App normal weiter, und gespeicherte Daten bleiben in jedem Fall erhalten (REQ-APP-UI-004).
+
+- **Die Materialbörse ist in der App.** Angebote und Gesuche org-weit, „Ich kann liefern" als Umschalter mit jederzeitiger Rücknahme, eigene Einträge mit „Zurückziehen", und beide Erstellen-Dialoge — das Angebot mit Vorschlägen aus dem eigenen Lagerbestand. Übergabe und Ort bleiben wie im Web außerhalb des Tools.
+
+- **Die Raffinerie ist in der App.** „Meine Orders" mit den Filtern In Arbeit, Abholbereit und Eingelagert, die Restzeit läuft auf dem Gerät minütlich weiter, und im Detail legt „In Lager buchen" pro Material einen Lager-Eintrag mit Qualität an. Der Extractor-Import aus Design-Kapitel 11 kommt später mit den übrigen Datei-Importen.
+
+- **Ein ausgelasteter Server bekommt auf jedem Bildschirm einen Countdown statt einer Fehlermeldung.** Die App versucht es automatisch erneut — 3, 6, 12, dann alle 30 Sekunden — und zeigt die verbleibende Zeit; bei einer Drosselung hält sie sich an die Wartezeit, die der Server nennt. „Jetzt erneut versuchen" setzt den Rhythmus zurück. Bereits geladene Inhalte bleiben stehen (REQ-APP-UI-003).
+
+- **Benachrichtigungen erscheinen jetzt auch in der Statusleiste** — solange die App läuft. Auf dem Sperrbildschirm steht dabei nie mehr als „Neue Benachrichtigung". Ohne Push-Dienst erreicht dich das nicht bei geschlossener App (REQ-APP-NOTIF-010).
+
 - **Die App aktualisiert sich jetzt live, und andere sehen deine Änderungen sofort.** Ändert jemand im Browser einen Einsatz, einen Auftrag oder das Lager, zieht die App den betroffenen Bereich nach — ohne Neuladen und ohne dass die Anzeige leer blinkt. Umgekehrt aktualisiert eine Buchung aus der App jede offene Browser-Ansicht. Lager, Einsatz-Detail, Einsatz- und Auftragsliste, Auftrags-Detail, Operationen und die Bank sind angebunden; Materialbörse, Raffinerie und Beförderung folgen mit ihren Screens (REQ-APP-SYNC-001…005).
 
 - **Konten der Kartellbank lassen sich jetzt in der App einstellen.** Zielsaldo setzen und regeln, wer das Konto sieht — sichtbar nur für die Person, die für das Konto verantwortlich ist. Ein- und Auszahlungen bleiben der Weboberfläche vorbehalten (REQ-APP-BANK-006, REQ-APP-BANK-007).
@@ -29,6 +39,10 @@
 - **Gleichzeitige Änderungen sagen es dir, ohne deine Eingabe wegzuwerfen.** Hat jemand anderes denselben Eintrag zwischenzeitlich geändert, bleibt alles Getippte stehen und der Dialog erklärt, was zu tun ist.
 
 ### Fixed
+
+- **Sicherheits-Durchsicht vor dem ersten Release.** Serverseitige Fehlertexte landen nicht mehr im Geräte-Log, die Download-Adresse der Update-Seite wird geprüft, ein fremdes Programm kann eine laufende Anmeldung nicht mehr abbrechen, und die Android-Datensicherung ist ganz abgeschaltet — sie hätte ohnehin nichts gesichert.
+
+- **Die Raffinerie rechnete die Erntemenge falsch um.** Der Server führt Mengen in Units (100 Units = 1 SCU); die App zeigte sie als SCU an und hätte beim Einlagern das Hundertfache gebucht. Zeitstempel in Raffinerie und Materialbörse erscheinen jetzt in deiner Zeitzone statt als Rohwert, und die App stürzt nach einer Buchung nicht mehr ab.
 
 - **Negative Beträge sahen unterschiedlich aus.** In den Einsatz-Finanzen stand „−2.500" bei den Ausgaben und „-2.500" eine Zeile darunter beim Netto — zwei Zeichen für dieselbe Sache.
 

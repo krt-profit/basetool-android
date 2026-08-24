@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android
 
+import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.auth.AuthDataStore
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,6 +55,46 @@ class BackupExclusionTest {
             "device-transfer must exclude ${AuthDataStore.RELATIVE_PATH} — a cloud-backup rule " +
                 "does not cover D2D transfer",
             deviceTransfer.contains(AuthDataStore.RELATIVE_PATH),
+        )
+    }
+
+    @Test
+    fun `every rule set excludes the org-unit pin as well`() {
+        // Three source comments promise this test covers it — backup_rules.xml, the
+        // data_extraction_rules and ActiveOrgUnitStore itself — and until now none of them was
+        // true. The exclusions are correct today, so nothing is exposed; what was missing is the
+        // guard that keeps them correct. A renamed FILE_NAME would otherwise start shipping one
+        // member's org scope into cloud backup and device-to-device transfer, silently.
+        val legacy = read(File("src/main/res/xml/backup_rules.xml"))
+        assertTrue(
+            "backup_rules.xml must exclude ${ActiveOrgUnitStore.BACKUP_PATH}",
+            legacy.contains(ActiveOrgUnitStore.BACKUP_PATH),
+        )
+
+        val rules = read(File("src/main/res/xml/data_extraction_rules.xml"))
+        val cloudBackup = section(rules, "cloud-backup")
+        val deviceTransfer = section(rules, "device-transfer")
+        assertTrue(
+            "cloud-backup must exclude ${ActiveOrgUnitStore.BACKUP_PATH}",
+            cloudBackup.contains(ActiveOrgUnitStore.BACKUP_PATH),
+        )
+        assertTrue(
+            "device-transfer must exclude ${ActiveOrgUnitStore.BACKUP_PATH} — a cloud-backup rule " +
+                "alone does not govern a phone handed to the next device",
+            deviceTransfer.contains(ActiveOrgUnitStore.BACKUP_PATH),
+        )
+    }
+
+    @Test
+    fun `backup is off outright, not merely narrowed by exclusions`() {
+        // The exclusions above are the belt; this is the braces. With both persisted files
+        // excluded a restore produces an empty app anyway, so leaving backup on bought a member
+        // nothing and cost a standing invariant: every file added later has to be remembered in
+        // three rule sets, and forgetting one is invisible.
+        val manifest = read(File("src/main/AndroidManifest.xml"))
+        assertTrue(
+            "the manifest must set android:allowBackup=\"false\"",
+            manifest.contains("android:allowBackup=\"false\""),
         )
     }
 

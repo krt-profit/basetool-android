@@ -111,6 +111,7 @@ class OrdersScreenTest {
                     onStatusToggled = {},
                     onToggleMaterials = { toggled.add(it) },
                     onRefresh = { refreshed.add(Unit) },
+                    onRetryNow = {},
                     onLoadMore = {},
                     onOpenOrder = { opened.add(it) },
                 )
@@ -134,6 +135,7 @@ class OrdersScreenTest {
                 OrderDetailScreen(
                     state = state,
                     onRefresh = {},
+                    onRetryNow = {},
                     actions =
                         OrderDetailActions(
                             onToggleAssignment = { assigned.add(Unit) },

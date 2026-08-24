@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -62,6 +63,7 @@ const val PERSONAL_INVENTORY_CREATE_TAG: String = "personal-inventory-create"
  * @param state what to draw.
  * @param onQueryChanged the search box changed.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the next page was asked for.
  * @param onCreate the new-entry action was taken.
  * @param onEdit a row was tapped.
@@ -74,6 +76,7 @@ fun PersonalInventoryScreen(
     state: PersonalInventoryState,
     onQueryChanged: (String) -> Unit,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     onCreate: () -> Unit,
     onEdit: (PersonalItem) -> Unit,
@@ -122,14 +125,29 @@ fun PersonalInventoryScreen(
             }
 
             is PersonalInventoryPhase.Failed -> {
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_crate,
-                    title = stringResource(R.string.personal_inventory_error_title),
-                    message = stringResource(R.string.personal_inventory_error_message),
-                    actionText = stringResource(R.string.missions_retry),
-                    onAction = onRefresh,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                )
+                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                // empty state, because a countdown in front of a 403 promises a retry that will
+                // answer exactly the same.
+                val retryIn = state.retryIn
+                if (retryIn != null) {
+                    KrtRetryCountdown(
+                        secondsLeft = retryIn,
+                        title = stringResource(R.string.retry_busy_title),
+                        message = stringResource(R.string.retry_busy_message, retryIn),
+                        retryLabel = stringResource(R.string.retry_now),
+                        onRetry = onRetryNow,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                } else {
+                    KrtEmptyState(
+                        iconRes = DesignR.drawable.ic_krt_crate,
+                        title = stringResource(R.string.personal_inventory_error_title),
+                        message = stringResource(R.string.personal_inventory_error_message),
+                        actionText = stringResource(R.string.missions_retry),
+                        onAction = onRefresh,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                }
             }
 
             is PersonalInventoryPhase.Ready -> {

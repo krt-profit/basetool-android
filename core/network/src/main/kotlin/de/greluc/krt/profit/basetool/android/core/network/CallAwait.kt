@@ -27,6 +27,16 @@ import kotlin.coroutines.resumeWithException
  * [Response] leaks its connection out of the pool, and OkHttp reports it only as a `StrictMode`-ish
  * warning much later, in an unrelated call.
  *
+ * **This resumes on the caller's dispatcher, which for a ViewModel is the main thread — so the
+ * caller must move the response handling off it.** `ApiReader` wraps both of its handling blocks in
+ * `withContext(Dispatchers.IO)` for that reason, and the reason is not theoretical: closing an
+ * HTTP/2 response whose body was never read makes OkHttp write an `RST_STREAM` to the socket, and
+ * that is a `NetworkOnMainThreadException` that crashes the app. Found on a device, on the one
+ * write that returns a body the app does not parse. Reads only escaped it because a body already
+ * buffered in memory needs no socket. Note that this is a different point from the paragraph
+ * above: the objection there is to replacing `enqueue` with `withContext { execute() }`, which
+ * would break cancellation. Wrapping the *handling* keeps both properties.
+ *
  * @return the response; the caller owns it and must close it
  * @throws IOException if the call fails before a response was received
  */

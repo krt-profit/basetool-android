@@ -42,8 +42,11 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
+import de.greluc.krt.profit.basetool.android.gate.UpdateGate
+import de.greluc.krt.profit.basetool.android.gate.UpdateGateViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
@@ -62,6 +65,9 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
@@ -115,6 +121,11 @@ class MainActivity : AppCompatActivity() {
      */
     private val loginViewModel: LoginViewModel by viewModels { authViewModels(container) }
     private val gateViewModel: AccountGateViewModel by viewModels { authViewModels(container) }
+
+    /** Decides whether this build may run at all. */
+    private val updateGateViewModel: UpdateGateViewModel by viewModels {
+        authViewModels(container)
+    }
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
@@ -131,7 +142,18 @@ class MainActivity : AppCompatActivity() {
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
 
+    /** Beförderung — the member's own assessments and rank standings (#66). */
+    private val promotionViewModel: PromotionViewModel by viewModels { authViewModels(container) }
+
     private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
+
+    /** The member's own Raffinerie orders; activity-scoped like every other list. */
+    private val refineryViewModel: RefineryViewModel by viewModels { authViewModels(container) }
+
+    /** The Materialbörse. */
+    private val exchangeViewModel: MaterialBoardViewModel by viewModels {
+        authViewModels(container)
+    }
 
     private val inventoryViewModel: InventoryViewModel by viewModels { authViewModels(container) }
     private val personalInventoryViewModel: PersonalInventoryViewModel by
@@ -198,155 +220,177 @@ class MainActivity : AppCompatActivity() {
 
         // Outermost gate: the lock protects what is already on the device, so it runs
         // ahead of the session and the account gate rather than waiting on either.
-        AppLockGate(
-            viewModel = lockViewModel,
-            activity = this@MainActivity,
-            onSignOut = signOut,
+        // The version wall stands outside every other gate, and the endpoint behind it is
+        // anonymous for the same reason (server REQ-API-010): when the breaking change is in the
+        // auth flow itself, the old build cannot sign in, so a wall placed behind the session
+        // would never appear for the one case it exists for. Nothing is wiped -- chapter 14 keeps
+        // cached data through an update wall.
+        UpdateGate(
+            viewModel = updateGateViewModel,
+            onOpenReleases = { CustomTabLauncher.launch(this@MainActivity, it) },
+            onExit = { finish() },
         ) {
-            // Inside the gate, not above it: the stored refresh token is sealed by the lock, so a
-            // restore attempted while locked reads nothing and settles the session on "signed out"
-            // — leaving a member with a perfectly good session staring at the login screen after
-            // every unlock. Composed here it runs once the lock is open, and with no lock armed
-            // this content composes immediately, so nothing changes for anyone who has not enabled
-            // it.
-            //
-            // Guarded on Unknown so a background re-lock does not spend a refresh round trip (and
-            // a rotation of the realm's refresh token) every time the member comes back.
-            LaunchedEffect(Unit) {
-                if (container.session.state.value is SessionState.Unknown) {
-                    container.session.restore()
+            AppLockGate(
+                viewModel = lockViewModel,
+                activity = this@MainActivity,
+                onSignOut = signOut,
+            ) {
+                // Inside the gate, not above it: the stored refresh token is sealed by the lock, so a
+                // restore attempted while locked reads nothing and settles the session on "signed out"
+                // — leaving a member with a perfectly good session staring at the login screen after
+                // every unlock. Composed here it runs once the lock is open, and with no lock armed
+                // this content composes immediately, so nothing changes for anyone who has not enabled
+                // it.
+                //
+                // Guarded on Unknown so a background re-lock does not spend a refresh round trip (and
+                // a rotation of the realm's refresh token) every time the member comes back.
+                LaunchedEffect(Unit) {
+                    if (container.session.state.value is SessionState.Unknown) {
+                        container.session.restore()
+                    }
                 }
-            }
 
-            when (val current = session) {
-                is SessionState.SignedIn -> {
-                    AccountGate(
-                        viewModel = gateViewModel,
-                        accountName = current.claims?.preferredUsername,
-                        onLogout = signOut,
-                    ) {
-                        // After the approval gate, before the app: the backend enforces the
-                        // same order, and a member still awaiting approval has nothing to consent
-                        // to yet.
-                        TermsGate(viewModel = termsViewModel, onDecline = signOut) {
-                            // Behind the terms gate on purpose: the memberships read needs a
-                            // cleared account, and asking earlier would spend a refused request
-                            // on every start for a member who is still waiting for approval.
-                            LaunchedEffect(Unit) { orgUnitViewModel.load() }
-                            val orgUnit by orgUnitViewModel.state.collectAsState()
-                            BasetoolApp(
-                                orgUnit = orgUnit,
-                                missions = missionsViewModel,
-                                missionDetail = {
-                                    MissionDetailViewModel(
-                                        container.missions,
-                                        container.identity,
-                                        container.connectivity,
-                                        it,
-                                        container.liveSync,
-                                    )
-                                },
-                                operations = operationsViewModel,
-                                notifications = notificationsViewModel,
-                                dashboard = dashboardViewModel,
-                                hangar = hangarViewModel,
-                                bank = bankViewModel,
-                                bankAccount = {
-                                    BankAccountViewModel(
-                                        container.bank,
-                                        container.connectivity,
-                                        it,
-                                        container.liveSync,
-                                    )
-                                },
-                                orders = ordersViewModel,
-                                orderDetail = {
-                                    OrderDetailViewModel(
-                                        container.orders,
-                                        container.identity,
-                                        container.connectivity,
-                                        it,
-                                        container.liveSync,
-                                    )
-                                },
-                                inventory = inventoryViewModel,
-                                personalInventory = personalInventoryViewModel,
-                                personalBlueprints = personalBlueprintsViewModel,
-                                booking = bookingViewModel,
-                                operationDetail = {
-                                    OperationDetailViewModel(
-                                        container.operations,
-                                        container.identity,
-                                        container.connectivity,
-                                        it,
-                                        container.liveSync,
-                                    )
-                                },
-                                onSelectOrgUnit = orgUnitViewModel::select,
-                                onLogout = signOut,
-                                settings =
-                                    SettingsBindings(
-                                        accountName = current.claims?.preferredUsername,
-                                        language = language,
-                                        onLanguageChange = { chosen ->
-                                            language = chosen
-                                            LanguageSetting.apply(chosen)
-                                        },
-                                        appLockEnabled = lockArmed,
-                                        appLockAvailable = lockAvailable,
-                                        onAppLockChange = { wanted ->
-                                            if (wanted) {
-                                                // Arming raises the same prompt as unlocking: the
-                                                // key is auth-per-use, so Keystore will not encrypt
-                                                // with it unattended. It also means a lock is only
-                                                // ever armed by somebody who just proved they can
-                                                // open it.
-                                                scope.launch {
-                                                    lockViewModel.prepareArm()?.let { cipher ->
-                                                        BiometricGate.prompt(
-                                                            activity = this@MainActivity,
-                                                            cipher = cipher,
-                                                            onSuccess = lockViewModel::completeArm,
-                                                            onFailure = { },
-                                                        )
+                when (val current = session) {
+                    is SessionState.SignedIn -> {
+                        AccountGate(
+                            viewModel = gateViewModel,
+                            accountName = current.claims?.preferredUsername,
+                            onLogout = signOut,
+                        ) {
+                            // After the approval gate, before the app: the backend enforces the
+                            // same order, and a member still awaiting approval has nothing to consent
+                            // to yet.
+                            TermsGate(viewModel = termsViewModel, onDecline = signOut) {
+                                // Behind the terms gate on purpose: the memberships read needs a
+                                // cleared account, and asking earlier would spend a refused request
+                                // on every start for a member who is still waiting for approval.
+                                LaunchedEffect(Unit) { orgUnitViewModel.load() }
+                                val orgUnit by orgUnitViewModel.state.collectAsState()
+                                BasetoolApp(
+                                    orgUnit = orgUnit,
+                                    missions = missionsViewModel,
+                                    missionDetail = {
+                                        MissionDetailViewModel(
+                                            container.missions,
+                                            container.identity,
+                                            container.connectivity,
+                                            it,
+                                            container.liveSync,
+                                        )
+                                    },
+                                    operations = operationsViewModel,
+                                    notifications = notificationsViewModel,
+                                    dashboard = dashboardViewModel,
+                                    hangar = hangarViewModel,
+                                    bank = bankViewModel,
+                                    bankAccount = {
+                                        BankAccountViewModel(
+                                            container.bank,
+                                            container.connectivity,
+                                            it,
+                                            container.liveSync,
+                                        )
+                                    },
+                                    orders = ordersViewModel,
+                                    orderDetail = {
+                                        OrderDetailViewModel(
+                                            container.orders,
+                                            container.identity,
+                                            container.connectivity,
+                                            it,
+                                            container.liveSync,
+                                        )
+                                    },
+                                    inventory = inventoryViewModel,
+                                    exchange = exchangeViewModel,
+                                    refinery = refineryViewModel,
+                                    refineryOrder = {
+                                        RefineryDetailViewModel(
+                                            container.refinery,
+                                            container.connectivity,
+                                            it,
+                                            container.liveSync,
+                                        )
+                                    },
+                                    personalInventory = personalInventoryViewModel,
+                                    personalBlueprints = personalBlueprintsViewModel,
+                                    booking = bookingViewModel,
+                                    operationDetail = {
+                                        OperationDetailViewModel(
+                                            container.operations,
+                                            container.identity,
+                                            container.connectivity,
+                                            it,
+                                            container.liveSync,
+                                        )
+                                    },
+                                    onSelectOrgUnit = orgUnitViewModel::select,
+                                    onLogout = signOut,
+                                    promotion = promotionViewModel,
+                                    settings =
+                                        SettingsBindings(
+                                            accountName = current.claims?.preferredUsername,
+                                            language = language,
+                                            onLanguageChange = { chosen ->
+                                                language = chosen
+                                                LanguageSetting.apply(chosen)
+                                            },
+                                            appLockEnabled = lockArmed,
+                                            appLockAvailable = lockAvailable,
+                                            onAppLockChange = { wanted ->
+                                                if (wanted) {
+                                                    // Arming raises the same prompt as unlocking: the
+                                                    // key is auth-per-use, so Keystore will not encrypt
+                                                    // with it unattended. It also means a lock is only
+                                                    // ever armed by somebody who just proved they can
+                                                    // open it.
+                                                    scope.launch {
+                                                        lockViewModel.prepareArm()?.let { cipher ->
+                                                            BiometricGate.prompt(
+                                                                activity = this@MainActivity,
+                                                                cipher = cipher,
+                                                                onSuccess = lockViewModel::completeArm,
+                                                                onFailure = { },
+                                                            )
+                                                        }
                                                     }
+                                                } else {
+                                                    lockViewModel.setEnabled(false)
                                                 }
-                                            } else {
-                                                lockViewModel.setEnabled(false)
-                                            }
-                                        },
-                                        onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
-                                        onOpenImprint = { openWebPage(IMPRINT_PATH) },
-                                        onOpenTerms = { openWebPage(TERMS_PATH) },
-                                        onOpenUrl = { url ->
-                                            CustomTabLauncher.launch(this@MainActivity, url)
-                                        },
-                                        versionCode = BuildConfig.VERSION_CODE,
-                                    ),
-                            )
+                                            },
+                                            onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
+                                            onOpenImprint = { openWebPage(IMPRINT_PATH) },
+                                            onOpenTerms = { openWebPage(TERMS_PATH) },
+                                            onOpenUrl = { url ->
+                                                CustomTabLauncher.launch(this@MainActivity, url)
+                                            },
+                                            versionCode = BuildConfig.VERSION_CODE,
+                                        ),
+                                )
+                            }
                         }
                     }
-                }
 
-                SessionState.Unknown -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        KrtLoadingIndicator(text = stringResource(R.string.login_signing_in))
+                    SessionState.Unknown -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            KrtLoadingIndicator(text = stringResource(R.string.login_signing_in))
+                        }
                     }
-                }
 
-                else -> {
-                    LoginScreen(
-                        state = login,
-                        onSignIn = { loginViewModel.startLogin(this@MainActivity) },
-                        // Both were empty stubs until the settings chapter gave the app a
-                        // place to put the same documents. They matter MORE here than there: the
-                        // privacy notice has to be reachable before any processing starts, and
-                        // processing starts with the sign-in tap.
-                        onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
-                        onOpenImprint = { openWebPage(IMPRINT_PATH) },
-                        versionName = version.versionName.orEmpty(),
-                        versionCode = BuildConfig.VERSION_CODE,
-                    )
+                    else -> {
+                        LoginScreen(
+                            state = login,
+                            onSignIn = { loginViewModel.startLogin(this@MainActivity) },
+                            // Both were empty stubs until the settings chapter gave the app a
+                            // place to put the same documents. They matter MORE here than there: the
+                            // privacy notice has to be reachable before any processing starts, and
+                            // processing starts with the sign-in tap.
+                            onOpenPrivacy = { openWebPage(PRIVACY_PATH) },
+                            onOpenImprint = { openWebPage(IMPRINT_PATH) },
+                            versionName = version.versionName.orEmpty(),
+                            versionCode = BuildConfig.VERSION_CODE,
+                        )
+                    }
                 }
             }
         }
@@ -426,15 +470,34 @@ class MainActivity : AppCompatActivity() {
             viewModelFactory {
                 initializer { LoginViewModel(container) }
                 initializer { AccountGateViewModel(container.accountGate) }
+                initializer {
+                    UpdateGateViewModel(container.appVersion, BuildConfig.VERSION_CODE)
+                }
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
-                initializer { NotificationsViewModel(container.notifications) }
+                initializer {
+                    NotificationsViewModel(
+                        container.notifications,
+                        container.systemNotifications,
+                        container.shadeTitle,
+                    )
+                }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
+                initializer { PromotionViewModel(container.promotion) }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
+                initializer { RefineryViewModel(container.refinery, container.liveSync) }
+                initializer {
+                    MaterialBoardViewModel(
+                        container.materialBoard,
+                        container.inventory,
+                        container.connectivity,
+                        container.liveSync,
+                    )
+                }
                 initializer {
                     InventoryViewModel(container.inventory, container.connectivity, container.liveSync)
                 }

@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.auth
 
 import android.content.Context
 import de.greluc.krt.profit.basetool.android.BuildConfig
+import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.auth.AppLock
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
@@ -28,23 +29,29 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
+import de.greluc.krt.profit.basetool.android.core.data.AppVersionRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalInventoryRepository
+import de.greluc.krt.profit.basetool.android.core.data.PromotionRepository
+import de.greluc.krt.profit.basetool.android.core.data.RefineryRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import de.greluc.krt.profit.basetool.android.core.network.SystemConnectivity
+import de.greluc.krt.profit.basetool.android.notifications.SystemNotifications
+import de.greluc.krt.profit.basetool.android.notifications.SystemNotifier
 import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.UUID
@@ -273,6 +280,33 @@ class AuthContainer(
     }
 
     /**
+     * The shade, for something the running app's own stream delivered (chapter 14).
+     *
+     * In the container rather than built at the call site so the application context is the one
+     * used — an Activity context here would keep the Activity alive behind a PendingIntent.
+     */
+    val systemNotifications: SystemNotifications by lazy { SystemNotifier(appContext) }
+
+    /**
+     * The shade headline.
+     *
+     * Resolved here so the notification carries no free text from anywhere else: chapter 14's rule
+     * is that the shade says something fixed, and a title threaded in from a caller is a title a
+     * caller can make say anything.
+     */
+    val shadeTitle: String by lazy { appContext.getString(R.string.notification_shade_title) }
+
+    /**
+     * The member's own Beförderung record.
+     *
+     * Its own repository because it answers a question nothing else on the app asks, and both its
+     * paths are me-scoped: there is no id to pass and no way to reach anybody else's record.
+     */
+    val promotion: PromotionRepository by lazy {
+        PromotionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
      * The live-sync bridge: change signals in, the app's own announcements out (ADR-0143).
      *
      * One instance for the whole app rather than one per screen, and shared with [apiClient] for
@@ -333,6 +367,37 @@ class AuthContainer(
      */
     val inventory: InventoryRepository by lazy {
         InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The served-version policy behind the forced-update gate.
+     *
+     * Shares [apiClient] like everything else, and works signed out too: the header
+     * interceptor omits `Authorization` when there is no session, which is what makes
+     * the gate answer for a build too old to log in.
+     */
+    val appVersion: AppVersionRepository by lazy {
+        AppVersionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Materialbörse.
+     *
+     * Org-wide by construction: the board is one list for the whole organisation, so nothing about
+     * scope is configured here either.
+     */
+    val materialBoard: MaterialBoardRepository by lazy {
+        MaterialBoardRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The member's own Raffinerie orders.
+     *
+     * Only the `my-orders` surface: the controller's `/all` and `/users/{id}` reads are the
+     * Logistik view, and the app stays on the member-facing one.
+     */
+    val refinery: RefineryRepository by lazy {
+        RefineryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

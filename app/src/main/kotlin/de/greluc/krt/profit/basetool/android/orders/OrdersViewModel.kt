@@ -22,6 +22,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.Job
@@ -59,6 +60,7 @@ sealed interface OrdersPhase {
  * @property hasMore whether the server has another page
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property expanded which orders have their material list open, by id
  */
 data class OrdersState(
@@ -70,6 +72,7 @@ data class OrdersState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val expanded: Set<String> = emptySet(),
 )
 
@@ -105,6 +108,24 @@ class OrdersViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<OrdersState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     private var loadJob: Job? = null
     private var loadedOnce = false
@@ -206,6 +227,7 @@ class OrdersViewModel(
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        retry.onSuccess()
                     }
 
                     is ApiResult.Failure -> {
@@ -216,6 +238,7 @@ class OrdersViewModel(
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        retry.onFailure(result.error, hasContent = keepRows)
                     }
                 }
             }
@@ -252,6 +275,7 @@ sealed interface OrderDetailPhase {
  * @property order the order once it arrives
  * @property phase how far the read has got
  * @property refreshing whether a pull-to-refresh is running
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property me who the caller is, once known; `null` while the read is out or after it failed
  * @property noteDraft the caller's note while they are editing it, or `null` when the editor is
  *   closed. Empty string is an open editor holding nothing, which is how a note is cleared
@@ -265,6 +289,7 @@ data class OrderDetailState(
     val order: JobOrder? = null,
     val phase: OrderDetailPhase = OrderDetailPhase.Loading,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val me: Identity? = null,
     val noteDraft: String? = null,
     val statusPickerOpen: Boolean = false,
@@ -310,6 +335,19 @@ class OrderDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<OrderDetailState> = mutableState.asStateFlow()
+
+    /** The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003). */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepContent = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     init {
         viewModelScope.launch {
@@ -504,6 +542,7 @@ class OrderDetailViewModel(
                             phase = OrderDetailPhase.Ready,
                             refreshing = false,
                         )
+                    retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
@@ -513,6 +552,7 @@ class OrderDetailViewModel(
                             phase = OrderDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    retry.onFailure(result.error, hasContent = false)
                 }
             }
         }

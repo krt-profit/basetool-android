@@ -333,6 +333,74 @@ first in Phase 5: pin the **CA key** (ISRG Root X1/X2 SPKI) instead of the leaf 
 keypair-reuse requirement, no pin churn tied to app updates) and still excludes every other CA;
 the leaf+backup pin remains the stricter, higher-maintenance option.
 
+### 5.1 Pinning as shipped, and how to rotate it (2026-08-24)
+
+**The evaluation §5 called for is done and the CA pin won.** `app/src/main/res/xml/network_security_config.xml`
+pins all three production hosts — `api.profit-base.online`, `keycloak.profit-base.online`,
+`profit-base.online` — to **both** Let's Encrypt roots, with an `expiration` of 2028-08-24.
+
+**Why not the leaf.** A leaf pin has to reach devices *before* the server rotates its key, and
+Let's Encrypt renews every sixty days with a fresh keypair unless the CSR is deliberately reused.
+That makes every renewal a release deadline, on a channel (GitHub Releases plus Obtainium) where
+nothing forces a member to update. The first missed deadline takes the app away from everyone who
+has not updated, with no way left to reach them. The root pin has none of that: it survives every
+renewal, needs no keypair reuse, and still excludes every other CA in the device's trust store.
+
+**What it does not protect against, stated rather than implied:** a mis-issuance by Let's Encrypt
+itself. That is the price of the choice, and the CAA record of §4 is what narrows it.
+
+**Both roots, not one.** ISRG Root X2 is the ECDSA root and Let's Encrypt issues from its
+intermediates. A certificate chaining to X2 with only X1 pinned fails to validate, so pinning one
+root would turn an ordinary CA-side change into an outage reaching every installed build at once.
+`NetworkSecurityConfigTest` asserts both, on all three hosts, as real `<pin>` elements rather than
+as strings anywhere in the file.
+
+**The expiry is the safety valve.** Android stops *enforcing* an expired pin-set rather than
+failing the connection. If both roots were ever replaced and no update shipped, the app degrades to
+ordinary system trust instead of going dark. The date is a deadline for us, not for the
+certificate.
+
+**The dev flavour pins nothing**, deliberately: the test stack's certificate is a throwaway signed
+by a CA destroyed at generation time (main repo ADR-0139), and pinning it would tie every debug
+build to a file in another repository.
+
+#### The rotation runbook
+
+Two situations need it, and only one of them is an emergency.
+
+**A. Let's Encrypt announces a new root** (the planned case; they give years of notice).
+
+1. Get the new root's SPKI pin **from a certificate, never from a web page**. Any JDK trust store
+   that already ships it will do:
+
+   ```bash
+   keytool -exportcert -rfc -cacerts -storepass changeit -alias <alias> > root.pem
+   openssl x509 -in root.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+   ```
+
+2. **Add** it to all three `<pin-set>` blocks. Do not remove the old ones — a pin-set is an OR, and
+   the whole point of this step is that both chains validate while members update.
+3. Push the `expiration` out by two years in the same edit.
+4. Ship that build **before** anything changes server-side, and leave it out there long enough that
+   the installed base has moved. There is no telemetry to tell you when that is; the honest answer
+   is a release cycle plus a month.
+5. Only then remove the retired root, in a later release.
+
+**B. The pin is wrong and members cannot connect** (the emergency).
+
+The failure looks like every request failing with a TLS error on production while the browser works
+fine — that asymmetry is the tell, because Chrome does not use this config.
+
+1. **Do not touch the server.** Nothing server-side can fix a pin baked into an APK.
+2. Ship a build with the corrected pin, or with the three `<domain-config>` blocks removed
+   entirely. Removing them is a legitimate emergency action: it returns the app to ordinary system
+   trust, which is where it was before this section existed.
+3. Announce it where members will see it — the wiki page and the release notes — because an app
+   that cannot connect cannot tell them anything itself.
+
+**Before every release**, one check that costs nothing: `./gradlew :app:testDevDebugUnitTest --tests "*NetworkSecurityConfigTest"`.
+It fails if a pin element was lost, if a host lost its pin-set, or if a pin-set lost its expiry.
+
 ## 6. App/API behavior contracts (security-relevant)
 
 - Handle RFC 7807 codes as first-class states: `UNAUTHENTICATED` (401 → silent refresh → login),
@@ -365,3 +433,48 @@ exposure package (rate-limit bypass incl. spoofed-XFF attribution, forwarded-hea
 audience/azp confusion, SSE starvation, page-size amplification); pin-rotation fire drill on the
 test stack; assetlinks/key-rotation drill (§2.10); kill-switch drill (client disable + observed
 lockout + the §2.13 min-version gate). Findings gate the release.
+
+### 7.1 The MASVS review as performed (2026-08-24)
+
+**Verdicts:** STORAGE *finding* · CRYPTO *ok* · AUTH *finding* · NETWORK *ok* · PLATFORM *finding*
+· RESILIENCE *ok, with the accepted residual risk of § 1 unchanged*.
+
+Four findings, all low, all fixed in the same pass. None was reachable without either a compromised
+backend or a co-installed app; each was cheap enough that arguing about severity would have cost
+more than the fix.
+
+| # | Category | What | Fix |
+|---|---|---|---|
+| 1 | STORAGE | `ProblemDetail` had no `toString()`, and ~50 sites log an `ApiError` — so the server's localised prose, the request path with its ids and every field-validation message reached logcat on release builds | one `toString()` override that keeps `code`, `status` and `correlationId` and drops the rest |
+| 2 | PLATFORM | `releasesUrl` arrived from the wire on the one anonymous endpoint and left as an implicit `ACTION_VIEW`; a `market://` or `intent://` value would open whatever claims it | https-only, else the published fallback |
+| 3 | AUTH | `AuthRedirectActivity` is exported and `take()` read *and cleared* the pending attempt before the state was checked, so any installed app could end a login in flight | `peek()` reads; the caller clears only once the redirect is judged to be this attempt's |
+| 4 | STORAGE | Three source comments promised `BackupExclusionTest` guarded the org-unit pin; it did not | the assertion those comments describe, plus `allowBackup="false"` |
+
+**`allowBackup` went off rather than staying on-with-exclusions.** Both persisted files were already
+excluded from all three rule sets, so a restore produced an empty app — backup bought a member
+nothing and cost a standing invariant that every future file be remembered in three places.
+
+**One finding fixed itself twice, and that is worth recording.** The `PendingIntent` was first made
+explicit with `setClass` inside an `apply` block, which binds the same component at runtime and left
+the CodeQL alert standing, because the query does not follow a mutation there. An alert that
+survives its own fix is a defect of its own: the next reader has to re-derive whether it is real. It
+is built from the `Intent(Context, Class)` constructor now.
+
+**What the review confirmed rather than found** — recorded so the next pass knows what was already
+looked at: AES-256-GCM with a provider IV and `setRandomizedEncryptionRequired`, an auth-per-use
+app-lock key whose `CryptoObject` cipher is the one that unwraps the token at rest, PKCE S256 with
+256-bit state and nonce and a verified App Link in prod, a logout that revokes and deletes both the
+blob and the DPoP key it is bound to, exactly two persisted files with no disk HTTP cache and no
+database, pinning on all three prod hosts to both ISRG roots with dev relaxations unreachable from
+release by two independent mechanisms, `FLAG_SECURE` app-wide, no WebView, no `ContentProvider`, and
+DPoP proofs over a non-exportable P-256 key clocked by `ServerClock` rather than the device.
+
+**`taskAffinity` is unset, deliberately.** It is the StrandHogg 2.0 shape, and Android 11+ blocks
+cross-UID task insertion; at a floor of API 30 its absence is not a vulnerability. Setting
+`taskAffinity=""` would be free hardening and remains available.
+
+**Still outstanding from § 7, and not claimed as done:** the red-team pass against the exposure
+package, the pin-rotation fire drill, the assetlinks/key-rotation drill, and the kill-switch drill.
+The min-version gate half of the last one is built and device-verified (REQ-API-010); the rest needs
+the production key and the vhost paste, which are the owner's
+([`OWNER_RUNBOOK.md`](OWNER_RUNBOOK.md) §§ 1–4).

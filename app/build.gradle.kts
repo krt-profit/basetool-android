@@ -254,13 +254,18 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 
-    // The only instrumented tests in the project, and they exist for one reason: the trust anchor
-    // below cannot be proven anywhere else. Android applies the network security config to the
-    // process, so nothing on the JVM or under Robolectric can tell whether a TLS handshake with
-    // the test stack actually succeeds.
+    // The instrumented tests, which exist for the properties the JVM cannot see at all. Two so
+    // far: Android applies the network security config to the process, so nothing on the JVM or
+    // under Robolectric can tell whether a TLS handshake with the test stack actually succeeds --
+    // and StrictMode is a runtime facility, so the main-thread rule of REQ-APP-API-006 is
+    // unobservable off a device. It took a device walk and a crash to learn the second one.
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(project(":core:contract"))
+    androidTestImplementation(project(":core:network"))
 }
 
 /*

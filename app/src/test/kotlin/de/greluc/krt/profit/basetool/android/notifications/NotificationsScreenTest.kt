@@ -68,6 +68,7 @@ class NotificationsScreenTest {
                 NotificationsScreen(
                     state = state,
                     onRefresh = {},
+                    onRetryNow = {},
                     onLoadMore = {},
                     onOpen = { opened.add(it.id) },
                 )

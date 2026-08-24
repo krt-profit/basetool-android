@@ -38,6 +38,28 @@ data class ProblemDetail(
     @SerialName("correlationId") val correlationId: String? = null,
     val fieldErrors: Map<String, String>? = null,
 ) {
+    /**
+     * Renders only the three fields that identify a problem, never the ones that describe it.
+     *
+     * Roughly fifty call sites log an `ApiError`, and every `ApiError` carries one of these — so
+     * the generated `toString()` was putting the server's own localised prose, the request path
+     * with its ids, and every field-validation message into logcat on release builds. Some of that
+     * prose names members and amounts, which the project's logging rule forbids categorically, and
+     * logcat is app-private only until a bugreport or an OEM collector picks it up.
+     *
+     * Overriding here rather than editing fifty call sites is deliberate: the next call site gets
+     * it for free, and a `\${result.error}` in a log line stays the obvious thing to write.
+     * [IdTokenClaims], [PkceChallenge] and [AuthorizationRequest] suppress their own sensitive
+     * halves the same way.
+     *
+     * What is kept is exactly what a diagnosis needs: the stable code, the status, and the
+     * correlation id that ties the line to the backend's own (REQ-OBS-002).
+     *
+     * @return the identifying fields, without the descriptive ones.
+     */
+    override fun toString(): String =
+        "ProblemDetail(code=$code, status=$status, correlationId=$correlationId)"
+
     companion object {
         /** No valid session: the caller must re-authenticate. */
         const val CODE_UNAUTHENTICATED: String = "UNAUTHENTICATED"

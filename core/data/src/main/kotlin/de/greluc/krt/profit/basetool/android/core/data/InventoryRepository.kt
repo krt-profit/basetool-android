@@ -230,9 +230,27 @@ data class InventoryPage(
 }
 
 /**
+ * The material catalogue, as a seam of its own.
+ *
+ * Extracted from [InventorySource] rather than duplicated: the Materialbörse's „Gesuch erstellen"
+ * sheet needs exactly this one method and nothing else the Lager offers, and a second repository
+ * calling `/api/v1/materials/search` would be a second place for the page cap and the trimming to
+ * drift.
+ */
+fun interface MaterialLookup {
+    /**
+     * Searches materials.
+     *
+     * @param query what the member typed.
+     * @return the matches, capped by the server's page size.
+     */
+    suspend fun materials(query: String): ApiResult<List<MaterialOption>>
+}
+
+/**
  * The Lager reads, as a seam.
  */
-interface InventorySource {
+interface InventorySource : MaterialLookup {
     /**
      * Reads one page of material groups.
      *
@@ -305,14 +323,6 @@ interface InventorySource {
         version: Long?,
         note: String?,
     ): ApiResult<Unit>
-
-    /**
-     * Searches materials.
-     *
-     * @param query what the member typed.
-     * @return the matches, capped by the server's page size.
-     */
-    suspend fun materials(query: String): ApiResult<List<MaterialOption>>
 
     /**
      * Searches places.

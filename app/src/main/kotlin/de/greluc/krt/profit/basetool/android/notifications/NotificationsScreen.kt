@@ -46,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import java.time.Instant
@@ -69,6 +70,7 @@ private val TYPE_ICON = 20.dp
  *
  * @param state what to draw.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onOpen a row was tapped; the host decides whether its subject has a screen yet.
  * @param modifier layout modifier.
@@ -78,6 +80,7 @@ private val TYPE_ICON = 20.dp
 fun NotificationsScreen(
     state: NotificationsState,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     onOpen: (Notification) -> Unit,
     modifier: Modifier = Modifier,
@@ -106,14 +109,29 @@ fun NotificationsScreen(
             }
 
             is NotificationsPhase.Failed -> {
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_bell,
-                    title = stringResource(R.string.notifications_error_title),
-                    message = stringResource(R.string.notifications_error_message),
-                    actionText = stringResource(R.string.missions_retry),
-                    onAction = onRefresh,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                )
+                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                // empty state, because a countdown in front of a 403 promises a retry that will
+                // answer exactly the same.
+                val retryIn = state.retryIn
+                if (retryIn != null) {
+                    KrtRetryCountdown(
+                        secondsLeft = retryIn,
+                        title = stringResource(R.string.retry_busy_title),
+                        message = stringResource(R.string.retry_busy_message, retryIn),
+                        retryLabel = stringResource(R.string.retry_now),
+                        onRetry = onRetryNow,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                } else {
+                    KrtEmptyState(
+                        iconRes = DesignR.drawable.ic_krt_bell,
+                        title = stringResource(R.string.notifications_error_title),
+                        message = stringResource(R.string.notifications_error_message),
+                        actionText = stringResource(R.string.missions_retry),
+                        onAction = onRefresh,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                }
             }
 
             is NotificationsPhase.Ready -> {
@@ -317,6 +335,7 @@ fun NotificationsRoute(
     NotificationsScreen(
         state = state,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpen = onOpen,
         modifier = modifier,

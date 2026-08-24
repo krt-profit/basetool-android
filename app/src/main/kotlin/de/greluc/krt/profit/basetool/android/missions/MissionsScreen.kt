@@ -41,6 +41,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
@@ -74,6 +75,7 @@ const val MISSIONS_SEARCH_TAG: String = "missions-search"
  * @param onIncludePastChanged the "Vergangene" chip was tapped.
  * @param onResetFilters the reset chip was tapped.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the "load more" control was tapped.
  * @param onOpenMission a row was tapped.
  * @param onOpenOperations the Operationen half of the segment was tapped.
@@ -88,6 +90,7 @@ fun MissionsScreen(
     onIncludePastChanged: (Boolean) -> Unit,
     onResetFilters: () -> Unit,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenOperations: () -> Unit,
@@ -122,14 +125,29 @@ fun MissionsScreen(
             }
 
             is MissionsPhase.Failed -> {
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_target,
-                    title = stringResource(R.string.missions_error_title),
-                    message = stringResource(R.string.missions_error_message),
-                    actionText = stringResource(R.string.missions_retry),
-                    onAction = onRefresh,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                )
+                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                // empty state, because a countdown in front of a 403 promises a retry that will
+                // answer exactly the same.
+                val retryIn = state.retryIn
+                if (retryIn != null) {
+                    KrtRetryCountdown(
+                        secondsLeft = retryIn,
+                        title = stringResource(R.string.retry_busy_title),
+                        message = stringResource(R.string.retry_busy_message, retryIn),
+                        retryLabel = stringResource(R.string.retry_now),
+                        onRetry = onRetryNow,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                } else {
+                    KrtEmptyState(
+                        iconRes = DesignR.drawable.ic_krt_target,
+                        title = stringResource(R.string.missions_error_title),
+                        message = stringResource(R.string.missions_error_message),
+                        actionText = stringResource(R.string.missions_retry),
+                        onAction = onRefresh,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                }
             }
 
             is MissionsPhase.Ready -> {
@@ -511,6 +529,7 @@ fun MissionsRoute(
         onIncludePastChanged = viewModel::onIncludePastChanged,
         onResetFilters = viewModel::onResetFilters,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpenMission = onOpenMission,
         onOpenOperations = onOpenOperations,

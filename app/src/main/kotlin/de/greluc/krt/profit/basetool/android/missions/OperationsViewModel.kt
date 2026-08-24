@@ -16,6 +16,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OperationSource
 import de.greluc.krt.profit.basetool.android.core.data.OperationStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +59,7 @@ sealed interface OperationsPhase {
  * @property hasMore whether the server has another page
  * @property loadingMore whether that next page is in flight
  * @property refreshing whether a pull-to-refresh is running over an already-populated list
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  */
 data class OperationsState(
     val query: OperationQuery = OperationQuery.NONE,
@@ -69,6 +71,7 @@ data class OperationsState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
 ) {
     /** Whether the member has narrowed anything, read from the typed term so reset appears at once. */
     val isNarrowed: Boolean get() = query.isNarrowed || searchText.isNotBlank()
@@ -99,6 +102,24 @@ class OperationsViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<OperationsState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     private val typedText = MutableStateFlow("")
 
@@ -236,6 +257,7 @@ class OperationsViewModel(
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        retry.onSuccess()
                     }
 
                     is ApiResult.Failure -> {
@@ -246,6 +268,7 @@ class OperationsViewModel(
                                 loadingMore = false,
                                 refreshing = false,
                             )
+                        retry.onFailure(result.error, hasContent = keepRows)
                     }
                 }
             }

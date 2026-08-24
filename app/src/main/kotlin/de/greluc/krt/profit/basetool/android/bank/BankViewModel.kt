@@ -21,6 +21,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +59,15 @@ data class BankAccountsState(
     val accounts: List<BankAccountSummary> = emptyList(),
     val phase: BankPhase = BankPhase.Loading,
     val refreshing: Boolean = false,
+    /**
+     * Seconds until the automatic retry, or `null` when none is pending.
+     *
+     * Only ever set while the **first** load has failed with a retryable status. A screen that
+     * already has accounts on it keeps them and gets its banner instead — replacing loaded content
+     * with a countdown would take away what the member was reading to tell them something they can
+     * see without losing their place (design chapter 14).
+     */
+    val retryIn: Int? = null,
 )
 
 /**
@@ -130,6 +140,25 @@ class BankViewModel(
         reload(keepContent = false)
     }
 
+    /**
+     * The chapter-14 retry ladder for this screen's first load.
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen, and the copy this class used to hold is what [FirstLoadRetry] was extracted
+     * from.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepContent = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
+
     /** Re-reads the accounts, keeping what is on screen while it runs. */
     fun onRefresh() {
         mutableState.value = mutableState.value.copy(refreshing = true)
@@ -149,6 +178,7 @@ class BankViewModel(
         viewModelScope.launch {
             when (val result = source.balances()) {
                 is ApiResult.Success -> {
+                    retry.onSuccess()
                     mutableState.value =
                         BankAccountsState(accounts = result.value, phase = BankPhase.Ready)
                 }
@@ -160,6 +190,7 @@ class BankViewModel(
                             phase = BankPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    retry.onFailure(result.error, hasContent = keepContent)
                 }
             }
         }

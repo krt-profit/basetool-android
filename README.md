@@ -64,6 +64,38 @@ rather than once per release with the one key that cannot be regenerated. The wo
 third-party action is pinned to a full commit SHA. Details and the deliberately-still-open gates:
 [`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) § 4.
 
+## Installing, and checking what you installed
+
+Distribution is **GitHub Releases plus [Obtainium](https://github.com/ImranR98/Obtainium)**. There
+is no Play Store listing, which means none of the checks a store would perform happen — so the
+release publishes everything needed to make them yourself.
+
+**Three things travel with every release**, and each answers a different question:
+
+| | Answers |
+|---|---|
+| the APK's **SHA-256**, in the release notes | is this the file that release built? |
+| the **signing certificate's SHA-256**, below and in the notes | did it come from us? |
+| a GitHub **build attestation** | did *this* workflow, on *this* commit, produce it? |
+
+The certificate fingerprint is the one that matters most and the one to bookmark. Android refuses an
+update signed by a different key, so a changed fingerprint is either a key rotation announced here
+first, or an APK that is not ours.
+
+```
+Signaturzertifikat SHA-256: published with the first release (v0.1.0)
+```
+
+The attestation is checkable offline with the GitHub CLI:
+
+```bash
+gh attestation verify basetool-<version>.apk --repo krt-profit/basetool-android
+```
+
+**The app pins its TLS.** All three production hosts are pinned to the two Let's Encrypt roots
+(`app/src/main/res/xml/network_security_config.xml`); what that does and does not protect against,
+and how to rotate it, is in [`docs/ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) § 5.1.
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) — one-time [CLA](CLA.md) signature

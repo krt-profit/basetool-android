@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -136,6 +137,7 @@ sealed interface ShipEditor {
  * @property hasMore whether that half has another page
  * @property loadingMore whether it is in flight
  * @property refreshing whether a pull-to-refresh is running over rows already on screen
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  */
 data class HangarState(
     val segment: HangarSegment = HangarSegment.MINE,
@@ -149,6 +151,7 @@ data class HangarState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val online: Boolean = true,
     val editor: ShipEditor = ShipEditor.Closed,
     val hulls: List<ShipTypeOption> = emptyList(),
@@ -185,6 +188,24 @@ class HangarViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<HangarState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * One ladder for both segments, because they share one phase: a member who switches while
+     * a countdown runs is looking at the same failed screen with a different heading.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     private val typedText = MutableStateFlow("")
 
@@ -367,6 +388,7 @@ class HangarViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
@@ -377,6 +399,7 @@ class HangarViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                retry.onFailure(result.error, hasContent = false)
             }
         }
     }
@@ -399,6 +422,7 @@ class HangarViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
@@ -409,6 +433,7 @@ class HangarViewModel(
                         loadingMore = false,
                         refreshing = false,
                     )
+                retry.onFailure(result.error, hasContent = false)
             }
         }
     }
