@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.notifications
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
@@ -106,24 +107,22 @@ class SystemNotifier(
      */
     private fun intentFor(route: String?): PendingIntent {
         val target = route ?: INBOX_ROUTE
-        // Built explicit from the CONSTRUCTOR, not made explicit afterwards. Both forms bind the
-        // same component at runtime, and only this one is visibly explicit to a reader and to
-        // static analysis: `setClass` inside an `apply` block is a mutation CodeQL's
-        // implicit-PendingIntent query does not follow, so the earlier version fixed the intent
-        // and left the alert standing -- which is its own kind of defect, because the next person
-        // has to re-derive whether the finding is real.
+        // Component AND package, assigned as plain statements rather than inside an `apply`.
         //
-        // Why it matters at all: a PendingIntent is handed to the system to fire on our behalf, so
-        // an implicit one inside it is a blank cheque against whatever resolves it. The activity
-        // is known here; nothing needs to resolve anything.
+        // A PendingIntent is handed to the system to fire on our behalf, so an implicit intent
+        // inside one is a blank cheque against whatever resolves it. The activity is known here;
+        // nothing needs to resolve anything. All three forms tried -- `package` alone, `setClass`
+        // in an `apply`, the `Intent(Context, Class)` constructor -- bind correctly at runtime,
+        // and the first two left CodeQL's implicit-PendingIntent query still reporting. An alert
+        // that survives its own fix is its own defect: the next reader has to re-derive whether
+        // the finding is real, and after the third round the readable form is the one written out
+        // in full.
         //
         // The deep link stays as the intent's DATA, which is what the nav graph routes on.
-        val intent =
-            Intent(context, MainActivity::class.java).apply {
-                action = Intent.ACTION_VIEW
-                data = "$KRT_DEEP_LINK_SCHEME://$target".toUri()
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
+        val intent = Intent(Intent.ACTION_VIEW, "$KRT_DEEP_LINK_SCHEME://$target".toUri())
+        intent.component = ComponentName(context, MainActivity::class.java)
+        intent.setPackage(context.packageName)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         return PendingIntent.getActivity(
             context,
             target.hashCode(),
