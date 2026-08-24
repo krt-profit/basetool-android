@@ -122,7 +122,16 @@ and `advanceUntilIdle()` never returns. Use `runCurrent()`, and cancel the scope
   Benachrichtigungen, Mein Inventar, Blueprints, Bank, Materialbörse, Raffinerie list and detail.
   That is the whole list — a screen added later without it is the defect this line exists to make
   visible.
-- [ ] **Walked on a device** — outstanding (#67).
+- [x] **Walked on a device** (2026-08-24), against a real rate-limited server rather than a fake
+  one: the ring showed the server's own `Retry-After` — 26, then 19 four seconds later — beside
+  „Der Server ist ausgelastet. Automatischer Neuversuch in 26 s.", with the manual retry offered.
+  Producing the 429 needed the test stack's per-IP budget squeezed to a handful of requests; a
+  server nobody can rate-limit is a rule nobody can check.
+
+  That walk found the reason the rule had never actually held: the backend answered a 429 with
+  `X-Rate-Limit-Retry-After-Seconds` and **no `Retry-After`**, so „429 uses the server's
+  `Retry-After`" was unreachable however correct the client was. Fixed in the main repo; the app
+  needed no change.
 
 ---
 
@@ -162,6 +171,9 @@ plus Obtainium (plan Q1), so the button opens the release page the server names.
 - [x] The policy is read once however often the gate is composed.
 - [x] A newer build being available is not treated as a refusal — the two numbers stay apart, or
   every release would be a forced one.
-- [ ] **Walked on a device** — outstanding (#67).
+- [x] **Walked on a device** (2026-08-24): with the floor set above the installed build the wall
+  appeared with its call to action, back left the app, and clearing the floor let it run again.
+  Setting the floor at all needed a compose passthrough that did not exist — REQ-API-010 promised
+  an env var and a restart, and the variable reached nothing.
 
 **Code:** `UpdateGate`, `UpdateGateViewModel`, `AppVersionRepository`

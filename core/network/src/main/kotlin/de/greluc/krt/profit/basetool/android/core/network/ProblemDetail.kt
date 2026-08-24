@@ -48,7 +48,7 @@ data class ProblemDetail(
      * logcat is app-private only until a bugreport or an OEM collector picks it up.
      *
      * Overriding here rather than editing fifty call sites is deliberate: the next call site gets
-     * it for free, and a `${'$'}{result.error}` in a log line stays the obvious thing to write.
+     * it for free, and a `\${result.error}` in a log line stays the obvious thing to write.
      * [IdTokenClaims], [PkceChallenge] and [AuthorizationRequest] suppress their own sensitive
      * halves the same way.
      *
@@ -58,7 +58,7 @@ data class ProblemDetail(
      * @return the identifying fields, without the descriptive ones.
      */
     override fun toString(): String =
-        "ProblemDetail(code=${'$'}code, status=${'$'}status, correlationId=${'$'}correlationId)"
+        "ProblemDetail(code=$code, status=$status, correlationId=$correlationId)"
 
     companion object {
         /** No valid session: the caller must re-authenticate. */
