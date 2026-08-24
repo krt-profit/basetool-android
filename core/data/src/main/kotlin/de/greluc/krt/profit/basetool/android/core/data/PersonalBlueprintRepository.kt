@@ -10,8 +10,10 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintCraftabilityDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintProductDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintRequirementIngredientDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponsePersonalBlueprintResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintCreateRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintRecipeResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -195,6 +197,14 @@ interface PersonalBlueprintSource {
      * @return the matches, capped by the server.
      */
     suspend fun products(query: String): ApiResult<List<BlueprintProduct>>
+
+    /**
+     * Reads the recipe of one owned blueprint — its ingredients and their required quality.
+     *
+     * @param id the owned-blueprint row, resolved server-side against the caller's own.
+     * @return the recipe, or a failure the detail pane can show.
+     */
+    suspend fun recipe(id: String): ApiResult<BlueprintRecipe>
 }
 
 /**
@@ -293,6 +303,21 @@ class PersonalBlueprintRepository(
         }
 
     override suspend fun remove(id: String): ApiResult<Unit> = reader.delete("$PATH/$id")
+
+    /**
+     * Reads one blueprint's recipe.
+     *
+     * @param id the owned-blueprint row.
+     * @return the recipe, or the classified failure.
+     */
+    override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> =
+        when (
+            val result =
+                reader.get("$PATH/$id/recipe", PersonalBlueprintRecipeResponse.serializer())
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
 
     override suspend fun products(query: String): ApiResult<List<BlueprintProduct>> {
         val params = listOf(QUERY_PARAM to query.trim(), LIMIT_PARAM to PRODUCT_LIMIT.toString())
@@ -407,3 +432,80 @@ private fun BlueprintProductDto.toModel(): BlueprintProduct? {
         owned = ownedByCurrentUser == true,
     )
 }
+
+/**
+ * What one owned blueprint is made of.
+ *
+ * @property productName what the blueprint produces.
+ * @property variantCount how many variants the recipe covers; `1` for a plain one.
+ * @property ingredients every ingredient, flattened out of the server's requirement groups.
+ */
+data class BlueprintRecipe(
+    val productName: String,
+    val variantCount: Int,
+    val ingredients: List<BlueprintIngredient>,
+)
+
+/**
+ * One ingredient of a recipe.
+ *
+ * **Both quantities are carried, not one plus a conversion.** They are the same amount in two
+ * scales, and converting between them in the client is exactly the mistake that produced the
+ * refinery's hundred-fold stock bug. A column labelled SCU renders [quantityScu]; a column
+ * labelled units renders [quantityUnits].
+ *
+ * @property name the material.
+ * @property kind what sort of ingredient it is, as the server names it.
+ * @property quantityScu the amount in SCU, when the server states one.
+ * @property quantityUnits the amount in whole units, when the server states one.
+ * @property minQuality the lowest quality grade that still satisfies the requirement, or `null`
+ *   when the ingredient has no quality dimension.
+ * @property groupName the requirement group it came from, kept so a grouped recipe can still be
+ *   read as one list without losing which alternative an ingredient belongs to.
+ */
+data class BlueprintIngredient(
+    val name: String,
+    val kind: String?,
+    val quantityScu: Double?,
+    val quantityUnits: Int?,
+    val minQuality: Int?,
+    val groupName: String?,
+)
+
+/**
+ * Maps the wire recipe onto the model, flattening the requirement groups.
+ *
+ * The server sends ingredients twice over: once at the top level and once inside each requirement
+ * group. Both are taken, keyed by name and group so an ingredient that appears in two groups stays
+ * two rows — collapsing them would hide that the recipe offers a choice.
+ *
+ * @return the model.
+ */
+private fun PersonalBlueprintRecipeResponse.toModel(): BlueprintRecipe {
+    val flat =
+        ingredients.orEmpty().map { it.toModel(groupName = null) } +
+            requirementGroups.orEmpty().flatMap { group ->
+                group.ingredients.orEmpty().map { it.toModel(groupName = group.name) }
+            }
+    return BlueprintRecipe(
+        productName = productName.orEmpty(),
+        variantCount = variantCount ?: 1,
+        ingredients = flat.filter { it.name.isNotBlank() },
+    )
+}
+
+/**
+ * Maps one wire ingredient.
+ *
+ * @param groupName the requirement group it sits in, or `null` at the top level.
+ * @return the model.
+ */
+private fun BlueprintRequirementIngredientDto.toModel(groupName: String?): BlueprintIngredient =
+    BlueprintIngredient(
+        name = name.orEmpty(),
+        kind = kind,
+        quantityScu = quantityScu,
+        quantityUnits = quantityUnits,
+        minQuality = minQuality,
+        groupName = groupName,
+    )

@@ -14,17 +14,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -32,7 +34,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.window.core.layout.WindowSizeClass
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
@@ -44,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavi
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
@@ -62,22 +64,8 @@ import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventory
 import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
-
-/**
- * Whether the current window is wide enough for the navigation rail and list-detail layouts.
- *
- * The expanded breakpoint (840 dp) is where a tablet in landscape sits; below it the app uses the
- * bottom bar. Orientation is never locked above 600 dp — Android 16 ignores such requests anyway —
- * so this recomposes when the window changes and the shell swaps without losing state.
- *
- * @return `true` for expanded and wider windows.
- */
-@Composable
-private fun isExpandedWindow(): Boolean =
-    currentWindowAdaptiveInfoV2()
-        .windowSizeClass
-        .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
 /**
  * The application shell: top bar, navigation surface and the content of the active destination.
@@ -142,7 +130,7 @@ fun BasetoolApp(
     val currentRoute = backStackEntry?.destination?.route
     val current = destinationOf(currentRoute) ?: KrtDestination.Home
     val root = rootOf(current)
-    val expanded = isExpandedWindow()
+    val expanded = isWideWindow()
     var orgSwitcherOpen by rememberSaveable { mutableStateOf(false) }
 
     // The badge and the inbox read one state, so they cannot disagree — a member seeing "3 neu"
@@ -228,8 +216,16 @@ fun BasetoolApp(
                 notificationCount = unreadCount,
                 onNotificationsClick = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
             )
-            Box(modifier = Modifier.weight(1f)) {
+            // The content column caps at 1200 dp and centres; the top and bottom chrome keep
+            // spanning the full width. Foundations ch. 01 § 5 asks for exactly this, and the
+            // token existed while nothing applied it — on a 1280 dp tablet every list ran edge
+            // to edge, which is the readability problem the cap is there to prevent.
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.TopCenter,
+            ) {
                 BasetoolNavHost(
+                    modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
                     navController = navController,
                     onOpenDestination = { navController.navigateToTopLevel(it.route) },
                     onLogout = onLogout,

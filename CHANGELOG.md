@@ -4,6 +4,14 @@
 
 ### Added
 
+
+
+
+
+- **Das Tablet nutzt die Breite jetzt so, wie es der Entwurf vorsieht.** Einsätze, Aufträge, Raffinerie und Bank zeigen die Liste neben dem Detail; die Übersicht wird zweispaltig, der Posteingang bekommt eine schmalere Lesespalte, die Nutzungsbedingungen stehen neben ihrer Zustimmungsleiste, und Blueprints zeigen rechts das Rezept mit der geforderten Qualität je Zutat. Auf dem Telefon ändert sich nichts.
+- **Der Hangar zeigt auf dem Tablet die volle Tabelle statt Karten.** Dieselben Spalten wie im Browser — Typ, Name, Versicherung, Ort, Ausgebaut — und ein Klick auf die Zeile öffnet den Editor wie auf dem Telefon.
+- **Die Haupt-Aktion einer Liste sitzt jetzt als quadratische Schaltfläche unten rechts.** Hangar, Lager, Mein Inventar und Materialbörse hatten sie in einer Kopfzeile, die auf dem Telefon Suche und Filter nach unten schob, bevor ein einziges Ergebnis zu sehen war.
+- **Der Posteingang lässt sich jetzt bedienen.** Einzelne Benachrichtigungen als gelesen markieren oder löschen — per Wischgeste oder über die Knöpfe in der Zeile — dazu „Alle als gelesen markieren" und „Gelesene löschen". Ein Löschen lässt sich fünf Sekunden lang rückgängig machen (REQ-APP-NOTIF-011, REQ-APP-NOTIF-012).
 - **Die App erfährt jetzt, wenn ihre Version nicht mehr bedient wird.** Ist der Build zu alt, erscheint „Update erforderlich" mit dem Weg zur Download-Seite statt eines unverständlichen Fehlers. Ohne Antwort vom Server läuft die App normal weiter, und gespeicherte Daten bleiben in jedem Fall erhalten (REQ-APP-UI-004).
 
 - **Die Materialbörse ist in der App.** Angebote und Gesuche org-weit, „Ich kann liefern" als Umschalter mit jederzeitiger Rücknahme, eigene Einträge mit „Zurückziehen", und beide Erstellen-Dialoge — das Angebot mit Vorschlägen aus dem eigenen Lagerbestand. Übergabe und Ort bleiben wie im Web außerhalb des Tools.

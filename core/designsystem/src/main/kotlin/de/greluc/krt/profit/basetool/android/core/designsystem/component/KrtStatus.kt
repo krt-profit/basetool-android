@@ -27,6 +27,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -405,17 +407,26 @@ fun KrtPresenceIndicator(
     modifier: Modifier = Modifier,
     count: Int? = null,
 ) {
-    val transition = rememberInfiniteTransition(label = "krt-presence")
-    val pulse by transition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.3f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(PRESENCE_PULSE_MS),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "krt-presence-alpha",
-    )
+    // Unlike the loading spinner, this pulse carries no information the text does not already
+    // give — it is the one purely decorative animation in the app, so reduced motion stops it
+    // outright rather than shortening it. A zero-duration infinite repeat would spin the
+    // animation clock forever without ever settling, so the transition is skipped entirely.
+    val reducedMotion = KrtTheme.motionMs == 0
+    val pulse by
+        if (reducedMotion) {
+            remember { mutableFloatStateOf(1f) }
+        } else {
+            rememberInfiniteTransition(label = "krt-presence").animateFloat(
+                initialValue = 1f,
+                targetValue = 0.3f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(PRESENCE_PULSE_MS),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "krt-presence-alpha",
+            )
+        }
 
     Row(
         modifier = modifier,

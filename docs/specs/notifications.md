@@ -4,9 +4,14 @@
 > **Server contract:** main repo `REQ-API-009`, `REQ-NOTIF-010` (the stream), `REQ-NOTIF-019` (newest 50)
 > **Related:** [`api-contract.md`](api-contract.md)
 
-The inbox, the bell badge and the push channel behind both. **Read-only**: marking read, deleting
-and the swipe gestures are mutations and belong to Phase 3, so this inbox shows state and offers no
-action on it.
+The inbox, the bell badge and the push channel behind both. **Fully interactive** since 2026-08-24:
+marking read, deleting, „Alle als gelesen markieren", „Gelesene löschen" and the two swipe gestures.
+
+It was read-only until then, and the reason recorded here was that those were "mutations and belong
+to Phase 3". Phase 3 shipped without them and nobody lifted the deferral, so a sentence that
+described a plan ended up describing nothing — the gap it justified had outlived the plan. The four
+endpoints existed the whole time; what was missing was their place on the frozen contract and the
+API vhost's allow-list.
 
 ---
 
@@ -250,10 +255,45 @@ can honestly maintain.
 **Code:** `app/…/notifications/KrtNotificationChannels.kt`, `SystemNotifier.kt`,
 `NotificationPermission.kt`
 
+### REQ-APP-NOTIF-011 — Every inbox action reaches the member before the network
+
+Marking read, deleting and both bulk actions apply to the visible state first and call afterwards.
+A failure restores exactly what was there, field by field — a failed mark-read puts back the row's
+**previous** read flag rather than setting "unread", so a race cannot manufacture an unread row out
+of one that was already read.
+
+**A delete is the one that waits.** The server has no un-delete, so an undo offered after the call
+would be a button that cannot do what it says. The row leaves the list at once, the call is
+scheduled five seconds out, and „Rückgängig" cancels it. The delete therefore lands five seconds
+late, which nothing depends on, and the take-back is real, which the member does depend on. A
+second delete commits the first rather than holding two; leaving the screen commits a pending one,
+because a member who deletes and immediately leaves must not find the row back on return.
+
+„Gelesene löschen" has no undo window, deliberately: it names exactly what it removes, touches
+nothing the member has not already seen, and holding an unbounded number of rows to offer a
+take-back would be a different feature.
+
+Both bulk actions take the new badge value from the server's own `unreadCount` rather than assuming
+zero — another device may have produced an unread row while the call was in flight.
+
+**Code:** `app/…/notifications/NotificationsViewModel.kt`,
+`core/data/…/NotificationRepository.kt`
+
+### REQ-APP-NOTIF-012 — The swipe is the fast path, never the only path
+
+Swipe right marks read (green reveal), swipe left deletes (red reveal). Reveal at 88 dp, commit at
+50 % of the row width or on a fling, spring back over `KrtTheme.motionMs` — which is `0` under
+reduced motion, so the row snaps instead of gliding.
+
+Every row also carries the two actions as 48 dp icon buttons. They are **not** a fallback to be
+dropped once the gesture works: a gesture is invisible to a screen reader and hard for anyone with
+a motor impairment, and the design's own handoff says the buttons remain for assistive technology.
+
+**Code:** `core/designsystem/…/component/KrtRows.kt` (`KrtSwipeableRow`),
+`app/…/notifications/NotificationsScreen.kt`
+
 ## Known gaps, stated rather than omitted
 
-- **No mark-read, no delete, no swipe, no "Alle gelesen".** All are mutations (Phase 3). The design's
-  inbox is fully interactive; this one deliberately is not.
 - **No system notification shade.** Design ch. 14, and the plan's Q2 decision rules out a push
   channel entirely — the app has no Firebase and will not get one.
 - **The unread preview on the dashboard** is part of the Dashboard slice, which reads this same view

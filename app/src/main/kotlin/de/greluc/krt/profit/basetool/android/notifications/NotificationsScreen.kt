@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,13 +43,19 @@ import de.greluc.krt.profit.basetool.android.core.data.Notification
 import de.greluc.krt.profit.basetool.android.core.data.NotificationKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSwipeAction
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSwipeableRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -62,17 +69,27 @@ private val UNREAD_BAR = 3.dp
 private val TYPE_ICON = 20.dp
 
 /**
- * The notification inbox (design spec ch. 07), read-only.
+ * The notification inbox (design spec ch. 07), fully interactive.
  *
- * **No mark-read, no delete, no swipe.** All three are mutations and belong to Phase 3; the design's
- * inbox is fully interactive and this one deliberately is not. A row shows whether it is unread and
- * opens its subject, which is what a read-only inbox can honestly offer.
+ * Every action reaches the member before the network does: a row flips read, or leaves the list, on
+ * the spot. A delete is the one that can be taken back — the row goes at once and the call waits
+ * five seconds, because the server cannot un-delete and an undo offered after the call would be a
+ * button that cannot do what it says.
+ *
+ * **Both actions exist twice, and that is the point.** Swiping is the fast path; the two icon
+ * buttons on every row are the reachable one. A gesture is invisible to a screen reader and hard
+ * for anyone with a motor impairment, so the buttons are not a fallback to be dropped later.
  *
  * @param state what to draw.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onOpen a row was tapped; the host decides whether its subject has a screen yet.
+ * @param onMarkRead mark one notification read.
+ * @param onMarkAllRead mark every unread notification read.
+ * @param onDelete delete one notification, with the undo window.
+ * @param onDeleteRead delete every already-read notification.
+ * @param onUndoDelete take the pending delete back.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,77 +100,130 @@ fun NotificationsScreen(
     onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     onOpen: (Notification) -> Unit,
+    onMarkRead: (String) -> Unit,
+    onMarkAllRead: () -> Unit,
+    onDelete: (String) -> Unit,
+    onDeleteRead: () -> Unit,
+    onUndoDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        if (state.unread > 0) {
-            Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.notifications_unread,
-                        state.unread.toInt(),
-                        state.unread,
-                    ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-            )
-        }
-
-        when (state.phase) {
-            is NotificationsPhase.Loading -> {
-                KrtLoadingIndicator(
-                    text = stringResource(R.string.notifications_title),
-                    modifier = Modifier.fillMaxSize(),
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        // Narrower than the app-wide 1200 dp cap, because design ch. 07 says so: an inbox is a
+        // column of sentences, and a sentence that runs the full width of a tablet is harder to
+        // read than one that does not. The global cap is a maximum, not a target.
+        // widthIn BEFORE fillMaxSize, not after. The other order fixes the width to the parent's
+        // maximum first, leaving widthIn nothing to shrink — the cap silently does nothing, which
+        // is how it shipped and what a 1280 dp tablet showed: rows running the full width.
+        Column(modifier = Modifier.widthIn(max = INBOX_COLUMN_MAX).fillMaxSize()) {
+            if (state.unread > 0) {
+                Text(
+                    text =
+                        pluralStringResource(
+                            R.plurals.notifications_unread,
+                            state.unread.toInt(),
+                            state.unread,
+                        ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
                 )
             }
-
-            is NotificationsPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // empty state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
-                val retryIn = state.retryIn
-                if (retryIn != null) {
-                    KrtRetryCountdown(
-                        secondsLeft = retryIn,
-                        title = stringResource(R.string.retry_busy_title),
-                        message = stringResource(R.string.retry_busy_message, retryIn),
-                        retryLabel = stringResource(R.string.retry_now),
-                        onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            if (state.phase is NotificationsPhase.Ready && state.notifications.isNotEmpty()) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                ) {
+                    KrtGhostButton(
+                        text = stringResource(R.string.notifications_mark_all_read),
+                        onClick = onMarkAllRead,
+                        enabled = state.unread > 0,
                     )
-                } else {
-                    KrtEmptyState(
-                        iconRes = DesignR.drawable.ic_krt_bell,
-                        title = stringResource(R.string.notifications_error_title),
-                        message = stringResource(R.string.notifications_error_message),
-                        actionText = stringResource(R.string.missions_retry),
-                        onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    KrtGhostButton(
+                        text = stringResource(R.string.notifications_delete_read),
+                        onClick = onDeleteRead,
+                        enabled = state.notifications.any { it.read },
                     )
                 }
             }
 
-            is NotificationsPhase.Ready -> {
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (state.notifications.isEmpty()) {
-                        KrtRefreshableFill {
-                            KrtEmptyState(
-                                iconRes = DesignR.drawable.ic_krt_bell,
-                                title = stringResource(R.string.notifications_empty_title),
-                                message = stringResource(R.string.notifications_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.lg),
+            when (state.phase) {
+                is NotificationsPhase.Loading -> {
+                    KrtLoadingIndicator(
+                        text = stringResource(R.string.notifications_title),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                is NotificationsPhase.Failed -> {
+                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                    // empty state, because a countdown in front of a 403 promises a retry that will
+                    // answer exactly the same.
+                    val retryIn = state.retryIn
+                    if (retryIn != null) {
+                        KrtRetryCountdown(
+                            secondsLeft = retryIn,
+                            title = stringResource(R.string.retry_busy_title),
+                            message = stringResource(R.string.retry_busy_message, retryIn),
+                            retryLabel = stringResource(R.string.retry_now),
+                            onRetry = onRetryNow,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    } else {
+                        KrtEmptyState(
+                            iconRes = DesignR.drawable.ic_krt_bell,
+                            title = stringResource(R.string.notifications_error_title),
+                            message = stringResource(R.string.notifications_error_message),
+                            actionText = stringResource(R.string.missions_retry),
+                            onAction = onRefresh,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    }
+                }
+
+                is NotificationsPhase.Ready -> {
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (state.notifications.isEmpty()) {
+                            KrtRefreshableFill {
+                                KrtEmptyState(
+                                    iconRes = DesignR.drawable.ic_krt_bell,
+                                    title = stringResource(R.string.notifications_empty_title),
+                                    message = stringResource(R.string.notifications_empty_message),
+                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                )
+                            }
+                        } else {
+                            NotificationsList(
+                                state = state,
+                                onOpen = onOpen,
+                                onLoadMore = onLoadMore,
+                                onMarkRead = onMarkRead,
+                                onDelete = onDelete,
                             )
                         }
-                    } else {
-                        NotificationsList(state = state, onOpen = onOpen, onLoadMore = onLoadMore)
                     }
                 }
             }
+        }
+        // The undo sits above the list rather than inside it: the row it refers to is gone, so
+        // anchoring it to the list would anchor it to nothing.
+        if (state.pendingDelete != null) {
+            KrtToast(
+                title = stringResource(R.string.notifications_deleted_title),
+                message = stringResource(R.string.notifications_deleted_message),
+                actionLabel = stringResource(R.string.notifications_undo),
+                onAction = onUndoDelete,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(KrtSpacing.lg),
+            )
         }
     }
 }
@@ -164,16 +234,44 @@ fun NotificationsScreen(
  * @param state what to draw.
  * @param onOpen a row was tapped.
  * @param onLoadMore the next page was asked for.
+ * @param onMarkRead mark one notification read.
+ * @param onDelete delete one notification.
  */
 @Composable
 private fun NotificationsList(
     state: NotificationsState,
     onOpen: (Notification) -> Unit,
     onLoadMore: () -> Unit,
+    onMarkRead: (String) -> Unit,
+    onDelete: (String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(NOTIFICATIONS_LIST_TAG)) {
         items(state.notifications, key = { it.id }) { notification ->
-            NotificationRow(notification = notification, onClick = { onOpen(notification) })
+            KrtSwipeableRow(
+                onStartAction = if (notification.read) null else ({ onMarkRead(notification.id) }),
+                onEndAction = { onDelete(notification.id) },
+                startAction = {
+                    KrtSwipeAction(
+                        label = stringResource(R.string.notifications_swipe_read),
+                        iconRes = DesignR.drawable.ic_krt_check,
+                        background = KrtTheme.colors.success,
+                    )
+                },
+                endAction = {
+                    KrtSwipeAction(
+                        label = stringResource(R.string.notifications_swipe_delete),
+                        iconRes = DesignR.drawable.ic_krt_trash,
+                        background = KrtTheme.colors.danger,
+                    )
+                },
+            ) {
+                NotificationRow(
+                    notification = notification,
+                    onClick = { onOpen(notification) },
+                    onMarkRead = { onMarkRead(notification.id) },
+                    onDelete = { onDelete(notification.id) },
+                )
+            }
         }
         item(key = "footer") {
             if (state.hasMore) {
@@ -209,11 +307,15 @@ private fun NotificationsList(
  *
  * @param notification the notification.
  * @param onClick opens its subject.
+ * @param onMarkRead marks it read; the control is hidden once it is.
+ * @param onDelete deletes it, with the undo window.
  */
 @Composable
 private fun NotificationRow(
     notification: Notification,
     onClick: () -> Unit,
+    onMarkRead: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     Row(
         modifier =
@@ -257,8 +359,25 @@ private fun NotificationRow(
                 color = KrtPalette.TextMuted,
             )
         }
+        // Not a fallback for the swipe — the reachable path to the same two actions. Both are
+        // 48 dp targets, which is why the row's own press area stops short of them.
+        if (!notification.read) {
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_check,
+                label = stringResource(R.string.notifications_mark_read_action),
+                onClick = onMarkRead,
+            )
+        }
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_trash,
+            label = stringResource(R.string.notifications_delete_action),
+            onClick = onDelete,
+        )
     }
 }
+
+/** The inbox's own content width on a tablet (design ch. 07: "rail + 720 dp column"). */
+private val INBOX_COLUMN_MAX = 720.dp
 
 /** Height of the unread inset bar, matching a two-line row. */
 private val ROW_BAR_HEIGHT = 40.dp
@@ -338,6 +457,11 @@ fun NotificationsRoute(
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpen = onOpen,
+        onMarkRead = viewModel::onMarkRead,
+        onMarkAllRead = viewModel::onMarkAllRead,
+        onDelete = viewModel::onDelete,
+        onDeleteRead = viewModel::onDeleteRead,
+        onUndoDelete = viewModel::onUndoDelete,
         modifier = modifier,
     )
 }

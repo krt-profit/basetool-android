@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
@@ -53,6 +54,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefr
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -110,95 +112,91 @@ fun InventoryScreen(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        if (!state.online) {
-            OfflineBand()
-        }
-        Row(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md)) {
-            KrtFilterChip(
-                text = stringResource(R.string.inventory_with_stock_only),
-                selected = state.withStockOnly,
-                onClick = { onWithStockOnlyChanged(!state.withStockOnly) },
-            )
-        }
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = KrtSpacing.md, end = KrtSpacing.md, bottom = KrtSpacing.sm),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            KrtCtaButton(
-                text = stringResource(R.string.booking_mode_in),
-                onClick = onBookIn,
-                modifier =
-                    Modifier
-                        .testTag(INVENTORY_BOOK_TAG)
-                        .alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
-                enabled = state.online,
-            )
-        }
-
-        when (state.phase) {
-            is InventoryPhase.Loading -> {
-                KrtLoadingIndicator(
-                    text = stringResource(R.string.inventory_title),
-                    modifier = Modifier.fillMaxSize(),
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!state.online) {
+                OfflineBand()
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md)) {
+                KrtFilterChip(
+                    text = stringResource(R.string.inventory_with_stock_only),
+                    selected = state.withStockOnly,
+                    onClick = { onWithStockOnlyChanged(!state.withStockOnly) },
                 )
             }
 
-            is InventoryPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // empty state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
-                val retryIn = state.retryIn
-                if (retryIn != null) {
-                    KrtRetryCountdown(
-                        secondsLeft = retryIn,
-                        title = stringResource(R.string.retry_busy_title),
-                        message = stringResource(R.string.retry_busy_message, retryIn),
-                        retryLabel = stringResource(R.string.retry_now),
-                        onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                    )
-                } else {
-                    KrtEmptyState(
-                        iconRes = DesignR.drawable.ic_krt_crate,
-                        title = stringResource(R.string.inventory_error_title),
-                        message = stringResource(R.string.inventory_error_message),
-                        actionText = stringResource(R.string.missions_retry),
-                        onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            when (state.phase) {
+                is InventoryPhase.Loading -> {
+                    KrtLoadingIndicator(
+                        text = stringResource(R.string.inventory_title),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
-            }
 
-            is InventoryPhase.Ready -> {
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (state.visibleGroups.isEmpty()) {
-                        KrtRefreshableFill {
-                            InventoryEmpty(
-                                filtered = state.withStockOnly && state.groups.isNotEmpty(),
+                is InventoryPhase.Failed -> {
+                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                    // empty state, because a countdown in front of a 403 promises a retry that will
+                    // answer exactly the same.
+                    val retryIn = state.retryIn
+                    if (retryIn != null) {
+                        KrtRetryCountdown(
+                            secondsLeft = retryIn,
+                            title = stringResource(R.string.retry_busy_title),
+                            message = stringResource(R.string.retry_busy_message, retryIn),
+                            retryLabel = stringResource(R.string.retry_now),
+                            onRetry = onRetryNow,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    } else {
+                        KrtEmptyState(
+                            iconRes = DesignR.drawable.ic_krt_crate,
+                            title = stringResource(R.string.inventory_error_title),
+                            message = stringResource(R.string.inventory_error_message),
+                            actionText = stringResource(R.string.missions_retry),
+                            onAction = onRefresh,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    }
+                }
+
+                is InventoryPhase.Ready -> {
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (state.visibleGroups.isEmpty()) {
+                            KrtRefreshableFill {
+                                InventoryEmpty(
+                                    filtered = state.withStockOnly && state.groups.isNotEmpty(),
+                                )
+                            }
+                        } else {
+                            InventoryTree(
+                                state = state,
+                                onToggleGroup = onToggleGroup,
+                                onToggleStack = onToggleStack,
+                                onBookOut = onBookOut,
+                                online = state.online,
+                                onLoadMore = onLoadMore,
                             )
                         }
-                    } else {
-                        InventoryTree(
-                            state = state,
-                            onToggleGroup = onToggleGroup,
-                            onToggleStack = onToggleStack,
-                            onBookOut = onBookOut,
-                            online = state.online,
-                            onLoadMore = onLoadMore,
-                        )
                     }
                 }
             }
         }
+        KrtFab(
+            iconRes = DesignR.drawable.ic_krt_plus,
+            label = stringResource(R.string.booking_mode_in),
+            onClick = onBookIn,
+            enabled = state.online,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(KrtSpacing.lg)
+                    .padding(bottom = LocalKrtBottomBarInset.current)
+                    .testTag(INVENTORY_BOOK_TAG),
+        )
     }
 }
 

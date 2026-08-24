@@ -233,6 +233,8 @@
     <string name="operation_detail_error_title">System Malfunction</string>
     <string name="operation_detail_error_message">The Operation could not be loaded.</string>
     <!-- Benachrichtigungen (design chapter 07) -->
+    <string name="list_detail_none_title">Nothing selected</string>
+    <string name="list_detail_none_message">Pick an entry on the left to see it here.</string>
     <string name="notifications_title">Benachrichtigungen</string>
     <plurals name="notifications_unread">
         <item quantity="one">%1$d new</item>
@@ -250,6 +252,15 @@
     <string name="notifications_unread_marker">Unread</string>
     <!-- One per server-side notification type; mirrors the web app's notifications.type.* keys.
          Placeholders are NAMED because the two bundles order the values differently. -->
+    <string name="notifications_mark_all_read">Mark all as read</string>
+    <string name="notifications_delete_read">Delete read</string>
+    <string name="notifications_mark_read_action">Mark as read</string>
+    <string name="notifications_delete_action">Delete notification</string>
+    <string name="notifications_swipe_read">Read</string>
+    <string name="notifications_swipe_delete">Delete</string>
+    <string name="notifications_deleted_title">Deleted</string>
+    <string name="notifications_deleted_message">Notification deleted.</string>
+    <string name="notifications_undo">Undo</string>
     <string name="notifications_type_generic">New notification</string>
     <string name="notifications_type_job_order_created">New job order #{displayId} for {orgUnit}</string>
     <string name="notifications_type_job_order_updated">Job order #{displayId} for {orgUnit} was changed by requester {requester}</string>
@@ -295,6 +306,15 @@
         <item quantity="one">%1$d ship · %2$d fitted</item>
         <item quantity="other">%1$d ships · %2$d fitted</item>
     </plurals>
+    <string name="hangar_column_type">Type</string>
+    <string name="hangar_column_name">Name</string>
+    <string name="hangar_column_insurance">Insurance</string>
+    <string name="hangar_column_location">Location</string>
+    <string name="hangar_column_fitted">Fitted</string>
+    <string name="hangar_column_actions">Actions</string>
+    <string name="hangar_fitted_yes">Yes</string>
+    <string name="hangar_fitted_no">No</string>
+    <string name="hangar_value_unknown">—</string>
     <string name="hangar_end_of_list">End of list</string>
     <string name="hangar_empty_mine_title">No ship in the hangar</string>
     <string name="hangar_empty_mine_message">Add your first ship — its hull, its insurance and where it is parked.</string>
@@ -434,6 +454,19 @@
     <string name="blueprints_title">Blueprints</string>
     <string name="blueprints_tab_items">Items</string>
     <string name="blueprints_tab_blueprints">Blueprints</string>
+    <string name="blueprints_recipe_none">Pick a blueprint on the left to see its recipe.</string>
+    <string name="blueprints_recipe_loading">Loading recipe</string>
+    <string name="blueprints_recipe_error_title">Signal Lost</string>
+    <string name="blueprints_recipe_error_message">The recipe could not be loaded.</string>
+    <string name="blueprints_recipe_empty_title">No ingredients</string>
+    <string name="blueprints_recipe_empty_message">The server lists no ingredients for this blueprint.</string>
+    <string name="blueprints_recipe_quality">Q %1$d</string>
+    <plurals name="blueprints_recipe_units">
+        <item quantity="one">%1$d unit</item>
+        <item quantity="other">%1$d units</item>
+    </plurals>
+    <string name="blueprints_recipe_scu">%1$.2f SCU</string>
+    <string name="blueprints_edit">Edit</string>
     <string name="blueprints_search">Search blueprint</string>
     <string name="blueprints_add">Add</string>
     <string name="blueprints_remove">Remove</string>

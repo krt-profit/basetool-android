@@ -60,5 +60,16 @@ object KrtSpacing {
  *
  * The design system allows exactly this one motion: 200 ms colour/fade. No bounces, no parallax, no
  * decorative movement — and animations must be skipped when the system reports reduced motion.
+ *
+ * Do not pass this to `tween(...)` directly. Read `KrtTheme.motionMs`, which resolves to `0` on a
+ * device that asks for reduced motion; this constant is only the unreduced value it falls back to.
  */
 const val KRT_MOTION_MS = 200
+
+/**
+ * Opacity of the press highlight — white at 8 %, per the design system's single ripple rule.
+ *
+ * Applied to every interaction state through the theme's `RippleConfiguration`, not per component.
+ * Material's own default is a 8/10/10/16 % ladder, so leaving it unset renders presses at 10 %.
+ */
+const val KRT_RIPPLE_ALPHA = 0.08f

@@ -8,9 +8,14 @@
 package de.greluc.krt.profit.basetool.android.core.designsystem.component
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,24 +23,36 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Tint fill of a row in selection mode. */
 private const val SELECTED_ROW_ALPHA = 0.08f
@@ -336,8 +353,116 @@ fun KrtSwipeAction(
     }
 }
 
-/** Width of a revealed swipe action. */
-private val SWIPE_ACTION_WIDTH = 96.dp
+/** Width of a revealed swipe action — "Reveal bei 88 dp" (design ch. 07, Swipe spec). */
+private val SWIPE_ACTION_WIDTH = 88.dp
+
+/**
+ * Fraction of the row width a drag must pass before release commits the action.
+ *
+ * "Commit ab 50% Zugweite oder Fling; darunter federt die Zeile zurueck" — below it the row springs
+ * back, which is the "reveal, never auto-commit" rule of ch. 02 § 4 stated as a number.
+ */
+private const val SWIPE_COMMIT_FRACTION = 0.5f
+
+/** Release speed, in px/s, that commits regardless of how far the row was dragged. */
+private const val SWIPE_FLING_VELOCITY = 1000f
+
+/**
+ * Wraps a list row in the design system's two swipe actions.
+ *
+ * The gesture existed only as a picture until now: [KrtSwipeAction] drew the revealed tile and
+ * nothing ever moved a row, so the inbox had no swipe at all. The numbers here are the spec's, not
+ * defaults — reveal at [SWIPE_ACTION_WIDTH], commit at [SWIPE_COMMIT_FRACTION] of the row width or
+ * on a fling, and a spring-back over `KrtTheme.motionMs`.
+ *
+ * Committing is left to the caller and the row is **not** removed here. A delete is optimistic with
+ * a 5 s undo toast, so the list decides whether the row disappears; a "mark read" leaves it in
+ * place. Either way the row animates back to rest, because a row that stayed open after its action
+ * ran would read as though the action had not.
+ *
+ * Under reduced motion the spring-back has zero duration, so the row snaps home instead of gliding.
+ * The gesture itself is a finger tracking its own position and stays available — and the row's
+ * icon buttons remain the accessible path to both actions, which is what the spec requires of them
+ * anyway.
+ *
+ * @param onStartAction invoked on a committed left-to-right swipe (the green "gelesen" reveal);
+ *   `null` disables that direction.
+ * @param onEndAction invoked on a committed right-to-left swipe (the red "loeschen" reveal);
+ *   `null` disables that direction.
+ * @param startAction the tile revealed behind a left-to-right swipe.
+ * @param endAction the tile revealed behind a right-to-left swipe.
+ * @param modifier layout modifier.
+ * @param enabled when false the row does not move; used while a list is refreshing.
+ * @param content the row itself.
+ */
+@Composable
+fun KrtSwipeableRow(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onStartAction: (() -> Unit)? = null,
+    onEndAction: (() -> Unit)? = null,
+    startAction: @Composable (() -> Unit)? = null,
+    endAction: @Composable (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val offset = remember { Animatable(0f) }
+    val motionMs = KrtTheme.motionMs
+    var rowWidth by remember { mutableIntStateOf(0) }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .onSizeChanged { rowWidth = it.width },
+    ) {
+        // The revealed side is decided by the sign of the offset, so only one tile is ever
+        // composed — two would both be hit-testable under the row.
+        if (offset.value > 0f && startAction != null) {
+            Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.CenterStart) {
+                startAction()
+            }
+        } else if (offset.value < 0f && endAction != null) {
+            Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.CenterEnd) {
+                endAction()
+            }
+        }
+
+        Box(
+            modifier =
+                Modifier
+                    .offset { IntOffset(offset.value.roundToInt(), 0) }
+                    .draggable(
+                        enabled = enabled && (onStartAction != null || onEndAction != null),
+                        orientation = Orientation.Horizontal,
+                        state =
+                            rememberDraggableState { delta ->
+                                scope.launch {
+                                    val lower = if (onEndAction != null) -rowWidth.toFloat() else 0f
+                                    val upper = if (onStartAction != null) rowWidth.toFloat() else 0f
+                                    offset.snapTo((offset.value + delta).coerceIn(lower, upper))
+                                }
+                            },
+                        onDragStopped = { velocity ->
+                            val travelled = abs(offset.value)
+                            val committed =
+                                rowWidth > 0 &&
+                                    (
+                                        travelled >= rowWidth * SWIPE_COMMIT_FRACTION ||
+                                            abs(velocity) >= SWIPE_FLING_VELOCITY
+                                    ) &&
+                                    travelled >= SWIPE_ACTION_WIDTH.value
+                            if (committed) {
+                                if (offset.value > 0f) onStartAction?.invoke() else onEndAction?.invoke()
+                            }
+                            offset.animateTo(0f, tween(motionMs))
+                        },
+                    ),
+        ) {
+            content()
+        }
+    }
+}
 
 @Preview(name = "List rows", showBackground = true, backgroundColor = 0xFF000000)
 @Composable

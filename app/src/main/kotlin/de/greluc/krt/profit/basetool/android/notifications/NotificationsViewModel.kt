@@ -63,6 +63,23 @@ data class NotificationsState(
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
     val retryIn: Int? = null,
+    val pendingDelete: PendingDelete? = null,
+)
+
+/**
+ * A delete the member can still take back.
+ *
+ * The server has no way to un-delete a notification, so an undo offered *after* the call would be
+ * a button that cannot do what it says. The row leaves the list at once and the call is what
+ * waits: five seconds later it goes, and the undo cancels it before then. That makes the take-back
+ * real, at the cost of the delete landing five seconds late — which nothing depends on.
+ *
+ * @property notification the row that vanished, kept so it can come back unchanged.
+ * @property index where it was, so it returns to its place rather than to the top.
+ */
+data class PendingDelete(
+    val notification: Notification,
+    val index: Int,
 )
 
 /**
@@ -112,6 +129,7 @@ class NotificationsViewModel(
     }
 
     private var watchJob: Job? = null
+    private var undoJob: Job? = null
     private var pollJob: Job? = null
     private var inboxLoaded = false
 
@@ -139,6 +157,7 @@ class NotificationsViewModel(
 
     /** Stops the poll and closes the stream. Called when the app leaves the foreground. */
     fun onBackground() {
+        flushPendingDelete()
         pollJob?.cancel()
         pollJob = null
         watchJob?.cancel()
@@ -165,6 +184,201 @@ class NotificationsViewModel(
         inboxLoaded = true
         reload(keepRows = true)
         refreshUnread()
+    }
+
+    /**
+     * Marks one notification read, optimistically.
+     *
+     * The row flips and the badge drops before the call goes out, because the member has already
+     * seen the result they asked for. A failure restores the previous read flag rather than
+     * setting "unread", so a race cannot invent an unread row out of one that was already read.
+     *
+     * @param id the notification to mark.
+     */
+    fun onMarkRead(id: String) {
+        val before = mutableState.value
+        val row = before.notifications.firstOrNull { it.id == id } ?: return
+        if (row.read) {
+            return
+        }
+        mutableState.value =
+            before.copy(
+                notifications =
+                    before.notifications.map { if (it.id == id) it.copy(read = true) else it },
+                unread = (before.unread - 1).coerceAtLeast(0),
+            )
+        viewModelScope.launch {
+            // Only the failure path does anything: success is the state the list already shows.
+            val result = source.markRead(id)
+            if (result is ApiResult.Failure) {
+                KrtLog.w(LOG_TAG) { "mark-read failed: ${result.error}" }
+                val now = mutableState.value
+                mutableState.value =
+                    now.copy(
+                        notifications =
+                            now.notifications.map {
+                                if (it.id == id) it.copy(read = row.read) else it
+                            },
+                        unread = before.unread,
+                    )
+            }
+        }
+    }
+
+    /**
+     * Marks every unread notification read.
+     *
+     * The badge takes the server's own number rather than assuming zero: another device may have
+     * produced an unread row while this call was in flight, and claiming zero would hide it until
+     * the next poll.
+     */
+    fun onMarkAllRead() {
+        val before = mutableState.value
+        if (before.unread == 0L) {
+            return
+        }
+        mutableState.value =
+            before.copy(
+                notifications = before.notifications.map { it.copy(read = true) },
+                unread = 0,
+            )
+        viewModelScope.launch {
+            when (val result = source.markAllRead()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(unread = result.value.unreadCount)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "mark-all-read failed: ${result.error}" }
+                    reload(keepRows = true)
+                    refreshUnread()
+                }
+            }
+        }
+    }
+
+    /**
+     * Removes one notification from the list and schedules its delete.
+     *
+     * See [PendingDelete] for why the call waits. Starting a second delete commits the first at
+     * once: two pending rows would mean two toasts competing for one corner, and the toast should
+     * be about the member's most recent action.
+     *
+     * @param id the notification to delete.
+     */
+    fun onDelete(id: String) {
+        flushPendingDelete()
+        val before = mutableState.value
+        val index = before.notifications.indexOfFirst { it.id == id }
+        if (index < 0) {
+            return
+        }
+        val row = before.notifications[index]
+        mutableState.value =
+            before.copy(
+                notifications = before.notifications.filterNot { it.id == id },
+                total = (before.total - 1).coerceAtLeast(0),
+                unread = if (row.read) before.unread else (before.unread - 1).coerceAtLeast(0),
+                pendingDelete = PendingDelete(row, index),
+            )
+        undoJob =
+            viewModelScope.launch {
+                delay(UNDO_WINDOW_MS)
+                commitDelete(row.id)
+            }
+    }
+
+    /** Puts the pending row back where it was and cancels its delete. */
+    fun onUndoDelete() {
+        undoJob?.cancel()
+        undoJob = null
+        val current = mutableState.value
+        val pending = current.pendingDelete ?: return
+        val rows = current.notifications.toMutableList()
+        rows.add(pending.index.coerceIn(0, rows.size), pending.notification)
+        mutableState.value =
+            current.copy(
+                notifications = rows,
+                total = current.total + 1,
+                unread = if (pending.notification.read) current.unread else current.unread + 1,
+                pendingDelete = null,
+            )
+    }
+
+    /**
+     * Deletes every already-read notification.
+     *
+     * No undo window on this one, unlike a single row. It names exactly what it removes, it touches
+     * nothing the member has not already seen, and holding an unbounded number of rows in memory
+     * to offer a take-back would be a different feature. A failure reloads rather than guesses.
+     */
+    fun onDeleteRead() {
+        flushPendingDelete()
+        val before = mutableState.value
+        val kept = before.notifications.filterNot { it.read }
+        if (kept.size == before.notifications.size) {
+            return
+        }
+        mutableState.value =
+            before.copy(
+                notifications = kept,
+                total = (before.total - (before.notifications.size - kept.size)).coerceAtLeast(0),
+            )
+        viewModelScope.launch {
+            when (val result = source.deleteRead()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(unread = result.value.unreadCount)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "delete-read failed: ${result.error}" }
+                    reload(keepRows = true)
+                    refreshUnread()
+                }
+            }
+        }
+    }
+
+    /**
+     * Sends a pending delete now instead of waiting out its window.
+     *
+     * Runs when another delete starts and when the screen stops being looked at. Without it a
+     * member who deleted a row and immediately left would find it still there on return.
+     */
+    private fun flushPendingDelete() {
+        val pending = mutableState.value.pendingDelete ?: return
+        undoJob?.cancel()
+        undoJob = null
+        mutableState.value = mutableState.value.copy(pendingDelete = null)
+        viewModelScope.launch { commitDelete(pending.notification.id) }
+    }
+
+    /**
+     * Performs the delete and clears the undo state.
+     *
+     * A failure puts the row back. The list already said it was gone; leaving it gone while the
+     * server still holds it would show a state that no reload agrees with.
+     *
+     * @param id the notification to delete.
+     */
+    private suspend fun commitDelete(id: String) {
+        val pending = mutableState.value.pendingDelete
+        when (val result = source.delete(id)) {
+            is ApiResult.Success -> {
+                if (pending?.notification?.id == id) {
+                    mutableState.value = mutableState.value.copy(pendingDelete = null)
+                }
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "delete failed: ${result.error}" }
+                if (pending?.notification?.id == id) {
+                    onUndoDelete()
+                } else {
+                    reload(keepRows = true)
+                }
+            }
+        }
     }
 
     /**
@@ -310,6 +524,14 @@ class NotificationsViewModel(
 
         /** Ceiling for the reconnect delay. */
         const val MAX_BACKOFF_MS = 60_000L
+
+        /**
+         * How long the undo stays available, in milliseconds.
+         *
+         * Five seconds, from the design's swipe spec — and therefore also how late the delete
+         * itself lands.
+         */
+        private const val UNDO_WINDOW_MS = 5_000L
 
         /** Log subsystem. A notification's parameters can name a member and are never logged. */
         const val LOG_TAG = "notifications"

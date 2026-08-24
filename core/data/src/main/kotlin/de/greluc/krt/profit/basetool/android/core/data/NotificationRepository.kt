@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.NotificationBulkResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.NotificationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.NotificationUnreadCountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseNotificationDto
@@ -60,7 +61,52 @@ interface NotificationSource {
      *   completes when the server closes the stream, which it does every thirty minutes by design.
      */
     fun changes(): Flow<Unit>
+
+    /**
+     * Marks one notification read.
+     *
+     * @param id the notification to mark.
+     * @return success, or a failure the caller can roll its optimistic update back on.
+     */
+    suspend fun markRead(id: String): ApiResult<Unit>
+
+    /**
+     * Marks every unread notification of the caller read.
+     *
+     * @return how many rows changed and what the unread count is now, or a failure.
+     */
+    suspend fun markAllRead(): ApiResult<NotificationBulkResult>
+
+    /**
+     * Deletes one notification.
+     *
+     * @param id the notification to delete.
+     * @return success, or a failure the caller can restore the row on.
+     */
+    suspend fun delete(id: String): ApiResult<Unit>
+
+    /**
+     * Deletes every already-read notification of the caller.
+     *
+     * @return how many rows went and what the unread count is now, or a failure.
+     */
+    suspend fun deleteRead(): ApiResult<NotificationBulkResult>
 }
+
+/**
+ * What a bulk inbox action changed.
+ *
+ * The server answers both numbers in one response, which is why nothing here needs a follow-up
+ * read: [unreadCount] settles the badge from the same call that changed it, so the badge and the
+ * list cannot disagree in the window a second request would have opened.
+ *
+ * @property affected how many rows the action touched.
+ * @property unreadCount how many notifications are unread now.
+ */
+data class NotificationBulkResult(
+    val affected: Int,
+    val unreadCount: Long,
+)
 
 /**
  * Reads the notification inbox from the backend.
@@ -133,6 +179,52 @@ class NotificationRepository(
             .filter { it.name == NOTIFICATION_EVENT }
             .map { }
 
+    /**
+     * Marks one notification read.
+     *
+     * The server answers with the updated row; it is discarded on purpose. The caller has already
+     * flipped the row optimistically, and adopting the response here would make the repository the
+     * second place that decides what a read row looks like.
+     *
+     * @param id the notification to mark.
+     * @return success, or the classified failure.
+     */
+    override suspend fun markRead(id: String): ApiResult<Unit> =
+        when (val result = reader.post("$INBOX_PATH/$id/read", NotificationDto.serializer())) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
+        }
+
+    /**
+     * Marks every unread notification read.
+     *
+     * @return the affected count and the new unread count, or the classified failure.
+     */
+    override suspend fun markAllRead(): ApiResult<NotificationBulkResult> =
+        when (val result = reader.post(READ_ALL_PATH, NotificationBulkResultDto.serializer())) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
+    /**
+     * Deletes one notification.
+     *
+     * @param id the notification to delete.
+     * @return success, or the classified failure.
+     */
+    override suspend fun delete(id: String): ApiResult<Unit> = reader.delete("$INBOX_PATH/$id")
+
+    /**
+     * Deletes every already-read notification.
+     *
+     * @return the affected count and the new unread count, or the classified failure.
+     */
+    override suspend fun deleteRead(): ApiResult<NotificationBulkResult> =
+        when (val result = reader.delete(READ_PATH, NotificationBulkResultDto.serializer())) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
     companion object {
         /**
          * Rows per page.
@@ -149,6 +241,8 @@ class NotificationRepository(
         private const val INBOX_PATH = "/api/v1/notifications"
         private const val UNREAD_PATH = "/api/v1/notifications/unread-count"
         private const val STREAM_PATH = "/api/v1/notifications/stream"
+        private const val READ_ALL_PATH = "/api/v1/notifications/read-all"
+        private const val READ_PATH = "/api/v1/notifications/read"
         private const val NOTIFICATION_EVENT = "notification"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
@@ -189,3 +283,15 @@ private fun NotificationDto.toModel(): Notification? {
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
     )
 }
+
+/**
+ * Maps a bulk result off the wire, defaulting both numbers.
+ *
+ * A missing `unreadCount` becomes zero rather than "unknown" on purpose: both actions can only ever
+ * lower the count, and the alternative — leaving the badge at its old value — would show a number
+ * the member just cleared.
+ *
+ * @return the model.
+ */
+private fun NotificationBulkResultDto.toModel(): NotificationBulkResult =
+    NotificationBulkResult(affected = affected ?: 0, unreadCount = unreadCount ?: 0L)

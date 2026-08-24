@@ -110,10 +110,18 @@ fun SettingsScreen(
 /**
  * The column itself, capped so it does not stretch across a tablet.
  *
- * Design chapter 13 lays the tablet out in two columns — Einstellungen beside Beförderung. That
- * pairing cannot be built yet, because Beförderung reads evaluations from the backend and lands
- * with the live-parity phase. A single capped, centred column is the honest half of that layout:
- * settings rows dragged to 1280 dp put a 44 dp toggle a hand's width from its own label.
+ * Design chapter 13 lays the tablet out in two columns — Einstellungen beside Beförderung — and
+ * this screen deliberately builds only the left one (ADR-0009).
+ *
+ * The reason is no longer the one this comment used to give. Beförderung's repository, view model
+ * and screen all exist and are tested; what is missing is a **design chapter** for it, so its
+ * destination renders a placeholder by the owner's decision (`krt-profit/basetool-android#66`).
+ * Putting the second column in now would pair the settings with a placeholder on every tablet,
+ * which is worse than the honest half.
+ *
+ * The half that is here still earns its cap: settings rows dragged to 1280 dp put a 44 dp toggle a
+ * hand's width from its own label. Restoring the pairing is a one-place change once #66 lands —
+ * this column keeps its width and gains a sibling.
  *
  * @param accountName the signed-in member's username, or `null` while unknown.
  * @param language the language currently on screen.

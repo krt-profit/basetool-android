@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.exchange
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
@@ -57,6 +59,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegm
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -148,37 +151,91 @@ fun MaterialBoardScreen(
         }
 
         is BoardPhase.Ready -> {
-            Column(modifier = modifier.fillMaxSize()) {
-                if (!state.online) {
-                    OfflineBand()
+            Box(modifier = modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (!state.online) {
+                        OfflineBand()
+                    }
+                    KrtSegmentedControl(
+                        options =
+                            listOf(
+                                stringResource(R.string.board_side_offers),
+                                stringResource(R.string.board_side_requests),
+                            ),
+                        selectedIndex = if (state.side == BoardSide.OFFERS) 0 else 1,
+                        onSelect = {
+                            onSideChanged(if (it == 0) BoardSide.OFFERS else BoardSide.REQUESTS)
+                        },
+                        stretch = true,
+                        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+                    )
+                    // Part of the design, not decoration: chapter 10 states it as copy, because the
+                    // board deliberately carries no place and no handover and a member must be able to
+                    // tell that from the screen rather than from its absence.
+                    Text(
+                        text = stringResource(R.string.board_privacy_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                        modifier =
+                            Modifier
+                                .padding(horizontal = KrtSpacing.md)
+                                .testTag(BOARD_PRIVACY_TAG),
+                    )
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (state.entries.isEmpty()) {
+                            KrtRefreshableFill {
+                                KrtEmptyState(
+                                    iconRes = DesignR.drawable.ic_krt_swap,
+                                    title = stringResource(R.string.board_empty_title),
+                                    message = stringResource(R.string.board_empty_message),
+                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                )
+                            }
+                        } else {
+                            LazyColumn(modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG)) {
+                                items(state.entries, key = { it.id }) { entry ->
+                                    BoardRow(
+                                        entry = entry,
+                                        busy = state.busyEntryId == entry.id,
+                                        writable = state.writable,
+                                        onSignalToggled = { onSignalToggled(entry) },
+                                        onWithdraw = { onWithdraw(entry) },
+                                    )
+                                    KrtHairlineRule()
+                                }
+                                item(key = "footer") {
+                                    if (state.hasMore) {
+                                        KrtLoadMore(
+                                            text =
+                                                pluralStringResource(
+                                                    R.plurals.board_load_more,
+                                                    state.entries.size,
+                                                    state.entries.size,
+                                                ),
+                                            onClick = onLoadMore,
+                                            enabled = !state.loadingMore,
+                                            modifier = Modifier.padding(KrtSpacing.md),
+                                        )
+                                    } else {
+                                        KrtEndOfList(
+                                            text = stringResource(R.string.board_end_of_list),
+                                            modifier = Modifier.padding(KrtSpacing.md),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                KrtSegmentedControl(
-                    options =
-                        listOf(
-                            stringResource(R.string.board_side_offers),
-                            stringResource(R.string.board_side_requests),
-                        ),
-                    selectedIndex = if (state.side == BoardSide.OFFERS) 0 else 1,
-                    onSelect = {
-                        onSideChanged(if (it == 0) BoardSide.OFFERS else BoardSide.REQUESTS)
-                    },
-                    stretch = true,
-                    modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                )
-                // Part of the design, not decoration: chapter 10 states it as copy, because the
-                // board deliberately carries no place and no handover and a member must be able to
-                // tell that from the screen rather than from its absence.
-                Text(
-                    text = stringResource(R.string.board_privacy_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                    modifier =
-                        Modifier
-                            .padding(horizontal = KrtSpacing.md)
-                            .testTag(BOARD_PRIVACY_TAG),
-                )
-                KrtCtaButton(
-                    text =
+                // The label follows the segment: on "Gesuche" the action creates a request, not
+                // an offer, and a FAB that said "Angebot" there would be lying about what it does.
+                KrtFab(
+                    iconRes = DesignR.drawable.ic_krt_plus,
+                    label =
                         stringResource(
                             if (state.side == BoardSide.OFFERS) {
                                 R.string.board_new_offer
@@ -190,59 +247,11 @@ fun MaterialBoardScreen(
                     enabled = state.writable,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(KrtSpacing.md)
+                            .align(Alignment.BottomEnd)
+                            .padding(KrtSpacing.lg)
+                            .padding(bottom = LocalKrtBottomBarInset.current)
                             .testTag(BOARD_CREATE_TAG),
                 )
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (state.entries.isEmpty()) {
-                        KrtRefreshableFill {
-                            KrtEmptyState(
-                                iconRes = DesignR.drawable.ic_krt_swap,
-                                title = stringResource(R.string.board_empty_title),
-                                message = stringResource(R.string.board_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.lg),
-                            )
-                        }
-                    } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG)) {
-                            items(state.entries, key = { it.id }) { entry ->
-                                BoardRow(
-                                    entry = entry,
-                                    busy = state.busyEntryId == entry.id,
-                                    writable = state.writable,
-                                    onSignalToggled = { onSignalToggled(entry) },
-                                    onWithdraw = { onWithdraw(entry) },
-                                )
-                                KrtHairlineRule()
-                            }
-                            item(key = "footer") {
-                                if (state.hasMore) {
-                                    KrtLoadMore(
-                                        text =
-                                            pluralStringResource(
-                                                R.plurals.board_load_more,
-                                                state.entries.size,
-                                                state.entries.size,
-                                            ),
-                                        onClick = onLoadMore,
-                                        enabled = !state.loadingMore,
-                                        modifier = Modifier.padding(KrtSpacing.md),
-                                    )
-                                } else {
-                                    KrtEndOfList(
-                                        text = stringResource(R.string.board_end_of_list),
-                                        modifier = Modifier.padding(KrtSpacing.md),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
             }
             sheet()
         }

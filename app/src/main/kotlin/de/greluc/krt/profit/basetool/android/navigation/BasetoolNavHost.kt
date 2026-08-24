@@ -14,7 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,7 +30,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankAccountRoute
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountsRoute
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
-import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
@@ -66,8 +69,10 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
+import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.MoreScreen
 import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 
 /**
  * The navigation graph.
@@ -130,14 +135,17 @@ fun BasetoolNavHost(
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
 ) {
+    // Captured outside the transition lambdas: they are not composable, so the value has to be
+    // read here. Zero on a device asking for reduced motion, which makes the fade a cut.
+    val motionMs = KrtTheme.motionMs
     NavHost(
         navController = navController,
         startDestination = KrtDestination.Home.route,
         modifier = modifier,
-        enterTransition = { fadeIn(animationSpec = tween(KRT_MOTION_MS)) },
-        exitTransition = { fadeOut(animationSpec = tween(KRT_MOTION_MS)) },
-        popEnterTransition = { fadeIn(animationSpec = tween(KRT_MOTION_MS)) },
-        popExitTransition = { fadeOut(animationSpec = tween(KRT_MOTION_MS)) },
+        enterTransition = { fadeIn(animationSpec = tween(motionMs)) },
+        exitTransition = { fadeOut(animationSpec = tween(motionMs)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(motionMs)) },
+        popExitTransition = { fadeOut(animationSpec = tween(motionMs)) },
     ) {
         KrtDestination.entries.forEach { destination ->
             composable(
@@ -154,15 +162,19 @@ fun BasetoolNavHost(
                         destination = destination,
                         navController = navController,
                         missions = missions,
+                        missionDetail = missionDetail,
                         operations = operations,
                         notifications = notifications,
                         dashboard = dashboard,
                         hangar = hangar,
                         bank = bank,
+                        bankAccount = bankAccount,
                         orders = orders,
+                        orderDetail = orderDetail,
                         inventory = inventory,
                         exchange = exchange,
                         refinery = refinery,
+                        refineryOrder = refineryOrder,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
                         booking = booking,
@@ -221,21 +233,42 @@ private fun listDestination(
     destination: KrtDestination,
     navController: NavHostController,
     missions: MissionsViewModel,
+    missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
     bank: BankViewModel,
+    bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
+    orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
     memberName: String?,
     orgUnitName: String?,
 ): Boolean {
+    if (
+        listDetailDestination(
+            destination = destination,
+            navController = navController,
+            missions = missions,
+            missionDetail = missionDetail,
+            bank = bank,
+            bankAccount = bankAccount,
+            orders = orders,
+            orderDetail = orderDetail,
+            refinery = refinery,
+            refineryOrder = refineryOrder,
+        )
+    ) {
+        return true
+    }
+    var handled = true
     when (destination) {
         KrtDestination.Home -> {
             LaunchedEffect(Unit) { dashboard.load() }
@@ -262,18 +295,6 @@ private fun listDestination(
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
                 onOpenNotifications = { navController.navigate(KrtDestination.Notifications.route) },
-            )
-        }
-
-        KrtDestination.Missions -> {
-            LaunchedEffect(Unit) { missions.load() }
-            MissionsRoute(
-                viewModel = missions,
-                onOpenMission = { navController.navigate(missionDetailRoute(it)) },
-                // The segment navigates rather than toggling: both lists are their own destination,
-                // and a local toggle would leave the navigation bar highlighting the one the member
-                // is no longer looking at.
-                onOpenOperations = { navController.navigate(KrtDestination.Operations.route) },
             )
         }
 
@@ -306,33 +327,9 @@ private fun listDestination(
             MeinInventarRoute(items = personalInventory, blueprints = personalBlueprints)
         }
 
-        KrtDestination.Bank -> {
-            LaunchedEffect(Unit) { bank.loadOnce() }
-            BankAccountsRoute(
-                viewModel = bank,
-                onOpenAccount = { navController.navigate(bankAccountRoute(it)) },
-            )
-        }
-
-        KrtDestination.Orders -> {
-            LaunchedEffect(Unit) { orders.loadOnce() }
-            OrdersRoute(
-                viewModel = orders,
-                onOpenOrder = { navController.navigate(orderDetailRoute(it)) },
-            )
-        }
-
         KrtDestination.Exchange -> {
             LaunchedEffect(Unit) { exchange.loadOnce() }
             MaterialBoardRoute(viewModel = exchange)
-        }
-
-        KrtDestination.Refinery -> {
-            LaunchedEffect(Unit) { refinery.loadOnce() }
-            RefineryOrdersRoute(
-                viewModel = refinery,
-                onOpenOrder = { navController.navigate(refineryOrderRoute(it)) },
-            )
         }
 
         KrtDestination.Inventory -> {
@@ -345,6 +342,154 @@ private fun listDestination(
                 },
             )
             BookingHost(viewModel = booking)
+        }
+
+        else -> {
+            handled = false
+        }
+    }
+    return handled
+}
+
+/**
+ * The four destinations that show a list beside its detail on a wide window.
+ *
+ * Split out of [listDestination] rather than living beside the others, and not only to keep that
+ * function under the complexity gate: these four are the same shape four times over — hold a
+ * selection, build a detail view model for it, hand the list a tap handler that either selects or
+ * navigates — and reading them together is what makes that shape visible. A fifth one belongs
+ * here too.
+ *
+ * Each keeps its own selection rather than sharing one, because the selections are unrelated:
+ * picking an Auftrag says nothing about which Konto should be open.
+ *
+ * @param destination which destination to draw.
+ * @param navController used for the phone's push navigation and for sibling destinations.
+ * @param missions the Einsatz list.
+ * @param missionDetail builds a view model for one Einsatz.
+ * @param bank the Konten list.
+ * @param bankAccount builds a view model for one Konto.
+ * @param orders the Auftrag queue.
+ * @param orderDetail builds a view model for one Auftrag.
+ * @param refinery the Raffinerie orders.
+ * @param refineryOrder builds a view model for one Raffinerie-Order.
+ * @return `true` when this function drew the destination.
+ */
+@Composable
+@Suppress("LongParameterList")
+private fun listDetailDestination(
+    destination: KrtDestination,
+    navController: NavHostController,
+    missions: MissionsViewModel,
+    missionDetail: (String) -> MissionDetailViewModel,
+    bank: BankViewModel,
+    bankAccount: (String) -> BankAccountViewModel,
+    orders: OrdersViewModel,
+    orderDetail: (String) -> OrderDetailViewModel,
+    refinery: RefineryViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
+): Boolean {
+    when (destination) {
+        KrtDestination.Missions -> {
+            LaunchedEffect(Unit) { missions.load() }
+            // Design ch. 06: "Tablet 1280×800 — list-detail". On a wide window a tap selects
+            // beside the list; on a phone it pushes the detail as its own screen, which is what
+            // the back arrow in the top bar already expects.
+            val wide = isWideWindow()
+            var selected by rememberSaveable { mutableStateOf<String?>(null) }
+            KrtListDetail(
+                detail =
+                    selected?.let { id ->
+                        {
+                            val detailModel = remember(id) { missionDetail(id) }
+                            LaunchedEffect(id) { detailModel.load() }
+                            MissionDetailRoute(viewModel = detailModel)
+                        }
+                    },
+            ) {
+                MissionsRoute(
+                    viewModel = missions,
+                    onOpenMission = {
+                        if (wide) selected = it else navController.navigate(missionDetailRoute(it))
+                    },
+                    // The segment navigates rather than toggling: both lists are their own
+                    // destination, and a local toggle would leave the navigation bar highlighting
+                    // the one the member is no longer looking at.
+                    onOpenOperations = { navController.navigate(KrtDestination.Operations.route) },
+                )
+            }
+        }
+
+        KrtDestination.Bank -> {
+            LaunchedEffect(Unit) { bank.loadOnce() }
+            // Design ch. 12: "Tablet 1280×800 — Konten + Detail".
+            val wide = isWideWindow()
+            var selected by rememberSaveable { mutableStateOf<String?>(null) }
+            KrtListDetail(
+                detail =
+                    selected?.let { id ->
+                        {
+                            val detailModel = remember(id) { bankAccount(id) }
+                            LaunchedEffect(id) { detailModel.load() }
+                            BankAccountRoute(viewModel = detailModel)
+                        }
+                    },
+            ) {
+                BankAccountsRoute(
+                    viewModel = bank,
+                    onOpenAccount = {
+                        if (wide) selected = it else navController.navigate(bankAccountRoute(it))
+                    },
+                )
+            }
+        }
+
+        KrtDestination.Orders -> {
+            LaunchedEffect(Unit) { orders.loadOnce() }
+            // Design ch. 10: "Tablet 1280×800 — Queue + Detail".
+            val wide = isWideWindow()
+            var selected by rememberSaveable { mutableStateOf<String?>(null) }
+            KrtListDetail(
+                detail =
+                    selected?.let { id ->
+                        {
+                            val detailModel = remember(id) { orderDetail(id) }
+                            LaunchedEffect(id) { detailModel.load() }
+                            OrderDetailRoute(viewModel = detailModel)
+                        }
+                    },
+            ) {
+                OrdersRoute(
+                    viewModel = orders,
+                    onOpenOrder = {
+                        if (wide) selected = it else navController.navigate(orderDetailRoute(it))
+                    },
+                )
+            }
+        }
+
+        KrtDestination.Refinery -> {
+            LaunchedEffect(Unit) { refinery.loadOnce() }
+            // Design ch. 11: "Tablet 1280×800 — Orders + Detail". No load() here, matching the
+            // standalone destination — this view model reads on construction.
+            val wide = isWideWindow()
+            var selected by rememberSaveable { mutableStateOf<String?>(null) }
+            KrtListDetail(
+                detail =
+                    selected?.let { id ->
+                        {
+                            val detailModel = remember(id) { refineryOrder(id) }
+                            RefineryOrderDetailRoute(viewModel = detailModel)
+                        }
+                    },
+            ) {
+                RefineryOrdersRoute(
+                    viewModel = refinery,
+                    onOpenOrder = {
+                        if (wide) selected = it else navController.navigate(refineryOrderRoute(it))
+                    },
+                )
+            }
         }
 
         else -> {
@@ -372,6 +517,7 @@ private fun listDestination(
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
  */
+
 @Composable
 @Suppress("LongParameterList")
 private fun PushedDestination(
