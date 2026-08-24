@@ -75,6 +75,12 @@ jobs:
         if: matrix.build-mode == 'manual'
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
 
+      # Every other workflow that runs the wrapper validates it first; this one
+      # executes the same jar to build the CodeQL database, so it does too.
+      - name: Validate the Gradle wrapper
+        if: matrix.build-mode == 'manual'
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
       - name: Set up Gradle
         if: matrix.build-mode == 'manual'
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
