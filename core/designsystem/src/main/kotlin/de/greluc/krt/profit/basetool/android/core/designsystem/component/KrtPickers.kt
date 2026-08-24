@@ -48,10 +48,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
-import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 
 /** Width of the orange bar marking the currently selected option. */
 private val SELECTED_OPTION_BAR = 3.dp
@@ -516,7 +516,7 @@ fun KrtToggle(
     enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
 ) {
-    val motion = tween<Color>(KRT_MOTION_MS)
+    val motion = tween<Color>(KrtTheme.motionMs)
     val track by animateColorAsState(
         targetValue = if (checked) MaterialTheme.colorScheme.primary else KrtPalette.SurfaceInput,
         animationSpec = motion,
@@ -534,7 +534,7 @@ fun KrtToggle(
     )
     val knobOffset by animateDpAsState(
         targetValue = if (checked) TOGGLE_WIDTH - TOGGLE_KNOB - TOGGLE_KNOB_INSET else TOGGLE_KNOB_INSET,
-        animationSpec = tween(KRT_MOTION_MS),
+        animationSpec = tween(KrtTheme.motionMs),
         label = "toggleKnobOffset",
     )
 

@@ -27,7 +27,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankAccountRoute
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountsRoute
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
-import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
@@ -130,14 +130,17 @@ fun BasetoolNavHost(
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
 ) {
+    // Captured outside the transition lambdas: they are not composable, so the value has to be
+    // read here. Zero on a device asking for reduced motion, which makes the fade a cut.
+    val motionMs = KrtTheme.motionMs
     NavHost(
         navController = navController,
         startDestination = KrtDestination.Home.route,
         modifier = modifier,
-        enterTransition = { fadeIn(animationSpec = tween(KRT_MOTION_MS)) },
-        exitTransition = { fadeOut(animationSpec = tween(KRT_MOTION_MS)) },
-        popEnterTransition = { fadeIn(animationSpec = tween(KRT_MOTION_MS)) },
-        popExitTransition = { fadeOut(animationSpec = tween(KRT_MOTION_MS)) },
+        enterTransition = { fadeIn(animationSpec = tween(motionMs)) },
+        exitTransition = { fadeOut(animationSpec = tween(motionMs)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(motionMs)) },
+        popExitTransition = { fadeOut(animationSpec = tween(motionMs)) },
     ) {
         KrtDestination.entries.forEach { destination ->
             composable(

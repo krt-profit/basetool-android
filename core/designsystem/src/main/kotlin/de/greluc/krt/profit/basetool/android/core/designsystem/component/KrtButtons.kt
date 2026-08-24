@@ -45,7 +45,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtBloom
-import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -217,14 +216,15 @@ fun KrtButton(
     val pressed by interactionSource.collectIsPressedAsState()
     var focused by remember { mutableStateOf(false) }
 
+    val motion = androidx.compose.animation.core.tween<Color>(KrtTheme.motionMs)
     val container by animateColorAsState(
         targetValue = if (pressed) style.containerPressed else style.container,
-        animationSpec = androidx.compose.animation.core.tween(KRT_MOTION_MS),
+        animationSpec = motion,
         label = "krt-button-container",
     )
     val content by animateColorAsState(
         targetValue = if (pressed) style.contentPressed else style.content,
-        animationSpec = androidx.compose.animation.core.tween(KRT_MOTION_MS),
+        animationSpec = motion,
         label = "krt-button-content",
     )
     val borderColor = if (pressed) style.borderPressed else style.border
