@@ -40,6 +40,8 @@
 
 ### Fixed
 
+- **Benachrichtigungen in der Statusleiste kamen bei niemandem an.** Die App hatte die Android-Berechtigung dafür nie angefragt, sondern nur geprüft — und damit still nichts angezeigt. Sie fragt jetzt einmal, nachdem du drin bist.
+
 - **Sicherheits-Durchsicht vor dem ersten Release.** Serverseitige Fehlertexte landen nicht mehr im Geräte-Log, die Download-Adresse der Update-Seite wird geprüft, ein fremdes Programm kann eine laufende Anmeldung nicht mehr abbrechen, und die Android-Datensicherung ist ganz abgeschaltet — sie hätte ohnehin nichts gesichert.
 
 - **Die Raffinerie rechnete die Erntemenge falsch um.** Der Server führt Mengen in Units (100 Units = 1 SCU); die App zeigte sie als SCU an und hätte beim Einlagern das Hundertfache gebucht. Zeitstempel in Raffinerie und Materialbörse erscheinen jetzt in deiner Zeitzone statt als Rohwert, und die App stürzt nach einer Buchung nicht mehr ab.

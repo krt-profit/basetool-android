@@ -401,6 +401,38 @@ fine — that asymmetry is the tell, because Chrome does not use this config.
 **Before every release**, one check that costs nothing: `./gradlew :app:testDevDebugUnitTest --tests "*NetworkSecurityConfigTest"`.
 It fails if a pin element was lost, if a host lost its pin-set, or if a pin-set lost its expiry.
 
+### 5.2 The 52 Dependabot alerts, and why none of them is in the app (2026-08-24)
+
+The repository carries a standing set of Dependabot alerts — 2 critical, 21 high at the time of
+writing — and every one of them is on **`settings.gradle.kts`**, the plugin classpath. They are
+transitive dependencies of the OpenAPI generator: `handlebars` is its templating engine, and
+`netty`, `jose4j`, `bouncycastle`, `plexus-utils` and `jdom2` arrive through swagger-parser's HTTP
+and JOSE stack.
+
+**None of them ships.** Verified rather than assumed:
+
+```bash
+./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath | grep -icE "netty|handlebars|bouncycastle|jose4j|plexus|jdom"
+# 0
+```
+
+That is worth writing down because a badge saying "2 critical" reads as *the app is vulnerable*, and
+it is not: the exposure is a **build-time** one — a developer machine and a CI runner parsing a
+committed OpenAPI document we wrote ourselves. The runner is ephemeral, the input is not attacker
+controlled, and the actions are SHA-pinned (§ 4 of the DEV_CI doc).
+
+**What would change the answer**, and is therefore what to watch for rather than the count:
+
+- any of these names appearing on `prodReleaseRuntimeClasspath` — the command above is the check;
+- a generator that starts fetching a **remote** spec, which would turn the parser into something an
+  outsider can feed;
+- an alert on a manifest that is *not* `settings.gradle.kts`.
+
+The generator is kept current (7.25.0) because a newer one can only help, but the versions are
+upstream's to choose: bumping it did not clear `bcprov-jdk18on`, `jdom2` or `jose4j`, and pinning
+them from here would mean overriding a plugin's own resolved graph to silence a badge for code that
+never runs in the product.
+
 ## 6. App/API behavior contracts (security-relevant)
 
 - Handle RFC 7807 codes as first-class states: `UNAUTHENTICATED` (401 → silent refresh → login),
@@ -454,11 +486,23 @@ more than the fix.
 excluded from all three rule sets, so a restore produced an empty app — backup bought a member
 nothing and cost a standing invariant that every future file be remembered in three places.
 
-**One finding fixed itself twice, and that is worth recording.** The `PendingIntent` was first made
-explicit with `setClass` inside an `apply` block, which binds the same component at runtime and left
-the CodeQL alert standing, because the query does not follow a mutation there. An alert that
-survives its own fix is a defect of its own: the next reader has to re-derive whether it is real. It
-is built from the `Intent(Context, Class)` constructor now.
+**One finding took four attempts, and that is worth recording.** The `PendingIntent` was explicit
+after the first one and stayed explicit through all of them — `setPackage`, then `setClass` inside
+an `apply` block, then the `Intent(Context, Class)` constructor. Each binds the component at
+runtime; none satisfied the query, which tracks the `component` field through straight-line
+assignment and follows neither a builder block nor a constructor argument. What closed it was
+`intent.component = ComponentName(context, MainActivity::class.java)` as a plain statement.
+
+The lesson is not about this rule. **An alert that survives a correct fix costs more than the
+finding did** — the next reader has to re-derive whether the code or the query is wrong, and the
+honest-looking move at that point is to dismiss it as a false positive. It was not one: the original
+intent really was implicit. When a fix is right and the alert stays, change the *shape* the analysis
+can see before reaching for a dismissal.
+
+**The `dev` flavor manifest carries `allowBackup="false"` too**, though the merge already resolved
+it there. `java/android/backup-enabled` reads each manifest as written, so the flavor file said
+nothing while the artifact was correct — and a flavor that declares `<application>` with no
+attribute reads, to a person as much as to the query, as a place where backup is fine.
 
 **What the review confirmed rather than found** — recorded so the next pass knows what was already
 looked at: AES-256-GCM with a provider IV and `setRandomizedEncryptionRequired`, an auth-per-use

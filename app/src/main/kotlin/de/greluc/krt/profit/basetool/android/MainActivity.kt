@@ -60,6 +60,7 @@ import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
@@ -265,6 +266,11 @@ class MainActivity : AppCompatActivity() {
                                 // cleared account, and asking earlier would spend a refused request
                                 // on every start for a member who is still waiting for approval.
                                 LaunchedEffect(Unit) { orgUnitViewModel.load() }
+                                // Behind the same two gates, and for a related reason: a
+                                // system permission dialog in front of somebody who may not
+                                // have an account yet is a question they cannot answer
+                                // usefully.
+                                RequestNotificationPermissionOnce()
                                 val orgUnit by orgUnitViewModel.state.collectAsState()
                                 BasetoolApp(
                                     orgUnit = orgUnit,

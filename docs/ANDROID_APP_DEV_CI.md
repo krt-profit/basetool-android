@@ -183,14 +183,14 @@ Baseline posture (all from GitHub's current security docs):
 | Workflow | Trigger | Jobs | State |
 |---|---|---|---|
 | `ci.yml` | PR + push to main | `./gradlew build` (assemble all four variants, unit + Robolectric tests, Android Lint with SARIF → code scanning, detekt, Spotless/ktlint), wrapper validation; second job: actionlint + zizmor | **built** |
-| `codeql.yml` | PR + push + weekly | CodeQL `java-kotlin` and `actions`, `build-mode: none`, `security-and-quality` queries | **built** |
+| `codeql.yml` | PR + push + weekly | CodeQL `security-and-quality` on `java-kotlin` (`build-mode: manual` — a real uncached `assembleDevDebug`; see the file header for why `none` was abandoned) and on `actions` (`build-mode: none`), wrapper validation | **built** |
 | `dco.yml` | PR | Signed-off-by trailer matching the author on every commit the PR adds | **built** |
 | `gitleaks.yml` | PR + dispatch | pinned gitleaks binary, range-scoped to `base..head` on a PR | **built** |
 | `supply-chain.yml` | PR + push + weekly | dependency-review-action (fails on moderate+ and on incompatible licences), OpenSSF Scorecard → code scanning | **built** |
 | `dependabot.yml` | daily / weekly | `gradle` daily (see the note below), `github-actions` weekly | **built** |
 | `instrumented.yml` | PR label or nightly | GMD emulator suite on `ubuntu-latest` with the KVM udev step | planned — waits for the first instrumented test |
 | `release-dry-run.yml` | PR + push to main + dispatch | generate a throwaway key → base64 round trip → `assembleProdRelease` → `apksigner verify` (v3 present, v1 absent, one signer, certificate is the generated one) → shred; no secrets, no cache, nothing published | **built** |
-| `release.yml` | tag `v*` | build APK, SBOM, sign, attach to GitHub Release — **environment `release`** | planned — waits for the signing key and the `release` environment (Phase 5) |
+| `release.yml` | tag `v*` | wrapper validation, build APK, sign, `apksigner verify` against the configured key, provenance attestation, dependency SBOM, **draft** release — **environment `release`** | **built** — cannot run until the owner runbook's §§ 2-3 provide the key and the environment |
 
 **Why Dependabot runs the Gradle ecosystem daily.** Android Lint runs with
 `warningsAsErrors = true` and its dependency checks treat an available newer version as a

@@ -6,8 +6,9 @@
 > main repo [`docs/API_VHOST_ROLLOUT_RUNBOOK.md`](https://github.com/krt-profit/basetool/blob/main/docs/API_VHOST_ROLLOUT_RUNBOOK.md)
 > (Phase J)
 
-Everything else in this project is automated, reviewed or testable. What is left here needs either
-production access, a secret, or a decision — and each of those is yours by rule, not by convention.
+Everything else in this project is automated, reviewed or testable. What is left here needs
+production access, a secret, a repository setting, or a decision — and each of those is yours by
+rule, not by convention.
 
 **Read the whole of a step before starting it.** Two of them (the signing key, the vhost paste) are
 hard to undo, and one of them is impossible to undo.
@@ -96,7 +97,8 @@ safety net, not the plan.
 
 ## 4. The first release
 
-**Status:** outstanding. Depends on §§ 2 and 3.
+**Status:** outstanding. Depends on §§ 2 and 3, and should follow § 8 — five minutes of repo
+settings that are worth having in place before the first tag rather than after it.
 
 1. Make sure `main` is where you want it and CI is green.
 2. Tag and push:
@@ -176,3 +178,78 @@ and the carve-out is the *content*, not the commit.
 **Do it with the release, not before.** The page tells members how to install something; until § 4
 is done there is nothing to install, and a handbook page describing a file that does not exist is
 worse than no page.
+
+---
+
+## 8. Close the two governance gaps — do this before § 4
+
+**Status:** outstanding, both halves. **Undoable:** yes, trivially — these are two settings
+screens. Neither is urgent on its own; both are worth doing before § 4, because a rule added
+afterwards protects everything from then on and nothing from before.
+
+### 8a. `main` accepts a merge with red CI
+
+The `Protect main` ruleset requires a pull request, signed commits, no force-push and no
+deletion — but it has **no `required_status_checks` rule at all**. Nothing stops a merge while
+CI is red; the gate is the discipline of whoever presses the button. The main `basetool` repo
+requires five checks, so this is the android repo drifting from your own standard rather than a
+new policy. Scorecard has been saying so under `BranchProtectionID`: *"no status checks found to
+merge onto branch 'main'"*.
+
+Settings → Rules → **Protect main** → Add rule → **Require status checks to pass**, tick *Require
+branches to be up to date before merging*, then add these eight by name:
+
+```
+Build, Test & Lint
+Analyze (java-kotlin)
+Analyze (actions)
+Verify Signed-off-by on every commit
+Workflow lint
+gitleaks
+Dependency review
+Sign and verify a release APK
+```
+
+**Add only these eight.** `CodeQL`, `Submit the dependency graph` and `OpenSSF Scorecard` report
+*skipped* on a pull request — they run on push to `main` or on a schedule. A required check that
+never reports a real conclusion is the one configuration mistake here that is annoying to
+diagnose, because the PR simply sits there with nothing marked red.
+
+The ruleset keeps `OrganizationAdmin` and `RepositoryRole` as always-bypass actors, so this
+never locks you out of an emergency merge — it makes the bypass a decision you take rather than
+one you take by default.
+
+### 8b. There is no tag protection on `v*`
+
+The main `basetool` repo has a `Version` ruleset protecting `refs/tags/v*` and `refs/tags/V*`
+against deletion and non-fast-forward. This repo has **no tag ruleset at all** — the ruleset list
+holds exactly one entry, and it targets branches.
+
+That gap is inert today and stops being inert at § 4. A `v*` tag that can be moved is one that can
+be made to name different code *after* the release workflow signed an APK and attested its
+provenance against the commit the tag named at build time. The attestation stays valid for what it
+attested; it just stops describing what the tag now points at. Nobody would catch that by reading
+the release page.
+
+Settings → Rules → **New ruleset** → *Tag ruleset*, enforcement **Active**, target
+`refs/tags/v*` and `refs/tags/V*`, and enable **Restrict deletions** and **Block force pushes** —
+the same two rules the main repo uses, and nothing more.
+
+---
+
+---
+
+## 9. The three Scorecard warnings that are not defects
+
+Recorded so nobody spends an afternoon on them a second time.
+
+- **`CodeReviewID` — 0/4 approved changesets, high.** A consequence of being the only
+  maintainer: the ruleset asks for a pull request but zero approvals, because requiring an
+  approver on a one-person repo means requiring a second account. Accepted, and worth revisiting
+  the day somebody else commits.
+- **`MaintainedID` — repository created within the last 90 days, high.** Time fixes this one; it
+  will clear on its own around 2026-11.
+- **`BinaryArtifactsID` — score 9, binary detected.** `gradle/wrapper/gradle-wrapper.jar`, the
+  repo's only committed binary and one the wrapper cannot work without. The mitigation is
+  checksum validation, which now runs in **every** workflow that executes it — `codeql.yml` was
+  the last gap and is closed.
