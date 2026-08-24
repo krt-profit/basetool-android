@@ -63,11 +63,17 @@ handover the tool never sees and cannot correct.
 On a **request**, the quality field is a *minimum*, not an offered grade. The two are opposite
 claims about the same number, so the row says „Min. Q 3" rather than „Q 3".
 
+**Two display rules a device walk added.** The row printed the wire's ISO timestamp
+(`2026-08-24T09:29:53.187358Z`) and the wire's trailing zero (`120.0 SCU`). Both now go through the
+same helpers the rest of the app uses — a relative span in the member's zone, and `formatAmount` —
+because a figure a member reads twice in two places has to read the same both times.
+
 **Acceptance**
 
 - [x] An item row reads its own fields and counts pieces (`MaterialBoardRepositoryTest`,
   `MaterialBoardScreenTest`).
 - [x] A request row labels its quality as a minimum.
+- [x] No row renders an ISO timestamp or a trailing `.0`, both asserted as absences.
 
 **Code:** `MaterialBoardRepository`, `MaterialBoardScreen`
 

@@ -224,3 +224,34 @@ recorded in `core/contract/src/main/openapi/README.md`.
   against the main repo's is the next step; both repositories are public, so it is reachable.
 - [ ] Only the operations in the `REQ-API-009` contract set are consumed. **Open** — nothing
   enforces it on this side; the generated surface is every schema in the document.
+
+---
+
+### REQ-APP-API-006 — A response is handled off the main thread, always
+
+`Call.await()` resumes on the **caller's** dispatcher, and for a ViewModel that is the main thread.
+`ApiReader` therefore wraps both of its handling blocks in `withContext(Dispatchers.IO)`.
+
+**This is not defensive tidiness; it is a crash that shipped as far as a device walk.** Closing an
+HTTP/2 response whose body was never read makes OkHttp write an `RST_STREAM` to the socket — and a
+socket write on the main thread is a `NetworkOnMainThreadException`, which is fatal. It surfaced on
+the Raffinerie booking: the write succeeded, the Lager entry was created, and the app died closing
+the response.
+
+Reads escaped it only by luck. A body already buffered in memory needs no socket to read, so
+`decodeFromString(response.body.string())` on the main thread usually returns without touching the
+network — usually being the whole problem.
+
+The `enqueue`-based cancellation of `Call.await()` is untouched: what moves is where the
+continuation resumes, not how the call is made. Replacing `enqueue` with
+`withContext { execute() }` would break cancellation and is the thing `CallAwait`'s own KDoc warns
+against — a different point, now written down beside this one so the two are not confused.
+
+**Acceptance**
+
+- [x] Both `ApiReader` handling blocks run on `Dispatchers.IO`.
+- [x] Walked on a device: the booking that crashed now completes and the screen updates.
+- [ ] **A StrictMode guard in an instrumented test** — outstanding; the JVM suite cannot see this
+  class of defect at all, which is why it took a device to find.
+
+**Code:** `ApiReader`, `CallAwait`

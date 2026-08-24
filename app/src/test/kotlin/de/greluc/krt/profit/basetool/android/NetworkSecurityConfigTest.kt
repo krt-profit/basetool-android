@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,6 +57,89 @@ class NetworkSecurityConfigTest {
             "no domain in the main config may permit cleartext",
             xml.contains("cleartextTrafficPermitted=\"true\""),
         )
+    }
+
+    /**
+     * Every production host the app speaks to is pinned, and to **both** Let's Encrypt roots.
+     *
+     * The second root is the assertion that earns its place. ISRG Root X2 is the ECDSA root, and a
+     * certificate that chains to it while only X1 is pinned fails to validate — so pinning one
+     * root would turn an ordinary CA-side change into an outage that reaches every installed
+     * build at once.
+     */
+    @Test
+    fun `every production host is pinned to both Let's Encrypt roots`() {
+        val xml = read(releaseConfig)
+
+        listOf("api.profit-base.online", "keycloak.profit-base.online", "profit-base.online")
+            .forEach { host ->
+                assertTrue(
+                    "$host must have a domain-config",
+                    xml.contains("<domain includeSubdomains=\"false\">$host</domain>"),
+                )
+            }
+        assertEquals(
+            "each of the three hosts needs its own pin-set",
+            PINNED_HOSTS,
+            Regex("<pin-set").findAll(xml).count(),
+        )
+        assertEquals(
+            "ISRG Root X1 must be pinned on all three",
+            PINNED_HOSTS,
+            pinCount(xml, ISRG_X1),
+        )
+        assertEquals(
+            "ISRG Root X2 must be pinned on all three — it is the ECDSA root, and omitting it " +
+                "breaks every chain issued from its intermediates",
+            PINNED_HOSTS,
+            pinCount(xml, ISRG_X2),
+        )
+    }
+
+    /**
+     * Counts a pin as an actual `<pin>` element.
+     *
+     * A bare substring search also matches the file's own comment, which documents both values —
+     * and would have passed with the pins present in prose and absent from the config.
+     *
+     * @param xml the config.
+     * @param pin the base64 SPKI hash.
+     * @return how many pin elements carry it.
+     */
+    private fun pinCount(
+        xml: String,
+        pin: String,
+    ): Int = Regex(Regex.escape("<pin digest=\"SHA-256\">$pin</pin>")).findAll(xml).count()
+
+    /**
+     * Every pin-set carries an expiry.
+     *
+     * Android stops enforcing an expired pin-set rather than failing the connection, and that is
+     * the only safety valve this design has: if both roots were ever replaced and no update
+     * shipped, the app degrades to ordinary system trust instead of going dark. A pin-set without
+     * one is a permanent commitment made by accident.
+     */
+    @Test
+    fun `no pin-set is open-ended`() {
+        val xml = read(releaseConfig)
+
+        assertEquals(
+            "every pin-set needs an expiration",
+            Regex("<pin-set").findAll(xml).count(),
+            Regex("<pin-set expiration=").findAll(xml).count(),
+        )
+    }
+
+    /**
+     * The dev flavour pins nothing.
+     *
+     * Its certificate is a throwaway signed by a CA that was destroyed at generation time, so a
+     * pin there would tie every debug build to a file in another repository — and would break the
+     * moment that material is regenerated.
+     */
+    @Test
+    fun `the dev config pins nothing`() {
+        assertFalse("the dev config must carry no pin-set", read(devConfig).contains("<pin-set"))
     }
 
     /**
@@ -208,5 +292,18 @@ class NetworkSecurityConfigTest {
          * while breaking the other.
          */
         const val ANCHOR_RESOURCE = "basetool_test_ca"
+
+        /** The API host, Keycloak and the web frontend. */
+        const val PINNED_HOSTS = 3
+
+        /**
+         * The SPKI pin of ISRG Root X1 (RSA).
+         *
+         * Recomputed from a trust store rather than transcribed — see the config's own note.
+         */
+        const val ISRG_X1 = "C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M="
+
+        /** The SPKI pin of ISRG Root X2 (ECDSA). */
+        const val ISRG_X2 = "diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI="
     }
 }

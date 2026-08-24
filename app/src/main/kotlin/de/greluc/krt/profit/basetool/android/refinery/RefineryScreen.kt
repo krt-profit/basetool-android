@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -54,8 +55,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import java.math.BigDecimal
 import java.time.Duration
+import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the order list. */
@@ -309,7 +315,10 @@ private fun secondLine(
         if (phase == RefineryPhase.RUNNING) {
             remainingText(order.endsAt, now)
         } else {
-            stringResource(R.string.refinery_amount_scu, order.totalAmount)
+            // The order's own unit is not knowable across mixed goods, so the row states SCU —
+            // which every refining run in practice is. A single-good order takes the good's unit.
+            val piece = order.yields.isNotEmpty() && order.yields.all { it.unitIsPiece }
+            amountText(order.totalAmount, piece)
         }
     return listOfNotNull(method, detail).joinToString(SEPARATOR)
 }
@@ -482,7 +491,7 @@ private fun OrderDetailBody(
         )
         KrtKeyValueRow(
             label = stringResource(R.string.refinery_started),
-            value = order.startedAt ?: stringResource(R.string.refinery_remaining_unknown),
+            value = order.startedAt.asLocalTimestamp(),
         )
         KrtKeyValueRow(
             label = stringResource(R.string.refinery_ready),
@@ -490,7 +499,7 @@ private fun OrderDetailBody(
                 if (phase == RefineryPhase.RUNNING) {
                     remainingText(order.endsAt, state.now)
                 } else {
-                    order.endsAt ?: stringResource(R.string.refinery_remaining_unknown)
+                    order.endsAt.asLocalTimestamp()
                 },
         )
         KrtSectionTitle(text = stringResource(R.string.refinery_yield))
@@ -536,8 +545,30 @@ private fun YieldRow(good: RefineryYield) {
                 good.materialName.takeIf { it.isNotBlank() },
                 good.quality?.let { stringResource(R.string.refinery_quality, it) },
             ).joinToString(SEPARATOR),
-        value = stringResource(R.string.refinery_amount_scu, good.amount),
+        value = amountText(good.amount, good.unitIsPiece),
     )
+}
+
+/**
+ * An amount in the material's own unit.
+ *
+ * **Never a hardcoded SCU**, for the same reason as on the Materialbörse: an item counted in pieces
+ * and labelled „SCU" is a quantity a member acts on. And never the wire's number either — the
+ * repository has already turned units into SCU, and this only has to render what it produced
+ * without inventing precision the run did not have.
+ *
+ * @param amount the amount, already in the member's unit.
+ * @param piece whether that unit is pieces.
+ * @return the rendered figure.
+ */
+@Composable
+private fun amountText(
+    amount: Double,
+    piece: Boolean,
+): String {
+    val unit =
+        stringResource(if (piece) R.string.refinery_unit_piece else R.string.refinery_unit_scu)
+    return "${formatAmount(BigDecimal.valueOf(amount).stripTrailingZeros().toPlainString())} $unit"
 }
 
 /**
@@ -576,6 +607,36 @@ private fun StoreConfirmation(
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.White,
         )
+    }
+}
+
+/**
+ * Renders a wire timestamp the way chapter 11 writes one: „16.08. 22:41", in the member's zone.
+ *
+ * Found on a device: the detail printed `2026-08-24T02:53:02.557721Z` verbatim in both rows. The
+ * wire is UTC ISO and the screen is the member's zone (`REQ-APP-API-004`) — the rule every other
+ * screen in the app already follows.
+ *
+ * An unparseable value is shown as it came rather than replaced: a server that changed its format
+ * is something to see. A missing one falls back to the unknown-time wording.
+ *
+ * @return the formatted stamp.
+ */
+@Composable
+private fun String?.asLocalTimestamp(): String {
+    val raw = this?.takeIf { it.isNotBlank() }
+    val instant = raw?.let { runCatching { Instant.parse(it) }.getOrNull() }
+    val zone = remember { ZoneId.systemDefault() }
+    val format =
+        remember(zone) {
+            DateTimeFormatter
+                .ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)
+                .withZone(zone)
+        }
+    return when {
+        raw == null -> stringResource(R.string.refinery_remaining_unknown)
+        instant == null -> raw
+        else -> format.format(instant)
     }
 }
 

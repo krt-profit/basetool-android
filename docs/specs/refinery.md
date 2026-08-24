@@ -118,6 +118,34 @@ exists either way, and a booking withheld over a missing grade loses the yield.
 
 ---
 
+### REQ-APP-REF-004a — `outputQuantity` is in UNITS, and one SCU is a hundred of them
+
+The server tracks a good's `outputQuantity` in **units**. A run yielding 288 SCU arrives as
+`28800`, and the store endpoint reads its `amount` back in **SCU** — multiplying by a hundred when
+it writes the good again (`RefineryOrderService#updateGoodOutputQuantity`). The web app divides by
+a hundred to display it.
+
+**The app got this wrong in both directions and a device walk is what found it.** The screen
+printed `28800 SCU` for 288 SCU, and — the part that matters — the booking sent the raw unit count
+as if it were SCU. A real order would have created a Lager entry a **hundred times** the yield, and
+there is no undo: the entry is real stock, and the order is marked eingelagert either way.
+
+The conversion lives in the repository, once, at the boundary. Everything above it works in the
+member's unit, `PIECE` materials are not divided, and the amount the booking sends is the same
+number the screen shows.
+
+**Acceptance**
+
+- [x] `62200` on the wire reads as `622` SCU (`RefineryRepositoryTest`).
+- [x] The booking sends the SCU figure and **never** the raw unit count — asserted as an absence,
+  because the wrong value would still have produced a valid-looking request.
+- [x] Walked on a device against real unit data: Lager entry `288 SCU`, and the order's good back
+  at exactly `28800` — the round trip is stable.
+
+**Code:** `RefineryRepository`, `RefineryScreen`
+
+---
+
 ### REQ-APP-REF-005 — A booking announces three rooms
 
 A booking changes three things that are not the same screen: the order, the „Meine Orders" queue,
@@ -154,6 +182,8 @@ data, white, never orange.
 
 **Acceptance**
 
+- [x] Timestamps render in the member's zone, never as the wire's ISO string — the detail printed
+  `2026-08-24T02:53:02.557721Z` in both rows until a device walk showed it.
 - [x] No scan control exists on the screen.
 - [x] No value on the screen is labelled as an estimate.
 - [x] Both figures use the shared `formatAmount`, so the app and the web read the same number.

@@ -14,6 +14,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
+import de.greluc.krt.profit.basetool.android.MainActivity
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.navigation.KRT_DEEP_LINK_SCHEME
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -107,7 +108,13 @@ class SystemNotifier(
         val target = route ?: INBOX_ROUTE
         val intent =
             Intent(Intent.ACTION_VIEW, "$KRT_DEEP_LINK_SCHEME://$target".toUri()).apply {
-                `package` = context.packageName
+                // The COMPONENT, not just the package. Both restrict resolution to this app, but
+                // only the component makes the intent explicit in the sense the platform and
+                // CodeQL's implicit-PendingIntent query both use -- and a PendingIntent wrapping
+                // an implicit intent is handed to the system to fire on our behalf, which is the
+                // shape that has been exploitable elsewhere. The activity is known here; there is
+                // no reason to let anything resolve it.
+                setClass(context, MainActivity::class.java)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         return PendingIntent.getActivity(

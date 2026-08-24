@@ -39,8 +39,11 @@ class RefineryRepositoryTest {
     private companion object {
         const val HTTP_OK = 200
 
-        /** The fixture's refined output, in SCU. */
-        const val YIELD_SCU = 622
+        /** The fixture's refined output, in SCU. The wire carries a hundred times this. */
+        const val YIELD_SCU = 622.0
+
+        /** How close a Double comparison of SCU has to be to count. */
+        const val SCU_TOLERANCE = 0.001
 
         /** Well before every fixture's end time. */
         val BEFORE: OffsetDateTime = OffsetDateTime.parse("2026-08-16T23:00:00Z")
@@ -67,7 +70,7 @@ class RefineryRepositoryTest {
                   {"inputMaterial": {"id": "m0", "name": "Quantainium (Raw)"},
                    "inputQuantity": 800,
                    "outputMaterial": {"id": "m1", "name": "Quantainium"},
-                   "outputQuantity": 622, "quality": 3}
+                   "outputQuantity": 62200, "quality": 3}
                 ]},
                {"id": "r2", "status": "COMPLETED",
                 "location": {"id": "loc1", "name": "ARC-L1 Wide Forest"},
@@ -89,9 +92,9 @@ class RefineryRepositoryTest {
                {"inputMaterial": {"id": "m0", "name": "Quantainium (Raw)"},
                 "inputQuantity": 800,
                 "outputMaterial": {"id": "m1", "name": "Quantainium"},
-                "outputQuantity": 622, "quality": 3},
+                "outputQuantity": 62200, "quality": 3},
                {"inputMaterial": {"id": "m2", "name": "Titanium (Raw)"},
-                "inputQuantity": 100, "outputQuantity": 80}
+                "inputQuantity": 100, "outputQuantity": 8000}
              ]}
             """.trimIndent()
     }
@@ -153,7 +156,11 @@ class RefineryRepositoryTest {
             // The OUTPUT material, not the input: the ore went in and no longer exists.
             assertEquals("Quantainium", first.yields.single().materialName)
             assertEquals("m1", first.yields.single().materialId)
-            assertEquals(YIELD_SCU, first.totalAmount)
+            // 62200 on the wire, 622 SCU on the screen. The server tracks outputQuantity in
+            // units and one SCU is a hundred of them; the app sends this same number back on a
+            // booking, so reading it raw would have created a Lager entry a hundredfold.
+            assertEquals(YIELD_SCU, first.totalAmount, SCU_TOLERANCE)
+            assertFalse(first.yields.single().unitIsPiece)
         }
 
     @Test
@@ -229,6 +236,9 @@ class RefineryRepositoryTest {
             assertTrue(body.contains("\"materialId\":\"m1\""))
             assertTrue(body.contains("\"locationId\":\"loc1\""))
             assertTrue(body.contains("\"quality\":3"))
+            // SCU, not the wire's units: the endpoint reads this as the member's own figure.
+            assertTrue("expected the SCU amount in $body", body.contains("\"amount\":622"))
+            assertFalse("the raw unit count must never be sent", body.contains("62200"))
         }
 
     @Test

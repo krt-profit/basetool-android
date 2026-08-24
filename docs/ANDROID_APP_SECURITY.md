@@ -333,6 +333,74 @@ first in Phase 5: pin the **CA key** (ISRG Root X1/X2 SPKI) instead of the leaf 
 keypair-reuse requirement, no pin churn tied to app updates) and still excludes every other CA;
 the leaf+backup pin remains the stricter, higher-maintenance option.
 
+### 5.1 Pinning as shipped, and how to rotate it (2026-08-24)
+
+**The evaluation §5 called for is done and the CA pin won.** `app/src/main/res/xml/network_security_config.xml`
+pins all three production hosts — `api.profit-base.online`, `keycloak.profit-base.online`,
+`profit-base.online` — to **both** Let's Encrypt roots, with an `expiration` of 2028-08-24.
+
+**Why not the leaf.** A leaf pin has to reach devices *before* the server rotates its key, and
+Let's Encrypt renews every sixty days with a fresh keypair unless the CSR is deliberately reused.
+That makes every renewal a release deadline, on a channel (GitHub Releases plus Obtainium) where
+nothing forces a member to update. The first missed deadline takes the app away from everyone who
+has not updated, with no way left to reach them. The root pin has none of that: it survives every
+renewal, needs no keypair reuse, and still excludes every other CA in the device's trust store.
+
+**What it does not protect against, stated rather than implied:** a mis-issuance by Let's Encrypt
+itself. That is the price of the choice, and the CAA record of §4 is what narrows it.
+
+**Both roots, not one.** ISRG Root X2 is the ECDSA root and Let's Encrypt issues from its
+intermediates. A certificate chaining to X2 with only X1 pinned fails to validate, so pinning one
+root would turn an ordinary CA-side change into an outage reaching every installed build at once.
+`NetworkSecurityConfigTest` asserts both, on all three hosts, as real `<pin>` elements rather than
+as strings anywhere in the file.
+
+**The expiry is the safety valve.** Android stops *enforcing* an expired pin-set rather than
+failing the connection. If both roots were ever replaced and no update shipped, the app degrades to
+ordinary system trust instead of going dark. The date is a deadline for us, not for the
+certificate.
+
+**The dev flavour pins nothing**, deliberately: the test stack's certificate is a throwaway signed
+by a CA destroyed at generation time (main repo ADR-0139), and pinning it would tie every debug
+build to a file in another repository.
+
+#### The rotation runbook
+
+Two situations need it, and only one of them is an emergency.
+
+**A. Let's Encrypt announces a new root** (the planned case; they give years of notice).
+
+1. Get the new root's SPKI pin **from a certificate, never from a web page**. Any JDK trust store
+   that already ships it will do:
+
+   ```bash
+   keytool -exportcert -rfc -cacerts -storepass changeit -alias <alias> > root.pem
+   openssl x509 -in root.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+   ```
+
+2. **Add** it to all three `<pin-set>` blocks. Do not remove the old ones — a pin-set is an OR, and
+   the whole point of this step is that both chains validate while members update.
+3. Push the `expiration` out by two years in the same edit.
+4. Ship that build **before** anything changes server-side, and leave it out there long enough that
+   the installed base has moved. There is no telemetry to tell you when that is; the honest answer
+   is a release cycle plus a month.
+5. Only then remove the retired root, in a later release.
+
+**B. The pin is wrong and members cannot connect** (the emergency).
+
+The failure looks like every request failing with a TLS error on production while the browser works
+fine — that asymmetry is the tell, because Chrome does not use this config.
+
+1. **Do not touch the server.** Nothing server-side can fix a pin baked into an APK.
+2. Ship a build with the corrected pin, or with the three `<domain-config>` blocks removed
+   entirely. Removing them is a legitimate emergency action: it returns the app to ordinary system
+   trust, which is where it was before this section existed.
+3. Announce it where members will see it — the wiki page and the release notes — because an app
+   that cannot connect cannot tell them anything itself.
+
+**Before every release**, one check that costs nothing: `./gradlew :app:testDevDebugUnitTest --tests "*NetworkSecurityConfigTest"`.
+It fails if a pin element was lost, if a host lost its pin-set, or if a pin-set lost its expiry.
+
 ## 6. App/API behavior contracts (security-relevant)
 
 - Handle RFC 7807 codes as first-class states: `UNAUTHENTICATED` (401 → silent refresh → login),

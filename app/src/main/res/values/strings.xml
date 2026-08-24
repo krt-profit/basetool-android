@@ -601,7 +601,8 @@
     <string name="refinery_ready">Fertig</string>
     <string name="refinery_yield">Ertrag</string>
     <string name="refinery_quality">Qualität %1$d</string>
-    <string name="refinery_amount_scu">%1$d SCU</string>
+    <string name="refinery_unit_scu">SCU</string>
+    <string name="refinery_unit_piece">Stück</string>
     <plurals name="refinery_remaining_minutes">
         <item quantity="one">noch %1$d Minute</item>
         <item quantity="other">noch %1$d Minuten</item>

@@ -40,6 +40,8 @@
 
 ### Fixed
 
+- **Die Raffinerie rechnete die Erntemenge falsch um.** Der Server führt Mengen in Units (100 Units = 1 SCU); die App zeigte sie als SCU an und hätte beim Einlagern das Hundertfache gebucht. Zeitstempel in Raffinerie und Materialbörse erscheinen jetzt in deiner Zeitzone statt als Rohwert, und die App stürzt nach einer Buchung nicht mehr ab.
+
 - **Negative Beträge sahen unterschiedlich aus.** In den Einsatz-Finanzen stand „−2.500" bei den Ausgaben und „-2.500" eine Zeile darunter beim Netto — zwei Zeichen für dieselbe Sache.
 
 - **Aktionen in Bottom-Sheets lagen unter der Gestenleiste.** „Buchen" und „Speichern" ließen sich am unteren Bildschirmrand nicht antippen — der Tipp ging ans System statt an den Knopf. Betrifft alle Sheets der App.

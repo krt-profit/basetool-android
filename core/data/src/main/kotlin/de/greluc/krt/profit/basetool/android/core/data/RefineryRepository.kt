@@ -23,16 +23,26 @@ import java.time.OffsetDateTime
 /**
  * One material coming out of a refining run.
  *
+ * **[amount] is in the member's unit, not the wire's.** The server tracks `outputQuantity` in
+ * *units*, and one SCU is a hundred of them — so a run yielding 288 SCU arrives as `28800`. The web
+ * app divides by a hundred to show it and the app now does the same, because the two must read
+ * alike and because the booking sends this number: shipping the raw value would have created a
+ * Lager entry a hundred times too large, and there is no undo for that.
+ *
+ * A `PIECE` material is already counted in pieces and is not divided.
+ *
  * @property materialId the refined material's id; `null` when the server named no output material,
  *   which is the one case a good cannot be booked into the Lager.
  * @property materialName what to call it.
- * @property amount how much, in the material's own unit.
+ * @property amount how much, in the material's own unit — SCU or pieces, never wire units.
+ * @property unitIsPiece whether that unit is pieces rather than SCU.
  * @property quality the refining quality, or `null` when the order does not record one.
  */
 data class RefineryYield(
     val materialId: String?,
     val materialName: String,
-    val amount: Int,
+    val amount: Double,
+    val unitIsPiece: Boolean,
     val quality: Int?,
 )
 
@@ -107,8 +117,13 @@ data class RefineryOrder(
     val profit: String?,
     val version: Long?,
 ) {
-    /** Total output across every good, in whatever units they carry. */
-    val totalAmount: Int get() = yields.sumOf { it.amount }
+    /**
+     * Total output across every good, in the member's units.
+     *
+     * A sum across mixed units is a rough figure by nature — the list row uses it to say how big a
+     * run was, not to state a quantity anybody acts on.
+     */
+    val totalAmount: Double get() = yields.sumOf { it.amount }
 
     /**
      * What the member sees at [now].
@@ -277,7 +292,11 @@ class RefineryRepository(
                             // zero rather than refusing: the member's material exists either way,
                             // and a booking withheld over a missing grade loses the yield.
                             quality = good.quality ?: DEFAULT_QUALITY,
-                            amount = good.amount.toDouble(),
+                            // SCU, not wire units: the endpoint reads this as the member's own
+                            // figure, writes it into the Lager as-is and multiplies it back by a
+                            // hundred into the order's good. Sending the raw `outputQuantity`
+                            // would book a hundred times the yield.
+                            amount = good.amount,
                         )
                     }
                 }
@@ -505,16 +524,23 @@ private fun hasEndedBy(
  * The **output** material is what gets booked, not the input: the ore went in, the refined material
  * comes out, and booking the input would put ore in the Lager that no longer exists.
  *
- * @return the yield row.
+ * @return the yield row, with its amount already in the member's unit.
  */
-private fun RefineryGoodDto.toModel(): RefineryYield =
-    RefineryYield(
+private fun RefineryGoodDto.toModel(): RefineryYield {
+    val piece = outputMaterial?.quantityType == "PIECE"
+    return RefineryYield(
         materialId = outputMaterial?.id,
         materialName =
             outputMaterial
                 ?.name
                 ?.takeIf { it.isNotBlank() }
                 ?: inputMaterial.name?.takeIf { it.isNotBlank() }.orEmpty(),
-        amount = outputQuantity,
+        // Units to SCU. The one conversion in this file, and the one the booking depends on.
+        amount = if (piece) outputQuantity.toDouble() else outputQuantity / UNITS_PER_SCU,
+        unitIsPiece = piece,
         quality = quality,
     )
+}
+
+/** How many wire units make one SCU. The server tracks `outputQuantity` in the smaller one. */
+private const val UNITS_PER_SCU = 100.0

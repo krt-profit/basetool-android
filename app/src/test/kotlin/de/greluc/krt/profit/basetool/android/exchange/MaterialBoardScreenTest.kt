@@ -47,7 +47,7 @@ class MaterialBoardScreenTest {
         quality = if (piece) null else 3,
         ownerName = "Vex",
         ownerOrgUnits = listOf("SK VG"),
-        postedAt = null,
+        postedAt = "2026-08-24T09:29:53.187358Z",
         remark = null,
         interestCount = 2,
         interestedHandles = handles,
@@ -107,7 +107,9 @@ class MaterialBoardScreenTest {
     fun `a material row shows its quality beside the amount`() {
         board(listOf(entry()))
 
-        compose.onNodeWithText("240.0 SCU · Q 3 · 2 Zusagen").assertIsDisplayed()
+        // "240", not "240.0": the wire carries the trailing zero and a member does not read it.
+        // Found on a device.
+        compose.onNodeWithText("240 SCU · Q 3 · 2 Zusagen").assertIsDisplayed()
     }
 
     @Test
@@ -116,8 +118,11 @@ class MaterialBoardScreenTest {
 
         // „Q 3" on a request would read as an offered grade. It is the floor the requester will
         // accept, and the two are opposite claims.
-        compose.onNodeWithText("240.0 SCU · Min. Q 3 · 2 Zusagen").assertIsDisplayed()
-        compose.onNodeWithText("Gesucht von Vex").assertIsDisplayed()
+        compose.onNodeWithText("240 SCU · Min. Q 3 · 2 Zusagen").assertIsDisplayed()
+        // The timestamp is rendered as a relative span in the member's zone, never as the wire's
+        // ISO string — which is what the row printed until a device walk showed it.
+        compose.onNodeWithText("Gesucht von Vex", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("2026-08-24T09:29:53.187358Z", substring = true).assertDoesNotExist()
     }
 
     @Test

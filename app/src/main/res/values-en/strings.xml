@@ -584,7 +584,8 @@
     <string name="refinery_ready">Ready at</string>
     <string name="refinery_yield">Yield</string>
     <string name="refinery_quality">Quality %1$d</string>
-    <string name="refinery_amount_scu">%1$d SCU</string>
+    <string name="refinery_unit_scu">SCU</string>
+    <string name="refinery_unit_piece">pcs</string>
     <plurals name="refinery_remaining_minutes">
         <item quantity="one">%1$d minute left</item>
         <item quantity="other">%1$d minutes left</item>

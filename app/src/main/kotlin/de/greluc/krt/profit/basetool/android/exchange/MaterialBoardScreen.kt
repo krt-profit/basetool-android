@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.exchange
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
@@ -56,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the board list. */
@@ -401,7 +404,29 @@ private fun ownerLine(entry: BoardEntry): String {
         } else {
             who
         }
-    return listOfNotNull(prefix, entry.postedAt).joinToString(SEPARATOR)
+    return listOfNotNull(prefix, entry.postedAt?.relativeToNow()).joinToString(SEPARATOR)
+}
+
+/**
+ * How long ago the server's timestamp is, in the platform's words.
+ *
+ * Found on a device: the row printed `2026-08-24T09:29:53.187358Z` verbatim. The wire is UTC ISO
+ * and the screen is the member's zone (`REQ-APP-API-004`) — the same rule the Bank's ledger and the
+ * Einsatz list already follow, and the same helper they use.
+ *
+ * An unparseable value is shown as it came rather than dropped: a server that changed its format is
+ * something to see, not to hide.
+ *
+ * @return the localised relative span.
+ */
+private fun String.relativeToNow(): String {
+    val instant = runCatching { Instant.parse(this) }.getOrNull() ?: return this
+    return DateUtils
+        .getRelativeTimeSpanString(
+            instant.toEpochMilli(),
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS,
+        ).toString()
 }
 
 /**
@@ -417,7 +442,9 @@ private fun ownerLine(entry: BoardEntry): String {
 private fun amountLine(entry: BoardEntry): String {
     val unit =
         stringResource(if (entry.unitIsPiece) R.string.board_unit_piece else R.string.board_unit_scu)
-    val amount = "${entry.amount} $unit"
+    // formatAmount, not the raw string: the wire carries `120.0` and a member reads „120". The
+    // same helper the Bank and the Einsatz Finanzen use, so one figure reads the same everywhere.
+    val amount = "${formatAmount(entry.amount)} $unit"
     val quality =
         entry.quality?.let {
             if (entry.side == BoardSide.REQUESTS) {
@@ -623,7 +650,7 @@ private fun StockRow(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = "${stock.amount} $unit",
+            text = "${formatAmount(stock.amount)} $unit",
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.TextMuted,
         )

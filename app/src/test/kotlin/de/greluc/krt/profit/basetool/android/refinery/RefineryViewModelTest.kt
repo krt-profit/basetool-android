@@ -103,7 +103,8 @@ class RefineryViewModelTest {
                         RefineryYield(
                             materialId = materialId,
                             materialName = "Quantainium",
-                            amount = 622,
+                            amount = 622.0,
+                            unitIsPiece = false,
                             quality = 3,
                         ),
                     ),
