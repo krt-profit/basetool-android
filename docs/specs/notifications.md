@@ -216,6 +216,18 @@ object graph, so no caller can thread free text into the shade.
 the app. Checking only the first posts into a void while believing somebody was told. The permission
 is referenced by name, because the constant is API 33 and this app starts at 30.
 
+**And the app has to ASK for it.** It checked the permission and never requested it, so on Android
+13+ — where it is denied until asked — the whole shade half could not work for anybody: the channels
+were created, `canPost` answered `false`, and the notifier silently posted nothing, correctly and
+uselessly. Nothing failed anywhere, which is why only a device found it.
+
+`RequestNotificationPermissionOnce` asks **behind the approval and terms gates**, not at launch: a
+system dialog in front of somebody who may not have an account yet is a question they cannot answer
+usefully. Once, and never again by us — Android remembers a denial, and without a push channel the
+permission buys a notification only while the app is running, which is not worth pressing anybody
+about. The answer is not stored: `canPost` reads the live state before every post, so a grant works
+immediately and a change in the system settings is not shadowed by a stale copy.
+
 **One notification id, reused.** The app cannot clear entries it posted before a restart, so a
 growing stack would outlive its own truth; one entry saying the inbox has something new is what it
 can honestly maintain.
@@ -226,9 +238,17 @@ can honestly maintain.
   (`KrtNotificationChannels`).
 - [x] Every posted notification carries the fixed public version (`SystemNotifier`).
 - [x] Nothing is posted without both gates (`KrtNotificationChannels.canPost`).
-- [ ] **Walked on a device** — outstanding (#67).
+- [x] **Walked on a device** (2026-08-24). The permission dialog appears once, behind the gates. A
+  notification published onto the backend's own fan-out channel reached the shade, and the posted
+  record carries every rule chapter 14 states: `channel=krt_general`, `color=0xffe77e23`,
+  `category=social`, `vis=PRIVATE`, `flags=AUTO_CANCEL`, a `contentIntent` that starts the app —
+  and two titles, „Neues im Basetool" in the shade against „Neue Benachrichtigung" in the
+  `publicVersion` the lock screen shows.
+- [x] The lock-screen rule is verified by that pair rather than by reading the code: the public
+  version is the only thing standing between a member's lock screen and whatever the shade says.
 
-**Code:** `app/…/notifications/KrtNotificationChannels.kt`, `SystemNotifier.kt`
+**Code:** `app/…/notifications/KrtNotificationChannels.kt`, `SystemNotifier.kt`,
+`NotificationPermission.kt`
 
 ## Known gaps, stated rather than omitted
 
