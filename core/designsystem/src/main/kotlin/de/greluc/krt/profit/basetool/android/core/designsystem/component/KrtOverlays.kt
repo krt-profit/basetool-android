@@ -191,12 +191,19 @@ fun KrtModal(
  * A toast: near-black panel with an accent border, corner brackets and the bloom.
  *
  * This composable only renders the panel; placement and the dismissal timer belong to the screen's
- * scaffold. Destructive swipes pair it with a 5 second undo action.
+ * scaffold. Destructive swipes pair it with a 5 second undo action, which is what [actionLabel] is
+ * for — the inbox's "Benachrichtigung geloescht. / Rueckgaengig" of design ch. 07 is the case it
+ * was added for.
+ *
+ * The action is a ghost button rather than a second CTA: a toast is not a screen context, and the
+ * design system's one-filled-CTA rule counts the screen behind it.
  *
  * @param title short headline; uppercased and rendered in the accent colour.
  * @param message one sentence of detail.
  * @param modifier layout modifier.
  * @param isError whether this is an error toast (red accents instead of orange).
+ * @param actionLabel optional action, e.g. the undo of a destructive swipe; needs [onAction].
+ * @param onAction invoked when the action is pressed.
  */
 @Composable
 fun KrtToast(
@@ -204,6 +211,8 @@ fun KrtToast(
     message: String,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     val accent = if (isError) KrtTheme.colors.dangerText else MaterialTheme.colorScheme.primary
     val bloom = if (isError) KrtTheme.colors.glowDangerLg else KrtTheme.colors.glowPrimaryLg
@@ -229,6 +238,13 @@ fun KrtToast(
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.Gray1,
         )
+        if (actionLabel != null && onAction != null) {
+            KrtGhostButton(
+                text = actionLabel,
+                onClick = onAction,
+                modifier = Modifier.padding(top = KrtSpacing.sm),
+            )
+        }
     }
 }
 

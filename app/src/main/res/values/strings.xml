@@ -267,6 +267,15 @@
     <string name="notifications_unread_marker">Ungelesen</string>
     <!-- One per server-side notification type; mirrors the web app's notifications.type.* keys.
          Placeholders are NAMED because the two bundles order the values differently. -->
+    <string name="notifications_mark_all_read">Alle als gelesen markieren</string>
+    <string name="notifications_delete_read">Gelesene löschen</string>
+    <string name="notifications_mark_read_action">Als gelesen markieren</string>
+    <string name="notifications_delete_action">Benachrichtigung löschen</string>
+    <string name="notifications_swipe_read">Gelesen</string>
+    <string name="notifications_swipe_delete">Löschen</string>
+    <string name="notifications_deleted_title">Gelöscht</string>
+    <string name="notifications_deleted_message">Benachrichtigung gelöscht.</string>
+    <string name="notifications_undo">Rückgängig</string>
     <string name="notifications_type_generic">Neue Benachrichtigung</string>
     <string name="notifications_type_job_order_created">Neuer Auftrag #{displayId} für {orgUnit}</string>
     <string name="notifications_type_job_order_updated">Auftrag #{displayId} für {orgUnit} vom Auftraggeber {requester} geändert</string>

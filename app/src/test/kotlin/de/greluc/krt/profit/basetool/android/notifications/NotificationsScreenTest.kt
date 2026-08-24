@@ -62,6 +62,11 @@ class NotificationsScreenTest {
     private fun show(
         state: NotificationsState,
         opened: MutableList<String> = mutableListOf(),
+        markedRead: MutableList<String> = mutableListOf(),
+        deleted: MutableList<String> = mutableListOf(),
+        markedAllRead: MutableList<Unit> = mutableListOf(),
+        deletedRead: MutableList<Unit> = mutableListOf(),
+        undone: MutableList<Unit> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -71,6 +76,11 @@ class NotificationsScreenTest {
                     onRetryNow = {},
                     onLoadMore = {},
                     onOpen = { opened.add(it.id) },
+                    onMarkRead = { markedRead.add(it) },
+                    onMarkAllRead = { markedAllRead.add(Unit) },
+                    onDelete = { deleted.add(it) },
+                    onDeleteRead = { deletedRead.add(Unit) },
+                    onUndoDelete = { undone.add(Unit) },
                 )
             }
         }
