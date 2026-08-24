@@ -655,4 +655,8 @@
         <item quantity="one">%1$d pledge</item>
         <item quantity="other">%1$d pledges</item>
     </plurals>
+    <!-- Forced-update gate (design ch. 14) -->
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_message">The server no longer serves this version. Download the current build to carry on. Your stored data is kept.</string>
+    <string name="update_required_cta">Open the download page</string>
 </resources>

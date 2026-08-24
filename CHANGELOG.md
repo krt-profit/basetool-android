@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die App erfährt jetzt, wenn ihre Version nicht mehr bedient wird.** Ist der Build zu alt, erscheint „Update erforderlich" mit dem Weg zur Download-Seite statt eines unverständlichen Fehlers. Ohne Antwort vom Server läuft die App normal weiter, und gespeicherte Daten bleiben in jedem Fall erhalten (REQ-APP-UI-004).
+
 - **Die Materialbörse ist in der App.** Angebote und Gesuche org-weit, „Ich kann liefern" als Umschalter mit jederzeitiger Rücknahme, eigene Einträge mit „Zurückziehen", und beide Erstellen-Dialoge — das Angebot mit Vorschlägen aus dem eigenen Lagerbestand. Übergabe und Ort bleiben wie im Web außerhalb des Tools.
 
 - **Die Raffinerie ist in der App.** „Meine Orders" mit den Filtern In Arbeit, Abholbereit und Eingelagert, die Restzeit läuft auf dem Gerät minütlich weiter, und im Detail legt „In Lager buchen" pro Material einen Lager-Eintrag mit Qualität an. Der Extractor-Import aus Design-Kapitel 11 kommt später mit den übrigen Datei-Importen.

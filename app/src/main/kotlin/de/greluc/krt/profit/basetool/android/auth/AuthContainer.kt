@@ -29,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionEnvelope
 import de.greluc.krt.profit.basetool.android.core.auth.TokenClient
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
+import de.greluc.krt.profit.basetool.android.core.data.AppVersionRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
@@ -366,6 +367,17 @@ class AuthContainer(
      */
     val inventory: InventoryRepository by lazy {
         InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The served-version policy behind the forced-update gate.
+     *
+     * Shares [apiClient] like everything else, and works signed out too: the header
+     * interceptor omits `Authorization` when there is no session, which is what makes
+     * the gate answer for a build too old to log in.
+     */
+    val appVersion: AppVersionRepository by lazy {
+        AppVersionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

@@ -89,17 +89,23 @@ the first load failed and there is nothing on it**. A screen with content keeps 
 banner — replacing loaded data would take away what the member was reading in order to tell them
 something the banner says without costing them their place.
 
-**A screen adopts it with four pieces**, and the Bank accounts list is the worked example:
+**A screen adopts it with three lines**, since the conditions themselves moved into
+[`FirstLoadRetry`](../../app/src/main/kotlin/de/greluc/krt/profit/basetool/android/ui/FirstLoadRetry.kt)
+(2026-08-24). The Bank held the only copy, and the next nine screens would each have re-derived
+those conditions from the one before it.
 
-1. a `retryIn: Int?` on its state, set only while a countdown runs;
-2. a `scheduleRetry(error, keepContent)` on the failure branch, which starts nothing unless the
-   error is `ServiceUnavailable` or `RateLimited`, the screen is empty, and no timer is already
-   running;
-3. an `onRetry()` that cancels the timer and **resets the attempt count** — the member pressing the
-   button is new information, and inheriting a thirty-second wait from an automatic attempt they did
-   not make would punish them for having waited;
-4. an `onRetryNow` callback on the composable, kept **separate from `onRefresh`**. A pull-to-refresh
-   does not carry the reset, and collapsing the two would lose it silently.
+1. a `retryIn: Int?` on the state and a `FirstLoadRetry` wired to write it;
+2. `retry.onFailure(error, hasContent)` on the failure branch and `retry.onSuccess()` on the
+   success one — the second matters as much as the first: without it a screen that recovered would
+   still be waiting thirty seconds a week later;
+3. an `onRetryNow` callback on the composable, kept **separate from `onRefresh`**. A pull-to-refresh
+   does not carry the ladder reset, and collapsing the two would lose it silently.
+
+**The ladder is deliberately endless** against a server that stays busy — the member is looking at
+the screen and the countdown keeps telling them how long. That has one consequence for tests worth
+writing down, because it cost two debugging rounds: `runTest` drains the scheduler at teardown, so a
+test that starts a countdown and does not cancel the ViewModel's scope **hangs instead of failing**,
+and `advanceUntilIdle()` never returns. Use `runCurrent()`, and cancel the scope at the end.
 
 **Acceptance**
 
@@ -108,5 +114,51 @@ something the banner says without costing them their place.
   (`KrtRetryCountdownTest`, 4 tests).
 - [x] The Bank shows the countdown for a busy server and the ordinary empty state otherwise
   (`BankViewModel`, `BankScreen`).
+- [x] The shared ladder starts on `503`, climbs, and is reset by a manual retry; a `403` gets no
+  countdown at all (`RefineryViewModelTest`). This is the first test the ladder has ever had — the
+  hang above is why.
+- [x] Adopted by the Raffinerie (list and detail) and the Materialbörse.
 - [ ] **The remaining screens' first-load paths** — outstanding (#67).
 - [ ] **Walked on a device** — outstanding (#67).
+
+---
+
+### REQ-APP-UI-004 — The forced-update gate stands outside every other gate
+
+Design chapter 14's non-dismissible „Update erforderlich" screen. The server names a floor
+(`GET /api/v1/app/version-policy`, main repo REQ-API-010) and a build below it stops running.
+
+**Outermost, ahead of the lock and the session.** The endpoint is anonymous for exactly this
+reason: when the breaking change is in the auth flow itself, the old build cannot sign in, so a wall
+placed behind the session gate would never appear for the one case it exists for — the member would
+see an authentication error blaming their credentials instead.
+
+**It fails open in three separate ways**, because a wall is the most destructive state this app has:
+it takes the whole tool away.
+
+- A **failed read** runs the app. There is no screen for "we could not check whether you may run",
+  and inventing one would be the same wall with a different sentence — shown to a member whose only
+  problem is a train tunnel.
+- A **zero floor** allows everything. That is what an unconfigured server answers, and any other
+  reading of it would refuse every installed build the first time the code shipped.
+- The policy is read **once per process**, not on a loop. A wall appearing mid-session over work in
+  progress is worse than one that waits for the next start, and the floor does not move often
+  enough to justify polling.
+
+**Nothing is wiped.** The chapter is explicit that cached data survives, so the gate composes over
+the app rather than signing anybody out. Back **exits** — there is nothing behind the screen, and a
+back press that did nothing would read as a frozen app.
+
+**Recorded deviation:** the chapter's CTA points at a store listing. Distribution is GitHub Releases
+plus Obtainium (plan Q1), so the button opens the release page the server names.
+
+**Acceptance**
+
+- [x] Above the floor runs; below it walls off and carries the release URL (`UpdateGateTest`).
+- [x] A zero floor and a failed read both run the app.
+- [x] The policy is read once however often the gate is composed.
+- [x] A newer build being available is not treated as a refusal — the two numbers stay apart, or
+  every release would be a forced one.
+- [ ] **Walked on a device** — outstanding (#67).
+
+**Code:** `UpdateGate`, `UpdateGateViewModel`, `AppVersionRepository`

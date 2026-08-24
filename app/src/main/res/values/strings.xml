@@ -672,4 +672,8 @@
         <item quantity="one">%1$d Zusage</item>
         <item quantity="other">%1$d Zusagen</item>
     </plurals>
+    <!-- Forced-update gate (design ch. 14) -->
+    <string name="update_required_title">Update erforderlich</string>
+    <string name="update_required_message">Diese Version wird vom Server nicht mehr bedient. Lade die aktuelle Version herunter, um weiterzuarbeiten. Deine gespeicherten Daten bleiben erhalten.</string>
+    <string name="update_required_cta">Zur Download-Seite</string>
 </resources>
