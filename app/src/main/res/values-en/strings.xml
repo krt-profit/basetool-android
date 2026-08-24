@@ -233,6 +233,8 @@
     <string name="operation_detail_error_title">System Malfunction</string>
     <string name="operation_detail_error_message">The Operation could not be loaded.</string>
     <!-- Benachrichtigungen (design chapter 07) -->
+    <string name="list_detail_none_title">Nothing selected</string>
+    <string name="list_detail_none_message">Pick an entry on the left to see it here.</string>
     <string name="notifications_title">Benachrichtigungen</string>
     <plurals name="notifications_unread">
         <item quantity="one">%1$d new</item>
@@ -452,6 +454,19 @@
     <string name="blueprints_title">Blueprints</string>
     <string name="blueprints_tab_items">Items</string>
     <string name="blueprints_tab_blueprints">Blueprints</string>
+    <string name="blueprints_recipe_none">Pick a blueprint on the left to see its recipe.</string>
+    <string name="blueprints_recipe_loading">Loading recipe</string>
+    <string name="blueprints_recipe_error_title">Signal Lost</string>
+    <string name="blueprints_recipe_error_message">The recipe could not be loaded.</string>
+    <string name="blueprints_recipe_empty_title">No ingredients</string>
+    <string name="blueprints_recipe_empty_message">The server lists no ingredients for this blueprint.</string>
+    <string name="blueprints_recipe_quality">Q %1$d</string>
+    <plurals name="blueprints_recipe_units">
+        <item quantity="one">%1$d unit</item>
+        <item quantity="other">%1$d units</item>
+    </plurals>
+    <string name="blueprints_recipe_scu">%1$.2f SCU</string>
+    <string name="blueprints_edit">Edit</string>
     <string name="blueprints_search">Search blueprint</string>
     <string name="blueprints_add">Add</string>
     <string name="blueprints_remove">Remove</string>

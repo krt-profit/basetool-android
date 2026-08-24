@@ -99,6 +99,7 @@ fun MeinInventarRoute(
                 onAdd = blueprints::onAdd,
                 onEdit = blueprints::onEdit,
                 onDelete = blueprints::onDeleteRequested,
+                onSelect = blueprints::onSelect,
             )
         }
     }

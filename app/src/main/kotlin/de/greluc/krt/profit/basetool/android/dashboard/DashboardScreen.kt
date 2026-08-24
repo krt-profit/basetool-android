@@ -11,10 +11,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusLabel
 import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -101,71 +104,145 @@ fun DashboardScreen(
         onRefresh = onRefresh,
         modifier = modifier.fillMaxSize(),
     ) {
-        LazyColumn(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
-            item(key = "greeting") {
+        if (isWideWindow()) {
+            // Design ch. 05 asks for a two-column grid on the tablet. The greeting and the
+            // announcement stay full width — they address the member and the whole org, not one
+            // of the two columns — and the two sections sit side by side below them.
+            //
+            // Two independent LazyColumns rather than one grid: the sections are different
+            // lengths and scroll at their own pace, and a grid would tie the last Einsatz to
+            // whatever notification happens to sit beside it.
+            Column(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
                 Greeting(memberName = memberName, orgUnitName = orgUnitName)
-            }
-            state.announcement?.let { announcement ->
-                item(key = "announcement") {
-                    AnnouncementBand(text = announcement.content)
-                }
-            }
-            item(key = "missions-title") {
-                KrtSectionTitle(
-                    text = stringResource(R.string.dashboard_missions),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-                )
-            }
-            when {
-                state.phase is DashboardPhase.Failed -> {
-                    item(key = "missions-failed") {
-                        MutedLine(text = stringResource(R.string.dashboard_missions_failed))
+                state.announcement?.let { AnnouncementBand(text = it.content) }
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+                ) {
+                    LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        missionsSection(
+                            state = state,
+                            onOpenMission = onOpenMission,
+                            onOpenMissions = onOpenMissions,
+                        )
                     }
-                }
-
-                state.missions.isEmpty() && state.phase is DashboardPhase.Ready -> {
-                    item(key = "missions-empty") {
-                        MutedLine(text = stringResource(R.string.dashboard_missions_empty))
-                    }
-                }
-
-                else -> {
-                    items(state.missions, key = { it.id }) { mission ->
-                        MissionBandRow(mission = mission, onClick = { onOpenMission(mission.id) })
-                    }
-                    item(key = "missions-all") {
-                        LinkLine(
-                            text = stringResource(R.string.dashboard_missions_all),
-                            onClick = onOpenMissions,
+                    LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        notificationsSection(
+                            unread = unread,
+                            unreadKnown = unreadKnown,
+                            onOpenNotifications = onOpenNotifications,
                         )
                     }
                 }
             }
-            item(key = "notifications-title") {
-                KrtSectionTitle(
-                    text = stringResource(R.string.dashboard_notifications),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-                )
-            }
-            if (unread.isEmpty()) {
-                // Silence while the inbox is still answering: saying "nothing unread" before it
-                // has is a claim about the member's inbox made out of not knowing yet.
-                if (unreadKnown) {
-                    item(key = "notifications-empty") {
-                        MutedLine(text = stringResource(R.string.dashboard_notifications_empty))
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
+                item(key = "greeting") {
+                    Greeting(memberName = memberName, orgUnitName = orgUnitName)
+                }
+                state.announcement?.let { announcement ->
+                    item(key = "announcement") {
+                        AnnouncementBand(text = announcement.content)
                     }
                 }
-            } else {
-                items(unread.take(PREVIEW_ROWS), key = { it.id }) { notification ->
-                    MutedLine(text = notification.preview())
-                }
-                item(key = "notifications-all") {
-                    LinkLine(
-                        text = stringResource(R.string.dashboard_notifications_all),
-                        onClick = onOpenNotifications,
-                    )
-                }
+                missionsSection(
+                    state = state,
+                    onOpenMission = onOpenMission,
+                    onOpenMissions = onOpenMissions,
+                )
+                notificationsSection(
+                    unread = unread,
+                    unreadKnown = unreadKnown,
+                    onOpenNotifications = onOpenNotifications,
+                )
             }
+        }
+    }
+}
+
+/**
+ * The "Einsätze" half of the dashboard.
+ *
+ * A `LazyListScope` extension rather than a composable so the same rows can be the top half of one
+ * list on a phone and the whole of the left list on a tablet, without either layout owning a copy.
+ *
+ * @param state what to draw.
+ * @param onOpenMission opens one Einsatz.
+ * @param onOpenMissions opens the full list.
+ */
+private fun LazyListScope.missionsSection(
+    state: DashboardState,
+    onOpenMission: (String) -> Unit,
+    onOpenMissions: () -> Unit,
+) {
+    item(key = "missions-title") {
+        KrtSectionTitle(
+            text = stringResource(R.string.dashboard_missions),
+            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        )
+    }
+    when {
+        state.phase is DashboardPhase.Failed -> {
+            item(key = "missions-failed") {
+                MutedLine(text = stringResource(R.string.dashboard_missions_failed))
+            }
+        }
+
+        state.missions.isEmpty() && state.phase is DashboardPhase.Ready -> {
+            item(key = "missions-empty") {
+                MutedLine(text = stringResource(R.string.dashboard_missions_empty))
+            }
+        }
+
+        else -> {
+            items(state.missions, key = { it.id }) { mission ->
+                MissionBandRow(mission = mission, onClick = { onOpenMission(mission.id) })
+            }
+            item(key = "missions-all") {
+                LinkLine(
+                    text = stringResource(R.string.dashboard_missions_all),
+                    onClick = onOpenMissions,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The "Benachrichtigungen" half of the dashboard.
+ *
+ * @param unread the unread rows, of which only the first few are previewed.
+ * @param unreadKnown whether the inbox has answered yet.
+ * @param onOpenNotifications opens the inbox.
+ */
+private fun LazyListScope.notificationsSection(
+    unread: List<Notification>,
+    unreadKnown: Boolean,
+    onOpenNotifications: () -> Unit,
+) {
+    item(key = "notifications-title") {
+        KrtSectionTitle(
+            text = stringResource(R.string.dashboard_notifications),
+            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        )
+    }
+    if (unread.isEmpty()) {
+        // Silence while the inbox is still answering: saying "nothing unread" before it
+        // has is a claim about the member's inbox made out of not knowing yet.
+        if (unreadKnown) {
+            item(key = "notifications-empty") {
+                MutedLine(text = stringResource(R.string.dashboard_notifications_empty))
+            }
+        }
+    } else {
+        items(unread.take(PREVIEW_ROWS), key = { it.id }) { notification ->
+            MutedLine(text = notification.preview())
+        }
+        item(key = "notifications-all") {
+            LinkLine(
+                text = stringResource(R.string.dashboard_notifications_all),
+                onClick = onOpenNotifications,
+            )
         }
     }
 }

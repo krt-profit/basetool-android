@@ -7,6 +7,8 @@
 
 
 
+
+- **Das Tablet nutzt die Breite jetzt so, wie es der Entwurf vorsieht.** Einsätze, Aufträge, Raffinerie und Bank zeigen die Liste neben dem Detail; die Übersicht wird zweispaltig, der Posteingang bekommt eine schmalere Lesespalte, die Nutzungsbedingungen stehen neben ihrer Zustimmungsleiste, und Blueprints zeigen rechts das Rezept mit der geforderten Qualität je Zutat. Auf dem Telefon ändert sich nichts.
 - **Der Hangar zeigt auf dem Tablet die volle Tabelle statt Karten.** Dieselben Spalten wie im Browser — Typ, Name, Versicherung, Ort, Ausgebaut — und ein Klick auf die Zeile öffnet den Editor wie auf dem Telefon.
 - **Die Haupt-Aktion einer Liste sitzt jetzt als quadratische Schaltfläche unten rechts.** Hangar, Lager, Mein Inventar und Materialbörse hatten sie in einer Kopfzeile, die auf dem Telefon Suche und Filter nach unten schob, bevor ein einziges Ergebnis zu sehen war.
 - **Der Posteingang lässt sich jetzt bedienen.** Einzelne Benachrichtigungen als gelesen markieren oder löschen — per Wischgeste oder über die Knöpfe in der Zeile — dazu „Alle als gelesen markieren" und „Gelesene löschen". Ein Löschen lässt sich fünf Sekunden lang rückgängig machen (REQ-APP-NOTIF-011, REQ-APP-NOTIF-012).

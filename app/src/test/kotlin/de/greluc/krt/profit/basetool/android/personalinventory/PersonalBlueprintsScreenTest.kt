@@ -123,6 +123,7 @@ class PersonalBlueprintsScreenTest {
                     onAdd = {},
                     onEdit = { edited.add(it) },
                     onDelete = { deleted.add(it) },
+                    onSelect = {},
                 )
             }
         }

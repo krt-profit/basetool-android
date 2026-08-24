@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.personalinventory
 
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
 import de.greluc.krt.profit.basetool.android.core.data.CraftabilityMaterial
 import de.greluc.krt.profit.basetool.android.core.data.OwnedBlueprint
@@ -109,6 +110,15 @@ class PersonalBlueprintsViewModelTest {
         override suspend fun products(query: String): ApiResult<List<BlueprintProduct>> {
             searched.add(query)
             return ApiResult.Success(products)
+        }
+
+        var recipeAnswer: ApiResult<BlueprintRecipe> =
+            ApiResult.Success(BlueprintRecipe(productName = "", variantCount = 1, ingredients = emptyList()))
+        var recipeCalls = mutableListOf<String>()
+
+        override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> {
+            recipeCalls.add(id)
+            return recipeAnswer
         }
     }
 

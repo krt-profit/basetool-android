@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.personalinventory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
 import de.greluc.krt.profit.basetool.android.core.data.OwnedBlueprint
 import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintRepository
@@ -129,7 +130,42 @@ data class BlueprintsState(
     val pendingDelete: OwnedBlueprint? = null,
     val deleting: Boolean = false,
     val lastFailure: ApiError? = null,
+    val selectedId: String? = null,
+    val recipe: RecipeState = RecipeState.Idle,
 )
+
+/**
+ * The recipe pane of the tablet's master-detail (design ch. 09).
+ *
+ * A state of its own rather than a nullable recipe plus a boolean: the pane has to tell "nothing
+ * selected" apart from "selected and still loading" apart from "selected and the read failed", and
+ * two flags would let those three be four.
+ */
+sealed interface RecipeState {
+    /** Nothing is selected; the pane shows its prompt. */
+    data object Idle : RecipeState
+
+    /** A blueprint is selected and its recipe is on its way. */
+    data object Loading : RecipeState
+
+    /**
+     * The recipe arrived.
+     *
+     * @property recipe what to draw.
+     */
+    data class Ready(
+        val recipe: BlueprintRecipe,
+    ) : RecipeState
+
+    /**
+     * The read failed.
+     *
+     * @property error what went wrong, so the pane can say whether retrying is worth it.
+     */
+    data class Failed(
+        val error: ApiError,
+    ) : RecipeState
+}
 
 /**
  * Drives the Blueprints tab of "Mein Inventar".
@@ -256,6 +292,44 @@ class PersonalBlueprintsViewModel(
     fun onEditorDismissed() {
         searchJob?.cancel()
         mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Closed)
+    }
+
+    /**
+     * Selects a blueprint and reads its recipe.
+     *
+     * Only the tablet's master-detail calls this; on a phone the row does nothing of the sort,
+     * because the design gives the phone no recipe screen to go to.
+     *
+     * Re-selecting the same row is ignored rather than re-read: the pane already shows it, and a
+     * second read would blank a recipe the member is looking at.
+     *
+     * @param id the owned blueprint to show.
+     */
+    fun onSelect(id: String) {
+        if (mutableState.value.selectedId == id && mutableState.value.recipe is RecipeState.Ready) {
+            return
+        }
+        mutableState.value =
+            mutableState.value.copy(selectedId = id, recipe = RecipeState.Loading)
+        viewModelScope.launch {
+            when (val result = repository.recipe(id)) {
+                is ApiResult.Success -> {
+                    // Guarded: a slow read for a row the member has since left must not overwrite
+                    // the recipe of the one they are looking at now.
+                    if (mutableState.value.selectedId == id) {
+                        mutableState.value =
+                            mutableState.value.copy(recipe = RecipeState.Ready(result.value))
+                    }
+                }
+
+                is ApiResult.Failure -> {
+                    if (mutableState.value.selectedId == id) {
+                        mutableState.value =
+                            mutableState.value.copy(recipe = RecipeState.Failed(result.error))
+                    }
+                }
+            }
+        }
     }
 
     /**

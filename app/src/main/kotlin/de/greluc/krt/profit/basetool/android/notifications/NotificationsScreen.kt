@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -106,8 +107,11 @@ fun NotificationsScreen(
     onUndoDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        // Narrower than the app-wide 1200 dp cap, because design ch. 07 says so: an inbox is a
+        // column of sentences, and a sentence that runs the full width of a tablet is harder to
+        // read than one that does not. The global cap is a maximum, not a target.
+        Column(modifier = Modifier.fillMaxSize().widthIn(max = INBOX_COLUMN_MAX)) {
             if (state.unread > 0) {
                 Text(
                     text =
@@ -368,6 +372,9 @@ private fun NotificationRow(
         )
     }
 }
+
+/** The inbox's own content width on a tablet (design ch. 07: "rail + 720 dp column"). */
+private val INBOX_COLUMN_MAX = 720.dp
 
 /** Height of the unread inset bar, matching a two-line row. */
 private val ROW_BAR_HEIGHT = 40.dp

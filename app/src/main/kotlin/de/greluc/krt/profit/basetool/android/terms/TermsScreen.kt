@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.terms
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -46,6 +49,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModa
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Bullet marker; the design uses a disc, and Compose has no list primitive. */
@@ -102,38 +106,42 @@ fun TermsScreen(
     ) {
         Header(document)
 
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
-        ) {
-            Text(
-                text = document.intro,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.Gray1,
-            )
-            document.sections.forEach { section ->
-                Spacer(Modifier.height(KrtSpacing.lg))
-                SectionBlock(section)
+        // Design ch. 04 gives the Terms — and only the Terms — a split on the tablet: the
+        // document on the left at a readable measure, the action rail on the right. Login and
+        // the pending/app-lock screens keep their single 480 dp column, so this is not the
+        // general wide layout of the auth family but this one screen's rule.
+        //
+        // Splitting matters here more than elsewhere: this is the one screen a member must read
+        // before acting, and a full-tablet-width line of legal prose is the hardest thing to read
+        // the app could put in front of them. The rail also keeps the CTA visible while they
+        // scroll, instead of hiding the thing they are scrolling towards.
+        if (isWideWindow()) {
+            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                TermsDocumentColumn(
+                    document = document,
+                    modifier = Modifier.weight(1f).widthIn(max = DOCUMENT_MAX_WIDTH),
+                )
+                ActionBar(
+                    checked = checked,
+                    onCheckedChange = { checked = it },
+                    accepting = accepting,
+                    errorRes = errorRes,
+                    onAccept = onAccept,
+                    onDecline = { confirmingDecline = true },
+                    modifier = Modifier.width(ACTION_RAIL_WIDTH),
+                )
             }
-            Spacer(Modifier.height(KrtSpacing.lg))
-            Text(
-                text = document.lastUpdated,
-                style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.TextMuted,
+        } else {
+            TermsDocumentColumn(document = document, modifier = Modifier.weight(1f))
+            ActionBar(
+                checked = checked,
+                onCheckedChange = { checked = it },
+                accepting = accepting,
+                errorRes = errorRes,
+                onAccept = onAccept,
+                onDecline = { confirmingDecline = true },
             )
         }
-
-        ActionBar(
-            checked = checked,
-            onCheckedChange = { checked = it },
-            accepting = accepting,
-            errorRes = errorRes,
-            onAccept = onAccept,
-            onDecline = { confirmingDecline = true },
-        )
     }
 
     if (confirmingDecline) {
@@ -153,6 +161,56 @@ fun TermsScreen(
         }
     }
 }
+
+/**
+ * The scrolling document itself.
+ *
+ * Extracted so the phone's single column and the tablet's split can share it — the text is the
+ * same text, and a second copy would be a second place for the prose to drift.
+ *
+ * @param document what to render.
+ * @param modifier layout modifier; the caller decides the width and the weight.
+ */
+@Composable
+private fun TermsDocumentColumn(
+    document: TermsDocument,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
+    ) {
+        Text(
+            text = document.intro,
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+        document.sections.forEach { section ->
+            Spacer(Modifier.height(KrtSpacing.lg))
+            SectionBlock(section)
+        }
+        Spacer(Modifier.height(KrtSpacing.lg))
+        Text(
+            text = document.lastUpdated,
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+    }
+}
+
+/**
+ * Widest the document column gets on a tablet.
+ *
+ * Design ch. 04 states the measure as "\u2264 80 ch"; at the body style's 16 sp Lato that is about
+ * this many dp. Expressed in dp because a Compose width constraint cannot take characters, and
+ * kept as one number so the reason survives next to it.
+ */
+private val DOCUMENT_MAX_WIDTH = 720.dp
+
+/** Width of the action rail beside the document. */
+private val ACTION_RAIL_WIDTH = 360.dp
 
 /**
  * The fixed header: eyebrow, title, version and date.
@@ -251,11 +309,12 @@ private fun ActionBar(
     errorRes: Int?,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     KrtHairlineRule()
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .background(KrtPalette.Gray4)
                 .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
