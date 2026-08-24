@@ -106,15 +106,22 @@ class SystemNotifier(
      */
     private fun intentFor(route: String?): PendingIntent {
         val target = route ?: INBOX_ROUTE
+        // Built explicit from the CONSTRUCTOR, not made explicit afterwards. Both forms bind the
+        // same component at runtime, and only this one is visibly explicit to a reader and to
+        // static analysis: `setClass` inside an `apply` block is a mutation CodeQL's
+        // implicit-PendingIntent query does not follow, so the earlier version fixed the intent
+        // and left the alert standing -- which is its own kind of defect, because the next person
+        // has to re-derive whether the finding is real.
+        //
+        // Why it matters at all: a PendingIntent is handed to the system to fire on our behalf, so
+        // an implicit one inside it is a blank cheque against whatever resolves it. The activity
+        // is known here; nothing needs to resolve anything.
+        //
+        // The deep link stays as the intent's DATA, which is what the nav graph routes on.
         val intent =
-            Intent(Intent.ACTION_VIEW, "$KRT_DEEP_LINK_SCHEME://$target".toUri()).apply {
-                // The COMPONENT, not just the package. Both restrict resolution to this app, but
-                // only the component makes the intent explicit in the sense the platform and
-                // CodeQL's implicit-PendingIntent query both use -- and a PendingIntent wrapping
-                // an implicit intent is handed to the system to fire on our behalf, which is the
-                // shape that has been exploitable elsewhere. The activity is known here; there is
-                // no reason to let anything resolve it.
-                setClass(context, MainActivity::class.java)
+            Intent(context, MainActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = "$KRT_DEEP_LINK_SCHEME://$target".toUri()
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         return PendingIntent.getActivity(

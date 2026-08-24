@@ -148,6 +148,39 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+  # Keeps GitHub's dependency graph current, which is what the release job exports its SBOM from
+  # (DEV_CI § 4). Main only: a submission from a pull request would write a fork's graph into this
+  # repository's, and a graph nobody can trust is worse than none.
+  dependency-graph:
+    name: Submit the dependency graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+
+      - name: Validate the Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Submit the resolved dependencies
+        uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
   workflows:
     name: Workflow lint
     runs-on: ubuntu-latest

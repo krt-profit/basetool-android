@@ -24,9 +24,18 @@
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+      allowBackup is OFF, rather than on-with-exclusions. Both files this app persists — the
+      encrypted refresh token and the org-unit pin — are excluded from backup and device transfer
+      anyway, so a restore would produce an empty app: backup buys a member nothing here. What it
+      costs is a standing invariant, that every file added in future is remembered in three rule
+      sets, and a class of mistake nobody would notice. The rule files stay, because
+      `dataExtractionRules` still governs device-to-device transfer and because a later re-enable
+      must not start from a blank slate.
+    -->
     <application
         android:name=".BasetoolApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

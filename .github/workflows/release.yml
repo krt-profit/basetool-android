@@ -214,6 +214,26 @@ jobs:
         with:
           subject-path: ${{ steps.verify.outputs.apk }}
 
+      - name: Export the dependency SBOM
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # GitHub's own dependency-graph export rather than the CycloneDX Gradle plugin, which
+          # DEV_CI § 4 leaves conditional on an AGP compatibility nobody has verified. This needs
+          # no plugin, cannot break the build, and describes the same resolved graph -- the
+          # `dependency-submission` step on main is what keeps it current.
+          #
+          # A repository whose graph has never been submitted answers with an almost empty
+          # document rather than an error, so the job does not fail on it: an SBOM is evidence to
+          # publish, not a gate on shipping a build that is already signed and attested.
+          if gh api "repos/${{ github.repository }}/dependency-graph/sbom" > sbom.json 2>/dev/null; then
+            echo "SBOM exported ($(wc -c < sbom.json) bytes)"
+          else
+            echo "::warning::the dependency graph answered no SBOM; the release ships without one"
+            rm -f sbom.json
+          fi
+
       - name: Publish the draft release
         env:
           GH_TOKEN: ${{ github.token }}

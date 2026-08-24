@@ -11,6 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AppVersionPolicyDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 
 /**
@@ -87,14 +88,29 @@ class AppVersionRepository(
                         // member the first time the server omitted a value.
                         minimumVersionCode = result.value.minimumVersionCode ?: 0,
                         latestVersionCode = result.value.latestVersionCode ?: 0,
-                        releasesUrl =
-                            result.value.releasesUrl?.takeIf { it.isNotBlank() } ?: RELEASES_FALLBACK,
+                        // https, or the fallback. This is the one value in the app that
+                        // arrives from the wire and leaves again as an implicit ACTION_VIEW, on
+                        // the one endpoint that answers without a token — so `market://`,
+                        // `intent://` or anything else another app claims would be launched on a
+                        // compromised server's say-so. A wall with a wrong-but-safe link beats a
+                        // wall that opens something we did not choose.
+                        releasesUrl = safeReleasesUrl(result.value.releasesUrl),
                     ),
                 )
             }
         }
 
     private companion object {
+        /**
+         * Accepts a release URL only if it is https.
+         *
+         * @param raw what the server sent.
+         * @return the URL, or the published fallback.
+         */
+        fun safeReleasesUrl(raw: String?): String =
+            raw?.takeIf { it.isNotBlank() }?.toHttpUrlOrNull()?.takeIf { it.isHttps }?.toString()
+                ?: RELEASES_FALLBACK
+
         /** Log subsystem. Nothing about a member passes through here. */
         const val LOG_TAG = "app-version"
 

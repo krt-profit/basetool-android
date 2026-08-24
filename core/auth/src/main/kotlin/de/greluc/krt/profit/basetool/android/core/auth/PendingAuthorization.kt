@@ -72,15 +72,23 @@ class PendingAuthorization(
     }
 
     /**
-     * Consumes the pending attempt.
+     * Reads the pending attempt **without consuming it**.
+     *
+     * Consuming on read is what this used to do, and it made the attempt destroyable by anybody:
+     * [AuthRedirectActivity] is exported, so another installed app can start it with any intent it
+     * likes, and the read alone would have thrown the attempt away — the member's real redirect
+     * then arrives with nothing to complete and every login ends in „abgelaufen". PKCE and the
+     * 256-bit state already stop that app from *stealing* a login; this stops it from *breaking*
+     * one, which is a different property and was not covered.
+     *
+     * The caller clears it once the redirect has been judged — see [clear].
      *
      * @return the attempt, or `null` when there is none or it can no longer be read — which for the
      *   caller means the same thing: this redirect cannot be completed and the member starts over
      */
     @OptIn(ExperimentalEncodingApi::class)
-    suspend fun take(): AuthorizationRequest? {
+    suspend fun peek(): AuthorizationRequest? {
         val encoded = storedValue() ?: return null
-        clear()
         return decode(encoded)
     }
 

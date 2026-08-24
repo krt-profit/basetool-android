@@ -84,7 +84,7 @@ class LoginViewModel(
     fun completeLogin(redirect: String?) {
         if (redirect == null) return
         viewModelScope.launch {
-            val request = container.pendingAuthorization.take()
+            val request = container.pendingAuthorization.peek()
             if (request == null) {
                 // No attempt is pending: a stale redirect, or the app was reinstalled while the
                 // browser was open. Nothing to complete, and nothing to report either.
@@ -92,8 +92,17 @@ class LoginViewModel(
                 mutableState.value = LoginUiState.Idle
                 return@launch
             }
+            // The attempt is consumed only once the redirect turns out to BE this attempt's.
+            // A state mismatch means somebody else's intent reached the exported activity, and
+            // discarding on that would let any installed app end a login in flight — the member's
+            // own redirect would then find nothing pending. Consuming on a real answer keeps the
+            // single-use property that matters: a code is redeemed at most once.
+            val response = request.readRedirect(redirect)
+            if (response !is AuthorizationResponse.StateMismatch) {
+                container.pendingAuthorization.clear()
+            }
             mutableState.value =
-                when (val response = request.readRedirect(redirect)) {
+                when (response) {
                     is AuthorizationResponse.Code -> redeem(request, response.code)
                     is AuthorizationResponse.Denied -> LoginUiState.Failed(R.string.login_error_denied)
                     AuthorizationResponse.StateMismatch -> LoginUiState.Failed(R.string.login_error_expired)
