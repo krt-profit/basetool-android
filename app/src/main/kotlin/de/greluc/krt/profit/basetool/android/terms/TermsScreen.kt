@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -117,10 +118,17 @@ fun TermsScreen(
         // scroll, instead of hiding the thing they are scrolling towards.
         if (isWideWindow()) {
             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                TermsDocumentColumn(
-                    document = document,
-                    modifier = Modifier.weight(1f).widthIn(max = DOCUMENT_MAX_WIDTH),
-                )
+                // The cap has to sit INSIDE the weighted slot, not after it. `weight` hands the
+                // child a fixed width, and `widthIn` cannot narrow a fixed constraint — it would
+                // read as a cap and do nothing, which is what a 1280 dp tablet showed: the
+                // document ran 872 dp wide. A Box takes the weight and passes loose constraints
+                // down, so the measure applies.
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopStart) {
+                    TermsDocumentColumn(
+                        document = document,
+                        modifier = Modifier.widthIn(max = DOCUMENT_MAX_WIDTH).fillMaxHeight(),
+                    )
+                }
                 ActionBar(
                     checked = checked,
                     onCheckedChange = { checked = it },
