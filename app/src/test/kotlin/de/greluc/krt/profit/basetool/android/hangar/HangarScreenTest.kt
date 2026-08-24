@@ -74,6 +74,7 @@ class HangarScreenTest {
                     onSegmentSelected = {},
                     onSearchChanged = {},
                     onRefresh = {},
+                    onRetryNow = {},
                     onLoadMore = {},
                     onCreate = { created.add(Unit) },
                     onEdit = { edited.add(it) },

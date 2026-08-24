@@ -53,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHair
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
@@ -109,6 +110,7 @@ const val MISSION_FINANCE_SAVE_TAG: String = "mission-finance-save"
  * @param state what to draw.
  * @param onTabSelected a tab was picked.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onRetryFinances the Finanzen tab's retry.
  * @param actions what the caller may do to their own sign-up.
  * @param finances what they may do to the Einsatz's money.
@@ -120,6 +122,7 @@ fun MissionDetailScreen(
     state: MissionDetailState,
     onTabSelected: (MissionTab) -> Unit,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onRetryFinances: () -> Unit,
     actions: MissionSignUpActions,
     finances: MissionFinanceActions,
@@ -156,7 +159,22 @@ fun MissionDetailScreen(
             }
 
             phase is MissionDetailPhase.Failed -> {
-                MissionDetailFailure(error = phase.error)
+                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                // failure state, because a countdown in front of a 403 promises a retry that will
+                // answer exactly the same.
+                val retryIn = state.retryIn
+                if (retryIn != null) {
+                    KrtRetryCountdown(
+                        secondsLeft = retryIn,
+                        title = stringResource(R.string.retry_busy_title),
+                        message = stringResource(R.string.retry_busy_message, retryIn),
+                        retryLabel = stringResource(R.string.retry_now),
+                        onRetry = onRetryNow,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                } else {
+                    MissionDetailFailure(error = phase.error)
+                }
             }
 
             else -> {
@@ -1032,6 +1050,7 @@ fun MissionDetailRoute(
         state = state,
         onTabSelected = viewModel::onTabSelected,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         onRetryFinances = viewModel::onRetryFinances,
         actions =
             MissionSignUpActions(

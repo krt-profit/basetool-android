@@ -20,6 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OperationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +55,7 @@ sealed interface OperationDetailPhase {
  * @property phase how far the read has got
  * @property myUserId the caller's backend user id, or `null` while unknown or unreadable
  * @property refreshing whether a pull-to-refresh is running over content already on screen
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  */
 data class OperationDetailState(
     val operationId: String,
@@ -65,6 +67,7 @@ data class OperationDetailState(
     val online: Boolean = true,
     val error: ApiError? = null,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
 ) {
     /**
      * The caller's own payout row, when it can be identified.
@@ -106,6 +109,24 @@ class OperationDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<OperationDetailState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { load() },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     init {
         viewModelScope.launch {
@@ -204,6 +225,7 @@ class OperationDetailViewModel(
                             phase = OperationDetailPhase.Ready,
                             refreshing = false,
                         )
+                    retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
@@ -213,6 +235,7 @@ class OperationDetailViewModel(
                             phase = OperationDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    retry.onFailure(result.error, hasContent = false)
                 }
             }
         }

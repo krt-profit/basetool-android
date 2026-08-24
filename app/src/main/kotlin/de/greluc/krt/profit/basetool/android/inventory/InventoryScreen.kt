@@ -50,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
@@ -91,6 +92,7 @@ private val RAIL_HEIGHT = 44.dp
  * @param onBookOut an entry's booking action was taken.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param modifier layout modifier.
  */
@@ -104,6 +106,7 @@ fun InventoryScreen(
     onBookOut: (InventoryEntry) -> Unit,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
+    onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -146,14 +149,29 @@ fun InventoryScreen(
             }
 
             is InventoryPhase.Failed -> {
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_crate,
-                    title = stringResource(R.string.inventory_error_title),
-                    message = stringResource(R.string.inventory_error_message),
-                    actionText = stringResource(R.string.missions_retry),
-                    onAction = onRefresh,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                )
+                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                // empty state, because a countdown in front of a 403 promises a retry that will
+                // answer exactly the same.
+                val retryIn = state.retryIn
+                if (retryIn != null) {
+                    KrtRetryCountdown(
+                        secondsLeft = retryIn,
+                        title = stringResource(R.string.retry_busy_title),
+                        message = stringResource(R.string.retry_busy_message, retryIn),
+                        retryLabel = stringResource(R.string.retry_now),
+                        onRetry = onRetryNow,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                } else {
+                    KrtEmptyState(
+                        iconRes = DesignR.drawable.ic_krt_crate,
+                        title = stringResource(R.string.inventory_error_title),
+                        message = stringResource(R.string.inventory_error_message),
+                        actionText = stringResource(R.string.missions_retry),
+                        onAction = onRefresh,
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    )
+                }
             }
 
             is InventoryPhase.Ready -> {
@@ -595,6 +613,7 @@ fun InventoryRoute(
         onBookOut = onBookOut,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
+        onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         modifier = modifier,
     )

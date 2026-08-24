@@ -10,7 +10,7 @@
 
 - **Die Raffinerie ist in der App.** „Meine Orders" mit den Filtern In Arbeit, Abholbereit und Eingelagert, die Restzeit läuft auf dem Gerät minütlich weiter, und im Detail legt „In Lager buchen" pro Material einen Lager-Eintrag mit Qualität an. Der Extractor-Import aus Design-Kapitel 11 kommt später mit den übrigen Datei-Importen.
 
-- **Ein ausgelasteter Server bekommt jetzt einen Countdown statt einer Fehlermeldung.** Die App versucht es automatisch erneut — 3, 6, 12, dann alle 30 Sekunden — und zeigt die verbleibende Zeit; bei einer Drosselung hält sie sich an die Wartezeit, die der Server nennt. „Jetzt erneut versuchen" setzt den Rhythmus zurück. Bereits geladene Inhalte bleiben stehen (REQ-APP-UI-003).
+- **Ein ausgelasteter Server bekommt auf jedem Bildschirm einen Countdown statt einer Fehlermeldung.** Die App versucht es automatisch erneut — 3, 6, 12, dann alle 30 Sekunden — und zeigt die verbleibende Zeit; bei einer Drosselung hält sie sich an die Wartezeit, die der Server nennt. „Jetzt erneut versuchen" setzt den Rhythmus zurück. Bereits geladene Inhalte bleiben stehen (REQ-APP-UI-003).
 
 - **Benachrichtigungen erscheinen jetzt auch in der Statusleiste** — solange die App läuft. Auf dem Sperrbildschirm steht dabei nie mehr als „Neue Benachrichtigung". Ohne Push-Dienst erreicht dich das nicht bei geschlossener App (REQ-APP-NOTIF-010).
 

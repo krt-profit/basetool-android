@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,6 +103,7 @@ data class LocationSearch(
  * @property query the list's search term.
  * @property phase how far the read has got.
  * @property refreshing whether a pull-to-refresh is running.
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property loadingMore whether the next page is on its way.
  * @property hasMore whether another page exists.
  * @property online whether writes are possible at all.
@@ -117,6 +119,7 @@ data class PersonalInventoryState(
     val query: String = "",
     val phase: PersonalInventoryPhase = PersonalInventoryPhase.Loading,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val loadingMore: Boolean = false,
     val hasMore: Boolean = false,
     val online: Boolean = true,
@@ -145,6 +148,24 @@ class PersonalInventoryViewModel(
 
     /** What the screen renders. */
     val state: StateFlow<PersonalInventoryState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     private var loadJob: Job? = null
     private var searchJob: Job? = null
@@ -480,6 +501,7 @@ class PersonalInventoryViewModel(
                         refreshing = false,
                         loadingMore = false,
                     )
+                retry.onSuccess()
             }
 
             is ApiResult.Failure -> {
@@ -489,6 +511,7 @@ class PersonalInventoryViewModel(
                         refreshing = false,
                         loadingMore = false,
                     )
+                retry.onFailure(result.error, hasContent = false)
             }
         }
     }

@@ -117,8 +117,11 @@ and `advanceUntilIdle()` never returns. Use `runCurrent()`, and cancel the scope
 - [x] The shared ladder starts on `503`, climbs, and is reset by a manual retry; a `403` gets no
   countdown at all (`RefineryViewModelTest`). This is the first test the ladder has ever had — the
   hang above is why.
-- [x] Adopted by the Raffinerie (list and detail) and the Materialbörse.
-- [ ] **The remaining screens' first-load paths** — outstanding (#67).
+- [x] **Adopted by every screen that loads from the server** (2026-08-24): Einsätze and one
+  Einsatz, Operationen and one Operation, Aufträge and one Auftrag, Lager, Hangar,
+  Benachrichtigungen, Mein Inventar, Blueprints, Bank, Materialbörse, Raffinerie list and detail.
+  That is the whole list — a screen added later without it is the defect this line exists to make
+  visible.
 - [ ] **Walked on a device** — outstanding (#67).
 
 ---

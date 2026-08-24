@@ -23,6 +23,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,6 +123,7 @@ sealed interface MissionFinancesPhase {
  * @property tab which tab is showing
  * @property finances how far the money has got, on its own timeline
  * @property refreshing whether a pull-to-refresh is running over content already on screen
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  */
 data class MissionDetailState(
     val missionId: String,
@@ -130,6 +132,7 @@ data class MissionDetailState(
     val tab: MissionTab = MissionTab.OVERVIEW,
     val finances: MissionFinancesPhase = MissionFinancesPhase.Idle,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
     val me: Identity? = null,
     val saving: Boolean = false,
     val online: Boolean = true,
@@ -219,6 +222,24 @@ class MissionDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<MissionDetailState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepContent = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     init {
         viewModelScope.launch {
@@ -581,6 +602,7 @@ class MissionDetailViewModel(
                             phase = MissionDetailPhase.Ready,
                             refreshing = false,
                         )
+                    retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
@@ -590,6 +612,7 @@ class MissionDetailViewModel(
                             phase = MissionDetailPhase.Failed(result.error),
                             refreshing = false,
                         )
+                    retry.onFailure(result.error, hasContent = false)
                 }
             }
         }

@@ -83,6 +83,7 @@ class OperationsScreenTest {
                     onStatusToggled = {},
                     onResetFilters = {},
                     onRefresh = {},
+                    onRetryNow = {},
                     onLoadMore = {},
                     onOpenOperation = { opened.add(it) },
                     onOpenMissions = { segmentTaps.add(Unit) },
@@ -108,6 +109,7 @@ class OperationsScreenTest {
                 OperationDetailScreen(
                     state = state,
                     onRefresh = {},
+                    onRetryNow = {},
                     onOpenMission = { opened.add(it) },
                     onTogglePaidOut = { confirmed.add(it) },
                 )

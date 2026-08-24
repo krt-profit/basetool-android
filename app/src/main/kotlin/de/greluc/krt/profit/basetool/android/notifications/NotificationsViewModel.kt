@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.data.Notification
 import de.greluc.krt.profit.basetool.android.core.data.NotificationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +51,7 @@ sealed interface NotificationsPhase {
  * @property hasMore whether the server has another page
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running over rows already on screen
+ * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  */
 data class NotificationsState(
     val notifications: List<Notification> = emptyList(),
@@ -60,6 +62,7 @@ data class NotificationsState(
     val hasMore: Boolean = false,
     val loadingMore: Boolean = false,
     val refreshing: Boolean = false,
+    val retryIn: Int? = null,
 )
 
 /**
@@ -89,6 +92,24 @@ class NotificationsViewModel(
 
     /** What the inbox and the badge draw. */
     val state: StateFlow<NotificationsState> = mutableState.asStateFlow()
+
+    /**
+     * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepRows = false) },
+        )
+
+    /** The member asked again. Cancels the countdown and starts the ladder over. */
+    fun onRetry() {
+        retry.onManualRetry()
+    }
 
     private var watchJob: Job? = null
     private var pollJob: Job? = null
@@ -258,6 +279,7 @@ class NotificationsViewModel(
                             loadingMore = false,
                             refreshing = false,
                         )
+                    retry.onSuccess()
                 }
 
                 is ApiResult.Failure -> {
@@ -268,6 +290,7 @@ class NotificationsViewModel(
                             loadingMore = false,
                             refreshing = false,
                         )
+                    retry.onFailure(result.error, hasContent = keepRows)
                 }
             }
         }
