@@ -111,7 +111,10 @@ fun NotificationsScreen(
         // Narrower than the app-wide 1200 dp cap, because design ch. 07 says so: an inbox is a
         // column of sentences, and a sentence that runs the full width of a tablet is harder to
         // read than one that does not. The global cap is a maximum, not a target.
-        Column(modifier = Modifier.fillMaxSize().widthIn(max = INBOX_COLUMN_MAX)) {
+        // widthIn BEFORE fillMaxSize, not after. The other order fixes the width to the parent's
+        // maximum first, leaving widthIn nothing to shrink — the cap silently does nothing, which
+        // is how it shipped and what a 1280 dp tablet showed: rows running the full width.
+        Column(modifier = Modifier.widthIn(max = INBOX_COLUMN_MAX).fillMaxSize()) {
             if (state.unread > 0) {
                 Text(
                     text =
