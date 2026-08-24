@@ -565,4 +565,52 @@
     <string name="retry_busy_title">Signal unstable</string>
     <string name="retry_busy_message">The server is busy. Retrying automatically in %1$d s.</string>
     <string name="retry_now">Retry now</string>
+    <!-- Raffinerie (design ch. 11) -->
+    <string name="refinery_title">Raffinerie</string>
+    <string name="refinery_order_title">Raffinerie order</string>
+    <string name="refinery_filter_all">All</string>
+    <string name="refinery_filter_running">Refining</string>
+    <string name="refinery_filter_ready">Ready</string>
+    <string name="refinery_filter_stored">Stored</string>
+    <string name="refinery_phase_running">Refining</string>
+    <string name="refinery_phase_ready">Ready</string>
+    <string name="refinery_phase_stored">Stored</string>
+    <string name="refinery_phase_cancelled">Cancelled</string>
+    <string name="refinery_station">Station</string>
+    <string name="refinery_station_unknown">Unknown station</string>
+    <string name="refinery_method">Method</string>
+    <string name="refinery_method_unknown">Unknown method</string>
+    <string name="refinery_started">Started</string>
+    <string name="refinery_ready">Ready at</string>
+    <string name="refinery_yield">Yield</string>
+    <string name="refinery_quality">Quality %1$d</string>
+    <string name="refinery_amount_scu">%1$d SCU</string>
+    <plurals name="refinery_remaining_minutes">
+        <item quantity="one">%1$d minute left</item>
+        <item quantity="other">%1$d minutes left</item>
+    </plurals>
+    <plurals name="refinery_remaining_hours">
+        <item quantity="one">%1$d h %2$d min left</item>
+        <item quantity="other">%1$d h %2$d min left</item>
+    </plurals>
+    <string name="refinery_remaining_unknown">Time left unknown</string>
+    <string name="refinery_ore_sales">Ore sales</string>
+    <string name="refinery_profit">Profit/loss</string>
+    <string name="refinery_store">Book into Lager</string>
+    <string name="refinery_store_confirm">Book</string>
+    <plurals name="refinery_store_question">
+        <item quantity="one">Creates %1$d Lager entry at %2$s and marks the order stored.</item>
+        <item quantity="other">Creates %1$d Lager entries at %2$s and marks the order stored.</item>
+    </plurals>
+    <string name="refinery_stored_notice">Yield stored. Assignment to Aufträge and Einsätze happens in the Lager.</string>
+    <string name="refinery_empty_title">No orders</string>
+    <string name="refinery_empty_message">No Raffinerie order matches this filter.</string>
+    <string name="refinery_error_title">Signal Lost — Raffinerie</string>
+    <string name="refinery_error_message">The orders could not be loaded.</string>
+    <plurals name="refinery_load_more">
+        <item quantity="one">%1$d loaded — load more</item>
+        <item quantity="other">%1$d loaded — load more</item>
+    </plurals>
+    <string name="refinery_end_of_list">End of list</string>
+    <string name="refinery_store_cancel">Cancel</string>
 </resources>

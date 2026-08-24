@@ -59,6 +59,8 @@ import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
@@ -97,6 +99,8 @@ private fun isExpandedWindow(): Boolean =
  * @param bank drives the Konten list.
  * @param bankAccount builds a view model for one account.
  * @param orders drives the Auftrag queue.
+ * @param refinery drives the member's own Raffinerie orders.
+ * @param refineryOrder builds a view model for one Raffinerie order.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
@@ -120,6 +124,8 @@ fun BasetoolApp(
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
+    refinery: RefineryViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -236,6 +242,8 @@ fun BasetoolApp(
                     bankAccount = bankAccount,
                     orders = orders,
                     orderDetail = orderDetail,
+                    refinery = refinery,
+                    refineryOrder = refineryOrder,
                     inventory = inventory,
                     personalInventory = personalInventory,
                     personalBlueprints = personalBlueprints,

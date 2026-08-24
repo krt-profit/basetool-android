@@ -10,7 +10,6 @@ package de.greluc.krt.profit.basetool.android.bank
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
-import de.greluc.krt.profit.basetool.android.core.common.RetryBackoff
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountDetail
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
@@ -22,10 +21,9 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -142,18 +140,23 @@ class BankViewModel(
         reload(keepContent = false)
     }
 
-    /** The pending automatic retry, if one is counting down. */
-    private var retryJob: Job? = null
-
-    /** How many automatic attempts have failed; reset by a manual retry. */
-    private var attempts = 0
+    /**
+     * The chapter-14 retry ladder for this screen's first load.
+     *
+     * Shared rather than re-derived: the conditions under which a countdown is right are the same
+     * on every screen, and the copy this class used to hold is what [FirstLoadRetry] was extracted
+     * from.
+     */
+    private val retry =
+        FirstLoadRetry(
+            scope = viewModelScope,
+            onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
+            onRetry = { reload(keepContent = false) },
+        )
 
     /** The member asked again. Cancels the countdown and starts the ladder over. */
     fun onRetry() {
-        retryJob?.cancel()
-        attempts = 0
-        mutableState.value = mutableState.value.copy(retryIn = null)
-        reload(keepContent = false)
+        retry.onManualRetry()
     }
 
     /** Re-reads the accounts, keeping what is on screen while it runs. */
@@ -161,52 +164,6 @@ class BankViewModel(
         mutableState.value = mutableState.value.copy(refreshing = true)
         loadedOnce = true
         reload(keepContent = true)
-    }
-
-    /**
-     * Starts the automatic retry after a busy server, counting down for the screen.
-     *
-     * Three conditions, and every one of them is a case where retrying would be wrong:
-     *
-     * - only a **retryable** status. A 403 or a 404 will answer the same in three seconds, and a
-     *   countdown in front of it promises the member something that will not happen.
-     * - only when the screen has **nothing on it**. With content loaded the banner is the right
-     *   surface and the member keeps their place.
-     * - only **one** timer at a time, so a refresh landing on a failure does not stack a second
-     *   countdown on the first.
-     *
-     * The attempt count lives here rather than in the ladder, which is what lets [onRetry] reset it:
-     * the member pressing the button is new information, and inheriting a thirty-second wait from
-     * an automatic attempt they did not make would punish them for having waited.
-     *
-     * @param error what the read failed with.
-     * @param keepContent whether the screen had content to keep.
-     */
-    private fun scheduleRetry(
-        error: ApiError,
-        keepContent: Boolean,
-    ) {
-        val retryable = error is ApiError.ServiceUnavailable || error is ApiError.RateLimited
-        if (!retryable || keepContent || retryJob?.isActive == true) {
-            return
-        }
-        retryJob =
-            viewModelScope.launch {
-                val wait =
-                    RetryBackoff.next(
-                        attempt = attempts,
-                        retryAfterSeconds = (error as? ApiError.RateLimited)?.retryAfter?.inWholeSeconds,
-                    )
-                attempts++
-                var left = wait.inWholeSeconds.toInt()
-                while (left > 0) {
-                    mutableState.value = mutableState.value.copy(retryIn = left)
-                    delay(ONE_SECOND_MS)
-                    left--
-                }
-                mutableState.value = mutableState.value.copy(retryIn = null)
-                reload(keepContent = false)
-            }
     }
 
     /**
@@ -221,6 +178,7 @@ class BankViewModel(
         viewModelScope.launch {
             when (val result = source.balances()) {
                 is ApiResult.Success -> {
+                    retry.onSuccess()
                     mutableState.value =
                         BankAccountsState(accounts = result.value, phase = BankPhase.Ready)
                 }
@@ -232,16 +190,13 @@ class BankViewModel(
                             phase = BankPhase.Failed(result.error),
                             refreshing = false,
                         )
-                    scheduleRetry(result.error, keepContent)
+                    retry.onFailure(result.error, hasContent = keepContent)
                 }
             }
         }
     }
 
     private companion object {
-        /** One tick of the countdown. */
-        const val ONE_SECOND_MS = 1_000L
-
         /** Log subsystem. No amount, handle or note is ever logged. */
         const val LOG_TAG = "bank"
     }

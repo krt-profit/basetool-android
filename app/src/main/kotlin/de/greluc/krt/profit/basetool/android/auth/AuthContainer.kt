@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintRepository
 import de.greluc.krt.profit.basetool.android.core.data.PersonalInventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.PromotionRepository
+import de.greluc.krt.profit.basetool.android.core.data.RefineryRepository
 import de.greluc.krt.profit.basetool.android.core.data.TermsRepository
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import de.greluc.krt.profit.basetool.android.core.network.KrtHttpClient
@@ -364,6 +365,16 @@ class AuthContainer(
      */
     val inventory: InventoryRepository by lazy {
         InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The member's own Raffinerie orders.
+     *
+     * Only the `my-orders` surface: the controller's `/all` and `/users/{id}` reads are the
+     * Logistik view, and the app stays on the member-facing one.
+     */
+    val refinery: RefineryRepository by lazy {
+        RefineryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     private val proofFactory by lazy { DpopProofFactory(dpopKeys.keyPair(), serverClock) }

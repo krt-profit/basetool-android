@@ -112,6 +112,13 @@ enum class KrtDestination(
         R.string.order_detail_title,
         DesignR.drawable.ic_krt_clipboard_list,
     ),
+
+    /** One Raffinerie order with its yield table, pushed from „Meine Orders". */
+    RefineryOrder(
+        "refinery-order/{refineryOrderId}",
+        R.string.refinery_order_title,
+        DesignR.drawable.ic_krt_refinery,
+    ),
     ;
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
@@ -189,6 +196,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         KrtDestination.OperationDetail to KrtDestination.Operations,
         KrtDestination.BankAccount to KrtDestination.Bank,
         KrtDestination.OrderDetail to KrtDestination.Orders,
+        KrtDestination.RefineryOrder to KrtDestination.Refinery,
     )
 
 /**
@@ -236,6 +244,18 @@ fun orderDetailRoute(orderId: String): String = "order/" + orderId
 
 /** The name of the id argument in [KrtDestination.OrderDetail]'s route. */
 const val ORDER_ID_ARG: String = "orderId"
+
+/**
+ * The route that opens one Raffinerie order.
+ *
+ * @param orderId the order to open.
+ * @return the concrete route, with the id substituted into [KrtDestination.RefineryOrder]'s
+ *   pattern.
+ */
+fun refineryOrderRoute(orderId: String): String = "refinery-order/" + orderId
+
+/** The name of the id argument in [KrtDestination.RefineryOrder]'s route. */
+const val REFINERY_ORDER_ID_ARG: String = "refineryOrderId"
 
 /**
  * Resolves a destination to the navigation root it belongs to.

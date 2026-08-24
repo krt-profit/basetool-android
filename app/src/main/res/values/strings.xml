@@ -582,4 +582,52 @@
     <string name="retry_busy_title">Signal instabil</string>
     <string name="retry_busy_message">Der Server ist ausgelastet. Automatischer Neuversuch in %1$d s.</string>
     <string name="retry_now">Jetzt erneut versuchen</string>
+    <!-- Raffinerie (design ch. 11) -->
+    <string name="refinery_title">Raffinerie</string>
+    <string name="refinery_order_title">Raffinerie-Order</string>
+    <string name="refinery_filter_all">Alle</string>
+    <string name="refinery_filter_running">In Arbeit</string>
+    <string name="refinery_filter_ready">Abholbereit</string>
+    <string name="refinery_filter_stored">Eingelagert</string>
+    <string name="refinery_phase_running">In Arbeit</string>
+    <string name="refinery_phase_ready">Abholbereit</string>
+    <string name="refinery_phase_stored">Eingelagert</string>
+    <string name="refinery_phase_cancelled">Abgebrochen</string>
+    <string name="refinery_station">Station</string>
+    <string name="refinery_station_unknown">Unbekannte Station</string>
+    <string name="refinery_method">Methode</string>
+    <string name="refinery_method_unknown">Unbekannte Methode</string>
+    <string name="refinery_started">Gestartet</string>
+    <string name="refinery_ready">Fertig</string>
+    <string name="refinery_yield">Ertrag</string>
+    <string name="refinery_quality">Qualität %1$d</string>
+    <string name="refinery_amount_scu">%1$d SCU</string>
+    <plurals name="refinery_remaining_minutes">
+        <item quantity="one">noch %1$d Minute</item>
+        <item quantity="other">noch %1$d Minuten</item>
+    </plurals>
+    <plurals name="refinery_remaining_hours">
+        <item quantity="one">noch %1$d Std. %2$d Min.</item>
+        <item quantity="other">noch %1$d Std. %2$d Min.</item>
+    </plurals>
+    <string name="refinery_remaining_unknown">Restzeit unbekannt</string>
+    <string name="refinery_ore_sales">Ore Sales</string>
+    <string name="refinery_profit">Gewinn/Verlust</string>
+    <string name="refinery_store">In Lager buchen</string>
+    <string name="refinery_store_confirm">Buchen</string>
+    <plurals name="refinery_store_question">
+        <item quantity="one">Legt %1$d Lager-Eintrag bei %2$s an und markiert die Order als eingelagert.</item>
+        <item quantity="other">Legt %1$d Lager-Einträge bei %2$s an und markiert die Order als eingelagert.</item>
+    </plurals>
+    <string name="refinery_stored_notice">Ertrag eingelagert. Die Zuordnung zu Aufträgen und Einsätzen erfolgt im Lager.</string>
+    <string name="refinery_empty_title">Keine Orders</string>
+    <string name="refinery_empty_message">Für diesen Filter liegt keine Raffinerie-Order vor.</string>
+    <string name="refinery_error_title">Signal Lost — Raffinerie</string>
+    <string name="refinery_error_message">Die Orders konnten nicht geladen werden.</string>
+    <plurals name="refinery_load_more">
+        <item quantity="one">%1$d geladen — mehr laden</item>
+        <item quantity="other">%1$d geladen — mehr laden</item>
+    </plurals>
+    <string name="refinery_end_of_list">Ende der Liste</string>
+    <string name="refinery_store_cancel">Abbrechen</string>
 </resources>

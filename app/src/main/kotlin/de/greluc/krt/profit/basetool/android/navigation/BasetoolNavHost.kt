@@ -57,6 +57,10 @@ import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryOrderDetailRoute
+import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
+import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
@@ -86,6 +90,8 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
+ * @param refinery drives the member's own Raffinerie orders.
+ * @param refineryOrder builds a view model for one Raffinerie order.
  * @param memberName the signed-in member's name, for the dashboard greeting.
  * @param orgUnitName the active org unit's name, for the same line.
  * @param onLogout ends the session.
@@ -108,6 +114,8 @@ fun BasetoolNavHost(
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
+    refinery: RefineryViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -149,6 +157,7 @@ fun BasetoolNavHost(
                         bank = bank,
                         orders = orders,
                         inventory = inventory,
+                        refinery = refinery,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
                         booking = booking,
@@ -164,6 +173,7 @@ fun BasetoolNavHost(
                         operationDetail = operationDetail,
                         bankAccount = bankAccount,
                         orderDetail = orderDetail,
+                        refineryOrder = refineryOrder,
                         onOpenDestination = onOpenDestination,
                         onLogout = onLogout,
                         promotion = promotion,
@@ -213,6 +223,7 @@ private fun listDestination(
     bank: BankViewModel,
     orders: OrdersViewModel,
     inventory: InventoryViewModel,
+    refinery: RefineryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -305,6 +316,14 @@ private fun listDestination(
             )
         }
 
+        KrtDestination.Refinery -> {
+            LaunchedEffect(Unit) { refinery.loadOnce() }
+            RefineryOrdersRoute(
+                viewModel = refinery,
+                onOpenOrder = { navController.navigate(refineryOrderRoute(it)) },
+            )
+        }
+
         KrtDestination.Inventory -> {
             LaunchedEffect(Unit) { inventory.loadOnce() }
             InventoryRoute(
@@ -352,6 +371,7 @@ private fun PushedDestination(
     operationDetail: (String) -> OperationDetailViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
+    refineryOrder: (String) -> RefineryDetailViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
     @Suppress("UnusedParameter") promotion: PromotionViewModel,
@@ -387,6 +407,12 @@ private fun PushedDestination(
             val viewModel = remember(orderId) { orderDetail(orderId) }
             LaunchedEffect(orderId) { viewModel.load() }
             OrderDetailRoute(viewModel = viewModel)
+        }
+
+        KrtDestination.RefineryOrder -> {
+            val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
+            val viewModel = remember(orderId) { refineryOrder(orderId) }
+            RefineryOrderDetailRoute(viewModel = viewModel)
         }
 
         KrtDestination.More -> {

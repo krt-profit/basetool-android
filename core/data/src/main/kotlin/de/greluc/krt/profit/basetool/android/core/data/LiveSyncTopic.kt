@@ -205,6 +205,9 @@ object LiveSyncSections {
     /** A Raffinerie-Order's own fields. */
     const val REFINERY_ORDER: String = "order"
 
+    /** A Raffinerie-Order's Einlagern dialog — the section a booking announces. */
+    const val REFINERY_STORE: String = "store"
+
     /** A bank account's settings region. */
     const val ORGUNIT_BANK_SETTINGS: String = "orgUnitBankSettings"
 
