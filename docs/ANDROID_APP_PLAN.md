@@ -342,13 +342,28 @@ remaining scope is exactly the three items above.
 **Editor presence stays web-only, permanently.** It is the one part of the web socket that carries
 cross-user identity data, and the app has no place to show it.
 
-**Where the phase stands.** The bridge shipped in both repos; the four remaining slices are tracked
-so none of them lives only in a plan paragraph: Materialboerse (#64), Raffinerie (#65),
-Befoerderung (#66) and system states (#67). Two of them carry a dependency worth naming here rather
-than only in the issue -- the forced-update gate needs a **new backend contract** (nothing today
-lets the server state a minimum app version), and the notification channels are blocked on
-krt-profit/basetool#1653, an SSE delivery fault found while device-verifying the bridge that
-reproduces on the shipped notification stream and may mean the push channel is dead in production.
+**Where the phase stands (2026-08-24).** The bridge shipped in both repos. Of the four slices that
+followed it, three are done and one is deliberately withheld:
+
+- **Materialboerse (#64)** — shipped. Both halves, the pledge toggle, Zurueckziehen and both create
+  sheets. Item *creates* are not in it: they address a P4K `productKey` the app has no picker for.
+- **Raffinerie (#65)** — shipped, without the extractor import as decided. Its two recorded
+  deviations from chapter 11 are in `docs/specs/refinery.md`.
+- **System states (#67)** — shipped. The notification channels' blocker resolved itself: the SSE
+  fault (krt-profit/basetool#1653) turned out to be a `ShallowEtagHeaderFilter` registered on `/*`,
+  buffering every stream and never writing the buffer back. **The notification push had been dead
+  the whole time** and nothing said so. Fixed, and guarded by a test that reads a socket, because no
+  server-side metric can tell a delivering stream from a silent one. The forced-update gate's new
+  backend contract shipped as REQ-API-010.
+- **Befoerderung (#66)** — **built and withheld**, and the phase closes without it. The screen has
+  no chapter in the design handoff and a derived layout is not a followed one (owner decision,
+  2026-08-23, reaffirmed 2026-08-24). Everything behind it stays wired: the repository, the tests,
+  the contract freeze and the allow-list lines. The issue stays open until a chapter exists.
+
+**The vhost paste is the one thing left, and it is the owner's** (runbook Phase J). Until it is
+applied the nightly `edge-deny-probe` reports the phase-3 and phase-4 paths as `404`, which is
+production being read correctly rather than a defect — see the runbook's note before investigating
+that run again.
 
 **Phase 5 — hardening & first release**
 Certificate pinning rollout (**CA-pin evaluated first**, else leaf backup-pin + expiration;
