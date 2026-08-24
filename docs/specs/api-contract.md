@@ -251,7 +251,12 @@ against — a different point, now written down beside this one so the two are n
 
 - [x] Both `ApiReader` handling blocks run on `Dispatchers.IO`.
 - [x] Walked on a device: the booking that crashed now completes and the screen updates.
-- [ ] **A StrictMode guard in an instrumented test** — outstanding; the JVM suite cannot see this
-  class of defect at all, which is why it took a device to find.
+- [x] **A StrictMode guard, on a device** (`ApiReaderMainThreadTest`). It has to live in the
+  instrumented suite because `StrictMode` is an Android runtime facility: on a JVM there is no
+  main-thread policy and no `NetworkOnMainThreadException`, so every unit and Robolectric test in
+  this repository passed while the shipped app died. The policy is `penaltyDeath()` on network
+  access, which turns a violation into a failed test rather than a log line nobody reads, and the
+  body-less case answers `200` **with a body** on purpose — a `204` leaves nothing to reset and
+  would pass even with the defect present.
 
 **Code:** `ApiReader`, `CallAwait`
