@@ -45,12 +45,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTable
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableCell
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableColumn
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the hangar list. */
@@ -238,8 +242,21 @@ private fun HangarBody(
         HangarEmpty(segment = state.segment, narrowed = state.isNarrowed)
         return
     }
+    val wide = isWideWindow()
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(HANGAR_LIST_TAG)) {
-        if (state.segment == HangarSegment.MINE) {
+        if (state.segment == HangarSegment.MINE && wide) {
+            // Design ch. 08: the tablet gets the web app's full table, the phone the cards.
+            // One item rather than one per ship — a table is a single grid whose columns have to
+            // line up, and a LazyColumn of table rows would size each one on its own.
+            item(key = "ships-table") {
+                ShipTable(
+                    ships = state.ships,
+                    online = state.online,
+                    onEdit = onEdit,
+                    onDelete = onDelete,
+                )
+            }
+        } else if (state.segment == HangarSegment.MINE) {
             items(state.ships, key = { it.id }) { ship ->
                 ShipCard(
                     ship = ship,
@@ -281,6 +298,69 @@ private fun HangarState.countLabel(): String =
     } else {
         pluralStringResource(R.plurals.hangar_type_count, total.toInt(), types.size, total)
     }
+
+/**
+ * The tablet's dense ship table — the web app's columns, per design ch. 08.
+ *
+ * Carries the same five facts the card does, in the order the web table uses, so a member who
+ * knows one recognises the other. The trailing column holds the row's two actions rather than a
+ * value; giving them a column of their own keeps them off the data cells, where a mis-tap would
+ * be a deletion.
+ *
+ * @param ships the rows.
+ * @param online whether writes are possible; the actions disable with the rest of the screen.
+ * @param onEdit opens the editor for a ship.
+ * @param onDelete asks to delete one.
+ */
+@Composable
+private fun ShipTable(
+    ships: List<Ship>,
+    online: Boolean,
+    onEdit: (Ship) -> Unit,
+    onDelete: (Ship) -> Unit,
+) {
+    val columns =
+        listOf(
+            KrtTableColumn(stringResource(R.string.hangar_column_type), weight = 1.4f),
+            KrtTableColumn(stringResource(R.string.hangar_column_name), weight = 1.2f),
+            KrtTableColumn(stringResource(R.string.hangar_column_insurance), weight = 0.9f),
+            KrtTableColumn(stringResource(R.string.hangar_column_location), weight = 1.2f),
+            KrtTableColumn(stringResource(R.string.hangar_column_fitted), weight = 0.6f),
+            KrtTableColumn(stringResource(R.string.hangar_column_actions), weight = 0.8f),
+        )
+    val fittedYes = stringResource(R.string.hangar_fitted_yes)
+    val fittedNo = stringResource(R.string.hangar_fitted_no)
+    val unknown = stringResource(R.string.hangar_value_unknown)
+
+    // The row opens the editor, exactly as the card does — a member who learned the phone layout
+    // does not have to learn a second gesture on the tablet.
+    KrtTable(
+        columns = columns,
+        rowCount = ships.size,
+        onRowClick = { onEdit(ships[it]) },
+    ) { row, column ->
+        val ship = ships[row]
+        if (column == columns.lastIndex) {
+            ShipCardActions(
+                online = online,
+                onDelete = { onDelete(ship) },
+            )
+        } else {
+            KrtTableCell(
+                text =
+                    when (column) {
+                        0 -> ship.typeName
+                        1 -> ship.name ?: unknown
+                        2 -> ship.insurance ?: unknown
+                        3 -> ship.locationName ?: unknown
+                        else -> if (ship.fitted) fittedYes else fittedNo
+                    },
+                column = columns[column],
+                emphasis = column == 0,
+            )
+        }
+    }
+}
 
 /**
  * One ship, as the design's card.

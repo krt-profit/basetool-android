@@ -321,6 +321,15 @@
         <item quantity="one">%1$d Schiff · %2$d fitted</item>
         <item quantity="other">%1$d Schiffe · %2$d fitted</item>
     </plurals>
+    <string name="hangar_column_type">Typ</string>
+    <string name="hangar_column_name">Name</string>
+    <string name="hangar_column_insurance">Versicherung</string>
+    <string name="hangar_column_location">Ort</string>
+    <string name="hangar_column_fitted">Ausgebaut</string>
+    <string name="hangar_column_actions">Aktionen</string>
+    <string name="hangar_fitted_yes">Ja</string>
+    <string name="hangar_fitted_no">Nein</string>
+    <string name="hangar_value_unknown">—</string>
     <string name="hangar_end_of_list">Ende der Liste</string>
     <string name="hangar_empty_mine_title">Kein Schiff im Hangar</string>
     <string name="hangar_empty_mine_message">Leg dein erstes Schiff an — Typ, Versicherung und wo es steht.</string>
