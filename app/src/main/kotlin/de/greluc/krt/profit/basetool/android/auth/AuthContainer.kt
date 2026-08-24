@@ -35,6 +35,7 @@ import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
@@ -365,6 +366,16 @@ class AuthContainer(
      */
     val inventory: InventoryRepository by lazy {
         InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Materialbörse.
+     *
+     * Org-wide by construction: the board is one list for the whole organisation, so nothing about
+     * scope is configured here either.
+     */
+    val materialBoard: MaterialBoardRepository by lazy {
+        MaterialBoardRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

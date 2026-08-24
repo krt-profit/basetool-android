@@ -630,4 +630,46 @@
     </plurals>
     <string name="refinery_end_of_list">Ende der Liste</string>
     <string name="refinery_store_cancel">Abbrechen</string>
+    <!-- Materialbörse (design ch. 10 §3–4) -->
+    <string name="board_title">Materialbörse</string>
+    <string name="board_side_offers">Angebote</string>
+    <string name="board_side_requests">Gesuche</string>
+    <string name="board_privacy_note">Übergabe &amp; Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse.</string>
+    <string name="board_new_offer">Angebot erstellen</string>
+    <string name="board_new_request">Gesuch erstellen</string>
+    <string name="board_new_offer_hint">Org-weit sichtbar · Interessenten melden sich über „Ich kann liefern"</string>
+    <string name="board_new_request_hint">Org-weit sichtbar · Anbieter melden sich über „Ich kann liefern"</string>
+    <string name="board_signal_on">Ich kann liefern</string>
+    <string name="board_signal_off">Zusage zurücknehmen</string>
+    <string name="board_withdraw">Zurückziehen</string>
+    <string name="board_supporters">Zusagen</string>
+    <string name="board_unnamed">Ohne Bezeichnung</string>
+    <string name="board_unknown_owner">Unbekannt</string>
+    <string name="board_requested_by">Gesucht von %1$s</string>
+    <string name="board_unit_scu">SCU</string>
+    <string name="board_unit_piece">Stück</string>
+    <string name="board_quality">Q %1$d</string>
+    <string name="board_min_quality">Min. Q %1$d</string>
+    <string name="board_field_material">Material</string>
+    <string name="board_field_amount">Menge</string>
+    <string name="board_field_min_quality">Min. Qualität (optional)</string>
+    <string name="board_field_remark">Anmerkung (optional)</string>
+    <string name="board_publish_request">Gesuch veröffentlichen</string>
+    <string name="board_publish_offer">Angebot veröffentlichen</string>
+    <string name="board_stock_loading">Eigener Bestand wird geladen …</string>
+    <string name="board_stock_empty">Kein freigebbarer Bestand im Lager.</string>
+    <string name="board_picked">Gewählt</string>
+    <string name="board_end_of_list">Ende der Liste</string>
+    <string name="board_empty_title">Nichts auf der Börse</string>
+    <string name="board_empty_message">Für diese Seite liegt derzeit kein Eintrag vor.</string>
+    <string name="board_error_title">Signal Lost — Materialbörse</string>
+    <string name="board_error_message">Die Börse konnte nicht geladen werden.</string>
+    <plurals name="board_load_more">
+        <item quantity="one">%1$d geladen — mehr laden</item>
+        <item quantity="other">%1$d geladen — mehr laden</item>
+    </plurals>
+    <plurals name="board_interest_count">
+        <item quantity="one">%1$d Zusage</item>
+        <item quantity="other">%1$d Zusagen</item>
+    </plurals>
 </resources>

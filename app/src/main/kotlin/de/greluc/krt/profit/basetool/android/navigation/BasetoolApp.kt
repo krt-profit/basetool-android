@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
@@ -99,6 +100,7 @@ private fun isExpandedWindow(): Boolean =
  * @param bank drives the Konten list.
  * @param bankAccount builds a view model for one account.
  * @param orders drives the Auftrag queue.
+ * @param exchange drives the Materialbörse.
  * @param refinery drives the member's own Raffinerie orders.
  * @param refineryOrder builds a view model for one Raffinerie order.
  * @param orderDetail builds a view model for one order.
@@ -124,6 +126,7 @@ fun BasetoolApp(
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
+    exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
     inventory: InventoryViewModel,
@@ -242,6 +245,7 @@ fun BasetoolApp(
                     bankAccount = bankAccount,
                     orders = orders,
                     orderDetail = orderDetail,
+                    exchange = exchange,
                     refinery = refinery,
                     refineryOrder = refineryOrder,
                     inventory = inventory,

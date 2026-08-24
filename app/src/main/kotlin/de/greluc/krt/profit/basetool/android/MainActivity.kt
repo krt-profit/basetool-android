@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
@@ -141,6 +142,11 @@ class MainActivity : AppCompatActivity() {
 
     /** The member's own Raffinerie orders; activity-scoped like every other list. */
     private val refineryViewModel: RefineryViewModel by viewModels { authViewModels(container) }
+
+    /** The Materialbörse. */
+    private val exchangeViewModel: MaterialBoardViewModel by viewModels {
+        authViewModels(container)
+    }
 
     private val inventoryViewModel: InventoryViewModel by viewModels { authViewModels(container) }
     private val personalInventoryViewModel: PersonalInventoryViewModel by
@@ -279,6 +285,7 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 },
                                 inventory = inventoryViewModel,
+                                exchange = exchangeViewModel,
                                 refinery = refineryViewModel,
                                 refineryOrder = {
                                     RefineryDetailViewModel(
@@ -462,6 +469,14 @@ class MainActivity : AppCompatActivity() {
                 initializer { PromotionViewModel(container.promotion) }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
+                initializer {
+                    MaterialBoardViewModel(
+                        container.materialBoard,
+                        container.inventory,
+                        container.connectivity,
+                        container.liveSync,
+                    )
+                }
                 initializer {
                     InventoryViewModel(container.inventory, container.connectivity, container.liveSync)
                 }

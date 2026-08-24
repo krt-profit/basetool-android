@@ -613,4 +613,46 @@
     </plurals>
     <string name="refinery_end_of_list">End of list</string>
     <string name="refinery_store_cancel">Cancel</string>
+    <!-- Materialbörse (design ch. 10 §3–4) -->
+    <string name="board_title">Materialbörse</string>
+    <string name="board_side_offers">Offers</string>
+    <string name="board_side_requests">Requests</string>
+    <string name="board_privacy_note">Handover and place stay off-tool and private — the board only conveys interest.</string>
+    <string name="board_new_offer">Create offer</string>
+    <string name="board_new_request">Create request</string>
+    <string name="board_new_offer_hint">Visible org-wide · Interested members answer with “I can supply”</string>
+    <string name="board_new_request_hint">Visible org-wide · Suppliers answer with “I can supply”</string>
+    <string name="board_signal_on">I can supply</string>
+    <string name="board_signal_off">Withdraw pledge</string>
+    <string name="board_withdraw">Withdraw</string>
+    <string name="board_supporters">Pledges</string>
+    <string name="board_unnamed">Unnamed</string>
+    <string name="board_unknown_owner">Unknown</string>
+    <string name="board_requested_by">Requested by %1$s</string>
+    <string name="board_unit_scu">SCU</string>
+    <string name="board_unit_piece">pcs</string>
+    <string name="board_quality">Q %1$d</string>
+    <string name="board_min_quality">Min. Q %1$d</string>
+    <string name="board_field_material">Material</string>
+    <string name="board_field_amount">Amount</string>
+    <string name="board_field_min_quality">Min. quality (optional)</string>
+    <string name="board_field_remark">Remark (optional)</string>
+    <string name="board_publish_request">Publish request</string>
+    <string name="board_publish_offer">Publish offer</string>
+    <string name="board_stock_loading">Loading your own stock …</string>
+    <string name="board_stock_empty">No releasable stock in the Lager.</string>
+    <string name="board_picked">Picked</string>
+    <string name="board_end_of_list">End of list</string>
+    <string name="board_empty_title">Nothing on the board</string>
+    <string name="board_empty_message">There is no entry on this side right now.</string>
+    <string name="board_error_title">Signal Lost — Materialbörse</string>
+    <string name="board_error_message">The board could not be loaded.</string>
+    <plurals name="board_load_more">
+        <item quantity="one">%1$d loaded — load more</item>
+        <item quantity="other">%1$d loaded — load more</item>
+    </plurals>
+    <plurals name="board_interest_count">
+        <item quantity="one">%1$d pledge</item>
+        <item quantity="other">%1$d pledges</item>
+    </plurals>
 </resources>

@@ -30,6 +30,8 @@ import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KRT_MOTION_MS
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
+import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
@@ -90,6 +92,7 @@ import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
+ * @param exchange drives the Materialbörse.
  * @param refinery drives the member's own Raffinerie orders.
  * @param refineryOrder builds a view model for one Raffinerie order.
  * @param memberName the signed-in member's name, for the dashboard greeting.
@@ -114,6 +117,7 @@ fun BasetoolNavHost(
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
+    exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
     personalInventory: PersonalInventoryViewModel,
@@ -157,6 +161,7 @@ fun BasetoolNavHost(
                         bank = bank,
                         orders = orders,
                         inventory = inventory,
+                        exchange = exchange,
                         refinery = refinery,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
@@ -223,6 +228,7 @@ private fun listDestination(
     bank: BankViewModel,
     orders: OrdersViewModel,
     inventory: InventoryViewModel,
+    exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -314,6 +320,11 @@ private fun listDestination(
                 viewModel = orders,
                 onOpenOrder = { navController.navigate(orderDetailRoute(it)) },
             )
+        }
+
+        KrtDestination.Exchange -> {
+            LaunchedEffect(Unit) { exchange.loadOnce() }
+            MaterialBoardRoute(viewModel = exchange)
         }
 
         KrtDestination.Refinery -> {

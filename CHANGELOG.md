@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Die Materialbörse ist in der App.** Angebote und Gesuche org-weit, „Ich kann liefern" als Umschalter mit jederzeitiger Rücknahme, eigene Einträge mit „Zurückziehen", und beide Erstellen-Dialoge — das Angebot mit Vorschlägen aus dem eigenen Lagerbestand. Übergabe und Ort bleiben wie im Web außerhalb des Tools.
+
 - **Die Raffinerie ist in der App.** „Meine Orders" mit den Filtern In Arbeit, Abholbereit und Eingelagert, die Restzeit läuft auf dem Gerät minütlich weiter, und im Detail legt „In Lager buchen" pro Material einen Lager-Eintrag mit Qualität an. Der Extractor-Import aus Design-Kapitel 11 kommt später mit den übrigen Datei-Importen.
 
 - **Ein ausgelasteter Server bekommt jetzt einen Countdown statt einer Fehlermeldung.** Die App versucht es automatisch erneut — 3, 6, 12, dann alle 30 Sekunden — und zeigt die verbleibende Zeit; bei einer Drosselung hält sie sich an die Wartezeit, die der Server nennt. „Jetzt erneut versuchen" setzt den Rhythmus zurück. Bereits geladene Inhalte bleiben stehen (REQ-APP-UI-003).
