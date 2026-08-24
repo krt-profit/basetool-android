@@ -401,6 +401,38 @@ fine — that asymmetry is the tell, because Chrome does not use this config.
 **Before every release**, one check that costs nothing: `./gradlew :app:testDevDebugUnitTest --tests "*NetworkSecurityConfigTest"`.
 It fails if a pin element was lost, if a host lost its pin-set, or if a pin-set lost its expiry.
 
+### 5.2 The 52 Dependabot alerts, and why none of them is in the app (2026-08-24)
+
+The repository carries a standing set of Dependabot alerts — 2 critical, 21 high at the time of
+writing — and every one of them is on **`settings.gradle.kts`**, the plugin classpath. They are
+transitive dependencies of the OpenAPI generator: `handlebars` is its templating engine, and
+`netty`, `jose4j`, `bouncycastle`, `plexus-utils` and `jdom2` arrive through swagger-parser's HTTP
+and JOSE stack.
+
+**None of them ships.** Verified rather than assumed:
+
+```bash
+./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath | grep -icE "netty|handlebars|bouncycastle|jose4j|plexus|jdom"
+# 0
+```
+
+That is worth writing down because a badge saying "2 critical" reads as *the app is vulnerable*, and
+it is not: the exposure is a **build-time** one — a developer machine and a CI runner parsing a
+committed OpenAPI document we wrote ourselves. The runner is ephemeral, the input is not attacker
+controlled, and the actions are SHA-pinned (§ 4 of the DEV_CI doc).
+
+**What would change the answer**, and is therefore what to watch for rather than the count:
+
+- any of these names appearing on `prodReleaseRuntimeClasspath` — the command above is the check;
+- a generator that starts fetching a **remote** spec, which would turn the parser into something an
+  outsider can feed;
+- an alert on a manifest that is *not* `settings.gradle.kts`.
+
+The generator is kept current (7.25.0) because a newer one can only help, but the versions are
+upstream's to choose: bumping it did not clear `bcprov-jdk18on`, `jdom2` or `jose4j`, and pinning
+them from here would mean overriding a plugin's own resolved graph to silence a badge for code that
+never runs in the product.
+
 ## 6. App/API behavior contracts (security-relevant)
 
 - Handle RFC 7807 codes as first-class states: `UNAUTHENTICATED` (401 → silent refresh → login),
