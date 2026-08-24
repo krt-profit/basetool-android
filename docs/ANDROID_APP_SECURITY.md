@@ -433,3 +433,48 @@ exposure package (rate-limit bypass incl. spoofed-XFF attribution, forwarded-hea
 audience/azp confusion, SSE starvation, page-size amplification); pin-rotation fire drill on the
 test stack; assetlinks/key-rotation drill (§2.10); kill-switch drill (client disable + observed
 lockout + the §2.13 min-version gate). Findings gate the release.
+
+### 7.1 The MASVS review as performed (2026-08-24)
+
+**Verdicts:** STORAGE *finding* · CRYPTO *ok* · AUTH *finding* · NETWORK *ok* · PLATFORM *finding*
+· RESILIENCE *ok, with the accepted residual risk of § 1 unchanged*.
+
+Four findings, all low, all fixed in the same pass. None was reachable without either a compromised
+backend or a co-installed app; each was cheap enough that arguing about severity would have cost
+more than the fix.
+
+| # | Category | What | Fix |
+|---|---|---|---|
+| 1 | STORAGE | `ProblemDetail` had no `toString()`, and ~50 sites log an `ApiError` — so the server's localised prose, the request path with its ids and every field-validation message reached logcat on release builds | one `toString()` override that keeps `code`, `status` and `correlationId` and drops the rest |
+| 2 | PLATFORM | `releasesUrl` arrived from the wire on the one anonymous endpoint and left as an implicit `ACTION_VIEW`; a `market://` or `intent://` value would open whatever claims it | https-only, else the published fallback |
+| 3 | AUTH | `AuthRedirectActivity` is exported and `take()` read *and cleared* the pending attempt before the state was checked, so any installed app could end a login in flight | `peek()` reads; the caller clears only once the redirect is judged to be this attempt's |
+| 4 | STORAGE | Three source comments promised `BackupExclusionTest` guarded the org-unit pin; it did not | the assertion those comments describe, plus `allowBackup="false"` |
+
+**`allowBackup` went off rather than staying on-with-exclusions.** Both persisted files were already
+excluded from all three rule sets, so a restore produced an empty app — backup bought a member
+nothing and cost a standing invariant that every future file be remembered in three places.
+
+**One finding fixed itself twice, and that is worth recording.** The `PendingIntent` was first made
+explicit with `setClass` inside an `apply` block, which binds the same component at runtime and left
+the CodeQL alert standing, because the query does not follow a mutation there. An alert that
+survives its own fix is a defect of its own: the next reader has to re-derive whether it is real. It
+is built from the `Intent(Context, Class)` constructor now.
+
+**What the review confirmed rather than found** — recorded so the next pass knows what was already
+looked at: AES-256-GCM with a provider IV and `setRandomizedEncryptionRequired`, an auth-per-use
+app-lock key whose `CryptoObject` cipher is the one that unwraps the token at rest, PKCE S256 with
+256-bit state and nonce and a verified App Link in prod, a logout that revokes and deletes both the
+blob and the DPoP key it is bound to, exactly two persisted files with no disk HTTP cache and no
+database, pinning on all three prod hosts to both ISRG roots with dev relaxations unreachable from
+release by two independent mechanisms, `FLAG_SECURE` app-wide, no WebView, no `ContentProvider`, and
+DPoP proofs over a non-exportable P-256 key clocked by `ServerClock` rather than the device.
+
+**`taskAffinity` is unset, deliberately.** It is the StrandHogg 2.0 shape, and Android 11+ blocks
+cross-UID task insertion; at a floor of API 30 its absence is not a vulnerability. Setting
+`taskAffinity=""` would be free hardening and remains available.
+
+**Still outstanding from § 7, and not claimed as done:** the red-team pass against the exposure
+package, the pin-rotation fire drill, the assetlinks/key-rotation drill, and the kill-switch drill.
+The min-version gate half of the last one is built and device-verified (REQ-API-010); the rest needs
+the production key and the vhost paste, which are the owner's
+([`OWNER_RUNBOOK.md`](OWNER_RUNBOOK.md) §§ 1–4).
