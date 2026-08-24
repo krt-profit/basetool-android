@@ -379,6 +379,35 @@ work only if a Play channel is ever added (Q3).
 describe something that does not exist for them. The page belongs with the release: how to install
 it through Obtainium, what the app does, and what stays in the browser.
 
+**Where phase 5 stands (2026-08-24).** Everything that can be done without a production key or
+production access is done; what is left is in [`OWNER_RUNBOOK.md`](OWNER_RUNBOOK.md), one step per
+section.
+
+- **Certificate pinning — shipped.** The § 5 evaluation came out for the **CA pin**: all three
+  production hosts are pinned to both Let's Encrypt roots, with expirations, and the rotation
+  runbook is § 5.1 of the security doc. The leaf+backup variant was rejected on the property that
+  actually decides it here — it cannot brick the app. The pins were computed from certificates in a
+  trust store, never transcribed, and a test asserts both roots on all three hosts as real `<pin>`
+  elements.
+- **MASVS review — performed and recorded** (security doc § 7.1). Four low findings, all fixed:
+  server prose reaching logcat, a wire string becoming an implicit intent, a login any co-installed
+  app could end, and a backup guard three comments claimed existed. `allowBackup` went off outright.
+- **Release provenance — shipped.** `release.yml` builds, signs, verifies the certificate against
+  the configured key, attests the build, exports the dependency SBOM and creates a **draft**
+  release carrying the APK's SHA-256 and the signing certificate's. The README documents both
+  checks and the `gh attestation verify` command.
+- **Datenschutzerklärung — finalised.** The app has its own section in the policy the app itself
+  links to (main repo, `privacy.h2_3_9`), covering what it stores, that both files are excluded
+  from backup and device transfer, and the absences: no analytics, no ads, no tracking, no
+  automatic crash reporting, no push service.
+- **The wiki page — drafted** at `docs/wiki/App.md`, ready to commit into `basetool.wiki` with the
+  release.
+
+**Still outstanding, and all of it the owner's:** the vhost paste, the signing key, the `release`
+environment, the first tag. The four drills § 7 lists — red-team against the exposure package,
+pin rotation, assetlinks/key rotation, kill-switch — need the production key and the paste; the
+min-version half of the kill switch is built and device-verified.
+
 Each phase lands with the binding repo obligations of §8. Phases 2–4 slice vertically (a feature
 ships UI + repository + tests + i18n together), so the cut lines can shift after Q6.
 
