@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.hangar
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -46,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegm
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -99,95 +102,96 @@ fun HangarScreen(
     onDelete: (Ship) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        if (!state.online) {
-            OfflineBand()
-        }
-        KrtSegmentedControl(
-            options =
-                listOf(
-                    stringResource(R.string.hangar_segment_mine),
-                    stringResource(R.string.hangar_segment_org),
-                ),
-            selectedIndex = state.segment.ordinal,
-            onSelect = { onSegmentSelected(HangarSegment.entries[it]) },
-            stretch = true,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.md)
-                    .testTag(HANGAR_SEGMENT_TAG),
-        )
-        if (state.segment == HangarSegment.MINE) {
-            Row(
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!state.online) {
+                OfflineBand()
+            }
+            KrtSegmentedControl(
+                options =
+                    listOf(
+                        stringResource(R.string.hangar_segment_mine),
+                        stringResource(R.string.hangar_segment_org),
+                    ),
+                selectedIndex = state.segment.ordinal,
+                onSelect = { onSegmentSelected(HangarSegment.entries[it]) },
+                stretch = true,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.sm),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                KrtCtaButton(
-                    text = stringResource(R.string.hangar_add),
-                    onClick = onCreate,
-                    modifier =
-                        Modifier
-                            .testTag(HANGAR_ADD_TAG)
-                            .alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
-                    enabled = state.online,
-                )
+                        .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.md)
+                        .testTag(HANGAR_SEGMENT_TAG),
+            )
+            KrtTextField(
+                // The typed value, not the debounced one (REQ-APP-MIS-004).
+                value = state.searchText,
+                onValueChange = onSearchChanged,
+                placeholder = stringResource(R.string.hangar_search_placeholder),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md).testTag(HANGAR_SEARCH_TAG),
+            )
+
+            when (state.phase) {
+                is HangarPhase.Loading -> {
+                    KrtLoadingIndicator(
+                        text = stringResource(R.string.hangar_title),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                is HangarPhase.Failed -> {
+                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                    // empty state, because a countdown in front of a 403 promises a retry that will
+                    // answer exactly the same.
+                    val retryIn = state.retryIn
+                    if (retryIn != null) {
+                        KrtRetryCountdown(
+                            secondsLeft = retryIn,
+                            title = stringResource(R.string.retry_busy_title),
+                            message = stringResource(R.string.retry_busy_message, retryIn),
+                            retryLabel = stringResource(R.string.retry_now),
+                            onRetry = onRetryNow,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    } else {
+                        KrtEmptyState(
+                            iconRes = DesignR.drawable.ic_krt_ship,
+                            title = stringResource(R.string.hangar_error_title),
+                            message = stringResource(R.string.hangar_error_message),
+                            actionText = stringResource(R.string.missions_retry),
+                            onAction = onRefresh,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    }
+                }
+
+                is HangarPhase.Ready -> {
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        HangarBody(state = state, onLoadMore = onLoadMore, onEdit = onEdit, onDelete = onDelete)
+                    }
+                }
             }
         }
-        KrtTextField(
-            // The typed value, not the debounced one (REQ-APP-MIS-004).
-            value = state.searchText,
-            onValueChange = onSearchChanged,
-            placeholder = stringResource(R.string.hangar_search_placeholder),
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md).testTag(HANGAR_SEARCH_TAG),
-        )
-
-        when (state.phase) {
-            is HangarPhase.Loading -> {
-                KrtLoadingIndicator(
-                    text = stringResource(R.string.hangar_title),
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-
-            is HangarPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // empty state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
-                val retryIn = state.retryIn
-                if (retryIn != null) {
-                    KrtRetryCountdown(
-                        secondsLeft = retryIn,
-                        title = stringResource(R.string.retry_busy_title),
-                        message = stringResource(R.string.retry_busy_message, retryIn),
-                        retryLabel = stringResource(R.string.retry_now),
-                        onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                    )
-                } else {
-                    KrtEmptyState(
-                        iconRes = DesignR.drawable.ic_krt_ship,
-                        title = stringResource(R.string.hangar_error_title),
-                        message = stringResource(R.string.hangar_error_message),
-                        actionText = stringResource(R.string.missions_retry),
-                        onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                    )
-                }
-            }
-
-            is HangarPhase.Ready -> {
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    HangarBody(state = state, onLoadMore = onLoadMore, onEdit = onEdit, onDelete = onDelete)
-                }
-            }
+        // Design ch. 08 asks for a FAB here, and only on "Meine Schiffe" — the org overview is a
+        // read of everybody's fleet and has nothing to create. It replaces the inline CTA that sat
+        // in the header row: a list screen floats its primary action (ch. 00), and the header
+        // button also pushed the search field down on every phone.
+        if (state.segment == HangarSegment.MINE) {
+            KrtFab(
+                iconRes = DesignR.drawable.ic_krt_plus,
+                label = stringResource(R.string.hangar_add),
+                onClick = onCreate,
+                enabled = state.online,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(KrtSpacing.lg)
+                        .padding(bottom = LocalKrtBottomBarInset.current)
+                        .testTag(HANGAR_ADD_TAG),
+            )
         }
     }
 }
