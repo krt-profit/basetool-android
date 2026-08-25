@@ -7,14 +7,20 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -28,10 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
@@ -41,7 +52,10 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
@@ -50,6 +64,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFiel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
@@ -62,6 +77,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import kotlinx.coroutines.launch
@@ -139,7 +155,6 @@ fun MissionDetailScreen(
                     OfflineBand()
                 }
                 MissionDetailHead(detail = detail)
-                SignUpBar(state = state, actions = actions)
                 MissionTabRow(
                     selected = state.tab,
                     detail = state.detail,
@@ -148,7 +163,10 @@ fun MissionDetailScreen(
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
                     onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
+                    // weight, not fillMaxSize: the tab content takes what is left after the head,
+                    // the tab row and the CTA bar, so the bar stays on screen instead of being
+                    // pushed off by a long Ablauf.
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                 ) {
                     MissionTabContent(
                         state = state,
@@ -157,6 +175,10 @@ fun MissionDetailScreen(
                         finances = finances,
                     )
                 }
+                // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
+                // tab row, where the screen's primary action scrolled away with the briefing and
+                // read as one more fact about the Einsatz.
+                SignUpBar(state = state, actions = actions)
                 state.entryDraft?.let { draft ->
                     FinanceEntrySheet(draft = draft, state = state, actions = finances)
                 }
@@ -246,27 +268,10 @@ private fun SignUpBar(
     actions: MissionSignUpActions,
 ) {
     val mine = state.mySignUp
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-    ) {
-        state.error?.let { error -> SignUpError(error = error) }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            KrtCtaButton(
-                text =
-                    stringResource(
-                        if (mine == null) {
-                            R.string.mission_detail_sign_up
-                        } else {
-                            R.string.mission_detail_withdraw
-                        },
-                    ),
-                onClick = actions.onToggleSignUp,
-                modifier = Modifier.testTag(MISSION_SIGN_UP_TAG).writeAlpha(state.writable),
-                enabled = state.writable,
-            )
-            if (mine != null) {
-                SignUpRowActions(mine = mine, state = state, actions = actions)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        state.error?.let { error ->
+            Box(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+                SignUpError(error = error)
             }
         }
         // Only once the Einsatz has actually started: the server refuses a check-in before then,
@@ -277,7 +282,34 @@ private fun SignUpBar(
                 text = stringResource(R.string.mission_detail_check_in_not_yet),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
+                modifier = Modifier.padding(horizontal = KrtSpacing.md),
             )
+        }
+        KrtBottomCtaBar {
+            KrtCtaButton(
+                text =
+                    stringResource(
+                        if (mine == null) {
+                            R.string.mission_detail_sign_up
+                        } else {
+                            R.string.mission_detail_withdraw
+                        },
+                    ),
+                // The artboard's CTA carries the login glyph beside its label; signing up is an
+                // entry, and the icon says so before the word is read.
+                iconRes =
+                    if (mine == null) DesignR.drawable.ic_krt_login else DesignR.drawable.ic_krt_logout,
+                onClick = actions.onToggleSignUp,
+                modifier =
+                    Modifier
+                        .testTag(MISSION_SIGN_UP_TAG)
+                        .weight(1f)
+                        .writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+            if (mine != null) {
+                SignUpRowActions(mine = mine, state = state, actions = actions)
+            }
         }
     }
 }
@@ -354,65 +386,6 @@ private fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
- * The sticky head: title, status, org badge and the fact band.
- *
- * @param detail the Einsatz.
- */
-@Composable
-private fun MissionDetailHead(detail: MissionDetail) {
-    val zone = remember { ZoneId.systemDefault() }
-    val time = remember(zone) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone) }
-
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = detail.name,
-                style = MaterialTheme.typography.titleLarge,
-                color = KrtPalette.White,
-                modifier = Modifier.weight(1f),
-            )
-            KrtStatusBadge(text = detail.statusLabel(), tone = detail.statusTone())
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            detail.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
-            detail.operationName?.let { KrtChip(text = it, tone = KrtChipTone.Info) }
-        }
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.mission_detail_signups,
-                    detail.registeredParticipants,
-                    detail.registeredParticipants,
-                    detail.checkedInParticipants,
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
-        // Only the facts the server actually gave. An empty "Ort —" row states nothing and costs a
-        // line of a head that has to stay small enough to leave the content room.
-        val facts =
-            buildList {
-                detail.meetingTime?.let { add(stringResource(R.string.mission_detail_fact_meeting) to time.format(it)) }
-                detail.plannedStartTime?.let {
-                    add(stringResource(R.string.mission_detail_fact_join) to time.format(it))
-                }
-                detail.plannedEndTime?.let { add(stringResource(R.string.mission_detail_fact_end) to time.format(it)) }
-                detail.meetingPoint?.let { add(stringResource(R.string.mission_detail_fact_place) to it) }
-                detail.partyLeadName?.let { add(stringResource(R.string.mission_detail_fact_lead) to it) }
-            }
-        facts.forEach { (label, value) -> KrtKeyValueRow(label = label, value = value) }
-        KrtHairlineRule()
-    }
-}
-
-/**
  * The tab row.
  *
  * Horizontally scrollable because seven German tab labels do not fit a phone's width, and the
@@ -427,32 +400,85 @@ private fun MissionTabRow(
     detail: MissionDetail?,
     onTabSelected: (MissionTab) -> Unit,
 ) {
-    Row(
+    // `.tab-nav`: a surface row on the dark-gray band with a hairline under it — text tabs with a
+    // 3 dp orange underline on the active one, NOT filter chips. Chips read as a filter a member
+    // can combine; these are pages, exactly one of which is showing.
+    Column(modifier = Modifier.fillMaxWidth().background(KrtPalette.Gray4)) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = KrtSpacing.md)
+                    .testTag(MISSION_DETAIL_TABS_TAG),
+        ) {
+            MissionTab.entries.forEach { tab ->
+                // Design ch. 06 artboard 2 puts a count on every tab that holds a countable list,
+                // so a member can see there are three objectives without opening the tab. A tab
+                // whose content is not a list (Übersicht) carries none, and neither does one whose
+                // list has not been read yet.
+                MissionTabItem(
+                    label = stringResource(tab.labelRes()),
+                    count = detail?.let(tab::countIn),
+                    selected = tab == selected,
+                    onClick = { onTabSelected(tab) },
+                )
+            }
+        }
+        KrtHairlineRule()
+    }
+}
+
+/**
+ * One tab: its label, its count in orange, and the underline that marks the open one.
+ *
+ * @param label the tab's name.
+ * @param count how many rows its list holds, `null` when it has none or has not been read.
+ * @param selected whether this tab is the one showing.
+ * @param onClick opens it.
+ */
+@Composable
+private fun MissionTabItem(
+    label: String,
+    count: Int?,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.md)
-                .testTag(MISSION_DETAIL_TABS_TAG),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .clickable(onClick = onClick)
+                .heightIn(min = KrtSpacing.touchTarget),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Bottom,
     ) {
-        MissionTab.entries.forEach { tab ->
-            // Design ch. 06 artboard 2 puts a count on every tab that holds a countable list, so a
-            // member can see there are three objectives without opening the tab. A tab whose
-            // content is not a list (Übersicht) carries none, and neither does one whose list has
-            // not been read yet.
-            val count = detail?.let(tab::countIn)
-            KrtFilterChip(
-                text =
-                    if (count == null) {
-                        stringResource(tab.labelRes())
-                    } else {
-                        stringResource(R.string.mission_tab_with_count, stringResource(tab.labelRes()), count)
-                    },
-                selected = tab == selected,
-                onClick = { onTabSelected(tab) },
+        Row(
+            modifier = Modifier.padding(horizontal = TAB_PADDING_H, vertical = TAB_PADDING_V),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        ) {
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) KrtPalette.White else KrtPalette.Gray2,
+                maxLines = 1,
             )
+            count?.let {
+                Text(
+                    text = it.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(TAB_UNDERLINE)
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    ),
+        )
     }
 }
 
@@ -484,26 +510,6 @@ private fun MissionTabContent(
             MissionTab.FREQUENCIES -> frequenciesTab(detail)
             MissionTab.FINANCES -> financesTab(state, onRetryFinances, finances)
         }
-    }
-}
-
-/**
- * Übersicht: the briefing text, or the note that it is members-only.
- *
- * @param detail the Einsatz.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.overviewTab(detail: MissionDetail) {
-    item {
-        KrtSectionTitle(text = stringResource(R.string.mission_detail_description))
-    }
-    item {
-        // An outsider read carries no description (ADR-0034). Saying so beats a blank section,
-        // which reads as an Einsatz nobody bothered to describe.
-        Text(
-            text = detail.description ?: stringResource(R.string.mission_detail_description_hidden),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (detail.description != null) KrtPalette.White else KrtPalette.TextMuted,
-        )
     }
 }
 
@@ -1021,7 +1027,7 @@ private fun MissionTab.labelRes(): Int =
  * @return the translated status, or the raw server value when this build does not know it.
  */
 @Composable
-private fun MissionDetail.statusLabel(): String =
+internal fun MissionDetail.statusLabel(): String =
     if (status == MissionStatus.UNKNOWN) {
         rawStatus.orEmpty()
     } else {
@@ -1041,7 +1047,7 @@ private fun MissionDetail.statusLabel(): String =
  *
  * @return the design system's tone; an unknown status is drawn as planned rather than as a problem.
  */
-private fun MissionDetail.statusTone(): KrtStatusTone =
+internal fun MissionDetail.statusTone(): KrtStatusTone =
     when (status) {
         MissionStatus.PLANNED, MissionStatus.UNKNOWN -> KrtStatusTone.Planned
         MissionStatus.ACTIVE -> KrtStatusTone.Active
@@ -1106,3 +1112,12 @@ private fun MissionTab.countIn(detail: MissionDetail): Int? =
         MissionTab.FREQUENCIES -> detail.frequencies.size
         MissionTab.FINANCES -> null
     }
+
+/** Horizontal padding of a tab label — `.tab-nav .tab` is 14 px. */
+private val TAB_PADDING_H = 14.dp
+
+/** Vertical padding of a tab label — `.tab-nav .tab` is 11 px. */
+private val TAB_PADDING_V = 11.dp
+
+/** The active tab's underline — 3 px in `.tab-nav .tab.active`. */
+private val TAB_UNDERLINE = 3.dp
