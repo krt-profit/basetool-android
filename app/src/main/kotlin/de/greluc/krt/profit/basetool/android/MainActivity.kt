@@ -17,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,7 +43,9 @@ import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
@@ -77,6 +80,7 @@ import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
 import kotlinx.coroutines.launch
+import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
  * The single activity of the app.
@@ -404,6 +408,26 @@ class MainActivity : AppCompatActivity() {
                     SessionState.Unknown -> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             KrtLoadingIndicator(text = stringResource(R.string.login_signing_in))
+                        }
+                    }
+
+                    is SessionState.Stale -> {
+                        // NOT the login screen. A stale session is a stored one that could not be
+                        // proven right now — a tunnel, not a logout (ADR-0004) — and the token is
+                        // still on disk. Asking for a password here throws away a working session
+                        // over a dropped connection, and the member has no way to tell that is what
+                        // happened: the login screen carries no explanation at all.
+                        Box(
+                            Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            KrtEmptyState(
+                                iconRes = DesignR.drawable.ic_krt_wifi_off,
+                                title = stringResource(R.string.session_stale_title),
+                                message = stringResource(R.string.session_stale_message),
+                                actionText = stringResource(R.string.session_stale_retry),
+                                onAction = { scope.launch { container.session.restore() } },
+                            )
                         }
                     }
 

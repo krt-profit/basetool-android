@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-08-25
+
+### Fixed
+
+- **Die App-Sperre wirft dich nicht mehr aus der Anmeldung.** Mit eingeschalteter Sperre führte
+  jedes Beenden der App dazu, dass nach dem Entsperren die Anmeldeseite kam — obwohl die Sitzung
+  noch gültig war und auf dem Gerät lag. Ursache war eine Abfrage vor dem Entsperren, die „noch
+  gesperrt" nicht von „nicht angemeldet" unterscheiden konnte.
+- **Eine kurz nicht erreichbare Verbindung fragt nicht mehr nach dem Passwort.** Konnte die Sitzung
+  beim Start nicht bestätigt werden, zeigte die App die Anmeldeseite ohne jeden Hinweis. Jetzt steht
+  dort, dass du weiterhin angemeldet bist, mit „Erneut versuchen".
+
 ## [0.1.2] — 2026-08-25
 
 ### Fixed

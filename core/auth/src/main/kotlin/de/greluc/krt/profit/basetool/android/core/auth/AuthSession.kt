@@ -73,14 +73,27 @@ class AuthSession(
      *
      * @return the resulting state, also published on [state]
      */
-    suspend fun restore(): SessionState {
-        val stored = refreshTokenStore.read()
-        return if (stored == null) {
-            publish(SessionState.SignedOut)
-        } else {
-            publish(stateFor(tokenClient.refresh(stored), previousRefreshToken = stored))
+    suspend fun restore(): SessionState =
+        when (val stored = refreshTokenStore.read()) {
+            is StoredRefreshToken.Present -> {
+                publish(
+                    stateFor(tokenClient.refresh(stored.token), previousRefreshToken = stored.token),
+                )
+            }
+
+            StoredRefreshToken.Absent -> {
+                publish(SessionState.SignedOut)
+            }
+
+            StoredRefreshToken.Locked -> {
+                // Nothing is decided here, and deliberately nothing is published: the session is
+                // still unread, not ended. The gate calls this again once the member has
+                // authenticated. Reaching this branch means a caller ran ahead of the lock, which
+                // is worth a line because it used to be the silent half of a logout.
+                KrtLog.i(LOG_TAG) { "session cannot be restored while the app lock is closed" }
+                state.value
+            }
         }
-    }
 
     /**
      * Completes a login by redeeming the authorization code.
@@ -133,14 +146,28 @@ class AuthSession(
             if (!needsRefresh()) {
                 null
             } else {
-                val stored = tokens?.refreshToken ?: refreshTokenStore.read()
-                if (stored == null) {
-                    publish(SessionState.SignedOut)
-                    null
-                } else {
-                    val result = tokenClient.refresh(stored)
-                    publish(stateFor(result, previousRefreshToken = stored))
-                    result
+                when (val stored = storedRefreshToken()) {
+                    is StoredRefreshToken.Present -> {
+                        val result = tokenClient.refresh(stored.token)
+                        publish(stateFor(result, previousRefreshToken = stored.token))
+                        result
+                    }
+
+                    StoredRefreshToken.Absent -> {
+                        publish(SessionState.SignedOut)
+                        null
+                    }
+
+                    // The call that brought us here runs on an OkHttp thread, and on a cold start
+                    // it can be a request made *above* the lock gate — the version check is one.
+                    // Publishing SignedOut here is what logged a member out before they had even
+                    // been offered the fingerprint prompt: the session was never read, so there is
+                    // nothing to conclude. The request goes out unauthenticated and fails on its
+                    // own terms, which is the honest outcome for a request nobody could have
+                    // authorised yet.
+                    StoredRefreshToken.Locked -> {
+                        null
+                    }
                 }
             }
         }
@@ -164,13 +191,17 @@ class AuthSession(
             if (current != null && current != refused) {
                 return@withLock current
             }
-            val stored = tokens?.refreshToken ?: refreshTokenStore.read()
-            if (stored == null) {
+            val stored = storedRefreshToken()
+            if (stored is StoredRefreshToken.Locked) {
+                // Same reasoning as refreshIfNeeded: a sealed token is not an ended session.
+                return@withLock null
+            }
+            if (stored !is StoredRefreshToken.Present) {
                 publish(SessionState.SignedOut)
                 return@withLock null
             }
-            val result = tokenClient.refresh(stored)
-            publish(stateFor(result, previousRefreshToken = stored))
+            val result = tokenClient.refresh(stored.token)
+            publish(stateFor(result, previousRefreshToken = stored.token))
             (result as? TokenResult.Granted)?.tokens?.accessToken
         }
 
@@ -191,7 +222,9 @@ class AuthSession(
         tokens = null
         publish(SessionState.SignedOut)
 
-        val refreshToken = ending?.refreshToken ?: refreshTokenStore.read()
+        // Sealed or absent are the same thing here: there is no token to revoke, and the wipe
+        // below happens either way. A logout must never depend on the lock being open.
+        val refreshToken = ending?.refreshToken ?: refreshTokenStore.readTokenOrNull()
         if (refreshToken != null) {
             tokenClient.revokeRefreshToken(refreshToken)
         }
@@ -202,6 +235,16 @@ class AuthSession(
 
         return ending?.idToken?.let(tokenClient::endSessionUri)
     }
+
+    /**
+     * The refresh token this session should use, from memory first and the store second.
+     *
+     * @return the in-memory token wrapped as [StoredRefreshToken.Present] when there is one, else
+     *   whatever the store says — including [StoredRefreshToken.Locked], which callers must not
+     *   read as "signed out"
+     */
+    private suspend fun storedRefreshToken(): StoredRefreshToken =
+        tokens?.refreshToken?.let(StoredRefreshToken::Present) ?: refreshTokenStore.read()
 
     /**
      * Whether the held access token is missing or about to expire.

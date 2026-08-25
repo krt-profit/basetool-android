@@ -126,7 +126,7 @@ class AuthSessionTest {
             val state = session.restore()
 
             assertTrue("expected Stale, got $state", state is SessionState.Stale)
-            assertEquals("the stored token must survive an offline start", STORED_REFRESH, store.read())
+            assertEquals("the stored token must survive an offline start", STORED_REFRESH, store.readTokenOrNull())
         }
 
     @Test
@@ -140,7 +140,7 @@ class AuthSessionTest {
             val state = session.restore()
 
             assertEquals(SessionState.SignedOut, state)
-            assertNull(store.read())
+            assertNull(store.readTokenOrNull())
         }
 
     @Test
@@ -201,7 +201,7 @@ class AuthSessionTest {
 
             session.restore()
 
-            assertEquals(STORED_REFRESH, store.read())
+            assertEquals(STORED_REFRESH, store.readTokenOrNull())
         }
 
     @Test
@@ -214,7 +214,7 @@ class AuthSessionTest {
 
             assertTrue("expected SignedIn, got $result", result is LoginResult.SignedIn)
             assertEquals("member-1", (result as LoginResult.SignedIn).claims?.subject)
-            assertEquals(STORED_REFRESH, store.read())
+            assertEquals(STORED_REFRESH, store.readTokenOrNull())
         }
 
     @Test
@@ -227,7 +227,7 @@ class AuthSessionTest {
             val result = session.completeLogin(request, code = "auth-code")
 
             assertEquals(LoginResult.NonceMismatch, result)
-            assertNull(store.read())
+            assertNull(store.readTokenOrNull())
             assertNull(session.currentAccessToken())
         }
 
@@ -255,7 +255,7 @@ class AuthSessionTest {
 
             assertNull(session.currentAccessToken())
             assertEquals(SessionState.SignedOut, session.state.value)
-            assertNull(store.read())
+            assertNull(store.readTokenOrNull())
             assertTrue("the Keystore key must be destroyed too", cipher.keyDeleted)
             assertNotNull(endSession)
             assertTrue(endSession!!.startsWith(configuration.endSessionEndpoint))
@@ -274,7 +274,7 @@ class AuthSessionTest {
 
             session.logout()
 
-            assertNull(store.read())
+            assertNull(store.readTokenOrNull())
             assertTrue(cipher.keyDeleted)
             assertEquals(SessionState.SignedOut, session.state.value)
         }
