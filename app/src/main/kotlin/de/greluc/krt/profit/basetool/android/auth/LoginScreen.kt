@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHead
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.core.network.API_VERSION
 
 /** Width of the centred column; the tablet layout is the same column, not a split (design ch. 04). */
 private val COLUMN_MAX_WIDTH = 480.dp
@@ -221,7 +222,8 @@ private fun Footer(
  *
  * The design chapter pairs this with a "Server bereit" status. That half is deliberately not drawn:
  * the app has no health endpoint yet, and a status line that always says "ready" is worse than none
- * — it is the one element a member would trust during an outage.
+ * — it is the one element a member would trust during an outage. The API version, by contrast, needs
+ * no signal at all: it is the contract this build was compiled against, so it is drawn.
  *
  * @param versionName the app's version name
  * @param versionCode the build number
@@ -232,7 +234,7 @@ private fun Version(
     versionCode: Int,
 ) {
     Text(
-        text = stringResource(R.string.login_version, versionName, versionCode),
+        text = stringResource(R.string.login_version, versionName, versionCode, API_VERSION),
         style = MaterialTheme.typography.labelSmall,
         color = KrtPalette.TextMuted,
         textAlign = TextAlign.Center,

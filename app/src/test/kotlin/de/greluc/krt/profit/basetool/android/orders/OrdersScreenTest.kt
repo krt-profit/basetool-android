@@ -147,6 +147,9 @@ class OrdersScreenTest {
                             onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
                             onStatusChosen = { statuses.add(it) },
                             onDismissStatusPicker = {},
+                            onStatusSelected = { statuses.add(it) },
+                            onApplyStatus = {},
+                            onDismissStatusConfirm = {},
                         ),
                 )
             }

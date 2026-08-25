@@ -308,6 +308,17 @@ data class OrderDetailState(
      */
     val rejectedNote: String? = null,
     val statusPickerOpen: Boolean = false,
+    /**
+     * The status the member has picked but not yet applied.
+     *
+     * Design ch. 10 artboard 8 separates choosing from applying: the sheet carries a „Status
+     * übernehmen" action rather than moving the order the instant a row is tapped. A status change
+     * is visible to everyone on the order and two of the four cannot be taken back, so a mistap
+     * must not be able to make one.
+     */
+    val statusChoice: JobOrderStatus? = null,
+    /** Whether the terminal-status confirmation is up (artboard 9). */
+    val statusConfirmOpen: Boolean = false,
     val saving: Boolean = false,
     val online: Boolean = true,
     val error: ApiError? = null,
@@ -480,9 +491,51 @@ class OrderDetailViewModel(
         mutableState.value = current.copy(noteDraft = rejected, rejectedNote = null)
     }
 
-    /** Closes the status picker. */
+    /** Closes the status picker, discarding an unapplied choice. */
     fun onDismissStatusPicker() {
-        mutableState.value = mutableState.value.copy(statusPickerOpen = false)
+        mutableState.value =
+            mutableState.value.copy(
+                statusPickerOpen = false,
+                statusChoice = null,
+                statusConfirmOpen = false,
+            )
+    }
+
+    /**
+     * Marks a status as the one the member intends, without moving the order.
+     *
+     * @param status the picked status; the order's current status is inert in the sheet, so a tap
+     *   on it is ignored rather than treated as a no-op write.
+     */
+    fun onStatusSelected(status: JobOrderStatus) {
+        val current = mutableState.value
+        if (status == current.order?.status) {
+            return
+        }
+        mutableState.value = current.copy(statusChoice = status, error = null)
+    }
+
+    /**
+     * Applies the picked status, asking first when it cannot be taken back.
+     *
+     * `COMPLETED` and `REJECTED` are terminal **in this app**: no screen here offers a way back out
+     * of either, so from a member's side the change is one-way and the confirmation says so before
+     * the change rather than after it (design ch. 10 artboard 9).
+     */
+    fun onApplyStatus() {
+        val current = mutableState.value
+        val choice = current.statusChoice ?: return
+        if (choice in TERMINAL_STATUSES && !current.statusConfirmOpen) {
+            mutableState.value = current.copy(statusConfirmOpen = true)
+            return
+        }
+        mutableState.value = current.copy(statusConfirmOpen = false)
+        onStatusChosen(choice)
+    }
+
+    /** Backs out of the terminal confirmation, keeping the choice on screen. */
+    fun onDismissStatusConfirm() {
+        mutableState.value = mutableState.value.copy(statusConfirmOpen = false)
     }
 
     /**
@@ -554,6 +607,8 @@ class OrderDetailViewModel(
                             phase = OrderDetailPhase.Ready,
                             noteDraft = null,
                             statusPickerOpen = false,
+                            statusChoice = null,
+                            statusConfirmOpen = false,
                             saving = false,
                             error = null,
                         )
@@ -582,7 +637,12 @@ class OrderDetailViewModel(
                     mutableState.value =
                         mutableState.value.copy(
                             saving = false,
+                            // A refused write leaves the sheet closed but the choice discarded:
+                            // re-opening it must show where the order actually is, not what the
+                            // member wanted it to be.
                             statusPickerOpen = false,
+                            statusChoice = null,
+                            statusConfirmOpen = false,
                             error = result.error,
                         )
                 }
@@ -646,3 +706,11 @@ class OrderDetailViewModel(
         const val LOG_TAG = "orders"
     }
 }
+
+/**
+ * The statuses this app offers no way back out of.
+ *
+ * Not a server rule — the backend would accept a move back — but an app one: no screen here has the
+ * action, so for a member the change is one-way and the confirmation is honest in saying so.
+ */
+private val TERMINAL_STATUSES = setOf(JobOrderStatus.COMPLETED, JobOrderStatus.REJECTED)

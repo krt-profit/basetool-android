@@ -80,6 +80,10 @@ android {
         versionCode = 4
         versionName = "0.1.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // The generator that produced res/raw/oss_licenses.json, named on the report's last line
+        // (design ch. 15). Taken from the version catalog rather than typed, so the line cannot
+        // claim a version other than the plugin that actually ran.
+        buildConfigField("String", "LICENSEE_VERSION", "\"${libs.versions.licensee.get()}\"")
     }
 
     // dev = local test stack + debug trust anchors, prod = production hosts.

@@ -7,7 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.dashboard
 
+import android.text.format.DateUtils
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -27,6 +30,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,7 +41,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.Notification
@@ -55,6 +61,8 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import kotlinx.coroutines.delay
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -104,6 +112,7 @@ fun DashboardScreen(
     onOpenMission: (String) -> Unit,
     onOpenMissions: () -> Unit,
     onOpenNotifications: () -> Unit,
+    onQuickAction: (QuickAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PullToRefreshBox(
@@ -134,6 +143,7 @@ fun DashboardScreen(
                         )
                     }
                     LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        quickActionsSection(onQuickAction = onQuickAction)
                         notificationsSection(
                             unread = unread,
                             unreadKnown = unreadKnown,
@@ -157,6 +167,7 @@ fun DashboardScreen(
                     onOpenMission = onOpenMission,
                     onOpenMissions = onOpenMissions,
                 )
+                quickActionsSection(onQuickAction = onQuickAction)
                 notificationsSection(
                     unread = unread,
                     unreadKnown = unreadKnown,
@@ -164,6 +175,82 @@ fun DashboardScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * The four shortcuts design chapter 05 puts between the Einsätze band and the inbox.
+ *
+ * The set is fixed rather than derived: the chapter names these four, and a dashboard whose
+ * shortcuts move with the data is one a member cannot build muscle memory on. Each opens the
+ * surface the action lives on rather than the action itself — there is no global "check in", only
+ * a check-in on one Einsatz, and sending a member to a guessed Einsatz would be worse than sending
+ * them to the list they can pick from.
+ *
+ * The chapter notes "(user pick)" for a later revision. Nothing in the handoff draws that picker,
+ * so it is not invented here.
+ *
+ * @param onQuickAction opens the destination behind a tile.
+ */
+private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Unit) {
+    item(key = "quick-title") {
+        KrtSectionTitle(
+            text = stringResource(R.string.dashboard_quick_actions),
+            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        )
+    }
+    item(key = "quick-tiles") {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
+            QuickAction.entries.forEach { action ->
+                QuickActionTile(
+                    action = action,
+                    onClick = { onQuickAction(action) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One shortcut tile: the glyph over its label, square, on the input surface.
+ *
+ * @param action which shortcut this is.
+ * @param onClick opens it.
+ * @param modifier layout modifier, carrying the row's equal-share weight.
+ */
+@Composable
+private fun QuickActionTile(
+    action: QuickAction,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .heightIn(min = QUICK_TILE_MIN_HEIGHT)
+                .background(KrtPalette.SurfaceInput)
+                .clickable(onClick = onClick)
+                .padding(vertical = KrtSpacing.md, horizontal = KrtSpacing.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        KrtIcon(
+            id = action.iconRes,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = stringResource(action.labelRes),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.White,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -392,7 +479,23 @@ private fun MissionBandRow(
 private fun MissionFactsRow(mission: Mission) {
     val zone = remember { ZoneId.systemDefault() }
     val formatter = remember(zone) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone) }
-    val meeting = mission.meetingTime?.let(formatter::format)
+    // Design ch. 05 draws the countdown FIRST and the clock time after it: "in 2 Std. · TS 21:00".
+    // The relative half is what a member acts on — an absolute time alone makes them do the
+    // subtraction, and they do it against the wrong timezone often enough to matter. The absolute
+    // half stays because it is the one that survives being read out loud in TeamSpeak.
+    //
+    // Re-read once a minute so a countdown does not go stale while the dashboard sits open, which
+    // is exactly what it does between the greeting and the first tap.
+    val tick by produceState(0L) {
+        while (true) {
+            delay(COUNTDOWN_TICK_MS)
+            value += 1
+        }
+    }
+    val meeting =
+        mission.meetingTime?.let { at ->
+            remember(at, tick) { at.relativeToNow() + " · TS " + formatter.format(at) }
+        }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
@@ -516,3 +619,25 @@ private fun Notification.preview(): String =
         template = stringResource(notificationTypeRes(type)),
         generic = stringResource(R.string.notifications_type_generic),
     )
+
+/** Smallest a shortcut tile gets, so a wrapped label never squeezes the glyph out. */
+private val QUICK_TILE_MIN_HEIGHT = 72.dp
+
+/**
+ * When the Einsatz starts, in words, relative to now.
+ *
+ * `DateUtils` rather than a hand-written "in %d Std.": it is localised for every locale the system
+ * carries and it picks the unit a reader expects, which a hand-rolled version gets wrong the moment
+ * the gap crosses a day.
+ *
+ * @return e.g. "in 2 Std.".
+ */
+private fun Instant.relativeToNow(): String =
+    DateUtils.getRelativeTimeSpanString(
+        toEpochMilli(),
+        System.currentTimeMillis(),
+        DateUtils.MINUTE_IN_MILLIS,
+    ).toString()
+
+/** How often the seven-day band re-reads its countdowns (design ch. 05: "each minute"). */
+private const val COUNTDOWN_TICK_MS = 60_000L

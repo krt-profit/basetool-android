@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -90,7 +91,12 @@ class HangarScreenTest {
 
         compose.onNodeWithText("Carrack", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Meridian", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Anvil Aerospace").assertIsDisplayed()
+        // The maker leads the row as a lettermark square now (design ch. 08), so the full name is
+        // no longer on screen as text — it is what a screen reader announces for the square. The
+        // assertion follows the fact rather than the pixels: an abbreviation may hide a name
+        // visually, never from assistive technology.
+        compose.onNodeWithContentDescription("Anvil Aerospace").assertExists()
+        compose.onNodeWithText("AA").assertIsDisplayed()
         compose.onNodeWithTag(HANGAR_LIST_TAG).assertIsDisplayed()
     }
 

@@ -33,6 +33,16 @@
       `dataExtractionRules` still governs device-to-device transfer and because a later re-enable
       must not start from a blank slate.
     -->
+    <!-- Package visibility (API 30+): without this declaration PackageManager answers "no
+         browser" for every device, and design ch. 15 decides between opening a licence URL and
+         copying it on exactly that answer. Narrow by intent, not by package name. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:name=".BasetoolApplication"
         android:allowBackup="false"

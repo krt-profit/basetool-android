@@ -33,6 +33,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
+import de.greluc.krt.profit.basetool.android.dashboard.QuickAction
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
@@ -295,6 +296,7 @@ private fun listDestination(
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
                 onOpenNotifications = { navController.navigate(KrtDestination.Notifications.route) },
+                onQuickAction = { action -> navController.navigate(action.destination.route) },
             )
         }
 
@@ -632,6 +634,8 @@ private fun PushedDestination(
  * @property onOpenImprint opens the imprint in a browser.
  * @property onOpenTerms opens the terms of use in a browser.
  * @property onOpenUrl opens an arbitrary URL in a browser; used by the open-source notice.
+ *   Returns `false` when nothing on the device handled it, which is what turns the licence
+ *   action into a copy (design ch. 15).
  * @property versionCode the app's build number, from `BuildConfig`.
  */
 @Immutable
@@ -647,6 +651,6 @@ data class SettingsBindings(
     val onOpenPrivacy: () -> Unit,
     val onOpenImprint: () -> Unit,
     val onOpenTerms: () -> Unit,
-    val onOpenUrl: (String) -> Unit,
+    val onOpenUrl: (String) -> Boolean,
     val versionCode: Int,
 )
