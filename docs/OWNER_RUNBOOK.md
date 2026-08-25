@@ -151,6 +151,9 @@ settings that are worth having in place before the first tag rather than after i
 7. Publish the release.
 8. **Put the fingerprint in the README.** It currently says *published with the first release
    (v0.1.0)*; replace that line with the real digest and push it to `main`.
+9. **Delete the "noch nicht veröffentlicht" note from both wiki pages** — `Android-App` in
+   `basetool.wiki` and `Home` in `basetool-android.wiki` (§ 7). From this moment the download
+   addresses on them work, and a note saying they do not is the only wrong thing on the page.
 
 ---
 
@@ -192,24 +195,32 @@ one-commit change whenever a chapter exists.
 
 ---
 
-## 7. The German wiki page
+## 7. The German wiki pages
 
-**Status:** drafted, in [`docs/wiki/App.md`](wiki/App.md) — but the wiki is a **separate git
-repository** (`basetool.wiki`) that is not checked out here, so committing it is yours.
+**Status:** **done, 2026-08-24.** Both wikis are published; what is left is one line to delete,
+and it belongs to § 4.
 
-```bash
-git clone https://github.com/krt-profit/basetool.wiki.git
-cp <this repo>/docs/wiki/App.md basetool.wiki/App.md
-cd basetool.wiki && git add App.md && git commit -s -m "Add the Android app page" && git push
-```
+The page went into **two** places rather than the one this section originally named:
 
-German content, English commit message — the wiki is the one carve-out from the English-only rule,
+| Wiki | Page | Why there |
+|---|---|---|
+| `basetool.wiki` | **`Android-App`** | the handbook a member already reads; linked from `_Sidebar` and from Home's overview, beside the Desktop-Extractor — both are ways into the Basetool that are not the browser |
+| `basetool-android.wiki` | **`Home`** | that wiki held only the generated placeholder. With one page, a landing page that links to it is a landing page nobody needs |
+
+They are not copies of each other. The handbook version links to the pages that already describe
+Einsätze, Lager, Bank and the rest instead of describing them a second time — a second description
+is a second thing to keep true. What both carry in full is what is specific to the app: installing
+without a store, the browser round trip at login, the app lock, and what the device keeps.
+
+The page is named `Android-App`, not `App`, because in a wiki full of feature pages "App" says
+nothing about which one. Earlier revisions of this section said `App.md`; that name was never used.
+
+**It went live before the release**, against the advice this section used to give. So both pages
+open with a removable note saying there is no release yet — without it a member follows the
+Obtainium steps, finds nothing, and concludes the app is broken rather than unreleased.
+
+German content, English commit messages — the wiki is the one carve-out from the English-only rule,
 and the carve-out is the *content*, not the commit.
-
-**Do it with the release, not before.** The page tells members how to install something; until § 4
-is done there is nothing to install, and a handbook page describing a file that does not exist is
-worse than no page.
-
 ---
 
 ## 8. Close the two governance gaps — do this before § 4
