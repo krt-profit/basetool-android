@@ -62,7 +62,6 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
-import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryOrderDetailRoute
 import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
@@ -132,7 +131,6 @@ fun BasetoolNavHost(
     memberName: String?,
     orgUnitName: String?,
     onLogout: () -> Unit,
-    @Suppress("UnusedParameter") promotion: PromotionViewModel,
     settings: SettingsBindings,
     modifier: Modifier = Modifier,
 ) {
@@ -194,7 +192,6 @@ fun BasetoolNavHost(
                         refineryOrder = refineryOrder,
                         onOpenDestination = onOpenDestination,
                         onLogout = onLogout,
-                        promotion = promotion,
                         settings = settings,
                     )
                 }
@@ -533,7 +530,6 @@ private fun PushedDestination(
     refineryOrder: (String) -> RefineryDetailViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
-    @Suppress("UnusedParameter") promotion: PromotionViewModel,
     settings: SettingsBindings,
 ) {
     when (destination) {
