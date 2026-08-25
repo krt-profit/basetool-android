@@ -35,7 +35,7 @@ class OssLicensesTest {
 
     @Test
     fun `the notice is generated into the app and is not empty`() {
-        val artifacts = OssLicenses.read(resources)
+        val artifacts = OssLicenses.read(resources).loadedArtifacts()
 
         // If the build wiring in app/build.gradle.kts stops running, the app still builds and the
         // screen still opens; only the attribution disappears.
@@ -44,7 +44,7 @@ class OssLicensesTest {
 
     @Test
     fun `every artifact carries coordinates and a version`() {
-        OssLicenses.read(resources).forEach { artifact ->
+        OssLicenses.read(resources).loadedArtifacts().forEach { artifact ->
             assertTrue("empty coordinates in $artifact", artifact.coordinates.contains(':'))
             assertTrue("empty version for ${artifact.coordinates}", artifact.version.isNotBlank())
             assertTrue("empty name for ${artifact.coordinates}", artifact.name.isNotBlank())
@@ -56,6 +56,7 @@ class OssLicensesTest {
         val unknown =
             OssLicenses
                 .read(resources)
+                .loadedArtifacts()
                 .flatMap { it.spdxIds }
                 .distinct()
                 .filter { OssLicense.of(it) == null }
@@ -71,7 +72,7 @@ class OssLicensesTest {
 
     @Test
     fun `no artifact drops out of the grouping`() {
-        val artifacts = OssLicenses.read(resources)
+        val artifacts = OssLicenses.read(resources).loadedArtifacts()
         val listed = OssLicenses.byLicense(artifacts).flatMap { (_, group) -> group }.toSet()
 
         assertEquals(
@@ -113,3 +114,18 @@ class OssLicensesTest {
         assertEquals("com.example:nameless", artifacts.single().name)
     }
 }
+
+/**
+ * The artifacts of a report that must have been readable.
+ *
+ * `read` answers a two-case result now, and every test here is about the *contents* of a report the
+ * build has already generated — a report that cannot be read is a build failure these assertions
+ * would only report second-hand, so it fails loudly here instead.
+ *
+ * @return the artifact list.
+ */
+private fun OssReport.loadedArtifacts(): List<OssArtifact> =
+    when (this) {
+        is OssReport.Loaded -> artifacts
+        OssReport.Unreadable -> error("the generated open-source notice must be readable in a build")
+    }

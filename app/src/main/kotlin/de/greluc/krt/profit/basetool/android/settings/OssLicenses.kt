@@ -92,16 +92,16 @@ object OssLicenses {
      * @param resources the app's resources, holding `raw/oss_licenses.json`.
      * @return every bundled artifact, sorted by name, case-insensitively.
      */
-    fun read(resources: Resources): List<OssArtifact> =
+    fun read(resources: Resources): OssReport =
         try {
             val json = resources.openRawResource(R.raw.oss_licenses).use { it.readBytes() }
-            parse(String(json, Charsets.UTF_8))
+            OssReport.Loaded(parse(String(json, Charsets.UTF_8)))
         } catch (unreadable: Resources.NotFoundException) {
             KrtLog.e(LOG_TAG, unreadable) { "the generated open-source notice is missing" }
-            emptyList()
+            OssReport.Unreadable
         } catch (malformed: JSONException) {
             KrtLog.e(LOG_TAG, malformed) { "the generated open-source notice is not readable" }
-            emptyList()
+            OssReport.Unreadable
         }
 
     /**
@@ -150,4 +150,26 @@ object OssLicenses {
                 .takeIf { it.isNotEmpty() }
                 ?.let { license to it }
         }
+}
+
+/**
+ * What reading the generated notice came to.
+ *
+ * Two outcomes, not one list. A report that cannot be read is a build problem the member can retry
+ * out of; a report that is genuinely empty would be a defect the build gate already catches
+ * (`OssLicensesTest`). Design ch. 15 draws them as separate screens, and collapsing both into an
+ * empty list — which this used to do — makes it impossible to say which happened.
+ */
+sealed interface OssReport {
+    /**
+     * The report was read.
+     *
+     * @property artifacts every bundled artifact, sorted by name.
+     */
+    data class Loaded(
+        val artifacts: List<OssArtifact>,
+    ) : OssReport
+
+    /** The resource is missing or is not the document Licensee writes. */
+    data object Unreadable : OssReport
 }

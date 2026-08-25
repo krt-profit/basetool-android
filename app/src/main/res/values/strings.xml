@@ -117,6 +117,26 @@
     <string name="licenses_title">Open-Source-Lizenzen</string>
     <string name="licenses_intro">Diese App enthält die folgende Software von Dritten. Es gelten deren Lizenzbedingungen.</string>
     <string name="licenses_open_text">Lizenztext öffnen</string>
+    <string name="licenses_loading">Lizenzbericht wird geladen</string>
+    <string name="licenses_failed_title">Bericht nicht lesbar</string>
+    <string name="licenses_retry">Erneut versuchen</string>
+    <plurals name="licenses_summary_artifacts">
+        <item quantity="one">%1$d Artefakt</item>
+        <item quantity="other">%1$d Artefakte</item>
+    </plurals>
+    <plurals name="licenses_summary_licenses">
+        <item quantity="one">%1$d Lizenz</item>
+        <item quantity="other">%1$d Lizenzen</item>
+    </plurals>
+    <plurals name="licenses_group_summary">
+        <item quantity="one">%1$d Artefakt · SPDX: %2$s</item>
+        <item quantity="other">%1$d Artefakte · SPDX: %2$s</item>
+    </plurals>
+    <string name="licenses_summary">%1$s · %2$s · v%3$s (Build %4$d)</string>
+    <string name="licenses_no_browser">Kein Browser auf diesem Gerät erkannt. Lizenz-Links werden als URL kopiert statt geöffnet.</string>
+    <string name="licenses_copy_url">URL kopieren</string>
+    <string name="licenses_copied">URL kopiert — auf einem Gerät mit Browser öffnen.</string>
+    <string name="licenses_end_of_report">Ende des Berichts · erzeugt beim Build · licensee %1$s</string>
     <string name="licenses_unavailable">Die Lizenzübersicht konnte nicht gelesen werden.</string>
 
     <!-- Einsätze, list (design spec ch. 06 §1). "Einsätze", never "Missionen". -->

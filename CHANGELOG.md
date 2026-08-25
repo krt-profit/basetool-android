@@ -8,6 +8,10 @@
   Lager, Einsätze, Operationen, Aufträge, Raffinerie, Materialbörse, Mein Inventar und Blueprints
   zeigen ihre Einträge jetzt als umrandete Kacheln mit Abstand. Der Posteingang und der Lager-Baum
   bleiben bewusst Zeilen — so sieht der Entwurf sie vor.
+- **Die Open-Source-Lizenzen sind eine richtige Seite geworden.** Oben steht, wie viele Artefakte
+  und Lizenzen der Bericht umfasst und zu welchem Build er gehört, die Lizenz-Überschrift bleibt
+  beim Scrollen stehen, und am Ende steht, dass der Bericht zu Ende ist. Ohne Browser auf dem Gerät
+  wird die Lizenz-Adresse kopiert statt ins Leere getippt.
 - **Der Statuswechsel am Auftrag fragt jetzt nach, bevor er endgültig wird.** Du wählst den Status
   aus und bestätigst ihn — „Abgeschlossen" und „Abgelehnt" lassen sich in der App nicht
   zurücknehmen, und das steht jetzt dran, statt danach aufzufallen.

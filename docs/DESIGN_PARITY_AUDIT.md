@@ -224,19 +224,27 @@ five-point check at the end of that prompt is what an importer should run.
 
 ### New surfaces — parity
 
-#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **gap**
+#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **done**
 
-The screen has the intro, a section title per licence and the rows. The chapter adds five things it
-does not have:
+All five of the chapter's states are built:
 
-- a **summary line** — „102 Artefakte · 4 Lizenzen · v1.4.2 (Build 37) · Prod";
-- a **per-group subtitle** — „100 Artefakte · SPDX: Apache-2.0";
-- a **sticky group header** while scrolling, and an end-of-report line naming the generator and its
-  version;
-- the **no-browser fallback**: copy the URL and say so in a toast, rather than a dead row. This is
-  the open acceptance item on `REQ-APP-SET-005`, and the chapter now specifies it;
-- **loading** (spinner only after 300 ms) and **error** („Bericht nicht lesbar" + „Erneut versuchen")
-  as distinct states; the screen has one combined unavailable state.
+- the **summary line** — artefact and licence counts, version and build, because an attribution
+  question is always about a particular APK and the page could not say which;
+- the **per-group subtitle** with the count and the SPDX id;
+- a **sticky group header**, which matters more here than it looks: scrolled into the middle of a
+  hundred Apache artifacts, a row alone says nothing about the terms it falls under;
+- the **end-of-report line**, naming the generator and its version. `BuildConfig.LICENSEE_VERSION`
+  is new and comes from the version catalog — a register is only as trustworthy as the tool that
+  wrote it;
+- the **no-browser fallback**: the address is copied and a toast says so. This closes the open
+  acceptance item on `REQ-APP-SET-005`. It triggers on a tap that actually failed rather than on a
+  capability check at start-up — the check would have to guess, the tap knows;
+- **loading** and **error** as distinct states. The spinner is held back 300 ms, and the retry is
+  real: `OssLicenses.read` returns `OssReport.Loaded`/`Unreadable` instead of collapsing a missing
+  resource and an empty one into the same empty list, which is what made the two indistinguishable.
+
+The report is now read off the main thread. It is ~100 JSON objects out of a raw resource, and this
+screen is one tap from a settings row.
 
 #### 10 Aufträge artboards 5–9 · the note and status sheets — **done bar one row**
 

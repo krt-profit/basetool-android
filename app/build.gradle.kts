@@ -79,6 +79,10 @@ android {
                 .toInt()
         versionCode = 4
         versionName = "0.1.3"
+        // The generator's own version belongs on the licences screen's end-of-report line (design
+        // ch. 15): the notice is only as trustworthy as the tool that produced it, and a reader
+        // checking an attribution needs to know which one that was.
+        buildConfigField("String", "LICENSEE_VERSION", "\"${libs.versions.licensee.get()}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

@@ -100,6 +100,26 @@
     <string name="licenses_title">Open-source licences</string>
     <string name="licenses_intro">This app contains the following third-party software. Their licence terms apply.</string>
     <string name="licenses_open_text">Open the licence text</string>
+    <string name="licenses_loading">Loading the licence report</string>
+    <string name="licenses_failed_title">Report not readable</string>
+    <string name="licenses_retry">Try again</string>
+    <plurals name="licenses_summary_artifacts">
+        <item quantity="one">%1$d artifact</item>
+        <item quantity="other">%1$d artifacts</item>
+    </plurals>
+    <plurals name="licenses_summary_licenses">
+        <item quantity="one">%1$d licence</item>
+        <item quantity="other">%1$d licences</item>
+    </plurals>
+    <plurals name="licenses_group_summary">
+        <item quantity="one">%1$d artifact · SPDX: %2$s</item>
+        <item quantity="other">%1$d artifacts · SPDX: %2$s</item>
+    </plurals>
+    <string name="licenses_summary">%1$s · %2$s · v%3$s (build %4$d)</string>
+    <string name="licenses_no_browser">No browser detected on this device. Licence links are copied as a URL instead of opened.</string>
+    <string name="licenses_copy_url">Copy URL</string>
+    <string name="licenses_copied">URL copied — open it on a device with a browser.</string>
+    <string name="licenses_end_of_report">End of report · generated at build time · licensee %1$s</string>
     <string name="licenses_unavailable">The licence list could not be read.</string>
 
     <!-- Einsätze, list (design spec ch. 06 §1). The domain term stays German in English. -->

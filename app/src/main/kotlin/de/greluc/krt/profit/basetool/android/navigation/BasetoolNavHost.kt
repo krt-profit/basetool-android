@@ -631,7 +631,9 @@ private fun PushedDestination(
  * @property onOpenPrivacy opens the privacy policy in a browser.
  * @property onOpenImprint opens the imprint in a browser.
  * @property onOpenTerms opens the terms of use in a browser.
- * @property onOpenUrl opens an arbitrary URL in a browser; used by the open-source notice.
+ * @property onOpenUrl opens an arbitrary URL in a browser; used by the open-source notice. Answers
+ *   `false` when the device has no browser, which the licences screen turns into copying the
+ *   address instead of a tap that does nothing.
  * @property versionCode the app's build number, from `BuildConfig`.
  */
 @Immutable
@@ -647,6 +649,6 @@ data class SettingsBindings(
     val onOpenPrivacy: () -> Unit,
     val onOpenImprint: () -> Unit,
     val onOpenTerms: () -> Unit,
-    val onOpenUrl: (String) -> Unit,
+    val onOpenUrl: (String) -> Boolean,
     val versionCode: Int,
 )
