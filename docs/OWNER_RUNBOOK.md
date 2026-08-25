@@ -17,20 +17,51 @@ hard to undo, and one of them is impossible to undo.
 
 ## 1. The vhost paste — opens phase 3 and phase 4 to production
 
-**Status:** outstanding. **Effect until done:** the app's write paths and every phase-4 read answer
-`404` from outside the network, and the nightly `edge-deny-probe` is red — correctly so, reporting
-exactly the state this fixes.
+**Status:** **done, 2026-08-24, and verified.** What is left is not the vhost — see § 1a.
 
-The step-by-step lives in the **main repo's runbook, § Phase J**, together with the block to paste
-and the checks to run afterwards. It is not duplicated here, because a second copy is a copy that
-drifts.
+The step-by-step lives in the **main repo's runbook, § Phase J**, together with the block that was
+pasted and the checks that were run. It is not duplicated here, because a second copy is a copy
+that drifts.
 
-You decided on 2026-08-24 to hold it until phase 4 closed. Phase 4 is closed (see § 6), so this is
-now the next thing.
+Nineteen probes were run against `api.profit-base.online`. Eighteen matched the expectation table
+exactly: the two anonymous catalogue paths answered `200`, every me-scoped path answered `401`, the
+four phase-5 inbox mutations and the blueprint recipe answered `401` — admitted, and still asking
+for a login — and **`/api/v1/notification-rules` answered `404`**.
 
-> One thing to know before reading the result: `GET /api/v1/app/version-policy` must answer **200**,
-> not 401. It is the one anonymous path on that vhost and it is meant to be — an app too old to
-> authenticate has to be able to learn that it is too old. The runbook's table says so too.
+That last one is the check worth having run. It is the admin surface sitting directly beside the
+four paths phase 5 opened, and a `401` there would have meant the prefix was widened onto the
+machinery that generates every member's inbox. It stayed out.
+
+---
+
+## 1a. Deploy a build that contains what the vhost now admits
+
+**Status:** outstanding, and it is the only reason the probe table is not fully green.
+
+`GET /api/v1/app/version-policy` answered **401** where the table says **200**. That is not the
+vhost: a path the vhost had not admitted would answer `404`, and this one reaches the backend. It
+is the deployed build being older than the endpoint —
+
+| | |
+|---|---|
+| endpoint merged | 2026-08-24 09:33 (`#1662`) |
+| last release | **v1.5.61, 2026-08-21 21:18** |
+
+— three days apart. Production has no route for that path, so no `permitAll` matcher applies to it
+and the catch-all answers `401`.
+
+Cut and deploy a release containing `#1662` **and `#1665`** (the inbox mutations and the blueprint
+recipe, merged the same day at 17:43). The vhost already admits all of them; without the deploy
+they are open doors onto rooms that do not exist yet.
+
+Then re-run the version-policy probe. It must read `200`:
+
+```powershell
+curl.exe -s -o NUL -w '%{http_code}' "https://api.profit-base.online/api/v1/app/version-policy"
+```
+
+An app too old to authenticate has to be able to learn that it is too old; that is the whole reason
+this one path is anonymous, and it is the one path a stale deployment silently breaks.
 
 ---
 
