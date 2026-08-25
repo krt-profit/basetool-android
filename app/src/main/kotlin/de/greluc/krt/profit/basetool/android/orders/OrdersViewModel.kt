@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
@@ -74,6 +75,7 @@ data class OrdersState(
     val refreshing: Boolean = false,
     val retryIn: Int? = null,
     val expanded: Set<String> = emptySet(),
+    val ageThresholds: JobOrderAgeThresholds = JobOrderAgeThresholds(),
 )
 
 /**
@@ -215,10 +217,15 @@ class OrdersViewModel(
         }
         loadJob =
             viewModelScope.launch {
+                // Asked for alongside the page rather than in an init block: the source caches
+                // them after the first read, and a colour that arrives one frame after the rows
+                // would repaint the list in front of the member.
+                val thresholds = source.ageThresholds()
                 when (val result = source.queue(statuses, page = 0)) {
                     is ApiResult.Success -> {
                         mutableState.value =
                             mutableState.value.copy(
+                                ageThresholds = thresholds,
                                 orders = result.value.orders,
                                 total = result.value.totalElements,
                                 page = result.value.page,

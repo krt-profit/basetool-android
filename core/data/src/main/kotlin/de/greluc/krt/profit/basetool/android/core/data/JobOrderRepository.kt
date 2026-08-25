@@ -7,11 +7,13 @@
 
 package de.greluc.krt.profit.basetool.android.core.data
 
+import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AssigneeNoteRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.SystemSettingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateJobOrderStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -206,6 +208,18 @@ interface JobOrderSource {
     suspend fun detail(id: String): ApiResult<JobOrder>
 
     /**
+     * Reads the ages at which the queue starts colouring an order.
+     *
+     * On this source rather than a settings repository of its own because that is what the two
+     * numbers are: a property of how this queue is read. They belong to the operator (see
+     * [JobOrderAgeThresholds]).
+     *
+     * @return the configured thresholds, or the seeded defaults when the settings cannot be read —
+     *   never a failure, because a colour is not worth an error screen over a list that loaded.
+     */
+    suspend fun ageThresholds(): JobOrderAgeThresholds
+
+    /**
      * Puts a member on the order, or takes them off it.
      *
      * The app only ever passes the caller's own id: assigning anyone else needs LOGISTICIAN, and
@@ -264,6 +278,16 @@ class JobOrderRepository(
     private val reader: ApiReader,
 ) : JobOrderSource {
     /**
+     * The operator's age thresholds once they have been read, so the queue asks for them once.
+     *
+     * `@Volatile` because the queue and the detail screen can load on different dispatchers and
+     * both go through [ageThresholds]; a torn read here would cost one redundant request, which is
+     * harmless, but the field is cheap to make correct.
+     */
+    @Volatile
+    private var cachedThresholds: JobOrderAgeThresholds? = null
+
+    /**
      * Convenience constructor for the object graph.
      *
      * @param httpClient the API client, which supplies the bearer token and the mandatory headers
@@ -303,6 +327,52 @@ class JobOrderRepository(
             is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
         }
     }
+
+    /**
+     * Reads the operator's age thresholds, once per process.
+     *
+     * Cached because they are an operator setting that changes about never, and the alternative is
+     * two extra requests per page of a list that already made one.
+     *
+     * **Never fails.** A missing, unreadable or non-numeric value falls back to the same defaults
+     * the schema seeds, so the worst case is that the colours match a freshly installed server
+     * rather than a tuned one — which is a far better outcome than an error over a colour.
+     *
+     * @return the thresholds.
+     */
+    override suspend fun ageThresholds(): JobOrderAgeThresholds {
+        cachedThresholds?.let { return it }
+        val resolved =
+            JobOrderAgeThresholds(
+                yellowDays =
+                    settingDays(JobOrderAgeThresholds.KEY_YELLOW_DAYS)
+                        ?: JobOrderAgeThresholds.DEFAULT_YELLOW_DAYS,
+                redDays =
+                    settingDays(JobOrderAgeThresholds.KEY_RED_DAYS)
+                        ?: JobOrderAgeThresholds.DEFAULT_RED_DAYS,
+            )
+        cachedThresholds = resolved
+        return resolved
+    }
+
+    /**
+     * Reads one system setting as a day count.
+     *
+     * @param key the setting key.
+     * @return the value, or `null` when the read failed or the value is not a positive number —
+     *   both of which the caller answers with the default rather than with an error.
+     */
+    private suspend fun settingDays(key: String): Long? =
+        when (val result = reader.get(settingPath(key), SystemSettingDto.serializer())) {
+            is ApiResult.Failure -> {
+                KrtLog.d(LOG_TAG) { "age threshold $key unreadable, using the default" }
+                null
+            }
+
+            is ApiResult.Success -> {
+                result.value.value.trim().toLongOrNull()?.takeIf { it > 0 }
+            }
+        }
 
     /**
      * Reads one order.
@@ -426,6 +496,14 @@ class JobOrderRepository(
          * @return the path.
          */
         private fun orderPath(id: String) = "/api/v1/orders/$id"
+
+        /**
+         * Path of one system setting.
+         *
+         * @param key the setting key.
+         * @return the endpoint path.
+         */
+        private fun settingPath(key: String) = "/api/v1/settings/$key"
 
         /**
          * One member's edge on one order.

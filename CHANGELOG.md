@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Die Auftragsübersicht zeigt wieder das, was sie zeigen soll.** Jeder Auftrag steht jetzt als
+  Kachel da — mit Prio-Block, Art (Material/Item), Status, farbig markiertem Alter und beiden
+  beteiligten Einheiten als Abzeichen. Vorher war das eine Textzeile ohne Art und ohne Alter.
+
 ## [0.1.3] — 2026-08-25
 
 ### Fixed

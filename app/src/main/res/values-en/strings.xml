@@ -364,6 +364,13 @@
     <string name="orders_status_in_progress">In progress</string>
     <string name="orders_status_rejected">Rejected</string>
     <string name="orders_status_completed">Completed</string>
+    <string name="orders_priority_label">Prio</string>
+    <string name="orders_for_label">For</string>
+    <string name="orders_by_label">By</string>
+    <string name="orders_materials_label">Materialien</string>
+    <string name="orders_materials_count">(%1$d)</string>
+    <string name="orders_kind_material">Material</string>
+    <string name="orders_kind_item">Item</string>
     <string name="orders_number">#%1$s</string>
     <string name="orders_priority">Prio %1$d</string>
     <string name="orders_for">For %1$s</string>

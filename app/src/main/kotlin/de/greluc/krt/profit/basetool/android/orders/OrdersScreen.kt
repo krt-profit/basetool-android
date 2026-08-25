@@ -11,10 +11,12 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,19 +29,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeBand
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
@@ -48,8 +55,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadgeKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -222,10 +232,15 @@ private fun OrdersList(
     onLoadMore: () -> Unit,
     onOpenOrder: (String) -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG),
+        contentPadding = PaddingValues(horizontal = KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
         items(state.orders, key = { it.id }) { order ->
             OrderCard(
                 order = order,
+                ageThresholds = state.ageThresholds,
                 expanded = order.id in state.expanded,
                 onToggleMaterials = { onToggleMaterials(order.id) },
                 onClick = { onOpenOrder(order.id) },
@@ -269,54 +284,62 @@ private fun OrdersList(
 @Composable
 private fun OrderCard(
     order: JobOrder,
+    ageThresholds: JobOrderAgeThresholds,
     expanded: Boolean,
     onToggleMaterials: () -> Unit,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-    ) {
+    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                text = stringResource(R.string.orders_number, order.displayId),
-                style = MaterialTheme.typography.titleMedium,
-                color = KrtPalette.White,
+            PriorityBlock(priority = order.priority)
+            Column(
                 modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.orders_number, order.displayId),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = KrtPalette.White,
+                    )
+                    order.kindLabel()?.let { KrtChip(text = it, tone = order.kindTone()) }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
+                    order.createdAt?.let { created ->
+                        Text(
+                            text = created.relativeToNow(),
+                            style = MaterialTheme.typography.bodySmall,
+                            // The colour IS the information: an order nobody has picked up in
+                            // three months has to look different from one raised yesterday, and
+                            // the thresholds are the operator's (see JobOrderAgeThresholds).
+                            color = ageThresholds.toneFor(created),
+                        )
+                    }
+                }
+                PartiesRow(order = order)
+            }
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_chevron_right,
+                contentDescription = null,
+                tint = KrtPalette.Gray2,
             )
-            order.priority?.let { KrtChip(text = stringResource(R.string.orders_priority, it)) }
-            KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
         }
-        Text(
-            text = order.parties(),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
         if (order.materials.isNotEmpty()) {
-            Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.orders_material_count,
-                        order.materials.size,
-                        order.materials.size,
-                    ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onToggleMaterials)
-                        .padding(vertical = KrtSpacing.xs),
+            MaterialsDisclosure(
+                count = order.materials.size,
+                expanded = expanded,
+                onToggle = onToggleMaterials,
             )
             if (expanded) {
                 order.materials.forEach { MaterialLine(material = it) }
@@ -324,6 +347,132 @@ private fun OrderCard(
         }
     }
 }
+
+/**
+ * The queue position, as the design draws it: the number first, its meaning underneath.
+ *
+ * A chip reading "Prio 1" was the earlier form and it buried the one figure the queue is sorted
+ * by among the other chips on the card. Rendered as a block it is scannable down the list, which
+ * is what a priority is for.
+ *
+ * @param priority the position, or `null` for an order that carries none.
+ */
+@Composable
+private fun PriorityBlock(priority: Int?) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(PRIORITY_BLOCK_WIDTH),
+    ) {
+        Text(
+            text = priority?.toString() ?: EM_DASH,
+            style = MaterialTheme.typography.headlineSmall,
+            color = if (priority != null) MaterialTheme.colorScheme.primary else KrtPalette.Gray2,
+        )
+        Text(
+            text = stringResource(R.string.orders_priority_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+    }
+}
+
+/**
+ * Who the order is for and who is doing it, as two labelled org badges.
+ *
+ * These used to be one muted sentence, which lost the distinction the badge carries: a
+ * Spezialkommando is drawn differently from a Staffel because "who owns this work" is the
+ * question the queue is read for.
+ *
+ * @param order the order whose parties to draw.
+ */
+@Composable
+private fun PartiesRow(order: JobOrder) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.orders_for_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        KrtOrgBadge(
+            text = order.requestingOrgUnit ?: EM_DASH,
+            kind = orgBadgeKind(order.requestingOrgUnit),
+        )
+        Text(
+            text = stringResource(R.string.orders_by_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        KrtOrgBadge(
+            text = order.responsibleOrgUnit ?: EM_DASH,
+            kind = orgBadgeKind(order.responsibleOrgUnit),
+        )
+    }
+}
+
+/**
+ * The material list's disclosure row.
+ *
+ * A separate tap target from the card, so opening the list and opening the order cannot be
+ * confused; the chevron turns to say which of the two a tap will do.
+ *
+ * @param count how many materials the order has.
+ * @param expanded whether the list is open.
+ * @param onToggle opens or closes it.
+ */
+@Composable
+private fun MaterialsDisclosure(
+    count: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle)
+                .padding(vertical = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtIcon(
+            id =
+                if (expanded) {
+                    DesignR.drawable.ic_krt_chevron_down
+                } else {
+                    DesignR.drawable.ic_krt_chevron_right
+                },
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = stringResource(R.string.orders_materials_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = stringResource(R.string.orders_materials_count, count),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.TextMuted,
+        )
+    }
+}
+
+/**
+ * Which badge a unit name gets.
+ *
+ * @param unit the unit's display name, or `null` when the order names none.
+ * @return the badge kind; a Spezialkommando is told apart by its `SK` prefix, which is how the
+ *   backend names them everywhere this app reads them.
+ */
+private fun orgBadgeKind(unit: String?): KrtOrgBadgeKind =
+    when {
+        unit == null -> KrtOrgBadgeKind.Muted
+        unit.startsWith(SPECIAL_COMMAND_PREFIX, ignoreCase = true) -> KrtOrgBadgeKind.SpecialCommand
+        else -> KrtOrgBadgeKind.Own
+    }
 
 /**
  * One material line with its progress bar.
@@ -393,6 +542,33 @@ private fun JobOrder.parties(): String =
         responsibleOrgUnit?.let { stringResource(R.string.orders_by, it) },
         createdAt?.relativeToNow(),
     ).joinToString(" · ")
+
+/**
+ * The order's kind, as the chip beside its number.
+ *
+ * @return `Material` or `Item` in the member's language, or `null` when the server named no type —
+ *   in which case no chip is drawn rather than an empty one.
+ */
+@Composable
+private fun JobOrder.kindLabel(): String? =
+    when (type?.uppercase()) {
+        TYPE_MATERIAL -> stringResource(R.string.orders_kind_material)
+        TYPE_ITEM -> stringResource(R.string.orders_kind_item)
+        else -> type
+    }
+
+/**
+ * The tone that kind is drawn in.
+ *
+ * @return the design's two kind colours; anything unrecognised stays neutral rather than borrowing
+ *   a colour that means something else.
+ */
+private fun JobOrder.kindTone(): KrtChipTone =
+    when (type?.uppercase()) {
+        TYPE_MATERIAL -> KrtChipTone.Primary
+        TYPE_ITEM -> KrtChipTone.Info
+        else -> KrtChipTone.Muted
+    }
 
 /**
  * How long ago an instant is, in the platform's words.
@@ -992,3 +1168,32 @@ fun OrderDetailRoute(
         modifier = modifier,
     )
 }
+
+/** Width of the priority block, so every card's middle column starts on the same line. */
+private val PRIORITY_BLOCK_WIDTH = 40.dp
+
+/** What an absent figure reads as. */
+private const val EM_DASH = "—"
+
+/** How the backend names a Spezialkommando everywhere this app reads one. */
+private const val SPECIAL_COMMAND_PREFIX = "SK"
+
+/** `JobOrderDto.type` for a material order. */
+private const val TYPE_MATERIAL = "MATERIAL"
+
+/** `JobOrderDto.type` for an item order. */
+private const val TYPE_ITEM = "ITEM"
+
+/**
+ * The colour an order's age is drawn in.
+ *
+ * @param createdAt when the order was raised.
+ * @return the design's three age colours.
+ */
+@Composable
+private fun JobOrderAgeThresholds.toneFor(createdAt: Instant): Color =
+    when (bandFor(createdAt)) {
+        JobOrderAgeBand.Old -> KrtPalette.DangerText
+        JobOrderAgeBand.Ageing -> KrtPalette.Warning
+        JobOrderAgeBand.Fresh -> KrtPalette.TextMuted
+    }
