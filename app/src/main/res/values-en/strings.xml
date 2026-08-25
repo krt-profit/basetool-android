@@ -569,6 +569,11 @@
     <string name="order_detail_unassign_me">Step off</string>
     <string name="order_detail_change_status">Change status</string>
     <string name="order_detail_note">Note</string>
+    <string name="order_detail_note_scope">#%1$s · Your own assignment only</string>
+    <string name="order_detail_note_counter">%1$d / %2$d</string>
+    <string name="order_detail_note_conflict_title">Conflict — the note changed in the meantime</string>
+    <string name="order_detail_note_conflict_rejected">Your rejected version</string>
+    <string name="order_detail_note_conflict_reapply">Use my version</string>
     <string name="order_detail_note_hint">For this order only: when you work, which part you take.</string>
     <string name="order_detail_assignee_unnamed">Unknown</string>
     <string name="order_detail_not_allowed">You are not allowed to change this order.</string>

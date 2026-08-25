@@ -143,6 +143,7 @@ class OrdersScreenTest {
                             onNoteChanged = { notes.add(it) },
                             onSaveNote = { notes.add("save") },
                             onDismissNote = {},
+                            onReapplyRejectedNote = { notes.add("reapply") },
                             onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
                             onStatusChosen = { statuses.add(it) },
                             onDismissStatusPicker = {},

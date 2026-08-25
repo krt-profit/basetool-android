@@ -299,6 +299,14 @@ data class OrderDetailState(
     val retryIn: Int? = null,
     val me: Identity? = null,
     val noteDraft: String? = null,
+    /**
+     * The note the server refused in an optimistic-lock race, kept so the member can re-apply it.
+     *
+     * Design ch. 10 artboard 7: a 409 does not discard what somebody typed. The field is reset to
+     * what the server now holds and the refused text is offered beside it — losing a paragraph
+     * because a colleague saved first is the failure this whole mechanism exists to prevent.
+     */
+    val rejectedNote: String? = null,
     val statusPickerOpen: Boolean = false,
     val saving: Boolean = false,
     val online: Boolean = true,
@@ -460,6 +468,18 @@ class OrderDetailViewModel(
         }
     }
 
+    /**
+     * Puts the refused note back into the editor.
+     *
+     * The member has seen what the server now holds and decided their own text should win. Saving
+     * is a separate act; this only re-fills the field, so they can still edit or abandon it.
+     */
+    fun onReapplyRejectedNote() {
+        val current = mutableState.value
+        val rejected = current.rejectedNote ?: return
+        mutableState.value = current.copy(noteDraft = rejected, rejectedNote = null)
+    }
+
     /** Closes the status picker. */
     fun onDismissStatusPicker() {
         mutableState.value = mutableState.value.copy(statusPickerOpen = false)
@@ -476,6 +496,43 @@ class OrderDetailViewModel(
             return
         }
         write { source.setStatus(orderId, status, current.order?.version) }
+    }
+
+    /**
+     * Recovers from a lost optimistic-lock race on the note.
+     *
+     * Re-reads the order so the field shows what the server holds and the next save carries the
+     * current version, and keeps the refused text beside it. A failed re-read leaves the refusal on
+     * screen as an ordinary error — there is nothing better to offer, and pretending the reload
+     * worked would hand the member a stale version to save against.
+     */
+    private suspend fun onConflict() {
+        val refused = mutableState.value.noteDraft
+        when (val reload = source.detail(orderId)) {
+            is ApiResult.Success -> {
+                mutableState.value =
+                    mutableState.value.copy(
+                        order = reload.value,
+                        phase = OrderDetailPhase.Ready,
+                        noteDraft =
+                            reload.value.assignees
+                                .firstOrNull { it.userId == mutableState.value.me?.userId }
+                                ?.note
+                                .orEmpty(),
+                        rejectedNote = refused,
+                        saving = false,
+                        error = ApiError.OptimisticLock(),
+                    )
+            }
+
+            // The reload failed too. Keep the typed text exactly where it is and say only what is
+            // known — that the save lost the race. Resetting the field here would throw the
+            // member's paragraph away at the moment the network is least able to give it back.
+            is ApiResult.Failure -> {
+                mutableState.value =
+                    mutableState.value.copy(saving = false, error = ApiError.OptimisticLock())
+            }
+        }
     }
 
     /**
@@ -514,6 +571,14 @@ class OrderDetailViewModel(
                 // reason to make the member write their note again.
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "the order could not be changed: ${result.error}" }
+                    if (result.error is ApiError.OptimisticLock) {
+                        // A lost race is the one failure with a second step: the member has to see
+                        // what the order says NOW before deciding whether their text still applies.
+                        // Reloading also brings the version their next save needs, so re-applying
+                        // and saving cannot lose the race a second time for the same reason.
+                        onConflict()
+                        return@launch
+                    }
                     mutableState.value =
                         mutableState.value.copy(
                             saving = false,

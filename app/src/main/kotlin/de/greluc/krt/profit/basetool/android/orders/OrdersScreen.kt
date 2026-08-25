@@ -47,6 +47,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
@@ -729,6 +730,8 @@ data class OrderDetailActions(
     val onNoteChanged: (String) -> Unit,
     val onSaveNote: () -> Unit,
     val onDismissNote: () -> Unit,
+    /** Puts a note the server refused in an optimistic-lock race back into the editor. */
+    val onReapplyRejectedNote: () -> Unit,
     val onOpenStatusPicker: () -> Unit,
     val onStatusChosen: (JobOrderStatus) -> Unit,
     val onDismissStatusPicker: () -> Unit,
@@ -962,6 +965,16 @@ private fun NoteSheet(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
         ) {
+            // Whose note this is, on the sheet itself: the API only ever lets a member write their
+            // own, and the sheet is reached from a list of everybody's (design ch. 10 artboard 5).
+            state.order?.let { order ->
+                Text(
+                    text = stringResource(R.string.order_detail_note_scope, order.displayId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+            state.rejectedNote?.let { refused -> NoteConflict(refused = refused, actions = actions) }
             Text(
                 text = stringResource(R.string.order_detail_note_hint),
                 style = MaterialTheme.typography.bodySmall,
@@ -969,11 +982,19 @@ private fun NoteSheet(
             )
             KrtTextField(
                 value = draft,
-                onValueChange = actions.onNoteChanged,
+                onValueChange = { typed -> actions.onNoteChanged(typed.take(NOTE_MAX_LENGTH)) },
                 label = stringResource(R.string.order_detail_note),
                 enabled = !state.saving,
             )
-            state.error?.let { error -> WriteError(error = error) }
+            Text(
+                text = stringResource(R.string.order_detail_note_counter, draft.length, NOTE_MAX_LENGTH),
+                style = MaterialTheme.typography.labelSmall,
+                color = KrtPalette.TextMuted,
+                modifier = Modifier.align(Alignment.End),
+            )
+            // The conflict is drawn above as its own block, so it does not also arrive as a bare
+            // error line saying the same thing twice.
+            state.error?.takeIf { state.rejectedNote == null }?.let { error -> WriteError(error = error) }
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
@@ -1176,6 +1197,7 @@ fun OrderDetailRoute(
                 onNoteChanged = viewModel::onNoteChanged,
                 onSaveNote = viewModel::onSaveNote,
                 onDismissNote = viewModel::onDismissNote,
+                onReapplyRejectedNote = viewModel::onReapplyRejectedNote,
                 onOpenStatusPicker = viewModel::onOpenStatusPicker,
                 onStatusChosen = viewModel::onStatusChosen,
                 onDismissStatusPicker = viewModel::onDismissStatusPicker,
@@ -1212,3 +1234,53 @@ private fun JobOrderAgeThresholds.toneFor(createdAt: Instant): Color =
         JobOrderAgeBand.Ageing -> KrtPalette.Warning
         JobOrderAgeBand.Fresh -> KrtPalette.TextMuted
     }
+
+/**
+ * What a lost optimistic-lock race looks like on the note sheet.
+ *
+ * Design ch. 10 artboard 7. The field above has already been reset to what the server holds; this
+ * shows the text that was refused and offers to put it back, because the alternative — dropping it
+ * — loses a paragraph the member wrote to a colleague who happened to save first.
+ *
+ * @param refused the text the server would not take.
+ * @param actions what the sheet reports back.
+ */
+@Composable
+private fun NoteConflict(
+    refused: String,
+    actions: OrderDetailActions,
+) {
+    KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Inset) {
+        Text(
+            text = stringResource(R.string.order_detail_note_conflict_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = KrtPalette.Warning,
+        )
+        Text(
+            text = stringResource(R.string.order_detail_note_conflict_rejected),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+            modifier = Modifier.padding(top = KrtSpacing.xs),
+        )
+        Text(
+            text = refused,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.White,
+        )
+        KrtGhostButton(
+            text = stringResource(R.string.order_detail_note_conflict_reapply),
+            onClick = actions.onReapplyRejectedNote,
+            modifier = Modifier.padding(top = KrtSpacing.xs),
+        )
+    }
+}
+
+/**
+ * How long a note may be.
+ *
+ * The **contract's** limit, not the mockup's. `AssigneeNoteRequest.note` is capped at 500 on the
+ * wire; design ch. 10 draws the counter at 250. Enforcing 250 here would refuse text the server
+ * accepts, which is a worse failure than a counter that reads differently from an artboard — the
+ * discrepancy is recorded in docs/DESIGN_PARITY_AUDIT.md for the owner to settle.
+ */
+private const val NOTE_MAX_LENGTH = 500

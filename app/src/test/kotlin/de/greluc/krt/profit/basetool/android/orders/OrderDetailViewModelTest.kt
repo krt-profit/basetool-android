@@ -253,7 +253,7 @@ class OrderDetailViewModelTest {
         }
 
     @Test
-    fun `a refused note keeps the editor open with what was typed`() =
+    fun `a refused note is offered back rather than discarded`() =
         runTest(dispatcher) {
             source = FakeSource(order(mine()))
             source.answer = ApiResult.Failure(ApiError.OptimisticLock())
@@ -266,8 +266,35 @@ class OrderDetailViewModelTest {
             vm.onSaveNote()
             advanceUntilIdle()
 
-            assertEquals("Nachtschicht", vm.state.value.noteDraft)
+            // Design ch. 10 artboard 7: the typed text is never discarded. The reload succeeds
+            // here, so the field shows what the order now says and the refused text is held beside
+            // it — which is the pair the sheet draws.
+            assertEquals("", vm.state.value.noteDraft)
+            assertEquals("Nachtschicht", vm.state.value.rejectedNote)
             assertTrue(vm.state.value.error is ApiError.OptimisticLock)
+
+            vm.onReapplyRejectedNote()
+
+            assertEquals("Nachtschicht", vm.state.value.noteDraft)
+            assertNull("re-applying consumes it, so the block does not linger", vm.state.value.rejectedNote)
+        }
+
+    @Test
+    fun `a lost race puts the winner's note in the field`() =
+        runTest(dispatcher) {
+            source = FakeSource(order(mine(note = "Frühschicht")))
+            source.answer = ApiResult.Failure(ApiError.OptimisticLock())
+            val vm = model()
+            vm.load()
+            advanceUntilIdle()
+            vm.onEditNote()
+            vm.onNoteChanged("Nachtschicht")
+
+            vm.onSaveNote()
+            advanceUntilIdle()
+
+            assertEquals("Frühschicht", vm.state.value.noteDraft)
+            assertEquals("Nachtschicht", vm.state.value.rejectedNote)
         }
 
     @Test

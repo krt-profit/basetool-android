@@ -225,7 +225,7 @@ does not have:
 - **loading** (spinner only after 300 ms) and **error** („Bericht nicht lesbar" + „Erneut versuchen")
   as distinct states; the screen has one combined unavailable state.
 
-#### 10 Aufträge artboards 5–9 · the note and status sheets — **gap**
+#### 10 Aufträge artboards 5–9 · the note and status sheets — **note done, status open**
 
 The note sheet has a title, a hint, a field and two buttons. The chapter adds the order number and
 „Nur deine eigene Zuweisung" as a subtitle, a **250-character counter**, „Leeres Feld speichern
@@ -234,9 +234,20 @@ state**: „Konflikt — Notiz zwischenzeitlich geändert", the rejected text un
 Fassung", and „Meine Fassung übernehmen". Optimistic locking is a project-critical rule and this is
 the first artboard that draws its UX.
 
-The status sheet gains the current status as a subtitle, a **reason line per option**, a disabled
-option that says why, „Aktuell" on the current one, the footer „Erlaubte Wechsel richten sich nach
-deiner Rolle." and a **terminal-status confirmation** („Auftrag abschließen?").
+**Built:** the subtitle, the counter, and the 409 state — a lost race now re-reads the order, shows
+what it says *now* in the field, holds the refused text beside it under „Deine abgelehnte Fassung"
+and offers „Meine Fassung übernehmen". If the re-read fails too, the typed text stays put: throwing
+a member's paragraph away at the moment the network cannot give it back is the worse of the two
+failures, and a test pins both branches.
+
+**Design-versus-contract, for the owner:** the chapter's counter reads `0 / 250`;
+`AssigneeNoteRequest.note` is capped at **500** on the wire. The client uses 500 — enforcing 250
+would refuse text the server accepts — but the two should agree.
+
+**Still open:** the status sheet gains the current status as a subtitle, a **reason line per
+option**, a disabled option that says why, „Aktuell" on the current one, the footer „Erlaubte
+Wechsel richten sich nach deiner Rolle." and a **terminal-status confirmation**
+(„Auftrag abschließen?").
 
 #### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **check**
 

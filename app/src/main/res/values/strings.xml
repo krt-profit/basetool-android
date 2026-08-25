@@ -586,6 +586,11 @@
     <string name="order_detail_unassign_me">Abmelden</string>
     <string name="order_detail_change_status">Status ändern</string>
     <string name="order_detail_note">Notiz</string>
+    <string name="order_detail_note_scope">#%1$s · Nur deine eigene Zuweisung</string>
+    <string name="order_detail_note_counter">%1$d / %2$d</string>
+    <string name="order_detail_note_conflict_title">Konflikt — Notiz zwischenzeitlich geändert</string>
+    <string name="order_detail_note_conflict_rejected">Deine abgelehnte Fassung</string>
+    <string name="order_detail_note_conflict_reapply">Meine Fassung übernehmen</string>
     <string name="order_detail_note_hint">Nur für diesen Auftrag: wann du arbeitest, welchen Teil du nimmst.</string>
     <string name="order_detail_assignee_unnamed">Unbekannt</string>
     <string name="order_detail_not_allowed">Für diesen Auftrag fehlt dir die Berechtigung.</string>
