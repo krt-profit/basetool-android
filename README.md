@@ -83,8 +83,13 @@ update signed by a different key, so a changed fingerprint is either a key rotat
 first, or an APK that is not ours.
 
 ```
-Signaturzertifikat SHA-256: published with the first release (v0.1.0)
+Signaturzertifikat SHA-256:
+E8:40:20:5E:EC:16:F5:FD:CD:BA:8B:44:81:18:06:3C:4A:37:E6:16:20:99:CC:49:00:DF:23:80:C1:AF:50:64
 ```
+
+Recorded when the release key was generated, before it signed anything — so it is the value a
+release is checked *against*, not one copied out of a release. Compare it with the fingerprint in
+any release's notes; they must be identical.
 
 The attestation is checkable offline with the GitHub CLI:
 
