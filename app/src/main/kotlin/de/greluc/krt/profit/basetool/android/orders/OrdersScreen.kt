@@ -8,14 +8,17 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -59,6 +62,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadgeKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -100,7 +105,7 @@ const val ORDER_NOTE_SAVE_TAG: String = "order-note-save"
 const val ORDER_STATUS_SHEET_TAG: String = "order-status-sheet"
 
 /** The statuses an order can be moved to from the app, in the order the picker draws them. */
-private val STATUS_CHOICES =
+internal val STATUS_CHOICES =
     listOf(
         JobOrderStatus.OPEN,
         JobOrderStatus.IN_PROGRESS,
@@ -615,7 +620,7 @@ private val FILTERABLE_STATUSES =
  *
  * @return the resource id; [JobOrderStatus.UNKNOWN] has none and must not reach here.
  */
-private fun JobOrderStatus.labelRes(): Int =
+internal fun JobOrderStatus.labelRes(): Int =
     when (this) {
         JobOrderStatus.OPEN -> R.string.orders_status_open
         JobOrderStatus.IN_PROGRESS -> R.string.orders_status_in_progress
@@ -735,6 +740,12 @@ data class OrderDetailActions(
     val onOpenStatusPicker: () -> Unit,
     val onStatusChosen: (JobOrderStatus) -> Unit,
     val onDismissStatusPicker: () -> Unit,
+    /** Picks a status without applying it. */
+    val onStatusSelected: (JobOrderStatus) -> Unit,
+    /** Applies the picked status, asking first when it cannot be taken back. */
+    val onApplyStatus: () -> Unit,
+    /** Backs out of the terminal-status confirmation. */
+    val onDismissStatusConfirm: () -> Unit,
 )
 
 /**
@@ -944,119 +955,6 @@ private fun AssigneeRow(
 }
 
 /**
- * The caller's own note on this order.
- *
- * @param draft what the editor holds.
- * @param state the screen, for the save gate and the last refusal.
- * @param actions what it reports back.
- */
-@Composable
-private fun NoteSheet(
-    draft: String,
-    state: OrderDetailState,
-    actions: OrderDetailActions,
-) {
-    KrtBottomSheet(
-        onDismiss = actions.onDismissNote,
-        modifier = Modifier.testTag(ORDER_NOTE_SHEET_TAG),
-        title = stringResource(R.string.order_detail_note),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
-        ) {
-            // Whose note this is, on the sheet itself: the API only ever lets a member write their
-            // own, and the sheet is reached from a list of everybody's (design ch. 10 artboard 5).
-            state.order?.let { order ->
-                Text(
-                    text = stringResource(R.string.order_detail_note_scope, order.displayId),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            }
-            state.rejectedNote?.let { refused -> NoteConflict(refused = refused, actions = actions) }
-            Text(
-                text = stringResource(R.string.order_detail_note_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-            KrtTextField(
-                value = draft,
-                onValueChange = { typed -> actions.onNoteChanged(typed.take(NOTE_MAX_LENGTH)) },
-                label = stringResource(R.string.order_detail_note),
-                enabled = !state.saving,
-            )
-            Text(
-                text = stringResource(R.string.order_detail_note_counter, draft.length, NOTE_MAX_LENGTH),
-                style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.TextMuted,
-                modifier = Modifier.align(Alignment.End),
-            )
-            // The conflict is drawn above as its own block, so it does not also arrive as a bare
-            // error line saying the same thing twice.
-            state.error?.takeIf { state.rejectedNote == null }?.let { error -> WriteError(error = error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-                KrtGhostButton(
-                    text = stringResource(R.string.personal_inventory_cancel),
-                    onClick = actions.onDismissNote,
-                    enabled = !state.saving,
-                )
-                KrtCtaButton(
-                    text = stringResource(R.string.personal_inventory_save),
-                    onClick = actions.onSaveNote,
-                    modifier = Modifier.testTag(ORDER_NOTE_SAVE_TAG),
-                    enabled = state.writable,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Where the order should stand.
- *
- * The current status is shown as chosen rather than left out: a picker that hides where the order
- * is now reads as if it had no status at all.
- *
- * @param current where it stands.
- * @param state the screen, for the save gate.
- * @param actions what it reports back.
- */
-@Composable
-private fun StatusSheet(
-    current: JobOrderStatus,
-    state: OrderDetailState,
-    actions: OrderDetailActions,
-) {
-    KrtBottomSheet(
-        onDismiss = actions.onDismissStatusPicker,
-        modifier = Modifier.testTag(ORDER_STATUS_SHEET_TAG),
-        title = stringResource(R.string.order_detail_change_status),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        ) {
-            // UNKNOWN is absent on purpose: it carries a status this build has never seen, and
-            // asking the server to move an order into one is not a request that means anything.
-            STATUS_CHOICES.forEach { status ->
-                Text(
-                    text = stringResource(status.labelRes()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color =
-                        if (status == current) MaterialTheme.colorScheme.primary else KrtPalette.White,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = state.writable) { actions.onStatusChosen(status) }
-                            .padding(vertical = KrtSpacing.sm),
-                )
-            }
-        }
-    }
-}
-
-/**
  * What the last write returned, in the app's own words.
  *
  * A `403` is ordinary here rather than exceptional: the Logistician grant is per order, so a
@@ -1065,7 +963,7 @@ private fun StatusSheet(
  * @param error the refusal.
  */
 @Composable
-private fun WriteError(error: ApiError) {
+internal fun WriteError(error: ApiError) {
     KrtFieldError(
         text =
             stringResource(
@@ -1201,6 +1099,9 @@ fun OrderDetailRoute(
                 onOpenStatusPicker = viewModel::onOpenStatusPicker,
                 onStatusChosen = viewModel::onStatusChosen,
                 onDismissStatusPicker = viewModel::onDismissStatusPicker,
+                onStatusSelected = viewModel::onStatusSelected,
+                onApplyStatus = viewModel::onApplyStatus,
+                onDismissStatusConfirm = viewModel::onDismissStatusConfirm,
             ),
         modifier = modifier,
     )
@@ -1236,46 +1137,6 @@ private fun JobOrderAgeThresholds.toneFor(createdAt: Instant): Color =
     }
 
 /**
- * What a lost optimistic-lock race looks like on the note sheet.
- *
- * Design ch. 10 artboard 7. The field above has already been reset to what the server holds; this
- * shows the text that was refused and offers to put it back, because the alternative — dropping it
- * — loses a paragraph the member wrote to a colleague who happened to save first.
- *
- * @param refused the text the server would not take.
- * @param actions what the sheet reports back.
- */
-@Composable
-private fun NoteConflict(
-    refused: String,
-    actions: OrderDetailActions,
-) {
-    KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Inset) {
-        Text(
-            text = stringResource(R.string.order_detail_note_conflict_title),
-            style = MaterialTheme.typography.titleSmall,
-            color = KrtPalette.Warning,
-        )
-        Text(
-            text = stringResource(R.string.order_detail_note_conflict_rejected),
-            style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.TextMuted,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
-        )
-        Text(
-            text = refused,
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.White,
-        )
-        KrtGhostButton(
-            text = stringResource(R.string.order_detail_note_conflict_reapply),
-            onClick = actions.onReapplyRejectedNote,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
-        )
-    }
-}
-
-/**
  * How long a note may be.
  *
  * The **contract's** limit, not the mockup's. `AssigneeNoteRequest.note` is capped at 500 on the
@@ -1283,4 +1144,7 @@ private fun NoteConflict(
  * accepts, which is a worse failure than a counter that reads differently from an artboard — the
  * discrepancy is recorded in docs/DESIGN_PARITY_AUDIT.md for the owner to settle.
  */
-private const val NOTE_MAX_LENGTH = 500
+internal const val NOTE_MAX_LENGTH = 500
+
+/** Edge of the status colour square, as design ch. 10 artboard 8 draws it. */
+internal val STATUS_SWATCH = 10.dp

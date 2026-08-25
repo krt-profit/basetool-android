@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -90,7 +91,11 @@ class HangarScreenTest {
 
         compose.onNodeWithText("Carrack", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Meridian", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Anvil Aerospace").assertIsDisplayed()
+        // Design ch. 08 leads the row with the manufacturer as a lettermark square, so the full
+        // name is no longer drawn — it is what a screen reader is given instead, which is the pair
+        // worth asserting rather than either half alone.
+        compose.onNodeWithText("AA").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Anvil Aerospace").assertExists()
         compose.onNodeWithTag(HANGAR_LIST_TAG).assertIsDisplayed()
     }
 

@@ -7,6 +7,8 @@
 
 package de.greluc.krt.profit.basetool.android.hangar
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,7 +33,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Ship
@@ -43,6 +49,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
@@ -395,46 +402,121 @@ private fun ShipCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onEdit.takeIf { online },
     ) {
-        Text(
-            text = ship.headline(),
-            style = MaterialTheme.typography.titleMedium,
-            color = KrtPalette.White,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        ship.manufacturerName?.takeIf { it.isNotBlank() }?.let { maker ->
-            Text(
-                text = maker,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-        }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            KrtChip(
-                text =
-                    stringResource(
-                        if (ship.fitted) R.string.hangar_fitted else R.string.hangar_not_fitted,
-                    ),
-                tone = if (ship.fitted) KrtChipTone.Success else KrtChipTone.Muted,
-            )
-            KrtChip(
-                text = ship.insurance ?: stringResource(R.string.hangar_no_insurance),
-                tone = KrtChipTone.Info,
-            )
-            ship.locationName?.takeIf { it.isNotBlank() }?.let { place ->
+            ManufacturerMark(name = ship.manufacturerName)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            ) {
                 Text(
-                    text = place,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                    maxLines = 1,
+                    text = ship.headline(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = KrtPalette.White,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    KrtChip(
+                        text =
+                            stringResource(
+                                if (ship.fitted) R.string.hangar_fitted else R.string.hangar_not_fitted,
+                            ),
+                        tone = if (ship.fitted) KrtChipTone.Success else KrtChipTone.Muted,
+                    )
+                    KrtChip(
+                        text = ship.insurance ?: stringResource(R.string.hangar_no_insurance),
+                        tone = KrtChipTone.Info,
+                    )
+                    ship.locationName?.takeIf { it.isNotBlank() }?.let { place ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            KrtIcon(
+                                id = DesignR.drawable.ic_krt_map_pin,
+                                contentDescription = null,
+                                tint = KrtPalette.TextMuted,
+                            )
+                            Text(
+                                text = place,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = KrtPalette.TextMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
             }
         }
         ShipCardActions(online = online, onDelete = onDelete)
+    }
+}
+
+/**
+ * The manufacturer, as the square lettermark the chapter leads each ship row with.
+ *
+ * A **lettermark, not a logo**, and that is the delivered design rather than a stand-in for it:
+ * the manufacturer marks exist upstream only as SVGs with embedded rasters, so until clean vectors
+ * are re-exported the handoff names this placeholder as the design (README → Assets).
+ *
+ * Leading the row with it is what makes a hangar list scannable — the eye runs down one column of
+ * makers rather than reading every ship's second line. It was drawn as a muted subtitle before.
+ *
+ * @param name the manufacturer's full name, or `null` when the ship names none.
+ */
+@Composable
+private fun ManufacturerMark(name: String?) {
+    // The square shows two or three letters; a screen reader gets the whole name. Sighted members
+    // learn the marks, and a reader announcing "A A" would have lost information the row used to
+    // carry in full.
+    val spoken = name?.takeIf { it.isNotBlank() }
+    Box(
+        modifier =
+            Modifier
+                .size(MANUFACTURER_MARK_SIZE)
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                .background(KrtPalette.SurfaceInput)
+                .then(
+                    if (spoken != null) {
+                        Modifier.semantics { contentDescription = spoken }
+                    } else {
+                        Modifier
+                    },
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = name.lettermark(),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.Gray1,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * The two or three letters that stand for a manufacturer.
+ *
+ * Initials for a multi-word maker (Roberts Space Industries → RSI), the first letters otherwise
+ * (Drake → DRA), and a dash when the ship names none — an empty square reads as a failed image
+ * load rather than as missing data.
+ *
+ * @return the lettermark, uppercased.
+ */
+private fun String?.lettermark(): String {
+    val words = this?.trim()?.split(Regex("\\s+"))?.filter { it.isNotBlank() }.orEmpty()
+    return when {
+        words.isEmpty() -> EM_DASH
+        words.size >= 2 -> words.take(LETTERMARK_MAX).joinToString("") { it.take(1) }.uppercase()
+        else -> words.first().take(LETTERMARK_MAX).uppercase()
     }
 }
 
@@ -561,3 +643,12 @@ fun HangarRoute(
         )
     }
 }
+
+/** Edge of the manufacturer lettermark square, as design ch. 08 draws it. */
+private val MANUFACTURER_MARK_SIZE = 44.dp
+
+/** How many letters a lettermark carries. */
+private const val LETTERMARK_MAX = 3
+
+/** What an absent manufacturer reads as. */
+private const val EM_DASH = "\u2014"

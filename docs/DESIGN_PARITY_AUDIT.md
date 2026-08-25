@@ -101,12 +101,19 @@ behind a map pin: only the amount and the note were drawn, so two entries of the
 different hangars read as duplicates of each other. `total` + `unit` per group were already there as
 `amount`/`unit`. Mein Inventar and Blueprints are tiles.
 
-### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **content done, layout open**
+### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **done**
 
-Read against the chapter: every field is there — manufacturer, type + name, insurance chip, fitted
-chip, location. What differs is arrangement: the chapter leads the row with the manufacturer as a
-**lettermark badge** on the left, where the app puts it as a muted subtitle, and sets the location
-behind a map-pin glyph. Cosmetic and worth doing; not a missing fact. The tablet's full web table **is** implemented (2026-08-24 pass).
+The row now leads with the manufacturer as the chapter's **lettermark square** — initials for a
+multi-word maker, first letters otherwise — with the location behind a map-pin glyph beside the
+insurance and fitted chips. It was a muted subtitle, which cost the list its scannable first column.
+
+The full manufacturer name is no longer drawn, so it is given to assistive tech as the square's
+content description instead: a reader announcing „A A" would have lost information the row used to
+carry. The lettermark is the delivered design rather than a stand-in for it — the manufacturer marks
+exist upstream only as SVGs with embedded rasters, and the handoff names this placeholder as the
+design until clean vectors are re-exported.
+
+The tablet's full web table **is** implemented (2026-08-24 pass).
 
 ### 05 Dashboard · `dashboard/DashboardScreen.kt` — **done, one item blocked**
 
@@ -231,7 +238,7 @@ does not have:
 - **loading** (spinner only after 300 ms) and **error** („Bericht nicht lesbar" + „Erneut versuchen")
   as distinct states; the screen has one combined unavailable state.
 
-#### 10 Aufträge artboards 5–9 · the note and status sheets — **note done, status open**
+#### 10 Aufträge artboards 5–9 · the note and status sheets — **done bar one row**
 
 The note sheet has a title, a hint, a field and two buttons. The chapter adds the order number and
 „Nur deine eigene Zuweisung" as a subtitle, a **250-character counter**, „Leeres Feld speichern
@@ -250,10 +257,15 @@ failures, and a test pins both branches.
 `AssigneeNoteRequest.note` is capped at **500** on the wire. The client uses 500 — enforcing 250
 would refuse text the server accepts — but the two should agree.
 
-**Still open:** the status sheet gains the current status as a subtitle, a **reason line per
-option**, a disabled option that says why, „Aktuell" on the current one, the footer „Erlaubte
-Wechsel richten sich nach deiner Rolle." and a **terminal-status confirmation**
-(„Auftrag abschließen?").
+**Built:** the status sheet is choose-then-apply, as artboard 8 draws it — a colour square per
+status, the consequence beneath the ones that carry one, „Aktuell" on the current status, the role
+footer, „Status übernehmen", and a confirmation before either terminal status (artboard 9). It used
+to move the order on the first tap, which for „Abgeschlossen" meant a mistap was final.
+
+**Not built — nothing to back it:** the artboard also draws a *disabled* option with a per-status
+reason („Erfordert Rolle Logistiker"). The app's status control is role-gated as a whole
+(`statusChangeable = me.logistician`), and neither the API nor the app expresses which single
+transitions a role may make. Drawing a disabled row would mean inventing the rule it states.
 
 #### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **check**
 

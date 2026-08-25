@@ -586,6 +586,14 @@
     <string name="order_detail_unassign_me">Abmelden</string>
     <string name="order_detail_change_status">Status ändern</string>
     <string name="order_detail_note">Notiz</string>
+    <string name="order_detail_status_scope">#%1$s · Aktuell: %2$s</string>
+    <string name="order_detail_status_current">Aktuell</string>
+    <string name="order_detail_status_apply">Status übernehmen</string>
+    <string name="order_detail_status_role_note">Erlaubte Wechsel richten sich nach deiner Rolle.</string>
+    <string name="order_detail_status_note_open">Zurück in die Queue</string>
+    <string name="order_detail_status_note_terminal">Terminal — in der App nicht zurücknehmbar</string>
+    <string name="order_detail_status_confirm_title">Status wechseln?</string>
+    <string name="order_detail_status_confirm_body">Dieser Status lässt sich in der App nicht zurücknehmen.</string>
     <string name="order_detail_note_scope">#%1$s · Nur deine eigene Zuweisung</string>
     <string name="order_detail_note_counter">%1$d / %2$d</string>
     <string name="order_detail_note_conflict_title">Konflikt — Notiz zwischenzeitlich geändert</string>

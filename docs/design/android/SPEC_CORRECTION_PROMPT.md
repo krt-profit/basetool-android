@@ -6,8 +6,9 @@ the repository had made to the previous bundle. They were restored on import (se
 next export will drop them again, and the drift is invisible to the build.
 
 This prompt asks the design side to carry the corrections **in the source**, so the next export
-already has them. It also asks for a decision on four places where the spec draws a figure the
-backend does not have.
+already has them. It also carries the owner's decisions on four places where the spec drew a figure
+the backend does not have — those are settled, and item 5 states each as an edit rather than a
+question.
 
 Paste the whole thing into Claude Design. It needs no other context.
 
@@ -88,23 +89,30 @@ Paste the whole thing into Claude Design. It needs no other context.
 > traced from, in their own header comments. A raster and a favicon variant do not replace the
 > source geometry for a trace. Ship the SVG again, alongside the other two.
 >
-> ### 5 · Four places draw a figure the backend does not have
+> ### 5 · Four elements draw a figure the backend does not have — the owner has decided each
 >
-> These are not spec bugs — they are drawings of data the API does not expose. Each needs a
-> decision, and the honest interim is an annotation so nobody builds a placeholder. For each, either
-> **remove the element** or **mark it in the handoff notes as requiring backend work**, and say
-> which you did:
+> These are not spec bugs; they are drawings of data the API does not expose. The owner settled all
+> four on 2026-08-25, so each is a concrete edit rather than a question:
 >
-> | chapter | element | what the API has |
-> | :-- | :-- | :-- |
-> | 05 Dashboard | „{n} angemeldet" on the Einsatz band | `MissionListDto` carries no participant count; the figure exists only on the detail DTO, and the band is drawn from the list endpoint |
-> | 12 Bank | „{n} Verwahrer" chip on the account card | `BankAccountDto` carries no holder count |
-> | 13 Einstellungen | the Beförderung matrix's **self** and **lead** columns | `MemberEvaluationResponse` carries one `assignedLevel` per topic — there is no self-assessment and no separate lead assessment. Two of the four columns describe something the tool does not have |
-> | 10 Aufträge | the note counter reads `0 / 250` | `AssigneeNoteRequest.note` is capped at **500** on the wire. A 250 cap in the client would refuse text the server accepts |
+> **a · Chapter 13 — Beförderung: remove the `selbst` and `Führung` columns.** The matrix keeps
+> three: Thema, the assigned level, and the goal (`≥ …`). `MemberEvaluationResponse` carries one
+> `assignedLevel` per topic; there is no self-assessment and no separate lead assessment, and the
+> decision is not to build one. Redraw the matrix with three columns and let the remaining ones
+> breathe rather than leaving two empty gutters.
 >
-> The Beförderung one is the substantial question: it is either a feature that was intended and
-> never built, or two columns that should come out of the artboard. Do not guess — mark it and say
-> so.
+> **b · Chapter 12 — Bank: remove the „{n} Verwahrer" chip** from the account card.
+> `BankAccountDto` carries no holder count and one will not be added; the card keeps name, balance,
+> the 30-day delta and the sparkline.
+>
+> **c · Chapter 05 — Dashboard: keep „{n} angemeldet".** This one *is* being added to the API
+> (`MissionListDto` gains a participant count), so the artboard stays as drawn. Add a handoff note
+> saying the figure comes from the list endpoint's participant count, so nobody reads it as
+> detail-only data again.
+>
+> **d · Chapter 10 — the note counter reads `0 / 500`, not `0 / 250`.**
+> `AssigneeNoteRequest.note` is capped at 500 on the wire, and the client follows the contract; a
+> 250 in the artboard would have the spec refusing text the server accepts. Update the counter and
+> the „62 / 250" sample in artboard 7 accordingly.
 >
 > ### 6 · Give the corrections somewhere to live
 >
@@ -126,6 +134,8 @@ last import had to fix by hand:
 3. `04 Auth.dc.html` contains the string **„Der Gastmodus ist gestrichen"**.
 4. `assets/basetool-logo.svg` exists.
 5. `README.md` has the **Corrections carried in this bundle** section.
+6. Chapter 13's matrix has **three** columns; chapter 12's account card has **no** Verwahrer chip;
+   chapter 10's note counter reads **500**.
 
 If any is missing, the import has to re-apply it and this prompt needs re-sending — the audit
 records that under *The export dropped three of our reconciliations* in

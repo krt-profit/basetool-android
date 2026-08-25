@@ -8,6 +8,11 @@
   Lager, Einsätze, Operationen, Aufträge, Raffinerie, Materialbörse, Mein Inventar und Blueprints
   zeigen ihre Einträge jetzt als umrandete Kacheln mit Abstand. Der Posteingang und der Lager-Baum
   bleiben bewusst Zeilen — so sieht der Entwurf sie vor.
+- **Der Statuswechsel am Auftrag fragt jetzt nach, bevor er endgültig wird.** Du wählst den Status
+  aus und bestätigst ihn — „Abgeschlossen" und „Abgelehnt" lassen sich in der App nicht
+  zurücknehmen, und das steht jetzt dran, statt danach aufzufallen.
+- **Im Hangar steht der Hersteller als Kürzel-Kachel vorne in der Zeile.** So läuft das Auge eine
+  Spalte entlang, statt jede zweite Zeile zu lesen. Vorlesehilfen bekommen weiterhin den vollen Namen.
 - **Eine Notiz am Auftrag geht bei gleichzeitiger Bearbeitung nicht mehr verloren.** Hat jemand
   anders zuerst gespeichert, zeigt die App jetzt den aktuellen Stand und daneben deine abgelehnte
   Fassung mit „Meine Fassung übernehmen" — statt nur einer Fehlermeldung. Dazu ein Zeichenzähler.
