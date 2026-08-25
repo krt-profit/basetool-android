@@ -244,6 +244,45 @@ four things:
   im Org-Discord." plus the button becoming „Jetzt erneut versuchen" — is missing. The chapter is
   emphatic that nothing else changes: no red, no error face, the state stays *waiting*, not *blame*.
 
+## Rendering the artboards — the method that actually catches this
+
+Two passes of this audit read the chapters as **text** — the linearised handoff prose — and checked
+screenshots for whether the facts were *present*. That is a completeness check. The owner's verdict
+on the result was blunt and correct: *"das artboard und der emulator unterscheiden sich noch
+immer."*
+
+The chapters are web pages. They are now rendered:
+
+```bash
+# serve the spec (the .dc.html pages need their _ds/ and doc-page.js siblings)
+python -m http.server 8731 --directory docs/design/android
+
+# render ONE artboard, clipped to its own frame, after optional clicks
+node tools/design/board.mjs "http://localhost:8731/06%20Missionen.dc.html" 2 out.png "TEILNEHMER"
+```
+
+`tools/design/board.mjs` drives headless Chrome over the DevTools protocol with Node's built-in WebSocket — the
+repo has Playwright's browser binaries but no bindings — and clips to the artboard's own bounding
+box rather than to guessed pixels, so a chapter that reflows does not silently start cropping the
+wrong frame. **The artboards are interactive**: the mission detail's seven tabs, the segment
+switches and the payout radios only exist after a click, and the script takes the labels to click.
+
+The CSS is the other half. `_ds/…/krt-components.css` carries the numbers the artboards use, and
+those numbers are the spec:
+
+| class | what it settles |
+| :-- | :-- |
+| `.facts-bar` | key and value on ONE line, on `--color-surface-input`, 8/16 padding, 16 gap |
+| `.tab-nav` | text tabs, 3 px orange underline on the active one, counts in `--color-primary` |
+| `.attendance` | `.att-n` 1.9 rem Black; `.attendance-sub b` success green; meter 8 px, green fill on a bordered track — the CSS says why: *orange is not spent here, it stays on the Anmelden CTA* |
+| `card--flush` | heading band with a border under it, then `dt`/`dd` rows with hairline separators |
+
+**What this method caught that two text passes did not:** a mission detail with no attendance block
+and no briefing card at all, tabs drawn as filter chips, a top bar showing the *category* while the
+subject's name sat below it, a Raffinerie card that never listed its goods, an Auftrag detail with
+no tabs, a Bank list with no total. It also caught a **crash** — a count passed through `%1$d` as a
+String — which no amount of reading would have found.
+
 ## Visual pass on three emulators (2026-08-25)
 
 The static pass reads code against chapters; this one reads **pixels** against artboards. Both were
