@@ -195,6 +195,17 @@
         <item quantity="other">%1$d angemeldet, davon %2$d eingecheckt</item>
     </plurals>
     <string name="mission_detail_briefing">Einsatz auf einen Blick</string>
+    <string name="mission_detail_registered">Angemeldet</string>
+    <string name="mission_detail_checked_in_of">davon %1$s eingecheckt</string>
+    <string name="mission_detail_start_at">Start %1$s</string>
+    <string name="mission_detail_at_a_glance">EINSATZ AUF EINEN BLICK</string>
+    <string name="mission_detail_brief_goal">Ziel</string>
+    <string name="mission_detail_brief_join">Serverjoin</string>
+    <string name="mission_detail_brief_place">Treffpunkt</string>
+    <string name="mission_detail_brief_duration">Dauer</string>
+    <string name="mission_detail_brief_lead">Einsatzleiter</string>
+    <string name="mission_detail_brief_duration_value">~%1$d Std. (Ende %2$s)</string>
+    <string name="mission_detail_brief_end_only">Ende %1$s</string>
     <string name="mission_detail_description">Beschreibung</string>
     <string name="mission_detail_description_hidden">Die Beschreibung ist nur für Mitglieder sichtbar.</string>
     <string name="mission_detail_checked_in">Eingecheckt</string>
@@ -623,6 +634,7 @@
     <string name="order_detail_status_current">AKTUELL</string>
     <string name="order_detail_status_note_open">Der Auftrag wird wieder für Zusagen geöffnet.</string>
     <string name="order_detail_status_note_terminal">Endgültig — in der App nicht zurücknehmbar.</string>
+    <string name="order_detail_status_confirm_reject_title">Auftrag ablehnen?</string>
     <string name="order_detail_status_confirm_title">Auftrag abschließen?</string>
     <string name="order_detail_status_confirm_body">Der Auftrag wechselt auf „%1$s“. Das lässt sich in der App nicht zurücknehmen.</string>
     <string name="order_detail_change_status">Status ändern</string>

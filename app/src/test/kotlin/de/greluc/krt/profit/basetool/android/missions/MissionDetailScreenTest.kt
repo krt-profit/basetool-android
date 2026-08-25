@@ -15,6 +15,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -154,9 +156,16 @@ class MissionDetailScreenTest {
     fun `the head names the Einsatz and states its sign-ups`() {
         show(ready())
 
-        compose.onNodeWithText("Vertikaler Abbau").assertIsDisplayed()
-        compose.onNodeWithText("14 angemeldet, davon 9 eingecheckt").assertIsDisplayed()
-        compose.onNodeWithText("S1").assertIsDisplayed()
+        // The name, its status and the org badge live in the TOP BAR now (design ch. 06
+        // artboard 2), which this harness does not render — the screen publishes them through
+        // ProvideScreenTopBar. What the screen itself draws is the facts bar, the attendance
+        // block and the tabs, and those are what this asserts.
+        compose.onNodeWithText("14").assertIsDisplayed()
+        compose.onNodeWithText("ANGEMELDET").assertIsDisplayed()
+        compose.onNodeWithText("davon 9 eingecheckt").assertIsDisplayed()
+        // "ARC-L1" is in the facts bar AND in the briefing card, which is the point of both —
+        // take the first rather than asserting a uniqueness the design does not have.
+        compose.onAllNodesWithText("ARC-L1", substring = true).onFirst().assertIsDisplayed()
         compose.onNodeWithTag(MISSION_DETAIL_TABS_TAG).assertIsDisplayed()
     }
 
@@ -178,6 +187,14 @@ class MissionDetailScreenTest {
         // an Einsatz nobody bothered to describe, which is a different and wrong statement.
         show(ready(detail = detail(description = null)))
 
+        // Below the attendance block and the briefing card now, so it may sit off-screen in the
+        // test's viewport: assert it EXISTS rather than that it happens to be visible.
+        // The Übersicht is a LazyColumn and the description now sits under the attendance block
+        // and the briefing card, so it is not composed until it is scrolled to. Scrolling is what
+        // a member does; asserting without it would only be testing the viewport height.
+        compose
+            .onNodeWithTag(MISSION_DETAIL_CONTENT_TAG)
+            .performScrollToNode(hasText("Die Beschreibung ist nur für Mitglieder sichtbar."))
         compose.onNodeWithText("Die Beschreibung ist nur für Mitglieder sichtbar.").assertIsDisplayed()
     }
 

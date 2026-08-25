@@ -1020,7 +1020,14 @@ private fun NoteSheet(
                     text = stringResource(R.string.personal_inventory_save),
                     onClick = actions.onSaveNote,
                     modifier = Modifier.testTag(ORDER_NOTE_SAVE_TAG),
-                    enabled = state.writable,
+                    // Design ch. 10: the CTA is live only when the draft differs from what the
+                    // server holds. An enabled "Speichern" over an untouched field offers a write
+                    // that would change nothing — and on a first, empty note it invites one that
+                    // says nothing at all.
+                    enabled =
+                        state.writable &&
+                            !state.saving &&
+                            draft != state.myAssignment?.note.orEmpty(),
                 )
             }
         }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -190,6 +191,11 @@ fun BasetoolApp(
         navController.navigateToTopLevel(KrtDestination.Home.route)
     }
 
+    // What a pushed screen has published for the bar, if anything. A detail owns its head:
+    // chapters 06/10/11/12 all put the subject's own name there rather than its category.
+    val screenBar = remember { mutableStateOf<ScreenTopBar?>(null) }
+    val detail = screenBar.value
+
     Row(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (expanded) {
             KrtNavigationRail(
@@ -207,25 +213,14 @@ fun BasetoolApp(
             )
         }
         Column(modifier = Modifier.fillMaxSize()) {
-            KrtTopBar(
-                title = stringResource(current.titleRes),
-                modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-                onBack = if (isDetailRoute(current)) ({ navController.popBackStack() }) else null,
-                orgBadge = {
-                    // No badge at all until the scope is known. A placeholder would be a claim
-                    // about which unit the member is acting in, and the header that scopes every
-                    // request would disagree with it.
-                    orgUnit.active?.let { active ->
-                        KrtOrgBadge(
-                            text = active.name,
-                            // Not tappable with a single membership: the sheet would offer the
-                            // choice the member is already in. Same rule as the web sidebar.
-                            onClick = if (orgUnit.switchable) ({ orgSwitcherOpen = true }) else null,
-                        )
-                    }
-                },
-                notificationCount = unreadCount,
-                onNotificationsClick = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
+            AppTopBar(
+                destination = current,
+                detail = detail,
+                orgUnit = orgUnit,
+                unreadCount = unreadCount,
+                onBack = { navController.popBackStack() },
+                onSwitchOrg = { orgSwitcherOpen = true },
+                onNotifications = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
             )
             // The content column caps at 1200 dp and centres; the top and bottom chrome keep
             // spanning the full width. Foundations ch. 01 § 5 asks for exactly this, and the
@@ -235,33 +230,35 @@ fun BasetoolApp(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.TopCenter,
             ) {
-                BasetoolNavHost(
-                    modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
-                    navController = navController,
-                    onOpenDestination = { navController.navigateToTopLevel(it.route) },
-                    onLogout = onLogout,
-                    settings = settings,
-                    missions = missions,
-                    missionDetail = missionDetail,
-                    operations = operations,
-                    operationDetail = operationDetail,
-                    notifications = notifications,
-                    dashboard = dashboard,
-                    hangar = hangar,
-                    bank = bank,
-                    bankAccount = bankAccount,
-                    orders = orders,
-                    orderDetail = orderDetail,
-                    exchange = exchange,
-                    refinery = refinery,
-                    refineryOrder = refineryOrder,
-                    inventory = inventory,
-                    personalInventory = personalInventory,
-                    personalBlueprints = personalBlueprints,
-                    booking = booking,
-                    memberName = settings.accountName,
-                    orgUnitName = orgUnit.active?.name,
-                )
+                CompositionLocalProvider(LocalScreenTopBar provides screenBar) {
+                    BasetoolNavHost(
+                        modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
+                        navController = navController,
+                        onOpenDestination = { navController.navigateToTopLevel(it.route) },
+                        onLogout = onLogout,
+                        settings = settings,
+                        missions = missions,
+                        missionDetail = missionDetail,
+                        operations = operations,
+                        operationDetail = operationDetail,
+                        notifications = notifications,
+                        dashboard = dashboard,
+                        hangar = hangar,
+                        bank = bank,
+                        bankAccount = bankAccount,
+                        orders = orders,
+                        orderDetail = orderDetail,
+                        exchange = exchange,
+                        refinery = refinery,
+                        refineryOrder = refineryOrder,
+                        inventory = inventory,
+                        personalInventory = personalInventory,
+                        personalBlueprints = personalBlueprints,
+                        booking = booking,
+                        memberName = settings.accountName,
+                        orgUnitName = orgUnit.active?.name,
+                    )
+                }
             }
             if (!expanded) {
                 KrtBottomBar(
@@ -349,4 +346,61 @@ private fun NavHostController.navigateToTopLevel(
         launchSingleTop = true
         this.restoreState = restoreState
     }
+}
+
+/**
+ * The bar above every screen — either the destination's own title, or a pushed screen's head.
+ *
+ * Its own composable because assembling it is three decisions (which title, whether the org chip
+ * belongs there, whether the bell does) and folding them into `BasetoolApp` pushed that function
+ * past detekt's complexity cap. The cap was right: the bar is a thing, not a detail of the shell.
+ *
+ * @param destination the active destination, for its static title and for the back arrow.
+ * @param detail what a pushed screen published, or `null` on a root.
+ * @param orgUnit the active org context, for the chip.
+ * @param unreadCount unread notifications, for the bell's badge.
+ * @param onBack pops the back stack.
+ * @param onSwitchOrg opens the org switcher.
+ * @param onNotifications opens the inbox.
+ */
+@Composable
+private fun AppTopBar(
+    destination: KrtDestination,
+    detail: ScreenTopBar?,
+    orgUnit: OrgUnitState,
+    unreadCount: Int?,
+    onBack: () -> Unit,
+    onSwitchOrg: () -> Unit,
+    onNotifications: () -> Unit,
+) {
+    KrtTopBar(
+        title = detail?.title ?: stringResource(destination.titleRes),
+        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        subtitle = detail?.subtitle,
+        onBack = if (isDetailRoute(destination)) onBack else null,
+        // A detail's bar carries neither: the org chip and the bell are for choosing what
+        // to look at, and on a detail they compete with the thing being looked at.
+        orgBadge =
+            if (detail != null) {
+                null
+            } else {
+                {
+                    // No badge at all until the scope is known. A placeholder would be a
+                    // claim about which unit the member is acting in, and the header that
+                    // scopes every request would disagree with it.
+                    orgUnit.active?.let { active ->
+                        KrtOrgBadge(
+                            text = active.name,
+                            // Not tappable with a single membership: the sheet would offer
+                            // the choice the member is already in. Same rule as the web
+                            // sidebar.
+                            onClick =
+                                if (orgUnit.switchable) onSwitchOrg else null,
+                        )
+                    }
+                }
+            },
+        notificationCount = unreadCount.takeIf { detail == null },
+        onNotificationsClick = onNotifications,
+    )
 }

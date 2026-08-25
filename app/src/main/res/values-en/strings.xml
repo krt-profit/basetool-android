@@ -176,6 +176,17 @@
         <item quantity="other">%1$d signed up, %2$d checked in</item>
     </plurals>
     <string name="mission_detail_briefing">At a glance</string>
+    <string name="mission_detail_registered">Registered</string>
+    <string name="mission_detail_checked_in_of">%1$s of them checked in</string>
+    <string name="mission_detail_start_at">Start %1$s</string>
+    <string name="mission_detail_at_a_glance">MISSION AT A GLANCE</string>
+    <string name="mission_detail_brief_goal">Goal</string>
+    <string name="mission_detail_brief_join">Server join</string>
+    <string name="mission_detail_brief_place">Rally point</string>
+    <string name="mission_detail_brief_duration">Duration</string>
+    <string name="mission_detail_brief_lead">Mission lead</string>
+    <string name="mission_detail_brief_duration_value">~%1$d h (ends %2$s)</string>
+    <string name="mission_detail_brief_end_only">Ends %1$s</string>
     <string name="mission_detail_description">Description</string>
     <string name="mission_detail_description_hidden">The description is visible to members only.</string>
     <string name="mission_detail_checked_in">Checked in</string>
@@ -604,6 +615,7 @@
     <string name="order_detail_status_current">CURRENT</string>
     <string name="order_detail_status_note_open">The order is opened for pledges again.</string>
     <string name="order_detail_status_note_terminal">Final — cannot be undone in the app.</string>
+    <string name="order_detail_status_confirm_reject_title">Reject the order?</string>
     <string name="order_detail_status_confirm_title">Close the order?</string>
     <string name="order_detail_status_confirm_body">The order moves to “%1$s”. This cannot be undone in the app.</string>
     <string name="order_detail_change_status">Change status</string>

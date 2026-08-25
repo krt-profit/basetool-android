@@ -102,7 +102,17 @@ internal fun StatusSheet(
     val choice = state.statusChoice
     if (state.statusConfirmOpen && choice != null) {
         KrtModal(
-            title = stringResource(R.string.order_detail_status_confirm_title),
+            // One title for both terminal moves asked "Auftrag abschließen?" while rejecting one.
+            // They are equally final and they do not mean the same thing — the modal has to name
+            // the move it is about to make, or the confirmation confirms the wrong thing.
+            title =
+                stringResource(
+                    if (choice == JobOrderStatus.REJECTED) {
+                        R.string.order_detail_status_confirm_reject_title
+                    } else {
+                        R.string.order_detail_status_confirm_title
+                    },
+                ),
             confirmText = stringResource(R.string.order_detail_status_apply),
             onConfirm = actions.onApplyStatus,
             onDismiss = actions.onDismissStatusConfirm,
@@ -169,7 +179,9 @@ private fun StatusOption(
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isCurrent) KrtPalette.TextMuted else KrtPalette.White,
             )
-            status.consequenceRes()?.let { note ->
+            // Only for a move that is on offer. The current status carries no consequence,
+            // because choosing it is not a thing the sheet lets anyone do.
+            status.consequenceRes()?.takeIf { !isCurrent }?.let { note ->
                 Text(
                     text = stringResource(note),
                     style = MaterialTheme.typography.labelSmall,

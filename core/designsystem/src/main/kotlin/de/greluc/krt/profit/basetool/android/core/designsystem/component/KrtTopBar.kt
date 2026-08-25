@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
@@ -41,7 +42,10 @@ private val TOP_BAR_HEIGHT = 64.dp
  * There is deliberately no hamburger: the web app's drawer is replaced by the bottom bar and the
  * tablet rail.
  *
- * @param title screen title; uppercased for display.
+ * @param title screen title; uppercased for display unless [subtitle] is given — a detail's head
+ *   carries the subject's own name, and a name is not a label to shout.
+ * @param subtitle drawn under the title, small. Present only on a detail, where the chapters put
+ *   the subject's status directly under its name.
  * @param modifier layout modifier.
  * @param onBack when non-null a back arrow is shown and this is invoked; pass `null` on roots.
  * @param orgBadge optional org-context chip, typically a [KrtOrgBadge].
@@ -52,6 +56,7 @@ private val TOP_BAR_HEIGHT = 64.dp
 fun KrtTopBar(
     title: String,
     modifier: Modifier = Modifier,
+    subtitle: (@Composable () -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     orgBadge: @Composable (() -> Unit)? = null,
     notificationCount: Int? = null,
@@ -74,14 +79,26 @@ fun KrtTopBar(
                     style = KrtButtonStyles.chrome,
                 )
             }
-            Text(
-                text = title.krtUppercase(),
-                modifier = Modifier.weight(1f).padding(end = KrtSpacing.sm),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(modifier = Modifier.weight(1f).padding(end = KrtSpacing.sm)) {
+                Text(
+                    text = if (subtitle == null) title.krtUppercase() else title,
+                    style =
+                        if (subtitle == null) {
+                            MaterialTheme.typography.headlineSmall
+                        } else {
+                            MaterialTheme.typography.titleMedium
+                        },
+                    color =
+                        if (subtitle == null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            KrtPalette.White
+                        },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                subtitle?.invoke()
+            }
             orgBadge?.invoke()
             if (notificationCount != null && onNotificationsClick != null) {
                 Box(

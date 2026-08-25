@@ -485,7 +485,7 @@ private fun Mission.timeLabel(zone: ZoneId): String {
  *
  * @return e.g. "in 2 Std.", localised by the system.
  */
-private fun Instant.relativeToNow(): String =
+internal fun Instant.relativeToNow(): String =
     DateUtils.getRelativeTimeSpanString(
         toEpochMilli(),
         System.currentTimeMillis(),
