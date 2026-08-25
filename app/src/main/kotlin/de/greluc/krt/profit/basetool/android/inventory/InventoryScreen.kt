@@ -48,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -314,11 +315,23 @@ private fun GroupRow(
             Modifier
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                // Design ch. 09 fills the group header rather than leaving it on the page ground:
+                // it is what separates a group from the stacks underneath it in a long tree. The
+                // orange rail beside it is that artboard's `border-left: 4px solid #E77E23`.
+                .background(KrtPalette.SurfaceInput)
                 .padding(end = KrtSpacing.md, top = KrtSpacing.sm, bottom = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(width = GROUP_RAIL, color = MaterialTheme.colorScheme.primary)
+        // The chapter's group toggle turns a chevron; without one nothing says the row opens.
+        if (onClick != null) {
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_chevron_right,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
         Text(
             text = group.name,
             style = MaterialTheme.typography.titleMedium,
@@ -420,6 +433,28 @@ private fun EntryRow(
     ) {
         Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
         Column(modifier = Modifier.weight(1f)) {
+            // Design ch. 09 leads a stack entry with WHERE it is, behind a map pin — the amount is
+            // the figure on the right. Only the amount and the note were drawn, so two entries of
+            // the same material in different hangars read as duplicates of each other.
+            entry.locationName?.takeIf { it.isNotBlank() }?.let { place ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    KrtIcon(
+                        id = DesignR.drawable.ic_krt_map_pin,
+                        contentDescription = null,
+                        tint = KrtPalette.TextMuted,
+                    )
+                    Text(
+                        text = place,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             Amount(value = entry.amount, unit = entry.unit ?: unit)
             entry.note?.let { note ->
                 Text(

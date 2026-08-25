@@ -12,6 +12,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,6 +56,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFiel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -168,7 +170,11 @@ fun BankAccountsScreen(
                         )
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNTS_TAG)) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNTS_TAG),
+                        contentPadding = PaddingValues(KrtSpacing.md),
+                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    ) {
                         items(state.accounts, key = { it.id }) { account ->
                             AccountCard(account = account, onClick = { onOpenAccount(account.id) })
                         }
@@ -190,43 +196,33 @@ private fun AccountCard(
     account: BankAccountSummary,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = account.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = formatAmount(account.balance.orEmpty()),
-                style = MaterialTheme.typography.titleMedium,
-                color = KrtPalette.White,
-            )
-        }
-        account.delta30d?.let { delta ->
-            Text(
-                text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-        }
-        Sparkline(points = account.sparkline)
-        KrtHairlineRule()
-    }
+    // KrtKpiCard *is* this card: design ch. 12 draws the account as a `kpi-card` — name above, the
+    // balance large beneath it, and the 30-day delta beside a sparkline on one row. It was built
+    // here as a bare Column with a hairline underneath, which loses the border, puts the balance on
+    // the name's line and leaves the delta grey when its sign is the point of it.
+    KrtKpiCard(
+        title = account.name,
+        value = formatAmount(account.balance.orEmpty()),
+        modifier = Modifier.fillMaxWidth(),
+        delta = account.delta30d?.let { stringResource(R.string.bank_delta_30d, formatAmount(it)) },
+        deltaPositive = account.delta30d.isPositiveDelta(),
+        sparkline = account.sparkline.takeIf { it.isNotEmpty() }?.map(Double::toFloat),
+        onClick = onClick,
+    )
+}
+
+/**
+ * Whether a formatted delta reads as an increase.
+ *
+ * The server sends it already formatted and already signed, so the sign is read off the string
+ * rather than re-derived — which also keeps the minus sign the server chose, typographic or not.
+ *
+ * @return `false` only for an explicitly negative figure; an absent or unsigned one is not drawn as
+ *   a loss.
+ */
+private fun String?.isPositiveDelta(): Boolean {
+    val first = this?.trimStart()?.firstOrNull() ?: return true
+    return first !in MINUS_SIGNS
 }
 
 /**
@@ -762,3 +758,6 @@ private fun BankVisibilitySection(
         )
     }
 }
+
+/** Signs the server may put in front of a negative delta: hyphen-minus and U+2212. */
+private const val MINUS_SIGNS = "-−"

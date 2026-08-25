@@ -165,7 +165,9 @@ class MissionDetailScreenTest {
         val tabs = mutableListOf<MissionTab>()
         show(ready(), tabs = tabs)
 
-        compose.onNodeWithText("TEILNEHMER").performClick()
+        // The tab now carries its count (design ch. 06), so the label is a prefix rather than the
+        // whole node text.
+        compose.onNodeWithText("TEILNEHMER", substring = true).performClick()
 
         assertEquals(listOf(MissionTab.PARTICIPANTS), tabs)
     }

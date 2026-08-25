@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,6 +41,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.ReleasableStock
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
@@ -196,7 +198,11 @@ fun MaterialBoardScreen(
                                 )
                             }
                         } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG)) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
+                                contentPadding = PaddingValues(KrtSpacing.md),
+                                verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            ) {
                                 items(state.entries, key = { it.id }) { entry ->
                                     BoardRow(
                                         entry = entry,
@@ -275,13 +281,10 @@ private fun BoardRow(
     onSignalToggled: () -> Unit,
     onWithdraw: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
-                .testTag(BOARD_ROW_TAG),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    // A card, not a padded Column: every design chapter draws its list items as bordered
+    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
+    KrtCard(
+        modifier = Modifier.fillMaxWidth().testTag(BOARD_ROW_TAG),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

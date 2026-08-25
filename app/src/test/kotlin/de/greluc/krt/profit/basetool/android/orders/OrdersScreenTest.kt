@@ -165,11 +165,23 @@ class OrdersScreenTest {
     ) = JobOrderAssignee(userId = userId, name = "Rhea", note = note, version = EDGE_VERSION)
 
     @Test
-    fun `a queue row leads with its number and its parties`() {
+    fun `a queue card carries everything the design puts on it`() {
+        // Design ch. 10 draws a card, not a line: the queue is scanned for priority, kind, age and
+        // who owns the work, and an earlier revision showed only the number, a Prio chip and one
+        // muted sentence. Each assertion below is one thing that was missing from it.
         showQueue(OrdersState(orders = listOf(order()), total = 1, phase = OrdersPhase.Ready))
 
         compose.onNodeWithText("#1042").assertIsDisplayed()
-        compose.onNodeWithText("Staffel 1", substring = true).assertIsDisplayed()
+        // The priority block: the figure the queue is sorted by, and its label underneath.
+        compose.onNodeWithText("1").assertIsDisplayed()
+        compose.onNodeWithText("Prio").assertIsDisplayed()
+        // The kind chip, which the card did not show at all. Uppercased by the chip, like the
+        // badges below it.
+        compose.onNodeWithText("MATERIAL").assertIsDisplayed()
+        // Both parties as org badges. Uppercased by the badge, which is how the design draws them
+        // and why asserting the raw "Staffel 1" would now be asserting the wrong thing.
+        compose.onNodeWithText("STAFFEL 1").assertIsDisplayed()
+        compose.onNodeWithText("SK VANGUARD").assertIsDisplayed()
         compose.onNodeWithTag(ORDERS_LIST_TAG).assertIsDisplayed()
     }
 
@@ -184,7 +196,7 @@ class OrdersScreenTest {
         )
 
         compose.onAllNodesWithText("Quantainium").assertCountEquals(0)
-        compose.onNodeWithText("1 Material").performClick()
+        compose.onNodeWithText("Materialien").performClick()
 
         assertEquals(listOf("o1"), toggled)
     }

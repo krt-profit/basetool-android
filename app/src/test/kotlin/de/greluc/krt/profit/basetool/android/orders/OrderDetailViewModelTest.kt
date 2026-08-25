@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.orders
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
@@ -92,6 +93,9 @@ class OrderDetailViewModelTest {
             page: Int,
             pageSize: Int,
         ): ApiResult<JobOrderPage> = error("the detail never reads the queue")
+
+        /** The queue's age thresholds; the defaults, since no test tunes them. */
+        override suspend fun ageThresholds(): JobOrderAgeThresholds = JobOrderAgeThresholds()
 
         override suspend fun detail(id: String): ApiResult<JobOrder> = ApiResult.Success(order)
 

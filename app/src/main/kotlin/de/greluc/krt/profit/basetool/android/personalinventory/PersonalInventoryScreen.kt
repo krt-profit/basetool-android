@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.PersonalItem
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
@@ -258,42 +259,42 @@ private fun ItemRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(enabled = online, onClick = onEdit)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
+    // A card, not a padded Row: every design chapter draws its list items as bordered tiles.
+    // See docs/DESIGN_PARITY_AUDIT.md.
+    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onEdit.takeIf { online }) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtPalette.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = item.subtitle(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Text(
-                text = item.name,
+                text = item.quantity.toString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = item.subtitle(),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            KrtGhostButton(
+                text = stringResource(R.string.personal_inventory_delete),
+                onClick = onDelete,
+                modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+                enabled = online,
             )
         }
-        Text(
-            text = item.quantity.toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
-        )
-        KrtGhostButton(
-            text = stringResource(R.string.personal_inventory_delete),
-            onClick = onDelete,
-            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
-            enabled = online,
-        )
     }
 }
 

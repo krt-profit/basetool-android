@@ -631,6 +631,11 @@ private fun MissionListDto.toModel(): Mission? {
         orgUnitName = owningSquadron?.name,
         orgUnitShorthand = owningSquadron?.shorthand,
         meetingPoint = meetingPoint,
+        description = description?.takeIf { it.isNotBlank() },
+        // MissionListDto carries no participant count, so the dashboard band's "{n} angemeldet"
+        // (design ch. 05) has nothing behind it on this endpoint. Left null rather than faked, and
+        // recorded as a contract gap in docs/DESIGN_PARITY_AUDIT.md.
+        registeredCount = null,
     )
 }
 

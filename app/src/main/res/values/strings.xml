@@ -305,6 +305,8 @@
     <string name="dashboard_missions">Einsätze der nächsten 7 Tage</string>
     <string name="dashboard_missions_empty">In den nächsten 7 Tagen ist nichts geplant.</string>
     <string name="dashboard_missions_failed">Die Einsätze konnten nicht geladen werden.</string>
+    <string name="mission_tab_with_count">%1$s %2$d</string>
+    <string name="dashboard_mission_open">Öffnen</string>
     <string name="dashboard_missions_all">Alle Einsätze</string>
     <string name="dashboard_notifications">Ungelesen</string>
     <string name="dashboard_notifications_all">Alle ansehen</string>
@@ -381,6 +383,13 @@
     <string name="orders_status_in_progress">In Bearbeitung</string>
     <string name="orders_status_rejected">Abgelehnt</string>
     <string name="orders_status_completed">Abgeschlossen</string>
+    <string name="orders_priority_label">Prio</string>
+    <string name="orders_for_label">Für</string>
+    <string name="orders_by_label">Durch</string>
+    <string name="orders_materials_label">Materialien</string>
+    <string name="orders_materials_count">(%1$d)</string>
+    <string name="orders_kind_material">Material</string>
+    <string name="orders_kind_item">Item</string>
     <string name="orders_number">#%1$s</string>
     <string name="orders_priority">Prio %1$d</string>
     <string name="orders_for">Für %1$s</string>
@@ -388,6 +397,10 @@
     <plurals name="orders_material_count">
         <item quantity="one">%1$d Material</item>
         <item quantity="other">%1$d Materialien</item>
+    </plurals>
+    <plurals name="orders_material_claims">
+        <item quantity="one">%1$d Zusage</item>
+        <item quantity="other">%1$d Zusagen</item>
     </plurals>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Teile dieses Auftrags sind für dich ausgeblendet.</string>

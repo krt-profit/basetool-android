@@ -11,6 +11,7 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
@@ -264,7 +266,11 @@ private fun MissionsList(
     onLoadMore: () -> Unit,
 ) {
     val sections = groupMissionsByDay(state.missions, zone, today)
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(MISSIONS_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(MISSIONS_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
         sections.forEach { section ->
             item(key = "day-${section.day}") {
                 KrtSectionTitle(
@@ -313,14 +319,9 @@ private fun MissionRow(
     zone: ZoneId,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-    ) {
+    // A card, not a padded Column: every design chapter draws its list items as bordered
+    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
+    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),

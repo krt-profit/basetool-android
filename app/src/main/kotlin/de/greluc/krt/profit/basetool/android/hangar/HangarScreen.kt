@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
@@ -243,7 +245,11 @@ private fun HangarBody(
         return
     }
     val wide = isWideWindow()
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(HANGAR_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(HANGAR_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
         if (state.segment == HangarSegment.MINE && wide) {
             // Design ch. 08: the tablet gets the web app's full table, the phone the cards.
             // One item rather than one per ship — a table is a single grid whose columns have to
@@ -383,13 +389,11 @@ private fun ShipCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(enabled = online, onClick = onEdit)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    // A card, not a padded Column: every design chapter draws its list items as bordered
+    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
+    KrtCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onEdit.takeIf { online },
     ) {
         Text(
             text = ship.headline(),

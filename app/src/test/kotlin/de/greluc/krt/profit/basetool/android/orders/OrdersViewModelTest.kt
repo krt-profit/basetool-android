@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
@@ -63,6 +64,9 @@ class OrdersViewModelTest {
             pages.add(page)
             return if (answers.size > 1) answers.removeAt(0) else answers.first()
         }
+
+        /** The queue's age thresholds; the defaults, since no test tunes them. */
+        override suspend fun ageThresholds(): JobOrderAgeThresholds = JobOrderAgeThresholds()
 
         override suspend fun detail(id: String): ApiResult<JobOrder> = error("the queue never opens one")
 
