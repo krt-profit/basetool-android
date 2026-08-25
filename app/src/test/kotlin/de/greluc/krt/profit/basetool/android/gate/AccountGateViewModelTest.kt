@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -220,9 +221,107 @@ class AccountGateViewModelTest {
             val viewModel = viewModelFor(ScriptedSource(listOf(ApiResult.Failure(failure))))
 
             viewModel.start()
+            runCurrent()
+
+            val state = viewModel.state.value
+            assertTrue(state is AccountGateState.Unavailable)
+            assertEquals(failure, (state as AccountGateState.Unavailable).error)
+        }
+
+    /**
+     * An unreachable gate keeps asking on its own, along the 3 -> 6 -> 12 -> 30 s ladder.
+     *
+     * Design ch. 14 artboard 3. Without this the screen would sit there until the member happened
+     * to press the button, which is the wrong burden for an outage nothing they did caused.
+     */
+    @Test
+    fun `an unreachable gate retries on the backoff ladder`() =
+        gateTest {
+            val source = ScriptedSource(listOf(ApiResult.Failure(ApiError.Network(IOException("offline")))))
+            val viewModel = viewModelFor(source)
+
+            viewModel.start()
+            runCurrent()
+            assertEquals(1, source.calls)
+
+            advanceTimeBy(3.seconds + 1.seconds)
+            assertEquals(2, source.calls)
+
+            // Still one wait short of the next rung: the ladder lengthens rather than repeating.
+            advanceTimeBy(3.seconds)
+            assertEquals(2, source.calls)
+
+            advanceTimeBy(3.seconds + 1.seconds)
+            assertEquals(THIRD_ATTEMPT, source.calls)
+        }
+
+    /**
+     * The wait is counted down on screen, so the member can see the app is still working.
+     */
+    @Test
+    fun `the wait until the next attempt is visible`() =
+        gateTest {
+            val viewModel =
+                viewModelFor(ScriptedSource(listOf(ApiResult.Failure(ApiError.Network(IOException("offline"))))))
+
+            viewModel.start()
             advanceTimeBy(1.seconds)
 
-            assertEquals(AccountGateState.Unavailable(failure), viewModel.state.value)
+            val state = viewModel.state.value as AccountGateState.Unavailable
+            assertTrue("counting down, saw ${state.secondsUntilRetry}", (state.secondsUntilRetry ?: 0) in FIRST_RUNG)
+        }
+
+    /**
+     * A manual attempt starts the ladder over.
+     *
+     * The rung reached by automatic attempts the member did not make must not be inherited by the
+     * one they did: pressing the button and then waiting thirty seconds reads as being ignored.
+     */
+    @Test
+    fun `a manual retry resets the ladder`() =
+        gateTest {
+            val source = ScriptedSource(listOf(ApiResult.Failure(ApiError.Network(IOException("offline")))))
+            val viewModel = viewModelFor(source)
+
+            viewModel.start()
+            // Climb to the third rung, where the automatic wait is already twelve seconds.
+            advanceTimeBy(3.seconds + 6.seconds + 2.seconds)
+            val climbed = source.calls
+            assertEquals(THIRD_ATTEMPT, climbed)
+
+            viewModel.refresh()
+            runCurrent()
+            assertEquals(climbed + 1, source.calls)
+
+            // Back on the first rung: three seconds is enough again.
+            advanceTimeBy(3.seconds + 1.seconds)
+            assertEquals(climbed + 2, source.calls)
+        }
+
+    /**
+     * The outage ladder does not survive the outage.
+     *
+     * A gate that answers again is polled on the approval interval, not every few seconds, or a
+     * member waiting for approval behind a recovered outage would keep the fast rhythm forever.
+     */
+    @Test
+    fun `a recovered gate returns to the approval interval`() =
+        gateTest {
+            val source =
+                ScriptedSource(
+                    listOf(
+                        ApiResult.Failure(ApiError.Network(IOException("offline"))),
+                        ApiResult.Success(ApprovalStatus.PENDING),
+                    ),
+                )
+            val viewModel = viewModelFor(source)
+
+            viewModel.start()
+            advanceTimeBy(3.seconds + 1.seconds)
+            assertTrue(viewModel.state.value is AccountGateState.Blocked)
+
+            advanceTimeBy(30.seconds)
+            assertEquals(2, source.calls)
         }
 
     /**
@@ -245,3 +344,9 @@ class AccountGateViewModelTest {
             assertEquals(2, source.calls)
         }
 }
+
+/** How often the gate has been asked once the ladder has climbed two rungs. */
+private const val THIRD_ATTEMPT = 3
+
+/** The seconds a countdown on the ladder's first rung can legitimately be showing. */
+private val FIRST_RUNG = 1..3

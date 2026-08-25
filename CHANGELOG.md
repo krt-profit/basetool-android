@@ -4,6 +4,10 @@
 
 ### Changed
 
+- **Ist die Freigabeprüfung nicht erreichbar, versucht die App es von selbst weiter.** Der Bildschirm
+  zeigt jetzt, als wer du angemeldet bist und in wie vielen Sekunden der nächste Versuch läuft
+  (3, 6, 12, dann 30 Sekunden); ein eigener Versuch setzt den Rhythmus zurück. Vorher blieb nur der
+  Knopf.
 - **Listen sehen wieder aus wie im Entwurf: Kacheln statt Textzeilen.** Übersicht, Bank, Hangar,
   Lager, Einsätze, Operationen, Aufträge, Raffinerie, Materialbörse, Mein Inventar und Blueprints
   zeigen ihre Einträge jetzt als umrandete Kacheln mit Abstand. Der Posteingang und der Lager-Baum
