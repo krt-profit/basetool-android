@@ -37,7 +37,6 @@ android {
         disable += "AndroidGradlePluginVersion"
         disable += "GradleDependency"
         abortOnError = true
-        sarifReport = true
     }
 
     testOptions {

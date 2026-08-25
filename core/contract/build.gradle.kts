@@ -41,7 +41,6 @@ android {
         // template change break a build nobody can fix except by pinning a different generator.
         abortOnError = false
         checkGeneratedSources = false
-        sarifReport = true
     }
 }
 
