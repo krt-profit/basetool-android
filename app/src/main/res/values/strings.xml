@@ -461,6 +461,13 @@
     <string name="orders_error_title">Signal Lost</string>
     <string name="orders_error_message">Die Aufträge konnten nicht geladen werden.</string>
     <string name="order_detail_title">Auftrag</string>
+    <string name="order_tab_positions">Positionen</string>
+    <string name="order_tab_assignees">Zuständig</string>
+    <string name="order_tab_handovers">Übergaben</string>
+    <string name="order_detail_priority">Prio %1$d</string>
+    <string name="order_detail_fact_for">Für</string>
+    <string name="order_detail_fact_by">Durch</string>
+    <string name="order_detail_fact_assignee">Zuständig</string>
     <string name="order_detail_comment">Anmerkung</string>
     <string name="order_detail_materials">Material</string>
     <string name="order_detail_materials_empty">Für diesen Auftrag ist kein Material erfasst.</string>

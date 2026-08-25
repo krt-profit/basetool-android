@@ -442,6 +442,13 @@
     <string name="orders_error_title">Signal Lost</string>
     <string name="orders_error_message">The Aufträge could not be loaded.</string>
     <string name="order_detail_title">Auftrag</string>
+    <string name="order_tab_positions">Positions</string>
+    <string name="order_tab_assignees">Assigned</string>
+    <string name="order_tab_handovers">Handovers</string>
+    <string name="order_detail_priority">Prio %1$d</string>
+    <string name="order_detail_fact_for">For</string>
+    <string name="order_detail_fact_by">By</string>
+    <string name="order_detail_fact_assignee">Assigned</string>
     <string name="order_detail_comment">Note</string>
     <string name="order_detail_materials">Material</string>
     <string name="order_detail_materials_empty">No material is recorded for this order.</string>

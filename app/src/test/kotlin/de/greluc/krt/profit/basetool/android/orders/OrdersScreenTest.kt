@@ -150,6 +150,7 @@ class OrdersScreenTest {
                             onStatusSelected = { statuses.add(it) },
                             onApplyStatus = {},
                             onDismissStatusConfirm = {},
+                            onTabSelected = {},
                         ),
                 )
             }
@@ -316,17 +317,24 @@ class OrdersScreenTest {
             ),
         )
 
+        // The comment and the materials are the Positionen tab; who is on it is its own tab
+        // (design ch. 10 artboard 2). Asserting all four on one screen asserted a layout this
+        // screen deliberately no longer has.
         compose.onNodeWithText("Qualität ist zweitrangig.").assertIsDisplayed()
         compose.onNodeWithText("Quantainium").assertIsDisplayed()
-        compose.onNodeWithText("Rhea").assertIsDisplayed()
-        compose.onNodeWithText("Nachtschicht").assertIsDisplayed()
         compose.onNodeWithTag(ORDER_DETAIL_TAG).assertIsDisplayed()
+        compose.onAllNodesWithText("ZUSTÄNDIG", substring = true).onFirst().assertIsDisplayed()
     }
 
     @Test
     fun `an order with no handovers says so rather than leaving the section blank`() {
         showDetail(
-            OrderDetailState(orderId = "o1", order = order(), phase = OrderDetailPhase.Ready),
+            OrderDetailState(
+                orderId = "o1",
+                order = order(),
+                phase = OrderDetailPhase.Ready,
+                tab = OrderTab.HANDOVERS,
+            ),
         )
 
         compose.onNodeWithText("Noch keine Übergabe erfasst.").assertIsDisplayed()
@@ -456,5 +464,8 @@ class OrdersScreenTest {
         order = order().copy(assignees = assignees),
         phase = OrderDetailPhase.Ready,
         me = Identity("u1", logistician = logistician),
+        // Every caller of this helper asserts something about the assignee rows, and those live on
+        // their own tab now (design ch. 10 artboard 2).
+        tab = OrderTab.ASSIGNEES,
     )
 }

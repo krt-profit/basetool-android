@@ -68,6 +68,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
@@ -400,86 +402,15 @@ private fun MissionTabRow(
     detail: MissionDetail?,
     onTabSelected: (MissionTab) -> Unit,
 ) {
-    // `.tab-nav`: a surface row on the dark-gray band with a hairline under it — text tabs with a
-    // 3 dp orange underline on the active one, NOT filter chips. Chips read as a filter a member
-    // can combine; these are pages, exactly one of which is showing.
-    Column(modifier = Modifier.fillMaxWidth().background(KrtPalette.Gray4)) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = KrtSpacing.md)
-                    .testTag(MISSION_DETAIL_TABS_TAG),
-        ) {
-            MissionTab.entries.forEach { tab ->
-                // Design ch. 06 artboard 2 puts a count on every tab that holds a countable list,
-                // so a member can see there are three objectives without opening the tab. A tab
-                // whose content is not a list (Übersicht) carries none, and neither does one whose
-                // list has not been read yet.
-                MissionTabItem(
-                    label = stringResource(tab.labelRes()),
-                    count = detail?.let(tab::countIn),
-                    selected = tab == selected,
-                    onClick = { onTabSelected(tab) },
-                )
-            }
-        }
-        KrtHairlineRule()
-    }
-}
-
-/**
- * One tab: its label, its count in orange, and the underline that marks the open one.
- *
- * @param label the tab's name.
- * @param count how many rows its list holds, `null` when it has none or has not been read.
- * @param selected whether this tab is the one showing.
- * @param onClick opens it.
- */
-@Composable
-private fun MissionTabItem(
-    label: String,
-    count: Int?,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .clickable(onClick = onClick)
-                .heightIn(min = KrtSpacing.touchTarget),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = TAB_PADDING_H, vertical = TAB_PADDING_V),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-        ) {
-            Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (selected) KrtPalette.White else KrtPalette.Gray2,
-                maxLines = 1,
-            )
-            count?.let {
-                Text(
-                    text = it.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(TAB_UNDERLINE)
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    ),
-        )
-    }
+    KrtPageTabs(
+        tabs =
+            MissionTab.entries.map { tab ->
+                KrtPageTab(label = stringResource(tab.labelRes()), count = detail?.let(tab::countIn))
+            },
+        selectedIndex = MissionTab.entries.indexOf(selected),
+        onSelect = { onTabSelected(MissionTab.entries[it]) },
+        modifier = Modifier.testTag(MISSION_DETAIL_TABS_TAG),
+    )
 }
 
 /**
@@ -1112,12 +1043,3 @@ private fun MissionTab.countIn(detail: MissionDetail): Int? =
         MissionTab.FREQUENCIES -> detail.frequencies.size
         MissionTab.FINANCES -> null
     }
-
-/** Horizontal padding of a tab label — `.tab-nav .tab` is 14 px. */
-private val TAB_PADDING_H = 14.dp
-
-/** Vertical padding of a tab label — `.tab-nav .tab` is 11 px. */
-private val TAB_PADDING_V = 11.dp
-
-/** The active tab's underline — 3 px in `.tab-nav .tab.active`. */
-private val TAB_UNDERLINE = 3.dp
