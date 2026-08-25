@@ -7,10 +7,12 @@
 
 package de.greluc.krt.profit.basetool.android.dashboard
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +42,10 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.Notification
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -54,6 +59,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the dashboard's scrolling content. */
 const val DASHBOARD_TAG: String = "dashboard"
@@ -342,24 +348,118 @@ private fun MissionBandRow(
     mission: Mission,
     onClick: () -> Unit,
 ) {
-    // A card, not a padded Row: every design chapter draws its list items as bordered tiles.
-    // See docs/DESIGN_PARITY_AUDIT.md.
+    // Design ch. 05 draws this as a hud-box with three rows: name and briefing beside the status,
+    // then when and where, then the unit chip and the way in. It was a single line carrying the
+    // name and the status badge — everything a member needs to decide whether to open it was
+    // missing. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                text = mission.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = mission.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtPalette.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                mission.description?.let { briefing ->
+                    Text(
+                        text = briefing,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
+        MissionFactsRow(mission = mission)
+        MissionBandFooter(mission = mission)
+    }
+}
+
+/**
+ * When and where, each behind the glyph the design gives it.
+ *
+ * @param mission the Einsatz.
+ */
+@Composable
+private fun MissionFactsRow(mission: Mission) {
+    val zone = remember { ZoneId.systemDefault() }
+    val formatter = remember(zone) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone) }
+    val meeting = mission.meetingTime?.let(formatter::format)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        meeting?.let { GlyphFact(icon = DesignR.drawable.ic_krt_clock, text = it) }
+        mission.meetingPoint?.takeIf { it.isNotBlank() }?.let { place ->
+            GlyphFact(icon = DesignR.drawable.ic_krt_map_pin, text = place)
+        }
+    }
+}
+
+/**
+ * The band's last row: whose Einsatz it is, and the way in.
+ *
+ * @param mission the Einsatz.
+ */
+@Composable
+private fun MissionBandFooter(mission: Mission) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { unit ->
+            KrtChip(text = unit, tone = KrtChipTone.Primary)
+        }
+        // The design also puts "{n} angemeldet" here. MissionListDto carries no participant count,
+        // so there is nothing behind it on this endpoint — left out rather than invented, and
+        // recorded as a contract gap in docs/DESIGN_PARITY_AUDIT.md.
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = stringResource(R.string.dashboard_mission_open),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        KrtIcon(
+            id = DesignR.drawable.ic_krt_chevron_right,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/**
+ * One fact behind its glyph.
+ *
+ * @param icon the design's glyph for this fact.
+ * @param text the fact.
+ */
+@Composable
+private fun GlyphFact(
+    @DrawableRes icon: Int,
+    text: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtIcon(id = icon, contentDescription = null, tint = KrtPalette.TextMuted)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

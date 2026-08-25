@@ -93,24 +93,39 @@ The tree's group header now carries the chapter's fill beside the orange rail it
 Inventar and Blueprints are tiles. Still to check: `total` + `unit` per group node, `ort` / quality
 `q` / `qPct` per stack, and `missingRows` on a blueprint. `KrtTotalTile` remains unused.
 
-### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **part done**
+### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **content done, layout open**
 
-Ship rows are tiles now. Still open: the manufacturer lettermark (`mfr` / `mfrName`, the placeholder
-the handoff documents) and whether insurance `ins` and `fit` read as the chapter draws them. The tablet's full web table **is** implemented (2026-08-24 pass).
+Read against the chapter: every field is there — manufacturer, type + name, insurance chip, fitted
+chip, location. What differs is arrangement: the chapter leads the row with the manufacturer as a
+**lettermark badge** on the left, where the app puts it as a muted subtitle, and sets the location
+behind a map-pin glyph. Cosmetic and worth doing; not a missing fact. The tablet's full web table **is** implemented (2026-08-24 pass).
 
-### 05 Dashboard · `dashboard/DashboardScreen.kt` — **part done**
+### 05 Dashboard · `dashboard/DashboardScreen.kt` — **done, one item blocked**
 
-The Einsätze band is a tile now. Still open: `ort` on a mission row and a `count` on the quick actions.
+The band was a single line with the name and a status badge. Chapter 05 draws a `hud-box` with three
+rows, and it has all three now: name + briefing beside the status; the meeting time behind a clock
+glyph and the meeting point behind a map pin; the owning unit as a chip, and „Öffnen ›" as the way
+in. `Mission` gained `description` from `MissionListDto`, which was on the wire and unmapped.
 
-### 06 Missionen — artboards 1–5 · `missions/*` — **part done**
+**Blocked:** the chapter's „{n} angemeldet". `MissionListDto` carries no participant count — the
+figure exists only on the detail DTO — so the list endpoint cannot supply it. Left out rather than
+faked; a backend item, like the Bank's Verwahrer chip.
 
-Both list segments are tiles now. Still open: the per-tab `count` on the detail's tab row
-(`KrtCountBadge` unused). Artboard 5 (Operation detail + payout) exists, so **Operationen is
-covered** — contrary to the assumption that it had no template.
+### 06 Missionen — artboards 1–5 · `missions/*` — **done**
 
-### 11 Raffinerie — artboards 1–2 · `refinery/RefineryScreen.kt` — **part done**
+Both list segments are tiles, and the detail's tab row carries the count artboard 2 puts on it —
+derived from the collections the detail already holds, so no new read. Übersicht and Finanzen carry
+none on purpose: the first is prose, the second loads separately, and a figure before that read
+lands would be a promise the screen cannot keep.
 
-Order rows are tiles now. Still open: `method` and `station` beside the status.
+Artboard 5 (Operation detail + payout) exists, so **Operationen is covered** — contrary to the
+assumption that it had no template.
+
+### 11 Raffinerie — artboards 1–2 · `refinery/RefineryScreen.kt` — **done**
+
+Corrected from the probe: `station` and `method` **are** drawn — as `locationName` in the title and
+`methodName` in the second line, which is why a probe looking for the design's field names missed
+them. With the tile the row now matches artboard 1.
 
 ### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **done bar one**
 

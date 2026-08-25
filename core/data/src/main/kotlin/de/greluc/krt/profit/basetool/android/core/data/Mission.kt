@@ -98,6 +98,20 @@ data class Mission(
     val orgUnitName: String?,
     val orgUnitShorthand: String?,
     val meetingPoint: String?,
+    /**
+     * One-line briefing, drawn beneath the name on the dashboard band.
+     *
+     * Defaulted because it is genuinely optional on the wire and absent for an outsider read
+     * (ADR-0034) — a row without one is a row, not a defect.
+     */
+    val description: String? = null,
+    /**
+     * How many members have signed up.
+     *
+     * `null` on every list read: `MissionListDto` carries no participant count, so the design's
+     * "{n} angemeldet" has nothing behind it there. Not faked — see the parity audit.
+     */
+    val registeredCount: Int? = null,
 ) {
     /**
      * The instant this Einsatz is grouped and sorted by.

@@ -140,7 +140,11 @@ fun MissionDetailScreen(
                 }
                 MissionDetailHead(detail = detail)
                 SignUpBar(state = state, actions = actions)
-                MissionTabRow(selected = state.tab, onTabSelected = onTabSelected)
+                MissionTabRow(
+                    selected = state.tab,
+                    detail = state.detail,
+                    onTabSelected = onTabSelected,
+                )
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
                     onRefresh = onRefresh,
@@ -420,6 +424,7 @@ private fun MissionDetailHead(detail: MissionDetail) {
 @Composable
 private fun MissionTabRow(
     selected: MissionTab,
+    detail: MissionDetail?,
     onTabSelected: (MissionTab) -> Unit,
 ) {
     Row(
@@ -432,8 +437,18 @@ private fun MissionTabRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
         MissionTab.entries.forEach { tab ->
+            // Design ch. 06 artboard 2 puts a count on every tab that holds a countable list, so a
+            // member can see there are three objectives without opening the tab. A tab whose
+            // content is not a list (Übersicht) carries none, and neither does one whose list has
+            // not been read yet.
+            val count = detail?.let(tab::countIn)
             KrtFilterChip(
-                text = stringResource(tab.labelRes()),
+                text =
+                    if (count == null) {
+                        stringResource(tab.labelRes())
+                    } else {
+                        stringResource(R.string.mission_tab_with_count, stringResource(tab.labelRes()), count)
+                    },
                 selected = tab == selected,
                 onClick = { onTabSelected(tab) },
             )
@@ -1072,3 +1087,22 @@ fun MissionDetailRoute(
         modifier = modifier,
     )
 }
+
+/**
+ * How many rows this tab holds.
+ *
+ * @param detail the Einsatz as read.
+ * @return the count the tab chip shows, or `null` for a tab whose content is not a list — Übersicht
+ *   is prose and Finanzen is loaded separately, so a figure there would be either meaningless or a
+ *   promise the screen cannot keep before the second read lands.
+ */
+private fun MissionTab.countIn(detail: MissionDetail): Int? =
+    when (this) {
+        MissionTab.OVERVIEW -> null
+        MissionTab.PARTICIPANTS -> detail.participants.size
+        MissionTab.UNITS -> detail.units.size
+        MissionTab.STEPS -> detail.steps.size
+        MissionTab.OBJECTIVES -> detail.objectives.size
+        MissionTab.FREQUENCIES -> detail.frequencies.size
+        MissionTab.FINANCES -> null
+    }
