@@ -9,15 +9,20 @@ package de.greluc.krt.profit.basetool.android.bank
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -49,6 +54,8 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
@@ -175,10 +182,72 @@ fun BankAccountsScreen(
                         contentPadding = PaddingValues(KrtSpacing.md),
                         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                     ) {
+                        item(key = "total") {
+                            TotalCard(accounts = state.accounts)
+                        }
                         items(state.accounts, key = { it.id }) { account ->
                             AccountCard(account = account, onClick = { onOpenAccount(account.id) })
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * What the visible accounts add up to.
+ *
+ * Design ch. 12 artboard 1 leads the list with it, and the reason is scope: a member with a
+ * view-grant on three accounts is being told how much the org holds *that they can see*, which is
+ * not the same as what the org holds. Summing the rows on screen keeps the two identical by
+ * construction — a server-side grand total would silently include accounts the caller is not shown.
+ *
+ * Accounts whose balance the server withheld are skipped rather than counted as zero: a redacted
+ * balance is unknown, and unknown is not nothing.
+ *
+ * @param accounts the accounts on screen.
+ */
+@Composable
+private fun TotalCard(accounts: List<BankAccountSummary>) {
+    val total = accounts.mapNotNull { it.balance?.trim()?.toBigDecimalOrNull() }
+    if (total.isEmpty()) {
+        return
+    }
+    val sum = total.reduce { a, b -> a + b }
+    // The artboard's total card carries an orange rail on its LEFT edge; KrtCardVariant.Accent
+    // puts its bar across the top, which is a different mark for a different purpose. Composed
+    // here rather than by widening the shared component, because nothing else asks for this.
+    KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Flush) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            Box(
+                modifier =
+                    Modifier
+                        .width(KrtSpacing.xs)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.primary),
+            )
+            Column(modifier = Modifier.padding(KrtSpacing.lg)) {
+                Text(
+                    text = stringResource(R.string.bank_total),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = KrtPalette.TextMuted,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Text(
+                        text = formatAmount(sum.toPlainString()),
+                        style = MaterialTheme.typography.displaySmall,
+                        color = KrtPalette.White,
+                    )
+                    Text(
+                        text = stringResource(R.string.bank_total_unit),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = KrtPalette.TextMuted,
+                        modifier = Modifier.padding(bottom = KrtSpacing.xs),
+                    )
                 }
             }
         }

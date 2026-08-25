@@ -373,6 +373,9 @@
     <string name="hangar_error_title">Signal Lost</string>
     <string name="hangar_error_message">The hangar could not be loaded.</string>
     <!-- Bank (design chapter 12) -->
+    <string name="bank_total_for">TOTAL %1$s</string>
+    <string name="bank_total_unit">aUEC</string>
+    <string name="bank_total">TOTAL</string>
     <string name="bank_title">Bank</string>
     <string name="bank_accounts_empty_title">No accounts</string>
     <string name="bank_accounts_empty_message">No account of the org unit is visible to you.</string>

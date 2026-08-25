@@ -39,8 +39,14 @@ import java.io.IOException
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class InventoryScreenTest {
     private companion object {
-        /** The group, the stack and the entry — three rows, each stating the same quality. */
-        const val QUALITY_ROWS = 3
+        /**
+         * The stack and the entry — two rows, each stating the same quality.
+         *
+         * Not three: design ch. 09 artboard 1 keeps quality off the material GROUP row, because an
+         * aggregate averages stacks that may be in different systems and the reading that matters
+         * is the one on the stack being booked.
+         */
+        const val QUALITY_ROWS = 2
     }
 
     @get:Rule
@@ -257,7 +263,7 @@ class InventoryScreenTest {
 
         compose.onAllNodesWithText("12,5").assertCountEquals(1)
         compose.onNodeWithText("Reserviert").assertIsDisplayed()
-        // The group, the stack and now the entry each state it.
+        // The stack and the entry state it; the group deliberately does not.
         compose.onAllNodesWithText("Q 880").assertCountEquals(QUALITY_ROWS)
     }
 

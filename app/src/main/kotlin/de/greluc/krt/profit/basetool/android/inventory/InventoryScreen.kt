@@ -340,7 +340,9 @@ private fun GroupRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        group.quality?.let { KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(it))) }
+        // The group row carries no quality in artboard 09.1 — a material's aggregate quality is an
+        // average of stacks that may be far apart, and the number that matters is the one on the
+        // stack a member is about to book. The gauge lives on the rows below.
         Amount(value = group.amount, unit = group.unit)
     }
 }
@@ -467,7 +469,7 @@ private fun EntryRow(
             }
         }
         entry.quality?.let { quality ->
-            KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(quality)))
+            QualityMark(quality = quality)
         }
         KrtGhostButton(
             text = stringResource(R.string.booking_open),
@@ -475,6 +477,47 @@ private fun EntryRow(
             modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
             enabled = online,
         )
+    }
+}
+
+/**
+ * A quality reading: the number, and a 44 dp bar showing where it sits on the 0–1000 scale.
+ *
+ * Design ch. 09: "Quality = value + 44 dp mini-gauge (0–1000)". The number alone is only meaningful
+ * to somebody who already knows the scale — the bar makes "Q 874" readable as *high* at a glance,
+ * which is the judgement a member makes when choosing which stack to book out.
+ *
+ * @param quality the reading, 0–1000.
+ */
+@Composable
+private fun QualityMark(quality: String) {
+    // The reading arrives as a string on the wire; a value the app cannot parse still shows its
+    // number and simply draws no bar, rather than guessing a position on the scale.
+    val share = quality.trim().toDoubleOrNull()?.div(QUALITY_MAX)?.toFloat()?.coerceIn(0f, 1f)
+    Column(horizontalAlignment = Alignment.Start) {
+        Text(
+            text = stringResource(R.string.inventory_quality, quality),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.Gray1,
+        )
+        share?.let { filled ->
+            Box(
+                modifier =
+                    Modifier
+                        .padding(top = 2.dp)
+                        .width(QUALITY_GAUGE_WIDTH)
+                        .height(QUALITY_GAUGE_HEIGHT)
+                        .background(KrtPalette.Gray3),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(filled)
+                            .height(QUALITY_GAUGE_HEIGHT)
+                            .background(MaterialTheme.colorScheme.primary),
+                )
+            }
+        }
     }
 }
 
@@ -523,7 +566,7 @@ private fun StackRow(
         if (stack.personal) {
             KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
         }
-        stack.quality?.let { KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(it))) }
+        stack.quality?.let { QualityMark(quality = it) }
         Amount(value = stack.amount, unit = unit)
     }
 }
@@ -651,3 +694,12 @@ fun InventoryRoute(
         modifier = modifier,
     )
 }
+
+/** Width of the quality mini-gauge — 44 dp per design ch. 09. */
+private val QUALITY_GAUGE_WIDTH = 44.dp
+
+/** Height of the quality mini-gauge; the same flat band the attendance meter uses. */
+private val QUALITY_GAUGE_HEIGHT = 4.dp
+
+/** Top of the quality scale the gauge maps onto. */
+private const val QUALITY_MAX = 1_000.0
