@@ -35,16 +35,18 @@ class OssLicensesTest {
 
     @Test
     fun `the notice is generated into the app and is not empty`() {
-        val artifacts = OssLicenses.read(resources)
+        val report = OssLicenses.read(resources)
 
         // If the build wiring in app/build.gradle.kts stops running, the app still builds and the
-        // screen still opens; only the attribution disappears.
-        assertTrue("the generated open-source notice is empty", artifacts.isNotEmpty())
+        // screen still opens; only the attribution disappears. A report that reads as Unreadable
+        // covers both the missing file and the empty one — the screen makes the same offer either
+        // way, and neither is a notice.
+        assertTrue("the generated open-source notice is empty", report is OssReport.Loaded)
     }
 
     @Test
     fun `every artifact carries coordinates and a version`() {
-        OssLicenses.read(resources).forEach { artifact ->
+        OssLicenses.loaded(resources).forEach { artifact ->
             assertTrue("empty coordinates in $artifact", artifact.coordinates.contains(':'))
             assertTrue("empty version for ${artifact.coordinates}", artifact.version.isNotBlank())
             assertTrue("empty name for ${artifact.coordinates}", artifact.name.isNotBlank())
@@ -55,7 +57,7 @@ class OssLicensesTest {
     fun `every licence in the notice is one the app can name and address`() {
         val unknown =
             OssLicenses
-                .read(resources)
+                .loaded(resources)
                 .flatMap { it.spdxIds }
                 .distinct()
                 .filter { OssLicense.of(it) == null }
@@ -71,7 +73,7 @@ class OssLicensesTest {
 
     @Test
     fun `no artifact drops out of the grouping`() {
-        val artifacts = OssLicenses.read(resources)
+        val artifacts = OssLicenses.loaded(resources)
         val listed = OssLicenses.byLicense(artifacts).flatMap { (_, group) -> group }.toSet()
 
         assertEquals(

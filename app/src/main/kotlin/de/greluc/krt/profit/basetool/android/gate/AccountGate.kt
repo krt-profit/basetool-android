@@ -79,7 +79,17 @@ fun AccountGate(
                 onLogout = onLogout,
                 accountName = accountName,
                 secondsUntilRetry = current.secondsUntilRetry,
+                attempting = current.attempting,
+                escalate = current.failures >= GATE_ESCALATE_AFTER,
             )
         }
     }
 }
+
+/**
+ * How many failed attempts in a row before the gate names a fallback channel.
+ *
+ * Design ch. 14: after the third. Earlier would be noise on a thirty-second blip; later and a
+ * member sitting through a real outage never learns there is somewhere else to ask.
+ */
+private const val GATE_ESCALATE_AFTER = 3

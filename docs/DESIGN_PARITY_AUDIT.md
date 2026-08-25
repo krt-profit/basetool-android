@@ -133,7 +133,7 @@ behind a map pin: only the amount and the note were drawn, so two entries of the
 different hangars read as duplicates of each other. `total` + `unit` per group were already there as
 `amount`/`unit`. Mein Inventar and Blueprints are tiles.
 
-### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **layout open**
+### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **done (2026-08-25, verified on screen)**
 
 Read against the chapter: every field is there — manufacturer, type + name, insurance chip, fitted
 chip, location. What differs is arrangement: the chapter leads the row with the manufacturer as a
@@ -188,7 +188,7 @@ specification table for the top-bar bell's badge states, and the bell's badge is
 unread state the inbox reads. A probe cannot tell a handoff table from a rendered list, which is the
 method's honest limit.
 
-### 13 Einstellungen — artboards 1–2 · `settings/`, `promotion/` — **blocked on the backend**
+### 13 Einstellungen — artboards 1–2 · `settings/` — **done; Beförderung removed**
 
 Artboard 1 is **Beförderung — Meine Bewertungen**. Its matrix has four columns — topic / **self** /
 **lead** / goal — and the backend records **one** level per topic: `MemberEvaluationResponse` carries
@@ -243,6 +243,85 @@ four things:
 - **The escalation line after the 3rd failure** — „Weiterhin keine Antwort — Status der Systeme ggf.
   im Org-Discord." plus the button becoming „Jetzt erneut versuchen" — is missing. The chapter is
   emphatic that nothing else changes: no red, no error face, the state stays *waiting*, not *blame*.
+
+## Visual pass on three emulators (2026-08-25)
+
+The static pass reads code against chapters; this one reads **pixels** against artboards. Both were
+needed, and they found different things — three of the rows the static pass called done were built
+but unreachable, and three gaps it could not see at all only show up on screen.
+
+| device | API | dp | why this one |
+| :-- | :-- | :-- | :-- |
+| Pixel_10a | 37 | 411 × 923 | the chapters' phone reference (412 × 915) |
+| KrtTablet | 37 | 1280 × 800 | the chapters' tablet reference |
+| Pixel_5 | 30 | 393 × 851 | **minSdk** — the floor the app promises to run on |
+
+**Method.** The isolated test stack (`.env.test`, throwaway realm) with the Android compose override,
+`adb reverse` for the three ports, the mobile Keycloak client provisioned, and enough seeded content
+that the screens have something to draw. Screens were read through `uiautomator` and captured with
+`screencap`. Screenshot protection is on by default and blocks `screencap`, so the pass runs with the
+app's own "Screenshots erlauben" toggle on — which incidentally exercises that toggle.
+
+### What the pixels found that the code review did not
+
+| finding | chapter | state |
+| :-- | :-- | :-- |
+| The dashboard had no **Schnellaktionen** block at all | 05 | **fixed** — four fixed tiles, each opening the surface its action lives on |
+| The mission tile showed an absolute time only; the chapter leads with the countdown | 05 | **fixed** — "In 1 Stunde · TS 22:33", re-read once a minute |
+| The hangar's insurance chip read "6" — six of what | 08 | **fixed** — the unit is on the chip |
+| The hangar's location had no map pin, so it read as a third chip's caption | 08 | **fixed** |
+| A wide "LÖSCHEN" made deletion the loudest thing on every ship card | 08 | **fixed** — 44 dp icon buttons, as the chapter draws |
+| The licence register spanned the full tablet width | 15 | **fixed** — the chapter's 480 dp column |
+| Both version footers omitted the API version | 04, 13 | **fixed** |
+| The status sheet's order id had picked up an "A-" prefix from the mockup's sample data | 10 | **fixed** — the API sends a number |
+| **Tapping "Mehr" on a secondary screen did nothing** | 03 | **fixed** — a menu that reopens on the page you are leaving is not a menu |
+| **"Beförderung" led to "Dieser Bereich wird gerade gebaut."** | 13 | **removed** — the screen existed but was never wired; owner decision to take the entry out until the feature ships |
+
+### Confirmed on screen
+
+- **Chapter 04** — no guest entry, no terms link, the Fan Kit band above the footer. The app was right
+  and the spec has now caught up to it.
+- **Chapter 03** — phone: five destinations plus the org chip and the bell; tablet: the rail of seven
+  plus "Mehr", list pane with search and filters, detail pane showing "Nichts ausgewählt".
+- **Chapters 05, 06, 09, 10, 12, 13, 15** — tiles, date grouping, filter chips, the Lager's orange
+  group rail and right-aligned tabular amounts, the order card's Prio / status / age / Für / Durch,
+  the settings' square toggles with orange track and black knob.
+- **minSdk 30** — installs, launches, renders. `KRT/auth` logs `StrongBoxUnavailableException` twice
+  and falls back to TEE-backed keys both times, which is the handling working, not a defect.
+
+### Still open
+
+| item | why it is open |
+| :-- | :-- |
+| „{n} angemeldet" on the dashboard tile | backend shipped (basetool#1674); the app half lands once it is deployed, and the chapter says to hide the line until then rather than show a placeholder |
+| Status-sheet gating | `JobOrderDto` has no `transitions[]`; every non-current status is offered and the server refuses what it must — see chapter 10 above |
+| „Einsatz erstellen" FAB (ch. 06) | **the app cannot create Einsätze at all.** No route, no form, no repository call. The FAB is not a missing button, it is a missing feature — a decision, not a fix |
+| Lager quality **mini-gauge** (ch. 09: "value + 44 dp mini-gauge 0–1000") | the value is drawn as a "Q 720" chip; the gauge is not |
+| Server-status dot in the version footers (ch. 04, 13) | the app has no health signal, and a dot that can only be green is decoration that looks like a diagnosis. Needs either a health endpoint or an ADR |
+| Long top-bar titles truncate ("OPEN-SOURCE-LIZEN…") | the chapter's own phone frame has the same trailing elements; cosmetic |
+
+### One device could not be driven to the end — and why, exactly
+
+The sign-in on API 30 stops at „Anmeldung läuft …" and never returns. Chased to the bottom, because
+"the old emulator is weird" is the kind of note that costs the next person an afternoon:
+
+1. **Chrome's first run swallowed the Custom Tab.** A `VIEW` intent on a fresh emulator lands in
+   `FirstRunActivity`, the welcome screen, and the tab never comes back — no error, anywhere. Fixed
+   for the test device with `--disable-fre` (see `ANDROID_APP_DEV_CI.md`, now written down), which
+   skips the onboarding rather than accepting anything on a tester's behalf.
+2. **Behind it: Keycloak's `cookie_not_found`.** With the tab opening, the login form appears and
+   the POST comes back "Restart login cookie not found". The API-30 image ships **Chrome 83**;
+   Keycloak marks its auth-session cookies `Secure; SameSite=None`, and only Chrome 89+ treats
+   `http://127.0.0.1` as a secure context and sends them. This was already documented as the
+   interactive-E2E floor, and the measurement matches it exactly.
+
+Neither is an app defect, and neither reaches production, where Keycloak is served over TLS. Chrome
+cannot be raised on this AVD — the API-30 image installed here is **x86 32-bit**, so the newer
+Chrome sitting on the API-37 image (x86_64) cannot be installed onto it, and no other API-30 image
+is present. Raising it means installing an x86_64 API-30 image through the SDK manager.
+
+Everything ahead of the login was verified on minSdk — install, launch, the login screen, and the
+StrongBox→TEE fallback. The screens behind it were verified on the other two devices.
 
 ## Three rows were wrongly closed — and how
 
@@ -332,7 +411,7 @@ five-point check at the end of that prompt is what an importer should run.
 
 ### New surfaces — parity
 
-#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **gap**
+#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **done (2026-08-25, verified on screen)**
 
 The screen has the intro, a section title per licence and the rows. The chapter adds five things it
 does not have:
@@ -355,7 +434,7 @@ name and the artefacts alphabetical within it (deterministic, not report order);
 rows are **not interactive** (min 40 dp, 13 sp / 1.5); a one-artefact group is not a special case;
 and a dual-licensed artefact appears under **every** licence it carries.
 
-#### 10 Aufträge artboards 5–9 · the note and status sheets — **note done, status open**
+#### 10 Aufträge artboards 5–9 · the note and status sheets — **built; gating blocked on the API**
 
 The note sheet has a title, a hint, a field and two buttons. The chapter adds the order number and
 „Nur deine eigene Zuweisung" as a subtitle, a **250-character counter**, „Leeres Feld speichern

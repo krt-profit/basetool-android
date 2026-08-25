@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTogg
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.core.network.API_VERSION
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
@@ -257,11 +258,14 @@ private fun SettingsColumn(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // App version only. The design's footer also carries a server-status dot and the API
-        // version; both describe the link to the backend, and this build has no health signal to
-        // read them from — an always-green dot would be decoration that looks like a diagnosis.
+        // App version and API version. The design's footer also carries a server-status dot; that
+        // half stays undrawn because this build has no health signal to read it from, and an
+        // always-green dot would be decoration that looks like a diagnosis — the one element a
+        // member would trust during an outage. The API version needs no signal: it is what this
+        // build was compiled against.
         Text(
-            text = stringResource(R.string.settings_version, versionName, versionCode),
+            text =
+                stringResource(R.string.settings_version, versionName, versionCode, API_VERSION),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.Gray2,
             textAlign = TextAlign.Center,

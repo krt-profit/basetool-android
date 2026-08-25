@@ -92,17 +92,35 @@ object OssLicenses {
      * @param resources the app's resources, holding `raw/oss_licenses.json`.
      * @return every bundled artifact, sorted by name, case-insensitively.
      */
-    fun read(resources: Resources): List<OssArtifact> =
+    fun read(resources: Resources): OssReport =
         try {
             val json = resources.openRawResource(R.raw.oss_licenses).use { it.readBytes() }
-            parse(String(json, Charsets.UTF_8))
+            val artifacts = parse(String(json, Charsets.UTF_8))
+            // A report with no artifacts is not an empty list to render — the dependency graph is
+            // never empty, so zero means the generator did not run or wrote nothing. The chapter
+            // routes it to the error state (artboard 5) rather than to a page that looks complete.
+            if (artifacts.isEmpty()) OssReport.Unreadable else OssReport.Loaded(artifacts)
         } catch (unreadable: Resources.NotFoundException) {
             KrtLog.e(LOG_TAG, unreadable) { "the generated open-source notice is missing" }
-            emptyList()
+            OssReport.Unreadable
         } catch (malformed: JSONException) {
             KrtLog.e(LOG_TAG, malformed) { "the generated open-source notice is not readable" }
-            emptyList()
+            OssReport.Unreadable
         }
+
+    /**
+     * The artifacts of a readable report, or an empty list.
+     *
+     * A convenience for callers that only care about the contents — chiefly `OssLicensesTest`,
+     * which asserts properties of the bundled report and has its own assertion for the report
+     * being readable at all. The screen deliberately does **not** use this: collapsing the two
+     * outcomes is what made a missing resource look like a build with no dependencies.
+     *
+     * @param resources the app's resources.
+     * @return the artifacts, or empty when the report could not be read.
+     */
+    fun loaded(resources: Resources): List<OssArtifact> =
+        (read(resources) as? OssReport.Loaded)?.artifacts.orEmpty()
 
     /**
      * Parses Licensee's `artifacts.json`.
@@ -137,17 +155,48 @@ object OssLicenses {
      * Groups artifacts under the licences they are offered under.
      *
      * An artifact offered under two licences appears under both, because the recipient may rely on
-     * either — listing it once under an arbitrary one would misstate the terms. Groups keep the
-     * declaration order of [OssLicense], and a licence with no artifacts is dropped.
+     * either — listing it once under an arbitrary one would misstate the terms. A licence with no
+     * artifacts is dropped.
+     *
+     * The order is **alphabetical by licence name, then by coordinate** — not the declaration order
+     * of [OssLicense] and not the report's order. Both of those move when a dependency or an enum
+     * constant is added, and a legal notice whose rows shuffle between builds cannot be diffed
+     * against the previous one (design ch. 15: "Reihenfolge deterministisch").
      *
      * @param artifacts the parsed report.
-     * @return one entry per licence in use, each with its artifacts in the order given.
+     * @return one entry per licence in use, alphabetically, each with its artifacts alphabetically.
      */
     fun byLicense(artifacts: List<OssArtifact>): List<Pair<OssLicense, List<OssArtifact>>> =
-        OssLicense.entries.mapNotNull { license ->
-            artifacts
-                .filter { license.spdxId in it.spdxIds }
-                .takeIf { it.isNotEmpty() }
-                ?.let { license to it }
-        }
+        OssLicense.entries
+            .mapNotNull { license ->
+                artifacts
+                    .filter { license.spdxId in it.spdxIds }
+                    .sortedBy { it.coordinates.lowercase() }
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { license to it }
+            }.sortedBy { (license, _) -> license.displayName.lowercase() }
+}
+
+/**
+ * The outcome of reading the bundled report.
+ *
+ * Two outcomes rather than a possibly-empty list, because design chapter 15 draws them as two
+ * different screens: a report that cannot be read offers "Erneut versuchen", and one that is merely
+ * slow shows a spinner. Collapsing them into an empty list forced one screen to stand for both, and
+ * the one it stood for was the wrong one — a missing resource looked like a build with no
+ * dependencies.
+ */
+sealed interface OssReport {
+    /**
+     * The report was read.
+     *
+     * @property artifacts every bundled artifact; never empty, since an empty report is
+     *   [Unreadable].
+     */
+    data class Loaded(
+        val artifacts: List<OssArtifact>,
+    ) : OssReport
+
+    /** The resource is missing, malformed, or lists nothing. */
+    data object Unreadable : OssReport
 }

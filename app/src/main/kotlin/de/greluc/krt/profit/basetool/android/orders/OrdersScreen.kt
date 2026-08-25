@@ -8,14 +8,17 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -59,6 +62,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadgeKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -100,7 +105,7 @@ const val ORDER_NOTE_SAVE_TAG: String = "order-note-save"
 const val ORDER_STATUS_SHEET_TAG: String = "order-status-sheet"
 
 /** The statuses an order can be moved to from the app, in the order the picker draws them. */
-private val STATUS_CHOICES =
+internal val STATUS_CHOICES =
     listOf(
         JobOrderStatus.OPEN,
         JobOrderStatus.IN_PROGRESS,
@@ -615,7 +620,7 @@ private val FILTERABLE_STATUSES =
  *
  * @return the resource id; [JobOrderStatus.UNKNOWN] has none and must not reach here.
  */
-private fun JobOrderStatus.labelRes(): Int =
+internal fun JobOrderStatus.labelRes(): Int =
     when (this) {
         JobOrderStatus.OPEN -> R.string.orders_status_open
         JobOrderStatus.IN_PROGRESS -> R.string.orders_status_in_progress
@@ -735,6 +740,12 @@ data class OrderDetailActions(
     val onOpenStatusPicker: () -> Unit,
     val onStatusChosen: (JobOrderStatus) -> Unit,
     val onDismissStatusPicker: () -> Unit,
+    /** Marks a status as intended without moving the order (design ch. 10 artboard 8). */
+    val onStatusSelected: (JobOrderStatus) -> Unit,
+    /** Applies the marked status, asking first when the target cannot be taken back. */
+    val onApplyStatus: () -> Unit,
+    /** Backs out of the terminal confirmation, keeping the choice on screen. */
+    val onDismissStatusConfirm: () -> Unit,
 )
 
 /**
@@ -989,7 +1000,11 @@ private fun NoteSheet(
             Text(
                 text = stringResource(R.string.order_detail_note_counter, draft.length, NOTE_MAX_LENGTH),
                 style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.TextMuted,
+                // Design ch. 10 artboard 6: the counter turns warning-yellow before the ceiling,
+                // not at it. A limit a member only learns about when the field stops accepting
+                // characters costs them the sentence they were in the middle of.
+                color =
+                    if (draft.length >= NOTE_WARN_LENGTH) KrtPalette.Warning else KrtPalette.TextMuted,
                 modifier = Modifier.align(Alignment.End),
             )
             // The conflict is drawn above as its own block, so it does not also arrive as a bare
@@ -1006,50 +1021,6 @@ private fun NoteSheet(
                     onClick = actions.onSaveNote,
                     modifier = Modifier.testTag(ORDER_NOTE_SAVE_TAG),
                     enabled = state.writable,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Where the order should stand.
- *
- * The current status is shown as chosen rather than left out: a picker that hides where the order
- * is now reads as if it had no status at all.
- *
- * @param current where it stands.
- * @param state the screen, for the save gate.
- * @param actions what it reports back.
- */
-@Composable
-private fun StatusSheet(
-    current: JobOrderStatus,
-    state: OrderDetailState,
-    actions: OrderDetailActions,
-) {
-    KrtBottomSheet(
-        onDismiss = actions.onDismissStatusPicker,
-        modifier = Modifier.testTag(ORDER_STATUS_SHEET_TAG),
-        title = stringResource(R.string.order_detail_change_status),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        ) {
-            // UNKNOWN is absent on purpose: it carries a status this build has never seen, and
-            // asking the server to move an order into one is not a request that means anything.
-            STATUS_CHOICES.forEach { status ->
-                Text(
-                    text = stringResource(status.labelRes()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color =
-                        if (status == current) MaterialTheme.colorScheme.primary else KrtPalette.White,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = state.writable) { actions.onStatusChosen(status) }
-                            .padding(vertical = KrtSpacing.sm),
                 )
             }
         }
@@ -1201,6 +1172,9 @@ fun OrderDetailRoute(
                 onOpenStatusPicker = viewModel::onOpenStatusPicker,
                 onStatusChosen = viewModel::onStatusChosen,
                 onDismissStatusPicker = viewModel::onDismissStatusPicker,
+                onStatusSelected = viewModel::onStatusSelected,
+                onApplyStatus = viewModel::onApplyStatus,
+                onDismissStatusConfirm = viewModel::onDismissStatusConfirm,
             ),
         modifier = modifier,
     )
@@ -1284,3 +1258,10 @@ private fun NoteConflict(
  * discrepancy is recorded in docs/DESIGN_PARITY_AUDIT.md for the owner to settle.
  */
 private const val NOTE_MAX_LENGTH = 500
+
+/**
+ * Where the character counter turns yellow.
+ *
+ * Thirty characters of warning before the wall — design ch. 10 artboard 6 puts it at 470 of 500.
+ */
+private const val NOTE_WARN_LENGTH = 470

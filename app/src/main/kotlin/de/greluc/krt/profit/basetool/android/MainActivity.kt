@@ -72,7 +72,6 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
-import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
@@ -163,7 +162,6 @@ class MainActivity : AppCompatActivity() {
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
 
     /** Beförderung — the member's own assessments and rank standings (#66). */
-    private val promotionViewModel: PromotionViewModel by viewModels { authViewModels(container) }
 
     private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
 
@@ -354,7 +352,6 @@ class MainActivity : AppCompatActivity() {
                                     },
                                     onSelectOrgUnit = orgUnitViewModel::select,
                                     onLogout = signOut,
-                                    promotion = promotionViewModel,
                                     settings =
                                         SettingsBindings(
                                             accountName = current.claims?.preferredUsername,
@@ -563,7 +560,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
-                initializer { PromotionViewModel(container.promotion) }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
                 initializer {

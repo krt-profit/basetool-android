@@ -79,6 +79,8 @@ fun GateUnavailableScreen(
     modifier: Modifier = Modifier,
     accountName: String? = null,
     secondsUntilRetry: Int? = null,
+    attempting: Boolean = false,
+    escalate: Boolean = false,
 ) {
     Box(
         modifier =
@@ -117,6 +119,20 @@ fun GateUnavailableScreen(
                 color = KrtPalette.Gray1,
                 textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.height(KrtSpacing.sm))
+            Text(
+                // The countdown lives INSIDE the sentence that explains the wait, as the chapter
+                // draws it. Split across two lines, the number reads as a fact about the app and
+                // not as the answer to "why am I looking at this".
+                text =
+                    secondsUntilRetry?.let { seconds ->
+                        stringResource(R.string.gate_still_signed_in) + " " +
+                            stringResource(R.string.gate_retry_in, seconds)
+                    } ?: stringResource(R.string.gate_still_signed_in),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+                textAlign = TextAlign.Center,
+            )
             accountName?.let { name ->
                 Spacer(Modifier.height(KrtSpacing.sm))
                 Text(
@@ -126,22 +142,41 @@ fun GateUnavailableScreen(
                     textAlign = TextAlign.Center,
                 )
             }
-            secondsUntilRetry?.let { seconds ->
+            if (escalate) {
                 Spacer(Modifier.height(KrtSpacing.md))
                 Text(
-                    text = stringResource(R.string.gate_retry_in, seconds),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    // One line after the third failed attempt, and nothing else changes — no red,
+                    // no error face. The state is still waiting, not blame (design ch. 14).
+                    text = stringResource(R.string.gate_escalation),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
                     textAlign = TextAlign.Center,
                 )
             }
             Spacer(Modifier.height(KrtSpacing.xl))
             KrtOutlineButton(
-                text = stringResource(R.string.gate_retry),
+                text =
+                    stringResource(
+                        when {
+                            attempting -> R.string.gate_attempting
+                            escalate -> R.string.gate_retry_now
+                            else -> R.string.gate_retry
+                        },
+                    ),
                 onClick = onRetry,
                 iconRes = DesignR.drawable.ic_krt_reset,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !attempting,
             )
+            if (attempting) {
+                Spacer(Modifier.height(KrtSpacing.sm))
+                Text(
+                    text = stringResource(R.string.gate_attempt_note),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = KrtPalette.TextMuted,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(Modifier.height(KrtSpacing.md))
             KrtQuietDangerButton(
                 text = stringResource(R.string.logout),

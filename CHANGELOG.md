@@ -2,7 +2,38 @@
 
 ## [Unreleased]
 
+### Removed
+
+- **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
+  gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
+  Er kommt zurück, wenn die Ansicht wirklich fertig ist.
+
+### Fixed
+
+- **„Mehr" führt wieder ins Menü.** Warst du auf Bank, Hangar oder den Lizenzen, passierte beim
+  Tippen auf „Mehr" nichts — ausgerechnet der Knopf, der dich da wieder herausbringen soll.
+
 ### Changed
+
+- **Die Open-Source-Lizenzen sind eine richtige Seite geworden.** Oben steht, wie viele Artefakte und
+  Lizenzen der Bericht umfasst und zu welchem Build er gehört; die Lizenz-Überschrift bleibt beim
+  Scrollen stehen und lässt sich antippen, um ihre Softwareliste ein- und wieder auszuklappen. Am
+  Ende steht, dass der Bericht zu Ende ist. Ohne Browser auf dem Gerät wird die Lizenz-Adresse
+  kopiert statt ins Leere getippt.
+- **Die Übersicht hat Schnellaktionen.** Vier Kacheln — Check-In, Einbuchen, Auftrag, Angebot — führen
+  dorthin, wo die jeweilige Aktion zu Hause ist. Die Einsatz-Kachel nennt außerdem, wie lange es noch
+  hin ist („In 1 Stunde · TS 22:33"), und rechnet das jede Minute nach.
+- **Der Statuswechsel am Auftrag fragt jetzt nach, bevor er endgültig wird.** Du wählst den Status
+  aus und bestätigst ihn — „Abgeschlossen" und „Abgelehnt" lassen sich in der App nicht zurücknehmen,
+  und das steht jetzt dran, statt danach aufzufallen.
+- **Im Hangar steht der Hersteller als Kürzel-Kachel vorne in der Zeile**, der Ort hinter einer
+  Kartennadel, und die Versicherung nennt ihre Einheit statt nur einer Zahl. Bearbeiten und Löschen
+  sind Symbolknöpfe, statt „LÖSCHEN" quer über jede Karte zu legen.
+- **Ist die Freigabeprüfung nicht erreichbar, versucht die App es von selbst weiter** — nach 3, 6, 12
+  und dann 30 Sekunden, mit sichtbarer Restzeit; ein eigener Versuch setzt den Rhythmus zurück. Ein
+  laufender Versuch sagt das und wird nach 10 Sekunden abgebrochen, und ab dem dritten Fehlversuch
+  steht eine Zeile da, die auf den Org-Discord verweist.
+- **Die Versionszeile nennt zusätzlich die API-Version.**
 
 - **Ist die Freigabeprüfung nicht erreichbar, versucht die App es von selbst weiter.** Der Bildschirm
   zeigt jetzt, als wer du angemeldet bist und in wie vielen Sekunden der nächste Versuch läuft

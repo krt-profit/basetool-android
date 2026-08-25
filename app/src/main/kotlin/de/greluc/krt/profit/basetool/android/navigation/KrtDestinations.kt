@@ -70,9 +70,6 @@ enum class KrtDestination(
     /** Bank — org-unit accounts and booking requests. */
     Bank("bank", R.string.nav_bank, DesignR.drawable.ic_krt_bank),
 
-    /** Beförderung — evaluations and eligibility. */
-    Promotion("promotion", R.string.nav_promotion, DesignR.drawable.ic_krt_rank),
-
     /** Benachrichtigungen — the inbox behind the bell. */
     Notifications("notifications", R.string.nav_notifications, DesignR.drawable.ic_krt_bell),
 
@@ -172,7 +169,6 @@ val MORE_DESTINATIONS =
         KrtDestination.Refinery,
         KrtDestination.PersonalInventory,
         KrtDestination.Bank,
-        KrtDestination.Promotion,
         KrtDestination.Settings,
     )
 

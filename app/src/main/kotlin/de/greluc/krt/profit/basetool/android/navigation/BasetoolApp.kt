@@ -61,7 +61,6 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
-import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
@@ -101,7 +100,6 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 @Composable
 fun BasetoolApp(
     onLogout: () -> Unit,
-    promotion: PromotionViewModel,
     settings: SettingsBindings,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
@@ -150,11 +148,24 @@ fun BasetoolApp(
     val selectedRoute = selectedTopLevelRoute(root, destinations)
 
     val onSelect: (KrtNavItem) -> Unit = { item ->
-        if (item.route == selectedRoute) {
-            // Re-tapping the active destination pops it back to its own root.
-            navController.popBackStack(item.route, inclusive = false)
-        } else {
-            navController.navigateToTopLevel(item.route)
+        when {
+            // "Mehr" is a menu, not a place. Every tap on it shows the menu — restoring the tab's
+            // saved state instead would land a member back on whatever secondary screen they left
+            // (Bank, Hangar, the licence register), and the one control that is supposed to get
+            // them OUT of a secondary screen would look broken. The other tabs keep their state,
+            // because those are places and coming back to where you were is the point.
+            item.route == KrtDestination.More.route -> {
+                navController.navigateToTopLevel(item.route, restoreState = false)
+            }
+
+            // Re-tapping the active destination goes back to that destination's own root.
+            item.route == selectedRoute -> {
+                navController.popBackStack(item.route, inclusive = false)
+            }
+
+            else -> {
+                navController.navigateToTopLevel(item.route)
+            }
         }
     }
 
@@ -248,7 +259,6 @@ fun BasetoolApp(
                     personalInventory = personalInventory,
                     personalBlueprints = personalBlueprints,
                     booking = booking,
-                    promotion = promotion,
                     memberName = settings.accountName,
                     orgUnitName = orgUnit.active?.name,
                 )
@@ -325,11 +335,18 @@ private fun isDetailRoute(destination: KrtDestination): Boolean =
  * through another tab, and `launchSingleTop` keeps repeated navigation from stacking duplicates.
  *
  * @param route the destination route.
+ * @param restoreState whether to come back to where this tab was left. `false` lands on the tab's
+ *   own root instead — what "Mehr" wants, since a menu that reopens on the page you were trying to
+ *   leave is not a menu.
  */
-private fun NavHostController.navigateToTopLevel(route: String) {
-    navigate(route) {
+private fun NavHostController.navigateToTopLevel(
+    route: String,
+    restoreState: Boolean = true,
+) {
+    val target = route
+    navigate(target) {
         popUpTo(graph.startDestinationId) { saveState = true }
         launchSingleTop = true
-        restoreState = true
+        this.restoreState = restoreState
     }
 }

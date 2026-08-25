@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.hangar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,7 +32,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Ship
@@ -43,6 +48,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
@@ -211,13 +218,27 @@ fun HangarScreen(
 @Composable
 private fun ShipCardActions(
     online: Boolean,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-        KrtGhostButton(
-            text = stringResource(R.string.hangar_delete),
+    // Design ch. 08 gives the row 44 dp icon buttons, not a labelled button. A ghost button reading
+    // "LÖSCHEN" is the widest, loudest thing on a card whose subject is a ship, and it made the
+    // destructive action the most prominent one on every row.
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+    ) {
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_edit,
+            label = stringResource(R.string.hangar_edit),
+            onClick = onEdit,
+            enabled = online,
+        )
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_trash,
+            label = stringResource(R.string.hangar_delete),
             onClick = onDelete,
-            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
             enabled = online,
         )
     }
@@ -349,6 +370,7 @@ private fun ShipTable(
         if (column == columns.lastIndex) {
             ShipCardActions(
                 online = online,
+                onEdit = { onEdit(ship) },
                 onDelete = { onDelete(ship) },
             )
         } else {
@@ -395,6 +417,79 @@ private fun ShipCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onEdit.takeIf { online },
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.Top,
+        ) {
+            ManufacturerMark(ship.manufacturerName)
+            Column(modifier = Modifier.weight(1f)) {
+                ShipCardBody(ship = ship)
+            }
+        }
+        ShipCardActions(online = online, onEdit = onEdit, onDelete = onDelete)
+    }
+}
+
+/**
+ * The manufacturer as a lettermark square at the head of the row.
+ *
+ * Design ch. 08 leads each row with the maker rather than burying it in a subtitle: a fleet is read
+ * by running down one column, and a subtitle forces the eye to read every second line to do it. The
+ * square is an abbreviation of a fact already on screen, so screen readers still hear the full
+ * name — a visual shorthand must not remove information from anyone.
+ *
+ * Clean manufacturer vectors do not exist yet (the upstream SVGs embed rasters), so the handoff's
+ * lettermark placeholder **is** the design here, not a stand-in for it.
+ *
+ * @param maker the manufacturer's name, `null` when the catalogue has none.
+ */
+@Composable
+private fun ManufacturerMark(maker: String?) {
+    val spoken = maker?.takeIf { it.isNotBlank() }
+    Box(
+        modifier =
+            Modifier
+                .size(MARK_SIZE)
+                .background(KrtPalette.SurfaceInput)
+                .semantics { spoken?.let { contentDescription = it } },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = spoken.lettermark(),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/**
+ * The initials a manufacturer is abbreviated to.
+ *
+ * One letter per word for a multi-word maker ("Roberts Space Industries" -> "RSI"), the first two
+ * for a single word ("Drake" -> "DR"), capped at three so the square never has to shrink its type.
+ * An unknown maker gets an em dash rather than an empty square, which would read as a rendering
+ * fault.
+ *
+ * @return the mark's text.
+ */
+private fun String?.lettermark(): String {
+    val words = this?.trim()?.split(Regex("""\s+"""))?.filter { it.isNotBlank() }.orEmpty()
+    return when {
+        words.isEmpty() -> "—"
+        words.size == 1 -> words.first().take(2).uppercase()
+        else -> words.take(MARK_MAX_LETTERS).joinToString("") { it.first().uppercase() }
+    }
+}
+
+/**
+ * Everything the row says about the ship itself.
+ *
+ * @param ship the ship.
+ */
+@Composable
+private fun ShipCardBody(ship: Ship) {
+    Column {
         Text(
             text = ship.headline(),
             style = MaterialTheme.typography.titleMedium,
@@ -402,13 +497,6 @@ private fun ShipCard(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        ship.manufacturerName?.takeIf { it.isNotBlank() }?.let { maker ->
-            Text(
-                text = maker,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
@@ -420,21 +508,29 @@ private fun ShipCard(
                     ),
                 tone = if (ship.fitted) KrtChipTone.Success else KrtChipTone.Muted,
             )
-            KrtChip(
-                text = ship.insurance ?: stringResource(R.string.hangar_no_insurance),
-                tone = KrtChipTone.Info,
-            )
+            KrtChip(text = ship.insuranceLabel(), tone = KrtChipTone.Info)
             ship.locationName?.takeIf { it.isNotBlank() }?.let { place ->
-                Text(
-                    text = place,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Design ch. 08: "Ort with map-pin". A bare place name beside two chips reads
+                    // as a third chip's caption; the glyph says what kind of fact it is.
+                    KrtIcon(
+                        id = DesignR.drawable.ic_krt_map_pin,
+                        contentDescription = null,
+                        tint = KrtPalette.TextMuted,
+                    )
+                    Text(
+                        text = place,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
-        ShipCardActions(online = online, onDelete = onDelete)
     }
 }
 
@@ -559,5 +655,30 @@ fun HangarRoute(
             onConfirm = viewModel::onDeleteConfirmed,
             onDismiss = viewModel::onDeleteDismissed,
         )
+    }
+}
+
+/** Edge of the manufacturer lettermark square (design ch. 08). */
+private val MARK_SIZE = 44.dp
+
+/** Most initials a multi-word manufacturer is abbreviated to. */
+private const val MARK_MAX_LETTERS = 3
+
+/**
+ * The insurance chip's text.
+ *
+ * The API sends a bare string: "LTI" for a lifetime policy, otherwise a month count. A chip reading
+ * "6" says nothing — six of what — so a numeric value gets its unit. Anything else is passed through
+ * unchanged rather than guessed at, and a ship with no policy says so.
+ *
+ * @return the chip caption.
+ */
+@Composable
+private fun Ship.insuranceLabel(): String {
+    val raw = insurance?.trim().orEmpty()
+    return when {
+        raw.isBlank() -> stringResource(R.string.hangar_no_insurance)
+        raw.toIntOrNull() != null -> stringResource(R.string.hangar_insurance_months_value, raw)
+        else -> raw
     }
 }

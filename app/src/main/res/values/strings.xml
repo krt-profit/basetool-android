@@ -18,7 +18,7 @@
     <string name="login_privacy">Datenschutz</string>
     <string name="login_imprint">Impressum</string>
     <string name="login_terms">Nutzungsbedingungen</string>
-    <string name="login_version">v%1$s (%2$d)</string>
+    <string name="login_version">v%1$s (%2$d) · API v%3$s</string>
     <string name="session_stale_title">Sitzung nicht bestätigt</string>
     <string name="session_stale_message">Du bist weiterhin angemeldet — der Server war nur gerade nicht erreichbar. Sobald wieder Netz da ist, geht es ohne Passwort weiter.</string>
     <string name="session_stale_retry">ERNEUT VERSUCHEN</string>
@@ -56,7 +56,12 @@
     <string name="gate_error_title">Verification Offline</string>
     <string name="gate_error_body">Command did not respond. Deine Anmeldung bleibt gültig.</string>
     <string name="gate_signed_in_as">Angemeldet als %1$s</string>
-    <string name="gate_retry_in">Nächster Versuch in %1$d s</string>
+    <string name="gate_retry_in">Automatischer Neuversuch in %1$d s.</string>
+    <string name="gate_still_signed_in">Du bist angemeldet — es fehlt nur die Antwort der Freigabe-Prüfung.</string>
+    <string name="gate_attempting">Prüfe Freigabe…</string>
+    <string name="gate_attempt_note">Versuch läuft — Antwort wird bis 10 s abgewartet. Abmelden bleibt aktiv.</string>
+    <string name="gate_retry_now">Jetzt erneut versuchen</string>
+    <string name="gate_escalation">Weiterhin keine Antwort — Status der Systeme ggf. im Org-Discord.</string>
     <string name="gate_retry">Erneut versuchen</string>
 
     <!-- Terms gate (design spec ch. 04, screen 4). The wording itself comes from the backend. -->
@@ -99,7 +104,6 @@
     <string name="nav_refinery">Raffinerie</string>
     <string name="nav_personal_inventory">Mein Inventar</string>
     <string name="nav_bank">Bank</string>
-    <string name="nav_promotion">Beförderung</string>
     <string name="nav_notifications">Benachrichtigungen</string>
     <string name="nav_settings">Einstellungen</string>
     <string name="org_switcher_title">Aktive Org-Einheit</string>
@@ -113,14 +117,34 @@
     <string name="settings_privacy">Datenschutzerklärung</string>
     <string name="settings_imprint">Impressum</string>
     <string name="settings_terms">Nutzungsbedingungen</string>
-    <string name="settings_version">v%1$s (%2$d)</string>
+    <string name="settings_version">v%1$s (%2$d) · API v%3$s</string>
 
     <!-- Open-source notice; the list itself is generated from the build's dependency graph. -->
+    <!-- Design ch. 15 artboard 1: the meta line under the intro, and the group subtitle. Both
+         count artefacts, so both go through the same plural. -->
+    <plurals name="licenses_artifact_count">
+        <item quantity="one">%1$d Artefakt</item>
+        <item quantity="other">%1$d Artefakte</item>
+    </plurals>
+    <plurals name="licenses_license_count">
+        <item quantity="one">%1$d Lizenz</item>
+        <item quantity="other">%1$d Lizenzen</item>
+    </plurals>
+    <string name="licenses_meta">%1$s · %2$s · v%3$s (Build %4$d) · %5$s</string>
+    <string name="licenses_group_subtitle">%1$s · SPDX: %2$s</string>
+    <string name="licenses_end_of_report">Ende des Berichts · erzeugt beim Build · licensee %1$s</string>
     <string name="licenses_title">Open-Source-Lizenzen</string>
-    <string name="licenses_intro">Diese App enthält die folgende Software von Dritten. Es gelten deren Lizenzbedingungen.</string>
-    <string name="licenses_open_text">Lizenztext öffnen</string>
-    <string name="licenses_unavailable">Die Lizenzübersicht konnte nicht gelesen werden.</string>
-
+    <string name="licenses_intro">Diese App enthält Open-Source-Komponenten. Das Verzeichnis wird bei jedem Build aus dem Abhängigkeitsgraphen der ausgelieferten Variante erzeugt — die Versionen gelten exakt für diesen Build.</string>
+    <string name="licenses_copy_url">URL KOPIEREN</string>
+    <string name="licenses_no_browser_banner">Kein Browser auf diesem Gerät erkannt. Lizenz-Links werden als URL kopiert statt geöffnet.</string>
+    <string name="licenses_url_copied_title">URL kopiert</string>
+    <string name="licenses_url_copied_message">Auf einem Gerät mit Browser öffnen.</string>
+    <string name="licenses_loading">Lizenzbericht wird geladen</string>
+    <string name="licenses_error_title">Bericht nicht lesbar</string>
+    <string name="licenses_error_message">Der Lizenzbericht konnte nicht aus den App-Ressourcen geladen werden. Eine Neuinstallation behebt das in der Regel.</string>
+    <string name="licenses_retry">Erneut versuchen</string>
+    <string name="licenses_open_text">LIZENZTEXT</string>
+    
     <!-- Einsätze, list (design spec ch. 06 §1). "Einsätze", never "Missionen". -->
     <string name="missions_title">Einsätze</string>
     <string name="missions_search_placeholder">Einsatz suchen</string>
@@ -310,6 +334,11 @@
     <string name="mission_tab_with_count">%1$s %2$d</string>
     <string name="dashboard_mission_open">Öffnen</string>
     <string name="dashboard_missions_all">Alle Einsätze</string>
+    <string name="dashboard_quick_actions">SCHNELLAKTIONEN</string>
+    <string name="dashboard_quick_check_in">Check-In</string>
+    <string name="dashboard_quick_book_in">Einbuchen</string>
+    <string name="dashboard_quick_order">Auftrag</string>
+    <string name="dashboard_quick_offer">Angebot</string>
     <string name="dashboard_notifications">Ungelesen</string>
     <string name="dashboard_notifications_all">Alle ansehen</string>
     <string name="dashboard_notifications_empty">Nichts Ungelesenes.</string>
@@ -543,6 +572,7 @@
     <string name="hangar_type_none">Kein Schiffstyp gefunden.</string>
     <string name="hangar_field_insurance">Versicherung</string>
     <string name="hangar_insurance_lti">LTI</string>
+    <string name="hangar_insurance_months_value">%1$s Monate</string>
     <string name="hangar_insurance_months">Monate</string>
     <string name="hangar_insurance_months_placeholder">Monate (0–120)</string>
     <string name="hangar_insurance_months_range">0 bis 120 Monate.</string>
@@ -552,6 +582,7 @@
     <string name="hangar_ship_delete_title">Schiff löschen</string>
     <string name="hangar_ship_delete_body">„%1$s“ wird aus deinem Hangar gelöscht.</string>
     <string name="hangar_add">Schiff anlegen</string>
+    <string name="hangar_edit">Bearbeiten</string>
     <string name="hangar_delete">Löschen</string>
     <plurals name="hangar_type_more">
         <item quantity="one">Ein weiterer. Suche genauer.</item>
@@ -586,6 +617,14 @@
     <string name="inventory_entries_none">Keine Einträge.</string>
     <string name="order_detail_assign_me">Übernehmen</string>
     <string name="order_detail_unassign_me">Abmelden</string>
+    <string name="order_detail_status_scope">#%1$s · Aktuell: %2$s</string>
+    <string name="order_detail_status_role_note">Erlaubte Wechsel richten sich nach deiner Rolle.</string>
+    <string name="order_detail_status_apply">Status übernehmen</string>
+    <string name="order_detail_status_current">AKTUELL</string>
+    <string name="order_detail_status_note_open">Der Auftrag wird wieder für Zusagen geöffnet.</string>
+    <string name="order_detail_status_note_terminal">Endgültig — in der App nicht zurücknehmbar.</string>
+    <string name="order_detail_status_confirm_title">Auftrag abschließen?</string>
+    <string name="order_detail_status_confirm_body">Der Auftrag wechselt auf „%1$s“. Das lässt sich in der App nicht zurücknehmen.</string>
     <string name="order_detail_change_status">Status ändern</string>
     <string name="order_detail_note">Notiz</string>
     <string name="order_detail_note_scope">#%1$s · Nur deine eigene Zuweisung</string>
@@ -619,21 +658,6 @@
     <string name="bank_settings_visibility">Sichtbarkeit</string>
     <string name="bank_settings_visibility_fixed">Für diesen Kontotyp ist die Sichtbarkeit fest vorgegeben.</string>
     <string name="bank_settings_all_members">Alle Mitglieder der Einheit</string>
-    <string name="promotion_evaluations_title">MEINE BEWERTUNGEN</string>
-    <string name="promotion_standings_title">EIGNUNG</string>
-    <string name="promotion_category_unnamed">Ohne Kategorie</string>
-    <string name="promotion_evaluations_empty_title">Noch nichts bewertet</string>
-    <string name="promotion_evaluations_empty_message">Sobald ein Offizier dich bewertet, steht es hier.</string>
-    <string name="promotion_standings_empty_title">Keine Rangstufe offen</string>
-    <string name="promotion_standings_empty_message">Für dich ist derzeit keine Beförderungsstufe hinterlegt.</string>
-    <string name="promotion_error_title">Nicht geladen</string>
-    <string name="promotion_evaluations_error_message">Deine Bewertungen konnten nicht geladen werden.</string>
-    <string name="promotion_standings_error_message">Deine Eignung konnte nicht geladen werden.</string>
-    <string name="promotion_eligible">ERFÜLLT</string>
-    <string name="promotion_not_eligible">NOCH NICHT</string>
-    <string name="promotion_no_rules">Für diese Stufe sind keine Anforderungen hinterlegt.</string>
-    <string name="promotion_rank_step">Rang %1$d → %2$d</string>
-    <string name="promotion_check_progress">%1$d / %2$d · mind. %3$s</string>
     <string name="notification_channel_operations">Einsätze &amp; System</string>
     <string name="notification_channel_general">Allgemein</string>
     <string name="notification_public_title">Neue Benachrichtigung</string>

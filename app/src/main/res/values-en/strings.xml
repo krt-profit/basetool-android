@@ -11,7 +11,7 @@
     <string name="login_privacy">Privacy</string>
     <string name="login_imprint">Imprint</string>
     <string name="login_terms">Terms of use</string>
-    <string name="login_version">v%1$s (%2$d)</string>
+    <string name="login_version">v%1$s (%2$d) · API v%3$s</string>
     <string name="session_stale_title">Session not confirmed</string>
     <string name="session_stale_message">You are still signed in — the server just could not be reached. It continues without a password as soon as the connection is back.</string>
     <string name="session_stale_retry">TRY AGAIN</string>
@@ -44,7 +44,12 @@
     <string name="gate_error_title">Verification Offline</string>
     <string name="gate_error_body">Command did not respond. Your credentials remain valid.</string>
     <string name="gate_signed_in_as">Signed in as %1$s</string>
-    <string name="gate_retry_in">Next attempt in %1$d s</string>
+    <string name="gate_retry_in">Trying again automatically in %1$d s.</string>
+    <string name="gate_still_signed_in">You are signed in — only the approval check has not answered.</string>
+    <string name="gate_attempting">Checking approval…</string>
+    <string name="gate_attempt_note">Attempt running — the answer is waited out for up to 10 s. Signing out stays available.</string>
+    <string name="gate_retry_now">Try again now</string>
+    <string name="gate_escalation">Still no answer — system status may be posted in the org Discord.</string>
     <string name="gate_retry">Try again</string>
 
     <string name="terms_checking">Checking the terms of use …</string>
@@ -84,7 +89,6 @@
     <string name="nav_refinery">Raffinerie</string>
     <string name="nav_personal_inventory">My inventory</string>
     <string name="nav_bank">Bank</string>
-    <string name="nav_promotion">Beförderung</string>
     <string name="nav_notifications">Notifications</string>
     <string name="nav_settings">Settings</string>
     <string name="org_switcher_title">Active org unit</string>
@@ -97,13 +101,31 @@
     <string name="settings_privacy">Privacy policy</string>
     <string name="settings_imprint">Imprint</string>
     <string name="settings_terms">Terms of use</string>
-    <string name="settings_version">v%1$s (%2$d)</string>
+    <string name="settings_version">v%1$s (%2$d) · API v%3$s</string>
 
+    <plurals name="licenses_artifact_count">
+        <item quantity="one">%1$d artefact</item>
+        <item quantity="other">%1$d artefacts</item>
+    </plurals>
+    <plurals name="licenses_license_count">
+        <item quantity="one">%1$d licence</item>
+        <item quantity="other">%1$d licences</item>
+    </plurals>
+    <string name="licenses_meta">%1$s · %2$s · v%3$s (build %4$d) · %5$s</string>
+    <string name="licenses_group_subtitle">%1$s · SPDX: %2$s</string>
+    <string name="licenses_end_of_report">End of report · generated at build · licensee %1$s</string>
     <string name="licenses_title">Open-source licences</string>
-    <string name="licenses_intro">This app contains the following third-party software. Their licence terms apply.</string>
-    <string name="licenses_open_text">Open the licence text</string>
-    <string name="licenses_unavailable">The licence list could not be read.</string>
-
+    <string name="licenses_intro">This app contains open-source components. The register is generated at every build from the dependency graph of the shipped variant — the versions apply to exactly this build.</string>
+    <string name="licenses_copy_url">COPY URL</string>
+    <string name="licenses_no_browser_banner">No browser detected on this device. Licence links are copied as a URL instead of opened.</string>
+    <string name="licenses_url_copied_title">URL copied</string>
+    <string name="licenses_url_copied_message">Open it on a device with a browser.</string>
+    <string name="licenses_loading">Loading the licence report</string>
+    <string name="licenses_error_title">Report not readable</string>
+    <string name="licenses_error_message">The licence report could not be loaded from the app resources. Reinstalling usually fixes it.</string>
+    <string name="licenses_retry">Try again</string>
+    <string name="licenses_open_text">LICENCE TEXT</string>
+    
     <!-- Einsätze, list (design spec ch. 06 §1). The domain term stays German in English. -->
     <string name="missions_title">Einsätze</string>
     <string name="missions_search_placeholder">Search Einsatz</string>
@@ -293,6 +315,11 @@
     <string name="mission_tab_with_count">%1$s %2$d</string>
     <string name="dashboard_mission_open">Open</string>
     <string name="dashboard_missions_all">All Einsätze</string>
+    <string name="dashboard_quick_actions">QUICK ACTIONS</string>
+    <string name="dashboard_quick_check_in">Check-in</string>
+    <string name="dashboard_quick_book_in">Book in</string>
+    <string name="dashboard_quick_order">Order</string>
+    <string name="dashboard_quick_offer">Offer</string>
     <string name="dashboard_notifications">Unread</string>
     <string name="dashboard_notifications_all">View all</string>
     <string name="dashboard_notifications_empty">Nothing unread.</string>
@@ -526,6 +553,7 @@
     <string name="hangar_type_none">No ship type found.</string>
     <string name="hangar_field_insurance">Insurance</string>
     <string name="hangar_insurance_lti">LTI</string>
+    <string name="hangar_insurance_months_value">%1$s months</string>
     <string name="hangar_insurance_months">Months</string>
     <string name="hangar_insurance_months_placeholder">Months (0–120)</string>
     <string name="hangar_insurance_months_range">0 to 120 months.</string>
@@ -535,6 +563,7 @@
     <string name="hangar_ship_delete_title">Delete ship</string>
     <string name="hangar_ship_delete_body">“%1$s” will be deleted from your hangar.</string>
     <string name="hangar_add">Add ship</string>
+    <string name="hangar_edit">Edit</string>
     <string name="hangar_delete">Delete</string>
     <plurals name="hangar_type_more">
         <item quantity="one">One more. Search more precisely.</item>
@@ -569,6 +598,14 @@
     <string name="inventory_entries_none">No entries.</string>
     <string name="order_detail_assign_me">Take it on</string>
     <string name="order_detail_unassign_me">Step off</string>
+    <string name="order_detail_status_scope">#%1$s · Currently: %2$s</string>
+    <string name="order_detail_status_role_note">Which changes are allowed depends on your role.</string>
+    <string name="order_detail_status_apply">Apply status</string>
+    <string name="order_detail_status_current">CURRENT</string>
+    <string name="order_detail_status_note_open">The order is opened for pledges again.</string>
+    <string name="order_detail_status_note_terminal">Final — cannot be undone in the app.</string>
+    <string name="order_detail_status_confirm_title">Close the order?</string>
+    <string name="order_detail_status_confirm_body">The order moves to “%1$s”. This cannot be undone in the app.</string>
     <string name="order_detail_change_status">Change status</string>
     <string name="order_detail_note">Note</string>
     <string name="order_detail_note_scope">#%1$s · Your own assignment only</string>
@@ -602,21 +639,6 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
-    <string name="promotion_evaluations_title">MY ASSESSMENTS</string>
-    <string name="promotion_standings_title">ELIGIBILITY</string>
-    <string name="promotion_category_unnamed">Uncategorised</string>
-    <string name="promotion_evaluations_empty_title">Nothing assessed yet</string>
-    <string name="promotion_evaluations_empty_message">Once an officer assesses you, it appears here.</string>
-    <string name="promotion_standings_empty_title">No rank step open</string>
-    <string name="promotion_standings_empty_message">No promotion step is currently on file for you.</string>
-    <string name="promotion_error_title">Not loaded</string>
-    <string name="promotion_evaluations_error_message">Your assessments could not be loaded.</string>
-    <string name="promotion_standings_error_message">Your eligibility could not be loaded.</string>
-    <string name="promotion_eligible">MET</string>
-    <string name="promotion_not_eligible">NOT YET</string>
-    <string name="promotion_no_rules">No requirements are configured for this step.</string>
-    <string name="promotion_rank_step">Rank %1$d → %2$d</string>
-    <string name="promotion_check_progress">%1$d / %2$d · min. %3$s</string>
     <string name="notification_channel_operations">Operations &amp; system</string>
     <string name="notification_channel_general">General</string>
     <string name="notification_public_title">New notification</string>
