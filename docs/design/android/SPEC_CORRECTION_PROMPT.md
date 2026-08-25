@@ -1,15 +1,19 @@
-# Prompt: fold the repo's corrections back into the design spec
+# Prompt: fold the repo's corrections back into the design spec — fulfilled
 
-The 2026-08-25 export was a clean upstream regeneration, and it silently dropped three corrections
-the repository had made to the previous bundle. They were restored on import (see the handoff
-[`README.md`](README.md) → *Reconciled on import*), but restoring them by hand is not a fix: the
-next export will drop them again, and the drift is invisible to the build.
+**Status: closed on 2026-08-25.** The corrected bundle imported that day carries every item this
+prompt asked for, in the source rather than as a repo-side patch:
 
-This prompt asks the design side to carry the corrections **in the source**, so the next export
-already has them. It also asks for a decision on four places where the spec draws a figure the
-backend does not have.
+| asked for | delivered |
+| :-- | :-- |
+| `minSdk 30`, `--color-gray-2-text: #8A8A8A`, the guest-mode annotation, `basetool-logo.svg` | a *"Corrections carried in this bundle"* section in the handoff README, and the values themselves |
+| ch. 04 frames redrawn without the guest entry and the terms footer link | done — the annotation no longer has to excuse stale frames |
+| „{n} angemeldet": name the source or drop it | sourced from the list endpoint, with the hide-until-deployed rule |
+| „{n} Verwahrer": decide | removed — an account has no custodians |
+| promotion matrix: decide | reduced to Thema · Bewertung · Ziel |
+| note counter 250 vs the 500 wire cap | corrected to 500, yellow from 470 |
 
-Paste the whole thing into Claude Design. It needs no other context.
+The prompt is kept as the record of what was asked, so the delivered corrections can be read against
+it. Nothing here needs sending again.
 
 ---
 

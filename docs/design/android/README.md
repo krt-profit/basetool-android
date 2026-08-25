@@ -16,30 +16,29 @@ Open `00 Index.dc.html` in a browser (keep the folder structure intact — the p
 `_ds/…` CSS, `assets/…` and `support.js` relatively). `Spec Print Edition.html` is the
 compact paper digest of everything.
 
-## Reconciled on import (2026-08-25)
-
-Two things this export dropped are restored here rather than mirrored, because the repository is
-right about them and the export is not. Both are recorded so the next refresh does not undo them
-again:
-
-- **minSdk is 30, not 29.** ADR-0006 raised the floor and deleted the API-29 app-lock path: on API 29
-  the only auth-bound key is time-bound, which no `CryptoObject` accepts, so on the whole minSdk
-  platform the lock could neither be armed nor opened. That decision is owner-approved and
-  implemented; a spec saying 29 would reopen it silently.
-- **`--color-gray-2-text: #8A8A8A`** is put back into `_ds/…/colors_and_type.css`. Grau 2
-  (`#646464`) reads at ~3.5:1 on the flat-black page and fails WCAG AA as small text; the token is
-  the accessible tint and `KrtPalette.TextMuted` mirrors it. Losing it from the mirror would leave
-  the Android counterpart with no upstream source and invite a future "reconciliation" back to a
-  failing colour.
-
-`assets/basetool-logo.svg` is kept for the same reason: `ic_launcher_foreground.xml` and
-`krt_basetool_logo.xml` both cite it as the artwork they were traced from, and the export replaced
-it with a favicon variant rather than a redrawn mark.
-
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the
 manufacturer lettermarks (see Assets).
+
+## Corrections carried in this bundle
+Regenerations of this bundle have repeatedly dropped the items below. They are factual
+corrections, not preferences — preserve them verbatim in every re-export.
+1. **minSdk 30, never 29** (ADR-0006, owner-approved, implemented): on API 29 the only
+   auth-bound Keystore key is time-bound — no CryptoObject accepts it and Cipher.init throws
+   until an authentication already exists, so the app lock can neither be armed nor opened.
+   The API-29 path was deleted; a spec saying 29 invites reinstating a path that cannot work.
+2. **`--color-gray-2-text: #8A8A8A` stays in `_ds/…/colors_and_type.css`** (directly after
+   `--color-gray-2`): #646464 fails WCAG AA as small text on black (~3.5:1). Android mirrors
+   the token as `KrtPalette.TextMuted` — without it the mirror has no source, and the next
+   "reconciliation" moves the app back to a colour below the contrast floor.
+3. **Ch. 04 carries the guest-mode cancellation note** (owner decision 18.08.2026; binding:
+   Q8 in ANDROID_APP_PLAN.md, REQ-APP-AUTH-007/008): „Als Gast fortfahren" and the
+   „Nutzungsbedingungen" footer link are cancelled and were removed from the frames
+   (25.08.2026); the annotation in ch. 04 records the decision and its date.
+4. **`assets/basetool-logo.svg` ships in the bundle**: `ic_launcher_foreground.xml` and
+   `krt_basetool_logo.xml` name it in their header comments as the artwork they were traced
+   from — the raster and favicon variants do not replace the source geometry.
 
 ## Binding sources & precedence
 1. **DAS KARTELL design system** (`krt-profit/design-system`, mirrored in `_ds/…` here) —
@@ -56,7 +55,7 @@ manufacturer lettermarks (see Assets).
 | 01 Foundations.dc.html | M3 colorScheme/typography/shapes mapping, spacing, icon inventory |
 | 02 Components.dc.html | Every component in default/pressed/focus/disabled/error states; Fan Kit band §9 |
 | 03 Navigation.dc.html | Bottom bar (5), tablet rail (7+Mehr), Mehr list, back rules, deep links |
-| 04 Auth.dc.html | Login (Keycloak Custom Tab + Discord + guest), approval pending, terms, app-lock |
+| 04 Auth.dc.html | Login (Keycloak Custom Tab + Discord), approval pending, terms, app-lock |
 | 05 Dashboard.dc.html | Übersicht: greeting, announcement, Einsätze ≤7 d, 4 quick actions, unread |
 | 06 Missionen.dc.html | Einsätze/Operationen list, detail w/ 7 tabs, signup sheet, finance form, payouts |
 | 07 Benachrichtigungen.dc.html | Inbox, swipe actions, 50-cap + load more, badge states |

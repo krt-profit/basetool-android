@@ -1,6 +1,6 @@
 > **Doc type:** Living audit — kept in sync with `main` until every row is closed.
-> **Started:** 2026-08-25 · **Re-run:** 2026-08-25 against the updated bundle (chapters 04–15)
-> **Scope:** every app screen against `docs/design/android/`
+> **Started:** 2026-08-25 · **Re-run:** 2026-08-25 against the corrected bundle (2nd import)
+> **Scope:** every app screen **and every design token** against `docs/design/android/`
 > **Binding source:** the design handoff (`README.md` there): *"High-fidelity. Colors, type, spacing,
 > states and copy are final and binding — recreate pixel-perfectly (1 CSS px = 1 dp)."*
 
@@ -8,6 +8,34 @@
 
 The handoff is binding and the app was built against it, but nobody had compared the two since the
 screens landed. This is that comparison, screen by screen, with the evidence for each finding.
+
+## Token audit — the theme matches the artifact
+
+`docs/design/android/artifacts/Theme.kt` is the token source of truth (CLAUDE.md), and
+`_ds/…/colors_and_type.css` is the upstream mirror it was derived from. Both were compared value by
+value against `core:designsystem`:
+
+| token group | spec | app | verdict |
+| :-- | :-- | :-- | :-- |
+| brand + neutrals (`primary`, `accent-light/dark`, `white`, `bg-black`, `gray-1…4`, `gray-2-text`, `surface-input`) | 11 | 11 | **exact** |
+| semantic (`danger`, `danger-text`, `success`, `success-text`, `warning`, `info`, `info-text`) | 7 | 7 | **exact** |
+| department colours (`raumueberlegenheit`, `forschung`, `sub-radar`, `marinekorps`, `profit`, `search-rescue`) | 6 | 6 | **exact** |
+| type scale (`displayMedium` … `labelSmall`: weight, size, line height, tracking) | 14 | 14 | **exact** |
+| shapes (`extraSmall` … `extraLarge`, all 0 dp) | 5 | 5 | **exact** |
+| spacing + metrics (`xs`…`xxl`, `touchTarget`, `contentMax`, `hairline`, `headingRule`, `bracket`) | 11 | 11 | **exact** |
+| glows (`glowPrimary`, `glowPrimaryLg`, `glowDangerLg`) | 3 | 3 | **exact** |
+| motion (`KRT_MOTION_MS` = 200) | 1 | 1 | **exact** |
+
+Not a single value drifts, including `--color-gray-2-text: #8A8A8A` ↔ `KrtPalette.TextMuted`, which
+is the one the mirror lost in the first export and which the corrected bundle now carries upstream.
+
+Two deliberate differences, both fine:
+
+- **`--color-danger-hover: #D41A25` has no Compose counterpart.** There is no hover on a touch
+  screen; the press state is a ripple over `Danger`. Porting the token would create a value nothing
+  could legitimately read.
+- **`KrtSpacing.denseRow = 56.dp` exists only in the app.** It is the list-row height the artifact
+  does not specify, not a redefinition of anything it does.
 
 ## The systemic finding: the app has no tiles
 
@@ -88,10 +116,14 @@ chapter's `kpi-card`, the balance on the name's line rather than beneath it, and
 the sign is the whole point. It is `KrtKpiCard` now, which is that card, and the local sparkline is
 gone with it.
 
-**Blocked, not fixed:** the chapter's `{n} Verwahrer` chip. `BankAccountDto` carries no holder count,
-so this is a backend contract gap and belongs in the main repo rather than being invented here — the
-project rule is to flag a mismatch, not code around it. The request rows' `approvals` / `canApprove`
-are still to be checked.
+**Closed by decision (2nd import).** The Verwahrer chip is **gone from the spec**. An account has no
+custodians: `bank_posting.holder_id` was dropped in V181 and the holder dimension hangs off the
+*transaction* (`BankHolderPosting`), so „Verwahrer eines Kontos" was never a relation the domain
+had. Owner decision 25.08.2026 — the field is not coming, and the chapter now says so: card = name,
+balance, 30-day delta, sparkline. The app already draws exactly that, so this row closes without a
+code change. The holder breakdown inside the **detail** stays; the detail endpoint supplies it.
+
+The request rows' `approvals` / `canApprove` are still to be checked.
 
 ### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **done**
 
@@ -101,7 +133,7 @@ behind a map pin: only the amount and the note were drawn, so two entries of the
 different hangars read as duplicates of each other. `total` + `unit` per group were already there as
 `amount`/`unit`. Mein Inventar and Blueprints are tiles.
 
-### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **done (2026-08-25)**
+### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **layout open**
 
 Read against the chapter: every field is there — manufacturer, type + name, insurance chip, fitted
 chip, location. What differs is arrangement: the chapter leads the row with the manufacturer as a
@@ -109,10 +141,9 @@ chip, location. What differs is arrangement: the chapter leads the row with the 
 behind a map-pin glyph. Cosmetic and worth doing; not a missing fact. The tablet's full web table **is** implemented
 (2026-08-24 pass).
 
-**Built:** the manufacturer now leads the row as a lettermark square, so the eye runs down one
-column instead of reading every second line, and the location sits behind the map pin. Screen
-readers still hear the full manufacturer name — the square is a visual abbreviation, not a fact
-removed.
+**Correction (2nd import):** an earlier revision of this row claimed the lettermark was built. It is
+not — `HangarScreen.kt:405` still renders `manufacturerName` as a muted subtitle under the ship
+name. See *Three rows were wrongly closed* below.
 
 ### 05 Dashboard · `dashboard/DashboardScreen.kt` — **done, one item blocked**
 
@@ -121,9 +152,15 @@ rows, and it has all three now: name + briefing beside the status; the meeting t
 glyph and the meeting point behind a map pin; the owning unit as a chip, and „Öffnen ›" as the way
 in. `Mission` gained `description` from `MissionListDto`, which was on the wire and unmapped.
 
-**Blocked:** the chapter's „{n} angemeldet". `MissionListDto` carries no participant count — the
-figure exists only on the detail DTO — so the list endpoint cannot supply it. Left out rather than
-faked; a backend item, like the Bank's Verwahrer chip.
+**Unblocked (2nd import).** The chapter now names the source and the decision: „`{n} angemeldet`
+kommt aus der Teilnehmerzahl des LISTEN-Endpunkts — `MissionListDto` erhält das Feld
+(Eigentümer-Entscheidung 25.08.2026). Nicht aus dem Detail-DTO lesen; bis das Feld deployt ist,
+Zeile ausblenden statt Platzhalter."
+
+The backend half is built and open as **basetool#1674** (`registeredCount` on every list row,
+resolved for a whole page in one grouped statement). The app half waits for that to deploy, and the
+chapter dictates its shape: the client field is **nullable** and the line is **hidden** while it is
+absent — a placeholder would claim a number the server never sent.
 
 ### 06 Missionen — artboards 1–5 · `missions/*` — **done**
 
@@ -158,19 +195,91 @@ Artboard 1 is **Beförderung — Meine Bewertungen**. Its matrix has four column
 `assignedLevel` and nothing else. There is no self-assessment and no separate lead assessment to
 draw, so two of the four columns describe something the tool does not have.
 
-That is a design-versus-domain question rather than an implementation gap, and it needs the owner:
-either the artboard is drawn against an intended feature that was never built, or those columns
-should come out of it. Not invented here either way. `goal` is available (`minimumLevel`), and the
-requirement rows already carry it.
+That was a design-versus-domain question rather than an implementation gap, and it went to the
+owner.
+
+**Decided (2nd import): the two columns come out.** „Selbst-/Leitungs-Bewertung wird NICHT gebaut —
+die dreispaltige Matrix (Thema · Bewertung · Ziel ≥ …) ist final" (25.08.2026). The chapter is
+redrawn accordingly.
+
+**New gap, now actionable.** The app does not draw a matrix at all: `PromotionScreen.kt:106` renders
+each evaluation as a two-column `KrtKeyValueRow` (topic → level), with no goal column and no yellow
+when the level is under it. The goal is reachable — `PromotionRequirementCheckResponse.minimumLevel`,
+which the standings section already loads — but it is scoped to a rank step rather than to the
+member, so which step supplies the goal is a decision the implementation has to state rather than
+assume.
 
 Note for ADR-0009: that ADR says the handoff has no chapter for Beförderung — it has no *chapter*,
 but it does have this artboard, and the tablet layout draws it as the right column.
 
-### 04 Auth, 14 System States — **believed done**
+### 04 Auth — **done (2nd import)**
 
-Login, approval-pending, terms and app-lock were built against ch. 04 and verified on a device. Ch. 14
-covers Update erforderlich, 403/404/500, offline and the launcher; the in-fiction error copy is pinned
-by tests.
+Login, approval-pending, terms and app-lock were built against ch. 04 and verified on a device.
+
+The 2nd import closes the last discrepancy, and it closed in the app's favour: the chapter's frames
+still drew „Als Gast fortfahren" and the „Nutzungsbedingungen" footer link, with a note admitting
+they were stale. **The frames are redrawn now** (25.08.2026) — no guest entry, no terms link — which
+is exactly what `LoginScreen.kt` has shipped since the guest mode was dropped, and why the footer
+carries only Datenschutz and Impressum. The app never had to change; the spec caught up.
+
+### 14 System States — **error/offline/launcher done, gate partly**
+
+Update erforderlich, 403/404/500, offline and the launcher were built and the in-fiction error copy
+is pinned by tests.
+
+The **gate-outage** screen (artboard 3) got its backbone in #90: the state is its own rather than a
+borrowed 5xx, „Angemeldet als …", the auto-retry on the 3 → 6 → 12 → 30 s ladder with a visible
+countdown, and a manual attempt resetting it. Re-reading the chapter against what shipped leaves
+four things:
+
+- The chapter puts the countdown **inside** the explanatory sentence — „Du bist angemeldet — es
+  fehlt nur die Antwort der Freigabe-Prüfung. Automatischer Neuversuch in {n} s." The app shows two
+  separate lines and never says why the wait exists.
+- **The in-flight state is not drawn.** While an attempt runs the chapter labels the button „Prüfe
+  Freigabe…" and adds „Versuch läuft — Antwort wird bis 10 s abgewartet. Abmelden bleibt aktiv."
+  The app simply drops the countdown line, which reads as the screen having given up.
+- **„Versuch wartet max. 10 s"** is not enforced; the attempt inherits the HTTP client's timeout.
+  Ten seconds is the point at which waiting stops being informative.
+- **The escalation line after the 3rd failure** — „Weiterhin keine Antwort — Status der Systeme ggf.
+  im Org-Discord." plus the button becoming „Jetzt erneut versuchen" — is missing. The chapter is
+  emphatic that nothing else changes: no red, no error face, the state stays *waiting*, not *blame*.
+
+## Three rows were wrongly closed — and how
+
+Between the two imports, three rows in this document were changed from open to **done** on the
+strength of a session summary rather than a reading of `main`. Checking them against the code during
+this pass showed none of the three had landed:
+
+| row | claimed | actually on `main` |
+| :-- | :-- | :-- |
+| 15 Open-Source-Lizenzen | summary, sticky header, clipboard fallback, split states | one composable, none of it |
+| 10 Aufträge — status sheet | choose-then-apply with terminal confirmation | `OrdersScreen.kt:1051` applies on tap |
+| 08 Hangar | manufacturer lettermark | `HangarScreen.kt:405` muted subtitle |
+
+All three are open again above. The mechanism is worth naming, because it defeats the purpose of the
+document: an audit whose rows are written from what was *meant* to ship rather than from what did is
+worse than no audit — it sends the next reader past the gap instead of at it. Every verdict in this
+re-run was taken from a file, and the rows above cite the line.
+
+## Re-run against the corrected bundle (2nd import, 2026-08-25)
+
+A second export landed carrying the five corrections that had been raised against the first one. No
+artboard was added or removed; five chapters changed, and each change is a decision landing in the
+spec:
+
+| chapter | change | effect here |
+| :-- | :-- | :-- |
+| 04 Auth | guest entry + „Nutzungsbedingungen" footer link removed from the frames | spec catches up to the app — row closes |
+| 05 Dashboard | „{n} angemeldet" sourced from the **list** endpoint; hide the line until the field deploys | unblocks the row; backend open as basetool#1674 |
+| 10 Aufträge | note counter corrected 250 → **500** (the wire cap), yellow from 470 | app already caps at 500; the tint is missing |
+| 12 Bank | „{n} Verwahrer" chip and detail-header count **removed** | row closes with no code change |
+| 13 Einstellungen | promotion matrix reduced to Thema · Bewertung · Ziel | unblocks the row; app draws no matrix yet |
+
+The three reconciliations the first export had dropped — `minSdk 30`, `--color-gray-2-text`, the
+guest-mode annotation — are **carried upstream now**, in a "Corrections carried in this bundle"
+section of the handoff README. That is the outcome
+[`SPEC_CORRECTION_PROMPT.md`](design/android/SPEC_CORRECTION_PROMPT.md) was written for: the repo no
+longer has to re-apply them on every refresh. `assets/basetool-logo.svg` is in the bundle as asked.
 
 ## Re-run against the 2026-08-25 bundle
 
@@ -223,7 +332,7 @@ five-point check at the end of that prompt is what an importer should run.
 
 ### New surfaces — parity
 
-#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **done (2026-08-25)**
+#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **gap**
 
 The screen has the intro, a section title per licence and the rows. The chapter adds five things it
 does not have:
@@ -237,15 +346,16 @@ does not have:
 - **loading** (spinner only after 300 ms) and **error** („Bericht nicht lesbar" + „Erneut versuchen")
   as distinct states; the screen has one combined unavailable state.
 
-**Built:** all five. The summary counts artefacts and licences from the report itself and names the
-build; each group carries its artefact count and SPDX id; the group header sticks; the report ends
-with the generator and its version (`BuildConfig.LICENSEE_VERSION`, so it cannot drift from the
-plugin that produced the file). Without a browser the licence URL is copied and a toast says so —
-the row was previously a dead tap. Loading and „Bericht nicht lesbar" are separate states now,
-because a report that is *missing* and one that is *slow* are different problems and only one of
-them has a retry.
+**Correction (2nd import):** an earlier revision claimed all five were built. `LicensesScreen.kt`
+is still a single composable with none of them. See *Three rows were wrongly closed* below.
 
-#### 10 Aufträge artboards 5–9 · the note and status sheets — **done (2026-08-25)**
+The chapter also pins details the row above does not: the group order is alphabetical by licence
+name and the artefacts alphabetical within it (deterministic, not report order); the coordinate is
+**one** string `group:artifact:version` that breaks `break-all` without a hanging indent; artefact
+rows are **not interactive** (min 40 dp, 13 sp / 1.5); a one-artefact group is not a special case;
+and a dual-licensed artefact appears under **every** licence it carries.
+
+#### 10 Aufträge artboards 5–9 · the note and status sheets — **note done, status open**
 
 The note sheet has a title, a hint, a field and two buttons. The chapter adds the order number and
 „Nur deine eigene Zuweisung" as a subtitle, a **250-character counter**, „Leeres Feld speichern
@@ -264,11 +374,23 @@ failures, and a test pins both branches.
 `AssigneeNoteRequest.note` is capped at **500** on the wire. The client uses 500 — enforcing 250
 would refuse text the server accepts — but the two should agree.
 
-**Built (status sheet):** the order number and current status as a subtitle, a colour swatch and a
-consequence line per option, „Aktuell" on the one the order is in (which is not selectable), the
-role footer, and — the point of the artboard — **choosing is no longer applying**. „Status
-übernehmen" commits, and „Abgeschlossen" / „Abgelehnt" ask first: the app offers no way back out of
-either, so the member is told that before the change rather than after it.
+**Still open (status sheet).** `OrdersScreen.kt:1051` still applies the status on tap — no
+„Aktuell" row, no consequence line, no confirmation. Reading artboards 8–9 against the contract
+turned up something bigger than a layout gap:
+
+> „Auswahl = erlaubte Übergänge aus der API (`transitions[]` mit `reason` bei disabled), nie
+> clientseitig geraten."
+
+**`JobOrderDto` has no `transitions[]`.** The app cannot know which moves the caller's role allows,
+nor why a blocked one is blocked, so today it offers all four and lets the server refuse. Guessing
+the rules client-side is exactly what the chapter forbids and what the project rule forbids
+(flag the mismatch, do not code around it) — so the sheet can be built to the chapter *except* for
+the gating, which needs the field. **Backend item, like the mission count was.**
+
+What is buildable without it: the current status shown inert, the colour squares, the consequence
+line, „Status übernehmen" waiting on the server with the rows locked, the terminal confirmation
+(orange CTA for „Abgeschlossen", **red #A3000A** for „Abgelehnt" — the chapter distinguishes them),
+and the 409 path resetting the selection to the new server state.
 
 #### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **done (2026-08-25)**
 

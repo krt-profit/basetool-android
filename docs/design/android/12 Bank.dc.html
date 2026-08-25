@@ -47,7 +47,7 @@
                 <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt Bereich Profit</div><div class="kpi-value" style="font-size:24px">1.245.300 <span style="font-size:12px;color:#646464;font-weight:300">aUEC</span></div></div>
                 <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="3">
                   <button class="kpi-card" style="all:unset;box-sizing:border-box;cursor:pointer;background:#141414;border:1px solid #282828;padding:12px 14px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s" style-hover="border-color:#E77E23">
-                    <div style="display:flex;align-items:center;gap:8px;width:100%"><span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">{{ a.name }}</span><span class="chip chip--muted" style="font-size:8.5px">{{ a.holders }} Verwahrer</span></div>
+                    <div style="display:flex;align-items:center;gap:8px;width:100%"><span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">{{ a.name }}</span></div>
                     <div style="display:flex;align-items:flex-end;gap:12px;width:100%">
                       <div style="flex:1"><div style="font:900 20px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ a.balance }}</div><div style="font:700 11px/1.4 Lato,sans-serif;color:{{ a.deltaColor }};font-variant-numeric:tabular-nums">{{ a.delta }} · 30 T.</div></div>
                       <svg width="110" height="30" viewBox="0 0 110 30" style="flex:none"><polyline points="{{ a.spark }}" fill="none" stroke="#E77E23" stroke-width="1.5"></polyline></svg>
@@ -94,6 +94,7 @@
           <li>Sparkline = gezeichnete Polyline (Server liefert Punkte) — kein Chart-Framework (REQ-BANK-016)</li>
           <li>Anträge-Tab zeigt Freigabe-Aktionen nur mit Approver-Grant; Genehmigen zählt die Leiter hoch (1/2 → 2/2)</li>
           <li>Beträge immer tabular, Einzahlung grün +, Auszahlung rot − (Text-Tints)</li>
+          <li><b style="color:#FFD23F">Backend offen:</b> „{n} Verwahrer"-Chip auf der Kontokarte (ebenso „3 Verwahrer" im Detail-Kopf): BankAccountDto führt keine Verwahrer-Zahl. Eigentümer-Entscheidung 25.08.2026: das Feld kommt NICHT — Chip und Kopf-Zeilen endgültig entfernt; die Karte = Name, Kontostand, 30-Tage-Delta, Sparkline. Die Verwahrungs-Aufteilung im Detail bleibt (Detail-Endpunkt liefert sie)</li>
         </ul>
       </div>
     </div>
@@ -106,7 +107,7 @@
             <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
             <div style="flex:1;min-width:0">
               <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</div>
-              <div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Bereich Profit · 3 Verwahrer</div>
+              <div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Bereich Profit</div>
             </div>
             <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Kontoauszug als PDF" title="Kontoauszug (PDF)"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-pdf"></use></svg></button>
           </div>
@@ -216,7 +217,7 @@
             <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="3">
               <div style="background:{{ a.tabBg }};border:1px solid #282828;padding:10px 14px;box-shadow:{{ a.tabBar }}">
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">{{ a.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ a.balance }}</span></div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px"><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">{{ a.holders }} Verwahrer</span><span style="font:700 10.5px/1 Lato,sans-serif;color:{{ a.deltaColor }};font-variant-numeric:tabular-nums">{{ a.delta }}</span></div>
+                <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:3px"><span style="font:700 10.5px/1 Lato,sans-serif;color:{{ a.deltaColor }};font-variant-numeric:tabular-nums">{{ a.delta }}</span></div>
               </div>
             </sc-for>
             <span style="flex:1"></span>
@@ -224,7 +225,7 @@
           </div>
           <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0">
             <div style="display:flex;align-items:flex-start;gap:16px">
-              <div style="flex:1"><div style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">Bereich Profit · 3 Verwahrer · View-Grant: Mitglied</div></div>
+              <div style="flex:1"><div style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">Bereich Profit · View-Grant: Mitglied</div></div>
               <button class="btn-ghost btn" style="background:transparent;min-height:44px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-pdf"></use></svg>Kontoauszug (PDF)</button>
             </div>
             <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;max-width:980px">
@@ -279,9 +280,9 @@ class Component extends DCLogic {
   state = { tab: 0, reqSeg: 0, approved1: false };
   renderVals() {
     const accounts = [
-      { name: 'CARTEL', balance: '961.400', delta: '+38.200', deltaColor: '#2EBC3D', holders: 5, spark: '0,24 18,22 36,23 54,17 72,19 90,12 108,14', tabBg: '#141414', tabBar: 'inset 0 0 0 transparent' },
-      { name: 'Einsatzkasse', balance: '84.200', delta: '+12.400', deltaColor: '#2EBC3D', holders: 3, spark: '0,26 18,23 36,24 54,16 72,18 90,10 108,13', tabBg: '#1C1C1C', tabBar: 'inset 3px 0 0 #E77E23' },
-      { name: 'Rücklage', balance: '199.700', delta: '−4.100', deltaColor: '#F2564B', holders: 2, spark: '0,12 18,13 36,15 54,14 72,18 90,17 108,20', tabBg: '#141414', tabBar: 'inset 0 0 0 transparent' },
+      { name: 'CARTEL', balance: '961.400', delta: '+38.200', deltaColor: '#2EBC3D', spark: '0,24 18,22 36,23 54,17 72,19 90,12 108,14', tabBg: '#141414', tabBar: 'inset 0 0 0 transparent' },
+      { name: 'Einsatzkasse', balance: '84.200', delta: '+12.400', deltaColor: '#2EBC3D', spark: '0,26 18,23 36,24 54,16 72,18 90,10 108,13', tabBg: '#1C1C1C', tabBar: 'inset 3px 0 0 #E77E23' },
+      { name: 'Rücklage', balance: '199.700', delta: '−4.100', deltaColor: '#F2564B', spark: '0,12 18,13 36,15 54,14 72,18 90,17 108,20', tabBg: '#141414', tabBar: 'inset 0 0 0 transparent' },
     ];
     const a1 = this.state.approved1;
     const requests = [

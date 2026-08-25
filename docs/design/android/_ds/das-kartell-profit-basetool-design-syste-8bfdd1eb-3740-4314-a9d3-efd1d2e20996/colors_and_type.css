@@ -121,14 +121,12 @@
     /* light → dark. Grau 4 (#141414) is the standard dark surface.        */
     --color-gray-1: #D2D2D2;         /* GRAUABSTUFUNG 1 — primary body text on dark */
     --color-gray-2: #646464;         /* GRAUABSTUFUNG 2 — muted text, placeholders, disabled */
-
     /* Accessible muted-text tint — Grau 2 (#646464) reads at only ~3.5:1 on the
        flat-black page and FAILS WCAG AA as small text. Use whenever muted grey IS
        the text itself (secondary labels, placeholders, hints, field caps, dimmed
        units); keep --color-gray-2 for hairline borders, scrollbar thumbs, disabled
        fills and decorative glyphs. ≈ 6.1:1 on black, ≥ 4.9:1 on #141414 / #1C1C1C.
-       (Android mirror: KrtPalette.TextMuted.)
-       RESTORED ON IMPORT: the 2026-08-25 export dropped this token. See README. */
+       (Android mirror: KrtPalette.TextMuted.) */
     --color-gray-2-text: #8A8A8A;
     --color-gray-3: #282828;         /* GRAUABSTUFUNG 3 — hairline borders, hover-row fill */
     --color-gray-4: #141414;         /* GRAUABSTUFUNG 4 — darkest; standard surface */
