@@ -9,6 +9,8 @@
   Bildschirm stumm, ohne dass etwas darauf hingewiesen hätte. Jetzt hört sie nach zwei Versuchen auf
   und die betroffenen Bildschirme laden wieder selbst nach.
 
+## [0.1.1] — 2026-08-25
+
 ### Changed
 
 - **Screenshots lassen sich jetzt in den Einstellungen freigeben.** Unter „App" steht neben der
