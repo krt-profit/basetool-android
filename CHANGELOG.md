@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-08-25
+
 ### Fixed
 
 - **Live-Sync gibt nicht mehr für die ganze App auf.** Lehnt der Server die Verbindung als
