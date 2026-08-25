@@ -300,12 +300,28 @@ app's own "Screenshots erlauben" toggle on — which incidentally exercises that
 | Server-status dot in the version footers (ch. 04, 13) | the app has no health signal, and a dot that can only be green is decoration that looks like a diagnosis. Needs either a health endpoint or an ADR |
 | Long top-bar titles truncate ("OPEN-SOURCE-LIZEN…") | the chapter's own phone frame has the same trailing elements; cosmetic |
 
-### One device could not be driven to the end
+### One device could not be driven to the end — and why, exactly
 
-The API-30 system image ships **Chrome 83**, which cannot complete the Keycloak login — the sign-in
-stops at „Anmeldung läuft …" and never returns. That is the image, not the app: the same build signs
-in on API 37 against the same realm. Everything ahead of the login was verified on minSdk; the
-screens behind it were verified on the other two devices.
+The sign-in on API 30 stops at „Anmeldung läuft …" and never returns. Chased to the bottom, because
+"the old emulator is weird" is the kind of note that costs the next person an afternoon:
+
+1. **Chrome's first run swallowed the Custom Tab.** A `VIEW` intent on a fresh emulator lands in
+   `FirstRunActivity`, the welcome screen, and the tab never comes back — no error, anywhere. Fixed
+   for the test device with `--disable-fre` (see `ANDROID_APP_DEV_CI.md`, now written down), which
+   skips the onboarding rather than accepting anything on a tester's behalf.
+2. **Behind it: Keycloak's `cookie_not_found`.** With the tab opening, the login form appears and
+   the POST comes back "Restart login cookie not found". The API-30 image ships **Chrome 83**;
+   Keycloak marks its auth-session cookies `Secure; SameSite=None`, and only Chrome 89+ treats
+   `http://127.0.0.1` as a secure context and sends them. This was already documented as the
+   interactive-E2E floor, and the measurement matches it exactly.
+
+Neither is an app defect, and neither reaches production, where Keycloak is served over TLS. Chrome
+cannot be raised on this AVD — the API-30 image installed here is **x86 32-bit**, so the newer
+Chrome sitting on the API-37 image (x86_64) cannot be installed onto it, and no other API-30 image
+is present. Raising it means installing an x86_64 API-30 image through the SDK manager.
+
+Everything ahead of the login was verified on minSdk — install, launch, the login screen, and the
+StrongBox→TEE fallback. The screens behind it were verified on the other two devices.
 
 ## Three rows were wrongly closed — and how
 

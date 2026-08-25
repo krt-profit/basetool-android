@@ -54,6 +54,23 @@ mirroring this repo's conventions.
   the interactive flow on a current image, and read the floor's coverage from the instrumented
   tests.
 
+  **A fresh emulator has a second, earlier blocker: Chrome's first run.** Before Chrome has been
+  opened once, a `VIEW` intent lands in `org.chromium.chrome.browser.firstrun.FirstRunActivity`
+  — the welcome screen — and a Custom Tab launched into it never comes back, so the app sits on
+  „Anmeldung läuft …" with its login button disabled and no error anywhere. It reads exactly like
+  a broken login. Skip the onboarding instead of clicking through it, so nothing is accepted on
+  the tester's behalf:
+
+  ```bash
+  adb shell "echo 'chrome --disable-fre --no-first-run' > /data/local/tmp/chrome-command-line"
+  adb shell am set-debug-app --persistent com.android.chrome
+  ```
+
+  Confirm it took: a `VIEW` intent must land in `ChromeTabbedActivity`, not `FirstRunActivity`.
+  The two blockers stack — clearing the first run on the API 30 image gets the Custom Tab to open
+  and then reveals the cookie error below, which is the version limit and not something setup can
+  fix.
+
   **Serving the test stack's Keycloak over TLS does not fix this** — measured, not assumed. It
   works on the server side (Keycloak starts with both connectors, presents the shared test
   certificate, and the chain verifies), but the login runs in **Chrome**, and Chrome does not use
