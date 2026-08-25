@@ -125,6 +125,29 @@ It lived under "Mehr" until this screen existed, which was a stopgap and is reco
 - [x] The subtitle states the effect ("beim Start und nach 5 Minuten im Hintergrund"), not the
   boolean.
 
+### REQ-APP-SET-009 — Screenshot protection is switched off here, and phrased as a permission
+
+`REQ-APP-AUTH-010` owns what `FLAG_SECURE` does; this requirement owns the switch. The row sits
+under "App", directly below the app lock, because both answer the same question — who may see this
+device's screen.
+
+**It is phrased as "Screenshots erlauben", not as "Schutz aufheben".** A tester who wants to attach
+a picture to a bug report is looking for the thing they want to do, and a switch they must turn
+*off* to get a screenshot reads backwards at exactly the moment they are already annoyed. The
+subtitle carries the cost instead of a warning icon nobody reads: allowing capture also means the
+recents thumbnail shows their data.
+
+The default is off — capture blocked — and nothing about this row changes that for anyone who never
+opens it.
+
+**Acceptance**
+
+- [x] The row is on the settings screen, under "App", below the app lock.
+- [x] The toggle is on when capture is allowed, so its state matches its label rather than the
+  underlying flag.
+- [x] The subtitle names the consequence of the current state, not the boolean.
+- [x] The choice survives sign-out: it lives in its own store, not the one a logout wipes.
+
 ### REQ-APP-SET-005 — The legal texts are the web app's, opened in a browser
 
 Datenschutzerklärung, Impressum and Nutzungsbedingungen open the web frontend's `/privacy`,

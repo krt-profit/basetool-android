@@ -74,6 +74,9 @@
     <string name="lock_error_generic">Entsperren fehlgeschlagen. Bitte erneut versuchen.</string>
     <string name="lock_error_lockout">Zu viele Fehlversuche. Bitte später erneut versuchen oder die Gerätesperre verwenden.</string>
     <string name="lock_error_invalidated">Ein neuer Fingerabdruck wurde eingerichtet. Die App-Sperre lässt sich damit nicht mehr öffnen — bitte abmelden und neu anmelden.</string>
+    <string name="screencapture_setting">Screenshots erlauben</string>
+    <string name="screencapture_setting_on">Erlaubt. Auch die Vorschau in der App-Übersicht zeigt dann deine Daten.</string>
+    <string name="screencapture_setting_off">Blockiert. Screenshots und Bildschirmaufnahmen sind aus.</string>
     <string name="lock_setting">App-Sperre (Biometrie)</string>
     <string name="lock_setting_on">Aktiv — beim Start und nach 5 Minuten im Hintergrund entsperren</string>
     <string name="lock_setting_off">Aus — Daten nur durch die Gerätesperre geschützt</string>

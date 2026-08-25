@@ -291,13 +291,15 @@ public clients MUST be sender-constrained or use refresh token rotation"):
   `DEVICE_CREDENTIAL` combos via `setUserAuthenticationParameters`, which minSdk 30
   guarantees — the API-29 time-bound fallback is gone with the floor (ADR-0006).
   `setInvalidatedByBiometricEnrollment` die on new enrollment → re-login path required.
-- **`FLAG_SECURE` app-wide** (fixed by the design spec, ch. 04 — not just authenticated
-  screens; blocks screenshots/cast; ~70 % effective ≤ API 30 per Google's own numbers — treat
-  as hardening, not guarantee); `setHideOverlayWindows` where available; API 35+
-  `addScreenRecordingCallback` (`DETECT_SCREEN_RECORDING` normal permission) to warn during
-  capture. The app-lock renders as the spec's custom KRT lock screen driven by
-  BiometricPrompt. A user-facing toggle may relax FLAG_SECURE for screenshots if the org
-  wants it — default strict (secondary-decision register in the plan).
+- **`FLAG_SECURE` app-wide, on by default, member-switchable** (fixed by the design spec,
+  ch. 04 — not just authenticated screens; blocks screenshots/cast; ~70 % effective ≤ API 30 per
+  Google's own numbers — treat as hardening, not guarantee); `setHideOverlayWindows` where
+  available; API 35+ `addScreenRecordingCallback` (`DETECT_SCREEN_RECORDING` normal permission)
+  to warn during capture. The app-lock renders as the spec's custom KRT lock screen driven by
+  BiometricPrompt. **The toggle this register left open is now decided and built** (ADR-0010,
+  #81): default strict, one row in Einstellungen, and the flag is set before `setContent` and
+  cleared only after the stored preference has been read — unset, slow and failed reads all mean
+  blocked.
 - Cached member data: app-private storage under platform FBE (mandatory on devices launched with
   Android 10+, so every supported device) — the documented baseline; backup-excluded. SQLCipher (`sqlcipher-android` 4.17.0,
   active) only if the org classifies the cache as sensitive — it buys forensic-extraction

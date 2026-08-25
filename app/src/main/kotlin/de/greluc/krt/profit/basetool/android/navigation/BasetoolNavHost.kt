@@ -588,6 +588,8 @@ private fun PushedDestination(
                 appLockEnabled = settings.appLockEnabled,
                 appLockAvailable = settings.appLockAvailable,
                 onAppLockChange = settings.onAppLockChange,
+                screenCaptureAllowed = settings.screenCaptureAllowed,
+                onScreenCaptureChange = settings.onScreenCaptureChange,
                 onOpenPrivacy = settings.onOpenPrivacy,
                 onOpenImprint = settings.onOpenImprint,
                 onOpenTerms = settings.onOpenTerms,
@@ -622,6 +624,8 @@ private fun PushedDestination(
  * @property language the language currently on screen.
  * @property onLanguageChange pins a language; the platform then recreates the activity.
  * @property appLockEnabled whether a lock is armed.
+ * @property screenCaptureAllowed whether screenshots and screen recording are permitted.
+ * @property onScreenCaptureChange permits or forbids them.
  * @property appLockAvailable whether the device can prompt at all.
  * @property onAppLockChange arms or disarms the lock; arming raises the biometric prompt.
  * @property onOpenPrivacy opens the privacy policy in a browser.
@@ -636,6 +640,8 @@ data class SettingsBindings(
     val language: AppLanguage,
     val onLanguageChange: (AppLanguage) -> Unit,
     val appLockEnabled: Boolean,
+    val screenCaptureAllowed: Boolean,
+    val onScreenCaptureChange: (Boolean) -> Unit,
     val appLockAvailable: Boolean,
     val onAppLockChange: (Boolean) -> Unit,
     val onOpenPrivacy: () -> Unit,

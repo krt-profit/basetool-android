@@ -60,6 +60,9 @@
     <string name="lock_error_generic">Unlock failed. Please try again.</string>
     <string name="lock_error_lockout">Too many failed attempts. Try again later, or use your device credential.</string>
     <string name="lock_error_invalidated">A new fingerprint was enrolled. The app lock can no longer be opened — please sign out and sign in again.</string>
+    <string name="screencapture_setting">Allow screenshots</string>
+    <string name="screencapture_setting_on">Allowed. The recents preview will show your data as well.</string>
+    <string name="screencapture_setting_off">Blocked. Screenshots and screen recording are off.</string>
     <string name="lock_setting">App lock (biometrics)</string>
     <string name="lock_setting_on">On — unlock on start and after 5 minutes in the background</string>
     <string name="lock_setting_off">Off — data is protected by the device lock only</string>
