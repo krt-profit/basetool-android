@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
@@ -59,6 +60,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSpin
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -243,7 +245,13 @@ private fun LicensesList(
     // state, so the default stays what the chapter draws: everything visible.
     val collapsed = remember { mutableStateSetOf<String>() }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                // Design ch. 15, tablet: one 480 dp column, the rest of the canvas left black.
+                // Two columns would break the sticky headers and the scan order, and a register
+                // stretched to 1200 dp puts a 30-character coordinate alone on a very wide line.
+                .then(if (isWideWindow()) Modifier.widthIn(max = TABLET_COLUMN) else Modifier),
         contentPadding = PaddingValues(bottom = KrtSpacing.xl),
     ) {
         item(key = "intro") {
@@ -471,3 +479,6 @@ private const val SPINNER_DELAY_MS = 300L
 
 /** Minimum height of an artifact row, so a one-line coordinate still gets a comfortable band. */
 private val ROW_MIN_HEIGHT = 40.dp
+
+/** The register's column on a tablet — the width design ch. 15 keeps from the settings pane. */
+private val TABLET_COLUMN = 480.dp
