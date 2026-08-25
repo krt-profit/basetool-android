@@ -22,9 +22,14 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">04</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Auth</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px"><strong>Abweichung (Eigentümer-Entscheidung, 18.08.2026):</strong> Der Gastmodus ist gestrichen — jeder Nutzer meldet sich an. Der Eintrag „Als Gast fortfahren" auf dem Login-Screen entfällt ersatzlos; die Frames unten zeigen ihn weiterhin, weil dieses Handoff der Stand der Übergabe ist und nicht nachträglich umgeschrieben wird. Ebenfalls entfallen: der Link „Nutzungsbedingungen" in der Fußzeile — die Zustimmung ist ohnehin erzwungen und versioniert, und ohne Gastmodus passiert jeder Nutzer diese Schranke. Verbindlich ist Q8 in ANDROID_APP_PLAN.md und REQ-APP-AUTH-007/008. Login → Keycloak Custom Tab → approval pending → terms → app-lock. Frames are live: try the terms checkbox and the lock screen. The orange top bloom is allowed on auth screens ONLY.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Login → Keycloak Custom Tab → approval pending → terms → app-lock. Frames are live: try the terms checkbox and the lock screen. The orange top bloom is allowed on auth screens ONLY.</div>
     </div>
   </header>
+
+  <div style="display:flex;gap:12px;align-items:flex-start;border-left:4px solid #FFD23F;background:rgba(255,210,63,.12);padding:12px 16px;margin:0 0 24px;max-width:1200px">
+    <svg class="krt-icon" style="width:18px;height:18px;color:#FFD23F;flex:none;margin-top:2px"><use href="#krt-icon-warning"></use></svg>
+    <p style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2;margin:0"><b style="color:#FFD23F">Abweichung (Eigentümer-Entscheidung, 18.08.2026):</b> Der Gastmodus ist gestrichen — jeder Nutzer meldet sich an. Der Eintrag „Als Gast fortfahren" auf dem Login-Screen entfällt ersatzlos; die Frames unten sind entsprechend aktualisiert (Stand 25.08.2026). Ebenfalls entfallen: der Link „Nutzungsbedingungen" in der Fußzeile — die Zustimmung ist ohnehin erzwungen und versioniert, und ohne Gastmodus passiert jeder Nutzer diese Schranke. Verbindlich ist Q8 in ANDROID_APP_PLAN.md und REQ-APP-AUTH-007/008.</p>
+  </div>
 
   <section data-screen-label="Auth phone flow" style="margin-bottom:16px">
     <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Phone 412×915 — flow order left → right</div>
@@ -45,7 +50,6 @@
             <div style="display:flex;flex-direction:column;gap:12px">
               <button class="btn btn--cta" style="min-height:52px;width:100%" onClick="{{ noteKeycloak }}"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
               <button class="btn-ghost btn" style="background:transparent;min-height:52px;width:100%" onClick="{{ noteDiscord }}"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-discord"></use></svg>Mit Discord anmelden</button>
-              <button style="all:unset;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;color:#8A8A8A;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase" onClick="{{ noteGuest }}">Als Gast fortfahren<svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-chevron-right"></use></svg></button>
             </div>
             <div style="flex:1"></div>
             <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #282828;padding:12px 0 10px;margin-top:8px">
@@ -53,7 +57,7 @@
               <div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;align-items:center;padding-bottom:16px">
-              <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#646464"><span>Datenschutz</span><span>Impressum</span><span>Nutzungsbedingungen</span></div>
+              <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#646464"><span>Datenschutz</span><span>Impressum</span></div>
               <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2 (37)</div>
             </div>
           </div>
@@ -63,8 +67,8 @@
           <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
             <li>„Anmelden" opens Keycloak in a <b>Custom Tab</b> (dark toolbar #141414) — never a WebView</li>
             <li>Discord entry only when the IdP is configured (fail-closed guild gate)</li>
-            <li>Guest browse only when enabled: read-only Einsätze + Auftrag anlegen</li>
-            <li>Offline: both login buttons disabled 45% + offline banner; guest cache allowed</li>
+            <li>Gastmodus gestrichen (Eigentümer-Entscheidung 18.08.2026) — kein Gast-Eintrag; „Nutzungsbedingungen"-Footer-Link entfällt ebenso (Zustimmung erzwungen + versioniert)</li>
+            <li>Offline: both login buttons disabled 45% + offline banner</li>
             <li>Radial bloom: 440×260 dp at top center, rgba(231,126,35,.25) → transparent</li>
             <li><b>Fan Kit band</b> pinned above the version footer — mandatory, coupled unit, notice verbatim EN (spec: ch. 02 §9)</li>
           </ul>
@@ -239,7 +243,6 @@
               <div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-top:8px">
                 <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;width:100%"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-discord"></use></svg>Mit Discord anmelden</button>
-                <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;color:#8A8A8A;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Als Gast fortfahren</button>
               </div>
             </div>
             <div style="flex:1"></div>
@@ -322,7 +325,6 @@ class Component extends DCLogic {
       unlock: () => { this.setState({ locked: false }); clearTimeout(this._lt); this._lt = setTimeout(() => this.setState({ locked: true }), 2200); },
       noteKeycloak: () => this._toast('Custom Tab', 'Öffnet Keycloak (Realm IRI) im Chrome Custom Tab — Frame 2.'),
       noteDiscord: () => this._toast('Discord-Login', 'Keycloak-IdP „discord" — fail-closed Guild- und Rollen-Gate.'),
-      noteGuest: () => this._toast('Gast-Modus', 'Nur wenn serverseitig aktiviert: Einsätze ansehen, Auftrag anlegen.'),
       noteRefresh: () => this._toast('Status geprüft', 'Freigabe weiterhin ausstehend — nächste automatische Prüfung in 60 s.'),
       toastTitle: this.state.toast ? this.state.toast.title : '',
       toastMsg: this.state.toast ? this.state.toast.msg : false,

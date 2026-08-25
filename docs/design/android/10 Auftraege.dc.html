@@ -309,7 +309,7 @@
                 <div>
                   <label style="font-size:13px;margin-bottom:6px">Notiz</label>
                   <textarea placeholder="z. B. Bringe 400 SCU Laranite am Freitag mit." style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
-                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">0 / 250</div>
+                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">0 / 500</div>
                 </div>
                 <div style="display:flex;gap:10px">
                   <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
@@ -369,7 +369,7 @@
             <li>Nur die EIGENE Zuweisung — Server erzwingt (memberId aus Token), die UI bietet fremde Notizen nie an</li>
             <li>Speichern WARTET auf den Server: CTA → Spinner + „Speichern…", Felder gesperrt; 2xx schließt das Sheet + Toast „Gespeichert." — Fehler halten das Sheet offen (409 → Artboard 7)</li>
             <li>Leeren = leere Notiz speichern, KEIN eigener Lösch-Button: eine zweite betonte Aktion für denselben Endpunkt bricht die Ein-CTA-Regel, und Rot wäre falsch (trivial wiederherstellbar). Helper-Zeile erklärt es</li>
-            <li>250 Zeichen (Web-Freitext-Konvention); Zähler ab 230 gelb, harte Grenze bei 250; CTA nur aktiv, wenn Entwurf ≠ Serverstand (deshalb Artboard 5 disabled)</li>
+            <li><b style="color:#FFD23F">Korrektur:</b> 500 Zeichen = Wire-Cap von AssigneeNoteRequest.note (vorher fälschlich 250 — ein Client-Cap unter dem Server-Limit würde Text abweisen, den der Server akzeptiert); Zähler ab 470 gelb, harte Grenze bei 500; CTA nur aktiv, wenn Entwurf ≠ Serverstand (deshalb Artboard 5 disabled)</li>
           </ul>
         </div>
       </div>
@@ -399,7 +399,7 @@
                 <div>
                   <label style="font-size:13px;margin-bottom:6px">Notiz</label>
                   <textarea defaultValue="Liefere Laranite ab Freitag — 400 SCU. Übergabe direkt an Vex." style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
-                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">62 / 250</div>
+                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">62 / 500</div>
                 </div>
                 <div style="display:flex;gap:10px">
                   <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
@@ -669,9 +669,9 @@ class Component extends DCLogic {
       n6Open: this.state.n6Open, n6Closed: !this.state.n6Open,
       n6BgFilter: this.state.n6Open ? 'brightness(.4)' : 'none',
       n6Draft: this.state.n6Draft,
-      n6Count: n6Len + ' / 250',
-      n6CountColor: n6Len >= 250 ? '#F2564B' : n6Len >= 230 ? '#FFD23F' : '#646464',
-      n6OnChange: (e) => this.setState({ n6Draft: e.target.value.slice(0, 250) }),
+      n6Count: n6Len + ' / 500',
+      n6CountColor: n6Len >= 500 ? '#F2564B' : n6Len >= 470 ? '#FFD23F' : '#646464',
+      n6OnChange: (e) => this.setState({ n6Draft: e.target.value.slice(0, 500) }),
       n6Saving: this.state.n6Saving, n6NotSaving: !this.state.n6Saving,
       n6SaveLabel: this.state.n6Saving ? 'Speichern…' : 'Speichern',
       n6SaveStyle: 'min-height:52px;flex:1.4' + (n6Disabled && !this.state.n6Saving ? ';background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none' : ''),
