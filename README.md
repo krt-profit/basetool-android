@@ -5,18 +5,32 @@ the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
 portrait-first, tablets landscape-first, minSdk 30 (Android 11), dark-only DAS KARTELL
 design.
 
-**Status: phase 3 complete (2026-08-23).** The theme, the component library, the navigation shell,
-the auth flow (login, approval gate, terms, app lock) and the settings screen ship from phase 1; the
-member's read surface — Übersicht, Einsätze, Operationen, Aufträge, Lager, Bank, Hangar, Posteingang
-— from phase 2; and the app now **writes**: Mein Inventar and the Blueprints, the Hangar's own
-ships, the Lager's bookings, an Auftrag's assignment and status, an Einsatz's participation and
-money, and a bank account's settings. `./gradlew check` is green. Live parity, the Materialbörse,
-the Raffinerie and the file imports are phase 4. The owner-approved concept lives in
-[`docs/`](docs/):
+**Released: [v0.1.0](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
+through Obtainium or straight from the release page — and check what you installed before you do
+(see [Installing, and checking what you installed](#installing-and-checking-what-you-installed)).
+
+A member can do everything the plan set as the bar for a first release: read Übersicht, Einsätze,
+Operationen, Aufträge, Lager, Bank, Hangar, Mein Inventar, Materialbörse, Raffinerie and the
+Posteingang — and write to them. Sign up for an Einsatz and book its money, book stock in and out,
+take an Auftrag and change its status, keep your own ships and blueprints, offer and request on the
+Materialbörse, book a refining yield into the Lager, and clear the inbox. Data updates live while
+the app is in front; on a tablet the list sits beside its detail.
+
+**What it deliberately does not do.** The administration stays in the browser, permanently and by
+decision — roles, members, catalogues, mission planning — as does the bank-employee view. There is
+no push channel, so notifications reach you only while the app runs; that is the cost of not routing
+them through Google. Beförderung is absent for a different reason: it is built and tested but has no
+design chapter, so it is withheld ([#66](https://github.com/krt-profit/basetool-android/issues/66),
+[ADR-0009](docs/adr/0009-tablet-settings-ships-without-its-befoerderung-column.md)). The file
+imports of the Desktop-Extractor come later.
+
+The app needs the server side of `basetool` **v1.6.0 or newer**.
+
+The owner-approved concept lives in [`docs/`](docs/):
 
 | Document | Content |
 |---|---|
-| [`ANDROID_APP_PLAN.md`](docs/ANDROID_APP_PLAN.md) | Master plan: goals, verified toolchain baseline, architecture, feature map, roadmap, resolved decisions Q1–Q7 |
+| [`ANDROID_APP_PLAN.md`](docs/ANDROID_APP_PLAN.md) | Master plan: goals, verified toolchain baseline, architecture, feature map, resolved decisions Q1–Q7. Its **roadmap is spent** — the phases it lays out shipped in v0.1.0 — but Q1–Q7 stay binding and are not to be reopened silently |
 | [`ANDROID_APP_SECURITY.md`](docs/ANDROID_APP_SECURITY.md) | Threat model, API exposure, Keycloak client + DPoP posture, layered abuse prevention, release gate |
 | [`ANDROID_APP_PRIVACY_GDPR.md`](docs/ANDROID_APP_PRIVACY_GDPR.md) | GDPR / TDDDG / German-law analysis and the compliance checklist |
 | [`ANDROID_APP_DEV_CI.md`](docs/ANDROID_APP_DEV_CI.md) | Local dev/test environment, hardened GitHub CI, release signing |
@@ -31,22 +45,25 @@ consent-banner-free by design · admin area stays web-only.
 ## Module layout
 
 ```
-app/                  manifest, flavors, auth flow, navigation shell, settings          [built]
-core/common/          logging facade                                                     [built]
-core/designsystem/    KRT Compose theme, components, icon set, Lato fonts                [built]
-core/network/         OkHttp client, mandatory headers, problem+json → app states        [built]
-                      (SSE still planned; DTOs live in core/contract, no Retrofit — ADR-0008)
-core/contract/        the backend's committed openapi.json + the models generated from it  [built]
-core/auth/            Keystore token store, DPoP, token client, PKCE login + session     [built]
-core/data/            repositories, Room cache, org-unit context                         [planned]
-feature/…             one module per area (missions, orders, inventory, bank, …)         [planned]
+app/                  every screen, the auth flow, the navigation shell, settings
+core/common/          logging facade
+core/designsystem/    KRT Compose theme, components, icon set, Lato fonts
+core/network/         OkHttp client, mandatory headers, problem+json → app states, SSE
+                      (DTOs live in core/contract, no Retrofit — ADR-0008)
+core/contract/        the backend's committed openapi.json + the models generated from it
+core/auth/            Keystore token store, DPoP, token client, PKCE login + session
+core/data/            repositories and the org-unit context
 docs/                 concept docs, binding design spec, ADRs, specs
 ```
+
+`feature/` was planned as one module per area and stayed empty: the screens live in `app/`. The
+split was never worth its cost at this size, and an empty directory promising otherwise is worse
+than none — it is kept only so the intent is findable if the app ever outgrows one module.
 
 ## Build
 
 Requires JDK 25 and the Android SDK (platform 37). `./gradlew check` runs tests, Android Lint,
-detekt and Spotless; `./gradlew :app:installDevDebug` puts the component showcase on a device.
+detekt and Spotless; `./gradlew :app:installDevDebug` puts the dev flavour on a device — it carries a second launcher entry with the component showcase, which the release build does not.
 The toolchain has a few non-obvious constraints — see the *Toolchain landmines* section in
 [`CLAUDE.md`](CLAUDE.md) before changing build files.
 
@@ -72,7 +89,7 @@ release publishes everything needed to make them yourself.
 
 **Three things travel with every release**, and each answers a different question:
 
-| | Answers |
+| What ships with the release | Answers |
 |---|---|
 | the APK's **SHA-256**, in the release notes | is this the file that release built? |
 | the **signing certificate's SHA-256**, below and in the notes | did it come from us? |
