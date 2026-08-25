@@ -111,7 +111,7 @@ class KeystoreAppLock(
     override suspend fun prepareArm(): Cipher = key.sealCipher()
 
     override suspend fun completeArm(cipher: Cipher) {
-        val existing = tokenStore.read()
+        val existing = tokenStore.readTokenOrNull()
         val sessionKey = envelope.newSessionKey()
         setting.arm(key.seal(cipher, sessionKey))
         envelope.unlocked(sessionKey)
@@ -131,7 +131,7 @@ class KeystoreAppLock(
     override suspend fun disarm() {
         val existing =
             if (envelope.isOpen) {
-                tokenStore.read()
+                tokenStore.readTokenOrNull()
             } else {
                 KrtLog.w(LOG_TAG) { "disarming without an open envelope; dropping the sealed token" }
                 null

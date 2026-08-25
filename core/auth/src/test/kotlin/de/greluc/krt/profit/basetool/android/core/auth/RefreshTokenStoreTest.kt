@@ -58,13 +58,13 @@ class RefreshTokenStoreTest {
 
             store.write(TOKEN)
 
-            assertEquals(TOKEN, store.read())
+            assertEquals(StoredRefreshToken.Present(TOKEN), store.read())
         }
 
     @Test
     fun `reads null when nothing was ever written`() =
         runTest {
-            assertNull(storeWith(FakeSecretCipher()).read())
+            assertEquals(StoredRefreshToken.Absent, storeWith(FakeSecretCipher()).read())
         }
 
     @Test
@@ -78,10 +78,14 @@ class RefreshTokenStoreTest {
             store.write(TOKEN)
             cipher.failDecryption = true
 
-            assertNull(store.read())
+            assertEquals(StoredRefreshToken.Absent, store.read())
 
             cipher.failDecryption = false
-            assertNull("the unusable blob must not survive the failed read", store.read())
+            assertEquals(
+                "the unusable blob must not survive the failed read",
+                StoredRefreshToken.Absent,
+                store.read(),
+            )
         }
 
     @Test
@@ -92,7 +96,7 @@ class RefreshTokenStoreTest {
 
             store.clear()
 
-            assertNull(store.read())
+            assertEquals(StoredRefreshToken.Absent, store.read())
         }
 
     @Test
@@ -103,7 +107,7 @@ class RefreshTokenStoreTest {
             store.write(TOKEN)
             store.write(OTHER_TOKEN)
 
-            assertEquals(OTHER_TOKEN, store.read())
+            assertEquals(StoredRefreshToken.Present(OTHER_TOKEN), store.read())
         }
 
     /**
@@ -126,10 +130,16 @@ class RefreshTokenStoreTest {
             // A cold start: same stored bytes, an envelope that has not been unlocked.
             envelope.close()
 
-            assertNull("a closed lock yields no token", store.read())
+            // Locked, not Absent: the whole defect was that these two arrived as the same
+            // value and every caller had to guess which had happened.
+            assertEquals("a closed lock yields no token", StoredRefreshToken.Locked, store.read())
 
             envelope.unlocked(envelope.newSessionKey())
-            assertNull("a different session key cannot open it either", store.read())
+            assertEquals(
+                "a different session key cannot open it either",
+                StoredRefreshToken.Absent,
+                store.read(),
+            )
         }
 
     /**
@@ -148,11 +158,11 @@ class RefreshTokenStoreTest {
             store.write(TOKEN)
 
             envelope.close()
-            assertNull(store.read())
+            assertEquals(StoredRefreshToken.Locked, store.read())
 
             envelope.unlocked(sessionKey)
 
-            assertEquals(TOKEN, store.read())
+            assertEquals(StoredRefreshToken.Present(TOKEN), store.read())
         }
 
     private companion object {

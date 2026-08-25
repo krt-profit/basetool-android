@@ -210,6 +210,12 @@ they wait and then find it done. A refresh that fails because the phone is in a 
 stored token untouched and reports `SessionState.Stale` — the UI shows a retry, not a password
 prompt. Only a refusal from the realm clears the stored token.
 
+**That last sentence was true of the session and false of the screen until v0.1.3.** `MainActivity`
+matched `SignedIn` and `Unknown` and sent *everything else* to the login screen, so `Stale` — a
+stored session that simply could not be proven this second — asked for a password anyway, and
+without so much as a message: the login screen renders the login view model's state, which is idle
+at that point. `Stale` now has its own branch with the one thing that can help, a retry.
+
 **A refresh response with no `refresh_token` keeps the stored one.** The realm does not rotate
 (main repo REQ-SEC-012), so omission is legitimate, and overwriting the field with `null` would
 discard the only way back into the session.
@@ -228,6 +234,8 @@ discard the only way back into the session.
   verified to fail when the lock is removed.
 - [x] An unreachable realm leaves the stored token in place and yields `Stale`; `invalid_grant`
   clears it and yields `SignedOut`.
+- [x] `Stale` renders a retry, never the login screen — it is a separate branch from `SignedOut`
+  and not an `else`.
 - [x] A grant without a `refresh_token` keeps the stored one.
 - [x] The Custom Tab launch and the redirect activity (`REQ-APP-AUTH-008`).
 - [x] The chapter-04 screens all exist and drive this flow: `auth/LoginScreen`,
@@ -424,6 +432,28 @@ wrong.
 not wait on a network round trip; a locked app shows nothing while `REQ-APP-AUTH-009` is still
 asking.
 
+**A sealed token is a session waiting for a fingerprint, and nothing may read it as an ended one.**
+The refresh token at rest carries the lock's outer layer, so any read before the unlock cannot
+produce it. `RefreshTokenStore.read()` therefore answers `StoredRefreshToken.Locked`, which is a
+third outcome beside `Present` and `Absent` and **not** a null: a caller that cannot tell "no
+session" from "not yet authenticated" will pick the wrong one, and the wrong one logs a member out.
+
+This is written from a reproduction, not from caution. On a device with the lock armed, killing the
+app from recents and starting it again showed the lock screen and then, after a successful unlock,
+the **login** screen — every time, from a session that had been working seconds earlier. The chain:
+the version wall (`REQ-APP-UI-004`) stands *above* the lock gate by design and fires its check
+through the authenticated client; the interceptor asks `refreshIfNeeded()`; on a cold start there is
+no in-memory token, so the store is read; the read hit the sealed blob and answered `null`; `null`
+meant "no session" and `SignedOut` was published — before the member had been offered the prompt at
+all. By the time the gate opened, `MainActivity`'s `restore()` was guarded on `Unknown`, found
+`SignedOut`, and skipped. Every link honoured its own contract; what was missing was a way to say
+which of two opposite things had happened.
+
+**The locked read logs at `INFO`, not `DEBUG`.** It is the only trace of a good session going
+unused, and the release build's floor is `INFO` — at `DEBUG` the whole failure was invisible on the
+one build a member runs, which is why it could reproduce on every cold start and still not be
+reportable.
+
 **Cold start plus five minutes in the background.** The grace period is what makes the feature
 survive daily use — a member switching to Discord for four seconds must not be re-prompted, or the
 lock gets turned off within a day. Elapsed time is taken from a **monotonic** clock supplied by the
@@ -439,6 +469,12 @@ leaks exactly what it is there to withhold.
 
 - [x] `FLAG_SECURE` is set app-wide before the first frame, and stays set unless the member has
   switched it off (`ScreenCapturePreferenceTest`).
+- [x] A read of the sealed token answers `Locked`, distinct from `Absent`, and leaves the blob alone
+  (`RefreshTokenStoreTest`).
+- [x] Neither `refreshIfNeeded()`, `refreshFor()` nor `restore()` publishes `SignedOut` while the
+  token is sealed; the session stays unread until the unlock
+  (`LockedSessionIsNotSignedOutTest`, verified to fail without the fix).
+- [x] The locked read is visible at the release build's log level.
 - [x] An untouched install blocks capture without anyone choosing anything; so does an install whose
   preference store cannot be read.
 - [x] Switching the setting takes effect on the current screen, not at the next start — the

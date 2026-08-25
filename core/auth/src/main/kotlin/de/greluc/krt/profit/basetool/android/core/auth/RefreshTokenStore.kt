@@ -18,6 +18,35 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
+ * What the store had to say about the refresh token.
+ *
+ * Three outcomes, not two, and the third is the reason this type exists. "No usable token" and "a
+ * perfectly good token behind a lock nobody has opened yet" mean opposite things to a caller: the
+ * first is a member who has to log in, the second is a member who has to touch the sensor. Both
+ * used to arrive as `null`, and [AuthSession] answered the only way it could — by publishing
+ * `SignedOut` — which logged out a member for not having authenticated yet. Making the difference
+ * a type rather than a convention is what stops the next caller repeating it: the compiler asks.
+ */
+sealed interface StoredRefreshToken {
+    /** A token that was read and decrypted. */
+    data class Present(
+        val token: String,
+    ) : StoredRefreshToken
+
+    /** Nothing stored, or what was stored is no longer usable and has been dropped. */
+    data object Absent : StoredRefreshToken
+
+    /**
+     * A stored token sealed by the app lock, read before the lock was opened.
+     *
+     * **Not a session state.** The token is intact and still on disk; only this read failed, and it
+     * will succeed the moment the member authenticates. A caller that cannot wait must do nothing
+     * rather than conclude anything.
+     */
+    data object Locked : StoredRefreshToken
+}
+
+/**
  * The refresh token at rest: encrypted by [SecretCipher], stored as ciphertext in DataStore.
  *
  * The access token is **not** here and never will be — it lives in memory only (security concept
@@ -62,38 +91,50 @@ class RefreshTokenStore(
     /**
      * Reads the stored refresh token.
      *
-     * @return the token, or `null` when none is stored or the stored one is no longer usable
+     * @return what the store had; [StoredRefreshToken.Locked] is emphatically not "no session"
      */
     @OptIn(ExperimentalEncodingApi::class)
-    suspend fun read(): String? {
-        val stored = storedCiphertext() ?: return null
+    suspend fun read(): StoredRefreshToken {
+        val stored = storedCiphertext() ?: return StoredRefreshToken.Absent
         return try {
-            cipher.decrypt(Base64.decode(stored)).decodeToString()
+            StoredRefreshToken.Present(cipher.decrypt(Base64.decode(stored)).decodeToString())
         } catch (locked: AppLockedException) {
             // MUST come before the SecretCipherException branch, and must NOT clear. The token is
             // fine; the app lock simply has not been opened yet, and wiping here would log a member
-            // out for the crime of not having authenticated. Answering null is safe because the
-            // only caller reads this to decide whether a session can be restored, and the lock gate
-            // sits ahead of that decision — a read reaching this branch is a caller that got the
-            // order wrong, not a member who lost their session.
-            // The exception carries no detail worth a stack trace — it IS the detail — so its
-            // message goes into the line rather than the throwable channel, which DEBUG has
-            // no overload for anyway.
-            KrtLog.d(LOG_TAG) { "refresh token is sealed and the app lock is not open: ${locked.message}" }
-            null
+            // out for the crime of not having authenticated.
+            //
+            // **INFO, not DEBUG.** This used to answer `null` at DEBUG, and both halves cost a
+            // release: `null` was indistinguishable from "no session" so the caller signed the
+            // member out, and DEBUG is below the release build's floor so the only trace of it
+            // happening was invisible on the one build a member runs. A defect that reproduces
+            // every cold start and leaves nothing in the log is one nobody can report usefully.
+            KrtLog.i(LOG_TAG) { "refresh token is sealed, the app lock is not open yet: ${locked.message}" }
+            StoredRefreshToken.Locked
         } catch (unusable: SecretCipherException) {
             // Key invalidated, device locked, or a blob from another device. Drop it: keeping an
             // undecryptable blob means paying for the failure on every future read, and the member
             // has to log in again either way.
             KrtLog.w(LOG_TAG, unusable) { "stored refresh token is unusable, clearing it" }
             clear()
-            null
+            StoredRefreshToken.Absent
         } catch (malformed: IllegalArgumentException) {
             KrtLog.w(LOG_TAG, malformed) { "stored refresh token is not valid Base64, clearing it" }
             clear()
-            null
+            StoredRefreshToken.Absent
         }
     }
+
+    /**
+     * The token, or `null` for anything else.
+     *
+     * For the two callers that genuinely cannot act on the difference — arming and disarming the
+     * lock, both of which run with the envelope in a known state and treat "no token" as a valid
+     * thing to be arming over. Every other caller must handle [StoredRefreshToken.Locked]
+     * explicitly, which is why this is a separate method and not the default.
+     *
+     * @return the token when one was read, `null` when it was absent or sealed
+     */
+    suspend fun readTokenOrNull(): String? = (read() as? StoredRefreshToken.Present)?.token
 
     /**
      * Removes the stored token.
