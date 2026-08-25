@@ -126,31 +126,41 @@ safety net, not the plan.
 
 ---
 
-## 4. The first release
+## 4. Cutting a release
 
-**Status:** outstanding. Depends on §§ 2 and 3, and should follow § 8 — five minutes of repo
-settings that are worth having in place before the first tag rather than after it.
+**Status:** done once (v0.1.0, 2026-08-25) and repeatable. §§ 2, 3 and 8 are prerequisites and are
+in place; nothing below needs them redone.
 
+0. **Bump the version first, on `main`, in its own PR.** `app/build.gradle.kts` carries
+   `versionCode` and `versionName`. **`versionCode` must increase every time** — Obtainium and
+   Android both compare that number, not the name, so a release that reuses it does not install as
+   an update. Move the CHANGELOG's `[Unreleased]` entries under the new `[x.y.z]` heading and
+   update the README's `**Released:**` line in the same commit.
 1. Make sure `main` is where you want it and CI is green.
 2. Tag and push:
 
    ```bash
-   git tag -s v0.1.0 -m "v0.1.0"
-   git push origin v0.1.0
+   git tag -s vX.Y.Z -m "vX.Y.Z"
+   git push origin vX.Y.Z
    ```
 
 3. The `Release` workflow starts and **waits for your approval** (the required reviewer). Approve
-   it in the run's page.
+   it in the run's page. Tag protection means nobody else can trigger it.
 4. It builds, signs, verifies the certificate against the key you configured, attests the
    provenance, exports the dependency SBOM and creates a **draft** release. Nothing is public yet.
-5. **Read the draft.** It carries the APK SHA-256 and the certificate fingerprint. Check the
-   fingerprint against what you noted in § 2 — if they differ, stop: a different key signed it.
-6. Install the APK on a real device from that draft and open it once. This is the only step in the
+5. **Read the draft.** It carries the APK SHA-256 and the certificate fingerprint. Compare the
+   fingerprint against the README's — if they differ, stop: a different key signed it.
+6. **Add what changed.** The workflow's notes cover installation, checksums and provenance only —
+   they are the same every time and carry no changelog. Paste the release's entries in German and
+   English above them, or a member updating has no way to see why.
+7. Install the APK on a real device from that draft and open it once. This is the only step in the
    whole pipeline that a human has to do, and it is the one that catches "it builds, it signs, and
    it does not start".
-7. Publish the release.
-8. **Put the fingerprint in the README.** It currently says *published with the first release
-   (v0.1.0)*; replace that line with the real digest and push it to `main`.
+8. Publish the release.
+9. **Optional, on the production host:** set `APP_ANDROID_LATEST_VERSION_CODE` to the new
+   `versionCode` in the `.env` and restart the backend. Nothing breaks without it — only
+   `APP_ANDROID_MINIMUM_VERSION_CODE` gates anything (§ 5), and the app merely reads the latest
+   number without acting on it.
 
 ---
 

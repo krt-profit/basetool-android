@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-25
+
 ### Changed
 
 - **Screenshots lassen sich jetzt in den Einstellungen freigeben.** Unter „App" steht neben der
