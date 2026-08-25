@@ -398,6 +398,10 @@
         <item quantity="one">%1$d Material</item>
         <item quantity="other">%1$d Materialien</item>
     </plurals>
+    <plurals name="orders_material_claims">
+        <item quantity="one">%1$d Zusage</item>
+        <item quantity="other">%1$d Zusagen</item>
+    </plurals>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Teile dieses Auftrags sind für dich ausgeblendet.</string>
     <plurals name="orders_count">

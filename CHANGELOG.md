@@ -8,6 +8,11 @@
   Lager, Einsätze, Operationen, Aufträge, Raffinerie, Materialbörse, Mein Inventar und Blueprints
   zeigen ihre Einträge jetzt als umrandete Kacheln mit Abstand. Der Posteingang und der Lager-Baum
   bleiben bewusst Zeilen — so sieht der Entwurf sie vor.
+- **Im Lager steht jetzt bei jedem Eintrag, wo er liegt.** Bisher waren zwei Bestände desselben
+  Materials an verschiedenen Orten nicht auseinanderzuhalten. Gruppen zeigen außerdem einen Pfeil,
+  der anzeigt, dass sie sich öffnen lassen.
+- **Eine Auftragsposition nennt ihre Zusagen.** Wie viele Mitglieder bereits zugesagt haben, stand
+  nirgends.
 - **Die Einsatz-Kachel auf der Übersicht zeigt jetzt, worum es geht.** Kurzbeschreibung, Treffzeit,
   Treffpunkt, die zuständige Einheit und ein „Öffnen" — vorher standen dort nur Name und Status.
 - **Die Reiter im Einsatz-Detail zeigen ihre Anzahl.** Teilnehmer, Einheiten, Ablauf, Ziele und

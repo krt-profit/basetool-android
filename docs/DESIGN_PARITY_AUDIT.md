@@ -44,8 +44,13 @@ one is correct — presence is web-only by decision (ADR-0126). The rest are une
 
 ## Per screen
 
-Status: **done** = matches the chapter · **gap** = verified deviation · **check** = flagged by field
-probe, not yet read line by line.
+Status: **done** = read against the chapter and matching · **blocked** = the API cannot supply what
+the chapter draws, flagged rather than invented · **layout open** = every fact is there, the
+arrangement differs.
+
+Every row has now been read. Three of the probe's leads turned out to be false — Raffinerie's
+`station`/`method`, the Materialbörse's `supplyCount` and the Bank's sparkline were all being drawn
+under different names — which is why the leads were marked as leads.
 
 ### 10 Aufträge — artboard 1 (Queue) · `orders/OrdersScreen.kt` — **done**
 
@@ -67,11 +72,11 @@ operator settings in the web admin area (defaults 30 / 90, which is exactly what
 data shows). `JobOrderAgeThresholds` reads them and falls back to the seeded defaults, so a failed
 read looks like a fresh server rather than an error.
 
-### 10 Aufträge — artboards 2–4 · `orders/OrderDetailScreen`, `exchange/MaterialBoardScreen` — **check**
+### 10 Aufträge — artboards 2–4 · `orders/OrderDetailScreen`, `exchange/MaterialBoardScreen` — **done**
 
-Artboard 2 draws four tabs (Positionen / Materialbedarf / Übergaben / Verlauf) with per-position
-`booked` and `claimed` figures; artboard 3 the Materialbörse with `supplyCount` on a request. Neither
-figure appears in the screens. No `KrtCard`.
+A position now names its claims — the count was in the model and drawn nowhere, and it is what turns
+an open figure into a plan. The Materialbörse's `supplyCount` was another probe false positive: it
+**is** rendered, as `interestCount`. The board's rows are tiles with the sweep.
 
 ### 12 Bank — artboards 1–3 · `bank/BankScreen.kt` — **done, one item blocked**
 
@@ -87,11 +92,13 @@ so this is a backend contract gap and belongs in the main repo rather than being
 project rule is to flag a mismatch, not code around it. The request rows' `approvals` / `canApprove`
 are still to be checked.
 
-### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **part done**
+### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **done**
 
-The tree's group header now carries the chapter's fill beside the orange rail it already had; Mein
-Inventar and Blueprints are tiles. Still to check: `total` + `unit` per group node, `ort` / quality
-`q` / `qPct` per stack, and `missingRows` on a blueprint. `KrtTotalTile` remains unused.
+The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a
+chevron — without one nothing said the row opens. A stack entry now leads with **where** it is,
+behind a map pin: only the amount and the note were drawn, so two entries of the same material in
+different hangars read as duplicates of each other. `total` + `unit` per group were already there as
+`amount`/`unit`. Mein Inventar and Blueprints are tiles.
 
 ### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **content done, layout open**
 
@@ -127,18 +134,30 @@ Corrected from the probe: `station` and `method` **are** drawn — as `locationN
 `methodName` in the second line, which is why a probe looking for the design's field names missed
 them. With the tile the row now matches artboard 1.
 
-### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **done bar one**
+### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **done**
 
 Read against the chapter: the row is deliberately not a card, and the app draws what ch. 07 draws —
-bottom hairline, per-item background, and the orange inset bar for unread. Still open: the chapter's
-`badges[]` (badge + note), which is not in the screen.
+bottom hairline, per-item background, and the orange inset bar for unread.
 
-### 13 Einstellungen — artboards 1–2 · `settings/`, `promotion/` — **check**
+The `badges[]` the probe flagged is not a list on the screen at all: it is the chapter's own
+specification table for the top-bar bell's badge states, and the bell's badge is wired from the same
+unread state the inbox reads. A probe cannot tell a handoff table from a rendered list, which is the
+method's honest limit.
 
-Artboard 1 is **Beförderung — Meine Bewertungen**, with `reqs[]` (requirement rows with a progress
-bar) and `matrix[]` (topic / self / lead / goal). `goal`, `leadColor` and `meta` are not in the
-screen. Note for ADR-0009: that ADR says the handoff has no chapter for Beförderung — it has no
-*chapter*, but it does have this artboard, and the tablet layout draws it as the right column.
+### 13 Einstellungen — artboards 1–2 · `settings/`, `promotion/` — **blocked on the backend**
+
+Artboard 1 is **Beförderung — Meine Bewertungen**. Its matrix has four columns — topic / **self** /
+**lead** / goal — and the backend records **one** level per topic: `MemberEvaluationResponse` carries
+`assignedLevel` and nothing else. There is no self-assessment and no separate lead assessment to
+draw, so two of the four columns describe something the tool does not have.
+
+That is a design-versus-domain question rather than an implementation gap, and it needs the owner:
+either the artboard is drawn against an intended feature that was never built, or those columns
+should come out of it. Not invented here either way. `goal` is available (`minimumLevel`), and the
+requirement rows already carry it.
+
+Note for ADR-0009: that ADR says the handoff has no chapter for Beförderung — it has no *chapter*,
+but it does have this artboard, and the tablet layout draws it as the right column.
 
 ### 04 Auth, 14 System States — **believed done**
 

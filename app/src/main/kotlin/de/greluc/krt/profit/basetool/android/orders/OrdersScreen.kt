@@ -511,6 +511,21 @@ private fun MaterialLine(material: JobOrderMaterial) {
                 color = KrtPalette.TextMuted,
             )
         }
+        // Design ch. 10 artboard 2 puts the claims beside the stock on a position: "who has already
+        // promised part of this" is what turns an open figure into a plan. The count was in the
+        // model and drawn nowhere.
+        if (material.claimCount > 0) {
+            Text(
+                text =
+                    pluralStringResource(
+                        R.plurals.orders_material_claims,
+                        material.claimCount,
+                        material.claimCount,
+                    ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         material.progress?.let { progress ->
             LinearProgressIndicator(
                 progress = { progress },
