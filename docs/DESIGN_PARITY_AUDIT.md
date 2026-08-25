@@ -13,19 +13,29 @@ screens landed. This is that comparison, screen by screen, with the evidence for
 Every chapter draws its list items as **bordered cards**. The app draws almost all of them as bare
 rows in a `Column`.
 
-| | design chapters | app list screens |
-| :-- | :-- | :-- |
-| list item is a bordered card / `.card` | 10 of 10 (04–13) | **2 of 13** |
+| | design chapters | app list screens, before | after |
+| :-- | :-- | :-- | :-- |
+| list item is a bordered card / `.card` | 10 of 10 (04–13) | **2 of 13** | **11 of 13** |
 
-Measured: `class="card"` and per-item `border:1px` inside an `<sc-for>` across the chapters; `KrtCard(`
-across the thirteen list screens. Only `OrdersScreen` (fixed by this audit's first change) and
-`PromotionScreen` use it.
+The two that remain are correct as they are, and reading the chapters is what settled it:
 
-`KrtCard` has existed in `core:designsystem` since the design system landed. The screens simply do
-not call it — which is why the app reads as a list of text lines where the design reads as a stack
-of tiles.
+- **Benachrichtigungen** (ch. 07) is *not* a card in the design either — a row with a bottom hairline,
+  a per-item background and a `box-shadow` left bar for unread. The app already draws exactly that.
+- **Lager — Bestand** (ch. 09 artboard 1) is a tree, and its group header is a filled bar with
+  `border-left: 4px solid #E77E23`, not a tile. The app had the orange rail and was missing the fill;
+  it has both now.
 
-**Twenty design-system components are never used by the app at all**, and several of them are exactly
+Measured: `class="card"` and per-item `border:1px` inside an `<sc-for>` across the chapters; `KrtCard`
+/ `KrtKpiCard` / a hairline border across the thirteen list screens. Before this audit only
+`OrdersScreen` and `PromotionScreen` had one.
+
+`KrtCard` has existed in `core:designsystem` since the design system landed. The screens simply did
+not call it — which is why the app read as a list of text lines where the design reads as a stack of
+tiles. That is the single change with the widest visual effect in this whole audit, and it was one
+missing wrapper per screen.
+
+**Twenty design-system components were never used by the app at all** — `KrtCard`, `KrtKpiCard` and
+`KrtSparkline` have consumers now; the rest still do not, and several of them are exactly
 the missing pieces below: `KrtSparkline`, `KrtTotalTile`, `KrtKpiCard`, `KrtCountBadge`,
 `KrtDepartmentTag`, `KrtRecordCard`, `KrtPanelHeader`, `KrtDataValue`, `KrtCombobox`, `KrtSelectField`,
 `KrtChipSelect`, `KrtRadioRow`, `KrtBottomCtaBar`, `KrtButton`, `KrtSuccessButton`, `KrtSpinner`,
@@ -63,40 +73,50 @@ Artboard 2 draws four tabs (Positionen / Materialbedarf / Übergaben / Verlauf) 
 `booked` and `claimed` figures; artboard 3 the Materialbörse with `supplyCount` on a request. Neither
 figure appears in the screens. No `KrtCard`.
 
-### 12 Bank — artboards 1–3 · `bank/BankScreen.kt` — **gap**
+### 12 Bank — artboards 1–3 · `bank/BankScreen.kt` — **done, one item blocked**
 
-The account card is a bare `Column`. The chapter's `accounts[]` carries `spark` (a balance
-sparkline), `delta` with its own colour, and `holders`; **`holders` appears nowhere in the screen**
-and `KrtSparkline` is unused app-wide. The request rows carry `approvals` and `canApprove`.
+Corrected from the first pass: the screen *did* draw balance, delta and a sparkline — it had its own
+local `Sparkline` composable, so the probe's "unused `KrtSparkline`" reading was misleading. What was
+actually wrong was the container: a bare `Column` with a hairline underneath instead of the
+chapter's `kpi-card`, the balance on the name's line rather than beneath it, and a grey delta where
+the sign is the whole point. It is `KrtKpiCard` now, which is that card, and the local sparkline is
+gone with it.
 
-### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **check**
+**Blocked, not fixed:** the chapter's `{n} Verwahrer` chip. `BankAccountDto` carries no holder count,
+so this is a backend contract gap and belongs in the main repo rather than being invented here — the
+project rule is to flag a mismatch, not code around it. The request rows' `approvals` / `canApprove`
+are still to be checked.
 
-Tree nodes carry `total` + `unit` per group and each stack carries `ort`, quality `q` and `qPct`;
-blueprints carry `missingRows`. No `KrtCard`, `KrtTotalTile` unused.
+### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **part done**
 
-### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **check**
+The tree's group header now carries the chapter's fill beside the orange rail it already had; Mein
+Inventar and Blueprints are tiles. Still to check: `total` + `unit` per group node, `ort` / quality
+`q` / `qPct` per stack, and `missingRows` on a blueprint. `KrtTotalTile` remains unused.
 
-Ship rows carry manufacturer (`mfr` / `mfrName`, the lettermark placeholder the handoff documents),
-`type`, `ort`, insurance `ins` and `fit`. The screen mentions a manufacturer once. Tablet artboard is
-the full web table — that one **is** implemented (dense table, 2026-08-24 pass).
+### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **part done**
 
-### 05 Dashboard · `dashboard/DashboardScreen.kt` — **check**
+Ship rows are tiles now. Still open: the manufacturer lettermark (`mfr` / `mfrName`, the placeholder
+the handoff documents) and whether insurance `ins` and `fit` read as the chapter draws them. The tablet's full web table **is** implemented (2026-08-24 pass).
 
-Mission rows carry `ort` and the quick actions a `count`; neither found. No `KrtCard`.
+### 05 Dashboard · `dashboard/DashboardScreen.kt` — **part done**
 
-### 06 Missionen — artboards 1–5 · `missions/*` — **check**
+The Einsätze band is a tile now. Still open: `ort` on a mission row and a `count` on the quick actions.
 
-Tab row carries a per-tab `count` (`KrtCountBadge` unused). Artboard 5 (Operation detail + payout)
-exists, so **Operationen is covered** — contrary to the assumption that it had no template.
+### 06 Missionen — artboards 1–5 · `missions/*` — **part done**
 
-### 11 Raffinerie — artboards 1–2 · `refinery/RefineryScreen.kt` — **check**
+Both list segments are tiles now. Still open: the per-tab `count` on the detail's tab row
+(`KrtCountBadge` unused). Artboard 5 (Operation detail + payout) exists, so **Operationen is
+covered** — contrary to the assumption that it had no template.
 
-Order rows carry `method` and `station` beside the status and the yield list. No `KrtCard`.
+### 11 Raffinerie — artboards 1–2 · `refinery/RefineryScreen.kt` — **part done**
 
-### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **check**
+Order rows are tiles now. Still open: `method` and `station` beside the status.
 
-The chapter's `badges[]` (badge + note) is not in the screen. Swipe actions and the row itself were
-built in the inbox pass and are believed to match.
+### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **done bar one**
+
+Read against the chapter: the row is deliberately not a card, and the app draws what ch. 07 draws —
+bottom hairline, per-item background, and the orange inset bar for unread. Still open: the chapter's
+`badges[]` (badge + note), which is not in the screen.
 
 ### 13 Einstellungen — artboards 1–2 · `settings/`, `promotion/` — **check**
 

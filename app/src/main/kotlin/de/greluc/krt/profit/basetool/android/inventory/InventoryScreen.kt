@@ -314,6 +314,10 @@ private fun GroupRow(
             Modifier
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                // Design ch. 09 fills the group header rather than leaving it on the page ground:
+                // it is what separates a group from the stacks underneath it in a long tree. The
+                // orange rail beside it is that artboard's `border-left: 4px solid #E77E23`.
+                .background(KrtPalette.SurfaceInput)
                 .padding(end = KrtSpacing.md, top = KrtSpacing.sm, bottom = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,

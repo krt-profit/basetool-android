@@ -4,6 +4,12 @@
 
 ### Changed
 
+- **Listen sehen wieder aus wie im Entwurf: Kacheln statt Textzeilen.** Übersicht, Bank, Hangar,
+  Lager, Einsätze, Operationen, Aufträge, Raffinerie, Materialbörse, Mein Inventar und Blueprints
+  zeigen ihre Einträge jetzt als umrandete Kacheln mit Abstand. Der Posteingang und der Lager-Baum
+  bleiben bewusst Zeilen — so sieht der Entwurf sie vor.
+- **Die Kontokarte in der Bank zeigt den Saldo groß, darunter Veränderung und Verlauf.** Die
+  30-Tage-Veränderung ist jetzt grün oder rot statt grau.
 - **Die Auftragsübersicht zeigt wieder das, was sie zeigen soll.** Jeder Auftrag steht jetzt als
   Kachel da — mit Prio-Block, Art (Material/Item), Status, farbig markiertem Alter und beiden
   beteiligten Einheiten als Abzeichen. Vorher war das eine Textzeile ohne Art und ohne Alter.

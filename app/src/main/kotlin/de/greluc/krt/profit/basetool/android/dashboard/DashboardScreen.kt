@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.Notification
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
@@ -341,24 +342,24 @@ private fun MissionBandRow(
     mission: Mission,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = mission.name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
+    // A card, not a padded Row: every design chapter draws its list items as bordered tiles.
+    // See docs/DESIGN_PARITY_AUDIT.md.
+    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = mission.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
+        }
     }
 }
 

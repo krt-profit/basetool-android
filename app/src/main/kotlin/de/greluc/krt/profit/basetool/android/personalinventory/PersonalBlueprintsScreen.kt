@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.personalinventory
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -318,9 +319,12 @@ private fun BlueprintRow(
                     if (selected) {
                         MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_ROW_ALPHA)
                     } else {
-                        Color.Transparent
+                        // Design ch. 09 artboard 4 draws a blueprint as a bordered tile on the
+                        // surface fill, not as a line on the page ground.
+                        MaterialTheme.colorScheme.surface
                     },
                 )
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,

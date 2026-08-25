@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrder
 import de.greluc.krt.profit.basetool.android.core.data.RefineryPhase
 import de.greluc.krt.profit.basetool.android.core.data.RefineryYield
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
@@ -163,7 +165,11 @@ fun RefineryOrdersScreen(
                             )
                         }
                     } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG)) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
+                            contentPadding = PaddingValues(KrtSpacing.md),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                        ) {
                             items(state.orders, key = { it.id }) { order ->
                                 OrderRow(
                                     order = order,
@@ -252,14 +258,11 @@ private fun OrderRow(
     onClick: () -> Unit,
 ) {
     val phase = order.phaseAt(now)
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
-                .testTag(REFINERY_ROW_TAG),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    // A card, not a padded Column: every design chapter draws its list items as bordered
+    // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
+    KrtCard(
+        modifier = Modifier.fillMaxWidth().testTag(REFINERY_ROW_TAG),
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
