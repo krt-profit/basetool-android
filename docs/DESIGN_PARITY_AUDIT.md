@@ -255,9 +255,21 @@ option**, a disabled option that says why, „Aktuell" on the current one, the f
 Wechsel richten sich nach deiner Rolle." and a **terminal-status confirmation**
 („Auftrag abschließen?").
 
-#### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **check**
+#### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **done (2026-08-25)**
 
-Newly specified, with a live countdown for the automatic retry. To be read against the screen.
+Artboard 3 is now built. Four things were missing and are in:
+
+- **Der Zustand ist ein eigener, kein geborgter 5xx.** Die Copy nennt bewusst keinen Statuscode und
+  ist eine Feststellung statt eines Vorwurfs — „Command did not respond. Deine Anmeldung bleibt
+  gültig."
+- **„Angemeldet als …"** — der Screen behauptet die Sitzung nicht bloß, er zeigt sie.
+- **Auto-Retry mit sichtbarem Countdown**, Leiter 3 → 6 → 12 → 30 s aus `RetryBackoff` (dieselbe
+  wie überall sonst im Wartezustand, keine zweite Kadenz für dieselbe Sache).
+- **Ein manueller Versuch setzt die Leiter zurück.** Der Poll wird neu gestartet statt parallel
+  gefahren, damit nie zwei Fragen für eine Antwort unterwegs sind. Der *Freigabe*-Poll behält
+  dagegen sein Minutenraster — der ist ausdrücklich gegen Tap-to-shorten abgesichert.
+
+Fünf Tests halten die Leiter, den Countdown, den Reset und die Rückkehr aufs Minutenraster fest.
 
 ## Screens with no artboard
 

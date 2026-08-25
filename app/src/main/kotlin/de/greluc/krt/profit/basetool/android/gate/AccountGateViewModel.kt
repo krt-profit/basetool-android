@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.gate
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.common.RetryBackoff
 import de.greluc.krt.profit.basetool.android.core.data.AccountGateSource
 import de.greluc.krt.profit.basetool.android.core.data.ApprovalStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -48,6 +49,7 @@ class AccountGateViewModel(
     val state: StateFlow<AccountGateState> = mutableState.asStateFlow()
 
     private var poll: Job? = null
+    private var attempts = 0
 
     /**
      * Reads the gate once and starts polling if it is closed.
@@ -67,19 +69,62 @@ class AccountGateViewModel(
                     if (open) {
                         return@launch
                     }
-                    delay(POLL_INTERVAL)
+                    if (mutableState.value is AccountGateState.Unavailable) {
+                        // An unreachable gate is paced by the outage ladder, not by the approval
+                        // poll's minute: a member who cannot get an answer at all should not have
+                        // to wait a full minute to find out the outage is over.
+                        countDown(RetryBackoff.next(attempts).inWholeSeconds.toInt())
+                        attempts++
+                    } else {
+                        attempts = 0
+                        delay(POLL_INTERVAL)
+                    }
                 }
             }
     }
 
     /**
+     * Ticks the visible countdown down to the next automatic attempt.
+     *
+     * The ladder is `RetryBackoff`'s — 3 -> 6 -> 12 -> 30 s, the last step repeating — the same one
+     * every other waiting state in this app uses, so the gate does not invent a second rhythm for
+     * the same kind of wait (design ch. 14, artboard 3).
+     *
+     * @param seconds how long to wait before the caller asks again
+     */
+    private suspend fun countDown(seconds: Int) {
+        for (left in seconds downTo 1) {
+            mutableState.update { current ->
+                if (current is AccountGateState.Unavailable) current.copy(secondsUntilRetry = left) else current
+            }
+            delay(SECOND_MS)
+        }
+        mutableState.update { current ->
+            if (current is AccountGateState.Unavailable) current.copy(secondsUntilRetry = null) else current
+        }
+    }
+
+    /**
      * Re-reads the gate now, without disturbing the poll's schedule.
      *
-     * This is what the "Status aktualisieren" button does. It deliberately does **not** restart the
-     * timer: a member tapping it repeatedly would otherwise be able to shorten their own polling
-     * interval to nothing.
+     * This is what the "Status aktualisieren" button does. While the account is merely *waiting*
+     * for approval it deliberately does **not** restart the timer: a member tapping it repeatedly
+     * would otherwise be able to shorten their own polling interval to nothing.
+     *
+     * An **unreachable** gate is the opposite case and design ch. 14 says so — a manual attempt
+     * resets the backoff ladder. Pressing the button is new information there, and inheriting a
+     * thirty-second wait from automatic attempts the member did not make would make their own
+     * attempt feel ignored. The poll is restarted rather than run alongside, so the app never has
+     * two questions in flight for one answer.
      */
     fun refresh() {
+        if (state.value is AccountGateState.Unavailable) {
+            attempts = 0
+            poll?.cancel()
+            poll = null
+            start()
+            return
+        }
         viewModelScope.launch {
             mutableState.update { current ->
                 if (current is AccountGateState.Blocked) current.copy(refreshing = true) else current
@@ -153,5 +198,16 @@ sealed interface AccountGateState {
      */
     data class Unavailable(
         val error: ApiError,
+        /**
+         * Seconds until the app asks again on its own, or `null` while an attempt is running.
+         *
+         * Design ch. 14 artboard 3: the screen keeps trying without being told to. A state whose
+         * only way forward is a button the member has to keep pressing turns a passing outage into
+         * a chore, and this one is passing by definition — nothing the member did caused it.
+         */
+        val secondsUntilRetry: Int? = null,
     ) : AccountGateState
 }
+
+/** One second of countdown. */
+private const val SECOND_MS = 1_000L

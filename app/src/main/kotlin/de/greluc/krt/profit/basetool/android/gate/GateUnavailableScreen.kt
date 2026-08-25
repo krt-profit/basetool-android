@@ -52,12 +52,22 @@ private val STATUS_ICON = 40.dp
  * waiting for an administrator, which is both false and impossible to act on. All this screen
  * claims is that the question could not be asked.
  *
- * The full offline/5xx treatment lives in design chapter 14 and is not built yet. This is the
- * honest minimum in the meantime — say what happened, offer the retry, and keep the way out
- * reachable, because a member stuck behind an unreadable gate must always be able to sign out.
+ * Design chapter 14, artboard 3. The state is its own, not a borrowed 5xx: the member is
+ * authenticated and their credentials are fine — the server that says whether their registration is
+ * approved simply did not answer. **No status code appears in the copy**, deliberately, and the
+ * tone is a statement rather than an accusation: „Your credentials remain valid" is the sentence
+ * that does the work, because there is nothing here the member did or can fix.
+ *
+ * The app keeps asking on its own — 3 → 6 → 12 → 30 s — and a manual attempt resets that rhythm.
+ * A screen whose only way forward is a button the member has to keep pressing turns a passing
+ * outage into a chore.
  *
  * @param offline `true` when no response arrived at all, `false` when the server answered badly
- * @param onRetry asks again
+ * @param accountName who is signed in, so the screen can say the session is intact rather than
+ *   merely assert it; `null` when the ID token carried no username
+ * @param secondsUntilRetry seconds until the next automatic attempt, or `null` while one is in
+ *   flight
+ * @param onRetry asks again, now
  * @param onLogout signs out
  * @param modifier layout modifier from the caller
  */
@@ -67,6 +77,8 @@ fun GateUnavailableScreen(
     onRetry: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
+    accountName: String? = null,
+    secondsUntilRetry: Int? = null,
 ) {
     Box(
         modifier =
@@ -105,6 +117,24 @@ fun GateUnavailableScreen(
                 color = KrtPalette.Gray1,
                 textAlign = TextAlign.Center,
             )
+            accountName?.let { name ->
+                Spacer(Modifier.height(KrtSpacing.sm))
+                Text(
+                    text = stringResource(R.string.gate_signed_in_as, name),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = KrtPalette.TextMuted,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            secondsUntilRetry?.let { seconds ->
+                Spacer(Modifier.height(KrtSpacing.md))
+                Text(
+                    text = stringResource(R.string.gate_retry_in, seconds),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(Modifier.height(KrtSpacing.xl))
             KrtOutlineButton(
                 text = stringResource(R.string.gate_retry),
@@ -130,7 +160,13 @@ fun GateUnavailableScreen(
 @Composable
 private fun GateOfflinePreview() {
     KrtTheme {
-        GateUnavailableScreen(offline = true, onRetry = {}, onLogout = {})
+        GateUnavailableScreen(
+            offline = true,
+            onRetry = {},
+            onLogout = {},
+            accountName = "GrafRotz",
+            secondsUntilRetry = 6,
+        )
     }
 }
 

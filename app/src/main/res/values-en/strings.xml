@@ -39,10 +39,12 @@
     <string name="gate_refresh">Refresh status</string>
     <string name="gate_poll_hint">Checked automatically every 60 seconds.</string>
 
-    <string name="gate_offline_title">No connection</string>
-    <string name="gate_offline_body">Your access status cannot be read right now.</string>
-    <string name="gate_error_title">Server error</string>
-    <string name="gate_error_body">The server could not answer with your access status. Please try again later.</string>
+    <string name="gate_offline_title">Verification Offline</string>
+    <string name="gate_offline_body">Command did not respond. Your credentials remain valid.</string>
+    <string name="gate_error_title">Verification Offline</string>
+    <string name="gate_error_body">Command did not respond. Your credentials remain valid.</string>
+    <string name="gate_signed_in_as">Signed in as %1$s</string>
+    <string name="gate_retry_in">Next attempt in %1$d s</string>
     <string name="gate_retry">Try again</string>
 
     <string name="terms_checking">Checking the terms of use …</string>
