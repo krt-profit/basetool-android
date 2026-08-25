@@ -209,6 +209,12 @@ it with a favicon variant rather than a redrawn mark.
 unless somebody re-applies them, and nothing in the build detects it. The README's new "Reconciled
 on import" section is where the list lives so the next refresh has something to check against.
 
+The real fix is upstream, and there is a prompt for it:
+[`SPEC_CORRECTION_PROMPT.md`](design/android/SPEC_CORRECTION_PROMPT.md) asks the design side to
+carry all four corrections **in the source** and to settle the four places where an artboard draws a
+figure the API does not have. Until that comes back, every import re-applies them by hand and the
+five-point check at the end of that prompt is what an importer should run.
+
 ### New surfaces — parity
 
 #### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **gap**
