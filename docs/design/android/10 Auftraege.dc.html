@@ -22,7 +22,7 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">10</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Aufträge & Materialbörse</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Queue canon from the web: #ID + Art + Einheiten-Badges, Prio (Drag nur für Logistiker), Status, einklappbare Materialliste mit Fortschritt, Alters-Färbung 30/90 Tage. Live: Detail-Tabs, Börsen-Segment, „Ich kann liefern".</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Queue canon from the web: #ID + Art + Einheiten-Badges, Prio (Drag nur für Logistiker), Status, einklappbare Materialliste mit Fortschritt, Alters-Färbung 30/90 Tage. Live: Detail-Tabs, Börsen-Segment, „Ich kann liefern", Notiz- &amp; Status-Sheets.</div>
     </div>
   </header>
 
@@ -178,7 +178,7 @@
       <div class="card" style="padding:12px 16px">
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OrderDetailScreen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
-          <li>Status change + Zuständigen setzen im Overflow → bottom sheet; Statuswechsel bestätigt mit Konsequenz</li>
+          <li>Status change + Zuständigen setzen im Overflow → bottom sheet (Artboards 5–9); Statuswechsel bestätigt mit Konsequenz</li>
           <li>Materialbedarf ist die Queue-übergreifende Faltung (nur mit Queue-Sicht) — gleiche Gating-Regel wie Web</li>
           <li>Verlauf = append-only Aktivitätsspur, read-only</li>
         </ul>
@@ -289,12 +289,227 @@
     </div>
   </section>
 
+  <section data-screen-label="Auftraege detail sheets" style="margin-bottom:32px">
+    <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Detail-Sheets — Einstieg: Artboard 2, Overflow „Mehr" (Ordinary-Member-Aktionen)</div>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Notiz zur Zuweisung — leer (erste Notiz)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+                <div>
+                  <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Notiz zur Zuweisung</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Nur deine eigene Zuweisung</div>
+                </div>
+                <div>
+                  <label style="font-size:13px;margin-bottom:6px">Notiz</label>
+                  <textarea placeholder="z. B. Bringe 400 SCU Laranite am Freitag mit." style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
+                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">0 / 250</div>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.4;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Notiz — bestehende bearbeiten (live: Zähler, Speichern, Toast)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;padding:16px;filter:{{ n6BgFilter }};display:flex;flex-direction:column;gap:16px">
+              <div class="hud-box" style="height:180px"></div>
+              <sc-if value="{{ n6Closed }}" hint-placeholder-val="{{ false }}">
+                <button class="btn-ghost btn" style="background:transparent;min-height:48px" onClick="{{ n6Reopen }}"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-edit"></use></svg>Meine Notiz bearbeiten</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ n6Open }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+                <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+                <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+                  <div>
+                    <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Notiz zur Zuweisung</div>
+                    <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Nur deine eigene Zuweisung</div>
+                  </div>
+                  <div>
+                    <label style="font-size:13px;margin-bottom:6px">Notiz</label>
+                    <textarea value="{{ n6Draft }}" onChange="{{ n6OnChange }}" style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
+                    <div style="display:flex;align-items:baseline;gap:12px;margin-top:6px">
+                      <span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#646464">Leeres Feld speichern entfernt die Notiz.</span>
+                      <span style="font:300 11px/1 Lato,sans-serif;color:{{ n6CountColor }};font-variant-numeric:tabular-nums">{{ n6Count }}</span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:10px">
+                    <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1" onClick="{{ n6Cancel }}">Abbrechen</button>
+                    <button class="btn btn--cta" style="{{ n6SaveStyle }}" onClick="{{ n6Save }}"><sc-if value="{{ n6Saving }}" hint-placeholder-val="{{ false }}"><span class="krt-spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,.25);border-top-color:#000"></span></sc-if><sc-if value="{{ n6NotSaving }}" hint-placeholder-val="{{ true }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg></sc-if>{{ n6SaveLabel }}</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ n6Toast }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:#141414;border:1px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.3)">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#2EBC3D;flex:none"><use href="#krt-icon-check"></use></svg>
+                <div style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">Gespeichert.</div>
+              </div>
+            </sc-if>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — AssignmentNoteSheet</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Nur die EIGENE Zuweisung — Server erzwingt (memberId aus Token), die UI bietet fremde Notizen nie an</li>
+            <li>Speichern WARTET auf den Server: CTA → Spinner + „Speichern…", Felder gesperrt; 2xx schließt das Sheet + Toast „Gespeichert." — Fehler halten das Sheet offen (409 → Artboard 7)</li>
+            <li>Leeren = leere Notiz speichern, KEIN eigener Lösch-Button: eine zweite betonte Aktion für denselben Endpunkt bricht die Ein-CTA-Regel, und Rot wäre falsch (trivial wiederherstellbar). Helper-Zeile erklärt es</li>
+            <li>250 Zeichen (Web-Freitext-Konvention); Zähler ab 230 gelb, harte Grenze bei 250; CTA nur aktiv, wenn Entwurf ≠ Serverstand (deshalb Artboard 5 disabled)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">7 · Notiz — 409-Konflikt (optimistische Sperre)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
+                <div>
+                  <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Notiz zur Zuweisung</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Nur deine eigene Zuweisung</div>
+                </div>
+                <div style="border-left:4px solid #A3000A;background:rgba(163,0,10,.15);padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+                  <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.06em">Konflikt — Notiz zwischenzeitlich geändert</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#D2D2D2">Gespeichert in einer anderen Sitzung, heute 14:32. Das Feld zeigt die aktuelle Fassung; deine Änderung wurde nicht übernommen.</div>
+                  <div style="border-left:2px solid #646464;padding-left:8px">
+                    <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Deine abgelehnte Fassung</div>
+                    <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Liefere Laranite ab Freitag — 400 SCU. Übergabe gesammelt an ARC-L1.</div>
+                  </div>
+                  <button class="btn-outline btn" style="background:transparent;min-height:40px;font-size:10.5px;align-self:flex-start">Meine Fassung übernehmen</button>
+                </div>
+                <div>
+                  <label style="font-size:13px;margin-bottom:6px">Notiz</label>
+                  <textarea defaultValue="Liefere Laranite ab Freitag — 400 SCU. Übergabe direkt an Vex." style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
+                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">62 / 250</div>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.4;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">409-Verhalten</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Sheet bleibt offen; Feld lädt die aktuelle Server-Fassung, die abgelehnte Fassung bleibt im Alert sichtbar — nichts geht verloren. „Meine Fassung übernehmen" setzt den Entwurf zurück auf die abgelehnte Fassung</li>
+            <li>Optimistic Lock: PUT trägt version; 409 liefert aktuelle Notiz + neue version — erneutes Speichern nutzt sie. CTA disabled, bis der Entwurf wieder vom neuen Serverstand abweicht</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">8 · Status wechseln — gesperrte Option mit Grund (live: Auswahl)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="padding:4px 0 20px;display:flex;flex-direction:column;gap:14px">
+                <div style="padding:0 20px">
+                  <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Status wechseln</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Aktuell: In Bearbeitung</div>
+                </div>
+                <div style="border-top:1px solid #282828">
+                  <sc-for list="{{ stRows }}" as="r" hint-placeholder-count="4">
+                    <button style="all:unset;box-sizing:border-box;cursor:{{ r.cursor }};display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 20px;border-bottom:1px solid #1C1C1C;background:{{ r.bg }};box-shadow:{{ r.inset }}" onClick="{{ r.onTap }}">
+                      <span style="width:12px;height:12px;flex:none;background:{{ r.square }};opacity:{{ r.squareOp }}"></span>
+                      <div style="flex:1;min-width:0;text-align:left">
+                        <div style="font:700 13px/1.2 Lato,sans-serif;color:{{ r.nameColor }};text-transform:uppercase;letter-spacing:.5px">{{ r.label }}</div>
+                        <sc-if value="{{ r.sub }}" hint-placeholder-val="{{ false }}"><div style="font:300 11px/1.4 Lato,sans-serif;color:{{ r.subColor }};margin-top:2px">{{ r.sub }}</div></sc-if>
+                      </div>
+                      <sc-if value="{{ r.chip }}" hint-placeholder-val="{{ false }}"><span class="chip chip--warning" style="font-size:8.5px;flex:none">Aktuell</span></sc-if>
+                      <sc-if value="{{ r.box }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;flex:none;border:1px solid {{ r.boxBorder }};background:{{ r.boxBg }};display:flex;align-items:center;justify-content:center"><sc-if value="{{ r.check }}" hint-placeholder-val="{{ false }}"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></sc-if></span></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="padding:0 20px;display:flex;flex-direction:column;gap:14px">
+                  <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464">Erlaubte Wechsel richten sich nach deiner Rolle.</div>
+                  <div style="display:flex;gap:10px">
+                    <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                    <button class="btn btn--cta" style="{{ stCtaStyle }}">Status übernehmen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">9 · Terminal-Status — Bestätigung</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);filter:brightness(.55)">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="padding:4px 0 20px;display:flex;flex-direction:column;gap:14px">
+                <div style="padding:0 20px">
+                  <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Status wechseln</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Aktuell: In Bearbeitung</div>
+                </div>
+                <div style="border-top:1px solid #282828">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 20px;border-bottom:1px solid #1C1C1C;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
+                    <span style="width:12px;height:12px;flex:none;background:#2EBC3D"></span>
+                    <div style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Abgeschlossen</div>
+                    <span style="width:22px;height:22px;flex:none;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px">
+              <div class="krt-modal" style="max-width:360px;width:100%">
+                <div class="krt-modal-head"><h2>Auftrag abschließen?</h2></div>
+                <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">#A-1042 wird endgültig als <strong style="color:#2EBC3D">Abgeschlossen</strong> markiert. Terminale Status lassen sich in der App nicht zurücknehmen — Wiedereröffnung nur durch die Administration (Web).</p></div>
+                <div class="krt-modal-foot">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:48px">Endgültig abschließen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OrderStatusSheet</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Aktueller Status wird GEZEIGT (Zeile „Aktuell", inert) statt ausgeblendet — Orientierung vor Kürze; Auswahl = erlaubte Übergänge aus der API (transitions[] mit reason bei disabled), nie clientseitig geraten</li>
+            <li>Gesperrte Zeile trägt ihren Grund inline (kein Tooltip auf Touch); Status-Quadrate in den Semantikfarben, gesperrt auf 35%</li>
+            <li>Terminale Ziele bestätigen im Modal mit Konsequenz: CTA orange bei Abgeschlossen, ROT (#A3000A) bei Abgelehnt</li>
+            <li>„Status übernehmen" wartet auf den Server (Spinner im CTA, Zeilen gesperrt); Erfolg schließt Sheet + aktualisiert den Detail-Header; 409 (parallel geändert) → Sheet zeigt neuen Ist-Stand, Auswahl zurückgesetzt, Hinweis-Alert wie Artboard 7</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section data-screen-label="Auftraege tablet" style="margin-bottom:32px">
     <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Tablet 1280×800 — Queue + Detail (Drag-Handles für Logistiker)</div>
     <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
       <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
         <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
-          <img src="assets/krt.webp" alt="KRT" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+          <img src="assets/basetool-favicon.svg" alt="Basetool" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
           <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
             <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
               <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
@@ -361,7 +576,12 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { oTab: 0, bSeg: 0, mats0: false, mats1: false, mats2: false, int0: false, int1: false, intR0: true, intR1: false };
+  state = { oTab: 0, bSeg: 0, mats0: false, mats1: false, mats2: false, int0: false, int1: false, intR0: true, intR1: false,
+    n6Open: true, n6Saving: false, n6Toast: false,
+    n6Server: 'Liefere Laranite ab Freitag — 400 SCU.',
+    n6Draft: 'Liefere Laranite ab Freitag — 400 SCU. Übergabe gesammelt an ARC-L1.',
+    stSel: null };
+  componentWillUnmount() { clearTimeout(this._n6a); clearTimeout(this._n6b); }
   renderVals() {
     const mkOrder = (key, o) => ({
       ...o, open: this.state[key], chev: this.state[key] ? '90deg' : '0deg',
@@ -415,8 +635,59 @@ class Component extends DCLogic {
     const mkNav = (active) => navDefs.map((d, i) => ({ ...d, indBg: i === active ? '#E77E23' : 'transparent', iconColor: i === active ? '#000' : '#8A8A8A', labelColor: i === active ? '#FFFFFF' : '#8A8A8A' }));
     const railDefs = navDefs.slice(0, 4).concat([{ label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' }, { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' }]);
     const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 2 ? '#E77E23' : 'transparent', iconColor: i === 2 ? '#000' : '#8A8A8A', labelColor: i === 2 ? '#FFFFFF' : '#8A8A8A' }));
+    const n6Dirty = this.state.n6Draft.trim() !== this.state.n6Server.trim();
+    const n6Len = this.state.n6Draft.length;
+    const n6Disabled = !n6Dirty || this.state.n6Saving;
+    const stSel = this.state.stSel;
+    const stDefs = [
+      { key: 'open', label: 'Offen', square: '#3B82F6', sub: 'Zurück in die Queue', mode: 'select' },
+      { key: 'wip', label: 'In Bearbeitung', square: '#FFD23F', sub: '', mode: 'current' },
+      { key: 'done', label: 'Abgeschlossen', square: '#2EBC3D', sub: 'Terminal — nicht in der App zurücknehmbar', mode: 'select' },
+      { key: 'rej', label: 'Abgelehnt', square: '#F2564B', sub: 'Erfordert Rolle Logistiker (SK VANGUARD)', mode: 'disabled' },
+    ];
+    const stRows = stDefs.map((d) => {
+      const isSel = d.mode === 'select' && stSel === d.key;
+      const disabled = d.mode === 'disabled';
+      return {
+        label: d.label, square: d.square,
+        squareOp: disabled ? '.35' : '1',
+        sub: d.sub, subColor: '#8A8A8A',
+        nameColor: disabled ? '#646464' : '#FFFFFF',
+        bg: isSel || d.mode === 'current' ? '#1C1C1C' : 'transparent',
+        inset: isSel ? 'inset 3px 0 0 #E77E23' : 'none',
+        chip: d.mode === 'current',
+        box: d.mode !== 'current',
+        boxBorder: isSel ? '#E77E23' : disabled ? '#282828' : '#646464',
+        boxBg: isSel ? '#E77E23' : 'transparent',
+        check: isSel,
+        cursor: d.mode === 'select' ? 'pointer' : 'default',
+        onTap: d.mode === 'select' ? () => this.setState({ stSel: d.key }) : () => {},
+      };
+    });
     const b = this.state.bSeg;
     return {
+      n6Open: this.state.n6Open, n6Closed: !this.state.n6Open,
+      n6BgFilter: this.state.n6Open ? 'brightness(.4)' : 'none',
+      n6Draft: this.state.n6Draft,
+      n6Count: n6Len + ' / 250',
+      n6CountColor: n6Len >= 250 ? '#F2564B' : n6Len >= 230 ? '#FFD23F' : '#646464',
+      n6OnChange: (e) => this.setState({ n6Draft: e.target.value.slice(0, 250) }),
+      n6Saving: this.state.n6Saving, n6NotSaving: !this.state.n6Saving,
+      n6SaveLabel: this.state.n6Saving ? 'Speichern…' : 'Speichern',
+      n6SaveStyle: 'min-height:52px;flex:1.4' + (n6Disabled && !this.state.n6Saving ? ';background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none' : ''),
+      n6Save: () => {
+        if (n6Disabled) return;
+        this.setState({ n6Saving: true });
+        this._n6a = setTimeout(() => {
+          this.setState((s) => ({ n6Server: s.n6Draft, n6Saving: false, n6Open: false, n6Toast: true }));
+          this._n6b = setTimeout(() => this.setState({ n6Toast: false }), 2400);
+        }, 900);
+      },
+      n6Cancel: () => this.setState((s) => ({ n6Open: false, n6Draft: s.n6Server })),
+      n6Reopen: () => this.setState({ n6Open: true }),
+      n6Toast: this.state.n6Toast,
+      stRows,
+      stCtaStyle: 'min-height:52px;flex:1.4' + (stSel ? '' : ';background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none'),
       orders, oTabs, positions, demand, handovers, offers, requests, railNav,
       nav: mkNav(2), navB: mkNav(4),
       ot0: this.state.oTab === 0, ot1: this.state.oTab === 1, ot2: this.state.oTab === 2, ot3: this.state.oTab === 3,

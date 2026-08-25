@@ -8,6 +8,9 @@
   Lager, Einsätze, Operationen, Aufträge, Raffinerie, Materialbörse, Mein Inventar und Blueprints
   zeigen ihre Einträge jetzt als umrandete Kacheln mit Abstand. Der Posteingang und der Lager-Baum
   bleiben bewusst Zeilen — so sieht der Entwurf sie vor.
+- **Eine Notiz am Auftrag geht bei gleichzeitiger Bearbeitung nicht mehr verloren.** Hat jemand
+  anders zuerst gespeichert, zeigt die App jetzt den aktuellen Stand und daneben deine abgelehnte
+  Fassung mit „Meine Fassung übernehmen" — statt nur einer Fehlermeldung. Dazu ein Zeichenzähler.
 - **Im Lager steht jetzt bei jedem Eintrag, wo er liegt.** Bisher waren zwei Bestände desselben
   Materials an verschiedenen Orten nicht auseinanderzuhalten. Gruppen zeigen außerdem einen Pfeil,
   der anzeigt, dass sie sich öffnen lassen.

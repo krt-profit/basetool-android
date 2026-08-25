@@ -22,20 +22,20 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">14</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">System states & app icon</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Adaptive icon layers, notification shade, error/offline/update states. The 503 countdown is live.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Adaptive icon layers, notification shade, error/offline/update states, Gate-Ausfall nach Login. The 503 and gate countdowns are live.</div>
     </div>
   </header>
 
   <section data-screen-label="App icon" style="margin-bottom:44px;max-width:1200px">
     <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">1 · Adaptive app icon<span style="flex:1;height:1px;background:#282828"></span></h2>
-    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:100ch">Wedge-through-ring mark, orange on black — HARD RULE: the logo renders only in #E77E23, white or black. Mark drawn to the 66/108 dp safe zone; the launcher mask supplies every corner. Vector below is the spec approximation — final geometry from <span style="color:#D2D2D2">basetool/design/logos</span>.</p>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:100ch">Basetool mark — ring (planet), swoosh and profit bars plus star, orange on black — HARD RULE: the logo renders only in #E77E23, white or black. Mark drawn to the 66/108 dp safe zone; the launcher mask supplies every corner. Vector below is the spec approximation — final geometry from the design system's <span style="color:#D2D2D2">Basetool-Logofamilie</span> (assets/basetool-appicon-512.png · basetool-favicon.svg).</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
       <div class="card" style="padding:16px">
         <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Layers — ic_launcher.xml</div>
-        <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start">
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
             <div style="width:84px;height:84px;background:repeating-conic-gradient(#1C1C1C 0% 25%,#101010 0% 50%) 0 0/16px 16px;display:flex;align-items:center;justify-content:center">
-              <svg viewBox="0 0 108 108" style="width:64px;height:64px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="#E77E23"></polygon></svg>
+              <svg viewBox="0 0 108 108" style="width:64px;height:64px"><circle cx="54" cy="56" r="26" fill="none" stroke="#E77E23" stroke-width="7"></circle><polygon points="82,30 22,78 34,86" fill="#E77E23"></polygon><rect x="47" y="64" width="7" height="13" fill="#E77E23"></rect><rect x="58" y="58" width="7" height="19" fill="#E77E23"></rect><rect x="69" y="52" width="7" height="25" fill="#E77E23"></rect><path d="M28 18l2.4 6 6 2.4-6 2.4-2.4 6-2.4-6-6-2.4 6-2.4z" fill="#E77E23"></path></svg>
             </div>
             <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">foreground<br>(orange, safe zone)</span>
           </div>
@@ -45,9 +45,13 @@
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
             <div style="width:84px;height:84px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center">
-              <svg viewBox="0 0 108 108" style="width:64px;height:64px"><circle cx="54" cy="54" r="30" fill="none" stroke="#FFFFFF" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="#FFFFFF"></polygon></svg>
+              <svg viewBox="0 0 108 108" style="width:64px;height:64px"><circle cx="54" cy="56" r="26" fill="none" stroke="#FFFFFF" stroke-width="7"></circle><polygon points="82,30 22,78 34,86" fill="#FFFFFF"></polygon><rect x="47" y="64" width="7" height="13" fill="#FFFFFF"></rect><rect x="58" y="58" width="7" height="19" fill="#FFFFFF"></rect><rect x="69" y="52" width="7" height="25" fill="#FFFFFF"></rect><path d="M28 18l2.4 6 6 2.4-6 2.4-2.4 6-2.4-6-6-2.4 6-2.4z" fill="#FFFFFF"></path></svg>
             </div>
             <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">monochrome<br>(alpha-only white)</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <img src="assets/basetool-appicon-512.png" alt="Basetool App-Icon — DS-Asset" style="width:84px;height:84px;object-fit:contain;border:1px solid #282828">
+            <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">Referenz — DS-Asset<br>basetool-appicon-512</span>
           </div>
         </div>
       </div>
@@ -57,7 +61,7 @@
           <sc-for list="{{ masks }}" as="m" hint-placeholder-count="4">
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
               <div style="width:64px;height:64px;background:{{ m.bg }};border-radius:{{ m.radius }};display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #282828">
-                <svg viewBox="0 0 108 108" style="width:48px;height:48px"><circle cx="54" cy="54" r="30" fill="none" stroke="{{ m.fg }}" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="{{ m.fg }}"></polygon></svg>
+                <svg viewBox="0 0 108 108" style="width:48px;height:48px"><circle cx="54" cy="56" r="26" fill="none" stroke="{{ m.fg }}" stroke-width="7"></circle><polygon points="82,30 22,78 34,86" fill="{{ m.fg }}"></polygon><rect x="47" y="64" width="7" height="13" fill="{{ m.fg }}"></rect><rect x="58" y="58" width="7" height="19" fill="{{ m.fg }}"></rect><rect x="69" y="52" width="7" height="25" fill="{{ m.fg }}"></rect><path d="M28 18l2.4 6 6 2.4-6 2.4-2.4 6-2.4-6-6-2.4 6-2.4z" fill="{{ m.fg }}"></path></svg>
               </div>
               <span style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-align:center">{{ m.label }}</span>
             </div>
@@ -71,7 +75,7 @@
           <sc-for list="{{ launcher }}" as="l" hint-placeholder-count="4">
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
               <div style="width:52px;height:52px;border-radius:50%;background:{{ l.bg }};display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <sc-if value="{{ l.krt }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 108 108" style="width:40px;height:40px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="8"></circle><polygon points="93,39 93,69 13,54" fill="#E77E23"></polygon></svg></sc-if>
+                <sc-if value="{{ l.krt }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 108 108" style="width:40px;height:40px"><circle cx="54" cy="56" r="26" fill="none" stroke="#E77E23" stroke-width="7"></circle><polygon points="82,30 22,78 34,86" fill="#E77E23"></polygon><rect x="47" y="64" width="7" height="13" fill="#E77E23"></rect><rect x="58" y="58" width="7" height="19" fill="#E77E23"></rect><rect x="69" y="52" width="7" height="25" fill="#E77E23"></rect><path d="M28 18l2.4 6 6 2.4-6 2.4-2.4 6-2.4-6-6-2.4 6-2.4z" fill="#E77E23"></path></svg></sc-if>
                 <sc-if value="{{ l.dot }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:6px;background:{{ l.dot }}"></span></sc-if>
               </div>
               <span style="font:300 10.5px/1 Lato,sans-serif;color:{{ l.labelColor }}">{{ l.label }}</span>
@@ -79,8 +83,8 @@
           </sc-for>
         </div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:12px;background:#141414;border:1px solid #282828;padding:10px 14px">
-          <span style="width:28px;height:28px;background:#1C1C1C;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 108 108" style="width:20px;height:20px"><circle cx="54" cy="54" r="30" fill="none" stroke="#FFFFFF" stroke-width="10"></circle><polygon points="96,37 96,71 10,54" fill="#FFFFFF"></polygon></svg></span>
-          <span style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Status-bar small icon: 24 dp alpha-only silhouette, thicker strokes; accent color = #E77E23.</span>
+          <span style="width:28px;height:28px;background:#1C1C1C;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 108 108" style="width:20px;height:20px"><circle cx="54" cy="56" r="26" fill="none" stroke="#FFFFFF" stroke-width="10"></circle><polygon points="86,26 20,78 36,88" fill="#FFFFFF"></polygon></svg></span>
+          <span style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Status-bar small icon: 24 dp alpha-only, simplified silhouette — ring + swoosh, bars and star drop out at this size; accent color = #E77E23.</span>
         </div>
       </div>
     </div>
@@ -96,7 +100,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px 14px"><span style="font:300 26px/1 Lato,sans-serif;color:#fff">14:32</span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">So., 17. Aug.</span></div>
             <div style="background:#1A1C20;border-radius:0;border:1px solid #282828;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
               <div style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 108 108" style="width:16px;height:16px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="10"></circle><polygon points="96,37 96,71 10,54" fill="#E77E23"></polygon></svg>
+                <svg viewBox="0 0 108 108" style="width:16px;height:16px"><circle cx="54" cy="56" r="26" fill="none" stroke="#E77E23" stroke-width="10"></circle><polygon points="86,26 20,78 36,88" fill="#E77E23"></polygon></svg>
                 <span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">Basetool · Einsätze · vor 5 Min.</span>
               </div>
               <div>
@@ -110,7 +114,7 @@
             </div>
             <div style="background:#1A1C20;border:1px solid #282828;border-top:none;padding:12px 16px;display:flex;flex-direction:column;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 108 108" style="width:16px;height:16px"><circle cx="54" cy="54" r="30" fill="none" stroke="#E77E23" stroke-width="10"></circle><polygon points="96,37 96,71 10,54" fill="#E77E23"></polygon></svg>
+                <svg viewBox="0 0 108 108" style="width:16px;height:16px"><circle cx="54" cy="56" r="26" fill="none" stroke="#E77E23" stroke-width="10"></circle><polygon points="86,26 20,78 36,88" fill="#E77E23"></polygon></svg>
                 <span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">Basetool · Aufträge · vor 2 Std.</span>
               </div>
               <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Auftrag #A-1042 dir zugewiesen</div>
@@ -144,7 +148,7 @@
           <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
             <div style="flex:1"></div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
-              <img src="assets/krt.webp" alt="KRT" style="width:72px;height:72px;object-fit:contain">
+              <img src="assets/basetool-appicon-512.png" alt="Basetool" style="width:72px;height:72px;object-fit:contain">
               <div style="font:900 22px/1.2 Lato,sans-serif;color:#E77E23;letter-spacing:1.1px;text-transform:uppercase">Update erforderlich</div>
               <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:36ch">Der Server erwartet eine neuere App-Version. Bitte aktualisiere, um fortzufahren.</div>
               <div style="display:flex;gap:10px;align-items:center;font-variant-numeric:tabular-nums">
@@ -260,24 +264,179 @@
     </div>
   </section>
 
+  <section data-screen-label="Gate unavailable" style="margin-bottom:24px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">3 · Gate nicht erreichbar — nach Login, vor der App<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:100ch">Angemeldet, aber der Freigabe-Status (Gate) antwortet nicht. Kein 403 (das wäre eine Antwort), kein Offline-Banner (es gibt nichts Gecachtes dahinter), kein Login (Passwort wäre falsch). Ehrliche Aktionen: erneut versuchen, abmelden.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Ruhezustand — beide Aktionen (live: Countdown + Auto-Retry)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+              <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center">
+                <span class="krt-spinner" style="position:absolute;inset:0;width:auto;height:auto;border-width:3px"></span>
+                <span style="font:900 24px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ gCount }}</span>
+              </div>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#FFD23F;letter-spacing:1px;text-transform:uppercase">Verification Offline</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:34ch">Command did not respond. Your credentials remain valid.</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#646464;max-width:38ch">Du bist angemeldet — es fehlt nur die Antwort der Freigabe-Prüfung. Automatischer Neuversuch in {{ gCount }} s.</div>
+              <span class="chip chip--muted" style="font-size:10px">Angemeldet als GrafRotz</span>
+            </div>
+            <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
+              <button class="btn-outline btn" style="{{ gRetryStyle }}" onClick="{{ gRetryNow }}"><sc-if value="{{ gChecking }}" hint-placeholder-val="{{ false }}"><span class="krt-spinner" style="width:14px;height:14px"></span></sc-if><sc-if value="{{ gNotChecking }}" hint-placeholder-val="{{ true }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg></sc-if>{{ gRetryLabel }}</button>
+              <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#8A8A8A;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Abmelden</button>
+            </div>
+            <div style="flex:1.3"></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center;padding-bottom:16px">Backoff 3 → 6 → 12 → 30 s · manueller Versuch setzt zurück.</div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — GateUnavailableScreen</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Trigger: Token gültig, Freigabe-Status antwortet NICHT (Netzfehler, Timeout, 5xx ohne Body). Jede echte Antwort — genehmigt, ausstehend, abgelehnt, 403 — ist KEIN Gate-Ausfall und routet in die Auth-Zustände (Kap. 04)</li>
+            <li>Auto-Retry: JA — das 429/503-Countdown-Muster wiederverwendet; Backoff 3→6→12→30 s (Deckel 30), Versuch wartet max. 10 s, manueller Versuch setzt den Backoff zurück</li>
+            <li>Abmelden OHNE Rückfrage: nichts Ungespeichertes vorhanden (App-Inhalte nie geladen) und Warten darf nicht der einzige Ausweg sein — Tokens verwerfen, zurück zum Login (Kap. 04)</li>
+            <li>Antwortet das Gate währenddessen: genehmigt → sofort ins Dashboard, Countdown bricht ab, kein Toast; jede andere Antwort → zugehöriger Auth-Zustand (Kap. 04)</li>
+            <li>Kein Statuscode im Copy — kein 5xx geborgt; Ton ist Feststellung statt Vorwurf („credentials remain valid")</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Retry läuft</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+              <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center">
+                <span class="krt-spinner" style="position:absolute;inset:0;width:auto;height:auto;border-width:3px"></span>
+                <span style="font:900 24px/1 Lato,sans-serif;color:#FFFFFF">…</span>
+              </div>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#FFD23F;letter-spacing:1px;text-transform:uppercase">Verification Offline</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:34ch">Command did not respond. Your credentials remain valid.</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#646464;max-width:38ch">Du bist angemeldet — es fehlt nur die Antwort der Freigabe-Prüfung.</div>
+              <span class="chip chip--muted" style="font-size:10px">Angemeldet als GrafRotz</span>
+            </div>
+            <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
+              <button class="btn-outline btn" style="background:transparent;min-height:50px;width:100%;opacity:.45;pointer-events:none"><span class="krt-spinner" style="width:14px;height:14px"></span>Prüfe Freigabe…</button>
+              <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#8A8A8A;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Abmelden</button>
+            </div>
+            <div style="flex:1.3"></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center;padding-bottom:16px">Versuch läuft — Antwort wird bis 10 s abgewartet. Abmelden bleibt aktiv.</div>
+          </div>
+        </x-import>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Nach mehreren Fehlversuchen — Eskalationszeile</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;padding:0 32px">
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+              <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center">
+                <span class="krt-spinner" style="position:absolute;inset:0;width:auto;height:auto;border-width:3px"></span>
+                <span style="font:900 24px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">30</span>
+              </div>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#FFD23F;letter-spacing:1px;text-transform:uppercase">Verification Offline</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:34ch">Command did not respond. Your credentials remain valid.</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#646464;max-width:38ch">Du bist angemeldet — es fehlt nur die Antwort der Freigabe-Prüfung. Automatischer Neuversuch in 30 s.</div>
+              <span class="chip chip--muted" style="font-size:10px">Angemeldet als GrafRotz</span>
+              <div style="display:flex;align-items:flex-start;gap:8px;max-width:40ch">
+                <svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A;flex:none;margin-top:2px"><use href="#krt-icon-info"></use></svg>
+                <span style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;text-align:left">Weiterhin keine Antwort — Status der Systeme ggf. im Org-Discord.</span>
+              </div>
+            </div>
+            <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
+              <button class="btn-outline btn" style="background:transparent;min-height:50px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg>Jetzt erneut versuchen</button>
+              <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#8A8A8A;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Abmelden</button>
+            </div>
+            <div style="flex:1.3"></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center;padding-bottom:16px;font-variant-numeric:tabular-nums">4. Versuch fehlgeschlagen · Backoff bei 30 s gedeckelt.</div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Eskalation — bewusst minimal</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Nach dem 3. Fehlversuch erscheint EINE Zeile (Org-Discord als Ausweichkanal) — sonst ändert sich nichts: kein Fehlerbild, keine rote Färbung, der Zustand bleibt Warten, nicht Schuld</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — zentrierte Spalte (live)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;align-items:center;padding:0 32px">
+            <div style="flex:1"></div>
+            <div style="width:400px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+              <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center">
+                <span class="krt-spinner" style="position:absolute;inset:0;width:auto;height:auto;border-width:3px"></span>
+                <span style="font:900 24px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ gCount }}</span>
+              </div>
+              <div style="font:900 20px/1.2 Lato,sans-serif;color:#FFD23F;letter-spacing:1px;text-transform:uppercase">Verification Offline</div>
+              <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:34ch">Command did not respond. Your credentials remain valid.</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#646464;max-width:38ch">Du bist angemeldet — es fehlt nur die Antwort der Freigabe-Prüfung. Automatischer Neuversuch in {{ gCount }} s.</div>
+              <span class="chip chip--muted" style="font-size:10px">Angemeldet als GrafRotz</span>
+              <div style="margin-top:10px;display:flex;flex-direction:column;gap:12px;width:100%">
+                <button class="btn-outline btn" style="{{ gRetryStyle }}" onClick="{{ gRetryNow }}"><sc-if value="{{ gChecking }}" hint-placeholder-val="{{ false }}"><span class="krt-spinner" style="width:14px;height:14px"></span></sc-if><sc-if value="{{ gNotChecking }}" hint-placeholder-val="{{ true }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-reset"></use></svg></sc-if>{{ gRetryLabel }}</button>
+                <button style="all:unset;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#8A8A8A;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase">Abmelden</button>
+              </div>
+            </div>
+            <div style="flex:1.3"></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;text-align:center;padding-bottom:16px">Backoff 3 → 6 → 12 → 30 s · manueller Versuch setzt zurück.</div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px;max-width:600px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Tablet</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Kein Rail, kein App-Chrome — der Zustand liegt VOR der App; 400-dp-Spalte zentriert auf Schwarz (Konvention der Full-Screen-Zustände)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
     <a href="04 Auth.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 04 Auth</a>
-    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">Index →</a>
+    <a href="15 Open-Source-Lizenzen.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">15 Open-Source-Lizenzen →</a>
   </footer>
 </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { retryIn: 12 };
+  state = { retryIn: 12, gIn: 3, gIdx: 0, gChecking: false };
   componentDidMount() {
     this._iv = setInterval(() => this.setState(s => ({ retryIn: s.retryIn > 0 ? s.retryIn - 1 : 12 })), 1000);
   }
-  componentWillUnmount() { clearInterval(this._iv); }
+  componentWillUnmount() { clearInterval(this._iv); clearInterval(this._giv); clearTimeout(this._gt); }
   renderVals() {
+    const gSeq = [3, 6, 12, 30];
+    if (!this._giv) {
+      this._giv = setInterval(() => {
+        if (this.state.gChecking) return;
+        if (this.state.gIn > 1) { this.setState(s => ({ gIn: s.gIn - 1 })); return; }
+        this.setState({ gChecking: true });
+        this._gt = setTimeout(() => this.setState(s => {
+          const gIdx = Math.min(s.gIdx + 1, 3);
+          return { gChecking: false, gIdx, gIn: gSeq[gIdx] };
+        }), 1400);
+      }, 1000);
+    }
+    const gc = this.state.gChecking;
     return {
       retryIn: this.state.retryIn,
       retryNow: () => this.setState({ retryIn: 12 }),
+      gCount: gc ? '…' : String(this.state.gIn),
+      gChecking: gc, gNotChecking: !gc,
+      gRetryLabel: gc ? 'Prüfe Freigabe…' : 'Jetzt erneut versuchen',
+      gRetryStyle: 'background:transparent;min-height:50px;width:100%' + (gc ? ';opacity:.45;pointer-events:none' : ''),
+      gRetryNow: () => {
+        if (this.state.gChecking) return;
+        this.setState({ gChecking: true });
+        this._gt = setTimeout(() => this.setState({ gChecking: false, gIdx: 0, gIn: 3 }), 1400);
+      },
       masks: [
         { label: 'Circle', radius: '50%', bg: '#000', fg: '#E77E23' },
         { label: 'Squircle', radius: '28%', bg: '#000', fg: '#E77E23' },

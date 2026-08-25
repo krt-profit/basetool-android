@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:3200px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">15</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Open-Source-Lizenzen</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Push aus Einstellungen → Rechtliches &amp; Daten (Kap. 13). Build-generiertes Register (licensee-Report als raw-Resource): &gt;100 Artefakte mit exakter Version, gruppiert nach Lizenz, Lizenztext extern im Browser. Live: Scrollen mit Sticky-Headern, Kein-Browser-Toast.</div>
+    </div>
+  </header>
+
+  <section data-screen-label="Open-Source-Lizenzen frames" style="display:flex;gap:28px;align-items:flex-start">
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Listenanfang — Rahmentext + erste Gruppe (live scrollen)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück zu Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Open-Source-Lizenzen</div>
+          </div>
+          <div style="flex:1;overflow:auto">
+            <div style="padding:16px 16px 12px">
+              <div style="font:300 13.5px/1.55 Lato,sans-serif;color:#D2D2D2">Diese App enthält Open-Source-Komponenten. Das Verzeichnis wird bei jedem Build aus dem Abhängigkeitsgraphen der ausgelieferten Variante erzeugt — die Versionen gelten exakt für diesen Build.</div>
+              <div style="font:700 11px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;font-variant-numeric:tabular-nums;margin-top:10px">102 Artefakte · 4 Lizenzen · v1.4.2 (Build 37) · Prod</div>
+            </div>
+            <div style="margin:0 16px 16px;border:1px solid #282828;background:#141414">
+              <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+                <div style="position:relative">
+                  <div style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 16px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 12.5px/1.25 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.6px">{{ g.name }}</div>
+                      <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:2px;font-variant-numeric:tabular-nums">{{ g.sub }}</div>
+                    </div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:48px;padding:0 2px;font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.6px;flex:none" style-hover="color:#EEB64B" aria-label="Lizenztext im Browser öffnen">LIZENZTEXT<svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-external-link"></use></svg></button>
+                  </div>
+                  <sc-for list="{{ g.rows }}" as="a" hint-placeholder-count="3">
+                    <div data-mark="{{ a.mark }}" style="padding:11px 16px;border-bottom:1px solid #1C1C1C;font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;word-break:break-all">{{ a.c }}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <div style="padding:14px 16px;text-align:center;font:700 10.5px/1.4 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.8px">Ende des Berichts · erzeugt beim Build · licensee 1.14.1</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Listenmitte — Sticky-Header &amp; Gruppenwechsel (Gruppen 3–4 illustrativ)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück zu Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Open-Source-Lizenzen</div>
+          </div>
+          <div style="flex:1;overflow:auto" ref="{{ sc2Ref }}">
+            <div style="padding:16px 16px 12px">
+              <div style="font:300 13.5px/1.55 Lato,sans-serif;color:#D2D2D2">Diese App enthält Open-Source-Komponenten. Das Verzeichnis wird bei jedem Build aus dem Abhängigkeitsgraphen der ausgelieferten Variante erzeugt — die Versionen gelten exakt für diesen Build.</div>
+              <div style="font:700 11px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;font-variant-numeric:tabular-nums;margin-top:10px">102 Artefakte · 4 Lizenzen · v1.4.2 (Build 37) · Prod</div>
+            </div>
+            <div style="margin:0 16px 16px;border:1px solid #282828;background:#141414">
+              <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+                <div style="position:relative">
+                  <div style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 16px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 12.5px/1.25 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.6px">{{ g.name }}</div>
+                      <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:2px;font-variant-numeric:tabular-nums">{{ g.sub }}</div>
+                    </div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:48px;padding:0 2px;font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.6px;flex:none" style-hover="color:#EEB64B" aria-label="Lizenztext im Browser öffnen">LIZENZTEXT<svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-external-link"></use></svg></button>
+                  </div>
+                  <sc-for list="{{ g.rows }}" as="a" hint-placeholder-count="3">
+                    <div data-mark="{{ a.mark }}" style="padding:11px 16px;border-bottom:1px solid #1C1C1C;font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;word-break:break-all">{{ a.c }}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <div style="padding:14px 16px;text-align:center;font:700 10.5px/1.4 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.8px">Ende des Berichts · erzeugt beim Build · licensee 1.14.1</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OssLicensesScreen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Quelle: res/raw/oss_licenses.json — Licensee-Report der Build-Variante (Task OssLicensesResource). Off-main parsen; Reihenfolge deterministisch: Gruppen alphabetisch nach Lizenzname, Artefakte alphabetisch</li>
+          <li>Sticky-Header: JA — LazyColumn stickyHeader() je Gruppe; gepinnt identisch zum ruhenden Header (opak #1C1C1C, 2-dp-Orange-Regel, keine Elevation)</li>
+          <li>Koordinate = EIN String group:artifact:version — Version in derselben Zeile; Umbruch break-all ohne hängenden Einzug (bis ~57 Zeichen einzeilig bei 13 sp / 412 dp — kotlinx-coroutines-android:1.10.2 passt; adaptive-navigation:1.3.0 mit 62 Zeichen bricht auf Zeile 2). Zeilen nicht interaktiv, min. 40 dp, 13 sp / 1.5</li>
+          <li>Gruppe mit 1 Artefakt: kein Sonderfall — gleicher Header inkl. „1 Artefakt" (hier: BSD-3-Clause)</li>
+          <li>Dual-Lizenz: Artefakt erscheint unter JEDER Lizenz (hier illustrativ: javax.annotation-api unter CDDL 1.1 UND GPL 2.0 CPE). Heutiger Prod-Graph hat exakt 2 Gruppen — licensee-Gate erlaubt nur Apache-2.0 + BSD-3-Clause</li>
+          <li>Neue Lizenz ⇒ licensee allow() + OssLicense-Eintrag (Name + kanonische URL); OssLicensesTest erzwingt das Paar</li>
+          <li>Leer-Zustand unerreichbar (Graph nie leer); Report mit 0 Artefakten ⇒ Fehlerzustand (Artboard 5). Keine Suche, kein Filter — bewusst</li>
+          <li>Rahmentext: NÖTIG — erklärt Build-Bezug &amp; exakte Versionen (2 Sätze + Meta-Zeile, Artboard 1)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Kein Browser erkannt — Kopier-Fallback (live: Toast)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück zu Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Open-Source-Lizenzen</div>
+          </div>
+          <div style="flex:1;overflow:auto">
+            <div style="padding:16px 16px 12px">
+              <div style="font:300 13.5px/1.55 Lato,sans-serif;color:#D2D2D2">Diese App enthält Open-Source-Komponenten. Das Verzeichnis wird bei jedem Build aus dem Abhängigkeitsgraphen der ausgelieferten Variante erzeugt — die Versionen gelten exakt für diesen Build.</div>
+              <div style="font:700 11px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;font-variant-numeric:tabular-nums;margin-top:10px">102 Artefakte · 4 Lizenzen · v1.4.2 (Build 37) · Prod</div>
+            </div>
+            <div style="display:flex;gap:10px;margin:0 16px 12px;padding:10px 12px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12)">
+              <svg class="krt-icon" style="width:18px;height:18px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+              <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#D2D2D2">Kein Browser auf diesem Gerät erkannt. Lizenz-Links werden als URL kopiert statt geöffnet.</div>
+            </div>
+            <div style="margin:0 16px 16px;border:1px solid #282828;background:#141414">
+              <div style="position:relative">
+                <div style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 16px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                  <div style="flex:1;min-width:0">
+                    <div style="font:700 12.5px/1.25 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.6px">Apache License 2.0</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:2px;font-variant-numeric:tabular-nums">100 Artefakte · SPDX: Apache-2.0</div>
+                  </div>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;min-height:48px;padding:0 2px;font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.6px;flex:none" style-hover="color:#EEB64B" onClick="{{ copyTap }}" aria-label="Lizenz-URL kopieren">URL KOPIEREN</button>
+                </div>
+                <sc-for list="{{ apacheHead }}" as="a" hint-placeholder-count="3">
+                  <div style="padding:11px 16px;border-bottom:1px solid #1C1C1C;font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;word-break:break-all">{{ a.c }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:#141414;border:1px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.3)">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#2EBC3D;flex:none"><use href="#krt-icon-check"></use></svg>
+              <div style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">URL kopiert — auf einem Gerät mit Browser öffnen.</div>
+            </div>
+          </sc-if>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Kein Browser</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Erkennung beim Screen-Aufbau (PackageManager-Query VIEW https + &lt;queries&gt;-Deklaration im Manifest), nicht erst beim Tap</li>
+          <li>„LIZENZTEXT ⧉" wird zu „URL KOPIEREN" — Text-Action, kein neues Sprite-Icon; Toast bestätigt, Info-Banner einmal oben</li>
+          <li>URLs kommen aus dem OssLicense-Mapping — Lizenztexte bewusst nicht gebündelt (kanonische Quelle, APK-Größe)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Laden — Spinner erst nach 300 ms</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück zu Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Open-Source-Lizenzen</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+            <span class="krt-spinner" style="width:32px;height:32px;border-width:3px"></span>
+            <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.8px">Lizenzbericht wird geladen</div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Fehler — Bericht nicht lesbar</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück zu Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Open-Source-Lizenzen</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center">
+            <svg class="krt-icon" style="width:44px;height:44px;color:#F2564B"><use href="#krt-icon-warning"></use></svg>
+            <div style="font:900 18px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Bericht nicht lesbar</div>
+            <div style="font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:280px">Der Lizenzbericht konnte nicht aus den App-Ressourcen geladen werden. Eine Neuinstallation behebt das in der Regel.</div>
+            <button class="btn-outline btn" style="min-height:48px;padding:0 24px">Erneut versuchen</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Laden &amp; Fehler</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Lokaler Raw-Read (i. d. R. &lt;100 ms): Spinner erst nach 300 ms Verzögerung zeigen — kein Aufblitzen</li>
+          <li>Lokaler Fehler ⇒ KEIN Fiction-Canon (bleibt HTTP-Fehlern vorbehalten, Kap. 14); „Erneut versuchen" liest die Resource neu</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — 480-dp-Spalte (live scrollen)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+        <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+            <img src="assets/basetool-favicon.svg" alt="Basetool" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+            <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+              <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;height:64px;padding:0 12px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück zu Einstellungen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <h2 style="flex:1;margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Open-Source-Lizenzen</h2>
+              <span class="squadron-badge" style="font-size:12px">Bereich Profit</span>
+            </div>
+            <div style="flex:1;overflow:auto">
+              <div style="max-width:480px;margin:0 auto">
+                <div style="padding:20px 0 12px">
+                  <div style="font:300 13.5px/1.55 Lato,sans-serif;color:#D2D2D2">Diese App enthält Open-Source-Komponenten. Das Verzeichnis wird bei jedem Build aus dem Abhängigkeitsgraphen der ausgelieferten Variante erzeugt — die Versionen gelten exakt für diesen Build.</div>
+                  <div style="font:700 11px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;font-variant-numeric:tabular-nums;margin-top:10px">102 Artefakte · 4 Lizenzen · v1.4.2 (Build 37) · Prod</div>
+                </div>
+                <div style="margin:0 0 24px;border:1px solid #282828;background:#141414">
+                  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+                    <div style="position:relative">
+                      <div style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 16px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                        <div style="flex:1;min-width:0">
+                          <div style="font:700 12.5px/1.25 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.6px">{{ g.name }}</div>
+                          <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:2px;font-variant-numeric:tabular-nums">{{ g.sub }}</div>
+                        </div>
+                        <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:48px;padding:0 2px;font:700 11px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.6px;flex:none" style-hover="color:#EEB64B" aria-label="Lizenztext im Browser öffnen">LIZENZTEXT<svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-external-link"></use></svg></button>
+                      </div>
+                      <sc-for list="{{ g.rows }}" as="a" hint-placeholder-count="3">
+                        <div style="padding:11px 16px;border-bottom:1px solid #1C1C1C;font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;word-break:break-all">{{ a.c }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <div style="padding:14px 16px;text-align:center;font:700 10.5px/1.4 Lato,sans-serif;color:#646464;text-transform:uppercase;letter-spacing:.8px">Ende des Berichts · erzeugt beim Build · licensee 1.14.1</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px;max-width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Tablet</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>480-dp-Spalte der Einstellungen beibehalten: einspaltiges Register, Koordinaten bleiben scannbar; 2 Spalten würden Sticky-Header und Scan-Reihenfolge brechen. Restfläche bleibt Canvas-schwarz</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;margin-top:32px;max-width:1200px">
+    <a href="14 System States.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 14 System states &amp; app icon</a>
+    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">Index →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { toast: false };
+  componentDidMount() {
+    this._st = setTimeout(() => {
+      const sc = this._sc2;
+      if (!sc) return;
+      const m = sc.querySelector('[data-mark="tail"]');
+      if (m) sc.scrollTop = m.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 150;
+    }, 800);
+  }
+  componentWillUnmount() { clearTimeout(this._st); clearTimeout(this._tt); }
+  renderVals() {
+    const apache = [
+      'androidx.activity:activity:1.13.0', 'androidx.activity:activity-compose:1.13.0', 'androidx.activity:activity-ktx:1.13.0',
+      'androidx.annotation:annotation:1.10.0', 'androidx.annotation:annotation-experimental:1.5.1',
+      'androidx.appcompat:appcompat:1.8.0', 'androidx.appcompat:appcompat-resources:1.8.0',
+      'androidx.arch.core:core-common:2.2.0', 'androidx.arch.core:core-runtime:2.2.0',
+      'androidx.autofill:autofill:1.1.0', 'androidx.biometric:biometric:1.1.0', 'androidx.browser:browser:1.10.0',
+      'androidx.collection:collection:1.5.0', 'androidx.collection:collection-ktx:1.5.0',
+      'androidx.compose.animation:animation:1.10.0', 'androidx.compose.animation:animation-core:1.10.0',
+      'androidx.compose.foundation:foundation:1.10.0', 'androidx.compose.foundation:foundation-layout:1.10.0',
+      'androidx.compose.material:material-ripple:1.10.0',
+      'androidx.compose.material3:material3:1.5.0', 'androidx.compose.material3:material3-window-size-class:1.5.0',
+      'androidx.compose.material3.adaptive:adaptive:1.3.0', 'androidx.compose.material3.adaptive:adaptive-layout:1.3.0',
+      'androidx.compose.material3.adaptive:adaptive-navigation:1.3.0',
+      'androidx.compose.runtime:runtime:1.10.0', 'androidx.compose.runtime:runtime-saveable:1.10.0',
+      'androidx.compose.ui:ui:1.10.0', 'androidx.compose.ui:ui-geometry:1.10.0', 'androidx.compose.ui:ui-graphics:1.10.0',
+      'androidx.compose.ui:ui-text:1.10.0', 'androidx.compose.ui:ui-tooling-preview:1.10.0',
+      'androidx.compose.ui:ui-unit:1.10.0', 'androidx.compose.ui:ui-util:1.10.0',
+      'androidx.concurrent:concurrent-futures:1.2.0',
+      'androidx.core:core:1.19.0', 'androidx.core:core-ktx:1.19.0', 'androidx.core:core-splashscreen:1.0.1', 'androidx.core:core-viewtree:1.0.0',
+      'androidx.cursoradapter:cursoradapter:1.0.0', 'androidx.customview:customview:1.1.0', 'androidx.customview:customview-poolingcontainer:1.0.0',
+      'androidx.datastore:datastore:1.2.1', 'androidx.datastore:datastore-core:1.2.1',
+      'androidx.datastore:datastore-preferences:1.2.1', 'androidx.datastore:datastore-preferences-core:1.2.1',
+      'androidx.drawerlayout:drawerlayout:1.1.1', 'androidx.emoji2:emoji2:1.5.0', 'androidx.emoji2:emoji2-views-helper:1.5.0',
+      'androidx.fragment:fragment:1.8.9', 'androidx.fragment:fragment-ktx:1.8.9',
+      'androidx.graphics:graphics-path:1.0.1', 'androidx.interpolator:interpolator:1.0.0',
+      'androidx.lifecycle:lifecycle-common:2.11.0', 'androidx.lifecycle:lifecycle-common-jvm:2.11.0',
+      'androidx.lifecycle:lifecycle-livedata:2.11.0', 'androidx.lifecycle:lifecycle-livedata-core:2.11.0',
+      'androidx.lifecycle:lifecycle-process:2.11.0', 'androidx.lifecycle:lifecycle-runtime:2.11.0',
+      'androidx.lifecycle:lifecycle-runtime-compose:2.11.0', 'androidx.lifecycle:lifecycle-runtime-ktx:2.11.0',
+      'androidx.lifecycle:lifecycle-viewmodel:2.11.0', 'androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0',
+      'androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0', 'androidx.lifecycle:lifecycle-viewmodel-savedstate:2.11.0',
+      'androidx.loader:loader:1.1.0',
+      'androidx.navigation:navigation-common:2.9.8', 'androidx.navigation:navigation-compose:2.9.8', 'androidx.navigation:navigation-runtime:2.9.8',
+      'androidx.print:print:1.0.0', 'androidx.profileinstaller:profileinstaller:1.4.1',
+      'androidx.resourceinspection:resourceinspection-annotation:1.0.1',
+      'androidx.savedstate:savedstate:1.3.0', 'androidx.savedstate:savedstate-ktx:1.3.0',
+      'androidx.security:security-crypto:1.1.0', 'androidx.startup:startup-runtime:1.2.0', 'androidx.tracing:tracing:1.3.0',
+      'androidx.transition:transition:1.5.1',
+      'androidx.vectordrawable:vectordrawable:1.2.0', 'androidx.vectordrawable:vectordrawable-animated:1.2.0',
+      'androidx.versionedparcelable:versionedparcelable:1.2.1', 'androidx.viewpager:viewpager:1.0.0',
+      'androidx.window:window:1.4.0', 'androidx.window:window-core:1.4.0',
+      'com.github.stephenc.jcip:jcip-annotations:1.0-1',
+      'com.google.dagger:dagger:2.60.1', 'com.google.dagger:hilt-android:2.60.1', 'com.google.dagger:hilt-core:2.60.1',
+      'com.google.guava:listenablefuture:1.0', 'com.nimbusds:nimbus-jose-jwt:10.9.1',
+      'com.squareup.okhttp3:okhttp:5.5.0', 'com.squareup.okio:okio:3.16.0',
+      'jakarta.inject:jakarta.inject-api:2.0.1', 'javax.inject:javax.inject:1',
+      'org.jetbrains:annotations:26.0.2', 'org.jetbrains.kotlin:kotlin-stdlib:2.4.10',
+      'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2', 'org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2',
+      'org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.11.0', 'org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.11.0',
+      'org.jspecify:jspecify:1.0.0',
+    ];
+    const row = (c) => ({ c, mark: c === 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2' ? 'tail' : '' });
+    const groups = [
+      { name: 'Apache License 2.0', sub: apache.length + ' Artefakte · SPDX: Apache-2.0', rows: apache.map(row) },
+      { name: 'BSD 3-Clause "New" or "Revised" License', sub: '1 Artefakt · SPDX: BSD-3-Clause', rows: [row('com.google.protobuf:protobuf-javalite:4.31.1')] },
+      { name: 'Common Development and Distribution License 1.1', sub: '1 Artefakt · SPDX: CDDL-1.1', rows: [row('javax.annotation:javax.annotation-api:1.3.2')] },
+      { name: 'GNU General Public License v2.0 with Classpath Exception', sub: '1 Artefakt · SPDX: GPL-2.0-with-classpath-exception', rows: [row('javax.annotation:javax.annotation-api:1.3.2')] },
+    ];
+    const navDefs = [
+      { label: 'Übersicht', icon: '#krt-icon-dashboard' }, { label: 'Einsätze', icon: '#krt-icon-target' },
+      { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
+      { label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' },
+      { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' },
+    ];
+    const railNav = navDefs.map((d, i) => ({ ...d, indBg: i === 7 ? '#E77E23' : 'transparent', iconColor: i === 7 ? '#000' : '#8A8A8A', labelColor: i === 7 ? '#FFFFFF' : '#8A8A8A' }));
+    return {
+      groups, railNav,
+      apacheHead: apache.slice(0, 17).map(row),
+      sc2Ref: (el) => { this._sc2 = el; },
+      toastOn: this.state.toast,
+      copyTap: () => {
+        this.setState({ toast: true });
+        clearTimeout(this._tt);
+        this._tt = setTimeout(() => this.setState({ toast: false }), 2600);
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

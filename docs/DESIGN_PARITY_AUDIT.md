@@ -1,5 +1,6 @@
 > **Doc type:** Living audit — kept in sync with `main` until every row is closed.
-> **Started:** 2026-08-25 · **Scope:** every app screen against `docs/design/android/` chapters 04–14
+> **Started:** 2026-08-25 · **Re-run:** 2026-08-25 against the updated bundle (chapters 04–15)
+> **Scope:** every app screen against `docs/design/android/`
 > **Binding source:** the design handoff (`README.md` there): *"High-fidelity. Colors, type, spacing,
 > states and copy are final and binding — recreate pixel-perfectly (1 CSS px = 1 dp)."*
 
@@ -165,9 +166,103 @@ Login, approval-pending, terms and app-lock were built against ch. 04 and verifi
 covers Update erforderlich, 403/404/500, offline and the launcher; the in-fiction error copy is pinned
 by tests.
 
+## Re-run against the 2026-08-25 bundle
+
+A new export landed after the first pass. It **adds** three surfaces — all three of the ones this
+audit had reported as having no artboard, built from the prompts in
+[`MISSING_ARTBOARD_PROMPTS.md`](design/android/MISSING_ARTBOARD_PROMPTS.md):
+
+| new | where |
+| :-- | :-- |
+| Open-Source-Lizenzen, 5 artboards + tablet | **chapter 15** (new file) |
+| Auftrag — Notiz-Sheet (leer / bearbeiten / 409) und Status-Wechsel (gesperrte Option, Terminal-Bestätigung) | **chapter 10, artboards 5–9** |
+| Gate-Ausfall nach Login, with a live countdown | **chapter 14** |
+
+Every other chapter changed too, but only in markup and annotations — no artboard was added, removed
+or redrawn. Two annotation changes are worth knowing: chapter 13 now points the licences entry at
+chapter 15, and chapter 14's icon section now names the Basetool logo family instead of the old
+"spec approximation" wording.
+
+### The export dropped three of our reconciliations
+
+This bundle is a fresh upstream export, and it does not carry the corrections the repo copy had.
+All three are restored on import and recorded in the handoff README, because a silent revert here
+would be invisible until somebody built against it:
+
+1. **minSdk read 29.** ADR-0006 raised the floor to 30 and deleted the API-29 app-lock path — on API
+   29 the only auth-bound key is time-bound, which no `CryptoObject` accepts, so the lock could
+   neither be armed nor opened on the whole minSdk platform. An owner-approved, implemented
+   decision; a spec saying 29 reopens it silently.
+2. **`--color-gray-2-text: #8A8A8A` was gone** from the `_ds` mirror. Grau 2 (`#646464`) reads at
+   ~3.5:1 on flat black and fails WCAG AA as small text; this token is the accessible tint and
+   `KrtPalette.TextMuted` mirrors it. Losing it leaves the Android counterpart with no upstream
+   source and invites a "reconciliation" back to a failing colour.
+3. **Chapter 04 lost the guest-mode annotation** — the owner decision of 2026-08-18 that guest mode
+   is cancelled and „Als Gast fortfahren" is dropped without replacement. Without it the chapter
+   shows a guest button and nothing says it must not be built.
+
+`assets/basetool-logo.svg` is kept for the same reason: `ic_launcher_foreground.xml` and
+`krt_basetool_logo.xml` both cite it as the artwork they were traced from, and the export replaced
+it with a favicon variant rather than a redrawn mark.
+
+**This is a recurring cost, not a one-off.** Every hand-refreshed mirror loses local corrections
+unless somebody re-applies them, and nothing in the build detects it. The README's new "Reconciled
+on import" section is where the list lives so the next refresh has something to check against.
+
+The real fix is upstream, and there is a prompt for it:
+[`SPEC_CORRECTION_PROMPT.md`](design/android/SPEC_CORRECTION_PROMPT.md) asks the design side to
+carry all four corrections **in the source** and to settle the four places where an artboard draws a
+figure the API does not have. Until that comes back, every import re-applies them by hand and the
+five-point check at the end of that prompt is what an importer should run.
+
+### New surfaces — parity
+
+#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **gap**
+
+The screen has the intro, a section title per licence and the rows. The chapter adds five things it
+does not have:
+
+- a **summary line** — „102 Artefakte · 4 Lizenzen · v1.4.2 (Build 37) · Prod";
+- a **per-group subtitle** — „100 Artefakte · SPDX: Apache-2.0";
+- a **sticky group header** while scrolling, and an end-of-report line naming the generator and its
+  version;
+- the **no-browser fallback**: copy the URL and say so in a toast, rather than a dead row. This is
+  the open acceptance item on `REQ-APP-SET-005`, and the chapter now specifies it;
+- **loading** (spinner only after 300 ms) and **error** („Bericht nicht lesbar" + „Erneut versuchen")
+  as distinct states; the screen has one combined unavailable state.
+
+#### 10 Aufträge artboards 5–9 · the note and status sheets — **note done, status open**
+
+The note sheet has a title, a hint, a field and two buttons. The chapter adds the order number and
+„Nur deine eigene Zuweisung" as a subtitle, a **250-character counter**, „Leeres Feld speichern
+entfernt die Notiz.", a „Gespeichert."-toast, and — the one that matters — the **409 conflict
+state**: „Konflikt — Notiz zwischenzeitlich geändert", the rejected text under „Deine abgelehnte
+Fassung", and „Meine Fassung übernehmen". Optimistic locking is a project-critical rule and this is
+the first artboard that draws its UX.
+
+**Built:** the subtitle, the counter, and the 409 state — a lost race now re-reads the order, shows
+what it says *now* in the field, holds the refused text beside it under „Deine abgelehnte Fassung"
+and offers „Meine Fassung übernehmen". If the re-read fails too, the typed text stays put: throwing
+a member's paragraph away at the moment the network cannot give it back is the worse of the two
+failures, and a test pins both branches.
+
+**Design-versus-contract, for the owner:** the chapter's counter reads `0 / 250`;
+`AssigneeNoteRequest.note` is capped at **500** on the wire. The client uses 500 — enforcing 250
+would refuse text the server accepts — but the two should agree.
+
+**Still open:** the status sheet gains the current status as a subtitle, a **reason line per
+option**, a disabled option that says why, „Aktuell" on the current one, the footer „Erlaubte
+Wechsel richten sich nach deiner Rolle." and a **terminal-status confirmation**
+(„Auftrag abschließen?").
+
+#### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **check**
+
+Newly specified, with a live countdown for the automatic retry. To be read against the screen.
+
 ## Screens with no artboard
 
-Everything else in the app maps to an artboard. These do not, and need one before they can be judged:
+**None as of the 2026-08-25 bundle.** The three below were the gap; all three were delivered. Kept
+for the record of what was asked and what came back:
 
 1. **Open-Source-Lizenzen** (`settings/LicensesScreen.kt`) — ch. 13 names the entry point but draws
    no list.
