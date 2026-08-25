@@ -101,12 +101,18 @@ behind a map pin: only the amount and the note were drawn, so two entries of the
 different hangars read as duplicates of each other. `total` + `unit` per group were already there as
 `amount`/`unit`. Mein Inventar and Blueprints are tiles.
 
-### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **content done, layout open**
+### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **done (2026-08-25)**
 
 Read against the chapter: every field is there — manufacturer, type + name, insurance chip, fitted
 chip, location. What differs is arrangement: the chapter leads the row with the manufacturer as a
 **lettermark badge** on the left, where the app puts it as a muted subtitle, and sets the location
-behind a map-pin glyph. Cosmetic and worth doing; not a missing fact. The tablet's full web table **is** implemented (2026-08-24 pass).
+behind a map-pin glyph. Cosmetic and worth doing; not a missing fact. The tablet's full web table **is** implemented
+(2026-08-24 pass).
+
+**Built:** the manufacturer now leads the row as a lettermark square, so the eye runs down one
+column instead of reading every second line, and the location sits behind the map pin. Screen
+readers still hear the full manufacturer name — the square is a visual abbreviation, not a fact
+removed.
 
 ### 05 Dashboard · `dashboard/DashboardScreen.kt` — **done, one item blocked**
 
@@ -217,7 +223,7 @@ five-point check at the end of that prompt is what an importer should run.
 
 ### New surfaces — parity
 
-#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **gap**
+#### 15 Open-Source-Lizenzen · `settings/LicensesScreen.kt` — **done (2026-08-25)**
 
 The screen has the intro, a section title per licence and the rows. The chapter adds five things it
 does not have:
@@ -231,7 +237,15 @@ does not have:
 - **loading** (spinner only after 300 ms) and **error** („Bericht nicht lesbar" + „Erneut versuchen")
   as distinct states; the screen has one combined unavailable state.
 
-#### 10 Aufträge artboards 5–9 · the note and status sheets — **note done, status open**
+**Built:** all five. The summary counts artefacts and licences from the report itself and names the
+build; each group carries its artefact count and SPDX id; the group header sticks; the report ends
+with the generator and its version (`BuildConfig.LICENSEE_VERSION`, so it cannot drift from the
+plugin that produced the file). Without a browser the licence URL is copied and a toast says so —
+the row was previously a dead tap. Loading and „Bericht nicht lesbar" are separate states now,
+because a report that is *missing* and one that is *slow* are different problems and only one of
+them has a retry.
+
+#### 10 Aufträge artboards 5–9 · the note and status sheets — **done (2026-08-25)**
 
 The note sheet has a title, a hint, a field and two buttons. The chapter adds the order number and
 „Nur deine eigene Zuweisung" as a subtitle, a **250-character counter**, „Leeres Feld speichern
@@ -250,10 +264,11 @@ failures, and a test pins both branches.
 `AssigneeNoteRequest.note` is capped at **500** on the wire. The client uses 500 — enforcing 250
 would refuse text the server accepts — but the two should agree.
 
-**Still open:** the status sheet gains the current status as a subtitle, a **reason line per
-option**, a disabled option that says why, „Aktuell" on the current one, the footer „Erlaubte
-Wechsel richten sich nach deiner Rolle." and a **terminal-status confirmation**
-(„Auftrag abschließen?").
+**Built (status sheet):** the order number and current status as a subtitle, a colour swatch and a
+consequence line per option, „Aktuell" on the one the order is in (which is not selectable), the
+role footer, and — the point of the artboard — **choosing is no longer applying**. „Status
+übernehmen" commits, and „Abgeschlossen" / „Abgelehnt" ask first: the app offers no way back out of
+either, so the member is told that before the change rather than after it.
 
 #### 14 Gate-Ausfall · `gate/GateUnavailableScreen.kt` — **done (2026-08-25)**
 
