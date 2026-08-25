@@ -16,6 +16,26 @@ Open `00 Index.dc.html` in a browser (keep the folder structure intact — the p
 `_ds/…` CSS, `assets/…` and `support.js` relatively). `Spec Print Edition.html` is the
 compact paper digest of everything.
 
+## Reconciled on import (2026-08-25)
+
+Two things this export dropped are restored here rather than mirrored, because the repository is
+right about them and the export is not. Both are recorded so the next refresh does not undo them
+again:
+
+- **minSdk is 30, not 29.** ADR-0006 raised the floor and deleted the API-29 app-lock path: on API 29
+  the only auth-bound key is time-bound, which no `CryptoObject` accepts, so on the whole minSdk
+  platform the lock could neither be armed nor opened. That decision is owner-approved and
+  implemented; a spec saying 29 would reopen it silently.
+- **`--color-gray-2-text: #8A8A8A`** is put back into `_ds/…/colors_and_type.css`. Grau 2
+  (`#646464`) reads at ~3.5:1 on the flat-black page and fails WCAG AA as small text; the token is
+  the accessible tint and `KrtPalette.TextMuted` mirrors it. Losing it from the mirror would leave
+  the Android counterpart with no upstream source and invite a future "reconciliation" back to a
+  failing colour.
+
+`assets/basetool-logo.svg` is kept for the same reason: `ic_launcher_foreground.xml` and
+`krt_basetool_logo.xml` both cite it as the artwork they were traced from, and the export replaced
+it with a favicon variant rather than a redrawn mark.
+
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the
@@ -100,19 +120,15 @@ where they exist.
 `Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC`
 — one inseparable component, verbatim ENGLISH in every locale, ≥14 sp #D2D2D2, static,
 no KRT styling. Placements: Login (above version footer) + Einstellungen. Nowhere else.
-**Logo rule:** the app mark renders ONLY in #E77E23, white or black.
+**Logo rule:** the KRT mark renders ONLY in #E77E23, white or black.
 
 ## Assets
 - `assets/krt-icons-mobile.js` — full icon sprite: product set verbatim from
   `fragments/icons.html` + 20 mobile extensions (same contract: 24 dp, stroke 2, round
   caps, currentColor). Export as VectorDrawables per `artifacts/icon-export.md`
-- `assets/basetool-logo.svg` / `basetool-appicon-512.png` — **the app mark** and its icon
-  raster. This is the "final geometry" ch. 14 defers to; the wedge-through-ring KRT mark drawn
-  in that chapter was the spec approximation. Traced to VectorDrawables as
-  `app/.../ic_launcher_foreground.xml` (+ `ic_launcher_monochrome.xml`) and
-  `core:designsystem`'s `krt_basetool_logo.xml`
-- `assets/krt.webp` — DAS KARTELL org mark (raster). Kept for org-branded surfaces; NOT the
-  app icon
+- `assets/basetool-appicon-512.png` / `basetool-favicon.svg` — Basetool-Logofamilie (DS):
+  app logo everywhere in-app (full mark on black; favicon variant for small chrome like the
+  tablet rail); adaptive-icon vector per ch. 14 geometry. `assets/krt.webp` stays the org mark (web)
 - `assets/made-by-the-community.png` — official artwork, use unmodified
 - Lato WOFF2/TTF in `_ds/…/fonts/` — bundle as app fonts (Light/Regular/Bold/Black)
 - **Open item:** manufacturer logos (Anvil/Drake/MISC) exist in the repo only as SVGs with
@@ -126,7 +142,7 @@ no KRT styling. Placements: Login (above version footer) + Einstellungen. Nowher
    empty/loading/offline, Fan Kit band
 3. Navigation shell (ch. 03) + auth flow (ch. 04)
 4. Screens 05 → 13 in chapter order; system states (ch. 14) alongside
-5. Adaptive icon (**done**) + notification channels (ch. 14)
+5. Adaptive icon + notification channels (ch. 14)
 
 ## How to hand this to Claude Code
 Place this folder in the repo (suggested: `docs/design/android/` or alongside
