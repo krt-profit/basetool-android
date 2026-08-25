@@ -386,12 +386,24 @@ it renders while every gated endpoint refuses.
 
 ### REQ-APP-AUTH-010 — The app lock, and FLAG_SECURE underneath it
 
-**`FLAG_SECURE` is set app-wide, unconditionally.** Not only on authenticated screens: the design
-chapter fixes it for the whole app and the security concept repeats it, because the screenshot that
-matters is the one nobody takes deliberately — the recents thumbnail the system captures every time
-the app leaves the foreground, which then sits in the launcher. It is set before `setContent` so it
-covers the first frame. Google's own figures put its effectiveness near 70 % at API 30 and below, so
-it is **hardening, not a guarantee**, and nothing else may be justified by its presence.
+**`FLAG_SECURE` is set app-wide and on by default; the member may switch it off.** Not only on
+authenticated screens: the design chapter fixes it for the whole app and the security concept
+repeats it, because the screenshot that matters is the one nobody takes deliberately — the recents
+thumbnail the system captures every time the app leaves the foreground, which then sits in the
+launcher. Google's own figures put its effectiveness near 70 % at API 30 and below, so it is
+**hardening, not a guarantee**, and nothing else may be justified by its presence.
+
+It was unconditional until #81, where a tester reported the cost: the block also stops the one
+capture the project wants, a screenshot of a defect attached to a bug report. Crash reporting here
+is local-only by decision, so a picture is often the whole report. The switch is owner-approved
+(ADR-0010) and lives in Einstellungen (`REQ-APP-SET-009`).
+
+**The order in `MainActivity` is the safety property.** The flag is set before `setContent`, so it
+covers the very first frame, and is cleared only after the stored preference has been read and says
+so. Reading it is asynchronous; waiting for the read would leave the first frames — and any recents
+thumbnail taken in that window — unprotected. **Unset means blocked**, so a fresh install and a
+store that fails to read both behave as if nobody had asked. The worst case of a slow or failed read
+is a screenshot that does not work, never one that silently does.
 
 **The lock itself is opt-in and off by default** (design ch. 04). A lock nobody asked for is a daily
 obstacle, and the data behind it is already app-private, backup-excluded and covered by the flag
@@ -425,7 +437,12 @@ leaks exactly what it is there to withhold.
 
 **Acceptance**
 
-- [x] `FLAG_SECURE` is set app-wide before the first frame.
+- [x] `FLAG_SECURE` is set app-wide before the first frame, and stays set unless the member has
+  switched it off (`ScreenCapturePreferenceTest`).
+- [x] An untouched install blocks capture without anyone choosing anything; so does an install whose
+  preference store cannot be read.
+- [x] Switching the setting takes effect on the current screen, not at the next start — the
+  preference is collected for the activity's life.
 - [x] Off by default; a cold start with the setting on is locked, with it off is open
   (`AppLockViewModelTest`).
 - [x] Nothing is rendered before the setting has been read — neither locked nor open — so the app's

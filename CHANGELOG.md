@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Screenshots lassen sich jetzt in den Einstellungen freigeben.** Unter „App" steht neben der
+  App-Sperre der Schalter „Screenshots erlauben" — aus, solange ihn niemand einschaltet. Das war
+  bisher gar nicht möglich und hat Tester daran gehindert, einem Fehlerbericht ein Bild beizulegen.
+  Wer ihn einschaltet, zeigt damit auch in der App-Übersicht des Systems seine Daten (#81).
+
 ## [0.1.0] — 2026-08-25
 
 Erste Veröffentlichung der Android-App.

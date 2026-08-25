@@ -79,6 +79,8 @@ fun SettingsScreen(
     appLockEnabled: Boolean,
     appLockAvailable: Boolean,
     onAppLockChange: (Boolean) -> Unit,
+    screenCaptureAllowed: Boolean,
+    onScreenCaptureChange: (Boolean) -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
     onOpenTerms: () -> Unit,
@@ -96,6 +98,8 @@ fun SettingsScreen(
             appLockEnabled = appLockEnabled,
             appLockAvailable = appLockAvailable,
             onAppLockChange = onAppLockChange,
+            screenCaptureAllowed = screenCaptureAllowed,
+            onScreenCaptureChange = onScreenCaptureChange,
             onOpenPrivacy = onOpenPrivacy,
             onOpenImprint = onOpenImprint,
             onOpenTerms = onOpenTerms,
@@ -129,6 +133,8 @@ fun SettingsScreen(
  * @param appLockEnabled whether a lock is armed.
  * @param appLockAvailable whether the device can prompt at all.
  * @param onAppLockChange arms or disarms the lock.
+ * @param screenCaptureAllowed whether screenshots and screen recording are permitted.
+ * @param onScreenCaptureChange permits or forbids them.
  * @param onOpenPrivacy opens the privacy policy.
  * @param onOpenImprint opens the imprint.
  * @param onOpenTerms opens the terms of use.
@@ -145,6 +151,8 @@ private fun SettingsColumn(
     appLockEnabled: Boolean,
     appLockAvailable: Boolean,
     onAppLockChange: (Boolean) -> Unit,
+    screenCaptureAllowed: Boolean,
+    onScreenCaptureChange: (Boolean) -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenImprint: () -> Unit,
     onOpenTerms: () -> Unit,
@@ -202,6 +210,25 @@ private fun SettingsColumn(
                 onClick = { onAppLockChange(!appLockEnabled) },
             ) {
                 KrtToggle(checked = appLockEnabled, enabled = appLockAvailable)
+            }
+            KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            // Phrased as "allow", not "block": a switch a tester turns ON to get their screenshot
+            // reads the right way round, and the subtitle carries the cost rather than a warning
+            // icon nobody reads.
+            KrtSettingRow(
+                title = stringResource(R.string.screencapture_setting),
+                subtitle =
+                    stringResource(
+                        if (screenCaptureAllowed) {
+                            R.string.screencapture_setting_on
+                        } else {
+                            R.string.screencapture_setting_off
+                        },
+                    ),
+                leadingIcon = DesignR.drawable.ic_krt_eye,
+                onClick = { onScreenCaptureChange(!screenCaptureAllowed) },
+            ) {
+                KrtToggle(checked = screenCaptureAllowed)
             }
         }
 
@@ -318,12 +345,14 @@ private fun SettingsPreview() {
                 appLockEnabled = true,
                 appLockAvailable = true,
                 onAppLockChange = {},
+                screenCaptureAllowed = false,
+                onScreenCaptureChange = {},
                 onOpenPrivacy = {},
                 onOpenImprint = {},
                 onOpenTerms = {},
                 onOpenLicenses = {},
                 onLogout = {},
-                versionName = "0.1.0-alpha01",
+                versionName = "0.1.0",
                 versionCode = 1,
             )
         }

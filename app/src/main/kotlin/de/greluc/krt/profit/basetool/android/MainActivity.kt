@@ -28,8 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import de.greluc.krt.profit.basetool.android.auth.AuthContainer
@@ -70,6 +73,7 @@ import de.greluc.krt.profit.basetool.android.promotion.PromotionViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
+import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
 import kotlinx.coroutines.launch
@@ -127,6 +131,17 @@ class MainActivity : AppCompatActivity() {
     private val updateGateViewModel: UpdateGateViewModel by viewModels {
         authViewModels(container)
     }
+
+    /**
+     * The member's screen-capture choice.
+     *
+     * Held by the activity rather than a view model: it is applied to this window's flags, and a
+     * view model outliving a configuration change would only add a hop.
+     */
+    private val screenCapturePreference by lazy {
+        ScreenCapturePreference(ScreenCapturePreference.createStore(this))
+    }
+
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
@@ -171,7 +186,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        blockScreenCapture()
+        followScreenCapturePreference()
         lockViewModel.start()
         // The redirect routinely arrives on a COLD start: the process is killed behind the Custom
         // Tab often enough that handling it only in onNewIntent would lose every login on a device
@@ -215,6 +230,9 @@ class MainActivity : AppCompatActivity() {
         var language by remember { mutableStateOf(LanguageSetting.current()) }
 
         val lockArmed by container.appLockArmed.collectAsState(initial = false)
+        // Initial `true` so the switch never renders as "allowed" for the frames before the store
+        // answers — the same fail-closed ordering the window flag itself uses.
+        val captureBlocked by screenCapturePreference.blocked.collectAsState(initial = true)
         // Queried once per composition rather than per frame: enrolling a fingerprint
         // takes the member out of the app, so the answer cannot change under them.
         val lockAvailable = remember { BiometricGate.isAvailable(this@MainActivity) }
@@ -343,6 +361,12 @@ class MainActivity : AppCompatActivity() {
                                             },
                                             appLockEnabled = lockArmed,
                                             appLockAvailable = lockAvailable,
+                                            screenCaptureAllowed = !captureBlocked,
+                                            onScreenCaptureChange = { allowed ->
+                                                lifecycleScope.launch {
+                                                    screenCapturePreference.set(blocked = !allowed)
+                                                }
+                                            },
                                             onAppLockChange = { wanted ->
                                                 if (wanted) {
                                                     // Arming raises the same prompt as unlocking: the
@@ -417,22 +441,44 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Turns off screenshots, screen recording and casting for the whole app.
+     * Applies the member's screen-capture choice to this window.
      *
      * App-wide, not only on authenticated screens: the design chapter fixes it that way and the
      * security concept repeats it, because the capture that matters is the one nobody takes
      * deliberately — the recents thumbnail the system grabs when the app leaves the foreground,
-     * which then sits in the launcher. Called before `setContent` so it covers the very first
-     * frame.
+     * which then sits in the launcher.
      *
      * Google's own figures put its effectiveness near 70 % at API 30 and below, so this is
      * hardening rather than a guarantee, and nothing else may be justified by its presence.
+     *
+     * @param blocked `true` to set `FLAG_SECURE`, `false` to clear it.
      */
-    private fun blockScreenCapture() {
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE,
-        )
+    private fun applyScreenCapture(blocked: Boolean) {
+        if (blocked) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+
+    /**
+     * Sets `FLAG_SECURE` immediately, then relaxes it only if the member has asked for that.
+     *
+     * **The order is the safety property.** Reading the preference is asynchronous, so waiting for
+     * it would leave the first frames — and any recents thumbnail taken in that window —
+     * unprotected. Starting blocked and relaxing afterwards means the worst case of a slow or
+     * failed read is a screenshot that does not work, never one that silently does.
+     *
+     * The collection keeps running for the activity's life, so a change made in Einstellungen
+     * takes effect on the spot rather than at the next start.
+     */
+    private fun followScreenCapturePreference() {
+        applyScreenCapture(blocked = true)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                screenCapturePreference.blocked.collect(::applyScreenCapture)
+            }
+        }
     }
 
     /**
