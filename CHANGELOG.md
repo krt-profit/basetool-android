@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Live-Sync gibt nicht mehr für die ganze App auf.** Lehnt der Server die Verbindung als
+  fehlerhaft ab, fragte die App bis zum Beenden im Sekundentakt weiter — und blieb dabei auf jedem
+  Bildschirm stumm, ohne dass etwas darauf hingewiesen hätte. Jetzt hört sie nach zwei Versuchen auf
+  und die betroffenen Bildschirme laden wieder selbst nach.
+
 ### Changed
 
 - **Screenshots lassen sich jetzt in den Einstellungen freigeben.** Unter „App" steht neben der
