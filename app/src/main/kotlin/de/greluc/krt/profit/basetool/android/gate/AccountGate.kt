@@ -77,6 +77,8 @@ fun AccountGate(
                 offline = current.error is ApiError.Network,
                 onRetry = viewModel::refresh,
                 onLogout = onLogout,
+                accountName = accountName,
+                secondsUntilRetry = current.secondsUntilRetry,
             )
         }
     }
