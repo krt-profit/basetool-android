@@ -305,15 +305,20 @@ class LiveSyncRepository(
                                     }
                                 }
                             }
-                        if (attempt2.refused == HTTP_FORBIDDEN) {
+                        val verdict = attempt2.refused?.takeIf { it in FINAL_REFUSALS }
+                        if (verdict != null) {
                             refusals++
                             if (refusals >= MAX_REFUSALS) {
-                                // A refusal is a verdict, not a hiccup: this caller may not enter
-                                // any room it asked for, and that will not change while the screen
-                                // is open. Measured on a device before this guard existed: a
-                                // member without the Auftrags-queue capability re-asked every
-                                // thirty seconds for as long as the app ran.
-                                KrtLog.d(LOG_TAG) { "giving up after $refusals refusals" }
+                                // A refusal is a verdict, not a hiccup: this request will be
+                                // answered the same way for as long as this union stands, and the
+                                // union is what the connection follows. Measured on a device
+                                // before this guard existed: a member without the Auftrags-queue
+                                // capability re-asked every thirty seconds for as long as the app
+                                // ran.
+                                // Stays at DEBUG like every other line here: KrtLog's floor is
+                                // INFO, and anything at or above it reaches android.util.Log,
+                                // which is unmocked in JVM unit tests and throws.
+                                KrtLog.d(LOG_TAG) { "giving up after $refusals refusals ($verdict)" }
                                 trySend(LiveSyncEvent.Subscribed(emptySet()))
                                 break
                             }
@@ -525,7 +530,29 @@ class LiveSyncRepository(
         /** Consecutive refusals before the client accepts the verdict and stops asking. */
         const val MAX_REFUSALS = 2
 
+        const val HTTP_BAD_REQUEST = 400
+
         const val HTTP_FORBIDDEN = 403
+
+        /**
+         * Statuses that end the attempt loop instead of feeding the reconnect backoff.
+         *
+         * Both say something about **this request** that re-sending it cannot change, and the
+         * request only changes when the union does — at which point `flatMapLatest` starts a fresh
+         * connection with a fresh counter, so giving up is scoped to the union and not to the app.
+         *
+         * `400` is here because of a production incident: one member's union crossed the
+         * backend's per-stream topic cap, the endpoint refuses the whole request rather than the
+         * surplus, and a `400` fell into the "dropped socket, try again" branch. Live sync was dead
+         * on every screen for as long as the app was open, silently, and the app re-asked on the
+         * backoff for hours. The cap was raised to match the union shape, but a client that
+         * hammers a request the server has already called malformed is wrong independently of what
+         * made it malformed.
+         *
+         * `401` is deliberately absent: a stale token is exactly the refusal a retry fixes, once
+         * the interceptor beneath this has renewed it.
+         */
+        val FINAL_REFUSALS = setOf(HTTP_BAD_REQUEST, HTTP_FORBIDDEN)
 
         /** Sentinel for "the stream opened", since the atomic cannot hold a null. */
         const val NO_STATUS = 0

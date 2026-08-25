@@ -14,11 +14,14 @@ import de.greluc.krt.profit.basetool.android.core.network.SseEvent
 import de.greluc.krt.profit.basetool.android.core.network.SseStream
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -262,6 +265,54 @@ class LiveSyncRepositoryTest {
         }
 
     @Test
+    fun `a rejected request is not retried either, and a 400 is one`() =
+        runBlocking {
+            // Production, 2026-08-25: one member's union of open screens crossed the backend's
+            // per-stream topic cap. That endpoint refuses the whole request rather than the
+            // surplus, and a 400 used to fall into the "dropped socket, try again" branch — so
+            // live sync was dead on every screen for as long as the app was open, and the app
+            // re-asked on the backoff for hours. Re-sending a request the server has already
+            // called malformed cannot make it well-formed.
+            val reader = RefusingStream(status = 400)
+            val shared = repositoryWith(reader)
+
+            withTimeoutOrNull(SETTLE_MS) { shared.observe(setOf(LiveSyncTopic.ORDERS)).first() }
+
+            assertTrue(
+                "expected the client to stop asking, saw ${reader.attempts} attempts",
+                reader.attempts <= LiveSyncRepository.MAX_REFUSALS,
+            )
+        }
+
+    @Test
+    fun `a server hiccup is still retried, so a stale token does not kill the stream`() =
+        runBlocking {
+            // The mirror image, and the reason this is an allow-list rather than "any 4xx": a 401
+            // is exactly the refusal a retry fixes, once the interceptor beneath this has renewed
+            // the token. Giving up on it would leave the app un-live until the next navigation.
+            val reader = RefusingStream(status = 401)
+            val shared = repositoryWith(reader)
+
+            // Stops the moment the point is proven rather than waiting out the window: with the
+            // collapsed backoff this loop reconnects every few milliseconds, and leaving it
+            // running for two seconds would starve the dispatcher the next test needs.
+            val job = launch { shared.observe(setOf(LiveSyncTopic.ORDERS)).collect { } }
+            val keptTrying =
+                withTimeoutOrNull(SETTLE_MS) {
+                    while (reader.attempts <= LiveSyncRepository.MAX_REFUSALS) {
+                        delay(RETRY_POLL_MS)
+                    }
+                    true
+                } ?: false
+            job.cancelAndJoin()
+
+            assertTrue(
+                "expected the client to keep trying, saw ${reader.attempts} attempts",
+                keptTrying,
+            )
+        }
+
+    @Test
     fun `a screen whose rooms were all refused is told so, rather than left waiting`() =
         runBlocking {
             val shared = repositoryWith(RefusingStream())
@@ -330,8 +381,15 @@ class LiveSyncRepositoryTest {
         }
     }
 
-    /** A reader that always refuses, and counts the attempts. */
-    private class RefusingStream : SseStream(OkHttpClient(), "http://localhost") {
+    /**
+     * A reader that always refuses, and counts the attempts.
+     *
+     * @property status the status to refuse with; the two the client treats as verdicts differ in
+     *   what they mean but not in what it must do about them.
+     */
+    private class RefusingStream(
+        private val status: Int = HTTP_FORBIDDEN,
+    ) : SseStream(OkHttpClient(), "http://localhost") {
         @Volatile var attempts: Int = 0
 
         override fun events(
@@ -341,7 +399,7 @@ class LiveSyncRepositoryTest {
         ): Flow<SseEvent> =
             flow {
                 attempts++
-                onRefused?.invoke(HTTP_FORBIDDEN)
+                onRefused?.invoke(status)
             }
     }
 
@@ -396,6 +454,9 @@ class LiveSyncRepositoryTest {
 
         /** Long enough for the loop to have retried if it were going to. */
         const val SETTLE_MS = 2_000L
+
+        /** How often the retry test looks at the attempt counter while it waits for it to move. */
+        const val RETRY_POLL_MS = 5L
     }
 }
 

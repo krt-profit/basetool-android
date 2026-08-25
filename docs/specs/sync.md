@@ -18,16 +18,32 @@ ways — with the second direction being the one that actually broke something.
 
 ---
 
-### REQ-APP-SYNC-001 — One stream per screen, its rooms named in the URL
+### REQ-APP-SYNC-001 — One stream per client, carrying the union of its screens
 
-`GET /api/v1/live-sync/stream?topics=…`. The topic set is fixed for the stream's life; navigating
-to another screen closes the stream and opens a new one. **The URL is the subscription** — there is
-no subscribe frame, so there is no client-side subscription state that can disagree with the
-server's after a reconnect.
+`GET /api/v1/live-sync/stream?topics=…`. The topic set is fixed for one stream's life. **The URL is
+the subscription** — there is no subscribe frame, so there is no client-side subscription state that
+can disagree with the server's after a reconnect.
 
-This is why SSE rather than a socket. A browser tab holds several rooms at once and changes them
-without navigating; a phone shows one screen, so "resubscribe" and "navigate" are the same event,
-and one extra HTTP GET rides a transition the member is already waiting through.
+**The set is the union of every screen currently observing, not one screen's rooms.**
+`LiveSyncRepository` reference-counts demand per room, so a room enters the union with its first
+observer and leaves with its last, and any change to that union closes the stream and opens
+another — debounced, so three screens mounting together do not do it three times. A screen still
+sees only its own rooms: the acceptance list it is handed is intersected with what it asked for, or
+every screen would believe it is live because some other screen's room was accepted.
+
+This is why SSE rather than a socket. A browser tab changes its rooms without navigating and needs a
+subscribe protocol for it; here the union changes rarely enough that reopening the stream is
+cheaper than holding server-side per-stream subscription state and a resubscribe path after every
+network blip.
+
+**The union is what the server's cap has to fit, and once it did not.** The endpoint's
+`MAX_TOPICS_PER_STREAM` was sized at 8 against "what one screen needs", which is the wrong unit for
+a client that multiplexes: screens left on the back stack keep their rooms, so a member moving
+through the app accumulates them. In production one member crossed 8. Because the endpoint refuses
+the whole request rather than the surplus, live sync went dead on **every** screen at once, silently,
+and stayed dead behind the reconnect backoff. The server cap is now 16 (`REQ-FE-019` in the main
+repo, matching the web relay's per-session cap); the client's own guard against re-asking is
+`REQ-APP-SYNC-005`.
 
 Topics are built by [`LiveSyncTopic`](../../core/data/src/main/kotlin/de/greluc/krt/profit/basetool/android/core/data/LiveSyncTopic.kt)'s
 factories and never assembled at a call site. The wire string is the room key on **both** ends, so a
@@ -38,6 +54,9 @@ empty room — and nothing anywhere reports that.
 
 - [x] The requested rooms appear in the query, encoded (`LiveSyncRepositoryTest`).
 - [x] An empty room set never opens a connection (`LiveSyncRepositoryTest`).
+- [x] Two screens observing at once produce one stream asking for the union
+  (`LiveSyncRepositoryTest`).
+- [x] A room leaves the union when its last observer does, not its first (`LiveSyncRepositoryTest`).
 
 ---
 
@@ -132,8 +151,21 @@ going until the screen is closed.
 
 **It does not give up on a failure it cannot classify.** The stream reader completes the flow the
 same way for a clean close, a dropped socket and a `401`, so treating any of them as terminal would
-strand the screen for the two cases that recover on their own. A genuinely refused stream costs one
-attempt per backoff step, and the backoff is what bounds that.
+strand the screen for the cases that recover on their own — a stale token above all, which is
+precisely the refusal a retry fixes once the interceptor beneath has renewed it.
+
+**It does give up on a status that classifies itself.** `403` and `400` both say something about
+*this request* that an identical retry cannot change: the first that the caller may enter none of
+the rooms, the second that the request is not one the server will accept at all. After two the
+client stops and emits an empty acceptance list, which is the screens' cue to fall back to polling.
+The scope is the union, not the app — a changed union opens a fresh stream with a fresh counter, so
+a member who navigates away from whatever made the request unacceptable gets live sync back.
+
+`400` was added after it happened: the union crossed the server's topic cap (`REQ-APP-SYNC-001`),
+the `400` fell into the "dropped socket, try again" branch, and the app re-asked on the backoff for
+hours while every screen stayed silent. Both halves were wrong and both are fixed — but a client
+that hammers a request the server has already called malformed is wrong independently of what made
+it malformed.
 
 **A screen built without the bridge still works.** `observeLiveSync` and `publishLiveSync` accept a
 `null` source, so a preview or a test double needs no live sync, and a stream that never connects
@@ -150,6 +182,8 @@ snapshot of pseudonymous ids and callsigns).
 - [x] The heartbeat is not mistaken for a change (`LiveSyncRepositoryTest`).
 - [x] A frame for a room this build does not know is dropped, not synthesised (`LiveSyncRepositoryTest`).
 - [x] A `null` bridge is a working screen (`LiveSyncWiringTest`).
+- [x] A `403` stops the attempt loop; so does a `400` (`LiveSyncRepositoryTest`).
+- [x] A `401` does **not** — it keeps retrying (`LiveSyncRepositoryTest`).
 
 **Code:** `core/data/…/LiveSyncRepository.kt`, `LiveSyncTopic.kt`, `app/…/ui/LiveSync.kt`
 
@@ -158,6 +192,7 @@ snapshot of pseudonymous ids and callsigns).
 - **The Materialbörse, the Raffinerie and Beförderung are not wired yet** — their rooms exist in the
   registry and their screens land later in phase 4; each wires its own as it ships.
 - **Editor presence stays web-only**, deliberately and permanently for this app.
-- **The stream reconnects on every navigation.** Accepted: one GET per screen change. A subscribe
-  protocol over a long-lived stream would save it and cost server-held per-stream state plus a
-  resubscribe path after every network blip.
+- **The stream reconnects whenever the union changes.** Accepted: one GET per set of screens
+  mounting or unmounting, debounced so a burst counts once. A subscribe protocol over a long-lived
+  stream would save it and cost server-held per-stream state plus a resubscribe path after every
+  network blip.
