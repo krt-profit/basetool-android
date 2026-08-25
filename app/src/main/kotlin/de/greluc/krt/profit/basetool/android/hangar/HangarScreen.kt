@@ -48,6 +48,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
@@ -216,13 +218,27 @@ fun HangarScreen(
 @Composable
 private fun ShipCardActions(
     online: Boolean,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-        KrtGhostButton(
-            text = stringResource(R.string.hangar_delete),
+    // Design ch. 08 gives the row 44 dp icon buttons, not a labelled button. A ghost button reading
+    // "LÖSCHEN" is the widest, loudest thing on a card whose subject is a ship, and it made the
+    // destructive action the most prominent one on every row.
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+    ) {
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_edit,
+            label = stringResource(R.string.hangar_edit),
+            onClick = onEdit,
+            enabled = online,
+        )
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_trash,
+            label = stringResource(R.string.hangar_delete),
             onClick = onDelete,
-            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
             enabled = online,
         )
     }
@@ -354,6 +370,7 @@ private fun ShipTable(
         if (column == columns.lastIndex) {
             ShipCardActions(
                 online = online,
+                onEdit = { onEdit(ship) },
                 onDelete = { onDelete(ship) },
             )
         } else {
@@ -410,7 +427,7 @@ private fun ShipCard(
                 ShipCardBody(ship = ship)
             }
         }
-        ShipCardActions(online = online, onDelete = onDelete)
+        ShipCardActions(online = online, onEdit = onEdit, onDelete = onDelete)
     }
 }
 
@@ -491,18 +508,27 @@ private fun ShipCardBody(ship: Ship) {
                     ),
                 tone = if (ship.fitted) KrtChipTone.Success else KrtChipTone.Muted,
             )
-            KrtChip(
-                text = ship.insurance ?: stringResource(R.string.hangar_no_insurance),
-                tone = KrtChipTone.Info,
-            )
+            KrtChip(text = ship.insuranceLabel(), tone = KrtChipTone.Info)
             ship.locationName?.takeIf { it.isNotBlank() }?.let { place ->
-                Text(
-                    text = place,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Design ch. 08: "Ort with map-pin". A bare place name beside two chips reads
+                    // as a third chip's caption; the glyph says what kind of fact it is.
+                    KrtIcon(
+                        id = DesignR.drawable.ic_krt_map_pin,
+                        contentDescription = null,
+                        tint = KrtPalette.TextMuted,
+                    )
+                    Text(
+                        text = place,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -637,3 +663,22 @@ private val MARK_SIZE = 44.dp
 
 /** Most initials a multi-word manufacturer is abbreviated to. */
 private const val MARK_MAX_LETTERS = 3
+
+/**
+ * The insurance chip's text.
+ *
+ * The API sends a bare string: "LTI" for a lifetime policy, otherwise a month count. A chip reading
+ * "6" says nothing — six of what — so a numeric value gets its unit. Anything else is passed through
+ * unchanged rather than guessed at, and a ship with no policy says so.
+ *
+ * @return the chip caption.
+ */
+@Composable
+private fun Ship.insuranceLabel(): String {
+    val raw = insurance?.trim().orEmpty()
+    return when {
+        raw.isBlank() -> stringResource(R.string.hangar_no_insurance)
+        raw.toIntOrNull() != null -> stringResource(R.string.hangar_insurance_months_value, raw)
+        else -> raw
+    }
+}

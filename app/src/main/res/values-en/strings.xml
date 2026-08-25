@@ -44,7 +44,12 @@
     <string name="gate_error_title">Verification Offline</string>
     <string name="gate_error_body">Command did not respond. Your credentials remain valid.</string>
     <string name="gate_signed_in_as">Signed in as %1$s</string>
-    <string name="gate_retry_in">Next attempt in %1$d s</string>
+    <string name="gate_retry_in">Trying again automatically in %1$d s.</string>
+    <string name="gate_still_signed_in">You are signed in — only the approval check has not answered.</string>
+    <string name="gate_attempting">Checking approval…</string>
+    <string name="gate_attempt_note">Attempt running — the answer is waited out for up to 10 s. Signing out stays available.</string>
+    <string name="gate_retry_now">Try again now</string>
+    <string name="gate_escalation">Still no answer — system status may be posted in the org Discord.</string>
     <string name="gate_retry">Try again</string>
 
     <string name="terms_checking">Checking the terms of use …</string>
@@ -549,6 +554,7 @@
     <string name="hangar_type_none">No ship type found.</string>
     <string name="hangar_field_insurance">Insurance</string>
     <string name="hangar_insurance_lti">LTI</string>
+    <string name="hangar_insurance_months_value">%1$s months</string>
     <string name="hangar_insurance_months">Months</string>
     <string name="hangar_insurance_months_placeholder">Months (0–120)</string>
     <string name="hangar_insurance_months_range">0 to 120 months.</string>
@@ -558,6 +564,7 @@
     <string name="hangar_ship_delete_title">Delete ship</string>
     <string name="hangar_ship_delete_body">“%1$s” will be deleted from your hangar.</string>
     <string name="hangar_add">Add ship</string>
+    <string name="hangar_edit">Edit</string>
     <string name="hangar_delete">Delete</string>
     <plurals name="hangar_type_more">
         <item quantity="one">One more. Search more precisely.</item>
@@ -633,6 +640,10 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
+    <string name="promotion_matrix_topic">TOPIC</string>
+    <string name="promotion_matrix_level">LEVEL</string>
+    <string name="promotion_matrix_goal">GOAL</string>
+    <string name="promotion_matrix_goal_value">≥ %1$s</string>
     <string name="promotion_evaluations_title">MY ASSESSMENTS</string>
     <string name="promotion_standings_title">ELIGIBILITY</string>
     <string name="promotion_category_unnamed">Uncategorised</string>

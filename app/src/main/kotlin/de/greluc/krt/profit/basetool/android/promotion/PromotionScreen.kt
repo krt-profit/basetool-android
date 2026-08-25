@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,15 +27,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.PromotionCheck
+import de.greluc.krt.profit.basetool.android.core.data.PromotionEvaluation
 import de.greluc.krt.profit.basetool.android.core.data.PromotionStanding
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
@@ -102,8 +107,12 @@ fun PromotionScreen(
                     SectionHeading(
                         group.name.ifBlank { stringResource(R.string.promotion_category_unnamed) },
                     )
+                    MatrixHeader()
                     group.evaluations.forEach { evaluation ->
-                        KrtKeyValueRow(label = evaluation.topicName, value = evaluation.level)
+                        MatrixRow(
+                            evaluation = evaluation,
+                            goal = state.goalFor(evaluation.topicName),
+                        )
                     }
                 }
             }
@@ -219,6 +228,110 @@ private fun CheckRow(check: PromotionCheck) {
 }
 
 /**
+ * The matrix's column heads.
+ *
+ * Design ch. 13 artboard 1, as corrected on 2026-08-25: three columns, not five. The earlier draft
+ * had "Selbst" and "Leitung" beside them, describing an assessment the tool does not record —
+ * `MemberEvaluationResponse` carries one `assignedLevel` per topic and nothing else. The owner
+ * decided the columns come out rather than the feature going in.
+ */
+@Composable
+private fun MatrixHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        Text(
+            text = stringResource(R.string.promotion_matrix_topic),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.TextMuted,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(R.string.promotion_matrix_level),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.TextMuted,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(MATRIX_COLUMN),
+        )
+        Text(
+            text = stringResource(R.string.promotion_matrix_goal),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.TextMuted,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(MATRIX_COLUMN),
+        )
+    }
+    KrtHairlineRule()
+}
+
+/**
+ * One topic: where the member stands and what the next rank asks for.
+ *
+ * The level turns warning-yellow when it is **below** the goal, which is the whole point of putting
+ * the two numbers on one line — a member should be able to run down the column and see what is
+ * missing without doing the comparison themselves. Read-only by design: evaluations are maintained
+ * in the web tool's Bewertungsverwaltung.
+ *
+ * @param evaluation the member's level for this topic.
+ * @param goal the minimum the next rank step asks for, `null` when that step names no requirement
+ *   for this topic — in which case there is nothing to fall short of and nothing to colour.
+ */
+@Composable
+private fun MatrixRow(
+    evaluation: PromotionEvaluation,
+    goal: String?,
+) {
+    val short = goal != null && isBelow(evaluation.level, goal)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = evaluation.topicName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = evaluation.level,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (short) KrtPalette.Warning else KrtPalette.Gray1,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(MATRIX_COLUMN),
+        )
+        Text(
+            text = goal?.let { stringResource(R.string.promotion_matrix_goal_value, it) } ?: "—",
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.TextMuted,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(MATRIX_COLUMN),
+        )
+    }
+}
+
+/**
+ * Whether a level falls short of a goal.
+ *
+ * Both arrive as strings on the wire. Compared as numbers when they are numbers — the scale is
+ * 1..5 — and otherwise not compared at all: an unparseable pair means the server sent a scale this
+ * build does not know, and colouring it yellow would be a claim rather than a reading.
+ *
+ * @param level where the member stands.
+ * @param goal what the next rank asks for.
+ * @return `true` only when both parse and the level is the smaller one.
+ */
+private fun isBelow(
+    level: String,
+    goal: String,
+): Boolean {
+    val have = level.trim().toIntOrNull()
+    val need = goal.trim().toIntOrNull()
+    return have != null && need != null && have < need
+}
+
+/**
  * A section heading in the app's own style.
  *
  * @param text the heading.
@@ -232,3 +345,6 @@ private fun SectionHeading(text: String) {
         modifier = Modifier.padding(bottom = 4.dp),
     )
 }
+
+/** Width of the two numeric matrix columns, so the digits line up down the card. */
+private val MATRIX_COLUMN = 64.dp

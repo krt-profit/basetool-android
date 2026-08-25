@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.net.SocketTimeoutException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -120,6 +122,11 @@ class AccountGateViewModel(
     fun refresh() {
         if (state.value is AccountGateState.Unavailable) {
             attempts = 0
+            // The failure streak drives one line of copy, and a manual attempt is a fresh start for
+            // it too: a member who just pressed the button has not "kept getting no answer" yet.
+            mutableState.update { current ->
+                if (current is AccountGateState.Unavailable) current.copy(failures = 0) else current
+            }
             poll?.cancel()
             poll = null
             start()
@@ -144,7 +151,20 @@ class AccountGateViewModel(
      * @return `true` when the member may pass and the poll should stop
      */
     private suspend fun readOnce(): Boolean {
-        val result = source.registrationStatus()
+        mutableState.update { current ->
+            if (current is AccountGateState.Unavailable) {
+                current.copy(attempting = true, secondsUntilRetry = null)
+            } else {
+                current
+            }
+        }
+        // Ten seconds, then give up on THIS attempt and let the ladder schedule the next (design
+        // ch. 14: "Versuch wartet max. 10 s"). The HTTP client's own timeout is longer, and a
+        // member watching a countdown that has already reached zero has no way to tell a slow
+        // answer from a dead one.
+        val result =
+            withTimeoutOrNull(ATTEMPT_TIMEOUT) { source.registrationStatus() }
+                ?: ApiResult.Failure(ApiError.Network(SocketTimeoutException("gate attempt timed out")))
         val next =
             when (result) {
                 is ApiResult.Success -> {
@@ -157,8 +177,21 @@ class AccountGateViewModel(
 
                 is ApiResult.Failure -> {
                     when (val previous = mutableState.value) {
-                        is AccountGateState.Blocked -> previous.copy(refreshing = false)
-                        else -> AccountGateState.Unavailable(result.error)
+                        is AccountGateState.Blocked -> {
+                            previous.copy(refreshing = false)
+                        }
+
+                        is AccountGateState.Unavailable -> {
+                            previous.copy(
+                                error = result.error,
+                                attempting = false,
+                                failures = previous.failures + 1,
+                            )
+                        }
+
+                        else -> {
+                            AccountGateState.Unavailable(result.error, failures = 1)
+                        }
                     }
                 }
             }
@@ -206,8 +239,26 @@ sealed interface AccountGateState {
          * a chore, and this one is passing by definition — nothing the member did caused it.
          */
         val secondsUntilRetry: Int? = null,
+        /**
+         * Whether an attempt is in flight right now.
+         *
+         * Its own flag rather than "the countdown is null": the two are the same only by accident,
+         * and the screen says different things about them — a wait is a wait, an attempt is work.
+         */
+        val attempting: Boolean = false,
+        /**
+         * How many attempts have failed in a row.
+         *
+         * Design ch. 14 adds one line after the third — the Org-Discord as a fallback channel — and
+         * is emphatic that nothing else changes: no red, no error face. The state stays *waiting*,
+         * not *blame*.
+         */
+        val failures: Int = 0,
     ) : AccountGateState
 }
 
 /** One second of countdown. */
 private const val SECOND_MS = 1_000L
+
+/** Longest a single gate attempt is waited out before the ladder schedules the next. */
+private val ATTEMPT_TIMEOUT = 10.seconds

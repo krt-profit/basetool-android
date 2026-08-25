@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -238,6 +239,9 @@ private fun LicensesList(
     hasBrowser: Boolean,
     onLicenceAction: (String) -> Unit,
 ) {
+    // Which groups the member has folded away. Collapsed rather than expanded is the remembered
+    // state, so the default stays what the chapter draws: everything visible.
+    val collapsed = remember { mutableStateSetOf<String>() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = KrtSpacing.xl),
@@ -288,15 +292,23 @@ private fun LicensesList(
             }
         }
         groups.forEach { (license, artifacts) ->
+            val folded = license.spdxId in collapsed
             stickyHeader(key = license.spdxId) {
                 LicenseHeader(
                     license = license,
                     count = artifacts.size,
                     hasBrowser = hasBrowser,
+                    collapsed = folded,
+                    onToggle = {
+                        if (folded) collapsed.remove(license.spdxId) else collapsed.add(license.spdxId)
+                    },
                     onAction = { onLicenceAction(license.url) },
                 )
             }
-            items(artifacts, key = { "${license.spdxId}-${it.coordinates}" }) { artifact ->
+            items(
+                if (folded) emptyList() else artifacts,
+                key = { "${license.spdxId}-${it.coordinates}" },
+            ) { artifact ->
                 Text(
                     // ONE string, version included: the chapter is explicit that the coordinate is
                     // not split across a title and a subtitle, because a reader checking a version
@@ -329,9 +341,17 @@ private fun LicensesList(
  * in. In the no-browser case the action changes its **label**, not its glyph: the chapter rules out
  * inventing a second icon for it.
  *
+ * The heading also folds its own group away. That is a deviation from the chapter, which draws
+ * the register fully expanded and the rows inert — asked for by the owner (2026-08-25), because a
+ * hundred-odd coordinates under one licence make the *second* licence unreachable without a long
+ * scroll. The fold is on the heading's body only; the licence action keeps its own target, so
+ * reaching the licence text never costs an accidental collapse.
+ *
  * @param license the licence.
  * @param count how many artifacts sit under it.
  * @param hasBrowser decides whether the action opens or copies.
+ * @param collapsed whether this group's artifacts are folded away.
+ * @param onToggle folds the group away or back.
  * @param onAction opens or copies the licence address.
  */
 @Composable
@@ -339,6 +359,8 @@ private fun LicenseHeader(
     license: OssLicense,
     count: Int,
     hasBrowser: Boolean,
+    collapsed: Boolean,
+    onToggle: () -> Unit,
     onAction: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(KrtPalette.SurfaceInput)) {
@@ -347,7 +369,25 @@ private fun LicenseHeader(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            KrtIcon(
+                // The chevron is the affordance: without one, nothing says the heading can be
+                // tapped, and a member discovers the fold by accident or not at all.
+                id =
+                    if (collapsed) {
+                        DesignR.drawable.ic_krt_chevron_right
+                    } else {
+                        DesignR.drawable.ic_krt_chevron_down
+                    },
+                contentDescription = null,
+                tint = KrtPalette.TextMuted,
+            )
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clickable(onClick = onToggle)
+                        .padding(vertical = KrtSpacing.xs),
+            ) {
                 Text(
                     text = license.displayName,
                     style = MaterialTheme.typography.titleSmall,

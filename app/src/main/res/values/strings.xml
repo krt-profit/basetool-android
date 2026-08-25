@@ -56,7 +56,12 @@
     <string name="gate_error_title">Verification Offline</string>
     <string name="gate_error_body">Command did not respond. Deine Anmeldung bleibt gültig.</string>
     <string name="gate_signed_in_as">Angemeldet als %1$s</string>
-    <string name="gate_retry_in">Nächster Versuch in %1$d s</string>
+    <string name="gate_retry_in">Automatischer Neuversuch in %1$d s.</string>
+    <string name="gate_still_signed_in">Du bist angemeldet — es fehlt nur die Antwort der Freigabe-Prüfung.</string>
+    <string name="gate_attempting">Prüfe Freigabe…</string>
+    <string name="gate_attempt_note">Versuch läuft — Antwort wird bis 10 s abgewartet. Abmelden bleibt aktiv.</string>
+    <string name="gate_retry_now">Jetzt erneut versuchen</string>
+    <string name="gate_escalation">Weiterhin keine Antwort — Status der Systeme ggf. im Org-Discord.</string>
     <string name="gate_retry">Erneut versuchen</string>
 
     <!-- Terms gate (design spec ch. 04, screen 4). The wording itself comes from the backend. -->
@@ -568,6 +573,7 @@
     <string name="hangar_type_none">Kein Schiffstyp gefunden.</string>
     <string name="hangar_field_insurance">Versicherung</string>
     <string name="hangar_insurance_lti">LTI</string>
+    <string name="hangar_insurance_months_value">%1$s Monate</string>
     <string name="hangar_insurance_months">Monate</string>
     <string name="hangar_insurance_months_placeholder">Monate (0–120)</string>
     <string name="hangar_insurance_months_range">0 bis 120 Monate.</string>
@@ -577,6 +583,7 @@
     <string name="hangar_ship_delete_title">Schiff löschen</string>
     <string name="hangar_ship_delete_body">„%1$s“ wird aus deinem Hangar gelöscht.</string>
     <string name="hangar_add">Schiff anlegen</string>
+    <string name="hangar_edit">Bearbeiten</string>
     <string name="hangar_delete">Löschen</string>
     <plurals name="hangar_type_more">
         <item quantity="one">Ein weiterer. Suche genauer.</item>
@@ -652,6 +659,10 @@
     <string name="bank_settings_visibility">Sichtbarkeit</string>
     <string name="bank_settings_visibility_fixed">Für diesen Kontotyp ist die Sichtbarkeit fest vorgegeben.</string>
     <string name="bank_settings_all_members">Alle Mitglieder der Einheit</string>
+    <string name="promotion_matrix_topic">THEMA</string>
+    <string name="promotion_matrix_level">BEWERTUNG</string>
+    <string name="promotion_matrix_goal">ZIEL</string>
+    <string name="promotion_matrix_goal_value">≥ %1$s</string>
     <string name="promotion_evaluations_title">MEINE BEWERTUNGEN</string>
     <string name="promotion_standings_title">EIGNUNG</string>
     <string name="promotion_category_unnamed">Ohne Kategorie</string>

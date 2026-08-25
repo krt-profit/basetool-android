@@ -36,7 +36,26 @@ data class PromotionState(
     val standings: List<PromotionStanding> = emptyList(),
     val evaluationsError: ApiError? = null,
     val standingsError: ApiError? = null,
-)
+) {
+    /**
+     * The level the next rank step asks for on one topic.
+     *
+     * Design ch. 13 puts a goal beside every evaluation, and the goal lives on the **rank
+     * requirements**, not on the evaluation: `MemberEvaluationResponse` carries no minimum. Several
+     * steps can be open at once, so this reads the **first** one — the next rank the member is
+     * working toward. Reading the highest instead would show a goal nobody is being measured
+     * against yet, and merging them would invent a requirement no rule states.
+     *
+     * @param topicName the topic to look up.
+     * @return the minimum level, or `null` when the next step names no requirement for that topic.
+     */
+    fun goalFor(topicName: String): String? =
+        standings
+            .firstOrNull()
+            ?.checks
+            ?.firstOrNull { it.topicName == topicName }
+            ?.minimumLevel
+}
 
 /**
  * The member's own Beförderung record (REQ-APP-PROMO-001…003).
