@@ -157,6 +157,8 @@
     <string name="missions_status_active">Aktiv</string>
     <string name="missions_status_completed">Abgeschlossen</string>
     <string name="missions_status_cancelled">Abgebrochen</string>
+    <!-- Weekday and a numeric date, per design ch. 06 artboard 1. -->
+    <string name="missions_day_pattern">EEEE · dd.MM.</string>
     <string name="missions_day_today">Heute</string>
     <string name="missions_day_tomorrow">Morgen</string>
     <string name="missions_day_undated">Ohne Termin</string>
@@ -692,6 +694,8 @@
     <string name="refinery_phase_stored">Eingelagert</string>
     <string name="refinery_phase_cancelled">Abgebrochen</string>
     <string name="refinery_station">Station</string>
+    <string name="refinery_good_with_quality">%1$s (Q %2$d)</string>
+    <string name="refinery_value">Wert ≈ %1$s</string>
     <string name="refinery_station_unknown">Unbekannte Station</string>
     <string name="refinery_method">Methode</string>
     <string name="refinery_method_unknown">Unbekannte Methode</string>

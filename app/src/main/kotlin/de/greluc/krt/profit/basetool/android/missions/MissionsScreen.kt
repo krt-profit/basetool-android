@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
@@ -347,6 +348,14 @@ private fun MissionRow(
                 modifier = Modifier.weight(1f),
             )
             mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
+            // Design ch. 06 artboard 1 closes every row with a chevron. On a card whose whole
+            // surface is the tap target, it is the only thing that says the card HAS a target —
+            // without it the row reads as a summary rather than as a way in.
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_chevron_right,
+                contentDescription = null,
+                tint = KrtPalette.Gray2,
+            )
         }
     }
 }
@@ -501,10 +510,25 @@ internal fun Instant.relativeToNow(): String =
 @Composable
 private fun MissionDay.label(): String =
     when (this) {
-        MissionDay.Today -> stringResource(R.string.missions_day_today)
-        MissionDay.Tomorrow -> stringResource(R.string.missions_day_tomorrow)
-        MissionDay.Undated -> stringResource(R.string.missions_day_undated)
-        is MissionDay.On -> date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
+        MissionDay.Today -> {
+            stringResource(R.string.missions_day_today)
+        }
+
+        MissionDay.Tomorrow -> {
+            stringResource(R.string.missions_day_tomorrow)
+        }
+
+        MissionDay.Undated -> {
+            stringResource(R.string.missions_day_undated)
+        }
+
+        // Design ch. 06 artboard 1 writes it "DIENSTAG · 19.08." — the weekday, then the date in
+        // digits. FormatStyle.FULL spells the month out ("Donnerstag, 27. August 2026"), which on a
+        // 411 dp phone is a heading wider than the rows it groups. The year is dropped for the same
+        // reason it is missing from the artboard: this list only ever shows the near future.
+        is MissionDay.On -> {
+            date.format(DateTimeFormatter.ofPattern(stringResource(R.string.missions_day_pattern)))
+        }
     }
 
 /**
