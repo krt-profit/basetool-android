@@ -246,27 +246,44 @@ jobs:
           cat > notes.md <<EOF
           ## Installation
 
-          Über [Obtainium](https://github.com/ImranR98/Obtainium) mit dieser Repository-URL, oder
-          die APK unten direkt herunterladen. Es gibt keinen Play-Store-Eintrag.
+          **DE** — Über [Obtainium](https://github.com/ImranR98/Obtainium) mit dieser
+          Repository-URL, oder die APK unten direkt herunterladen. Es gibt keinen
+          Play-Store-Eintrag.
 
-          ## Prüfsummen
+          **EN** — Through [Obtainium](https://github.com/ImranR98/Obtainium) with this
+          repository URL, or download the APK below. There is no Play Store listing.
 
-          Beide Werte lassen sich vor dem Installieren vergleichen.
+          ## Prüfsummen · Checksums
 
-          | | |
+          | Wert · Value | SHA-256 |
           |---|---|
-          | APK SHA-256 | \`$APK_SHA256\` |
-          | Signaturzertifikat SHA-256 | \`$CERT_SHA256\` |
+          | APK | \`$APK_SHA256\` |
+          | Signaturzertifikat · Signing certificate | \`$CERT_SHA256\` |
 
-          Der Zertifikats-Fingerabdruck ändert sich **nie** ohne einen angekündigten
-          Schlüsselwechsel. Ein anderer Wert bedeutet, dass die Datei nicht von uns stammt —
+          **DE** — Beide Werte lassen sich vor dem Installieren vergleichen. Der
+          Zertifikats-Fingerabdruck ändert sich **nie** ohne einen angekündigten
+          Schlüsselwechsel; ein anderer Wert bedeutet, dass die Datei nicht von uns stammt —
           Android verweigert dann ohnehin das Update über eine bestehende Installation.
+          Den unabhängigen Vergleichswert findest du in der
+          [README](https://github.com/${{ github.repository }}#readme): er wurde beim Erzeugen
+          des Schlüssels festgehalten, also bevor er irgendetwas signiert hat.
 
-          ## Herkunft
+          **EN** — Both values can be checked before installing. The certificate fingerprint
+          **never** changes without an announced key rotation; a different value means the file
+          is not ours, and Android would refuse the update over an existing install anyway. The
+          independent reference lives in the
+          [README](https://github.com/${{ github.repository }}#readme) — it was recorded when
+          the key was generated, before it had signed anything.
 
-          Dieses Release trägt eine GitHub-Build-Attestierung. Mit installierter \`gh\`-CLI:
+          ## Herkunft · Provenance
 
-          \`\`\`
+          **DE** — Dieses Release trägt eine GitHub-Build-Attestierung: sie belegt, dass genau
+          dieser Workflow auf genau diesem Commit die Datei erzeugt hat.
+
+          **EN** — This release carries a GitHub build attestation: proof that this workflow, on
+          this commit, produced the file.
+
+          \`\`\`bash
           gh attestation verify $APK --repo ${{ github.repository }}
           \`\`\`
           EOF
