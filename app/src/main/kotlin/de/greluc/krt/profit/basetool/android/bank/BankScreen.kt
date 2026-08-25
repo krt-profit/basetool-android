@@ -63,17 +63,20 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFiel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSparkline
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import java.time.Instant
@@ -192,6 +195,25 @@ fun BankAccountsScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * The colour a 30-day change is stated in.
+ *
+ * Green up, red down, muted when it did not move — the direction is the fact, and a member reading
+ * a column of deltas should not have to parse a sign to see it. Both tints are the -text variants,
+ * which are the ones that hold contrast on black.
+ *
+ * @param delta the change as the server sent it.
+ * @return the tint for that reading.
+ */
+private fun deltaTone(delta: String): androidx.compose.ui.graphics.Color {
+    val value = delta.trim().toBigDecimalOrNull() ?: return KrtPalette.TextMuted
+    return when {
+        value.signum() > 0 -> KrtPalette.SuccessText
+        value.signum() < 0 -> KrtPalette.DangerText
+        else -> KrtPalette.TextMuted
     }
 }
 
@@ -379,23 +401,53 @@ fun BankAccountScreen(
                     item(key = "head") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                         ) {
-                            Text(
-                                text = account.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = KrtPalette.White,
-                            )
-                            Text(
-                                text = stringResource(R.string.bank_balance),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = KrtPalette.TextMuted,
-                            )
-                            Text(
-                                text = formatAmount(account.balance.orEmpty()),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = KrtPalette.White,
-                            )
+                            // The account's name and its org sit in the TOP BAR (design ch. 12
+                            // artboard 2), the rule every detail in this app now follows.
+                            // The artboard also puts the owning unit under the name; the detail
+                            // DTO does not carry it (BankAccountDetail has no orgUnitName, only
+                            // the summary does), so it is left off rather than guessed from the
+                            // list the member may not have come through.
+                            ProvideScreenTopBar(title = account.name)
+                            // The balance is a HUD box with its sparkline, not three stacked
+                            // Texts: the artboard gives the one number a member came for the
+                            // heaviest treatment on the screen, and puts the 30-day shape under it
+                            // so "is this going up" is answered without reading the ledger.
+                            KrtHudBox(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = stringResource(R.string.bank_balance).uppercase(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = KrtPalette.TextMuted,
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                                    verticalAlignment = Alignment.Bottom,
+                                ) {
+                                    Text(
+                                        text = formatAmount(account.balance.orEmpty()),
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = KrtPalette.White,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.bank_total_unit),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = KrtPalette.TextMuted,
+                                        modifier = Modifier.padding(bottom = KrtSpacing.xs),
+                                    )
+                                }
+                                account.delta30d?.let { delta ->
+                                    Text(
+                                        text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = deltaTone(delta),
+                                    )
+                                }
+                                // The artboard draws a large sparkline here. BankAccountDetail
+                                // carries no series — only the list summary does — so it is a
+                                // mapping gap rather than a layout one, and inventing a shape from
+                                // one number would be a chart of nothing.
+                            }
                             // Only for the member responsible for this account, and only because
                             // the server said so in the settings answer: the app works out no role
                             // of its own here.
@@ -411,13 +463,6 @@ fun BankAccountScreen(
                                         enabled = state.writable,
                                     )
                                 }
-                            account.delta30d?.let { delta ->
-                                Text(
-                                    text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = KrtPalette.TextMuted,
-                                )
-                            }
                         }
                     }
                     item(key = "ledger-title") {

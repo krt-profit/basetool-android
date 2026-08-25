@@ -42,10 +42,13 @@ private val TOP_BAR_HEIGHT = 64.dp
  * There is deliberately no hamburger: the web app's drawer is replaced by the bottom bar and the
  * tablet rail.
  *
- * @param title screen title; uppercased for display unless [subtitle] is given — a detail's head
- *   carries the subject's own name, and a name is not a label to shout.
- * @param subtitle drawn under the title, small. Present only on a detail, where the chapters put
- *   the subject's status directly under its name.
+ * @param title screen title.
+ * @param subject whether the title names a THING rather than a section. A section is shouted in
+ *   orange caps ("EINSÄTZE"); a thing keeps its own spelling in white, because "EINSATZKASSE" is
+ *   not what the account is called. Independent of [subtitle] — an account with no status line is
+ *   still an account.
+ * @param subtitle drawn under the title, small. The chapters put a subject's status directly under
+ *   its name.
  * @param modifier layout modifier.
  * @param onBack when non-null a back arrow is shown and this is invoked; pass `null` on roots.
  * @param orgBadge optional org-context chip, typically a [KrtOrgBadge].
@@ -56,6 +59,7 @@ private val TOP_BAR_HEIGHT = 64.dp
 fun KrtTopBar(
     title: String,
     modifier: Modifier = Modifier,
+    subject: Boolean = false,
     subtitle: (@Composable () -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     orgBadge: @Composable (() -> Unit)? = null,
@@ -81,19 +85,14 @@ fun KrtTopBar(
             }
             Column(modifier = Modifier.weight(1f).padding(end = KrtSpacing.sm)) {
                 Text(
-                    text = if (subtitle == null) title.krtUppercase() else title,
+                    text = if (subject) title else title.krtUppercase(),
                     style =
-                        if (subtitle == null) {
-                            MaterialTheme.typography.headlineSmall
-                        } else {
+                        if (subject) {
                             MaterialTheme.typography.titleMedium
-                        },
-                    color =
-                        if (subtitle == null) {
-                            MaterialTheme.colorScheme.primary
                         } else {
-                            KrtPalette.White
+                            MaterialTheme.typography.headlineSmall
                         },
+                    color = if (subject) KrtPalette.White else MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

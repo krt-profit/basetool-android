@@ -375,6 +375,8 @@ private fun AppTopBar(
 ) {
     KrtTopBar(
         title = detail?.title ?: stringResource(destination.titleRes),
+        // A published head always names a thing; a destination title always names a section.
+        subject = detail != null,
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         subtitle = detail?.subtitle,
         onBack = if (isDetailRoute(destination)) onBack else null,
