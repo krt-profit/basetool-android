@@ -36,6 +36,7 @@ enum class KrtDestination(
     val route: String,
     @param:StringRes val titleRes: Int,
     @param:DrawableRes val iconRes: Int,
+    @param:StringRes private val navTitleRes: Int? = null,
 ) {
     /** The dashboard — the app's home and the target of every "back from a root". */
     Home("home", R.string.nav_home, DesignR.drawable.ic_krt_dashboard),
@@ -59,7 +60,15 @@ enum class KrtDestination(
     Hangar("hangar", R.string.nav_hangar, DesignR.drawable.ic_krt_ship),
 
     /** Materialbörse — offers and requests between members. */
-    Exchange("exchange", R.string.nav_exchange, DesignR.drawable.ic_krt_swap),
+    Exchange(
+        "exchange",
+        R.string.nav_exchange,
+        DesignR.drawable.ic_krt_swap,
+        // „BÖRSE" on the rail, „Materialbörse" everywhere else. Both the navigation map (ch. 03)
+        // and the tablet dashboard (ch. 05) label the rail entry with the short form, while the
+        // „Mehr" list spells it out — a rail column is 88 dp wide and the compound crowds it.
+        navTitleRes = R.string.nav_exchange_short,
+    ),
 
     /** Raffinerie — refinery runs and their yields. */
     Refinery("refinery", R.string.nav_refinery, DesignR.drawable.ic_krt_refinery),
@@ -130,6 +139,15 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_refinery,
     ),
     ;
+
+    /**
+     * The label a bar or rail entry carries, which is not always the destination's name.
+     *
+     * Falls back to [titleRes], so only a destination whose navigation label the design shortens
+     * needs to say so.
+     */
+    @get:StringRes
+    val navLabelRes: Int get() = navTitleRes ?: titleRes
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
     val deepLink: String get() = "$KRT_DEEP_LINK_SCHEME://$route"

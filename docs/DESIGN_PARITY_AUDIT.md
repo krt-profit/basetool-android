@@ -1104,6 +1104,28 @@ Device-verified the way a conflict actually happens: an item open in „Mein Inv
 record moved through the API, then save. „KONFLIKT FESTGESTELLT" appeared over the sheet, and
 „NEU LADEN" closed the editor and showed the other writer's value in the list.
 
+## The tablet pass (2026-08-26)
+
+Everything structural held on a 2560×1600 tablet: the rail with its seven destinations plus „Mehr",
+the two-column dashboard grid, the content cap, and — the part that mattered after this session's
+changes — the 2×2 shortcut tiles and the wrapping filter chips, which had only been seen on a phone.
+
+Two copy placements did not.
+
+**„Alle ansehen" was under the list, not in the header.** Reading the artboard's *text* in order had
+put it after the rows; querying the DOM showed its parent element is „UngelesenAlle ansehen" — the
+section title's own row. It had been rendering as a free-floating orange line under the last card,
+which reads as one more row rather than a control for the section. `KrtSectionTitle` already had a
+`trailing` slot documented for precisely this.
+
+**The rail said „MATERIALBÖRSE" where two chapters say „BÖRSE".** The „Mehr" list spells it out and
+the rail abbreviates; a rail column is 88 dp wide. Destinations can now carry a navigation label
+distinct from their name.
+
+Worth noting as method: neither would have been found by the phone pass. The first is on both form
+factors and was simply missed until a wide layout made the floating link obvious; the second exists
+only on the rail.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

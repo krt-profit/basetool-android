@@ -107,6 +107,8 @@
     <string name="nav_more">Mehr</string>
     <string name="nav_hangar">Hangar</string>
     <string name="nav_exchange">Materialbörse</string>
+    <!-- The rail entry, which the design shortens (ch. 03, ch. 05). -->
+    <string name="nav_exchange_short">Börse</string>
     <string name="nav_refinery">Raffinerie</string>
     <string name="nav_personal_inventory">Mein Inventar</string>
     <string name="nav_bank">Bank</string>

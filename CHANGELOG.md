@@ -19,6 +19,9 @@
 
 ### Changed
 
+- **„Alle ansehen" und „Alle Einsätze" stehen jetzt in der Abschnittsüberschrift** statt als lose
+  Zeile unter der Liste, und die Tablet-Leiste schreibt „Börse" statt „Materialbörse".
+
 - **Wenn ein Speichern abgelehnt wird, weil jemand anderes den Eintrag inzwischen geändert hat,
   erscheint jetzt ein Hinweisfenster** statt einer leicht zu übersehenden Zeile unter dem Formular.
   „Neu laden" holt den aktuellen Stand; deine Eingabe bleibt bis dahin stehen.

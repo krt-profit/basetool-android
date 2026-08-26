@@ -201,7 +201,7 @@ fun BasetoolApp(
         destinations.map { destination ->
             KrtNavItem(
                 route = destination.route,
-                label = stringResource(destination.titleRes),
+                label = stringResource(destination.navLabelRes),
                 iconRes = destination.iconRes,
                 // No badge on any navigation entry. The Einsätze one carried a hardcoded 2 from
                 // the shell — a permanent claim that two of something were waiting, which no

@@ -324,9 +324,21 @@ private fun LazyListScope.missionsSection(
     onOpenMissions: () -> Unit,
 ) {
     item(key = "missions-title") {
+        // The see-all action rides in the title's trailing slot, which is what that slot is for
+        // („optional content pinned after the rule, e.g. a count or an action"). It hung under the
+        // last card as a free-floating orange line, which reads as a row of the list rather than a
+        // control belonging to the section. Artboard 1 shows the pattern on the inbox band.
         KrtSectionTitle(
             text = stringResource(R.string.dashboard_missions),
             modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            trailing = {
+                if (state.missions.isNotEmpty()) {
+                    SectionAction(
+                        text = stringResource(R.string.dashboard_missions_all),
+                        onClick = onOpenMissions,
+                    )
+                }
+            },
         )
     }
     when {
@@ -345,12 +357,6 @@ private fun LazyListScope.missionsSection(
         else -> {
             items(state.missions, key = { it.id }) { mission ->
                 MissionBandRow(mission = mission, onClick = { onOpenMission(mission.id) })
-            }
-            item(key = "missions-all") {
-                LinkLine(
-                    text = stringResource(R.string.dashboard_missions_all),
-                    onClick = onOpenMissions,
-                )
             }
         }
     }
@@ -372,6 +378,14 @@ private fun LazyListScope.notificationsSection(
         KrtSectionTitle(
             text = stringResource(R.string.dashboard_notifications),
             modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            trailing = {
+                if (unread.isNotEmpty()) {
+                    SectionAction(
+                        text = stringResource(R.string.dashboard_notifications_all),
+                        onClick = onOpenNotifications,
+                    )
+                }
+            },
         )
     }
     if (unread.isEmpty()) {
@@ -388,12 +402,6 @@ private fun LazyListScope.notificationsSection(
             // says that something happened but not whether it is still worth acting on, which is
             // the one thing a member skimming the dashboard is deciding.
             PreviewLine(text = notification.preview(), time = notification.dashboardTime())
-        }
-        item(key = "notifications-all") {
-            LinkLine(
-                text = stringResource(R.string.dashboard_notifications_all),
-                onClick = onOpenNotifications,
-            )
         }
     }
 }
@@ -737,6 +745,25 @@ private fun MutedLine(text: String) {
  *
  * @param text the label.
  * @param onClick where it goes.
+ */
+@Composable
+private fun SectionAction(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.clickable(onClick = onClick).padding(KrtSpacing.xs),
+    )
+}
+
+/**
+ * A tappable line that leads to the full screen behind a band.
+ *
+ * @param text the label.
+ * @param onClick opens the screen.
  */
 @Composable
 private fun LinkLine(

@@ -172,6 +172,18 @@ deciding.
 
 **The announcement gained its unread marker and its mark-read action** (below).
 
+**„Alle ansehen" belongs in the section header.** It hung under the last row as a free-floating
+orange line, which reads as one more row of the list rather than a control belonging to the section.
+The artboard puts it beside „UNGELESEN", and `KrtSectionTitle` already had the slot for exactly that
+(„optional content pinned after the rule, e.g. a count or an action"). The Einsatz band gets the
+same treatment: the artboard draws no see-all there at all, but the pattern is established one
+section below and a link floating under a card was the worse of the two readings.
+
+**The rail says „BÖRSE", not „MATERIALBÖRSE".** Both the navigation map (ch. 03) and the tablet
+dashboard (ch. 05) label the rail entry with the short form while the „Mehr" list spells it out — a
+rail column is 88 dp wide and the compound crowds it. Destinations can now carry a navigation label
+distinct from their name; only this one needs it.
+
 **Acceptance**
 
 - [x] The greeting asserts uppercase, so a sentence-case one fails rather than passing unnoticed
