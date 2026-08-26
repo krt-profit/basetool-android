@@ -689,6 +689,8 @@
     <string name="mission_detail_check_in">Check in</string>
     <string name="mission_detail_check_out">Check out</string>
     <string name="mission_detail_donate">Donate</string>
+    <string name="mission_detail_payout_self">Payout</string>
+    <string name="mission_detail_payout_org">Org treasury</string>
     <string name="mission_detail_take_payout">Take payout</string>
     <string name="mission_detail_not_allowed">You are not allowed to change this Einsatz.</string>
     <string name="mission_detail_check_in_not_yet">Checking in works once the Einsatz has started.</string>

@@ -75,6 +75,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
@@ -357,19 +358,28 @@ private fun SignUpRowActions(
             )
         }
     }
-    KrtGhostButton(
-        text =
-            stringResource(
-                if (mine.donating == true) {
-                    R.string.mission_detail_take_payout
-                } else {
-                    R.string.mission_detail_donate
-                },
-            ),
-        onClick = actions.onTogglePayoutPreference,
+    // Two radios, not one toggle. The choice is between two standing states — the payout comes to
+    // you, or it goes to the org treasury — and a button labelled with the OTHER state leaves a
+    // member reading "Spenden" unsure whether that is what they have chosen or what they are being
+    // offered. The component sheet (ch. 02 §6) draws exactly this pair.
+    Row(
         modifier = Modifier.testTag(MISSION_PAYOUT_TAG).writeAlpha(state.writable),
-        enabled = state.writable,
-    )
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtRadioRow(
+            selected = mine.donating != true,
+            onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
+            label = stringResource(R.string.mission_detail_payout_self),
+            enabled = state.writable,
+        )
+        KrtRadioRow(
+            selected = mine.donating == true,
+            onSelect = { if (mine.donating != true) actions.onTogglePayoutPreference() },
+            label = stringResource(R.string.mission_detail_payout_org),
+            enabled = state.writable,
+        )
+    }
 }
 
 /**

@@ -381,7 +381,9 @@ class MissionDetailScreenTest {
 
         compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithTag(MISSION_CHECK_IN_TAG).performClick()
-        compose.onNodeWithTag(MISSION_PAYOUT_TAG).performClick()
+        // The tag now sits on the radio PAIR, so the click goes to the option the caller is not in
+        // — choosing the state they already hold reports nothing, which is the point of a radio.
+        compose.onNodeWithText("Org-Kasse", ignoreCase = true).performClick()
 
         assertEquals(1, checked.size)
         assertEquals(1, paid.size)
@@ -398,7 +400,10 @@ class MissionDetailScreenTest {
     fun `a donating caller is offered the payout instead`() {
         show(readyForMe(mine(donating = true)))
 
-        compose.onNodeWithText("Auszahlen", ignoreCase = true).assertIsDisplayed()
+        // Both standing states are on screen as radios (ch. 02 §6), and the one the caller is in is
+        // the one that reads as chosen — a toggle labelled with the other state left that ambiguous.
+        compose.onNodeWithText("Org-Kasse", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Auszahlung", ignoreCase = true).assertIsDisplayed()
     }
 
     @Test
