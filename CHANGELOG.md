@@ -43,6 +43,10 @@
 
 ### Fixed
 
+- **Ein Tipp auf eine Benachrichtigung beendete die App**, statt den Posteingang zu öffnen — sie
+  verschwand kommentarlos zum Startbildschirm. Der Weg vom Systemhinweis in die App funktioniert
+  jetzt, und der Zurück-Schritt führt von dort auf die Übersicht.
+
 - **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
   Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
   alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf

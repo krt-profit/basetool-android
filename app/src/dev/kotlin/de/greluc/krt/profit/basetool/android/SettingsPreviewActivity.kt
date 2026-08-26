@@ -112,7 +112,7 @@ class SettingsPreviewActivity : AppCompatActivity() {
 
     /** The real preference, so the switch on this screen has the effect it claims. */
     private val screenCapturePreference by lazy {
-        ScreenCapturePreference(ScreenCapturePreference.createStore(this))
+        (application as BasetoolApplication).screenCapture
     }
 
     /**

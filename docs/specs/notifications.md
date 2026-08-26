@@ -343,6 +343,35 @@ formatter is how „gestern" ends up looking different on two screens of the sam
 
 ---
 
+### REQ-APP-NOTIF-014 — Tapping a notification must not kill the app
+
+The inbox's whole point is the tap that reaches it, and that tap crashed the process.
+
+A notification's `PendingIntent` carries `FLAG_ACTIVITY_NEW_TASK`, because it may be the thing that
+starts the app. Navigation answers that flag by rebuilding the task through `TaskStackBuilder` and
+finishing the current activity — which is how the chapter's „Kaltstart: Back-Stack = Ziel +
+Übersicht" is synthesised, and is correct. The replacement activity then opened a **second**
+DataStore on `krt_settings`, DataStore threw, and the process died before the inbox was drawn.
+
+From the member's side: they tap a notification about something that needs them, and the app
+disappears to the home screen. Nothing in the app reports it.
+
+The fix is ownership, recorded as [ADR-0014](../adr/0014-every-datastore-is-owned-by-the-application.md):
+every store is a property of `BasetoolApplication`. The rule is enforced by a test rather than a
+comment, because the identical mistake had already been made once for the token store, fixed
+correctly, documented next to the fix — and repeated in a different file.
+
+**Acceptance**
+
+- [x] `ProcessStoreOwnershipTest` fails the build when any source outside the application opens a
+  store; verified to fail by reintroducing the defect, not only to pass.
+- [x] Verified on a device against the test stack: with the app running,
+  `basetool://notifications` lands on the inbox and back returns to Übersicht. Before the fix the
+  same command left the launcher on screen with `IllegalStateException: There are multiple
+  DataStores active for the same file` in the log.
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No system notification shade.** Design ch. 14, and the plan's Q2 decision rules out a push

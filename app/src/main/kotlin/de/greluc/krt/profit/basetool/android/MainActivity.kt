@@ -141,12 +141,12 @@ class MainActivity : AppCompatActivity() {
     /**
      * The member's screen-capture choice.
      *
-     * Held by the activity rather than a view model: it is applied to this window's flags, and a
-     * view model outliving a configuration change would only add a hop.
+     * Read from the application rather than built here, for the same reason [container] is: a
+     * second store on `krt_settings` throws, and every activity recreation would build one. The
+     * *flag* it drives is per-window; the store behind it is per-process.
      */
-    private val screenCapturePreference by lazy {
-        ScreenCapturePreference(ScreenCapturePreference.createStore(this))
-    }
+    private val screenCapturePreference: ScreenCapturePreference
+        get() = (application as BasetoolApplication).screenCapture
 
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
