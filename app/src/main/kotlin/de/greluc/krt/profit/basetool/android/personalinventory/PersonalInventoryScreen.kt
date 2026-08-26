@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
@@ -270,7 +271,7 @@ private fun ItemRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = KrtPalette.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -283,16 +284,40 @@ private fun ItemRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                text = item.quantity.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-            )
-            KrtGhostButton(
-                text = stringResource(R.string.personal_inventory_delete),
-                onClick = onDelete,
-                modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            // Amount and unit, as artboard 09.4 sets them: the figure bright, the unit dimmed
+            // beside it. A bare "24" leaves a member to guess whether it is pieces or SCU, and on
+            // an item list it is always pieces — which is exactly why saying so costs nothing.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Text(
+                    text = item.quantity.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = KrtPalette.White,
+                )
+                Text(
+                    text = stringResource(R.string.personal_inventory_unit),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+            // Icon buttons, not a labelled "LÖSCHEN": the artboard's row ends in a 44 dp pencil,
+            // and a wide destructive label made deletion the loudest thing on every row of a list
+            // whose usual action is a correction.
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_edit,
+                label = stringResource(R.string.personal_inventory_edit),
+                onClick = onEdit,
                 enabled = online,
+                modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            )
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_trash,
+                label = stringResource(R.string.personal_inventory_delete),
+                onClick = onDelete,
+                enabled = online,
+                modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
             )
         }
     }

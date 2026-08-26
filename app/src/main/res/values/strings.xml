@@ -510,6 +510,7 @@
     <string name="personal_inventory_search">Eintrag suchen</string>
     <string name="personal_inventory_create">Eintrag anlegen</string>
     <string name="personal_inventory_edit">Eintrag ändern</string>
+    <string name="personal_inventory_unit">Stück</string>
     <string name="personal_inventory_delete">Löschen</string>
     <string name="personal_inventory_end_of_list">Ende der Liste</string>
     <string name="personal_inventory_empty_title">Nichts erfasst</string>

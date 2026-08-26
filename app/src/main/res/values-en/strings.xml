@@ -491,6 +491,7 @@
     <string name="personal_inventory_search">Search entry</string>
     <string name="personal_inventory_create">New entry</string>
     <string name="personal_inventory_edit">Edit entry</string>
+    <string name="personal_inventory_unit">pcs</string>
     <string name="personal_inventory_delete">Delete</string>
     <string name="personal_inventory_end_of_list">End of list</string>
     <string name="personal_inventory_empty_title">Nothing recorded</string>
