@@ -29,11 +29,13 @@ absent code: nothing exercises it and nothing keeps it honest against the API.
 carries an owner correction dated 2026-08-25 reducing the matrix to *Thema · Bewertung · Ziel*. The
 removed screen had already been rebuilt against it. `#66` and
 [ADR-0009](../adr/0009-tablet-settings-ships-without-its-befoerderung-column.md) both still say the
-handoff has no chapter for this area; that premise is stale, and the *current* decision does not
-rest on it.
+handoff has no chapter for this area; that premise is stale. It changes nothing: the removal was
+decided on other grounds and reaffirmed on 2026-08-26, and the chapter's existence is recorded here
+only so nobody re-derives the question from a wrong fact.
 
-**What the requirements below describe** is therefore the screen as it was built and as chapter 13
-draws it — a specification waiting for its slice, not a description of running code. Acceptance
+**The decision stands: no Beförderung in the app** (owner, 2026-08-26). This is not a slice waiting
+for a slot. The requirements below are kept as the record of what was built and what chapter 13
+draws, so that a future reversal would not start from nothing — they are **not** a plan. Acceptance
 items that were ticked against `PromotionViewModelTest` are marked open again: that file went with
 the screen.
 
