@@ -11,6 +11,10 @@
 
 ### Changed
 
+- **Bildschirme, die du aus „Mehr" öffnest, tragen oben keinen Org-Chip und keine Glocke mehr** —
+  nur noch Zurück-Pfeil, Titel und was der Bildschirm selbst anbietet. Der Hangar-Titel wurde
+  dadurch abgeschnitten, „Open-Source-Lizenzen" passt jetzt vollständig.
+
 - **Der Org-Einheit-Reiter im Hangar ist jetzt eine Tabelle mit Kennzahlen darüber** — Schiffstyp,
   Anzahl und Fitted in Spalten statt als Fließtext unter dem Namen, mit „Schiffe" und „Fitted" als
   Summen obendrüber. Eine Zeile antippen zeigt die gefilterte Schiffsliste.

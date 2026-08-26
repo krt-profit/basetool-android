@@ -672,7 +672,15 @@ does not have:
   as distinct states; the screen has one combined unavailable state.
 
 **Correction (2nd import):** an earlier revision claimed all five were built. `LicensesScreen.kt`
-is still a single composable with none of them. See *Three rows were wrongly closed* below.
+was still a single composable with none of them. See *Three rows were wrongly closed* below.
+
+**Closed (2026-08-26, verified on a device):** all five are built — the summary line reads
+„145 Artefakte · 2 Lizenzen · v0.1.3-dev (Build 4) · Dev", each group carries
+„144 Artefakte · SPDX: Apache-2.0" and sticks while scrolling, the report ends by naming licensee
+and its version, the no-browser path copies the URL and says so, and loading and error are separate
+states with the spinner held back 300 ms. What the device pass *did* find was in the bar above them
+rather than in the list: „OPEN-SOURCE-LI…" truncated by an org chip and a bell that artboard 15.1
+does not draw — the systemic finding below.
 
 The chapter also pins details the row above does not: the group order is alphabetical by licence
 name and the artefacts alphabetical within it (deterministic, not report order); the coordinate is
@@ -842,6 +850,27 @@ called only from the dev showcase. **Live-sync** is a different thing and does s
 ViewModels observe `/ws/sync` rooms and refresh silently, which draws nothing at all. The reason
 given in the note — „openapi.json führt keine Presence-Daten" — is true of presence and not of the
 sync rooms.
+
+## The top bar's two ends were asked two different questions (2026-08-26)
+
+Found on the licences screen and true of nine others. The back arrow came from the destination; the
+org chip and the bell came from whether a screen happened to **publish a title**. Every pushed
+screen that publishes none got all three — arrow, chip and bell — and the Hangar's title was
+truncated to make room.
+
+Four artboards draw the same head for four such screens, and none of them has a chip or a bell:
+
+| artboard | bar |
+| --- | --- |
+| 07.1 Benachrichtigungen | ← BENACHRICHTIGUNGEN · „3 NEU" |
+| 08.4 Hangar | ← HANGAR · ⋮ |
+| 13.1 Einstellungen | ← EINSTELLUNGEN |
+| 15.1 Open-Source-Lizenzen | ← OPEN-SOURCE-LIZENZEN |
+
+Both ends now come from one predicate — is this destination in the navigation set for this form
+factor — which also makes the phone/tablet split fall out for free: Hangar, Raffinerie and
+Materialbörse are pushed behind „Mehr" on a phone and roots on a tablet's rail, and the bar follows
+without a second rule. `REQ-APP-UI-005` and `TopBarOwnershipTest`.
 
 ## How this audit was made
 

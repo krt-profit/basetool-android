@@ -229,6 +229,7 @@ fun BasetoolApp(
             AppTopBar(
                 destination = current,
                 detail = detail,
+                navigable = current in destinations,
                 orgUnit = orgUnit,
                 unreadCount = unreadCount,
                 onBack = { navController.popBackStack() },
@@ -390,6 +391,8 @@ private fun NavHostController.navigateToTopLevel(
  * @param detail what a pushed screen published, or `null` on a root.
  * @param orgUnit the active org context, for the chip.
  * @param unreadCount unread notifications, for the bell's badge.
+ * @param navigable whether the navigation itself offers this destination — the bottom bar's five on
+ *   a phone, the rail's eight on a tablet. It decides who owns the bar's right-hand side.
  * @param onBack pops the back stack.
  * @param onSwitchOrg opens the org switcher.
  * @param onNotifications opens the inbox.
@@ -400,6 +403,7 @@ private fun AppTopBar(
     detail: ScreenTopBar?,
     orgUnit: OrgUnitState,
     unreadCount: Int?,
+    navigable: Boolean,
     onBack: () -> Unit,
     onSwitchOrg: () -> Unit,
     onNotifications: () -> Unit,
@@ -424,11 +428,18 @@ private fun AppTopBar(
         subject = subject != null,
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         subtitle = detail?.subtitle,
-        onBack = if (isDetailRoute(destination)) onBack else null,
-        // A detail's bar carries neither: the org chip and the bell are for choosing what
-        // to look at, and on a detail they compete with the thing being looked at.
+        // The back arrow and the right-hand side answer the same question and used to be asked
+        // differently: the arrow from the destination, the chip and the bell from whether a screen
+        // happened to publish a title. So every pushed screen that publishes none — the inbox, the
+        // settings, the licences, the Fleetview import, and everything reached from „Mehr" — got a
+        // back arrow AND the chip AND the bell. Artboards 07.1, 08.4, 13.1 and 15.1 all draw the
+        // same head: back arrow, title, and whatever that screen owns on the right. Nothing else.
+        onBack = if (navigable) null else onBack,
+        // The org chip and the bell are for choosing what to look at, so they belong to the
+        // destinations the navigation itself offers. On anything pushed they compete with the thing
+        // being looked at — and on the inbox the bell would point at the screen it is on.
         orgBadge =
-            if (subject != null) {
+            if (!navigable) {
                 null
             } else {
                 {
@@ -457,7 +468,7 @@ private fun AppTopBar(
                     }
                 }
             },
-        notificationCount = unreadCount.takeIf { subject == null },
+        notificationCount = unreadCount.takeIf { navigable },
         onNotificationsClick = onNotifications,
         actions = detail?.actions,
     )

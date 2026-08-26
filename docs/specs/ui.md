@@ -177,3 +177,42 @@ plus Obtainium (plan Q1), so the button opens the release page the server names.
   an env var and a restart, and the variable reached nothing.
 
 **Code:** `UpdateGate`, `UpdateGateViewModel`, `AppVersionRepository`
+
+---
+
+### REQ-APP-UI-005 — The top bar's two ends answer one question
+
+The bar has a left end — a back arrow, or nothing — and a right end: the org chip and the bell, or
+whatever the screen itself owns. Both answer the same question: **is this a destination the
+navigation offers, or something pushed on top of one?**
+
+They used to be asked differently. The arrow came from the destination; the chip and the bell came
+from whether a screen happened to publish a title. So every pushed screen that publishes none — the
+inbox, Einstellungen, the licences, the Fleetview import, and everything reached from „Mehr" — got a
+back arrow **and** the chip **and** the bell. The Hangar's title was truncated to „OPEN-SOURCE-LI…"
+shape to make room for a chip that does not belong there.
+
+**One predicate decides both:** whether the destination is in the navigation set for the current
+form factor — the bottom bar's five on a phone, the rail's eight on a tablet. A destination the
+navigation offers has no back arrow and carries the chip and the bell; anything else has the arrow
+and neither.
+
+The form factor is part of it, not an afterthought: Hangar, Raffinerie and Materialbörse sit behind
+„Mehr" on a phone and have their own rail entry on a tablet, so the same screen is pushed on one and
+a root on the other.
+
+**What a pushed screen puts on the right is its own.** The Hangar's overflow, the inbox's „3 NEU"
+chip, a detail's actions — the bar's right end is free precisely because the chip and the bell have
+left it (design ch. 07 artboard 1, ch. 08 artboard 4, ch. 13 artboard 1, ch. 15 artboard 1, which
+all draw the same head).
+
+**Acceptance**
+
+- [x] The five phone destinations and the eight tablet ones are the only ones without a back arrow;
+  the inbox is never among them (`TopBarOwnershipTest`).
+- [x] No destination is both a navigation entry and a sub-destination (`TopBarOwnershipTest`).
+- [x] Verified on a device: „← HANGAR ⋮" and „← OPEN-SOURCE-LIZENZEN" with the full title, no chip
+  and no bell on either.
+
+---
+
