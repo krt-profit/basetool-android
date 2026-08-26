@@ -656,6 +656,9 @@ fun KrtToggle(
  *   fixed 52 dp of design chapter 13. The fixed width is right for a pair like DE/EN that sits
  *   beside other controls; a segment that *is* the control — the Einsätze/Operationen switch above
  *   a list (chapter 06 §1) — spans the row, and a word like "Operationen" does not fit 52 dp.
+ * @param activeColor fill of the chosen segment. Orange by default; a control whose choice carries
+ *   a meaning of its own passes that meaning's colour, the way Einnahme/Ausgabe does.
+ * @param activeContentColor label colour on that fill.
  */
 @Composable
 fun KrtSegmentedControl(
@@ -665,6 +668,8 @@ fun KrtSegmentedControl(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     stretch: Boolean = false,
+    activeColor: Color = MaterialTheme.colorScheme.primary,
+    activeContentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     Row(
         modifier =
@@ -688,9 +693,8 @@ fun KrtSegmentedControl(
                 modifier =
                     (if (stretch) Modifier.weight(1f) else Modifier.width(SEGMENT_WIDTH))
                         .height(KrtSpacing.touchTarget)
-                        .background(
-                            if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        ).selectable(
+                        .background(if (active) activeColor else Color.Transparent)
+                        .selectable(
                             selected = active,
                             enabled = enabled,
                             role = Role.RadioButton,
@@ -703,7 +707,7 @@ fun KrtSegmentedControl(
                     style = MaterialTheme.typography.labelMedium,
                     color =
                         when {
-                            active -> MaterialTheme.colorScheme.onPrimary
+                            active -> activeContentColor
                             enabled -> KrtPalette.TextMuted
                             else -> KrtPalette.Gray3
                         },

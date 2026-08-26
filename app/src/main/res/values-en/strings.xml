@@ -654,7 +654,14 @@
     <string name="mission_detail_finance_edit">Edit</string>
     <string name="mission_detail_finance_delete">Delete</string>
     <string name="mission_detail_finance_amount">Amount (aUEC)</string>
-    <string name="mission_detail_finance_note">What for?</string>
+    <string name="mission_detail_finance_title">Finance entry</string>
+    <string name="mission_detail_finance_type">Type</string>
+    <string name="mission_detail_finance_type_income">+ INCOME</string>
+    <string name="mission_detail_finance_type_expense">− EXPENSE</string>
+    <string name="mission_detail_finance_amount_hint_income">Whole numbers · shown in green with a +</string>
+    <string name="mission_detail_finance_amount_hint_expense">Whole numbers · shown in red with a −</string>
+    <string name="mission_detail_finance_note_hint">e. g. refinery work order #7841</string>
+    <string name="mission_detail_finance_note">Purpose</string>
     <string name="mission_detail_finance_needs_signup">Booking works once you are signed up for the Einsatz.</string>
     <string name="operation_detail_payout_confirm">Confirm</string>
     <string name="operation_detail_payout_undo">Undo</string>

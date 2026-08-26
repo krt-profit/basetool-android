@@ -54,7 +54,7 @@ import java.time.Instant
  * German is pinned: it is the primary bundle and the copy rules are asserted against it.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [34], qualifiers = "de")
+@Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class MissionDetailScreenTest {
     @get:Rule
     val compose = createComposeRule()
@@ -544,7 +544,7 @@ class MissionDetailScreenTest {
         )
 
         compose.onNodeWithTag(MISSION_FINANCE_SHEET_TAG).assertIsDisplayed()
-        compose.onNodeWithText("2500").assertIsDisplayed()
+        compose.onNodeWithText("2500").performScrollTo().assertIsDisplayed()
     }
 
     /**

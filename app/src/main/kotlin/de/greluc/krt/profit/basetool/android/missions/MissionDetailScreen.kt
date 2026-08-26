@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,6 +43,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +65,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
@@ -837,37 +842,69 @@ private fun FinanceEntrySheet(
     state: MissionDetailState,
     actions: MissionFinanceActions,
 ) {
+    // Artboard 06.4 gives the entry one tone throughout: green for an Einnahme, red for an Ausgabe,
+    // on the chosen segment and on the amount alike. The sign is never typed - it IS the segment -
+    // and the hint under the field says so, which is why it changes with the choice.
+    val tone = if (draft.income) KrtPalette.Success else KrtPalette.Danger
+    val amountTone = if (draft.income) KrtPalette.SuccessText else KrtPalette.DangerText
     KrtBottomSheet(
         onDismiss = actions.onDismiss,
         modifier = Modifier.testTag(MISSION_FINANCE_SHEET_TAG),
-        title = stringResource(R.string.mission_detail_finance_add),
+        title = stringResource(R.string.mission_detail_finance_title),
     ) {
+        // The sheet scrolls: with the keyboard up on a small phone the form is taller than what is
+        // left of the screen, and a save button that cannot be reached is a form that cannot be
+        // submitted.
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(KrtSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
         ) {
+            KrtFieldLabel(text = stringResource(R.string.mission_detail_finance_type))
             KrtSegmentedControl(
                 options =
                     listOf(
-                        stringResource(R.string.mission_detail_finance_income),
-                        stringResource(R.string.mission_detail_finance_expense),
+                        stringResource(R.string.mission_detail_finance_type_income),
+                        stringResource(R.string.mission_detail_finance_type_expense),
                     ),
                 selectedIndex = if (draft.income) 0 else 1,
                 onSelect = { actions.onIncome(it == 0) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !state.saving,
                 stretch = true,
+                activeColor = tone,
+                activeContentColor = KrtPalette.White,
             )
             KrtTextField(
                 value = draft.amount,
                 onValueChange = actions.onAmount,
                 label = stringResource(R.string.mission_detail_finance_amount),
                 enabled = !state.saving,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textAlign = TextAlign.End,
+                tabularFigures = true,
+                valueStyle = MaterialTheme.typography.headlineSmall.copy(color = amountTone),
+            )
+            Text(
+                text =
+                    stringResource(
+                        if (draft.income) {
+                            R.string.mission_detail_finance_amount_hint_income
+                        } else {
+                            R.string.mission_detail_finance_amount_hint_expense
+                        },
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
             )
             KrtTextField(
                 value = draft.note,
                 onValueChange = actions.onNote,
                 label = stringResource(R.string.mission_detail_finance_note),
+                placeholder = stringResource(R.string.mission_detail_finance_note_hint),
                 enabled = !state.saving,
             )
             state.error?.let { error -> SignUpError(error = error) }
@@ -880,6 +917,7 @@ private fun FinanceEntrySheet(
                 KrtCtaButton(
                     text = stringResource(R.string.personal_inventory_save),
                     onClick = actions.onSave,
+                    iconRes = DesignR.drawable.ic_krt_save,
                     modifier = Modifier.testTag(MISSION_FINANCE_SAVE_TAG),
                     enabled = draft.submittable && state.writable,
                 )

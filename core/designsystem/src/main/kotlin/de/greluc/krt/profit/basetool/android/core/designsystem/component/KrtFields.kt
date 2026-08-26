@@ -38,9 +38,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -151,6 +153,9 @@ fun KrtFieldError(
  * @param keyboardOptions keyboard configuration, e.g. a numeric keyboard for amounts.
  * @param textAlign horizontal alignment of the text; centre it for stepper-style numeric inputs.
  * @param tabularFigures whether digits render with fixed width; switch on for amounts.
+ * @param valueStyle overrides how the typed value is rendered - size, weight and colour. Reach for
+ *   it when the number IS the screen, as the aUEC amount is on the Finanz-Eintrag sheet; leave it
+ *   null everywhere else so fields stay uniform.
  * @param trailing optional control at the end of the field — the combobox caret, for example. It
  *   sits inside the frame and the text area yields the width it takes.
  */
@@ -168,6 +173,7 @@ fun KrtTextField(
     textAlign: TextAlign = TextAlign.Start,
     tabularFigures: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
+    valueStyle: TextStyle? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -212,14 +218,7 @@ fun KrtTextField(
                             .weight(1f)
                             .krtFieldSemantics(accessibleName, if (isError) errorText else null),
                     enabled = enabled,
-                    textStyle =
-                        LocalTextStyle.current
-                            .merge(MaterialTheme.typography.bodyLarge)
-                            .copy(
-                                color = KrtPalette.White,
-                                textAlign = textAlign,
-                                fontFeatureSettings = if (tabularFigures) KRT_TABULAR_FIGURES else null,
-                            ),
+                    textStyle = krtValueStyle(valueStyle, textAlign, tabularFigures),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = keyboardOptions,
                     interactionSource = interactionSource,
@@ -228,6 +227,7 @@ fun KrtTextField(
                         KrtFieldDecoration(
                             showPlaceholder = value.isEmpty(),
                             placeholder = placeholder,
+                            textAlign = textAlign,
                             innerTextField = innerTextField,
                         )
                     },
@@ -267,6 +267,35 @@ private fun Modifier.krtFieldSemantics(
     }
 
 /**
+ * How the typed value is rendered.
+ *
+ * Pulled out of [KrtTextField] because the three-way merge - the ambient style, the caller's
+ * override, and the field's own non-negotiables - is the one piece of that composable with real
+ * branching in it.
+ *
+ * A caller's override wins on size and weight, but only wins on colour when it actually set one:
+ * `TextStyle` reports an unset colour as `Color.Unspecified`, which as a foreground paints nothing.
+ *
+ * @param valueStyle the caller's override, or null for the field default.
+ * @param textAlign which edge the value sits against.
+ * @param tabularFigures whether digits are held to one width.
+ * @return the style to hand `BasicTextField`.
+ */
+@Composable
+private fun krtValueStyle(
+    valueStyle: TextStyle?,
+    textAlign: TextAlign,
+    tabularFigures: Boolean,
+): TextStyle =
+    LocalTextStyle.current
+        .merge(valueStyle ?: MaterialTheme.typography.bodyLarge)
+        .copy(
+            color = valueStyle?.color?.takeIf { it.isSpecified } ?: KrtPalette.White,
+            textAlign = textAlign,
+            fontFeatureSettings = if (tabularFigures) KRT_TABULAR_FIGURES else null,
+        )
+
+/**
  * The inside of a [KrtTextField]: the hint, and the editable text itself.
  *
  * **This is the field's own decoration box, not a sibling of it**, and that placement is the whole
@@ -277,15 +306,28 @@ private fun Modifier.krtFieldSemantics(
  *
  * @param showPlaceholder whether the field is empty and the hint should therefore be visible.
  * @param placeholder the hint, or `null` when the field has none.
+ * @param textAlign which edge the value and its hint sit against.
  * @param innerTextField the editable text, supplied by `BasicTextField`.
  */
 @Composable
 private fun KrtFieldDecoration(
     showPlaceholder: Boolean,
     placeholder: String?,
+    textAlign: TextAlign,
     innerTextField: @Composable () -> Unit,
 ) {
-    Box(contentAlignment = Alignment.CenterStart) {
+    // Full width and aligned by the field's own `textAlign`: without it the box wraps its content,
+    // an End-aligned value has no room to move into and renders mid-field, and the placeholder of
+    // such a field would sit on the opposite side from the value that replaces it.
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment =
+            when (textAlign) {
+                TextAlign.End -> Alignment.CenterEnd
+                TextAlign.Center -> Alignment.Center
+                else -> Alignment.CenterStart
+            },
+    ) {
         if (showPlaceholder && placeholder != null) {
             Text(
                 text = placeholder,

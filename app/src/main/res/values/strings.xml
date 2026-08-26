@@ -673,7 +673,14 @@
     <string name="mission_detail_finance_edit">Ändern</string>
     <string name="mission_detail_finance_delete">Löschen</string>
     <string name="mission_detail_finance_amount">Betrag (aUEC)</string>
-    <string name="mission_detail_finance_note">Wofür?</string>
+    <string name="mission_detail_finance_title">Finanz-Eintrag</string>
+    <string name="mission_detail_finance_type">Typ</string>
+    <string name="mission_detail_finance_type_income">+ EINNAHME</string>
+    <string name="mission_detail_finance_type_expense">− AUSGABE</string>
+    <string name="mission_detail_finance_amount_hint_income">Ganzzahlig · wird grün mit + angezeigt</string>
+    <string name="mission_detail_finance_amount_hint_expense">Ganzzahlig · wird rot mit − angezeigt</string>
+    <string name="mission_detail_finance_note_hint">z. B. Raffinerie Work Order #7841</string>
+    <string name="mission_detail_finance_note">Verwendungszweck</string>
     <string name="mission_detail_finance_needs_signup">Buchen geht, sobald du für den Einsatz angemeldet bist.</string>
     <string name="operation_detail_payout_confirm">Bestätigen</string>
     <string name="operation_detail_payout_undo">Zurücknehmen</string>
