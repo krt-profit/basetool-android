@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
+### Added
+- **Der Hangar kann eine Fleetview-Datei importieren.** Hinter dem neuen `⋮` oben rechts: „Fleetview-Import"
+  nimmt eine JSON-Datei oder eingefügten Text und legt die Schiffe an; danach steht da, wie viele
+  importiert wurden, wie viele schon im Hangar waren und welche der Server nicht erkannt hat.
+  Erkannt werden CCU-Game-Fleetview, HangarXPLOR-Shiplist und Fleetyards-JSON.
+- **Zwei weitere Hangar-Aktionen im selben Menü:** „Home-Location setzen" ändert den Ort für die
+  ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe — mit Rückfrage, die die Anzahl nennt.
+
 ### Changed
+- **Jedes Suchfeld mit Vorschlägen sieht jetzt wie eines aus.** Schiffstyp, Ort, Material: die
+  Treffer stehen in einer abgesetzten Liste mit orangem Rahmen, der eingetippte Teil ist fett, und
+  am Feld sitzt ein Pfeil. Bisher waren es schlichte Textzeilen unter dem Feld. Die Liste öffnet
+  sich beim Tippen und schließt sich bei der Auswahl, statt danach offen stehen zu bleiben.
+- **Der Finanz-Eintrag eines Einsatzes zeigt die Richtung.** „+ Einnahme" ist grün, „− Ausgabe" rot,
+  und der Betrag ist in derselben Farbe groß und rechtsbündig. Getippt wird auf einem Zahlenfeld;
+  das Vorzeichen kommt aus der Auswahl darüber, nicht aus der Eingabe.
+- **Die Operation-Ansicht führt mit deinem Anteil.** Name und Status stehen oben in der Leiste, dein
+  Anteil darunter in einem hervorgehobenen Feld samt „offen" oder „ausgezahlt", und die Einsätze
+  stehen mit vorzeichenbehaftetem Ergebnis vor der Summe, die sie bildet. Eine bestätigte
+  Auszahlung zurückzunehmen fragt jetzt nach und nennt, was das bedeutet.
+- **„Gesuch erstellen" auf der Materialbörse** hat die Beispiele und Beschriftungen aus dem Entwurf,
+  Menge und Mindestqualität stehen nebeneinander, und es gibt einen Abbrechen-Knopf.
+- **In „Mein Inventar" steht die Einheit neben der Menge**, der Name ist hervorgehoben, und
+  Bearbeiten und Löschen sind zwei kleine Schaltflächen statt eines breiten „LÖSCHEN".
 
 - **Einsatz- und Auftrag-Detail sehen aus wie vorgesehen.** Der Einsatz zeigt jetzt oben seinen
   Namen mit Status, eine Faktenzeile (TS · Join · Ort · Leiter), wie viele angemeldet und
@@ -18,20 +41,6 @@
   darunter, und der Knopf heißt nach dem, was er tut — „Einbuchen" statt „Buchen".
 - **Der Schiff-Editor fragt zuerst nach dem Typ, dann nach dem Namen.** Versicherung und Ort stehen
   nebeneinander, und bei „Fitted" steht jetzt dabei, was das zusagt.
-
-### Removed
-
-- **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
-  gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
-  Er kommt zurück, wenn die Ansicht wirklich fertig ist.
-
-### Fixed
-
-- **„Mehr" führt wieder ins Menü.** Warst du auf Bank, Hangar oder den Lizenzen, passierte beim
-  Tippen auf „Mehr" nichts — ausgerechnet der Knopf, der dich da wieder herausbringen soll.
-
-### Changed
-
 - **Die Open-Source-Lizenzen sind eine richtige Seite geworden.** Oben steht, wie viele Artefakte und
   Lizenzen der Bericht umfasst und zu welchem Build er gehört; die Lizenz-Überschrift bleibt beim
   Scrollen stehen und lässt sich antippen, um ihre Softwareliste ein- und wieder auszuklappen. Am
@@ -77,6 +86,15 @@
 - **Die Auftragsübersicht zeigt wieder das, was sie zeigen soll.** Jeder Auftrag steht jetzt als
   Kachel da — mit Prio-Block, Art (Material/Item), Status, farbig markiertem Alter und beiden
   beteiligten Einheiten als Abzeichen. Vorher war das eine Textzeile ohne Art und ohne Alter.
+
+### Removed
+- **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
+  gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
+  Er kommt zurück, wenn die Ansicht wirklich fertig ist.
+
+### Fixed
+- **„Mehr" führt wieder ins Menü.** Warst du auf Bank, Hangar oder den Lizenzen, passierte beim
+  Tippen auf „Mehr" nichts — ausgerechnet der Knopf, der dich da wieder herausbringen soll.
 
 ## [0.1.3] — 2026-08-25
 

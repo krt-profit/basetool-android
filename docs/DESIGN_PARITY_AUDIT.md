@@ -278,11 +278,72 @@ under it, split by whether it is a layout question at all.
 | 14.2 **five notification channels** | the SSE event is `data="new"` with no kind, so every ping would land in one channel and the other four would be decoration a member could silence to no effect. Needs the kind on the wire |
 | 08.2 **Hersteller** combobox | the type picker already searches across manufacturers and names the maker beside the hull; a second cascading field would narrow a search that does not need narrowing |
 
-### Not yet compared
+### Second pass (2026-08-26) — the artboards the first pass had not reached
 
-Chapter 02's component canon (nine artboards), 04.2–04.5, 06.4 Finanz-Eintrag, 06.5 Operation,
-08.3 Fleetview-Import, 09.3 Zuordnung, 09.4 Mein Inventar, 10.4 Gesuch erstellen, 14.1 app icon,
-15.3–15.5.
+Same method as above: render the artboard, read the CSS behind it, then drive the emulator to the
+same screen and compare. Every row here was found that way.
+
+| artboard | what differed | state |
+| :-- | :-- | :-- |
+| 09.4 Mein Inventar | name at subtitle weight, no unit beside the amount, a wide "LÖSCHEN" where the artboard has 44 dp icon buttons | **built** |
+| 10.4 Gesuch erstellen | labels and placeholders missing, Menge + Min. Qualität stacked, no ABBRECHEN | **built** |
+| 06.4 Finanz-Eintrag | three grey fields: no Typ tone, no sign, no keypad, amount rendered like any other input | **built** |
+| 06.5 Operation | bar said OPERATION; "Dein Anteil" a caption over a number; results unsigned and untinted; rollup above the Einsätze it totals | **built** |
+| 08.3 Fleetview-Import | **the whole screen was missing**, and `POST /api/v1/hangar/import/fleetview` had never been called | **built** |
+| 08.1 Hangar overflow | the `⋮` did not exist, so neither did the bulk home location, the import, or "Hangar leeren" | **built** |
+| 02 pickers | `KrtCombobox` had existed since the design system landed and **no screen used it** — all four type-to-filter pickers were a bare field with unstyled lines under it | **built** |
+
+### What the second pass changed about the design system itself
+
+Four components moved, and each was a gap the screens had been working around rather than a
+preference:
+
+- **`KrtCombobox`** gained the orange caret `.krt-combobox__input` paints, the dark-gray listbox
+  framed in orange and open at the top, and hairlines between its options — then replaced the
+  hand-rolled picker in the hangar, in Buchen, in Mein Inventar and on the Börse.
+- **`KrtSegmentedControl`** takes the tone of what it selects instead of always orange, which is
+  what lets Einnahme read green and Ausgabe red on one control.
+- **`KrtTextField`** gained a trailing slot (the caret), a value style (the aUEC amount), multi-line
+  input (the import's paste box) — and its decoration box now honours `textAlign`, which nothing had
+  noticed because no field had ever asked to be right-aligned.
+- **`KrtOverflowMenu`** is new, built to `.assoc-pop` because Material's `DropdownMenu` brings
+  rounded corners, a ripple and an elevation tint the square-first system rules out.
+
+### Two traps the device caught that no reading would have
+
+- **A lambda handed to the top bar loses its state.** The overflow menu would not stay open: the
+  `actions` lambda is a fresh instance every recomposition, so keying `ProvideScreenTopBar`'s
+  `DisposableEffect` on it made the effect dispose and re-run every frame, replacing the composition
+  group behind the menu. The publisher now writes through `SideEffect` and clears once on dispose,
+  and the menu is stateless like every other picker here.
+- **Publishing a title turns a section bar into a subject bar.** The Hangar's bar lost its org badge
+  and its bell the moment the screen published one, because `AppTopBar` reads "a published head
+  always names a thing". `ScreenTopBar.title` is nullable now, so a top-level screen can add actions
+  without claiming to be a detail.
+
+### The artboard was wrong about one thing, and the endpoint settled it
+
+Artboard 08.3's paste hint shows `{"ships": [...]}`. The endpoint answers that with *"The uploaded
+file must contain a JSON array at the root"*, and it accepts three formats it names in its own
+refusals — CCU Game Fleetview, HangarXPLOR Shiplist, Fleetyards JSON. Verified against the local
+test stack by sending the app's exact multipart: the object form returns 400, the array form returns
+200 with the tally. The app ships the shape that works, names all three formats, and shows the
+server's own sentence when it refuses a file — it is the only party that can diagnose one.
+
+### Newly found: buildable, not built
+
+**09.3 Zuordnung** is a fully specified screen with a complete API behind it and no code at all.
+`InventoryItemDto` already carries `jobOrderAllocations`, `jobOrderRest`, `missionAllocations` and
+`missionRest`, and `POST`/`PATCH`/`DELETE /api/v1/inventory/{id}/allocation` write them — but
+`InventoryEntry` maps none of those four fields, so the app cannot show an allocation, let alone
+edit one. This is the same shape as the Materialbedarf tab: data on the wire, unmapped in
+`core:data`. Building it means the mapping, a split sheet with two independent stepper lists, the
+live rest with its three states (REST 0 / … FREI / ÜBERBUCHT), and two remote pickers.
+
+### Still not compared
+
+04.2–04.5 (Keycloak tab, approval pending, terms, app lock), 14.1 app icon, 15.3–15.5 (no-browser,
+loading and error states of the licence page), and chapter 02's component canon as a whole.
 
 ## Rendering the artboards — the method that actually catches this
 
