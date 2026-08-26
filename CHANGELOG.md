@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
+  Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
+  alle Ausgewählten.
+
 - **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
   Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als
   Zahl daneben und wird rot, sobald mehr zugesagt ist als vorhanden. Persönliche Einträge tragen

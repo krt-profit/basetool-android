@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -109,6 +110,9 @@ sealed interface EntriesPhase {
  * @property withStockOnly whether groups holding nothing are hidden
  * @property openedStacks the state of each opened stack, keyed by [stackKey]
  * @property online whether a booking can be sent at all
+ * @property allocation the open Zuordnung sheet, or `null`
+ * @property selection the rows long-pressed into selection mode; empty means the mode is off
+ * @property bulk the open bulk-move sheet, or `null`
  */
 data class InventoryState(
     val groups: List<InventoryGroup> = emptyList(),
@@ -124,6 +128,8 @@ data class InventoryState(
     val openedStacks: Map<String, EntriesPhase> = emptyMap(),
     val online: Boolean = true,
     val allocation: AllocationSheetState? = null,
+    val selection: Set<String> = emptySet(),
+    val bulk: BulkMoveState? = null,
 ) {
     /**
      * The rows the tree actually shows.
@@ -142,6 +148,21 @@ data class InventoryState(
                 groups
             }
 }
+
+/**
+ * The open bulk-move sheet.
+ *
+ * @property place where the selected rows are being sent, or `null` until one is picked.
+ * @property places the org's locations.
+ * @property saving whether the move is running.
+ * @property error the last refusal.
+ */
+data class BulkMoveState(
+    val place: LocationOption? = null,
+    val places: List<LocationOption> = emptyList(),
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+)
 
 /**
  * Drives the Lager tree.
@@ -410,6 +431,97 @@ class InventoryViewModel(
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "next page of the Lager failed: ${result.error}" }
                     mutableState.value = mutableState.value.copy(loadingMore = false)
+                }
+            }
+        }
+    }
+
+    /**
+     * Puts a row into the selection, or takes it out.
+     *
+     * Long-press starts the mode (design ch. 02 §4) and an empty selection ends it: there is no
+     * separate "leave selection mode", because a mode a member can be in with nothing selected is a
+     * mode they have to notice they are in.
+     *
+     * @param entryId the row.
+     */
+    fun onToggleSelected(entryId: String) {
+        val current = mutableState.value.selection
+        val next = if (entryId in current) current - entryId else current + entryId
+        mutableState.value = mutableState.value.copy(selection = next)
+    }
+
+    /** Clears the selection, which leaves selection mode. */
+    fun onSelectionCleared() {
+        mutableState.value = mutableState.value.copy(selection = emptySet())
+    }
+
+    /** Opens the bulk-move sheet over the current selection. */
+    fun onBulkMoveRequested() {
+        if (mutableState.value.selection.isEmpty()) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(bulk = BulkMoveState())
+        viewModelScope.launch {
+            val places = source.locations("")
+            val open = mutableState.value.bulk ?: return@launch
+            mutableState.value =
+                mutableState.value.copy(
+                    bulk = open.copy(places = (places as? ApiResult.Success)?.value.orEmpty()),
+                )
+        }
+    }
+
+    /** Closes it. */
+    fun onBulkMoveDismissed() {
+        mutableState.value = mutableState.value.copy(bulk = null)
+    }
+
+    /**
+     * Records where the selection is being sent.
+     *
+     * @param place the chosen location.
+     */
+    fun onBulkMovePlace(place: LocationOption) {
+        val open = mutableState.value.bulk ?: return
+        mutableState.value = mutableState.value.copy(bulk = open.copy(place = place, error = null))
+    }
+
+    /**
+     * Moves every selected row to the chosen place.
+     *
+     * One call, not one per row: the endpoint is all-or-nothing on its own terms, which is what a
+     * member selecting twelve stacks expects — a half-applied move would leave them reading a list
+     * they can no longer reason about.
+     */
+    fun onBulkMoveConfirmed() {
+        val open = mutableState.value.bulk
+        val place = open?.place
+        val ids = mutableState.value.selection.toList()
+        val ready = place != null && ids.isNotEmpty() && !open.saving
+        if (!ready || !mutableState.value.online) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(bulk = open.copy(saving = true, error = null))
+        viewModelScope.launch {
+            when (val result = source.bulkRebook(entryIds = ids, locationId = place.id)) {
+                is ApiResult.Success -> {
+                    // The opened stacks are dropped as well, not just the group list: their entries
+                    // are cached per stack, and the rows that just moved carry the OLD place until
+                    // something re-reads them. Leaving them would show a member a move they made
+                    // as not having happened.
+                    mutableState.value =
+                        mutableState.value.copy(
+                            bulk = null,
+                            selection = emptySet(),
+                            openedStacks = emptyMap(),
+                        )
+                    reload(keepRows = true)
+                }
+
+                is ApiResult.Failure -> {
+                    mutableState.value =
+                        mutableState.value.copy(bulk = open.copy(saving = false, error = result.error))
                 }
             }
         }

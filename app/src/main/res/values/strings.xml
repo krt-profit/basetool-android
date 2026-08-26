@@ -861,4 +861,16 @@
         <item quantity="one">Eine Änderung wurde gespeichert, dann brach es ab. Die Liste oben zeigt den Stand des Servers.</item>
         <item quantity="other">%1$d Änderungen wurden gespeichert, dann brach es ab. Die Liste oben zeigt den Stand des Servers.</item>
     </plurals>
+    <plurals name="inventory_selected">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+    <string name="inventory_selection_clear">Aufheben</string>
+    <string name="inventory_bulk_move">Umbuchen</string>
+    <string name="inventory_bulk_move_pick">Ort wählen</string>
+    <string name="inventory_bulk_move_confirm">Verschieben</string>
+    <plurals name="inventory_bulk_move_body">
+        <item quantity="one">Ein Eintrag wird an den gewählten Ort verschoben.</item>
+        <item quantity="other">%1$d Einträge werden an den gewählten Ort verschoben.</item>
+    </plurals>
 </resources>

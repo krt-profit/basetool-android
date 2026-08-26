@@ -11,6 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
 import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
+import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
@@ -145,6 +146,11 @@ class InventoryViewModelTest {
 
         override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
             ApiResult.Success(terminalAnswer)
+
+        override suspend fun bulkRebook(
+            entryIds: List<String>,
+            locationId: String,
+        ): ApiResult<BulkRebookResult> = ApiResult.Success(BulkRebookResult(entryIds.size, 0))
 
         override suspend fun setAllocation(
             entryId: String,

@@ -425,6 +425,25 @@ allocation, so the row offers no split; **without the logistics role it is read-
 app cannot know — it holds no role list by design — so the sheet opens and the server's 403 is
 reported in the app's own words.
 
+### Fourth pass (2026-08-26) — the component sheet, read against the screens
+
+Chapter 02's own artboards were almost entirely built; what the sheet turned up was two
+interactions it canonises that no screen performed.
+
+| canon | what the app did | state |
+| :-- | :-- | :-- |
+| §6 radio pair — Auszahlung / Org-Kasse | a toggle labelled with the OTHER state: a member reading "Spenden" could not tell whether that was their choice or the offer | **built** |
+| §4 long-press → selection mode → bottom action bar | `KrtListRow` had supported `onLongClick` since the design system landed and **no screen passed it**; chapter 09's handoff names the Lager's bulk Umbuchen explicitly, and `/api/v1/inventory/bulk-rebook` had never been called | **built** |
+
+The bulk endpoint is all-or-nothing on its own terms and reports rows already at the target as
+*skipped* rather than moved, which is why the app sends one call rather than one per row. Its
+sibling `/api/v1/inventory/bulk-checkout` exists and is deliberately **not** wired: the artboard's
+action bar names Umbuchen alone, and adding a bulk delete nobody asked for is not parity.
+
+One live-update bug came out of using it: the opened stacks are cached per stack, so rows that had
+just moved kept showing their old place until something re-read them. A member would have seen the
+move they made as not having happened.
+
 ### Still not compared
 
 09.3 Zuordnung (recorded above as buildable and unbuilt), 15.3 the no-browser state — which needs

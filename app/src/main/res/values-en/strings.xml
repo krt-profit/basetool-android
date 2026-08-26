@@ -842,4 +842,16 @@
         <item quantity="one">One change was saved before it stopped. The list above shows what the server holds.</item>
         <item quantity="other">%1$d changes were saved before it stopped. The list above shows what the server holds.</item>
     </plurals>
+    <plurals name="inventory_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="inventory_selection_clear">Clear</string>
+    <string name="inventory_bulk_move">Rebook</string>
+    <string name="inventory_bulk_move_pick">Pick a location</string>
+    <string name="inventory_bulk_move_confirm">Move</string>
+    <plurals name="inventory_bulk_move_body">
+        <item quantity="one">One entry will be moved to the chosen location.</item>
+        <item quantity="other">%1$d entries will be moved to the chosen location.</item>
+    </plurals>
 </resources>

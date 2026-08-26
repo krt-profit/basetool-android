@@ -117,6 +117,8 @@ class InventoryScreenTest {
                     onBookIn = { booked.add(Unit) },
                     onBookOut = { bookedOut.add(it) },
                     onAllocate = {},
+                    selection = emptySet(),
+                    onToggleSelected = {},
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
                     onRetryNow = {},

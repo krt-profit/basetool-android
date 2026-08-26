@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.inventory
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,20 +44,26 @@ import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
@@ -95,6 +105,8 @@ private val RAIL_HEIGHT = 44.dp
  * @param onBookIn the booking action was taken.
  * @param onBookOut an entry's booking action was taken.
  * @param onAllocate an entry's Zuordnung was opened.
+ * @param selection which rows are selected.
+ * @param onToggleSelected a row was long-pressed, or tapped while selecting.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
@@ -110,6 +122,8 @@ fun InventoryScreen(
     onBookIn: () -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
     onAllocate: (InventoryEntry) -> Unit,
+    selection: Set<String>,
+    onToggleSelected: (String) -> Unit,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -182,6 +196,8 @@ fun InventoryScreen(
                                 onToggleStack = onToggleStack,
                                 onBookOut = onBookOut,
                                 onAllocate = onAllocate,
+                                selection = selection,
+                                onToggleSelected = onToggleSelected,
                                 online = state.online,
                                 onLoadMore = onLoadMore,
                             )
@@ -213,6 +229,8 @@ fun InventoryScreen(
  * @param onToggleStack a stack was tapped.
  * @param onBookOut an entry's booking action was taken.
  * @param onAllocate an entry's Zuordnung was opened.
+ * @param selection which rows are selected.
+ * @param onToggleSelected a row was long-pressed, or tapped while selecting.
  * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
  */
@@ -223,6 +241,8 @@ private fun InventoryTree(
     onToggleStack: (String, InventoryStack) -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
     onAllocate: (InventoryEntry) -> Unit,
+    selection: Set<String>,
+    onToggleSelected: (String) -> Unit,
     online: Boolean,
     onLoadMore: () -> Unit,
 ) {
@@ -275,6 +295,8 @@ private fun InventoryTree(
                                     online = online,
                                     onBookOut = onBookOut,
                                     onAllocate = onAllocate,
+                                    selection = selection,
+                                    onToggleSelected = onToggleSelected,
                                 )
                             }
                         }
@@ -373,6 +395,8 @@ private fun LazyListScope.entryRows(
     online: Boolean,
     onBookOut: (InventoryEntry) -> Unit,
     onAllocate: (InventoryEntry) -> Unit,
+    selection: Set<String>,
+    onToggleSelected: (String) -> Unit,
 ) {
     when (phase) {
         // A closed stack contributes no rows at all.
@@ -406,6 +430,9 @@ private fun LazyListScope.entryRows(
                             online = online,
                             onBookOut = { onBookOut(entry) },
                             onAllocate = { onAllocate(entry) },
+                            selected = entry.id in selection,
+                            selecting = selection.isNotEmpty(),
+                            onToggleSelected = { onToggleSelected(entry.id) },
                         )
                     }
                 }
@@ -421,19 +448,32 @@ private fun LazyListScope.entryRows(
  * @param unit the group's quantity unit.
  * @param online whether a booking can be sent at all.
  * @param onBookOut opens the booking form on it.
+ * @param selected whether this row is in the selection.
+ * @param selecting whether the list is in selection mode at all.
+ * @param onToggleSelected the row was long-pressed, or tapped while selecting.
  */
 @Composable
 private fun EntryRow(
     entry: InventoryEntry,
     unit: String?,
     online: Boolean,
+    selected: Boolean,
+    selecting: Boolean,
     onBookOut: () -> Unit,
     onAllocate: () -> Unit,
+    onToggleSelected: () -> Unit,
 ) {
+    // Long-press starts selection mode and a plain tap continues it (design ch. 02 §4): once the
+    // mode is on, having to keep long-pressing every further row makes selecting twelve stacks a
+    // chore nobody finishes. A selected row wears the orange rail and a fill, as the artboard has it.
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { if (selecting) onToggleSelected() },
+                    onLongClick = onToggleSelected,
+                ).then(if (selected) Modifier.background(KrtPalette.SurfaceInput) else Modifier)
                 .padding(
                     start = ENTRY_INSET,
                     end = KrtSpacing.md,
@@ -443,7 +483,18 @@ private fun EntryRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
+        Rail(
+            width = if (selected) SELECT_RAIL else STACK_RAIL,
+            color = if (selected) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
+        )
+        if (selecting && selected) {
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_check,
+                contentDescription = null,
+                size = SELECT_MARK,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
         Column(modifier = Modifier.weight(1f)) {
             // Design ch. 09 leads a stack entry with WHERE it is, behind a map pin — the amount is
             // the figure on the right. Only the amount and the note were drawn, so two entries of
@@ -711,12 +762,60 @@ fun InventoryRoute(
         onBookIn = onBookIn,
         onBookOut = onBookOut,
         onAllocate = viewModel::onAllocate,
+        selection = state.selection,
+        onToggleSelected = viewModel::onToggleSelected,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         modifier = modifier,
     )
+
+    // The bottom action bar of chapter 02 §4: it exists only while something is selected, which is
+    // what makes the mode self-evident — nothing to leave, nothing to notice you are in.
+    if (state.selection.isNotEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            KrtBottomCtaBar {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text =
+                            pluralStringResource(
+                                R.plurals.inventory_selected,
+                                state.selection.size,
+                                state.selection.size,
+                            ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = KrtPalette.White,
+                        modifier = Modifier.weight(1f),
+                    )
+                    KrtGhostButton(
+                        text = stringResource(R.string.inventory_selection_clear),
+                        onClick = viewModel::onSelectionCleared,
+                    )
+                    KrtCtaButton(
+                        text = stringResource(R.string.inventory_bulk_move),
+                        onClick = viewModel::onBulkMoveRequested,
+                        iconRes = DesignR.drawable.ic_krt_swap,
+                        enabled = state.online,
+                    )
+                }
+            }
+        }
+    }
+
+    state.bulk?.let { bulk ->
+        BulkMoveSheet(
+            bulk = bulk,
+            count = state.selection.size,
+            onPlace = viewModel::onBulkMovePlace,
+            onConfirm = viewModel::onBulkMoveConfirmed,
+            onDismiss = viewModel::onBulkMoveDismissed,
+        )
+    }
 
     state.allocation?.let { allocation ->
         AllocationSheet(
@@ -742,3 +841,83 @@ private val QUALITY_GAUGE_HEIGHT = 4.dp
 
 /** Top of the quality scale the gauge maps onto. */
 private const val QUALITY_MAX = 1_000.0
+
+/** Width of the orange inset bar on a selected row (design ch. 02 §4). */
+private val SELECT_RAIL = 3.dp
+
+/** Size of the check beside it. */
+private val SELECT_MARK = 18.dp
+
+/**
+ * „Umbuchen" over a selection.
+ *
+ * One place for every selected row, because that is what the endpoint takes and what a member who
+ * has just moved a hangar's worth of stock actually wants. The count is in the CTA: a bulk action
+ * that does not say how much it will touch is one nobody should press.
+ *
+ * @param bulk the open sheet.
+ * @param count how many rows are selected.
+ * @param onPlace a place was picked.
+ * @param onConfirm the move was confirmed.
+ * @param onDismiss the sheet was closed.
+ */
+@Composable
+private fun BulkMoveSheet(
+    bulk: BulkMoveState,
+    count: Int,
+    onPlace: (LocationOption) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    KrtBottomSheet(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.inventory_bulk_move),
+        modifier = Modifier.testTag(INVENTORY_BULK_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            Text(
+                text = pluralStringResource(R.plurals.inventory_bulk_move_body, count, count),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+            KrtSelectField(
+                value = bulk.place?.name ?: stringResource(R.string.inventory_bulk_move_pick),
+                options = bulk.places.map { KrtOption(it.id, it.name) },
+                onSelect = { option ->
+                    bulk.places.firstOrNull { it.id == option.value }?.let(onPlace)
+                    open = false
+                },
+                expanded = open,
+                onExpandedChange = { open = it },
+                label = stringResource(R.string.booking_field_place),
+                selectedValue = bulk.place?.id,
+                enabled = !bulk.saving,
+            )
+            bulk.error?.let { KrtFieldError(text = stringResource(R.string.write_failed)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_cancel),
+                    onClick = onDismiss,
+                    enabled = !bulk.saving,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.inventory_bulk_move_confirm),
+                    onClick = onConfirm,
+                    iconRes = DesignR.drawable.ic_krt_swap,
+                    enabled = bulk.place != null && !bulk.saving,
+                    modifier = Modifier.testTag(INVENTORY_BULK_CONFIRM_TAG),
+                )
+            }
+        }
+    }
+}
+
+/** Test handle for the bulk-move sheet. */
+const val INVENTORY_BULK_TAG = "inventory-bulk-move"
+
+/** Test handle for its confirm button. */
+const val INVENTORY_BULK_CONFIRM_TAG = "inventory-bulk-confirm"

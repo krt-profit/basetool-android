@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AggregatedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryAllocationWriteDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemBookOutDto
@@ -306,6 +308,21 @@ fun interface MaterialLookup {
 }
 
 /**
+ * What a bulk rebook did.
+ *
+ * The two counts are reported apart because the server treats them apart: a row already at the
+ * target location is **skipped**, not failed, and telling a member "12 moved" when three of them
+ * were already there would be a number they cannot reconcile with the list in front of them.
+ *
+ * @property rebooked how many rows moved.
+ * @property skipped how many were already where they were being sent.
+ */
+data class BulkRebookResult(
+    val rebooked: Int,
+    val skipped: Int,
+)
+
+/**
  * The allocation half of the Lager's API.
  *
  * Split out from [InventorySource] because it is a seam of its own: three endpoints that address a
@@ -390,6 +407,22 @@ interface InventorySource :
     suspend fun bookIn(draft: BookInDraft): ApiResult<Unit>
 
     /**
+     * Moves several of the caller's rows to one location at once.
+     *
+     * All or nothing on the server's terms: an unknown id, a row belonging to somebody else, or an
+     * earmarked row that blocks the move aborts the whole call rather than half-applying it. Rows
+     * already at the target are skipped and counted.
+     *
+     * @param entryIds the rows to move.
+     * @param locationId where they go.
+     * @return how many moved and how many were already there, or the classified failure.
+     */
+    suspend fun bulkRebook(
+        entryIds: List<String>,
+        locationId: String,
+    ): ApiResult<BulkRebookResult>
+
+    /**
      * Books material out of one entry.
      *
      * @param id the entry.
@@ -397,6 +430,7 @@ interface InventorySource :
      * @param draft what the member entered.
      * @return success, or the classified failure.
      */
+
     suspend fun bookOut(
         id: String,
         version: Long?,
@@ -675,6 +709,39 @@ class InventoryRepository(
             }
         }
 
+    override suspend fun bulkRebook(
+        entryIds: List<String>,
+        locationId: String,
+    ): ApiResult<BulkRebookResult> =
+        when (
+            val result =
+                reader.post(
+                    path = BULK_REBOOK_PATH,
+                    body =
+                        BulkRebookRequest(
+                            itemIds = entryIds,
+                            mode = BulkRebookRequest.Mode.LOCATION,
+                            targetLocationId = locationId,
+                            mergeStock = true,
+                        ),
+                    bodySerializer = BulkRebookRequest.serializer(),
+                    deserializer = BulkRebookResultDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    BulkRebookResult(
+                        rebooked = result.value.rebooked ?: 0,
+                        skipped = result.value.skipped ?: 0,
+                    ),
+                )
+            }
+        }
+
     override suspend fun bookOut(
         id: String,
         version: Long?,
@@ -822,6 +889,7 @@ class InventoryRepository(
         private const val ENTRIES_PATH = "/api/v1/inventory/all/stack/entries"
         private const val BOOK_IN_PATH = "/api/v1/inventory"
         private const val ALLOCATION_PATH_PREFIX = "/api/v1/inventory"
+        private const val BULK_REBOOK_PATH = "/api/v1/inventory/bulk-rebook"
 
         /** The status a 200 that could not be mapped is reported under. */
         private const val HTTP_OK = 200
