@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
 import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
+import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
@@ -201,12 +202,16 @@ data class InventoryState(
  * @property places the org's locations.
  * @property saving whether the move is running.
  * @property error the last refusal.
+ * @property result what the server did, once it has — the sheet's **second step** rather than a
+ *   toast (design ch. 09, artboard 9). A skipped row needs its explaining sentence, and a toast is
+ *   too fleeting to carry one.
  */
 data class BulkMoveState(
     val place: LocationOption? = null,
     val places: List<LocationOption> = emptyList(),
     val saving: Boolean = false,
     val error: ApiError? = null,
+    val result: BulkRebookResult? = null,
 )
 
 /**
@@ -535,6 +540,20 @@ class InventoryViewModel(
         mutableState.value = mutableState.value.copy(selection = emptySet())
     }
 
+    /**
+     * Closes the result step, which is what ends the whole batch.
+     *
+     * Only here does the selection go and the tree re-read. The opened stacks are dropped as well,
+     * not just the group list: their entries are cached per stack and the rows that just moved
+     * still carry the OLD place, so leaving them would show a member the move they just made as not
+     * having happened.
+     */
+    fun onBulkMoveFinished() {
+        mutableState.value =
+            mutableState.value.copy(bulk = null, selection = emptySet(), openedStacks = emptyMap())
+        reload(keepRows = true)
+    }
+
     /** Opens the bulk-move sheet over the current selection. */
     fun onBulkMoveRequested() {
         if (mutableState.value.selection.isEmpty()) {
@@ -585,20 +604,18 @@ class InventoryViewModel(
         viewModelScope.launch {
             when (val result = source.bulkRebook(entryIds = ids, locationId = place.id)) {
                 is ApiResult.Success -> {
-                    // The opened stacks are dropped as well, not just the group list: their entries
-                    // are cached per stack, and the rows that just moved carry the OLD place until
-                    // something re-reads them. Leaving them would show a member a move they made
-                    // as not having happened.
+                    // The sheet stays open on its result step. Closing here and re-reading would
+                    // drop the one number a member cannot reconstruct — how many rows were skipped
+                    // because they already stood at the target, which is not a failure and needs
+                    // its sentence (design ch. 09, artboard 9).
                     mutableState.value =
-                        mutableState.value.copy(
-                            bulk = null,
-                            selection = emptySet(),
-                            openedStacks = emptyMap(),
-                        )
-                    reload(keepRows = true)
+                        mutableState.value.copy(bulk = open.copy(saving = false, result = result.value))
                 }
 
                 is ApiResult.Failure -> {
+                    // The selection is deliberately left standing: nothing was changed, and a
+                    // member who has just picked twelve rows must not have to pick them again to
+                    // retry (artboard 10).
                     mutableState.value =
                         mutableState.value.copy(bulk = open.copy(saving = false, error = result.error))
                 }

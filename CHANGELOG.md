@@ -23,7 +23,9 @@
   Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
   alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf
   einmal, jede Zeile trägt ein Kästchen, und die Gruppe zeigt „1/3 gewählt". Einklappen ändert nur
-  die Ansicht, nicht die Auswahl.
+  die Ansicht, nicht die Auswahl. Danach sagt das Blatt, was passiert ist — umgebucht und
+  übersprungen als zwei Zahlen, mit einem Satz dazu, dass Einträge am Zielort kein Fehler sind.
+  Lehnt der Server ab, bleibt die Auswahl stehen.
 
 - **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
   Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als

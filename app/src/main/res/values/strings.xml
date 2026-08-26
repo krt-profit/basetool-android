@@ -882,7 +882,20 @@
     </plurals>
     <string name="inventory_bulk_move">Umbuchen</string>
     <string name="inventory_bulk_move_pick">Ort wählen</string>
-    <string name="inventory_bulk_move_confirm">Verschieben</string>
+    <string name="inventory_bulk_move_result">Umbuchen — Ergebnis</string>
+    <string name="inventory_bulk_move_skip_hint">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</string>
+    <string name="inventory_bulk_move_refused">Der Server hat das Sammel-Umbuchen abgelehnt. Die Auswahl bleibt bestehen — nichts wurde geändert.</string>
+    <string name="inventory_bulk_move_rebooked">Umgebucht</string>
+    <string name="inventory_bulk_move_skipped">Übersprungen</string>
+    <string name="inventory_bulk_move_close">Schließen</string>
+    <plurals name="inventory_bulk_move_skipped_note">
+        <item quantity="one">%1$d Eintrag stand bereits an %2$s und wurde übersprungen — kein Fehler, keine Änderung nötig.</item>
+        <item quantity="other">%1$d Einträge standen bereits an %2$s und wurden übersprungen — kein Fehler, keine Änderung nötig.</item>
+    </plurals>
+    <plurals name="inventory_bulk_move_confirm">
+        <item quantity="one">%1$d Eintrag umbuchen</item>
+        <item quantity="other">%1$d Einträge umbuchen</item>
+    </plurals>
     <plurals name="inventory_bulk_move_body">
         <item quantity="one">Ein Eintrag wird an den gewählten Ort verschoben.</item>
         <item quantity="other">%1$d Einträge werden an den gewählten Ort verschoben.</item>

@@ -349,6 +349,69 @@ fun KrtTotalTile(
 }
 
 /**
+ * One figure of an outcome — how many rows a batch moved, how many it skipped.
+ *
+ * Not [KrtTotalTile]: that one is a screen's *total*, framed and carrying the orange bar that marks
+ * it as such. This is one of a pair reporting what a write just did, so it is bare except for a
+ * 4 dp rail in the tone of the number beside it (design ch. 09, artboard 9). Two tiles of equal
+ * width sit side by side; give each `Modifier.weight(1f)`.
+ *
+ * @param label what the figure counts, drawn small and muted above it.
+ * @param value the figure.
+ * @param tone the rail and the figure's colour — success for what happened, muted for what did not.
+ * @param modifier usually the weight that pairs it with its sibling.
+ */
+@Composable
+fun KrtOutcomeTile(
+    label: String,
+    value: String,
+    tone: KrtOutcomeTone,
+    modifier: Modifier = Modifier,
+) {
+    val hue =
+        when (tone) {
+            KrtOutcomeTone.Success -> KrtTheme.colors.successText
+            KrtOutcomeTone.Neutral -> KrtPalette.Gray1
+        }
+    val rail =
+        when (tone) {
+            KrtOutcomeTone.Success -> KrtTheme.colors.success
+            KrtOutcomeTone.Neutral -> KrtPalette.Gray2
+        }
+    Row(modifier = modifier.height(IntrinsicSize.Min).background(KrtPalette.Gray4)) {
+        Box(modifier = Modifier.width(OUTCOME_RAIL).fillMaxHeight().background(rail))
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = OUTCOME_PAD)) {
+            Text(
+                text = label.krtUppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = KrtPalette.Gray2,
+            )
+            Text(
+                text = value,
+                modifier = Modifier.padding(top = KrtSpacing.xs),
+                style = MaterialTheme.typography.headlineMedium,
+                color = hue,
+            )
+        }
+    }
+}
+
+/** Which of the two figures an [KrtOutcomeTile] is reporting. */
+enum class KrtOutcomeTone {
+    /** Something was done — the green figure. */
+    Success,
+
+    /** Something was deliberately not done, which is not a failure. */
+    Neutral,
+}
+
+/** Width of the tile's coloured rail. */
+private val OUTCOME_RAIL = 4.dp
+
+/** Vertical padding inside it. */
+private val OUTCOME_PAD = 10.dp
+
+/**
  * A KPI tile with an optional delta and sparkline.
  *
  * Deltas take the semantic text tints — positive green, negative red — matching the price rule of

@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -148,10 +149,13 @@ class InventoryViewModelTest {
         override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
             ApiResult.Success(terminalAnswer)
 
+        var bulkAnswer: ApiResult<BulkRebookResult>? = null
+
         override suspend fun bulkRebook(
             entryIds: List<String>,
             locationId: String,
-        ): ApiResult<BulkRebookResult> = ApiResult.Success(BulkRebookResult(entryIds.size, 0))
+        ): ApiResult<BulkRebookResult> =
+            bulkAnswer ?: ApiResult.Success(BulkRebookResult(entryIds.size, 0))
 
         override suspend fun setAllocation(
             entryId: String,
@@ -468,6 +472,80 @@ class InventoryViewModelTest {
         val stack = (model.state.value.opened.getValue("m1") as StackPhase.Ready).stacks.first()
         model.onToggleStack("m1", stack)
         advanceUntilIdle()
+        return model
+    }
+
+    /**
+     * The result is a step in the sheet, not a toast on the way out.
+     *
+     * Closing on success would drop the one figure a member cannot reconstruct from the tree — how
+     * many rows were skipped because they already stood at the target (design ch. 09, artboard 9).
+     */
+    @Test
+    fun `a finished batch keeps the sheet open on its result`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            source.bulkAnswer = ApiResult.Success(BulkRebookResult(rebooked = 1, skipped = 1))
+            val model = pickedAndTargeted()
+
+            model.onBulkMoveConfirmed()
+            advanceUntilIdle()
+
+            val bulk = model.state.value.bulk
+            assertEquals(BulkRebookResult(1, 1), bulk?.result)
+            assertTrue("the selection is still what the result describes", model.state.value.selection.isNotEmpty())
+        }
+
+    @Test
+    fun `closing the result ends the mode and re-reads the moved rows`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"))))
+            val model = pickedAndTargeted()
+            model.onBulkMoveConfirmed()
+            advanceUntilIdle()
+
+            model.onBulkMoveFinished()
+            advanceUntilIdle()
+
+            assertNull(model.state.value.bulk)
+            assertTrue(model.state.value.selection.isEmpty())
+            // The cached entries carry the OLD place until something re-reads them, so a batch that
+            // left them behind would show a member their own move as not having happened.
+            assertTrue(model.state.value.openedStacks.isEmpty())
+        }
+
+    /**
+     * „Die Auswahl bleibt bestehen — nichts wurde geändert" (design ch. 09, artboard 10).
+     *
+     * Nothing was written, so making the member pick twelve rows again to retry punishes them for
+     * the server's answer.
+     */
+    @Test
+    fun `a refused batch keeps both the sheet and the selection`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            source.bulkAnswer = ApiResult.Failure(ApiError.Forbidden())
+            val model = pickedAndTargeted()
+            val picked = model.state.value.selection
+
+            model.onBulkMoveConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(ApiError.Forbidden(), model.state.value.bulk?.error)
+            assertNull("nothing was written, so there is no result", model.state.value.bulk?.result)
+            assertEquals(picked, model.state.value.selection)
+        }
+
+    /** Opens the tree, picks its entries and points the sheet at a target. */
+    private suspend fun TestScope.pickedAndTargeted(): InventoryViewModel {
+        // Without a target the confirm is a no-op by design, and the test would assert against a
+        // write that never left.
+        source.locationAnswer = listOf(LocationOption(id = "l2", name = "Everus Harbor"))
+        val model = openedStackModel()
+        model.onToggleBranch("m1", null)
+        model.onBulkMoveRequested()
+        advanceUntilIdle()
+        model.state.value.bulk?.places?.firstOrNull()?.let(model::onBulkMovePlace)
         return model
     }
 }

@@ -861,7 +861,20 @@
     </plurals>
     <string name="inventory_bulk_move">Rebook</string>
     <string name="inventory_bulk_move_pick">Pick a location</string>
-    <string name="inventory_bulk_move_confirm">Move</string>
+    <string name="inventory_bulk_move_result">Rebooking — result</string>
+    <string name="inventory_bulk_move_skip_hint">Entries already at the target are skipped — not an error.</string>
+    <string name="inventory_bulk_move_refused">The server refused the batch rebooking. Your selection stands — nothing was changed.</string>
+    <string name="inventory_bulk_move_rebooked">Rebooked</string>
+    <string name="inventory_bulk_move_skipped">Skipped</string>
+    <string name="inventory_bulk_move_close">Close</string>
+    <plurals name="inventory_bulk_move_skipped_note">
+        <item quantity="one">%1$d entry already stood at %2$s and was skipped — not an error, nothing to change.</item>
+        <item quantity="other">%1$d entries already stood at %2$s and were skipped — not an error, nothing to change.</item>
+    </plurals>
+    <plurals name="inventory_bulk_move_confirm">
+        <item quantity="one">Rebook %1$d entry</item>
+        <item quantity="other">Rebook %1$d entries</item>
+    </plurals>
     <plurals name="inventory_bulk_move_body">
         <item quantity="one">One entry will be moved to the chosen location.</item>
         <item quantity="other">%1$d entries will be moved to the chosen location.</item>

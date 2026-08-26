@@ -6,7 +6,7 @@
 
 The org unit's stock, as a three-level tree — material, holding, entry — and the bookings that move
 it. Phase 2 shipped the two read levels; phase 3 added the entry level and the booking form
-(`007`–`012`); `013` added the selection mode and the bulk re-book behind it. The quality slider
+(`007`–`012`); `013` and `014` added the selection mode and the bulk re-book behind it. The quality slider
 remains out.
 
 ---
@@ -297,6 +297,37 @@ rule and **the selection survives it**.
 - [x] Verified on a device against the test stack: the head becomes „✕ 1 gewählt", the group wears
   „1/1 GEWÄHLT", the row wears its checkbox, the FAB and the navigation are gone, and „Umbuchen"
   renders locked over somebody else's row.
+
+### REQ-APP-INV-014 — The batch reports what it did, in the sheet, before anything closes
+
+`POST /inventory/bulk-rebook` in `LOCATION` mode answers with two figures: **rebooked** and
+**skipped**. A row already standing at the target is *skipped*, which is not a failure — nothing
+needed doing.
+
+**The result is the sheet's second step, not a toast.** A skipped count without its sentence reads
+as that many failures, and a toast is too fleeting to carry the sentence (design ch. 09, artboard 9).
+Two tiles state the figures — the rebooked one in the success tint, the skipped one neutral — and a
+line underneath names the target and says in words that nothing was wrong. Only **Schließen** ends
+the batch: it leaves selection mode and re-reads the tree, dropping the cached entries as well as
+the group list, because the rows that just moved still carry their old place.
+
+**The skip is announced before the write, too**, under the target picker — a member told afterwards
+reads it as damage.
+
+**A refusal changes nothing and takes nothing away.** On `403` the sheet stays open, the message
+names what happened, and the **selection survives** (artboard 10). Re-picking twelve rows to retry
+would punish the member for the server's answer. Real failures — network, `5xx` — leave the sheet
+open the same way; there is no silent abort.
+
+**Acceptance**
+
+- [x] A finished batch keeps the sheet open on its result and keeps the selection; closing it clears
+  both and drops the cached entries (`InventoryViewModelTest`).
+- [x] A refused batch keeps the sheet, the error and the selection, and produces no result
+  (`InventoryViewModelTest`).
+- [x] Verified on a device against the test stack by re-booking a row onto the place it already
+  stood at: `UMGEBUCHT 0 / ÜBERSPRUNGEN 1`, the sentence naming ARC-L1, and Schließen returning the
+  tree to its normal head.
 
 ---
 

@@ -44,6 +44,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
@@ -66,6 +67,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutcomeTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutcomeTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
@@ -1007,6 +1010,7 @@ fun InventoryRoute(
             onPlace = viewModel::onBulkMovePlace,
             onConfirm = viewModel::onBulkMoveConfirmed,
             onDismiss = viewModel::onBulkMoveDismissed,
+            onFinished = viewModel::onBulkMoveFinished,
         )
     }
 
@@ -1065,21 +1069,35 @@ private fun BulkMoveSheet(
     onPlace: (LocationOption) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    onFinished: () -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     KrtBottomSheet(
-        onDismiss = onDismiss,
-        title = stringResource(R.string.inventory_bulk_move),
+        // A finished batch is dismissed by finishing it, not by swiping past its own result: the
+        // skipped count is the one figure the tree cannot show afterwards.
+        onDismiss = if (bulk.result == null) onDismiss else onFinished,
+        title =
+            if (bulk.result == null) {
+                stringResource(R.string.inventory_bulk_move)
+            } else {
+                stringResource(R.string.inventory_bulk_move_result)
+            },
         modifier = Modifier.testTag(INVENTORY_BULK_TAG),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
         ) {
+            if (bulk.result != null) {
+                // No "n entries will be moved" over a batch that already ran — the tiles below say
+                // what happened, and the line above them would still be promising it.
+                BulkMoveOutcome(result = bulk.result, place = bulk.place?.name, onFinished = onFinished)
+                return@KrtBottomSheet
+            }
             Text(
                 text = pluralStringResource(R.plurals.inventory_bulk_move_body, count, count),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.Gray1,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
             )
             KrtSelectField(
                 value = bulk.place?.name ?: stringResource(R.string.inventory_bulk_move_pick),
@@ -1094,7 +1112,17 @@ private fun BulkMoveSheet(
                 selectedValue = bulk.place?.id,
                 enabled = !bulk.saving,
             )
-            bulk.error?.let { KrtFieldError(text = stringResource(R.string.write_failed)) }
+            // Said before the write rather than after it: a member told afterwards that four rows
+            // were skipped reads it as four failures (design ch. 09, artboard 6).
+            Text(
+                text = stringResource(R.string.inventory_bulk_move_skip_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+            // A refusal keeps the sheet open and the selection standing: nothing was changed, and
+            // re-picking twelve rows to retry punishes the member for the server's answer
+            // (artboard 10).
+            bulk.error?.let { KrtFieldError(text = stringResource(R.string.inventory_bulk_move_refused)) }
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
@@ -1102,7 +1130,7 @@ private fun BulkMoveSheet(
                     enabled = !bulk.saving,
                 )
                 KrtCtaButton(
-                    text = stringResource(R.string.inventory_bulk_move_confirm),
+                    text = pluralStringResource(R.plurals.inventory_bulk_move_confirm, count, count),
                     onClick = onConfirm,
                     iconRes = DesignR.drawable.ic_krt_swap,
                     enabled = bulk.place != null && !bulk.saving,
@@ -1113,6 +1141,58 @@ private fun BulkMoveSheet(
     }
 }
 
+/**
+ * What the batch did — its own step in the sheet, rather than a toast on the way out.
+ *
+ * Two figures and a sentence (design ch. 09, artboard 9). The skipped one is **not** an error: a row
+ * already standing at the target needs no move, and saying so in words is the difference between a
+ * member reading "1" as a failure and reading it as nothing to do. A toast is too fleeting to carry
+ * that sentence, which is why the result is a step and not a notification.
+ *
+ * @param result the counts the server returned.
+ * @param place where the rows were sent, for the sentence.
+ * @param onFinished closes the batch: ends selection mode and re-reads the tree.
+ */
+@Composable
+private fun BulkMoveOutcome(
+    result: BulkRebookResult,
+    place: String?,
+    onFinished: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        KrtOutcomeTile(
+            label = stringResource(R.string.inventory_bulk_move_rebooked),
+            value = result.rebooked.toString(),
+            tone = KrtOutcomeTone.Success,
+            modifier = Modifier.weight(1f),
+        )
+        KrtOutcomeTile(
+            label = stringResource(R.string.inventory_bulk_move_skipped),
+            value = result.skipped.toString(),
+            tone = KrtOutcomeTone.Neutral,
+            modifier = Modifier.weight(1f),
+        )
+    }
+    if (result.skipped > 0 && place != null) {
+        Text(
+            text =
+                pluralStringResource(
+                    R.plurals.inventory_bulk_move_skipped_note,
+                    result.skipped,
+                    result.skipped,
+                    place,
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+    }
+    KrtCtaButton(
+        text = stringResource(R.string.inventory_bulk_move_close),
+        onClick = onFinished,
+        modifier = Modifier.fillMaxWidth().testTag(INVENTORY_BULK_CLOSE_TAG),
+    )
+}
+
 /** Test handle for the bulk-move sheet. */
 const val INVENTORY_BULK_TAG = "inventory-bulk-move"
 
@@ -1121,3 +1201,6 @@ const val INVENTORY_BULK_CONFIRM_TAG = "inventory-bulk-confirm"
 
 /** Gap between the action bar's figure and the word beside it — design ch. 09, artboard 5. */
 private val SELECTION_COUNT_GAP = 10.dp
+
+/** Test handle for the result step's closing button. */
+const val INVENTORY_BULK_CLOSE_TAG = "inventory-bulk-close"
