@@ -375,6 +375,8 @@
     <string name="dashboard_missions_all">Alle Einsätze</string>
     <!-- Weekday spelled out, date numeric, as design ch. 05 writes it. Translatable so a
          locale can reorder the fields. -->
+    <!-- The greeting's date: the real one, then the Star Citizen year in brackets. -->
+    <string name="dashboard_date">%1$s (%2$d)</string>
     <string name="dashboard_date_pattern">EEEE, dd.MM.yyyy</string>
     <string name="dashboard_quick_actions">SCHNELLAKTIONEN</string>
     <string name="dashboard_quick_check_in">Check-In nächster Einsatz</string>
@@ -791,8 +793,14 @@
     <string name="bank_settings_visibility">Sichtbarkeit</string>
     <string name="bank_settings_visibility_fixed">Für diesen Kontotyp ist die Sichtbarkeit fest vorgegeben.</string>
     <string name="bank_settings_all_members">Alle Mitglieder der Einheit</string>
-    <string name="notification_channel_general">Allgemein</string>
-    <string name="notification_public_title">Neue Benachrichtigung</string>
+    <!-- The five channels of design ch. 14, so a member can silence one kind and keep
+         another. Their ids map onto NotificationKind. -->
+    <string name="notification_channel_missions">Einsätze &amp; Check-In</string>
+    <string name="notification_channel_orders">Aufträge &amp; Zuweisungen</string>
+    <string name="notification_channel_exchange">Materialbörse</string>
+    <string name="notification_channel_bank">Bank &amp; Auszahlungen</string>
+    <string name="notification_channel_system">System &amp; Ankündigungen</string>
+        <string name="notification_public_title">Neue Benachrichtigung</string>
     <string name="notification_shade_title">Neues im Basetool</string>
     <string name="retry_busy_title">Signal instabil</string>
     <string name="retry_busy_message">Der Server ist ausgelastet. Automatischer Neuversuch in %1$d s.</string>

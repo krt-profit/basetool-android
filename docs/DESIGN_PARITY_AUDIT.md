@@ -1126,6 +1126,36 @@ Worth noting as method: neither would have been found by the phone pass. The fir
 factors and was simply missed until a wide layout made the floating link obvious; the second exists
 only on the rail.
 
+## Chapter 14's channels, closed across two repositories (2026-08-26)
+
+The largest thing the audit had recorded as blocked, and it was blocked on the wire rather than on
+the app: the stream event was `data="new"`. A bare ping. Five channels cannot be filled from a
+signal that does not say what happened, and a tap cannot open a screen the message never named.
+
+The owner's decision was to extend the backend rather than work around it, so this closed as a pair:
+`krt-profit/basetool` #1681 (REQ-NOTIF-021, ADR-0146) and the app side here.
+
+**What the backend change turned on.** One event resolves to a `Map<NotificationType, Set<UUID>>` —
+the same trigger raises different kinds for different audiences — so the payload had to be per
+notification **type**, not per event, and `createFromEvent` now returns its result keyed by signal.
+That was the part worth getting right; a payload describing the event would have been wrong for at
+least one recipient of every multi-audience event.
+
+**What the app already had.** `NotificationKind` — the classification the inbox uses to pick a row's
+glyph — has exactly five buckets, and they are the chapter's five channels. The destination resolver
+the inbox row uses answers the shade's question too. Neither needed inventing; both needed the type
+on the wire.
+
+**One thing the device found that no test would have.** The channels were created inside `notify()`,
+so they did not exist until the first push of that kind — which means a member looking for the
+switch before their first Auftrag notification would find nothing to configure, and the choice only
+appears at the moment it is too late. Moved to application start.
+
+Device-verified end to end against a locally built backend: creating an Auftrag through the API put
+an entry in the shade on `channel=krt_orders` at importance 4, coloured `#E77E23`, `vis=PRIVATE`
+with a `publicVersion`, titled „Neuer Auftrag #9 für IRI" — the sentence assembled on the device
+from the type and its parameters — and tapping it opened Auftrag **#9** rather than the inbox.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

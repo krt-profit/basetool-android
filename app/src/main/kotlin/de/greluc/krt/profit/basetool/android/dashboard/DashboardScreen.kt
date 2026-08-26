@@ -424,9 +424,13 @@ private fun Greeting(
     // Weekday spelled out, date numeric, which is the artboard's form. FormatStyle.FULL renders
     // the month as a word and is a rung longer than the line has room for beside the org unit.
     // The pattern is translatable so a locale can reorder the fields.
+    val date = LocalDate.now(zone)
     val today =
-        LocalDate.now(zone)
-            .format(DateTimeFormatter.ofPattern(stringResource(R.string.dashboard_date_pattern)))
+        stringResource(
+            R.string.dashboard_date,
+            date.format(DateTimeFormatter.ofPattern(stringResource(R.string.dashboard_date_pattern))),
+            date.year + SC_YEAR_OFFSET,
+        )
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
@@ -801,6 +805,16 @@ private val QUICK_TILE_MIN_HEIGHT = 64.dp
 
 /** The glyph beside a shortcut's label, at the artboard's size. */
 private val QUICK_TILE_ICON = 22.dp
+
+/**
+ * How far ahead the Star Citizen calendar runs: its year 2956 is our 2026.
+ *
+ * The artboard dates the greeting „Sonntag, 17.08.2956" and the app prints both — the real date,
+ * then the SC year in brackets (owner decision, 2026-08-26). Writing error copy in character is one
+ * thing; a start screen that misstates today's date is another, and a member reading it beside a
+ * calendar, Discord or the web tool would find three different years.
+ */
+private const val SC_YEAR_OFFSET = 930
 
 /** How often the seven-day band re-reads its countdowns (design ch. 05: "each minute"). */
 private const val COUNTDOWN_TICK_MS = 60_000L

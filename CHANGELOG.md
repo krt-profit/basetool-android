@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Benachrichtigungen lassen sich jetzt einzeln stummschalten:** fünf Kategorien in den
+  Systemeinstellungen — Einsätze & Check-In, Aufträge & Zuweisungen, Materialbörse,
+  Bank & Auszahlungen, System & Ankündigungen.
+- **Der Hinweis im Benachrichtigungsschatten sagt jetzt, worum es geht** („Neuer Auftrag #9 für
+  IRI") statt nur „Neue Benachrichtigung", und ein Tipp öffnet direkt den passenden Bildschirm.
+  Auf dem **Sperrbildschirm** bleibt es weiterhin bei „Neue Benachrichtigung" — dort steht nie ein
+  Inhalt.
+
 - **Die Ankündigung auf der Übersicht zeigt jetzt, ob du sie schon gelesen hast**, und lässt sich
   mit „Als gelesen markieren" abhaken — wie im Webtool.
 

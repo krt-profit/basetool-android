@@ -15,49 +15,77 @@ import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.NotificationKind
 
 /**
- * The notification channels of design chapter 14, and the one place a system notification is posted
- * (REQ-APP-NOTIF-010).
+ * The notification channels of design chapter 14, and the rules that keep them honest.
  *
- * **What this can and cannot do.** There is no push channel — that was decided (plan Q2), and
- * without FCM nothing reaches a member whose app is not running. What is left is real but partial:
- * while the app runs, its own SSE stream delivers notifications, and a member who has switched
- * screens or locked the device still gets told. That is the whole benefit, and it is worth stating
- * plainly rather than implying the app pushes.
+ * **Five, because a member should be able to silence one kind and keep another.** The chapter names
+ * them — Einsätze & Check-In and Aufträge & Zuweisungen at high importance, Materialbörse, Bank &
+ * Auszahlungen and System & Ankündigungen at default — and they map one for one onto
+ * [NotificationKind], which the inbox already uses to pick a row's glyph. One classification, two
+ * uses: a kind that files a row under a glyph files a push under a channel.
  *
- * **Nothing sensitive on the lock screen.** Chapter 14 fixes this: the public version of every
- * notification says „Neue Benachrichtigung" and nothing else. It is enforced by construction here —
- * the channels are created with {@code VISIBILITY_PRIVATE} and the posted notification carries a
- * public replacement — rather than left to each call site to remember, because a call site that
- * forgot would put a member's amounts on a locked screen and nothing would flag it.
+ * **They could not exist until the push said what arrived.** The stream event was a bare ping, so
+ * every notification was the same message and four of these channels would have been switches that
+ * silence nothing. The backend now sends the kind (its REQ-NOTIF-021, ADR-0146) and the app files by
+ * it. A push that still arrives without one lands on [CHANNEL_SYSTEM], which is where "something
+ * happened and this build cannot say what" belongs.
+ *
+ * **Nothing sensitive on the lock screen.** Every channel is created `VISIBILITY_PRIVATE` and every
+ * posted notification carries a public replacement saying „Neue Benachrichtigung" and nothing else.
+ * Enforced here and in [SystemNotifier] rather than left to each call site, because a call site that
+ * forgot would put a member's amounts on a locked screen and nothing would flag it. This matters
+ * more now than it did: the shade entry carries the real wording since the owner's decision of
+ * 2026-08-26, so the public replacement is the only thing standing between that wording and a
+ * locked screen.
  */
 object KrtNotificationChannels {
-    /**
-     * The one channel this build posts on.
-     *
-     * Chapter 14 names five — Einsätze & Check-In, Aufträge & Zuweisungen, Materialbörse, Bank &
-     * Auszahlungen, System & Ankündigungen — so a member can silence one kind and keep another.
-     * This build can populate exactly one of them, and the reason is upstream: the notification
-     * stream's event is `name="notification", data="new"`, a bare ping with no type, no id and no
-     * content. Everything that reaches the shade is therefore the same message — "the inbox has
-     * something new" — and it has no kind to be filed under.
-     *
-     * A second channel **was** created here and nothing ever posted to it. That is worse than
-     * having one: it puts a switch in the member's system settings that silences nothing, and the
-     * member has no way to find that out. It is removed below rather than left standing until the
-     * stream can say what kind of thing arrived.
-     */
-    const val CHANNEL_GENERAL: String = "krt_general"
+    /** Einsätze and Check-In — chapter 14's first channel, at high importance. */
+    const val CHANNEL_MISSIONS: String = "krt_missions"
+
+    /** Aufträge and their assignments, at high importance. */
+    const val CHANNEL_ORDERS: String = "krt_orders"
+
+    /** The Materialbörse. */
+    const val CHANNEL_EXCHANGE: String = "krt_exchange"
+
+    /** Bank and payouts. */
+    const val CHANNEL_BANK: String = "krt_bank"
+
+    /** System messages and announcements — and anything this build cannot classify. */
+    const val CHANNEL_SYSTEM: String = "krt_system"
 
     /**
-     * The channel this build used to create and never posted to.
+     * The channel this build used to post everything on.
      *
-     * Kept only so [ensure] can delete it from devices that already have it. Android remembers a
-     * deleted channel's settings if it is ever recreated, so a member who had configured it loses
-     * nothing when the five-channel split lands.
+     * Kept only so [ensure] can delete it: it named itself „Allgemein" and carried every kind, so
+     * leaving it would give a member a switch that silences all five of the real ones under a name
+     * that says otherwise. Android remembers a deleted channel's settings if it is ever recreated.
+     */
+    private const val CHANNEL_GENERAL_LEGACY: String = "krt_general"
+
+    /**
+     * The channel that used to be created and never posted to.
+     *
+     * Deleted for the same reason it was deleted before the split: a switch that silences nothing.
      */
     private const val CHANNEL_OPERATIONS_LEGACY: String = "krt_operations"
+
+    /**
+     * The channel a notification of this kind belongs on.
+     *
+     * @param kind what the notification is about.
+     * @return the channel id.
+     */
+    fun channelFor(kind: NotificationKind): String =
+        when (kind) {
+            NotificationKind.MISSION -> CHANNEL_MISSIONS
+            NotificationKind.ORDER -> CHANNEL_ORDERS
+            NotificationKind.EXCHANGE -> CHANNEL_EXCHANGE
+            NotificationKind.BANK -> CHANNEL_BANK
+            NotificationKind.SYSTEM -> CHANNEL_SYSTEM
+        }
 
     /**
      * Creates the channels, if they do not exist yet.
@@ -70,15 +98,22 @@ object KrtNotificationChannels {
     fun ensure(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         manager.createNotificationChannel(
-            channel(
-                context,
-                CHANNEL_GENERAL,
-                R.string.notification_channel_general,
-                NotificationManager.IMPORTANCE_DEFAULT,
-            ),
+            channel(context, CHANNEL_MISSIONS, R.string.notification_channel_missions, HIGH),
         )
-        // Removes the channel that was created and never used. Harmless on a device that never
-        // had it, and on one that did it takes a dead switch out of the member's settings.
+        manager.createNotificationChannel(
+            channel(context, CHANNEL_ORDERS, R.string.notification_channel_orders, HIGH),
+        )
+        manager.createNotificationChannel(
+            channel(context, CHANNEL_EXCHANGE, R.string.notification_channel_exchange, DEFAULT),
+        )
+        manager.createNotificationChannel(
+            channel(context, CHANNEL_BANK, R.string.notification_channel_bank, DEFAULT),
+        )
+        manager.createNotificationChannel(
+            channel(context, CHANNEL_SYSTEM, R.string.notification_channel_system, DEFAULT),
+        )
+        // The two channels this app used to create. Harmless on a device that never had them.
+        manager.deleteNotificationChannel(CHANNEL_GENERAL_LEGACY)
         manager.deleteNotificationChannel(CHANNEL_OPERATIONS_LEGACY)
     }
 
@@ -90,7 +125,7 @@ object KrtNotificationChannels {
      * and believe it had told somebody.
      *
      * @param context any context.
-     * @return {@code true} when a posted notification would actually be shown.
+     * @return `true` when a posted notification would actually be shown.
      */
     fun canPost(context: Context): Boolean {
         // The permission itself only exists from API 33. Below that a notification needs no runtime
@@ -106,6 +141,12 @@ object KrtNotificationChannels {
 
     /** The runtime permission, by name: the constant is API 33 and this app starts at 30. */
     private const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
+
+    /** Chapter 14's HOCH. */
+    private const val HIGH = NotificationManager.IMPORTANCE_HIGH
+
+    /** Chapter 14's STANDARD. */
+    private const val DEFAULT = NotificationManager.IMPORTANCE_DEFAULT
 
     /**
      * Builds one channel.

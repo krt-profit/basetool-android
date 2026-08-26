@@ -251,41 +251,61 @@ re-tapped a different tab.
 
 ---
 
-### REQ-APP-UI-007 — The shade posts on one channel, because one is all it can fill
+### REQ-APP-UI-007 — Five channels, the real wording, and a tap that opens the right screen
 
 Chapter 14 names five notification channels — Einsätze & Check-In and Aufträge & Zuweisungen at
 high importance, Materialbörse, Bank & Auszahlungen and System & Ankündigungen at default — so a
-member can silence one kind of message and keep another.
+member can silence one kind and keep another. Chapter 03 adds that a tap opens the target screen,
+and chapter 14's shade mockups show the notification's real wording rather than a fixed line.
 
-**This build posts on one, and the reason is upstream.** The notification stream's event is
-`name="notification"` carrying the literal string `"new"`: a bare ping with no type, no id and no
-content. Everything that reaches the shade is therefore the same message — "the inbox has something
-new" — and it has no kind to be filed under. Five channels cannot be populated from a signal that
-does not say what happened.
+None of the three was possible: the stream event was `data="new"`, a bare ping with no kind, no
+entity and no parameters. Every push was the same message, four channels would have been switches
+that silence nothing, and every tap opened the inbox.
 
-**A second channel existed and nothing ever posted to it.** `krt_operations` was created at high
-importance on every start and no code path ever used it. That is worse than having one channel: it
-puts a switch in the member's system settings that silences nothing, and nothing tells them so. It
-is now deleted on start rather than left standing — Android remembers a deleted channel's settings
-if it is recreated, so nobody loses a preference when the split lands.
+**The backend now says what arrived** (main repo REQ-NOTIF-021, ADR-0146). The app reads the signal
+and everything else follows from the two fields it carries:
 
-**What the split needs**, stated so it is a decision and not a discovery: the stream event has to
-carry the notification's type (and ideally its id, which would also let the shade entry deep-link
-to the target screen instead of always to the inbox, as chapter 03 asks). That is a change to the
-main repo's `NotificationStreamService`, not something this app can arrange.
+- **The channel comes from `NotificationKind`**, which the inbox already uses to pick a row's glyph.
+  One classification, two uses — a kind that files a row under a glyph files a push under a channel,
+  and the five buckets it already had are the chapter's five channels.
+- **The wording is assembled on the device** from the type template and its parameters
+  (`REQ-APP-NOTIF-005`), so it is localised here and an unknown type degrades to the generic line
+  rather than to a blank. Owner decision, 2026-08-26: the shade carries the real wording, as drawn.
+- **The tap opens what the message is about**, through the same resolver the inbox row uses, so the
+  list and the push cannot disagree — and an entity this build has no screen for still falls back to
+  the inbox rather than to a route that does not exist.
 
-**Not adopted without a decision:** chapter 14's shade mockups show the notification's real title
-and body („Einsatz beginnt in 30 Minuten / Vertikaler Abbau — Lyria · Treffpunkt ARC-L1 · 12
-angemeldet"). This build posts a fixed headline instead. Putting org content on the shade is a
-change in what leaves the app's own surface, and the privacy gate makes that the owner's call —
-even though chapter 14's lock-screen rule (private channel plus a „Neue Benachrichtigung" public
-version, both already enforced here by construction) is exactly its mitigation.
+**The channels are created at start, not at the first push.** A channel Android has never been told
+about is absent from the app's notification settings, so the member's choice would only appear after
+the first message of that kind had already arrived — which is the one moment the choice is too late.
+
+**One notification id per channel**, so at most five entries and each replaced by the newest of its
+own kind. An Auftrag must not overwrite the Einsatz that starts in ten minutes.
+
+**The lock-screen rule matters more now than it did.** Every channel is `VISIBILITY_PRIVATE` and
+every notification carries a public replacement reading „Neue Benachrichtigung" and nothing else.
+That was belt-and-braces while the shade said nothing; it is now the only thing between the real
+wording and a locked screen, and it stays enforced by construction rather than per call site.
+
+**A push with no kind still lands somewhere.** The server degrades to the bare `new` on several
+paths, and a notification type this build has never seen classifies as `SYSTEM`. Both belong on
+„System & Ankündigungen", which is where "something happened and this build cannot say what" goes.
 
 **Acceptance**
 
-- [x] One channel is created and the unused one is removed on start.
-- [ ] Five channels, typed shade entries and per-notification deep links: **blocked** on the stream
-  carrying a type, and on the owner's decision about content in the shade.
+- [x] Each kind maps to its own channel — two kinds sharing one would mean a single switch silences
+  both — and an unknown or absent type lands on the system channel
+  (`NotificationChannelRoutingTest`).
+- [x] The shade and the inbox resolve the same destination, and an entity with no screen invents no
+  route (`NotificationChannelRoutingTest`).
+- [x] Every unreadable payload degrades to a bare refresh rather than throwing
+  (`NotificationSignalTest`).
+- [x] Device-verified end to end against a locally built backend: creating an Auftrag through the
+  API put an entry in the shade on **`channel=krt_orders`** at importance 4, coloured `#E77E23`,
+  `vis=PRIVATE` with a `publicVersion`, titled „Neuer Auftrag #9 für IRI" — and tapping it opened
+  Auftrag **#9**, not the inbox. The five channels appear in the system settings with the chapter's
+  names and importances before any notification arrives; the two channels this app used to create
+  are marked deleted.
 
 ---
 

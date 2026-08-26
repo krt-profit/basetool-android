@@ -354,6 +354,8 @@
     <string name="dashboard_missions_all">All Einsätze</string>
     <!-- Weekday spelled out, date numeric, as design ch. 05 writes it. Translatable so a
          locale can reorder the fields. -->
+    <!-- The greeting's date: the real one, then the Star Citizen year in brackets. -->
+    <string name="dashboard_date">%1$s (%2$d)</string>
     <string name="dashboard_date_pattern">EEEE, dd/MM/yyyy</string>
     <string name="dashboard_quick_actions">QUICK ACTIONS</string>
     <string name="dashboard_quick_check_in">Check-in next Einsatz</string>
@@ -770,8 +772,14 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
-    <string name="notification_channel_general">General</string>
-    <string name="notification_public_title">New notification</string>
+    <!-- The five channels of design ch. 14, so a member can silence one kind and keep
+         another. Their ids map onto NotificationKind. -->
+    <string name="notification_channel_missions">Einsätze &amp; check-in</string>
+    <string name="notification_channel_orders">Aufträge &amp; assignments</string>
+    <string name="notification_channel_exchange">Materialbörse</string>
+    <string name="notification_channel_bank">Bank &amp; payouts</string>
+    <string name="notification_channel_system">System &amp; announcements</string>
+        <string name="notification_public_title">New notification</string>
     <string name="notification_shade_title">Something new in the Basetool</string>
     <string name="retry_busy_title">Signal unstable</string>
     <string name="retry_busy_message">The server is busy. Retrying automatically in %1$d s.</string>

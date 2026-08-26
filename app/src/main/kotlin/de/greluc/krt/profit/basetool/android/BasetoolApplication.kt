@@ -11,6 +11,7 @@ import android.app.Application
 import android.util.Log
 import de.greluc.krt.profit.basetool.android.auth.AuthContainer
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.notifications.KrtNotificationChannels
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 
 /**
@@ -65,5 +66,11 @@ class BasetoolApplication : Application() {
         if (BuildConfig.DEBUG) {
             KrtLog.minimumLevel = Log.DEBUG
         }
+        // At start, not at the first push. Design ch. 14 gives a member five channels so they can
+        // silence one kind and keep another -- and a channel Android has never been told about is
+        // absent from the app's notification settings, so the choice would only appear after the
+        // first message of that kind had already arrived. Idempotent: Android keeps a channel's
+        // user-chosen importance once it exists.
+        KrtNotificationChannels.ensure(this)
     }
 }

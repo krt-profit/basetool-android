@@ -60,7 +60,7 @@ interface NotificationSource {
      * @return a cold flow; collecting opens the connection, cancelling closes it, and the flow
      *   completes when the server closes the stream, which it does every thirty minutes by design.
      */
-    fun changes(): Flow<Unit>
+    fun changes(): Flow<NotificationSignal>
 
     /**
      * Marks one notification read.
@@ -174,10 +174,10 @@ class NotificationRepository(
      *
      * @return the signal flow.
      */
-    override fun changes(): Flow<Unit> =
+    override fun changes(): Flow<NotificationSignal> =
         stream.events(STREAM_PATH)
             .filter { it.name == NOTIFICATION_EVENT }
-            .map { }
+            .map { NotificationSignal.parse(it.data) }
 
     /**
      * Marks one notification read.
