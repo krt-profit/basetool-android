@@ -9,7 +9,7 @@ the binding source** (marked `Doc type: living plan`):
 
 | Area (planned) | Will absorb |
 |---|---|
-| [`auth.md`](auth.md) (`REQ-APP-AUTH-*`) — **exists** (`001`–`012`) | login flow, token storage, DPoP, session states, app-lock, the refresh that keeps a session alive past one access token |
+| [`auth.md`](auth.md) (`REQ-APP-AUTH-*`) — **exists** (`001`–`013`) | login flow, token storage, DPoP, session states, app-lock, the refresh that keeps a session alive past one access token, the permission model and how a gated control refuses |
 | [`api-contract.md`](api-contract.md) (`REQ-APP-API-*`) — **exists** (`001`–`006`) | consumed endpoints, headers, problem-code handling, pagination, version echo, and the rule that a response is handled off the main thread — a crash the JVM suite cannot see |
 | [`settings.md`](settings.md) (`REQ-APP-SET-*`) — **exists** (`001`–`009`) | Einstellungen screen scope, per-app language, string-resource rule, legal links, the generated open-source notice, the screenshot switch |
 | [`missions.md`](missions.md) (`REQ-APP-MIS-*`) — **exists** (`001`–`018`) | Einsatz list and detail: server-side filtering, "Vergangene aus" as a status filter, malformed-row tolerance, debouncing, paging, day grouping, the four list states; the detail's lazy Finanzen tab, the redacted answer, its three failure sentences and the required-enum fragility; and phase 3's own participation — sign-up, the check-in the server only allows once the Einsatz runs, and the payout preference |

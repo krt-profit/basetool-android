@@ -696,3 +696,49 @@ written) and is dropped from the token client along with every other interceptor
 - [x] **Observed on a device (2026-08-22):** with the test realm's `accessTokenLifespan` lowered to
   60 s, screens kept loading three minutes and several expiries later, where the same walk-through
   had failed on every screen an hour into the previous session.
+### REQ-APP-AUTH-013 — The app knows what the caller may do, and says so instead of failing
+
+The app reads the caller's **permissions** from `/api/v1/users/me` — the same response it already
+reads the user id and the two membership grants from — and keeps them for the session in one
+app-wide holder. It is not a per-screen read: three of twelve ViewModels used to fetch the identity
+at all, which is why whole surfaces shipped with no permission awareness.
+
+A control the caller demonstrably may not use is **rendered in the disabled style, stays tappable,
+and names the missing grant when tapped**. It is not hidden, and it is not `enabled = false`:
+
+- **Not hidden**, because roles in this organisation are granted by hand. A member who cannot see
+  „Zuordnen" cannot discover that a Logistik role exists, and the person who could grant it is
+  never asked. The design system draws a disabled state for every rung of its button ladder and
+  this is what that state is for.
+- **Not `enabled = false`**, because a Compose control with that flag receives no tap, and a control
+  that cannot be tapped cannot explain itself. The disabled *appearance* plus a live tap target is
+  the whole mechanism.
+- The message **names the grant** — „Dafür brauchst du die Logistik-Rolle" — not the status code.
+  „403" tells a member nothing they can act on.
+
+Where the server's rule depends on the **row** rather than the role, the app answers what it can
+from what it holds and lets the server settle the rest. The Lager's rule is *own row, or edit rights
+on that row's org unit*; the app has the holder, the org unit and the caller's grants, so the common
+cases are decided locally. Where it cannot know, the control stays fully enabled and the refusal is
+reported in the app's own words.
+
+**The permission list is a hint, never a gate.** The server remains the only authority. A screen
+that treats a locally computed permission as sufficient to skip a check, or that hides a refusal it
+did not predict, is a defect. The list is re-read when the app resumes, so a role granted while the
+app is open takes effect without a sign-out.
+
+**Acceptance**
+
+- [ ] `Identity` carries the backend `permissions` alongside `userId`, `logistician` and
+  `missionManager`, read once per session from `/api/v1/users/me` and refreshed on resume.
+- [ ] Every screen reads it from one shared holder; no ViewModel fetches its own copy.
+- [ ] A permission-gated control renders at the ladder's disabled alpha, remains tappable, performs
+  no write on tap, and states the grant it needs.
+- [ ] No permission-gated control is hidden from a member who lacks the grant.
+- [ ] A plain `KRT Member` (`HANGAR_READ`, `HANGAR_WRITE`, `MISSION_READ`) can open the Lager and
+  reach no 403 by tapping what the screen offers on org-owned stock.
+- [ ] A row-dependent refusal the app could not predict is still reported in the app's own words,
+  never as a status code.
+
+**Enforced by:** `core/data/IdentityRepository.kt` · the shared identity holder ·
+**Decision:** [ADR-0011](../adr/0011-the-app-knows-its-permissions-and-refuses-in-place.md)

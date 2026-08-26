@@ -757,6 +757,10 @@ two artboards the running system contradicts. The prompt is written as one conti
 Claude Design session:
 [`docs/design/android/MISSING_ARTBOARD_PROMPTS_2.md`](design/android/MISSING_ARTBOARD_PROMPTS_2.md).
 
+**Round 3** — a correction to round 2's framing (the app *can* read `roles` and `permissions`;
+round 2 told the designer it could not) and the gated-state artboards that ADR-0011 calls for:
+[`docs/design/android/MISSING_ARTBOARD_PROMPTS_3.md`](design/android/MISSING_ARTBOARD_PROMPTS_3.md).
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

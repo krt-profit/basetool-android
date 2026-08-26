@@ -2,6 +2,10 @@
 
 Runde 1 ist [`MISSING_ARTBOARD_PROMPTS.md`](MISSING_ARTBOARD_PROMPTS.md) und geschlossen.
 
+**Abgeschickt am 2026-08-26.** Der Text unterhalb der Linie steht unverändert so, wie er an die
+Session ging — auch die eine Aussage darin, die falsch war. Korrektur und Nachtrag stehen in
+[`MISSING_ARTBOARD_PROMPTS_3.md`](MISSING_ARTBOARD_PROMPTS_3.md).
+
 Alles unterhalb der Linie ist **ein** Auftrag, gedacht zum Einfügen in die bestehende Claude-Design-
 Session, die das Bundle bereits im Kontext hat. Woher jeder Punkt kommt, steht in
 [`docs/DESIGN_PARITY_AUDIT.md`](../../DESIGN_PARITY_AUDIT.md) — hier nicht, damit der Prompt
@@ -19,12 +23,9 @@ wie gehabt.
 
 Drei Rahmenbedingungen, die für diese Runde besonders zählen: **Die App hat keinen Push-Kanal**
 (beschlossene Entscheidung Q2) — zeichne nie Copy, die eine Benachrichtigung verspricht. **Die App
-kennt Rollen und Rechte** — `/api/v1/users/me` liefert `roles` und `permissions`, und der
-Access-Token trägt `realm_access.roles` ohnehin mit. Zeichne rechteabhängige Bedienelemente daher
-nicht pauschal als „vorhanden und ablehnbar", sondern sag pro Fläche, ob sie ausgeblendet,
-deaktiviert-mit-Grund oder sichtbar-und-ablehnbar ist. Nur wo die Erlaubnis an der *Zeile* hängt
-statt an der Rolle — im Lager etwa „eigene Zeile oder Bearbeitungsrecht auf dieser Org-Einheit" —
-kann die App es nicht immer im Voraus wissen. Und **alles, was du zeichnest, muss ein Feld haben, das es in `openapi.json` gibt** —
+kennt keine Rollen** — sie kann nicht wissen, ob jemand etwas darf; der Server antwortet mit 403 und
+die App sagt es. Zeichne rechteabhängige Bedienelemente also vorhanden und ablehnbar, nicht
+versteckt. Und **alles, was du zeichnest, muss ein Feld haben, das es in `openapi.json` gibt** —
 wenn du etwas brauchst, das fehlt, schreib es als Anforderung an das Backend in die Handoff-Notiz,
 statt es zu zeichnen, als gäbe es das Feld schon.
 
