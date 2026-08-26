@@ -19,6 +19,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -31,13 +35,16 @@ import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -228,12 +235,38 @@ private fun HullPicker(
                     it.manufacturerName?.contains(term, ignoreCase = true) == true
             }
         }
+    // Opening is the member's act, not a side effect of the query still being non-empty: after a
+    // pick the query holds the chosen hull's name, and a list that reopens on that would cover the
+    // field the moment it is answered.
+    var open by rememberSaveable { mutableStateOf(false) }
+    val shown = matches.take(HULL_RESULT_LIMIT)
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        KrtTextField(
-            value = query,
-            onValueChange = onQuery,
+        KrtCombobox(
+            query = query,
+            onQueryChange = {
+                onQuery(it)
+                open = true
+            },
+            options = shown.map { KrtOption(it.id, it.label()) },
+            onSelect = { option ->
+                hulls.firstOrNull { it.id == option.value }?.let(onChosen)
+                open = false
+            },
+            expanded = open && shown.isNotEmpty(),
+            onExpandedChange = { open = it },
             label = stringResource(R.string.hangar_field_type),
             placeholder = stringResource(R.string.hangar_type_search),
+            selectedValue = chosen?.id,
+            notice =
+                if (matches.size > HULL_RESULT_LIMIT) {
+                    pluralStringResource(
+                        R.plurals.hangar_type_more,
+                        matches.size - HULL_RESULT_LIMIT,
+                        matches.size - HULL_RESULT_LIMIT,
+                    )
+                } else {
+                    null
+                },
             enabled = enabled,
         )
         chosen?.let {
@@ -245,29 +278,6 @@ private fun HullPicker(
         }
         if (term.isNotEmpty() && matches.isEmpty()) {
             Muted(stringResource(R.string.hangar_type_none))
-        }
-        matches.take(HULL_RESULT_LIMIT).forEach { hull ->
-            Text(
-                text = hull.label(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = enabled) { onChosen(hull) }
-                        .padding(vertical = KrtSpacing.sm),
-            )
-        }
-        if (matches.size > HULL_RESULT_LIMIT) {
-            Muted(
-                pluralStringResource(
-                    R.plurals.hangar_type_more,
-                    matches.size - HULL_RESULT_LIMIT,
-                    matches.size - HULL_RESULT_LIMIT,
-                ),
-            )
         }
     }
 }
@@ -337,33 +347,23 @@ private fun PlacePicker(
     enabled: Boolean,
     onChosen: (HomeLocation?) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        KrtFieldLabel(text = stringResource(R.string.hangar_field_location), enabled = enabled)
-        Text(
-            text = stringResource(R.string.hangar_location_none),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (chosen == null) MaterialTheme.colorScheme.primary else KrtPalette.TextMuted,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = enabled) { onChosen(null) }
-                    .padding(vertical = KrtSpacing.sm),
-        )
-        places.forEach { place ->
-            Text(
-                text = place.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (chosen?.id == place.id) MaterialTheme.colorScheme.primary else KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = enabled) { onChosen(place) }
-                        .padding(vertical = KrtSpacing.sm),
-            )
-        }
-    }
+    // A closed list of the org's own places, so the select field rather than the combobox: there
+    // is nothing to type, and an always-open column of every place buried the fields under it.
+    var open by rememberSaveable { mutableStateOf(false) }
+    val none = stringResource(R.string.hangar_location_none)
+    KrtSelectField(
+        value = chosen?.name ?: none,
+        options = listOf(KrtOption(NO_PLACE, none)) + places.map { KrtOption(it.id, it.name) },
+        onSelect = { option ->
+            onChosen(places.firstOrNull { it.id == option.value })
+            open = false
+        },
+        expanded = open,
+        onExpandedChange = { open = it },
+        label = stringResource(R.string.hangar_field_location),
+        selectedValue = chosen?.id ?: NO_PLACE,
+        enabled = enabled,
+    )
 }
 
 /**
@@ -418,3 +418,6 @@ fun ShipDeleteModal(
         )
     }
 }
+
+/** Value standing for "kein Ort" in the place select - no place has an empty id. */
+private const val NO_PLACE = ""

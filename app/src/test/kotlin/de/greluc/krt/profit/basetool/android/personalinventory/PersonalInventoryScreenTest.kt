@@ -15,10 +15,12 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.PersonalItem
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
@@ -284,6 +286,9 @@ class PersonalInventoryScreenTest {
             }
         }
 
+        // The list only opens once the member types, so open it the way they would: the point of
+        // this test is that a full list of hits cannot bury the save button.
+        compose.onNodeWithContentDescription("Ort").performTextInput("lor")
         compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag(PERSONAL_INVENTORY_SAVE_TAG))
         compose.onNodeWithTag(PERSONAL_INVENTORY_SAVE_TAG).assertIsDisplayed()
     }
@@ -361,6 +366,7 @@ class PersonalInventoryScreenTest {
             }
         }
 
+        compose.onNodeWithContentDescription("Ort").performTextInput("lor")
         compose.onNodeWithText("Lorville · Hurston · Stanton").assertIsDisplayed()
         compose.onNodeWithText("Nur der erste Treffer. Suche genauer, wenn dein Ort fehlt.")
             .assertIsDisplayed()

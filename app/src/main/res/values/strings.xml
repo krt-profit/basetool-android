@@ -762,10 +762,13 @@
     <string name="board_unit_piece">Stück</string>
     <string name="board_quality">Q %1$d</string>
     <string name="board_min_quality">Min. Q %1$d</string>
-    <string name="board_field_material">Material</string>
-    <string name="board_field_amount">Menge</string>
+    <string name="board_field_material">Material oder Item</string>
+    <string name="board_field_material_hint">z. B. Bexalit</string>
+    <string name="board_field_amount">Gewünschte Menge</string>
     <string name="board_field_min_quality">Min. Qualität (optional)</string>
+    <string name="board_field_min_quality_hint">0–1000</string>
     <string name="board_field_remark">Anmerkung (optional)</string>
+    <string name="board_field_remark_hint">z. B. für Blueprint Quantum-Antrieb</string>
     <string name="board_publish_request">Gesuch veröffentlichen</string>
     <string name="board_publish_offer">Angebot veröffentlichen</string>
     <string name="board_stock_loading">Eigener Bestand wird geladen …</string>

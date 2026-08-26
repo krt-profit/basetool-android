@@ -151,6 +151,8 @@ fun KrtFieldError(
  * @param keyboardOptions keyboard configuration, e.g. a numeric keyboard for amounts.
  * @param textAlign horizontal alignment of the text; centre it for stepper-style numeric inputs.
  * @param tabularFigures whether digits render with fixed width; switch on for amounts.
+ * @param trailing optional control at the end of the field — the combobox caret, for example. It
+ *   sits inside the frame and the text area yields the width it takes.
  */
 @Composable
 fun KrtTextField(
@@ -165,6 +167,7 @@ fun KrtTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     textAlign: TextAlign = TextAlign.Start,
     tabularFigures: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -200,34 +203,39 @@ fun KrtTextField(
                     .padding(horizontal = KrtSpacing.md),
             contentAlignment = Alignment.CenterStart,
         ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .krtFieldSemantics(accessibleName, if (isError) errorText else null),
-                enabled = enabled,
-                textStyle =
-                    LocalTextStyle.current
-                        .merge(MaterialTheme.typography.bodyLarge)
-                        .copy(
-                            color = KrtPalette.White,
-                            textAlign = textAlign,
-                            fontFeatureSettings = if (tabularFigures) KRT_TABULAR_FIGURES else null,
-                        ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                keyboardOptions = keyboardOptions,
-                interactionSource = interactionSource,
-                singleLine = true,
-                decorationBox = { innerTextField ->
-                    KrtFieldDecoration(
-                        showPlaceholder = value.isEmpty(),
-                        placeholder = placeholder,
-                        innerTextField = innerTextField,
-                    )
-                },
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .krtFieldSemantics(accessibleName, if (isError) errorText else null),
+                    enabled = enabled,
+                    textStyle =
+                        LocalTextStyle.current
+                            .merge(MaterialTheme.typography.bodyLarge)
+                            .copy(
+                                color = KrtPalette.White,
+                                textAlign = textAlign,
+                                fontFeatureSettings = if (tabularFigures) KRT_TABULAR_FIGURES else null,
+                            ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    keyboardOptions = keyboardOptions,
+                    interactionSource = interactionSource,
+                    singleLine = true,
+                    decorationBox = { innerTextField ->
+                        KrtFieldDecoration(
+                            showPlaceholder = value.isEmpty(),
+                            placeholder = placeholder,
+                            innerTextField = innerTextField,
+                        )
+                    },
+                )
+                if (trailing != null) {
+                    Box(modifier = Modifier.padding(start = KrtSpacing.sm)) { trailing() }
+                }
+            }
         }
         if (isError && errorText != null) {
             KrtFieldError(text = errorText)

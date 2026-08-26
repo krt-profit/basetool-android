@@ -743,10 +743,13 @@
     <string name="board_unit_piece">pcs</string>
     <string name="board_quality">Q %1$d</string>
     <string name="board_min_quality">Min. Q %1$d</string>
-    <string name="board_field_material">Material</string>
-    <string name="board_field_amount">Amount</string>
+    <string name="board_field_material">Material or item</string>
+    <string name="board_field_material_hint">e. g. Bexalite</string>
+    <string name="board_field_amount">Amount wanted</string>
     <string name="board_field_min_quality">Min. quality (optional)</string>
+    <string name="board_field_min_quality_hint">0–1000</string>
     <string name="board_field_remark">Remark (optional)</string>
+    <string name="board_field_remark_hint">e. g. for a Quantum Drive blueprint</string>
     <string name="board_publish_request">Publish request</string>
     <string name="board_publish_offer">Publish offer</string>
     <string name="board_stock_loading">Loading your own stock …</string>

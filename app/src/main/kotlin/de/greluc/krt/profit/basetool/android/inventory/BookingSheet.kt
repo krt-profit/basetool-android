@@ -19,6 +19,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -35,11 +39,13 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
@@ -404,27 +410,29 @@ private fun Picker(
     onQuery: (String) -> Unit,
     onChosen: (String) -> Unit,
 ) {
+    var open by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        KrtTextField(value = query, onValueChange = onQuery, label = label, enabled = enabled)
+        KrtCombobox(
+            query = query,
+            onQueryChange = {
+                onQuery(it)
+                open = true
+            },
+            options = options.map { (id, text) -> KrtOption(id, text) },
+            onSelect = { option ->
+                onChosen(option.value)
+                open = false
+            },
+            expanded = open && options.isNotEmpty(),
+            onExpandedChange = { open = it },
+            label = label,
+            enabled = enabled,
+        )
         chosen?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        options.forEach { (id, text) ->
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = enabled) { onChosen(id) }
-                        .padding(vertical = KrtSpacing.sm),
             )
         }
     }

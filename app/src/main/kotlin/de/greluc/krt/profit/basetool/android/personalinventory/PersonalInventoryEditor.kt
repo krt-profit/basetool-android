@@ -18,6 +18,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -28,11 +32,13 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.PersonalItem
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -192,12 +198,34 @@ private fun LocationPicker(
     onQuery: (String) -> Unit,
     onChosen: (PersonalLocation) -> Unit,
 ) {
+    var open by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        KrtTextField(
-            value = locations.query,
-            onValueChange = onQuery,
+        KrtCombobox(
+            query = locations.query,
+            onQueryChange = {
+                onQuery(it)
+                open = true
+            },
+            options = locations.results.map { KrtOption(it.uexId.toString(), it.label()) },
+            onSelect = { option ->
+                locations.results.firstOrNull { it.uexId.toString() == option.value }?.let(onChosen)
+                open = false
+            },
+            expanded = open && locations.results.isNotEmpty(),
+            onExpandedChange = { open = it },
             label = stringResource(R.string.personal_inventory_field_location),
             placeholder = stringResource(R.string.personal_inventory_location_search),
+            selectedValue = chosen?.uexId?.toString(),
+            notice =
+                if (locations.capped) {
+                    pluralStringResource(
+                        R.plurals.personal_inventory_location_capped,
+                        locations.results.size,
+                        locations.results.size,
+                    )
+                } else {
+                    null
+                },
             enabled = enabled,
         )
         chosen?.let {
@@ -215,36 +243,6 @@ private fun LocationPicker(
                 Muted(stringResource(R.string.personal_inventory_location_hint))
             } else if (typed >= MIN_QUERY && locations.results.isEmpty()) {
                 Muted(stringResource(R.string.personal_inventory_location_none))
-            }
-        }
-        // A plain column, not a LazyColumn: the whole sheet scrolls, and two scroll containers in
-        // the same direction cannot be nested. The list is capped at 25 rows, so nothing is lazy
-        // about it anyway.
-        if (locations.results.isNotEmpty()) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                locations.results.forEach { place ->
-                    Text(
-                        text = place.label(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = KrtPalette.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = enabled) { onChosen(place) }
-                                .padding(vertical = KrtSpacing.sm),
-                    )
-                }
-                if (locations.capped) {
-                    Muted(
-                        pluralStringResource(
-                            R.plurals.personal_inventory_location_capped,
-                            locations.results.size,
-                            locations.results.size,
-                        ),
-                    )
-                }
             }
         }
     }
