@@ -854,4 +854,6 @@
         <item quantity="one">One entry will be moved to the chosen location.</item>
         <item quantity="other">%1$d entries will be moved to the chosen location.</item>
     </plurals>
+    <string name="gate_denied_title">Not allowed</string>
+    <string name="gate_logistician">That needs the logistics role — or the entry has to be yours.</string>
 </resources>

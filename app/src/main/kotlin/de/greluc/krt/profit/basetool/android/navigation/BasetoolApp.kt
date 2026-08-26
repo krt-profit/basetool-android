@@ -65,6 +65,8 @@ import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprint
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
+import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
+import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -79,6 +81,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  *
  * @param onLogout ends the session; the caller opens the realm's end-session URL.
  * @param settings what the Einstellungen screen needs from the activity.
+ * @param caller who is signed in, for every screen that decides whether to offer an action.
  * @param missions drives the Einsatz list.
  * @param missionDetail builds a view model for one Einsatz.
  * @param operations drives the Operationen list.
@@ -103,6 +106,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 fun BasetoolApp(
     onLogout: () -> Unit,
     settings: SettingsBindings,
+    caller: CallerViewModel,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
@@ -196,6 +200,7 @@ fun BasetoolApp(
     // What a pushed screen has published for the bar, if anything. A detail owns its head:
     // chapters 06/10/11/12 all put the subject's own name there rather than its category.
     val screenBar = remember { mutableStateOf<ScreenTopBar?>(null) }
+    val who by caller.caller.collectAsStateWithLifecycle()
     val detail = screenBar.value
 
     Row(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -232,7 +237,10 @@ fun BasetoolApp(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.TopCenter,
             ) {
-                CompositionLocalProvider(LocalScreenTopBar provides screenBar) {
+                CompositionLocalProvider(
+                    LocalScreenTopBar provides screenBar,
+                    LocalCaller provides who,
+                ) {
                     BasetoolNavHost(
                         modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
                         navController = navController,

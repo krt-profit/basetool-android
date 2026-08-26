@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -64,11 +65,17 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOpti
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
+import de.greluc.krt.profit.basetool.android.ui.rememberDenial
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
+import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the tree. */
@@ -107,6 +114,7 @@ private val RAIL_HEIGHT = 44.dp
  * @param onAllocate an entry's Zuordnung was opened.
  * @param selection which rows are selected.
  * @param onToggleSelected a row was long-pressed, or tapped while selecting.
+ * @param onDenied a gated action was tapped; carries the reason to show.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
@@ -124,6 +132,7 @@ fun InventoryScreen(
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
     onToggleSelected: (String) -> Unit,
+    onDenied: (String) -> Unit,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -198,6 +207,7 @@ fun InventoryScreen(
                                 onAllocate = onAllocate,
                                 selection = selection,
                                 onToggleSelected = onToggleSelected,
+                                onDenied = onDenied,
                                 online = state.online,
                                 onLoadMore = onLoadMore,
                             )
@@ -231,6 +241,7 @@ fun InventoryScreen(
  * @param onAllocate an entry's Zuordnung was opened.
  * @param selection which rows are selected.
  * @param onToggleSelected a row was long-pressed, or tapped while selecting.
+ * @param onDenied a gated action was tapped; carries the reason to show.
  * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
  */
@@ -243,6 +254,7 @@ private fun InventoryTree(
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
     onToggleSelected: (String) -> Unit,
+    onDenied: (String) -> Unit,
     online: Boolean,
     onLoadMore: () -> Unit,
 ) {
@@ -297,6 +309,7 @@ private fun InventoryTree(
                                     onAllocate = onAllocate,
                                     selection = selection,
                                     onToggleSelected = onToggleSelected,
+                                    onDenied = onDenied,
                                 )
                             }
                         }
@@ -397,6 +410,7 @@ private fun LazyListScope.entryRows(
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
     onToggleSelected: (String) -> Unit,
+    onDenied: (String) -> Unit,
 ) {
     when (phase) {
         // A closed stack contributes no rows at all.
@@ -433,6 +447,7 @@ private fun LazyListScope.entryRows(
                             selected = entry.id in selection,
                             selecting = selection.isNotEmpty(),
                             onToggleSelected = { onToggleSelected(entry.id) },
+                            onDenied = onDenied,
                         )
                     }
                 }
@@ -451,6 +466,7 @@ private fun LazyListScope.entryRows(
  * @param selected whether this row is in the selection.
  * @param selecting whether the list is in selection mode at all.
  * @param onToggleSelected the row was long-pressed, or tapped while selecting.
+ * @param onDenied a gated action was tapped; carries the reason to show.
  */
 @Composable
 private fun EntryRow(
@@ -462,6 +478,7 @@ private fun EntryRow(
     onBookOut: () -> Unit,
     onAllocate: () -> Unit,
     onToggleSelected: () -> Unit,
+    onDenied: (String) -> Unit,
 ) {
     // Long-press starts selection mode and a plain tap continues it (design ch. 02 §4): once the
     // mode is on, having to keep long-pressing every further row makes selecting twelve stacks a
@@ -536,19 +553,25 @@ private fun EntryRow(
         // allocation at all (design ch. 09 §3), so offering the split on one would be offering a
         // refusal. Whether the caller may split a SHARED entry is the server's call — the app holds
         // no role list on purpose — so the sheet opens and a 403 is reported in its own words.
+        // Both writes go through the same gate the server applies — own row, or edit rights on the
+        // row's org unit. Drawn as disabled and still tappable, so the refusal can name the role
+        // that is missing instead of arriving as a 403 after the fact (ADR-0011).
+        val gate = Gate(allowed = mayEditRowOf(entry.holderId), reason = stringResource(R.string.gate_logistician))
         if (!entry.personal) {
+            val (dim, click) = rememberGated(gate, onAllocate, onDenied)
             KrtIconButton(
                 iconRes = DesignR.drawable.ic_krt_target,
                 label = stringResource(R.string.allocation_open),
-                onClick = onAllocate,
-                modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+                onClick = click,
+                modifier = dim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
                 enabled = online,
             )
         }
+        val (bookDim, bookClick) = rememberGated(gate, onBookOut, onDenied)
         KrtGhostButton(
             text = stringResource(R.string.booking_open),
-            onClick = onBookOut,
-            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            onClick = bookClick,
+            modifier = bookDim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
             enabled = online,
         )
     }
@@ -755,6 +778,10 @@ fun InventoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Where this sentence belongs — a tooltip on the control, a toast, a line under the button — is
+    // the open question in round 3 of the design prompt. The toast is the one carrier the system
+    // already draws for a transient sentence (ch. 02 §7), so it stands in until that is answered.
+    val (denial, setDenial) = rememberDenial()
     InventoryScreen(
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
@@ -764,6 +791,7 @@ fun InventoryRoute(
         onAllocate = viewModel::onAllocate,
         selection = state.selection,
         onToggleSelected = viewModel::onToggleSelected,
+        onDenied = setDenial,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
@@ -804,6 +832,20 @@ fun InventoryRoute(
                     )
                 }
             }
+        }
+    }
+
+    denial?.let { reason ->
+        LaunchedEffect(reason) {
+            delay(DENIAL_TOAST_MS)
+            setDenial(null)
+        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            KrtToast(
+                title = stringResource(R.string.gate_denied_title),
+                message = reason,
+                modifier = Modifier.padding(KrtSpacing.lg),
+            )
         }
     }
 
@@ -921,3 +963,6 @@ const val INVENTORY_BULK_TAG = "inventory-bulk-move"
 
 /** Test handle for its confirm button. */
 const val INVENTORY_BULK_CONFIRM_TAG = "inventory-bulk-confirm"
+
+/** How long a refusal stands before it goes away by itself. */
+private const val DENIAL_TOAST_MS = 4000L

@@ -79,6 +79,7 @@ import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
+import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
 import kotlinx.coroutines.launch
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -158,6 +159,7 @@ class MainActivity : AppCompatActivity() {
 
     private val dashboardViewModel: DashboardViewModel by viewModels { authViewModels(container) }
 
+    private val callerViewModel: CallerViewModel by viewModels { authViewModels(container) }
     private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
     private val fleetImportViewModel: FleetImportViewModel by viewModels { authViewModels(container) }
 
@@ -309,6 +311,7 @@ class MainActivity : AppCompatActivity() {
                                     operations = operationsViewModel,
                                     notifications = notificationsViewModel,
                                     dashboard = dashboardViewModel,
+                                    caller = callerViewModel,
                                     hangar = hangarViewModel,
                                     fleetImport = fleetImportViewModel,
                                     bank = bankViewModel,
@@ -561,6 +564,7 @@ class MainActivity : AppCompatActivity() {
                         container.shadeTitle,
                     )
                 }
+                initializer { CallerViewModel(container.identity) }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }

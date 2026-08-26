@@ -119,6 +119,7 @@ class InventoryScreenTest {
                     onAllocate = {},
                     selection = emptySet(),
                     onToggleSelected = {},
+                    onDenied = {},
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
                     onRetryNow = {},
