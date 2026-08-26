@@ -49,6 +49,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -93,6 +94,7 @@ private val RAIL_HEIGHT = 44.dp
  * @param onToggleStack a stack row was tapped.
  * @param onBookIn the booking action was taken.
  * @param onBookOut an entry's booking action was taken.
+ * @param onAllocate an entry's Zuordnung was opened.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
@@ -107,6 +109,7 @@ fun InventoryScreen(
     onToggleStack: (String, InventoryStack) -> Unit,
     onBookIn: () -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
+    onAllocate: (InventoryEntry) -> Unit,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -178,6 +181,7 @@ fun InventoryScreen(
                                 onToggleGroup = onToggleGroup,
                                 onToggleStack = onToggleStack,
                                 onBookOut = onBookOut,
+                                onAllocate = onAllocate,
                                 online = state.online,
                                 onLoadMore = onLoadMore,
                             )
@@ -208,6 +212,7 @@ fun InventoryScreen(
  * @param onToggleGroup a group was tapped.
  * @param onToggleStack a stack was tapped.
  * @param onBookOut an entry's booking action was taken.
+ * @param onAllocate an entry's Zuordnung was opened.
  * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
  */
@@ -217,6 +222,7 @@ private fun InventoryTree(
     onToggleGroup: (String) -> Unit,
     onToggleStack: (String, InventoryStack) -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
+    onAllocate: (InventoryEntry) -> Unit,
     online: Boolean,
     onLoadMore: () -> Unit,
 ) {
@@ -268,6 +274,7 @@ private fun InventoryTree(
                                     unit = group.unit,
                                     online = online,
                                     onBookOut = onBookOut,
+                                    onAllocate = onAllocate,
                                 )
                             }
                         }
@@ -365,6 +372,7 @@ private fun LazyListScope.entryRows(
     unit: String?,
     online: Boolean,
     onBookOut: (InventoryEntry) -> Unit,
+    onAllocate: (InventoryEntry) -> Unit,
 ) {
     when (phase) {
         // A closed stack contributes no rows at all.
@@ -397,6 +405,7 @@ private fun LazyListScope.entryRows(
                             unit = unit,
                             online = online,
                             onBookOut = { onBookOut(entry) },
+                            onAllocate = { onAllocate(entry) },
                         )
                     }
                 }
@@ -419,6 +428,7 @@ private fun EntryRow(
     unit: String?,
     online: Boolean,
     onBookOut: () -> Unit,
+    onAllocate: () -> Unit,
 ) {
     Row(
         modifier =
@@ -470,6 +480,19 @@ private fun EntryRow(
         }
         entry.quality?.let { quality ->
             QualityMark(quality = quality)
+        }
+        // Two actions, and one of them does not apply to every row: a personal entry carries no
+        // allocation at all (design ch. 09 §3), so offering the split on one would be offering a
+        // refusal. Whether the caller may split a SHARED entry is the server's call — the app holds
+        // no role list on purpose — so the sheet opens and a 403 is reported in its own words.
+        if (!entry.personal) {
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_target,
+                label = stringResource(R.string.allocation_open),
+                onClick = onAllocate,
+                modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+                enabled = online,
+            )
         }
         KrtGhostButton(
             text = stringResource(R.string.booking_open),
@@ -687,12 +710,28 @@ fun InventoryRoute(
         onToggleStack = viewModel::onToggleStack,
         onBookIn = onBookIn,
         onBookOut = onBookOut,
+        onAllocate = viewModel::onAllocate,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         modifier = modifier,
     )
+
+    state.allocation?.let { allocation ->
+        AllocationSheet(
+            state = allocation,
+            callbacks =
+                AllocationCallbacks(
+                    onAmount = viewModel::onAllocationAmount,
+                    onStep = viewModel::onAllocationStep,
+                    onAdd = viewModel::onAllocationAdd,
+                    onPick = viewModel::onAllocationPick,
+                    onSave = viewModel::onAllocationSave,
+                    onDismiss = viewModel::onAllocationDismissed,
+                ),
+        )
+    }
 }
 
 /** Width of the quality mini-gauge — 44 dp per design ch. 09. */

@@ -821,4 +821,23 @@
     <string name="update_required_title">Update required</string>
     <string name="update_required_message">The server no longer serves this version. Download the current build to carry on. Your stored data is kept.</string>
     <string name="update_required_cta">Open the download page</string>
+    <string name="allocation_title">Allocation</string>
+    <string name="allocation_subject_amount">Entry %1$s %2$s</string>
+    <string name="allocation_orders">Orders</string>
+    <string name="allocation_missions">Missions</string>
+    <string name="allocation_add_order">Allocate to an order</string>
+    <string name="allocation_add_mission">Allocate to a mission</string>
+    <string name="allocation_add_cancel">Cancel</string>
+    <string name="allocation_rest_free">%1$s free</string>
+    <string name="allocation_rest_none">Nothing left</string>
+    <string name="allocation_overbooked">Over-allocated</string>
+    <string name="allocation_save">Save the allocation</string>
+    <string name="allocation_open">Allocate</string>
+    <string name="allocation_model_note">Orders and missions are reconciled against the entry separately. Leaving a remainder is fine; promising more than exists is not.</string>
+    <string name="allocation_error_forbidden">Allocating needs the logistics role.</string>
+    <string name="allocation_error_amount">The server refused the amount — the entry has probably changed. Close the allocation and open it again.</string>
+    <plurals name="allocation_error_partial">
+        <item quantity="one">One change was saved before it stopped. The list above shows what the server holds.</item>
+        <item quantity="other">%1$d changes were saved before it stopped. The list above shows what the server holds.</item>
+    </plurals>
 </resources>

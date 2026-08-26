@@ -332,7 +332,9 @@ server's own sentence when it refuses a file — it is the only party that can d
 
 ### Newly found: buildable, not built
 
-**09.3 Zuordnung** is a fully specified screen with a complete API behind it and no code at all.
+**09.3 Zuordnung** — **built** (2026-08-26). What follows is what it was before, kept because the
+shape of the gap is the point: a fully specified screen with a complete API behind it and no code
+at all.
 `InventoryItemDto` already carries `jobOrderAllocations`, `jobOrderRest`, `missionAllocations` and
 `missionRest`, and `POST`/`PATCH`/`DELETE /api/v1/inventory/{id}/allocation` write them — but
 `InventoryEntry` maps none of those four fields, so the app cannot show an allocation, let alone
@@ -405,6 +407,23 @@ Three, each with the reason in the code:
 And two the app cannot show rather than will not: the offline banner's **"Zuletzt aktualisiert"**
 stamp and the **CACHE** chip beside it. The app holds no cache and records no load time, so both
 would be invented.
+
+### 09.3, once it was built
+
+The endpoint was probed before a line was written, and it settled four things the artboard does not
+say: `POST` on a target that already has an allocation is **400**, so add and change are different
+verbs; `DELETE` carries its target in the body; overbooking is **422**; and every write returns the
+whole entry with a **new version**, so a save with three changed rows is a sequence, not a batch.
+
+That last one is why the save applies rows one at a time and stops at the first failure, reporting
+how many landed. Pretending it was atomic would have a member re-entering changes that are already
+in. Overbooking is refused locally as well, because the artboard turns the sum red as it is typed
+rather than after a round trip.
+
+Two rules from the handoff note are honoured and one cannot be: a **personal entry** carries no
+allocation, so the row offers no split; **without the logistics role it is read-only**, which the
+app cannot know — it holds no role list by design — so the sheet opens and the server's 403 is
+reported in the app's own words.
 
 ### Still not compared
 

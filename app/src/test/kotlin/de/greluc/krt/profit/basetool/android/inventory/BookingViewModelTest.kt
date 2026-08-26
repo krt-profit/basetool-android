@@ -7,6 +7,8 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
@@ -122,6 +124,21 @@ class BookingViewModelTest {
 
         override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
             ApiResult.Success(listOf(TerminalOption("t1", "Area18 TDD", "5.75")))
+
+        override suspend fun setAllocation(
+            entryId: String,
+            kind: AllocationKind,
+            targetId: String,
+            amount: String,
+            existing: Boolean,
+            version: Long?,
+        ): ApiResult<InventoryEntry> = error("not used")
+
+        override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
+            ApiResult.Success(emptyList())
+
+        override suspend fun missionTargets(): ApiResult<List<AllocationTarget>> =
+            ApiResult.Success(emptyList())
     }
 
     private lateinit var source: FakeSource

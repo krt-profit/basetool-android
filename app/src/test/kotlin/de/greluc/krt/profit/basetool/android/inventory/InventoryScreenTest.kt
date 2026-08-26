@@ -116,6 +116,7 @@ class InventoryScreenTest {
                     onToggleStack = { _, stack -> stacksToggled.add(stack) },
                     onBookIn = { booked.add(Unit) },
                     onBookOut = { bookedOut.add(it) },
+                    onAllocate = {},
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
                     onRetryNow = {},

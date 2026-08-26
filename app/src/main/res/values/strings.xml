@@ -840,4 +840,23 @@
     <string name="update_required_title">Update erforderlich</string>
     <string name="update_required_message">Diese Version wird vom Server nicht mehr bedient. Lade die aktuelle Version herunter, um weiterzuarbeiten. Deine gespeicherten Daten bleiben erhalten.</string>
     <string name="update_required_cta">Zur Download-Seite</string>
+    <string name="allocation_title">Zuordnung</string>
+    <string name="allocation_subject_amount">Eintrag %1$s %2$s</string>
+    <string name="allocation_orders">Aufträge</string>
+    <string name="allocation_missions">Einsätze</string>
+    <string name="allocation_add_order">Auftrag zuordnen</string>
+    <string name="allocation_add_mission">Einsatz zuordnen</string>
+    <string name="allocation_add_cancel">Abbrechen</string>
+    <string name="allocation_rest_free">%1$s frei</string>
+    <string name="allocation_rest_none">Rest 0</string>
+    <string name="allocation_overbooked">Überbucht</string>
+    <string name="allocation_save">Zuordnung speichern</string>
+    <string name="allocation_open">Zuordnen</string>
+    <string name="allocation_model_note">Aufträge und Einsätze werden getrennt gegen die Eintragsmenge abgeglichen. Ein Rest ist erlaubt; mehr als vorhanden nicht.</string>
+    <string name="allocation_error_forbidden">Zuordnen darf nur, wer die Logistik-Rolle hat.</string>
+    <string name="allocation_error_amount">Der Server hat die Menge abgelehnt — der Eintrag hat sich vermutlich geändert. Schließe die Zuordnung und öffne sie neu.</string>
+    <plurals name="allocation_error_partial">
+        <item quantity="one">Eine Änderung wurde gespeichert, dann brach es ab. Die Liste oben zeigt den Stand des Servers.</item>
+        <item quantity="other">%1$d Änderungen wurden gespeichert, dann brach es ab. Die Liste oben zeigt den Stand des Servers.</item>
+    </plurals>
 </resources>

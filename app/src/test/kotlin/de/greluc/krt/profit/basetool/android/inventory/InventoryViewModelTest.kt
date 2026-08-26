@@ -7,6 +7,8 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
@@ -143,6 +145,21 @@ class InventoryViewModelTest {
 
         override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
             ApiResult.Success(terminalAnswer)
+
+        override suspend fun setAllocation(
+            entryId: String,
+            kind: AllocationKind,
+            targetId: String,
+            amount: String,
+            existing: Boolean,
+            version: Long?,
+        ): ApiResult<InventoryEntry> = error("not used")
+
+        override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
+            ApiResult.Success(emptyList())
+
+        override suspend fun missionTargets(): ApiResult<List<AllocationTarget>> =
+            ApiResult.Success(emptyList())
     }
 
     private fun group(

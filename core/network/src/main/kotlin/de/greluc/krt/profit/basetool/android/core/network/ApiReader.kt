@@ -342,7 +342,13 @@ class ApiReader(
     ): ApiResult<T> = delete(path, emptyList(), deserializer)
 
     /**
-     * Builds and runs one body-carrying request.
+     * Builds and runs one body-carrying request under any verb.
+     *
+     * The escape hatch behind [post] and [put], public because this API uses two verbs they do not
+     * cover: `PATCH`, and a `DELETE` that carries a body — the inventory's allocation endpoint
+     * names its target in the payload rather than in the path, so removing one is a DELETE with
+     * `{field, targetId, version}`. Reach for the named methods first; this is for the verbs that
+     * have no named method rather than a second way to POST.
      *
      * @param B the request type
      * @param T the response type
@@ -353,7 +359,7 @@ class ApiReader(
      * @param deserializer the serializer for [T]
      * @return the parsed answer, or the classified failure
      */
-    private suspend fun <B, T> send(
+    suspend fun <B, T> send(
         path: String,
         method: String,
         body: B,

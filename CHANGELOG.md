@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+
+- **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
+  Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als
+  Zahl daneben und wird rot, sobald mehr zugesagt ist als vorhanden. Persönliche Einträge tragen
+  keine Zuordnung.
 - **Der Hangar kann eine Fleetview-Datei importieren.** Hinter dem neuen `⋮` oben rechts: „Fleetview-Import"
   nimmt eine JSON-Datei oder eingefügten Text und legt die Schiffe an; danach steht da, wie viele
   importiert wurden, wie viele schon im Hangar waren und welche der Server nicht erkannt hat.

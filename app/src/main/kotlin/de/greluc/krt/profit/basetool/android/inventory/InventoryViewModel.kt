@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.inventory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
@@ -121,6 +123,7 @@ data class InventoryState(
     val withStockOnly: Boolean = false,
     val openedStacks: Map<String, EntriesPhase> = emptyMap(),
     val online: Boolean = true,
+    val allocation: AllocationSheetState? = null,
 ) {
     /**
      * The rows the tree actually shows.
@@ -410,6 +413,203 @@ class InventoryViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Opens the Zuordnung sheet on one entry.
+     *
+     * The targets are fetched when the sheet opens rather than with the list: they are two lookups
+     * a member who never splits a stack should not pay for on every Lager load.
+     *
+     * @param entry the stock entry to split.
+     */
+    fun onAllocate(entry: InventoryEntry) {
+        mutableState.value =
+            mutableState.value.copy(
+                allocation =
+                    AllocationSheetState(
+                        entry = entry,
+                        jobOrders = entry.jobOrderAllocations.toRows(),
+                        missions = entry.missionAllocations.toRows(),
+                    ),
+            )
+        viewModelScope.launch {
+            val orders = source.orderTargets()
+            val missions = source.missionTargets()
+            val open = mutableState.value.allocation ?: return@launch
+            mutableState.value =
+                mutableState.value.copy(
+                    allocation =
+                        open.copy(
+                            orderTargets = (orders as? ApiResult.Success)?.value.orEmpty(),
+                            missionTargets = (missions as? ApiResult.Success)?.value.orEmpty(),
+                        ),
+                )
+        }
+    }
+
+    /** Closes it, discarding anything not saved. */
+    fun onAllocationDismissed() {
+        mutableState.value = mutableState.value.copy(allocation = null)
+    }
+
+    /**
+     * Records a typed amount.
+     *
+     * @param kind which split.
+     * @param targetId the row.
+     * @param amount what was typed.
+     */
+    fun onAllocationAmount(
+        kind: AllocationKind,
+        targetId: String,
+        amount: String,
+    ) {
+        editAllocation(kind, targetId) { it.copy(amount = amount.filter { c -> c.isDigit() || c == '.' }) }
+    }
+
+    /**
+     * Steps a row up or down.
+     *
+     * @param kind which split.
+     * @param targetId the row.
+     * @param by `+1` or `-1`.
+     */
+    fun onAllocationStep(
+        kind: AllocationKind,
+        targetId: String,
+        by: Int,
+    ) {
+        editAllocation(kind, targetId) { row ->
+            val current = row.amount.trim().toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO
+            val next = (current + by.toBigDecimal()).coerceAtLeast(java.math.BigDecimal.ZERO)
+            row.copy(amount = next.stripTrailingZeros().toPlainString())
+        }
+    }
+
+    /**
+     * Adds a target to a split, at zero.
+     *
+     * At zero rather than at the whole rest: the member picked what to promise to, not how much,
+     * and a row that arrives pre-filled with everything left is one tap away from a split nobody
+     * intended.
+     *
+     * @param kind which split.
+     * @param target what was picked.
+     */
+    fun onAllocationAdd(
+        kind: AllocationKind,
+        target: AllocationTarget,
+    ) {
+        val open = mutableState.value.allocation ?: return
+        val row =
+            AllocationRow(
+                targetId = target.id,
+                label = target.label,
+                subtitle = target.subtitle,
+                amount = "0",
+                serverAmount = null,
+            )
+        val next =
+            if (kind == AllocationKind.JOB_ORDER) {
+                open.copy(jobOrders = open.jobOrders + row, picking = null)
+            } else {
+                open.copy(missions = open.missions + row, picking = null)
+            }
+        mutableState.value = mutableState.value.copy(allocation = next)
+    }
+
+    /**
+     * Opens or closes an add picker.
+     *
+     * @param kind the split whose picker to open, or `null` to close.
+     */
+    fun onAllocationPick(kind: AllocationKind?) {
+        val open = mutableState.value.allocation ?: return
+        mutableState.value = mutableState.value.copy(allocation = open.copy(picking = kind))
+    }
+
+    /**
+     * Writes every changed row, in sequence.
+     *
+     * Sequential and not parallel, because each write returns a new optimistic-locking version that
+     * the next one has to carry — firing them together would make all but the first collide with
+     * their own predecessor.
+     *
+     * A failure stops the sequence rather than pushing on. What already landed stays landed, and
+     * the count is reported: "three of five were written" is a fact the member needs, and pretending
+     * the save was atomic would leave them re-entering changes that are already in.
+     */
+    fun onAllocationSave() {
+        val open = mutableState.value.allocation ?: return
+        if (!open.submittable) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(allocation = open.copy(saving = true, error = null, partial = 0))
+        viewModelScope.launch {
+            var entry = open.entry
+            var written = 0
+            for ((kind, row) in open.pending) {
+                val result =
+                    source.setAllocation(
+                        entryId = entry.id,
+                        kind = kind,
+                        targetId = row.targetId,
+                        amount = row.amount,
+                        existing = row.existsOnServer,
+                        version = entry.version,
+                    )
+                when (result) {
+                    is ApiResult.Success -> {
+                        entry = result.value
+                        written++
+                    }
+
+                    is ApiResult.Failure -> {
+                        mutableState.value =
+                            mutableState.value.copy(
+                                allocation =
+                                    open.copy(
+                                        entry = entry,
+                                        jobOrders = entry.jobOrderAllocations.toRows(),
+                                        missions = entry.missionAllocations.toRows(),
+                                        saving = false,
+                                        error = result.error,
+                                        partial = written,
+                                    ),
+                            )
+                        return@launch
+                    }
+                }
+            }
+            mutableState.value = mutableState.value.copy(allocation = null)
+            reload(keepRows = true)
+        }
+    }
+
+    /**
+     * Rewrites one row of the open sheet.
+     *
+     * @param kind which split.
+     * @param targetId the row.
+     * @param change what to make of it.
+     */
+    private fun editAllocation(
+        kind: AllocationKind,
+        targetId: String,
+        change: (AllocationRow) -> AllocationRow,
+    ) {
+        val open = mutableState.value.allocation ?: return
+        val edit = { rows: List<AllocationRow> ->
+            rows.map { if (it.targetId == targetId) change(it) else it }
+        }
+        val next =
+            if (kind == AllocationKind.JOB_ORDER) {
+                open.copy(jobOrders = edit(open.jobOrders), error = null)
+            } else {
+                open.copy(missions = edit(open.missions), error = null)
+            }
+        mutableState.value = mutableState.value.copy(allocation = next)
     }
 
     /**
