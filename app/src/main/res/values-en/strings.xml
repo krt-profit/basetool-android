@@ -624,12 +624,36 @@
     </plurals>
     <string name="hangar_actions">More actions</string>
     <string name="hangar_bulk_home_location">Set home location</string>
+    <string name="hangar_bulk_home_location_reason">One place for the whole fleet</string>
+    <string name="hangar_menu_reason_empty">No ships in the hangar</string>
+    <string name="hangar_menu_reason_offline">Not possible while offline</string>
     <string name="hangar_bulk_home_location_title">Home location for every ship</string>
-    <string name="hangar_bulk_home_location_apply">Set for all</string>
+    <plurals name="hangar_bulk_home_location_apply">
+        <item quantity="one">Apply to 1 ship</item>
+        <item quantity="other">Apply to %1$d ships</item>
+    </plurals>
+    <plurals name="hangar_bulk_home_location_scope">
+        <item quantity="one">Applies to the one ship in „Meine Schiffe“ — its existing place is overwritten.</item>
+        <item quantity="other">Applies to all %1$d ships in „Meine Schiffe“ — existing places are overwritten.</item>
+    </plurals>
+    <plurals name="hangar_bulk_home_location_done">
+        <item quantity="one">Home location set (1 ship).</item>
+        <item quantity="other">Home location set (%1$d ships).</item>
+    </plurals>
+    <string name="hangar_bulk_home_location_refused">The server refused it. Nothing was changed — the place you picked is still there.</string>
     <string name="hangar_clear">Empty the hangar</string>
+    <string name="hangar_clear_title">Empty the hangar?</string>
+    <plurals name="hangar_clear_confirm">
+        <item quantity="one">Delete the one ship</item>
+        <item quantity="other">Delete all %1$d ships</item>
+    </plurals>
+    <plurals name="hangar_clear_done">
+        <item quantity="one">Hangar emptied (1 ship).</item>
+        <item quantity="other">Hangar emptied (%1$d ships).</item>
+    </plurals>
     <plurals name="hangar_clear_body">
-        <item quantity="one">Delete the one ship? This cannot be undone.</item>
-        <item quantity="other">Delete all %1$d ships? This cannot be undone.</item>
+        <item quantity="one">The one ship is removed from „Meine Schiffe“. No undo in the app — recovery only through another Fleetview import. Einsätze, Aufträge and Lager are untouched.</item>
+        <item quantity="other">All %1$d ships are removed from „Meine Schiffe“. No undo in the app — recovery only through another Fleetview import. Einsätze, Aufträge and Lager are untouched.</item>
     </plurals>
     <string name="hangar_field_fitted_hint">Fitted and ready for missions</string>
     <string name="hangar_field_fitted">Fitted</string>

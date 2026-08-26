@@ -645,12 +645,36 @@
     </plurals>
     <string name="hangar_actions">Weitere Aktionen</string>
     <string name="hangar_bulk_home_location">Home-Location setzen</string>
+    <string name="hangar_bulk_home_location_reason">Ein Ort für die gesamte Flotte</string>
+    <string name="hangar_menu_reason_empty">Keine Schiffe im Hangar</string>
+    <string name="hangar_menu_reason_offline">Ohne Verbindung nicht möglich</string>
     <string name="hangar_bulk_home_location_title">Home-Location für alle Schiffe</string>
-    <string name="hangar_bulk_home_location_apply">Für alle setzen</string>
+    <plurals name="hangar_bulk_home_location_apply">
+        <item quantity="one">Für 1 Schiff übernehmen</item>
+        <item quantity="other">Für %1$d Schiffe übernehmen</item>
+    </plurals>
+    <plurals name="hangar_bulk_home_location_scope">
+        <item quantity="one">Gilt für das eine Schiff in „Meine Schiffe“ — der vorhandene Ort wird überschrieben.</item>
+        <item quantity="other">Gilt für alle %1$d Schiffe in „Meine Schiffe“ — vorhandene Orte werden überschrieben.</item>
+    </plurals>
+    <plurals name="hangar_bulk_home_location_done">
+        <item quantity="one">Home-Location gesetzt (1 Schiff).</item>
+        <item quantity="other">Home-Location gesetzt (%1$d Schiffe).</item>
+    </plurals>
+    <string name="hangar_bulk_home_location_refused">Der Server hat das Setzen abgelehnt. Nichts wurde geändert — dein gewählter Ort steht noch.</string>
     <string name="hangar_clear">Hangar leeren</string>
+    <string name="hangar_clear_title">Hangar leeren?</string>
+    <plurals name="hangar_clear_confirm">
+        <item quantity="one">Das eine Schiff löschen</item>
+        <item quantity="other">Alle %1$d Schiffe löschen</item>
+    </plurals>
+    <plurals name="hangar_clear_done">
+        <item quantity="one">Hangar geleert (1 Schiff).</item>
+        <item quantity="other">Hangar geleert (%1$d Schiffe).</item>
+    </plurals>
     <plurals name="hangar_clear_body">
-        <item quantity="one">Das eine Schiff löschen? Das lässt sich nicht rückgängig machen.</item>
-        <item quantity="other">Alle %1$d Schiffe löschen? Das lässt sich nicht rückgängig machen.</item>
+        <item quantity="one">Das eine Schiff wird aus „Meine Schiffe“ gelöscht. Kein Undo in der App — Wiederherstellung nur über erneuten Fleetview-Import. Einsätze, Aufträge und Lager bleiben unberührt.</item>
+        <item quantity="other">Alle %1$d Schiffe werden aus „Meine Schiffe“ gelöscht. Kein Undo in der App — Wiederherstellung nur über erneuten Fleetview-Import. Einsätze, Aufträge und Lager bleiben unberührt.</item>
     </plurals>
     <string name="hangar_field_fitted_hint">Ausgerüstet und startklar für Einsätze</string>
     <string name="hangar_field_fitted">Fitted</string>
@@ -808,8 +832,8 @@
     <string name="board_privacy_note">Übergabe &amp; Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse.</string>
     <string name="board_new_offer">Angebot erstellen</string>
     <string name="board_new_request">Gesuch erstellen</string>
-    <string name="board_new_offer_hint">Org-weit sichtbar · Interessenten melden sich über „Ich kann liefern"</string>
-    <string name="board_new_request_hint">Org-weit sichtbar · Anbieter melden sich über „Ich kann liefern"</string>
+    <string name="board_new_offer_hint">Org-weit sichtbar · Interessenten melden sich über „Ich kann liefern“</string>
+    <string name="board_new_request_hint">Org-weit sichtbar · Anbieter melden sich über „Ich kann liefern“</string>
     <string name="board_signal_on">Ich kann liefern</string>
     <string name="board_signal_off">Zusage zurücknehmen</string>
     <string name="board_withdraw">Zurückziehen</string>

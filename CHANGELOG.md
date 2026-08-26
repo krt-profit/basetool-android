@@ -36,7 +36,9 @@
   importiert wurden, wie viele schon im Hangar waren und welche der Server nicht erkannt hat.
   Erkannt werden CCU-Game-Fleetview, HangarXPLOR-Shiplist und Fleetyards-JSON.
 - **Zwei weitere Hangar-Aktionen im selben Menü:** „Home-Location setzen" ändert den Ort für die
-  ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe — mit Rückfrage, die die Anzahl nennt.
+  ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe. Beide sagen jetzt vorher, wie viele
+  Schiffe betroffen sind, und was nicht angetastet wird; nach dem Leeren steht da, wie viele
+  gelöscht wurden. Einträge, die gerade nicht gehen, bleiben im Menü stehen und nennen den Grund.
 - **„Alle Org-Einheiten" im Umschalter.** Wer mehreren Staffeln oder einem Spezialkommando angehört,
   kann jetzt alle auf einmal sehen statt nur eine — die Wahl bleibt über einen Neustart erhalten.
   Der Umschalter benennt außerdem, um was für eine Einheit es geht („IRI — IRIDIUM", „SK Vanguard"),

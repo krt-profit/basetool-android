@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,6 +40,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
@@ -52,6 +54,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
@@ -69,6 +72,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTabl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableCell
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableColumn
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
@@ -76,6 +80,7 @@ import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the hangar list. */
@@ -637,6 +642,12 @@ fun HangarRoute(
     // which is why none of them belongs beside a ship.
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val actionsLabel = stringResource(R.string.hangar_actions)
+    // A dimmed row without a reason reads as a broken menu (design ch. 08, artboard 5).
+    // Two things can dim these entries and they are not the same answer.
+    val offlineReason = if (state.online) null else stringResource(R.string.hangar_menu_reason_offline)
+    val fleetReason =
+        offlineReason
+            ?: stringResource(R.string.hangar_menu_reason_empty).takeIf { state.ships.isEmpty() }
     val bulkLabel = stringResource(R.string.hangar_bulk_home_location)
     val importLabel = stringResource(R.string.fleet_import_title)
     val clearLabel = stringResource(R.string.hangar_clear)
@@ -650,24 +661,33 @@ fun HangarRoute(
                 onExpandedChange = { menuOpen = it },
                 items =
                     listOf(
+                        // The order is the artboards' own: Home-Location, Hangar leeren, Import.
+                        // Destructive in the middle rather than last looks wrong by habit and is
+                        // what chapters 08.4 and 08.5 both draw, so it is followed rather than
+                        // tidied.
                         KrtMenuItem(
                             label = bulkLabel,
                             iconRes = DesignR.drawable.ic_krt_map_pin,
+                            // The one entry that carries its purpose even when it can be used: a
+                            // member has to know it means the WHOLE fleet before tapping it.
+                            reason = fleetReason ?: stringResource(R.string.hangar_bulk_home_location_reason),
                             enabled = state.online && state.ships.isNotEmpty(),
                             onClick = viewModel::onBulkHomeLocationRequested,
-                        ),
-                        KrtMenuItem(
-                            label = importLabel,
-                            iconRes = DesignR.drawable.ic_krt_upload,
-                            enabled = state.online,
-                            onClick = onOpenImport,
                         ),
                         KrtMenuItem(
                             label = clearLabel,
                             iconRes = DesignR.drawable.ic_krt_trash,
                             danger = true,
+                            reason = fleetReason,
                             enabled = state.online && state.ships.isNotEmpty(),
                             onClick = viewModel::onClearRequested,
+                        ),
+                        KrtMenuItem(
+                            label = importLabel,
+                            iconRes = DesignR.drawable.ic_krt_upload,
+                            reason = offlineReason,
+                            enabled = state.online,
+                            onClick = onOpenImport,
                         ),
                     ),
             )
@@ -717,10 +737,45 @@ fun HangarRoute(
             onDismiss = viewModel::onClearDismissed,
         )
     }
+    state.homeLocationSet?.let { affected ->
+        LaunchedEffect(affected) {
+            delay(CLEARED_TOAST_MS)
+            viewModel.onHomeLocationSetAcknowledged()
+        }
+        Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = Alignment.BottomCenter) {
+            KrtToast(
+                title = stringResource(R.string.hangar_bulk_home_location),
+                message = pluralStringResource(R.plurals.hangar_bulk_home_location_done, affected, affected),
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.lg)
+                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+            )
+        }
+    }
+    state.cleared?.let { emptied ->
+        // Success is a toast, not a step: nothing is left to read afterwards, and the empty state
+        // behind it is the rest of the answer (design ch. 08, artboard 6).
+        LaunchedEffect(emptied) {
+            delay(CLEARED_TOAST_MS)
+            viewModel.onClearedAcknowledged()
+        }
+        Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = Alignment.BottomCenter) {
+            KrtToast(
+                title = stringResource(R.string.hangar_clear_title),
+                message = pluralStringResource(R.plurals.hangar_clear_done, emptied, emptied),
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.lg)
+                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+            )
+        }
+    }
     state.bulkHomeLocation?.let { bulk ->
         BulkHomeLocationSheet(
             bulk = bulk,
             places = state.places,
+            count = state.ships.size,
             onChosen = viewModel::onBulkHomeLocationChosen,
             onApply = viewModel::onBulkHomeLocationApplied,
             onDismiss = viewModel::onBulkHomeLocationDismissed,
@@ -744,9 +799,15 @@ private fun HangarClearModal(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Three guards, none of them a typing hurdle (design ch. 08, artboard 6, which resolves 08.1's
+    // „type-safe" against 08.3): the menu entry is already red, the modal names the count, the
+    // consequence AND the way back, and the confirm repeats the count. Chapter 02 §7 reserves the
+    // typing hurdle for irreversible admin actions on organisation-wide data — a personal hangar is
+    // the member's own and comes back from another import, and spending the hurdle here would blunt
+    // it where it is meant to bite.
     KrtModal(
-        title = stringResource(R.string.hangar_clear),
-        confirmText = stringResource(R.string.hangar_clear),
+        title = stringResource(R.string.hangar_clear_title),
+        confirmText = pluralStringResource(R.plurals.hangar_clear_confirm, count, count),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         tone = KrtModalTone.Danger,
@@ -770,6 +831,8 @@ private fun HangarClearModal(
  *
  * @param bulk what the sheet holds.
  * @param places the org's home locations.
+ * @param count how many ships it would touch — the length of the loaded list, which is where the
+ *   figure comes from; there is no API field for it (design ch. 08, artboard 10).
  * @param onChosen a place was picked.
  * @param onApply the CTA was pressed.
  * @param onDismiss the sheet was closed.
@@ -778,6 +841,7 @@ private fun HangarClearModal(
 private fun BulkHomeLocationSheet(
     bulk: BulkHomeLocation,
     places: List<HomeLocation>,
+    count: Int,
     onChosen: (HomeLocation) -> Unit,
     onApply: () -> Unit,
     onDismiss: () -> Unit,
@@ -805,6 +869,17 @@ private fun BulkHomeLocationSheet(
                 selectedValue = bulk.place?.id,
                 enabled = !bulk.saving,
             )
+            // The scope is stated here rather than behind a confirmation dialog. Nothing is lost —
+            // the write sets a location and can be repeated at will — so a second confirmation on
+            // top of a sheet would be a ceremony without a risk (design ch. 08, artboard 10).
+            Text(
+                text = pluralStringResource(R.plurals.hangar_bulk_home_location_scope, count, count),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+            bulk.error?.let {
+                KrtFieldError(text = stringResource(R.string.hangar_bulk_home_location_refused))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
@@ -812,9 +887,11 @@ private fun BulkHomeLocationSheet(
                     enabled = !bulk.saving,
                 )
                 KrtCtaButton(
-                    text = stringResource(R.string.hangar_bulk_home_location_apply),
+                    text = pluralStringResource(R.plurals.hangar_bulk_home_location_apply, count, count),
                     onClick = onApply,
-                    iconRes = DesignR.drawable.ic_krt_save,
+                    // The place marker, not the disk: the artboard's CTA carries the glyph of the
+                    // thing being set rather than the generic act of saving (design ch. 08, 7–10).
+                    iconRes = DesignR.drawable.ic_krt_map_pin,
                     enabled = bulk.place != null && !bulk.saving,
                     modifier = Modifier.testTag(HANGAR_BULK_APPLY_TAG),
                 )
@@ -856,3 +933,6 @@ const val HANGAR_BULK_TAG = "hangar-bulk-home-location"
 
 /** Test handle for its apply button. */
 const val HANGAR_BULK_APPLY_TAG = "hangar-bulk-apply"
+
+/** How long the "hangar emptied" confirmation stands before it goes by itself. */
+private const val CLEARED_TOAST_MS = 4_000L

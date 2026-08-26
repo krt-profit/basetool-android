@@ -176,6 +176,62 @@ line saying how many more there are.
 - [x] The overflow line states the remainder (`ShipEditorSheet`, plural resource).
 - [x] A hull without an id never reaches the picker (`HangarRepositoryTest`).
 
+### REQ-APP-HANGAR-010 — The overflow says what each entry does, and why one cannot be used
+
+The `⋮` opens a 268 dp dropdown right-aligned under the bar — on the phone as on the tablet, because
+three entries do not justify a bottom sheet. The order is the artboards' own: **Home-Location
+setzen, Hangar leeren, Import** (design ch. 08, artboards 4 and 5).
+
+Every entry leads with an 18 dp glyph in its own tint. **„Hangar leeren" is red in the menu**, not
+only in the modal it opens: the colour is the warning and the modal is the confirmation, and red
+appearing first at the second step would be a surprise where there should be none.
+
+**An entry that cannot be used stays.** It recedes to 45 % and gains a line saying why — „Keine
+Schiffe im Hangar", „Ohne Verbindung nicht möglich". A menu that changes shape between openings
+teaches a member nothing, and a dimmed row without a reason looks broken. Home-Location carries a
+line even when it *can* be used, because „Ein Ort für die gesamte Flotte" is the fact a member needs
+before tapping it.
+
+An entry the caller lacks the **grant** for is drawn the same way plus a lock, and answers on tap
+with the role's name (`REQ-APP-AUTH-013`) — never hidden.
+
+---
+
+### REQ-APP-HANGAR-011 — Emptying the hangar is guarded three times, and none of them is a typing hurdle
+
+Design ch. 08, artboard 6 resolves the contradiction between 08.1 („type-safe") and 08.3: the danger
+modal names the **count**, and there is **no** typing hurdle. Chapter 02 §7 reserves that hurdle for
+irreversible admin actions on organisation-wide data; a personal hangar is the member's own and
+comes back from another Fleetview import, so spending the hurdle here would blunt it where it is
+meant to bite.
+
+What guards it instead is three things in a row: the menu entry is already red, the modal names the
+count **and** the consequence **and** the way back („Wiederherstellung nur über erneuten
+Fleetview-Import. Einsätze, Aufträge und Lager bleiben unberührt."), and the confirm repeats the
+count („Alle 4 Schiffe löschen").
+
+The `DELETE` waits for the server. On success the app says **how many went** — an emptied hangar and
+a hangar that was always empty look identical, so the count is the only thing that distinguishes "it
+worked" from "nothing happened".
+
+---
+
+### REQ-APP-HANGAR-012 — The bulk home location states its scope instead of asking again
+
+The sheet's CTA names the count („Für 4 Schiffe übernehmen") and a line under the picker states what
+that means: it applies to every ship in „Meine Schiffe" and overwrites the places they have. The
+figure is the length of the loaded list; there is no API field for it.
+
+**No confirmation dialog.** Nothing is lost — the write sets a location and can be repeated at will
+— so a second confirmation stacked on a sheet would be ceremony without a risk (design ch. 08,
+artboard 10).
+
+**A refusal keeps the sheet and the picked place.** Nothing was written, and re-picking after a
+refusal charges the member for the server's answer. Success closes the sheet and says how many ships
+it touched.
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No FAB, no overflow, no import.** Adding, editing, deleting, "Home-Location setzen", "Hangar

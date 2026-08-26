@@ -139,6 +139,11 @@ sealed interface ShipEditor {
  * @property refreshing whether a pull-to-refresh is running over rows already on screen
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property clearRequested whether "Hangar leeren" is waiting on its danger modal
+ * @property homeLocationSet how many ships a just-finished bulk home-location write touched,
+ *   until it is acknowledged
+ * @property cleared how many ships a just-finished wipe removed, until it is acknowledged. An
+ *   emptied hangar and a hangar that was always empty look identical, so the count is the only
+ *   thing that says the write landed (design ch. 08, artboard 6)
  * @property bulkHomeLocation the open bulk home-location sheet, or `null`
  */
 data class HangarState(
@@ -160,6 +165,8 @@ data class HangarState(
     val places: List<HomeLocation> = emptyList(),
     val pendingDelete: Ship? = null,
     val clearRequested: Boolean = false,
+    val cleared: Int? = null,
+    val homeLocationSet: Int? = null,
     val bulkHomeLocation: BulkHomeLocation? = null,
     val deleting: Boolean = false,
     val lastFailure: ApiError? = null,
@@ -617,6 +624,8 @@ class HangarViewModel(
         if (!mutableState.value.online) {
             return
         }
+        // Counted before the write, because afterwards the list is empty and the number is gone.
+        val emptied = mutableState.value.ships.size
         mutableState.value = mutableState.value.copy(deleting = true)
         viewModelScope.launch {
             val result = source.clearHangar()
@@ -625,11 +634,25 @@ class HangarViewModel(
                     clearRequested = false,
                     deleting = false,
                     lastFailure = (result as? ApiResult.Failure)?.error,
+                    // An emptied hangar and a hangar that was always empty look identical, so the
+                    // one thing that distinguishes "it worked" from "nothing happened" is being
+                    // told how many went (design ch. 08, artboard 6).
+                    cleared = (result as? ApiResult.Success)?.let { emptied },
                 )
             if (result is ApiResult.Success) {
                 onRefresh()
             }
         }
+    }
+
+    /** Takes the "home location set" confirmation off screen once it has been read. */
+    fun onHomeLocationSetAcknowledged() {
+        mutableState.value = mutableState.value.copy(homeLocationSet = null)
+    }
+
+    /** Takes the "hangar emptied" confirmation off screen once it has been read. */
+    fun onClearedAcknowledged() {
+        mutableState.value = mutableState.value.copy(cleared = null)
     }
 
     /** Opens the bulk home-location sheet. */
@@ -659,17 +682,25 @@ class HangarViewModel(
         if (place == null || bulk.saving || !mutableState.value.online) {
             return
         }
-        mutableState.value = mutableState.value.copy(bulkHomeLocation = bulk.copy(saving = true))
+        val affected = mutableState.value.ships.size
+        mutableState.value =
+            mutableState.value.copy(bulkHomeLocation = bulk.copy(saving = true, error = null))
         viewModelScope.launch {
             when (val result = source.setHomeLocationForAll(place.id)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(bulkHomeLocation = null)
+                    mutableState.value =
+                        mutableState.value.copy(bulkHomeLocation = null, homeLocationSet = affected)
                     onRefresh()
                 }
 
                 is ApiResult.Failure -> {
+                    // The sheet stays, and so does the picked place. Nothing was written, and a
+                    // member who has to re-pick after a refusal is being charged for the server's
+                    // answer (design ch. 08, artboard 10).
                     mutableState.value =
-                        mutableState.value.copy(bulkHomeLocation = null, lastFailure = result.error)
+                        mutableState.value.copy(
+                            bulkHomeLocation = bulk.copy(saving = false, error = result.error),
+                        )
                 }
             }
         }
@@ -754,4 +785,5 @@ class HangarViewModel(
 data class BulkHomeLocation(
     val place: HomeLocation? = null,
     val saving: Boolean = false,
+    val error: ApiError? = null,
 )
