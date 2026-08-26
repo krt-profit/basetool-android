@@ -26,6 +26,10 @@
 
     <string name="more_section_secondary">Secondary targets</string>
     <string name="logout">Sign out</string>
+    <string name="logout_confirm_title">Sign out?</string>
+    <string name="logout_confirm_body">Ends the session and deletes the stored sign-in key from this device. Signing back in goes through the sign-in form in the browser again.</string>
+    <string name="logout_confirm_action">Sign out now</string>
+    <string name="logout_confirm_cancel">Cancel</string>
 
     <string name="login_offline_title">No connection</string>
     <string name="login_offline_retry">Reconnect</string>

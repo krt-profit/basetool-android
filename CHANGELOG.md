@@ -4,6 +4,21 @@
 
 ### Added
 
+### Changed
+
+- **„Abmelden" in den Einstellungen fragt jetzt nach.** Ein Danger-Dialog nennt, was es kostet: Die
+  Sitzung endet, der gespeicherte Anmelde-Schlüssel wird vom Gerät gelöscht, und die nächste
+  Anmeldung läuft wieder über das Anmeldeformular im Browser. Auf den Sperr- und Freigabe-Bildschirmen
+  bleibt „Abmelden" absichtlich ohne Rückfrage — dort ist es der einzige Weg weiter.
+
+### Removed
+
+- **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
+  gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
+  Er kommt zurück, wenn die Ansicht wirklich fertig ist.
+
+### Fixed
+
 - **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
   Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
   alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf

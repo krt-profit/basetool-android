@@ -35,6 +35,12 @@
     <!-- Session -->
     <string name="more_section_secondary">Sekundärziele</string>
     <string name="logout">Abmelden</string>
+    <!-- Sign-out confirmation. Danger-tone modal copy names the consequence instead of asking
+         a yes/no question: the stored key is destroyed, so the way back is the full browser flow. -->
+    <string name="logout_confirm_title">Abmelden?</string>
+    <string name="logout_confirm_body">Beendet die Sitzung und löscht den gespeicherten Anmelde-Schlüssel von diesem Gerät. Die nächste Anmeldung läuft wieder über das Anmeldeformular im Browser.</string>
+    <string name="logout_confirm_action">Jetzt abmelden</string>
+    <string name="logout_confirm_cancel">Abbrechen</string>
 
     <!-- Offline state -->
     <string name="login_offline_title">Keine Verbindung</string>
