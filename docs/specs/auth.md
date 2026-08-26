@@ -744,7 +744,10 @@ on that row's org unit*; the app has the holder, the org unit and the caller's g
 cases are decided locally. Where it cannot know, the control stays fully enabled and the refusal is
 reported in the app's own words.
 
-**The permission list is a hint, never a gate.** The server remains the only authority. A screen
+**The permission list is a hint, never a gate.** The server remains the only authority — its
+org-unit scoping was measured against a two-of-each fixture on 2026-08-26 and holds, including
+against a spoofed `X-Active-Org-Unit-Id`
+([`docs/TENANCY_VERIFICATION.md`](../TENANCY_VERIFICATION.md)). A screen
 that treats a locally computed permission as sufficient to skip a check, or that hides a refusal it
 did not predict, is a defect. The list is re-read when the app resumes, so a role granted while the
 app is open takes effect without a sign-out.
