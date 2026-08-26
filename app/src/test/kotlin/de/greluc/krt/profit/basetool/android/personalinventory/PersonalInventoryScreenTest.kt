@@ -327,10 +327,10 @@ class PersonalInventoryScreenTest {
         }
 
         compose.onNodeWithText("Medpens, neu benannt").assertIsDisplayed()
-        compose.onAllNodesWithText(
-            "Jemand anderes hat diesen Eintrag inzwischen geändert. Deine Eingabe bleibt stehen — " +
-                "lade neu und speichere erneut.",
-        ).assertCountEquals(1)
+        // The short line, not the dialog's sentence. The editor itself renders only this; the
+        // conflict dialog lives at the host, so the long wording appearing here would mean the two
+        // had started saying the same thing twice under one another.
+        compose.onAllNodesWithText("Nicht gespeichert — gleichzeitig geändert.").assertCountEquals(1)
     }
 
     @Test

@@ -81,6 +81,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
@@ -816,6 +817,15 @@ fun HangarRoute(
     )
 
     (state.editor as? ShipEditor.Open)?.let { editor ->
+        // Design ch. 14's conflict dialog: a refused save must not be a line under a
+        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
+        ConflictOn(
+            error = editor.error,
+            onReload = {
+                viewModel.onEditorDismissed()
+                viewModel.onRefresh()
+            },
+        )
         ShipEditorSheet(
             editor = editor,
             hulls = state.hulls,

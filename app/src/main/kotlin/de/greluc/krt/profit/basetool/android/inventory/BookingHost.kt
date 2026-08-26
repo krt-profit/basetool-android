@@ -43,6 +43,7 @@ fun BookingHost(viewModel: BookingViewModel) {
                     onNote = viewModel::onNoteChanged,
                     onSave = viewModel::onSave,
                     onDismiss = viewModel::onDismissed,
+                    onConflictReload = viewModel::onConflictReload,
                 ),
         )
     }

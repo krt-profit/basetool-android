@@ -540,8 +540,11 @@
     <string name="offline_banner_title">Offline</string>
     <string name="offline_writes_disabled">No network — editing is disabled until the connection is back.</string>
     <string name="value_absent">—</string>
-    <string name="conflict_title">Changed at the same time</string>
+    <string name="conflict_title">Conflict detected</string>
     <string name="conflict_body">Someone else changed this entry in the meantime. What you typed is still here — reload and save again.</string>
+    <!-- The line that stays under the form once the dialog is dismissed. -->
+    <string name="conflict_inline">Not saved — changed at the same time.</string>
+    <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
     <plurals name="personal_inventory_location_capped">

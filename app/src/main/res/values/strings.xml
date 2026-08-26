@@ -561,8 +561,11 @@
     <string name="offline_banner_title">Offline</string>
     <string name="offline_writes_disabled">Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.</string>
     <string name="value_absent">—</string>
-    <string name="conflict_title">Gleichzeitig geändert</string>
+    <string name="conflict_title">Konflikt festgestellt</string>
     <string name="conflict_body">Jemand anderes hat diesen Eintrag inzwischen geändert. Deine Eingabe bleibt stehen — lade neu und speichere erneut.</string>
+    <!-- The line that stays under the form once the dialog is dismissed. -->
+    <string name="conflict_inline">Nicht gespeichert — gleichzeitig geändert.</string>
+    <string name="conflict_cancel">Abbrechen</string>
     <string name="conflict_reload">Neu laden</string>
     <string name="write_failed">Konnte nicht gespeichert werden.</string>
     <plurals name="personal_inventory_location_capped">

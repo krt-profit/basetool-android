@@ -172,7 +172,7 @@ private fun EditorError(error: ApiError) {
     KrtFieldError(
         text =
             stringResource(
-                if (error is ApiError.OptimisticLock) R.string.conflict_body else R.string.write_failed,
+                if (error is ApiError.OptimisticLock) R.string.conflict_inline else R.string.write_failed,
             ),
     )
 }

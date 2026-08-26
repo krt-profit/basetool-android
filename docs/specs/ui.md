@@ -289,76 +289,53 @@ version, both already enforced here by construction) is exactly its mitigation.
 
 ---
 
-### REQ-APP-UI-008 — A refused save is an inline error, where the chapter draws a dialog
+### REQ-APP-UI-008 — A refused save raises the dialog chapter 14 draws
 
-Chapter 14 draws the 409 as a modal: **„KONFLIKT FESTGESTELLT"**, a sentence, and two actions —
-„ABBRECHEN" and „NEU LADEN UND ERNEUT VERSUCHEN". The app shows a `KrtFieldError` under the form,
-at all eleven write surfaces.
+Chapter 14 draws the 409 as a modal: **„KONFLIKT FESTGESTELLT"**, a sentence, and two actions. The
+app showed a `KrtFieldError` under the form at all eleven write surfaces — a line that is easy to
+miss under a scrolled sheet, and a member who misses it believes they saved.
 
-The presentation gap is real. A conflict means the save did not happen and the member must reload;
-an inline line under a scrolled sheet is easy to miss, and a member who misses it believes they
-saved.
+**Two of the chapter's sentences are not used, and neither is a translation question.**
 
-**The chapter's copy cannot be taken verbatim, and that is not a translation problem.** It makes two
-claims this app cannot honour:
+- *„…zwischenzeitlich von Rhea geändert"* — the 409 carries no identity. Naming somebody would be
+  inventing them.
+- *„Deine Eingaben bleiben in der Zwischenablage erhalten"* — nothing is put on the clipboard, and
+  making that sentence true would mean writing the member's input to the **system** clipboard, where
+  every other app on the device can read it. The wording used says what actually happens.
 
-- *„…zwischenzeitlich von Rhea geändert"* — the 409 carries no identity. The app does not know who
-  changed the record and would be inventing a name.
-- *„Deine Eingaben bleiben in der Zwischenablage erhalten"* — nothing is put on the clipboard. The
-  app's own wording, „Deine Eingabe bleibt stehen — lade neu und speichere erneut", describes what
-  actually happens. Making the artboard's sentence true would mean writing the member's input to the
-  **system** clipboard, which every other app on the device can read — a data-exposure change that
-  the privacy gate puts with the owner, not in a parity sweep.
+**The primary action reloads; it does not retry.** The chapter labels it „NEU LADEN UND ERNEUT
+VERSUCHEN". A button that re-sent the same values against the newer version would overwrite whatever
+the other person changed without either of them seeing it — the exact outcome optimistic locking
+exists to prevent. So it reloads, the member sees the current state, and they decide.
 
-**What the presentation change needs:** each of the eleven sites is a save inside a sheet or a
-detail form, and „neu laden und erneut versuchen" needs a reload path per surface that does not
-exist today — the sheets are opened with a snapshot and offer only dismiss. The modal itself is one
-composable; the eleven reload paths are the work.
+**The dialog lives at the host, not in the sheet.** Threading a reload down to each leaf that draws
+an error meant four parameters through composables with no business knowing about refresh; every one
+of those leaves reads the same screen-level state, so one `ConflictOn` per host covers them all and
+„Neu laden" can close the form and make the screen re-read.
 
-**Acceptance**
+**The form keeps a short line, not the dialog's sentence.** The first wiring rendered both, so the
+same two sentences sat under one another. The inline line is now „Nicht gespeichert — gleichzeitig
+geändert." — enough to explain the state a member returns to after dismissing the dialog, without
+repeating it.
 
-- [ ] **Open.** The modal presentation, with the app's accurate wording and a reload per write
-  surface. Not blocked by anything external — it is the largest single item chapter 14 leaves.
+**The Auftrag note is exempt.** Chapter 10 gives it a richer recovery — a refused note comes back as
+`rejectedNote` with „Meine Fassung übernehmen" — and a generic „Neu laden" over it would offer to
+throw away the very text that flow exists to preserve.
 
----
-
-### REQ-APP-UI-009 — Nothing truncates at font scale 1.3×
-
-Foundations ch. 01 states it as a hard rule: *„Must survive font scale 1.3× without truncation —
-never fix label widths (German compounds)."* It is the one rule in the whole handoff that no
-artboard can show, because every artboard is drawn at 1.0×.
-
-Setting the device to 1.3× found two failures at once, and both were invisible at 1.0×.
-
-**A shortcut lost its meaning.** „CHECK-IN NÄCHSTER EINSATZ" came out as „CHECK-IN NÄCHSTER EI…".
-The tile had `maxLines = 2`, which held at 1.0× and cut at 1.3×. The cap is gone: the tile has a
-minimum height and grows, and the pair share the taller one's height through `IntrinsicSize.Min` so
-a row of two does not read as two different components.
-
-**Filter chips broke inside the word.** „ABGEBROCHEN" rendered as „ABGEB ROCHE N" and
-„ABGESCHLOSSEN" as „ABG ESC HLO SSE N". A plain `Row` squeezes its last child, and a `Text` with no
-room breaks per character — which does not look like a layout out of room, it looks like corruption.
-
-Two changes, at two levels:
-
-- The chip rows are `FlowRow`, which is what this codebase already reaches for in the same
-  situation. Wrapping **by chip** keeps every filter both readable and reachable; horizontal
-  scrolling would keep it readable and hide half of it.
-- A chip's label is atomic — `maxLines = 1, softWrap = false` on the component. Callers lay chips
-  out so it never has to clip, and if one ever does, a clipped chip is a visible bug where a
-  character-broken one reads as a rendering fault.
-
-**The token layer needed nothing.** All nineteen Material 3 slots in the app's `darkColorScheme`
-match chapter 01's table exactly, checked value by value — including the two that carry the brand
-rule rather than a colour: `secondaryContainer` mapped to orange with black `on`, so every stock M3
-selection surface renders "orange background, black text" without a call site remembering to, and
-`surfaceTint = surface` so tonal elevation renders flat.
+**Dismissal is tracked by identity.** `ApiError.OptimisticLock` is a data class, so two separate
+refusals compare equal; a `remember(error)` key would treat the second as the first and a member who
+dismissed the dialog once would never see it again that session. The decision is a named function so
+the rule can be tested without going through two dialog windows.
 
 **Acceptance**
 
-- [x] Device-verified at `font_scale 1.3`: the shortcut wraps to three lines with no ellipsis,
-  Einsatz and Auftrag filters wrap whole words, Einstellungen holds.
-- [x] All nineteen M3 slots compared against the chapter's table; zero mismatches.
+- [x] Nine `ConflictOn` call sites cover all eleven refusal paths.
+- [x] The rule is pinned directly, including the case that matters: a **new** refusal equal to a
+  dismissed one is still raised (`ConflictModalTest`).
+- [x] Device-verified end to end against the test stack: an item was opened in „Mein Inventar", the
+  same record was changed through the API to move its version, and saving raised
+  „KONFLIKT FESTGESTELLT" with „ABBRECHEN" and „NEU LADEN". „Neu laden" closed the editor and the
+  list showed the other writer's value.
 
 ---
 

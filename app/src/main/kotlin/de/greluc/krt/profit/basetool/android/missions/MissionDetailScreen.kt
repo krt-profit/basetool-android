@@ -90,6 +90,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import kotlinx.coroutines.launch
@@ -160,6 +161,11 @@ fun MissionDetailScreen(
     // Bound so the smart cast below survives; `state.phase` is a property read and Kotlin will not
     // narrow it across the branch.
     val phase = state.phase
+    // Design ch. 14's conflict dialog, once for the screen rather than at each place an error
+    // is drawn: every one of them reads this same state, and a member must not be able to miss
+    // a refused save under a scrolled form.
+    ConflictOn(error = state.error, onReload = onRefresh)
+    state.joinSheet?.let { ConflictOn(error = it.error, onReload = onRefresh) }
     Column(modifier = modifier.fillMaxSize()) {
         when {
             detail != null -> {
@@ -414,7 +420,7 @@ private fun SignUpError(error: ApiError) {
         text =
             stringResource(
                 when (error) {
-                    is ApiError.OptimisticLock -> R.string.conflict_body
+                    is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.mission_detail_not_allowed
                     else -> R.string.write_failed
                 },

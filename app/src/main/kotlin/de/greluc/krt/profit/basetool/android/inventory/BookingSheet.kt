@@ -53,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTogg
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -169,13 +170,14 @@ fun BookingSheet(
                     text =
                         stringResource(
                             if (error is ApiError.OptimisticLock) {
-                                R.string.conflict_body
+                                R.string.conflict_inline
                             } else {
                                 R.string.write_failed
                             },
                         ),
                 )
             }
+            ConflictOn(error = state.error, onReload = callbacks.onConflictReload)
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
@@ -239,6 +241,7 @@ data class BookingCallbacks(
     val onNote: (String) -> Unit,
     val onSave: () -> Unit,
     val onDismiss: () -> Unit,
+    val onConflictReload: () -> Unit,
 )
 
 /**

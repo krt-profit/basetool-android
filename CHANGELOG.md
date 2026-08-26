@@ -19,6 +19,10 @@
 
 ### Changed
 
+- **Wenn ein Speichern abgelehnt wird, weil jemand anderes den Eintrag inzwischen geändert hat,
+  erscheint jetzt ein Hinweisfenster** statt einer leicht zu übersehenden Zeile unter dem Formular.
+  „Neu laden" holt den aktuellen Stand; deine Eingabe bleibt bis dahin stehen.
+
 - **Die Übersicht sieht aus wie entworfen:** Begrüßung in Orange und Versalien, Datum in Kurzform,
   die vier Schnellaktionen als 2×2-Raster mit ausgeschriebenen Beschriftungen („Einbuchen (Lager)"
   statt „Einbuchen"), eine ruhigere Statusmarkierung auf der Einsatzkarte und eine Zeitangabe unter

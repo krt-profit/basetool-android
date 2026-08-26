@@ -178,7 +178,7 @@ fun ShipEditorSheet(
                     text =
                         stringResource(
                             if (error is ApiError.OptimisticLock) {
-                                R.string.conflict_body
+                                R.string.conflict_inline
                             } else {
                                 R.string.write_failed
                             },

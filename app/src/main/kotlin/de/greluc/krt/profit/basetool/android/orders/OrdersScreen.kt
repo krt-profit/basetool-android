@@ -84,6 +84,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -681,6 +682,14 @@ fun OrderDetailScreen(
             ) {
                 OrderDetailBody(state = state, order = order, actions = actions)
             }
+            // Design ch. 14's conflict dialog -- but NOT for the note, which already has the
+            // richer recovery chapter 10 draws: a refused note comes back as `rejectedNote` with
+            // „Meine Fassung übernehmen", and a generic „Neu laden" over it would offer to throw
+            // away the very text that flow exists to preserve.
+            ConflictOn(
+                error = state.error?.takeIf { state.rejectedNote == null },
+                onReload = onRefresh,
+            )
             state.noteDraft?.let { draft ->
                 NoteSheet(draft = draft, state = state, actions = actions)
             }
@@ -995,7 +1004,7 @@ private fun WriteError(error: ApiError) {
         text =
             stringResource(
                 when (error) {
-                    is ApiError.OptimisticLock -> R.string.conflict_body
+                    is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.order_detail_not_allowed
                     else -> R.string.write_failed
                 },

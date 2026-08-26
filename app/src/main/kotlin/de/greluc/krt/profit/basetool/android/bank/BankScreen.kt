@@ -76,6 +76,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -304,6 +305,15 @@ fun BankAccountScreen(
     val phase = state.phase
     if (state.settingsOpen) {
         state.settings?.let { settings ->
+            // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and
+            // makes the account re-read rather than re-sending a value against a newer version.
+            ConflictOn(
+                error = state.error,
+                onReload = {
+                    actions.onDismiss()
+                    onRefresh()
+                },
+            )
             BankSettingsSheet(settings = settings, state = state, actions = actions)
         }
     }
@@ -716,7 +726,7 @@ private fun BankSettingsSheet(
                     text =
                         stringResource(
                             if (error is ApiError.OptimisticLock) {
-                                R.string.conflict_body
+                                R.string.conflict_inline
                             } else {
                                 R.string.write_failed
                             },

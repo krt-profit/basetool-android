@@ -79,6 +79,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.navigation.SelectionBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.DenialState
@@ -1019,6 +1020,15 @@ fun InventoryRoute(
     }
 
     state.allocation?.let { allocation ->
+        // Design ch. 14's conflict dialog: a refused save must not be a line under a
+        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
+        ConflictOn(
+            error = allocation.error,
+            onReload = {
+                viewModel.onAllocationDismissed()
+                viewModel.onRefresh()
+            },
+        )
         AllocationSheet(
             state = allocation,
             callbacks =

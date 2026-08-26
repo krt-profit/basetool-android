@@ -1072,6 +1072,38 @@ It also found three formatters the first sweep missed. That sweep grepped for
 „vor 6 Std." on the dashboard. A grep for the declaration finds declarations; a grep for
 `getRelativeTimeSpanString` finds the behaviour, and would have found all six.
 
+## The 409 dialog, closed (2026-08-26)
+
+Chapter 14's largest open item, and the one where the artboard's copy could not simply be typed in.
+
+Two of its sentences make claims the app cannot honour. It names the other editor („von Rhea") and
+the 409 carries no identity; it promises the input is on the clipboard, which would only become true
+by writing a member's data to the **system** clipboard, readable by every other app on the device.
+The app's existing wording was the accurate one, so the gap was presentation, not language.
+
+The chapter's button label is the more interesting of the two. „NEU LADEN UND ERNEUT VERSUCHEN",
+taken literally, is a button that re-sends the same values against the newer version — which
+overwrites whatever the other person changed without either of them seeing it, and is precisely the
+outcome the lock it just hit exists to prevent. It reloads and stops there.
+
+Three things about the build were decided by trying the obvious version first:
+
+- **Threading a reload into each leaf was wrong.** Four parameters through composables that have no
+  business knowing about refresh. Every one of those leaves reads the same screen-level error, so
+  the dialog belongs at the host — one line per screen, and „Neu laden" can close the form and make
+  the screen re-read.
+- **Rendering both the dialog and the inline line put the same two sentences under one another**,
+  which a screen test caught immediately. The form now keeps a short line, enough to explain the
+  state a member returns to after dismissing.
+- **Dismissal cannot be tracked by value.** `ApiError.OptimisticLock` is a data class, so two
+  refusals compare equal and a `remember(error)` would show the dialog once per session. The same
+  trap bit the test itself: `mutableStateOf` drops an assignment of an equal value, so the first
+  attempt at "a second refusal" could not even produce one.
+
+Device-verified the way a conflict actually happens: an item open in „Mein Inventar", the same
+record moved through the API, then save. „KONFLIKT FESTGESTELLT" appeared over the sheet, and
+„NEU LADEN" closed the editor and showed the other writer's value in the list.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.
