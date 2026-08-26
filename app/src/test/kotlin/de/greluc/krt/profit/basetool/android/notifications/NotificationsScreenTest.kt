@@ -7,8 +7,10 @@
 
 package de.greluc.krt.profit.basetool.android.notifications
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -126,8 +128,15 @@ class NotificationsScreenTest {
         compose.onNodeWithText("Neue Benachrichtigung").assertIsDisplayed()
     }
 
+    /**
+     * The count is not in the list any more — it is a chip in the bar (design ch. 07).
+     *
+     * Asserted as an absence rather than deleted, because the line it replaced was here for a
+     * reason: a member has to be told how many are unread. This pins that the answer is given
+     * once, in the bar, and does not quietly come back to the top of the list as well.
+     */
     @Test
-    fun `the unread count is stated above the list`() {
+    fun `the unread count is not restated inside the list`() {
         show(
             NotificationsState(
                 notifications = listOf(notification("n1")),
@@ -137,7 +146,7 @@ class NotificationsScreenTest {
             ),
         )
 
-        compose.onNodeWithText("3 neu").assertIsDisplayed()
+        compose.onAllNodesWithText("$UNREAD neu").assertCountEquals(0)
     }
 
     @Test

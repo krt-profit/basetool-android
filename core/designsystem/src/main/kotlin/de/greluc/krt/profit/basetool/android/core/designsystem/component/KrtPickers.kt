@@ -35,6 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
@@ -47,6 +49,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
@@ -56,11 +59,48 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 /** Width of the orange bar marking the currently selected option. */
 private val SELECTED_OPTION_BAR = 3.dp
 
-/** Maximum height of an open option list before it scrolls. */
-private val LISTBOX_MAX_HEIGHT = 280.dp
+/** Size of the combobox caret; the CSS paints a 12x8 chevron, square at 16 dp reads the same. */
+private val CARET_SIZE = 16.dp
 
 /** Edge length of the custom checkbox. */
 private val CHECKBOX_SIZE = 20.dp
+
+/**
+ * The listbox frame: left, right and bottom, but never the top.
+ *
+ * Compose borders are all-or-nothing, and the CSS is explicit that the top edge stays open
+ * (`border-top: none`) so the open list reads as an extension of the field rather than a second box
+ * floating under it. Drawing three sides by hand is the only way to say that.
+ *
+ * @param color the frame colour.
+ * @return the modifier drawing the frame.
+ */
+private fun Modifier.krtListboxFrame(color: Color): Modifier =
+    drawWithContent {
+        drawContent()
+        val stroke = 1.dp.toPx()
+        val half = stroke / 2
+        drawLine(color, Offset(half, 0f), Offset(half, size.height), stroke)
+        drawLine(color, Offset(size.width - half, 0f), Offset(size.width - half, size.height), stroke)
+        drawLine(color, Offset(0f, size.height - half), Offset(size.width, size.height - half), stroke)
+    }
+
+/**
+ * A hairline closing off the bottom of a row.
+ *
+ * Drawn rather than bordered so it does not box the row in on all four sides, and drawn *over* the
+ * content so an orange active row keeps its separator instead of painting across it.
+ *
+ * @param color the hairline colour.
+ * @return the modifier drawing the line.
+ */
+private fun Modifier.krtRowHairline(color: Color): Modifier =
+    drawWithContent {
+        drawContent()
+        val stroke = 1.dp.toPx()
+        val y = size.height - stroke / 2
+        drawLine(color, Offset(0f, y), Offset(size.width, y), stroke)
+    }
 
 /**
  * A single option inside a picker.
@@ -113,6 +153,7 @@ private fun highlight(
  * @param active whether this row is the highlighted one.
  * @param selected whether this option is the field's current value.
  * @param query current filter text, bolded inside the label.
+ * @param divider whether a hairline closes the row off - every option but the listbox's last.
  */
 @Composable
 private fun KrtOptionRow(
@@ -122,6 +163,7 @@ private fun KrtOptionRow(
     active: Boolean = false,
     selected: Boolean = false,
     query: String = "",
+    divider: Boolean = false,
 ) {
     val background = if (active) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
     val foreground =
@@ -135,6 +177,7 @@ private fun KrtOptionRow(
             modifier
                 .fillMaxWidth()
                 .background(background)
+                .then(if (divider) Modifier.krtRowHairline(KrtPalette.Gray3) else Modifier)
                 .defaultMinSize(minHeight = KrtSpacing.touchTarget)
                 .clickable(role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
@@ -175,6 +218,7 @@ private fun KrtOptionRow(
  * @param placeholder optional hint while the query is empty.
  * @param selectedValue value of the option currently held by the field, if any.
  * @param notice muted footer line, e.g. "2 von 118 Materialien".
+ * @param enabled whether the field accepts input; a disabled field never opens its list.
  */
 @Composable
 fun KrtCombobox(
@@ -189,6 +233,7 @@ fun KrtCombobox(
     placeholder: String? = null,
     selectedValue: String? = null,
     notice: String? = null,
+    enabled: Boolean = true,
 ) {
     Column(modifier = modifier) {
         KrtTextField(
@@ -199,16 +244,37 @@ fun KrtCombobox(
             },
             label = label,
             placeholder = placeholder,
+            enabled = enabled,
+            trailing = {
+                // `.krt-combobox__input` carries an orange caret as a background image. Without it
+                // the field is indistinguishable from a plain text box, and a member has no way to
+                // know that typing will offer them anything.
+                KrtIcon(
+                    id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
+                    contentDescription = null,
+                    size = CARET_SIZE,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            },
         )
-        if (expanded) {
+        if (expanded && enabled) {
+            // `.krt-combobox__listbox`: dark-gray fill, an orange frame that is open at the top so
+            // it reads as one control with the field above it, and hairlines between the options.
+            //
+            // The CSS caps the list at 18 rem and scrolls it, but that cap belongs to an absolutely
+            // positioned listbox floating over the page. This one sits in the flow of a sheet that
+            // already scrolls, and Compose cannot nest two scrollers in the same direction — a bare
+            // cap without a scroller would clip options away silently, which is the one outcome the
+            // "no silent caps" rule forbids. The list therefore takes the height it needs and the
+            // sheet scrolls; callers bound the option count and say so in `notice`.
             Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(max = LISTBOX_MAX_HEIGHT)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(KrtSpacing.hairline, MaterialTheme.colorScheme.primary),
+                        .background(KrtPalette.Gray4)
+                        .krtListboxFrame(MaterialTheme.colorScheme.primary),
             ) {
+                val rows = options.size + if (notice != null) 1 else 0
                 options.forEachIndexed { index, option ->
                     KrtOptionRow(
                         label = option.label,
@@ -219,12 +285,13 @@ fun KrtCombobox(
                         active = index == 0,
                         selected = option.value == selectedValue,
                         query = query,
+                        divider = index < rows - 1,
                     )
                 }
                 if (notice != null) {
                     Text(
                         text = notice,
-                        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                        modifier = Modifier.padding(KrtSpacing.md),
                         style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
                         color = KrtPalette.TextMuted,
                     )
@@ -300,9 +367,8 @@ fun KrtSelectField(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(max = LISTBOX_MAX_HEIGHT)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(KrtSpacing.hairline, MaterialTheme.colorScheme.primary),
+                        .background(KrtPalette.Gray4)
+                        .krtListboxFrame(MaterialTheme.colorScheme.primary),
             ) {
                 options.forEach { option ->
                     KrtOptionRow(
@@ -318,6 +384,55 @@ fun KrtSelectField(
         }
     }
 }
+
+/**
+ * The checkbox a list row wears while a multi-selection is running.
+ *
+ * Deliberately **not** [KrtCheckboxRow]'s mark. That one is the form control of design ch. 02: 18 dp,
+ * a filled `SurfaceInput` well with a `Gray3` edge, sized to sit beside a label on a page ground.
+ * Chapter 09's tree draws a different one — 22 dp, no fill at all and a `Gray2` edge — because it
+ * sits **on** a filled row, where the form control's own fill disappears into the row behind it and
+ * its edge is barely a shade off it. Same idea, two grounds, two marks.
+ *
+ * It renders the state only. The tap belongs to the whole row, which is what the artboard makes
+ * tappable („Tap = Auswahl umschalten"), so this carries no click of its own and no semantics —
+ * the row's `toggleable` owns both.
+ *
+ * @param checked whether the row is in the selection.
+ * @param modifier placement within the row.
+ */
+@Composable
+fun KrtSelectionCheckbox(
+    checked: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(SELECTION_CHECKBOX_SIZE)
+                .then(if (checked) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier)
+                .border(
+                    KrtSpacing.hairline,
+                    if (checked) MaterialTheme.colorScheme.primary else KrtPalette.Gray2,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) {
+            KrtIcon(
+                id = R.drawable.ic_krt_check,
+                contentDescription = null,
+                size = SELECTION_CHECK_GLYPH,
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+}
+
+/** Edge length of the tree's selection mark — design ch. 09, artboard 5. */
+private val SELECTION_CHECKBOX_SIZE = 22.dp
+
+/** The check inside it. */
+private val SELECTION_CHECK_GLYPH = 15.dp
 
 /**
  * The square checkbox of the design system.
@@ -393,6 +508,7 @@ fun KrtRadioRow(
     onSelect: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    supporting: String? = null,
     enabled: Boolean = true,
 ) {
     Row(
@@ -431,13 +547,39 @@ fun KrtRadioRow(
                 )
             }
         }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.Gray1,
-        )
+        // The label and its supporting line are one column, so a two-line explanation stays under
+        // its own choice instead of drifting toward the sibling radio (design ch. 06, artboard 3).
+        Column {
+            Text(
+                text = label,
+                style =
+                    if (supporting == null) {
+                        MaterialTheme.typography.bodyMedium
+                    } else {
+                        MaterialTheme.typography.titleSmall
+                    },
+                color = if (supporting == null) KrtPalette.Gray1 else KrtPalette.White,
+            )
+            supporting?.let { line ->
+                Text(
+                    text = line,
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontSize = RADIO_SUPPORTING_SIZE,
+                            lineHeight = RADIO_SUPPORTING_LINE,
+                        ),
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        }
     }
 }
+
+/** Size of a radio's supporting line — the design system's `--fs-2xs` rung in Light. */
+private val RADIO_SUPPORTING_SIZE = 11.sp
+
+/** Its line height, the 1.4 ratio the whole scale uses. */
+private val RADIO_SUPPORTING_LINE = 15.sp
 
 /** Diameter of the inner dot of a selected radio button. */
 private val RADIO_DOT = 8.dp
@@ -591,6 +733,9 @@ fun KrtToggle(
  *   fixed 52 dp of design chapter 13. The fixed width is right for a pair like DE/EN that sits
  *   beside other controls; a segment that *is* the control — the Einsätze/Operationen switch above
  *   a list (chapter 06 §1) — spans the row, and a word like "Operationen" does not fit 52 dp.
+ * @param activeColor fill of the chosen segment. Orange by default; a control whose choice carries
+ *   a meaning of its own passes that meaning's colour, the way Einnahme/Ausgabe does.
+ * @param activeContentColor label colour on that fill.
  */
 @Composable
 fun KrtSegmentedControl(
@@ -600,6 +745,8 @@ fun KrtSegmentedControl(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     stretch: Boolean = false,
+    activeColor: Color = MaterialTheme.colorScheme.primary,
+    activeContentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     Row(
         modifier =
@@ -623,9 +770,8 @@ fun KrtSegmentedControl(
                 modifier =
                     (if (stretch) Modifier.weight(1f) else Modifier.width(SEGMENT_WIDTH))
                         .height(KrtSpacing.touchTarget)
-                        .background(
-                            if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        ).selectable(
+                        .background(if (active) activeColor else Color.Transparent)
+                        .selectable(
                             selected = active,
                             enabled = enabled,
                             role = Role.RadioButton,
@@ -638,7 +784,7 @@ fun KrtSegmentedControl(
                     style = MaterialTheme.typography.labelMedium,
                     color =
                         when {
-                            active -> MaterialTheme.colorScheme.onPrimary
+                            active -> activeContentColor
                             enabled -> KrtPalette.TextMuted
                             else -> KrtPalette.Gray3
                         },

@@ -100,6 +100,8 @@ class OperationDetailViewModelTest {
         private val answer: ApiResult<String>,
         private val missionManager: Boolean = false,
     ) : IdentitySource {
+        override fun forget() = Unit
+
         var calls = 0
 
         override suspend fun myUserId(): ApiResult<String> {

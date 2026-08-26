@@ -244,6 +244,252 @@ four things:
   im Org-Discord." plus the button becoming „Jetzt erneut versuchen" — is missing. The chapter is
   emphatic that nothing else changes: no red, no error face, the state stays *waiting*, not *blame*.
 
+## Artboard-by-artboard pass (2026-08-26)
+
+Every screen below was read against its **rendered** artboard and then against the emulator, in that
+order. What the two passes before this one could not see is in the table; what is still open is
+under it, split by whether it is a layout question at all.
+
+| artboard | what differed | state |
+| :-- | :-- | :-- |
+| 06.2 Einsatz-Detail | no attendance block, no briefing card, tabs as chips, category in the bar, CTA mid-content | **built** |
+| 10.2 Auftrag-Detail | one long column — no head, no facts strip, no tabs | **built** |
+| 11.1 Raffinerie | card never listed its goods, no value footer | **built** |
+| 12.1 Bank | no grand total | **built** |
+| 12.2 Konto-Detail | three stacked Texts where the artboard has a HUD box | **built** |
+| 09.1 Lager | quality as a bare number, and on the wrong row | **built** |
+| 09.2 Buchen | amount as a plain field, quality full width below it, CTA said "Buchen" in every mode | **built** |
+| 08.2 Schiff bearbeiten | name asked before the hull; Versicherung and Ort full width each | **built** |
+| 10.3 Materialbörse | the signal button sized to its own label | **built** |
+| 06.1 Einsatz-Liste | no chevron; month spelled out in the date headings | **built** |
+
+### Deliberately not built, with the reason
+
+| artboard | why not |
+| :-- | :-- |
+| 10.2 **Materialbedarf** tab | `JobOrderDto.aggregatedMaterials` is on the wire but unmapped in `core:data` |
+| 10.2 **Verlauf** tab | the API exposes no activity trail at all |
+| 10.8 status **gating** | `JobOrderDto` has no `transitions[]`; guessing the rules client-side is what the chapter forbids |
+| 12.1 **Anträge** tab, 12.3 **Buchungsantrag** | the app knows booking requests only as notification *types* — there is no list and no create |
+| 12.2 **Verwahrung**, org line, sparkline | `BankAccountDetail` carries none of the three; only the list summary does |
+| 09.2 **Notiz (optional)** | `InventoryItemCreateDto` has no note field, so the box would discard what a member types |
+| 06.1 **„Einsatz erstellen"** FAB | the app cannot create an Einsatz at all — a missing feature, not a missing button |
+| 06.3 **Anmelden-Sheet** | signing up applies immediately; the payout radios and the ship picker are unbuilt, and the ship has no field on `AddParticipantRequest` |
+| 14.2 **five notification channels** | the SSE event is `data="new"` with no kind, so every ping would land in one channel and the other four would be decoration a member could silence to no effect. Needs the kind on the wire |
+| 08.2 **Hersteller** combobox | the type picker already searches across manufacturers and names the maker beside the hull; a second cascading field would narrow a search that does not need narrowing |
+
+### Second pass (2026-08-26) — the artboards the first pass had not reached
+
+Same method as above: render the artboard, read the CSS behind it, then drive the emulator to the
+same screen and compare. Every row here was found that way.
+
+| artboard | what differed | state |
+| :-- | :-- | :-- |
+| 09.4 Mein Inventar | name at subtitle weight, no unit beside the amount, a wide "LÖSCHEN" where the artboard has 44 dp icon buttons | **built** |
+| 10.4 Gesuch erstellen | labels and placeholders missing, Menge + Min. Qualität stacked, no ABBRECHEN | **built** |
+| 06.4 Finanz-Eintrag | three grey fields: no Typ tone, no sign, no keypad, amount rendered like any other input | **built** |
+| 06.5 Operation | bar said OPERATION; "Dein Anteil" a caption over a number; results unsigned and untinted; rollup above the Einsätze it totals | **built** |
+| 08.3 Fleetview-Import | **the whole screen was missing**, and `POST /api/v1/hangar/import/fleetview` had never been called | **built** |
+| 08.1 Hangar overflow | the `⋮` did not exist, so neither did the bulk home location, the import, or "Hangar leeren" | **built** |
+| 02 pickers | `KrtCombobox` had existed since the design system landed and **no screen used it** — all four type-to-filter pickers were a bare field with unstyled lines under it | **built** |
+
+### What the second pass changed about the design system itself
+
+Four components moved, and each was a gap the screens had been working around rather than a
+preference:
+
+- **`KrtCombobox`** gained the orange caret `.krt-combobox__input` paints, the dark-gray listbox
+  framed in orange and open at the top, and hairlines between its options — then replaced the
+  hand-rolled picker in the hangar, in Buchen, in Mein Inventar and on the Börse.
+- **`KrtSegmentedControl`** takes the tone of what it selects instead of always orange, which is
+  what lets Einnahme read green and Ausgabe red on one control.
+- **`KrtTextField`** gained a trailing slot (the caret), a value style (the aUEC amount), multi-line
+  input (the import's paste box) — and its decoration box now honours `textAlign`, which nothing had
+  noticed because no field had ever asked to be right-aligned.
+- **`KrtOverflowMenu`** is new, built to `.assoc-pop` because Material's `DropdownMenu` brings
+  rounded corners, a ripple and an elevation tint the square-first system rules out.
+
+### Two traps the device caught that no reading would have
+
+- **A lambda handed to the top bar loses its state.** The overflow menu would not stay open: the
+  `actions` lambda is a fresh instance every recomposition, so keying `ProvideScreenTopBar`'s
+  `DisposableEffect` on it made the effect dispose and re-run every frame, replacing the composition
+  group behind the menu. The publisher now writes through `SideEffect` and clears once on dispose,
+  and the menu is stateless like every other picker here.
+- **Publishing a title turns a section bar into a subject bar.** The Hangar's bar lost its org badge
+  and its bell the moment the screen published one, because `AppTopBar` reads "a published head
+  always names a thing". `ScreenTopBar.title` is nullable now, so a top-level screen can add actions
+  without claiming to be a detail.
+
+### The artboard was wrong about one thing, and the endpoint settled it
+
+Artboard 08.3's paste hint shows `{"ships": [...]}`. The endpoint answers that with *"The uploaded
+file must contain a JSON array at the root"*, and it accepts three formats it names in its own
+refusals — CCU Game Fleetview, HangarXPLOR Shiplist, Fleetyards JSON. Verified against the local
+test stack by sending the app's exact multipart: the object form returns 400, the array form returns
+200 with the tally. The app ships the shape that works, names all three formats, and shows the
+server's own sentence when it refuses a file — it is the only party that can diagnose one.
+
+### Newly found: buildable, not built
+
+**09.3 Zuordnung** — **built** (2026-08-26). What follows is what it was before, kept because the
+shape of the gap is the point: a fully specified screen with a complete API behind it and no code
+at all.
+`InventoryItemDto` already carries `jobOrderAllocations`, `jobOrderRest`, `missionAllocations` and
+`missionRest`, and `POST`/`PATCH`/`DELETE /api/v1/inventory/{id}/allocation` write them — but
+`InventoryEntry` maps none of those four fields, so the app cannot show an allocation, let alone
+edit one. This is the same shape as the Materialbedarf tab: data on the wire, unmapped in
+`core:data`. Building it means the mapping, a split sheet with two independent stepper lists, the
+live rest with its three states (REST 0 / … FREI / ÜBERBUCHT), and two remote pickers.
+
+### Third pass (2026-08-26) — chapters 02, 04, 14, 15
+
+Chapter 04's five artboards are laid out in a row rather than a column, which is why the clipping
+script had been returning their captions and nothing else — worth stating, because "the chapter has
+no mocks" was the wrong conclusion and would have closed five rows unchecked.
+
+| artboard | what differed | state |
+| :-- | :-- | :-- |
+| 04.3 Freigabe ausstehend | title sentence case; the account name printed rather than set in a chip | **built** |
+| 04.4 Nutzungsbedingungen | eyebrow and document title sentence case | **built** |
+| 04.5 Gesperrt | title sentence case | **built**, verified on the device |
+| 14.1 App-Icon | the adaptive layers were right; the **status-bar icon was a bell** where the chapter specifies the reduced mark | **built** |
+| 14.2 Ruhezustand | the retry heading rendered small and neutral where the chapter has it uppercase at title size in warning yellow | **built** |
+| 14.2 Offline-Exemplar | one muted sentence where the chapter has a banner: yellow edge, wifi-off glyph, state uppercase | **built**, verified offline on the device |
+| 15.4 Laden | caption sentence case (the 300 ms spinner delay was already right) | **built** |
+| 15.5 Bericht nicht lesbar | no danger glyph, title sentence case | **built** |
+
+**The casing is not a style preference.** Every one of those headings computes to
+`text-transform: uppercase` at weight 900 in the rendered chapter — checked, not inferred. The
+source strings stay sentence case and `krtUppercase` folds with the device locale, so a screen
+reader is not handed shouting and Turkish still gets its dotted I.
+
+### The unused-component scan
+
+Chapter 02 is the component canon, and reading it against the design system found almost nothing —
+the ladder, the disabled alpha, the focus-ring rule, the chip casing are all built. The useful
+question turned out to be a different one: **which canon components does the design system have that
+no screen calls?** Fourteen, and the answers split three ways.
+
+| component | verdict |
+| :-- | :-- |
+| `KrtTotalTile` | the Bank was **hand-rebuilding it**; now uses it |
+| `KrtSuccessButton` | Check-In is the ladder's own example for it and was a ghost button; now uses it |
+| `KrtSparkline` | the Bank had a **private copy** — dead code, never called, beside an unused import |
+| `KrtOfflineBanner` | the app had its own one-line notice; now uses it |
+| `KrtUpdateAvailablePill` | not built, and correctly so: the app reloads in place on a live signal and preserves an open draft, so there is no yanked state to warn about. A pill would mean *withholding* the peer's change — a behaviour change, not a visual one |
+| `KrtButton`, `KrtCountBadge` | internal — the ladder's base and the top bar's badge |
+| `KrtPanelHeader`, `KrtRecordCard`, `KrtDataValue`, `KrtChipSelect`, `KrtRadioRow`, `KrtDepartmentTag`, `KrtPresenceIndicator` | still unused; each needs its own artboard read before a screen adopts it |
+
+**Two of them had never worked, and nothing had noticed because nothing called them.**
+`KrtTotalTile`'s orange leading bar — the one mark that says a figure is the screen's total — drew
+*nothing*: a `Box` given only a width is zero pixels tall. `KrtOfflineBanner`'s edge had the same
+bug in a milder form, pinned to one touch target so a two-line reason left the bar short of its own
+text. Both were found the moment a screen used them. That is the argument against copying a
+component instead of calling it: a component nothing calls is a component nothing tests.
+
+The reverse also happened twice. The Bank's private sparkline handled a flat series correctly where
+the canon divided by a substituted `1f` and drew a fall that never happened, and it carried a
+content description the canon lacked. Both went **into** the design system rather than into the bin.
+
+### Where the app is deliberately not the artboard
+
+Three, each with the reason in the code:
+
+- **"Push bei Freigabe"** (04.3) — the app has no push channel at all (resolved decision Q2), so an
+  approval arrives through the poll or not at all. Promising a notification that cannot come would
+  leave a member watching a lock screen.
+- **"Gerätesperre verwenden"** (04.5) — `DEVICE_CREDENTIAL` is already an allowed authenticator, so
+  the system prompt offers the PIN itself. A second button would be a second door to one room.
+- **The Fleetview paste hint** (08.3) — the artboard's `{"ships": […]}` is refused by the endpoint,
+  which wants an array at the root. Verified against the live stack.
+
+And two the app cannot show rather than will not: the offline banner's **"Zuletzt aktualisiert"**
+stamp and the **CACHE** chip beside it. The app holds no cache and records no load time, so both
+would be invented.
+
+### 09.3, once it was built
+
+The endpoint was probed before a line was written, and it settled four things the artboard does not
+say: `POST` on a target that already has an allocation is **400**, so add and change are different
+verbs; `DELETE` carries its target in the body; overbooking is **422**; and every write returns the
+whole entry with a **new version**, so a save with three changed rows is a sequence, not a batch.
+
+That last one is why the save applies rows one at a time and stops at the first failure, reporting
+how many landed. Pretending it was atomic would have a member re-entering changes that are already
+in. Overbooking is refused locally as well, because the artboard turns the sum red as it is typed
+rather than after a round trip.
+
+Two rules from the handoff note are honoured and one cannot be: a **personal entry** carries no
+allocation, so the row offers no split; **without the logistics role it is read-only**, which the
+app cannot know — it holds no role list by design — so the sheet opens and the server's 403 is
+reported in the app's own words.
+
+### Fourth pass (2026-08-26) — the component sheet, read against the screens
+
+Chapter 02's own artboards were almost entirely built; what the sheet turned up was two
+interactions it canonises that no screen performed.
+
+| canon | what the app did | state |
+| :-- | :-- | :-- |
+| §6 radio pair — Auszahlung / Org-Kasse | a toggle labelled with the OTHER state: a member reading "Spenden" could not tell whether that was their choice or the offer | **built** |
+| §4 long-press → selection mode → bottom action bar | `KrtListRow` had supported `onLongClick` since the design system landed and **no screen passed it**; chapter 09's handoff names the Lager's bulk Umbuchen explicitly, and `/api/v1/inventory/bulk-rebook` had never been called | **built** |
+
+The bulk endpoint is all-or-nothing on its own terms and reports rows already at the target as
+*skipped* rather than moved, which is why the app sends one call rather than one per row. Its
+sibling `/api/v1/inventory/bulk-checkout` exists and is deliberately **not** wired: the artboard's
+action bar names Umbuchen alone, and adding a bulk delete nobody asked for is not parity.
+
+One live-update bug came out of using it: the opened stacks are cached per stack, so rows that had
+just moved kept showing their old place until something re-read them. A member would have seen the
+move they made as not having happened.
+
+### Still not compared
+
+09.3 Zuordnung (recorded above as buildable and unbuilt), 15.3 the no-browser state — which needs
+a device with no browser at all — and the seven canon components in the table above that no screen
+has adopted yet. 04.2 is the Keycloak page itself: a web surface owned by the realm theme, not by
+this app.
+
+## Rendering the artboards — the method that actually catches this
+
+Two passes of this audit read the chapters as **text** — the linearised handoff prose — and checked
+screenshots for whether the facts were *present*. That is a completeness check. The owner's verdict
+on the result was blunt and correct: *"das artboard und der emulator unterscheiden sich noch
+immer."*
+
+The chapters are web pages. They are now rendered:
+
+```bash
+# serve the spec (the .dc.html pages need their _ds/ and doc-page.js siblings)
+python -m http.server 8731 --directory docs/design/android
+
+# render ONE artboard, clipped to its own frame, after optional clicks
+node tools/design/board.mjs "http://localhost:8731/06%20Missionen.dc.html" 2 out.png "TEILNEHMER"
+```
+
+`tools/design/board.mjs` drives headless Chrome over the DevTools protocol with Node's built-in WebSocket — the
+repo has Playwright's browser binaries but no bindings — and clips to the artboard's own bounding
+box rather than to guessed pixels, so a chapter that reflows does not silently start cropping the
+wrong frame. **The artboards are interactive**: the mission detail's seven tabs, the segment
+switches and the payout radios only exist after a click, and the script takes the labels to click.
+
+The CSS is the other half. `_ds/…/krt-components.css` carries the numbers the artboards use, and
+those numbers are the spec:
+
+| class | what it settles |
+| :-- | :-- |
+| `.facts-bar` | key and value on ONE line, on `--color-surface-input`, 8/16 padding, 16 gap |
+| `.tab-nav` | text tabs, 3 px orange underline on the active one, counts in `--color-primary` |
+| `.attendance` | `.att-n` 1.9 rem Black; `.attendance-sub b` success green; meter 8 px, green fill on a bordered track — the CSS says why: *orange is not spent here, it stays on the Anmelden CTA* |
+| `card--flush` | heading band with a border under it, then `dt`/`dd` rows with hairline separators |
+
+**What this method caught that two text passes did not:** a mission detail with no attendance block
+and no briefing card at all, tabs drawn as filter chips, a top bar showing the *category* while the
+subject's name sat below it, a Raffinerie card that never listed its goods, an Auftrag detail with
+no tabs, a Bank list with no total. It also caught a **crash** — a count passed through `%1$d` as a
+String — which no amount of reading would have found.
+
 ## Visual pass on three emulators (2026-08-25)
 
 The static pass reads code against chapters; this one reads **pixels** against artboards. Both were
@@ -426,7 +672,15 @@ does not have:
   as distinct states; the screen has one combined unavailable state.
 
 **Correction (2nd import):** an earlier revision claimed all five were built. `LicensesScreen.kt`
-is still a single composable with none of them. See *Three rows were wrongly closed* below.
+was still a single composable with none of them. See *Three rows were wrongly closed* below.
+
+**Closed (2026-08-26, verified on a device):** all five are built — the summary line reads
+„145 Artefakte · 2 Lizenzen · v0.1.3-dev (Build 4) · Dev", each group carries
+„144 Artefakte · SPDX: Apache-2.0" and sticks while scrolling, the report ends by naming licensee
+and its version, the no-browser path copies the URL and says so, and loading and error are separate
+states with the spinner held back 300 ms. What the device pass *did* find was in the bar above them
+rather than in the list: „OPEN-SOURCE-LI…" truncated by an org chip and a bell that artboard 15.1
+does not draw — the systemic finding below.
 
 The chapter also pins details the row above does not: the group order is alphabetical by licence
 name and the artefacts alphabetical within it (deterministic, not report order); the coordinate is
@@ -500,6 +754,407 @@ for the record of what was asked and what came back:
    offline, not "the approval gate itself could not be read".
 
 Prompts for these three: [`docs/design/android/MISSING_ARTBOARD_PROMPTS.md`](design/android/MISSING_ARTBOARD_PROMPTS.md).
+
+**Round 2** — nine artboards and two corrections the parity pass turned up, **none of them a
+missing screen**: every artboard in the bundle has a screen behind it as of 2026-08-26. What is
+missing is the drawing for eleven decisions the implementation had to make alone — the Hangar's
+overflow and its two sheets, the Lager in selection mode and its bulk sheet, „Funktion an Bord"
+(the API carries the field, no artboard places it), a detail screen that actually folds, one
+table's phone collapse, and a verdict on the two components with neither placement nor data. Plus
+two artboards the running system contradicts. The prompt is written as one continuous brief for the
+Claude Design session:
+[`docs/design/android/MISSING_ARTBOARD_PROMPTS_2.md`](design/android/MISSING_ARTBOARD_PROMPTS_2.md).
+
+**Round 3** — a correction to round 2's framing (the app *can* read `roles` and `permissions`;
+round 2 told the designer it could not) and the gated-state artboards that ADR-0011 calls for:
+[`docs/design/android/MISSING_ARTBOARD_PROMPTS_3.md`](design/android/MISSING_ARTBOARD_PROMPTS_3.md).
+
+## Chapter 09 against the delivered bundle (2026-08-26)
+
+The answers to rounds 2 and 3 arrived as ten new artboards in chapter 09 (5–14). Every one was
+rendered, measured in the DOM rather than read off the picture, built, and then checked on the
+emulator as a plain `KRT Member` against stock that belongs to somebody else — which is the only
+caller who sees both lock kinds at once.
+
+| Artboard | What it asked for | Verdict |
+| --- | --- | --- |
+| 5 · Auswahlmodus | „✕ n gewählt" head, entry-level selection, group chip, checkboxes, no row actions, no FAB or nav | **was six gaps** — all closed |
+| 6–7 · Ziel wählen | count in the CTA, skip hint before the write | **was two gaps** — closed |
+| 8 · Speichern läuft | CTA spinner, fields locked | already right |
+| 9 · Ergebnis | result as a step in the sheet, two tiles, the sentence | **was a gap** — the sheet closed silently |
+| 10 · Abgelehnt (403) | canon copy, sheet open, selection survives | **was a gap** — generic „write failed" |
+| 11–12 · Gesperrte Zeile | 45 % + an obligatory lock badge, refusal toast in the warning tint | **was three gaps** — closed |
+| 13 · Sheet mit gesperrtem CTA | values legible, editors at 55 %, lock inline before the label | **was a gap** — closed |
+| 14 · Zwei Sperr-Arten | one picture, two copies: role lock and row lock | **was a gap** — both ran off one gate |
+
+### What only the device found
+
+Four defects survived the measurement and died on the emulator:
+
+- The refusal toast's bloom was several times the artboard's 25 %, because `krtBloom` scales from
+  the colour's own alpha and the warning tint was passed at full strength.
+- The toast passed **under** the floating action button rather than over it.
+- The switcher's kind marker was added unconditionally, and the organisation names a
+  Spezialkommando „SK Nebelkraehe" — the sheet read „SK SK NEBELKRAEHE".
+- The selection plural said „ausgewählt" where every artboard writes „gewählt".
+
+None of these is visible in a DOM measurement, a unit test or a screenshot of the artboard. They
+are the reason the optical pass on a real device is a separate step and not a formality.
+
+### One judgement call, stated rather than buried
+
+Artboards 6–9 carry the line „12 Einträge · Modus LOCATION · POST inventory/bulk-rebook" under the
+sheet's title. Only „12 Einträge" was shipped: the mode name and the endpoint are handoff
+annotation, and no member needs the HTTP verb of the thing they just tapped.
+
+## Chapters 02, 04, 06 and 08 against the delivered bundle (2026-08-26)
+
+| Chapter | What arrived | Verdict |
+| --- | --- | --- |
+| 02 · Components | Presence and the Bereich tag marked **web-only** | app draws neither; badge value corrected to „Alle Einheiten" |
+| 04 · Auth | the push-promise correction | **already right in the app** — the artboard is the stale half |
+| 06 · Missionen | „Funktion an Bord" (artboard 3) | **was a gap** — signing up was one tap with no sheet at all |
+| 08 · Hangar | overflow, wipe, bulk place, the collapse rule (4–11) | **six gaps** — all closed |
+
+### Four artboards that could not be built, and why
+
+Each of these is drawn in the bundle and has **no data or no endpoint** this app can reach. None is
+faked with a dash or a disabled control, because both claim the thing exists and is merely missing
+today:
+
+- **The LTI tile** over the Hangar's org aggregate (ch. 08, artboard 1). `SquadronShipOverviewDto`
+  carries `count` and `fittedCount`; `SquadronShipDetailDto` carries owner, location and `fitted` —
+  no insurance anywhere.
+- **„Eigenes Schiff einbringen"** in the sign-up sheet (ch. 06, artboard 3). Adding a unit is
+  `POST /missions/{id}/units`, guarded by `canManageMission`, and `AddParticipantPublicRequest` has
+  no ship field. No participant can reach it.
+- **„EINGEREICHT · vor 2 Std. · via Discord"** on the approval screen (ch. 04, artboard 3).
+  `RegistrationStatusDto` carries exactly one field: `approvalStatus`.
+- **„Du wirst benachrichtigt"** in the same card's body — this one is not a gap but a
+  contradiction: the artboard's own annotation beside it reads *„Never promise a notification
+  here"*, and the shipped copy already follows the annotation. Sweeping both string bundles for the
+  same shape found no other instance.
+
+### One deviation, recorded rather than absorbed
+
+The lock screen draws **one** unlock button where artboard 5 draws two — the second one opens the
+same system prompt as the first, which already carries the device-credential fallback inside it.
+[ADR-0013](adr/0013-the-lock-screen-has-one-button-because-the-prompt-has-two.md) has the reasoning
+and what was rejected.
+
+### What the chapter-02 note gets half right
+
+Its web-only annotation groups „Presence/Live-Sync". **Presence** is correct: no production screen
+draws the indicator or the update pill — `KrtPresenceIndicator` exists in the design system and is
+called only from the dev showcase. **Live-sync** is a different thing and does ship: eight
+ViewModels observe `/ws/sync` rooms and refresh silently, which draws nothing at all. The reason
+given in the note — „openapi.json führt keine Presence-Daten" — is true of presence and not of the
+sync rooms.
+
+## The top bar's two ends were asked two different questions (2026-08-26)
+
+Found on the licences screen and true of nine others. The back arrow came from the destination; the
+org chip and the bell came from whether a screen happened to **publish a title**. Every pushed
+screen that publishes none got all three — arrow, chip and bell — and the Hangar's title was
+truncated to make room.
+
+Four artboards draw the same head for four such screens, and none of them has a chip or a bell:
+
+| artboard | bar |
+| --- | --- |
+| 07.1 Benachrichtigungen | ← BENACHRICHTIGUNGEN · „3 NEU" |
+| 08.4 Hangar | ← HANGAR · ⋮ |
+| 13.1 Einstellungen | ← EINSTELLUNGEN |
+| 15.1 Open-Source-Lizenzen | ← OPEN-SOURCE-LIZENZEN |
+
+Both ends now come from one predicate — is this destination in the navigation set for this form
+factor — which also makes the phone/tablet split fall out for free: Hangar, Raffinerie and
+Materialbörse are pushed behind „Mehr" on a phone and roots on a tablet's rail, and the bar follows
+without a second rule. `REQ-APP-UI-005` and `TopBarOwnershipTest`.
+
+## Chapter 07 against the delivered bundle (2026-08-26)
+
+The inbox matched on everything structural — the type glyph per kind, the 3 dp orange rail on an
+unread row, both swipe directions, „Alle als gelesen markieren" / „Gelesene löschen", the `99+` cap
+and the „Zeige die neuesten n von m" line. Two things did not.
+
+**The unread count was in the wrong place.** The app drew it as an orange line above the first row;
+artboard 1 puts it in the top bar as a chip beside the title. The difference only shows up once the
+list is scrolled: the app's count scrolled away with the content, which is precisely when a member
+wants it. Moved to `ProvideScreenTopBar(actions = …)`, and the screen test now asserts the list body
+has **no** count, so the old placement cannot come back unnoticed.
+
+**Timestamps were one rung of a four-rung ladder.** The app rendered everything through
+`DateUtils.getRelativeTimeSpanString` with default flags — „Vor 5 Stunden" — where the chapter writes
+`vor 4 Min.`, `vor 2 Std.`, `gestern, 21:14` and `15.08., 09:30`.
+
+Three separate things were wrong there, and only the first was obvious:
+
+1. **Not abbreviated.** One flag, `FORMAT_ABBREV_RELATIVE`.
+2. **Capitalised.** The platform capitalises a standalone span; every artboard writes it lower-case.
+   Lowered on the first character only, in the resolved locale, so a locale opening on a proper noun
+   keeps it. English is unaffected — its abbreviated spans start with the number.
+3. **No day rungs at all.** This is the one that needed measuring rather than reading. The obvious
+   candidate, `getRelativeDateTimeString`, was probed with a throwaway Robolectric test before any
+   code was written, and it turned out to answer *every* distance with a fully qualified date —
+   `26.8.2026, 18:15` even for four minutes ago — and to never say „gestern" in German. So the lower
+   two rungs are composed here, from a translatable date pattern, while the upper two stay with the
+   platform.
+
+That probe paid for itself twice more. `FORMAT_NUMERIC_DATE` renders „15.8." in German where the
+artboard writes „15.08.", which is why the date is a padded pattern and not a platform flag. And a
+countdown two days out comes back as „Übermorgen", not „in 2 Tagen" — the platform's word, kept,
+because German has one and a literal count is what a language without the word falls back to.
+
+The formatter existed **three times**, privately, in the inbox, the Kartellbank and the dashboard.
+All three now share one ladder; three copies is how „gestern" ends up looking different on two
+screens of the same app.
+
+Device-verified: „← BENACHRICHTIGUNGEN [7 NEU]" in the bar, „vor 5 Std." on the rows, and
+„morgen · TS 21:44" on the dashboard, which had read „Morgen · TS 21:44" before. The „gestern" and
+„15.08." rungs are **not** device-verified and are recorded as such in `REQ-APP-NOTIF-013`: every
+notification in the test stack is minutes old, and the emulator runs a Play image that cannot be
+rooted to move its clock.
+
+## Chapter 03 against the delivered bundle (2026-08-26)
+
+Two frames — the phone bar and the tablet rail — plus ten binding rules. Both frames match, down to
+the rail promoting Hangar, Raffinerie and Börse out of „Mehr" on the larger screen. Of the rules,
+six held, one was crashing, two were broken and one is still open.
+
+The crash is written up separately (`REQ-APP-NOTIF-014`, ADR-0014): the chapter's „Push →
+Ziel-Screen direkt" was not merely unverified, it killed the app, and the whole rule could only be
+checked once that was fixed. It then held on the first try, back stack and all.
+
+**Unknown route → 404.** `basetool://voelligunbekannt` opened the dashboard, silently. The
+uncomfortable part is that `destinationOf`'s KDoc already described the correct behaviour — "the
+caller renders the in-fiction Signal Lost screen rather than silently falling back to the
+dashboard" — next to a call site reading `destinationOf(route) ?: KrtDestination.Home`. A comment
+that describes the opposite of its code is worse than no comment: it answers the reader's question
+and sends them away.
+
+The first fix was wrong in an instructive way. Registering a catch-all `basetool://{route}` on the
+404 destination looked exactly right — a literal host is more specific than a wildcard, so the
+literal should win. Navigation does not rank by specificity but by **how many arguments a match
+fills**: the wildcard fills one, every literal route fills none, and the wildcard outranked all of
+them. Every deep link in the app landed on „Signal Lost", which is a total inversion of the intent
+and produced no warning at compile time and none in review. The device found it in one command.
+Asking `navController.graph.hasDeepLink(uri)` instead cannot drift, because it is the graph.
+
+A second detail only the device showed: the „ZURÜCK ZUR BASIS" CTA pushed a *second* Übersicht on
+top of the first, so afterwards back on Übersicht landed on Übersicht rather than leaving the app —
+quietly breaking a different rule of the same chapter while fixing this one.
+
+**Predictive back** is asked of every screen. targetSdk 37 gets it free on Android 16+, which is
+what the emulator runs; minSdk 30 means members on 13 through 15 needed
+`enableOnBackInvokedCallback`, which was not set. Now set, with `tools:targetApi="33"` rather than a
+blanket lint ignore — lint is right that the attribute predates minSdk and wrong that it is a
+problem. This is the one item in the chapter that cannot be device-verified here, and it is recorded
+as resting on the platform contract.
+
+**Re-tap scrolls to top** — closed in the same pass. Popping already happened; scrolling could not,
+because no screen held a `LazyListState` and `animateScrollToItem` appeared nowhere in the app. The
+part worth recording is why a flag would not do: the pop *rebuilds* the destination, and the rebuild
+restores the list from saved state, so the new screen is already back where the member left it and
+has no way to tell „I came back" from „I asked for the top". A per-route counter that outlives the
+rebuild does, and each list remembers in its own saveable state which value it last acted on. One
+shared counter — the obvious version — would make every screen jump to the top on its next
+composition, so a member who once re-tapped „Lager" would afterwards lose their place in „Aufträge"
+for no visible reason.
+
+Verified on „Aufträge", which is the only bar destination whose list is longer than the screen.
+„Einsätze" and „Lager" fit, so they scroll nowhere and a pass on them would have proved nothing —
+the first attempt at verification did exactly that and looked like a success.
+
+## Chapter 05 against the delivered bundle (2026-08-26)
+
+The dashboard had every element the chapter asks for and looked like a different screen, which is
+the interesting kind of miss: nothing was absent, six things were slightly off, and slightly off
+six times over is a redesign.
+
+**Measuring beat reading, twice.** The shortcut tiles looked like a copy problem — „Einbuchen" where
+the artboard writes „Einbuchen (Lager)" — and the obvious fix would have been to lengthen the
+strings into tiles that cannot hold them. Querying the DOM gave 194 dp tiles in a 2-column grid on a
+412 dp frame, and the tile itself a flex **row** with a 22 dp glyph beside the label rather than
+above it. The labels were short because the layout was wrong; lengthening them alone would have
+produced four ellipses.
+
+**A rendering artifact nearly became a finding.** The mission card's status marker measured
+`background: transparent, border: 0` in this chapter, which reads as "the app's bordered chip is
+wrong". Chapter 02 — the component canon — shows the same class *with* its 8 dp square dot, next to
+a separate larger badge that does have the border and the uppercase. So the difference was real but
+not the one it first looked like: the app was using the **page-level badge inside a list**, and the
+design system's own KDoc had already said which of the two belongs where. Checking the canon chapter
+rather than trusting one chapter's computed style is what separated those two readings.
+
+**The announcement was the one real gap**, and it was invisible because the test stack had no
+announcement at all: `GET /announcement` answers `204`, the band hides, and the screen looks
+complete. Creating one through the API surfaced that the unread marker and the mark-read action
+were never built. Probing the contract first paid for itself again — `lastReadAnnouncementId` lives
+on `/users/me`, not on the notice, and **editing an announcement keeps its id**, so a rewritten
+notice stays read. That last one is the server's model, shared with the web app; the app reports it
+rather than inventing a second notion of freshness.
+
+Not adopted: the artboard's date reads „Sonntag, 17.08.2956" — the in-fiction Star Citizen year.
+The numeric **format** is adopted; the year is not. Writing error copy in character is a different
+decision from misstating today's date, and that one is the owner's.
+
+## Chapter 14 against the delivered bundle (2026-08-26)
+
+The chapter's rules held better than any other so far, and the two places they did not are both
+places where the app cannot simply be corrected.
+
+**Held:** the lock-screen rule, enforced by construction rather than per call site — the channel is
+`VISIBILITY_PRIVATE` and every posted notification carries a „Neue Benachrichtigung" public version,
+so no amount or name can be read off a locked device. The 24 dp alpha-only small icon with the brand
+accent. The forced-update wall standing outside every other gate, with its store-button deviation
+already recorded. The 429/503 countdown with its 3→6→12→30 backoff. The in-fiction titles („Access
+Denied", „Signal Lost", „System Malfunction") over one plain German line, which is the shape the
+chapter asks for.
+
+The offline band deserves a note for a different reason: it already **records what it leaves out**.
+Its KDoc says there is no „Zuletzt aktualisiert" stamp and no CACHE chip because "the app holds no
+cache and records no load time, so any timestamp would be invented". That is the discipline this
+audit is for, applied before the audit reached it.
+
+**The dead channel.** `krt_operations` was created at high importance on every start and nothing
+ever posted to it — every notification went to `krt_general`. A channel nothing uses is not a
+harmless leftover: it is a switch in the member's system settings that silences nothing, and they
+have no way to discover that. Deleted on start.
+
+Behind it sits the reason the five channels the chapter names cannot exist yet, and it is not in
+this repo: the stream event is `name="notification", data="new"`. A bare ping. Everything in the
+shade is the same message because the signal carries no kind — and the same absence is why a tapped
+notification always opens the inbox rather than the target screen chapter 03 asks for.
+
+**The 409 dialog** is the largest thing chapter 14 leaves open, and the interesting part is that its
+copy cannot be adopted. The artboard names the other editor („von Rhea") — the 409 carries no
+identity — and promises the input is on the clipboard, which would mean writing a member's data
+somewhere every other app on the device can read. The app's existing sentence is the accurate one.
+So the gap is presentation only: eleven write surfaces show an inline `KrtFieldError` where a modal
+belongs, and each needs a reload path it does not have.
+
+## Chapter 01 against the delivered bundle (2026-08-26)
+
+The token layer needed nothing. All nineteen Material 3 slots match the chapter's table value by
+value, including the two that carry a rule rather than a colour: `secondaryContainer` mapped to
+orange with black `on`, so every stock M3 selection surface renders the brand rule without a call
+site remembering to, and `surfaceTint = surface` so tonal elevation renders flat. Comparing them
+mechanically took a minute and was worth doing precisely because a wrong value there is invisible
+until it is everywhere.
+
+The chapter's one **untestable-by-artboard** rule is where it broke: *„Must survive font scale 1.3×
+without truncation — never fix label widths (German compounds)."* No artboard can show this — they
+are all drawn at 1.0× — so it is exactly the kind of rule a parity sweep skips.
+
+Setting the device to 1.3× broke two things immediately, and one of them was **mine, from an hour
+earlier**: the shortcut tiles I had just rebuilt to hold the artboard's full labels showed
+„CHECK-IN NÄCHSTER EI…". A `maxLines = 2` that fits at 1.0× is a fixed label width by another name.
+That is worth recording as a method note: the device pass has to be repeated at the accessibility
+settings the spec names, not only at the default, and a change that fixes a truncation at 1.0× can
+introduce one at 1.3×.
+
+The second was older and worse. Filter chips in a plain `Row` get squeezed, and a `Text` with no
+room breaks **per character**: „ABGEB ROCHE N", „ABG ESC HLO SSE N". That does not read as a layout
+that ran out of room; it reads as corruption. Fixed at two levels — `FlowRow` so chips wrap by chip,
+and `maxLines = 1, softWrap = false` on the chip component so the failure mode, if a caller ever
+squeezes one, is a clipped label rather than a scrambled one.
+
+The same pass closed a loose end from chapter 07. The relative-time ladder's lower rungs could not
+be device-verified there because every fixture notification is minutes old. The Auftrags-Queue
+reaches further back: „gestern, 21:44" was on screen in the chip screenshot, and ageing one row in
+the throwaway stack's database produced „15.08., 18:17". All four rungs are now confirmed on a
+device rather than only in a test.
+
+It also found three formatters the first sweep missed. That sweep grepped for
+`private fun Instant.relativeToNow` and found three; these are shaped differently — one takes a
+`String`, two are `internal` — so „Vor 20 Stunden" was still sitting in the Aufträge queue next to
+„vor 6 Std." on the dashboard. A grep for the declaration finds declarations; a grep for
+`getRelativeTimeSpanString` finds the behaviour, and would have found all six.
+
+## The 409 dialog, closed (2026-08-26)
+
+Chapter 14's largest open item, and the one where the artboard's copy could not simply be typed in.
+
+Two of its sentences make claims the app cannot honour. It names the other editor („von Rhea") and
+the 409 carries no identity; it promises the input is on the clipboard, which would only become true
+by writing a member's data to the **system** clipboard, readable by every other app on the device.
+The app's existing wording was the accurate one, so the gap was presentation, not language.
+
+The chapter's button label is the more interesting of the two. „NEU LADEN UND ERNEUT VERSUCHEN",
+taken literally, is a button that re-sends the same values against the newer version — which
+overwrites whatever the other person changed without either of them seeing it, and is precisely the
+outcome the lock it just hit exists to prevent. It reloads and stops there.
+
+Three things about the build were decided by trying the obvious version first:
+
+- **Threading a reload into each leaf was wrong.** Four parameters through composables that have no
+  business knowing about refresh. Every one of those leaves reads the same screen-level error, so
+  the dialog belongs at the host — one line per screen, and „Neu laden" can close the form and make
+  the screen re-read.
+- **Rendering both the dialog and the inline line put the same two sentences under one another**,
+  which a screen test caught immediately. The form now keeps a short line, enough to explain the
+  state a member returns to after dismissing.
+- **Dismissal cannot be tracked by value.** `ApiError.OptimisticLock` is a data class, so two
+  refusals compare equal and a `remember(error)` would show the dialog once per session. The same
+  trap bit the test itself: `mutableStateOf` drops an assignment of an equal value, so the first
+  attempt at "a second refusal" could not even produce one.
+
+Device-verified the way a conflict actually happens: an item open in „Mein Inventar", the same
+record moved through the API, then save. „KONFLIKT FESTGESTELLT" appeared over the sheet, and
+„NEU LADEN" closed the editor and showed the other writer's value in the list.
+
+## The tablet pass (2026-08-26)
+
+Everything structural held on a 2560×1600 tablet: the rail with its seven destinations plus „Mehr",
+the two-column dashboard grid, the content cap, and — the part that mattered after this session's
+changes — the 2×2 shortcut tiles and the wrapping filter chips, which had only been seen on a phone.
+
+Two copy placements did not.
+
+**„Alle ansehen" was under the list, not in the header.** Reading the artboard's *text* in order had
+put it after the rows; querying the DOM showed its parent element is „UngelesenAlle ansehen" — the
+section title's own row. It had been rendering as a free-floating orange line under the last card,
+which reads as one more row rather than a control for the section. `KrtSectionTitle` already had a
+`trailing` slot documented for precisely this.
+
+**The rail said „MATERIALBÖRSE" where two chapters say „BÖRSE".** The „Mehr" list spells it out and
+the rail abbreviates; a rail column is 88 dp wide. Destinations can now carry a navigation label
+distinct from their name.
+
+Worth noting as method: neither would have been found by the phone pass. The first is on both form
+factors and was simply missed until a wide layout made the floating link obvious; the second exists
+only on the rail.
+
+## Chapter 14's channels, closed across two repositories (2026-08-26)
+
+The largest thing the audit had recorded as blocked, and it was blocked on the wire rather than on
+the app: the stream event was `data="new"`. A bare ping. Five channels cannot be filled from a
+signal that does not say what happened, and a tap cannot open a screen the message never named.
+
+The owner's decision was to extend the backend rather than work around it, so this closed as a pair:
+`krt-profit/basetool` #1681 (REQ-NOTIF-021, ADR-0146) and the app side here.
+
+**What the backend change turned on.** One event resolves to a `Map<NotificationType, Set<UUID>>` —
+the same trigger raises different kinds for different audiences — so the payload had to be per
+notification **type**, not per event, and `createFromEvent` now returns its result keyed by signal.
+That was the part worth getting right; a payload describing the event would have been wrong for at
+least one recipient of every multi-audience event.
+
+**What the app already had.** `NotificationKind` — the classification the inbox uses to pick a row's
+glyph — has exactly five buckets, and they are the chapter's five channels. The destination resolver
+the inbox row uses answers the shade's question too. Neither needed inventing; both needed the type
+on the wire.
+
+**One thing the device found that no test would have.** The channels were created inside `notify()`,
+so they did not exist until the first push of that kind — which means a member looking for the
+switch before their first Auftrag notification would find nothing to configure, and the choice only
+appears at the moment it is too late. Moved to application start.
+
+Device-verified end to end against a locally built backend: creating an Auftrag through the API put
+an entry in the shade on `channel=krt_orders` at importance 4, coloured `#E77E23`, `vis=PRIVATE`
+with a `publicVersion`, titled „Neuer Auftrag #9 für IRI" — the sentence assembled on the device
+from the type and its parameters — and tapping it opened Auftrag **#9** rather than the inbox.
 
 ## How this audit was made
 

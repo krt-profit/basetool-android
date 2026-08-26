@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,12 +31,15 @@ import de.greluc.krt.profit.basetool.android.bank.BankAccountRoute
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountsRoute
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
+import de.greluc.krt.profit.basetool.android.core.data.PayoutPreference
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.dashboard.QuickAction
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportRoute
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
@@ -68,10 +72,14 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
+import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
+import de.greluc.krt.profit.basetool.android.ui.LocalRootScrollTick
 import de.greluc.krt.profit.basetool.android.ui.MoreScreen
 import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
+import de.greluc.krt.profit.basetool.android.ui.RootScrollSignals
+import de.greluc.krt.profit.basetool.android.ui.RouteNotFoundScreen
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 
 /**
@@ -109,6 +117,7 @@ import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 @Composable
 fun BasetoolNavHost(
     navController: NavHostController,
+    rootScroll: RootScrollSignals,
     onOpenDestination: (KrtDestination) -> Unit,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
@@ -117,6 +126,7 @@ fun BasetoolNavHost(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
+    fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
@@ -151,49 +161,56 @@ fun BasetoolNavHost(
                 route = destination.route,
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) { backStackEntry ->
-                // Two functions rather than one: nine areas hang off this graph, and the split
-                // follows a real seam — a LIST destination is one a member reaches from the bar or
-                // from "Mehr" and that loads itself; a PUSHED one is opened with an id from
-                // somewhere else. Anything neither handles is still a screen this build does not
-                // have, and says so.
-                val handled =
-                    listDestination(
-                        destination = destination,
-                        navController = navController,
-                        missions = missions,
-                        missionDetail = missionDetail,
-                        operations = operations,
-                        notifications = notifications,
-                        dashboard = dashboard,
-                        hangar = hangar,
-                        bank = bank,
-                        bankAccount = bankAccount,
-                        orders = orders,
-                        orderDetail = orderDetail,
-                        inventory = inventory,
-                        exchange = exchange,
-                        refinery = refinery,
-                        refineryOrder = refineryOrder,
-                        personalInventory = personalInventory,
-                        personalBlueprints = personalBlueprints,
-                        booking = booking,
-                        memberName = memberName,
-                        orgUnitName = orgUnitName,
-                    )
-                if (!handled) {
-                    PushedDestination(
-                        destination = destination,
-                        backStackEntry = backStackEntry,
-                        navController = navController,
-                        missionDetail = missionDetail,
-                        operationDetail = operationDetail,
-                        bankAccount = bankAccount,
-                        orderDetail = orderDetail,
-                        refineryOrder = refineryOrder,
-                        onOpenDestination = onOpenDestination,
-                        onLogout = onLogout,
-                        settings = settings,
-                    )
+                // Each destination sees only its own re-tap counter, so a re-tap on „Lager" cannot
+                // scroll „Einsätze" -- and a root screen obeys the rule without knowing its route.
+                CompositionLocalProvider(
+                    LocalRootScrollTick provides rootScroll.ticksFor(destination.route),
+                ) {
+                    // Two functions rather than one: nine areas hang off this graph, and the split
+                    // follows a real seam — a LIST destination is one a member reaches from the bar or
+                    // from "Mehr" and that loads itself; a PUSHED one is opened with an id from
+                    // somewhere else. Anything neither handles is still a screen this build does not
+                    // have, and says so.
+                    val handled =
+                        listDestination(
+                            destination = destination,
+                            navController = navController,
+                            missions = missions,
+                            missionDetail = missionDetail,
+                            operations = operations,
+                            notifications = notifications,
+                            dashboard = dashboard,
+                            hangar = hangar,
+                            bank = bank,
+                            bankAccount = bankAccount,
+                            orders = orders,
+                            orderDetail = orderDetail,
+                            inventory = inventory,
+                            exchange = exchange,
+                            refinery = refinery,
+                            refineryOrder = refineryOrder,
+                            personalInventory = personalInventory,
+                            personalBlueprints = personalBlueprints,
+                            booking = booking,
+                            memberName = memberName,
+                            orgUnitName = orgUnitName,
+                        )
+                    if (!handled) {
+                        PushedDestination(
+                            destination = destination,
+                            backStackEntry = backStackEntry,
+                            navController = navController,
+                            missionDetail = missionDetail,
+                            operationDetail = operationDetail,
+                            bankAccount = bankAccount,
+                            orderDetail = orderDetail,
+                            refineryOrder = refineryOrder,
+                            fleetImport = fleetImport,
+                            onOpenDestination = onOpenDestination,
+                            onLogout = onLogout,
+                            settings = settings,
+                        )
+                    }
                 }
             }
         }
@@ -289,6 +306,7 @@ private fun listDestination(
                 // "Nichts Ungelesenes" is a claim, and it may only be made once the inbox has
                 // actually answered. Before that the band shows nothing at all.
                 unreadKnown = notificationState.phase is NotificationsPhase.Ready,
+                onMarkAnnouncementRead = dashboard::onAnnouncementRead,
                 onRefresh = dashboard::onRefresh,
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
@@ -319,7 +337,12 @@ private fun listDestination(
 
         KrtDestination.Hangar -> {
             LaunchedEffect(Unit) { hangar.loadOnce() }
-            HangarRoute(viewModel = hangar)
+            HangarRoute(
+                viewModel = hangar,
+                // A plain push, NOT navigateToTopLevel: the import is a sub-page of the Hangar, so
+                // back has to return here rather than to Übersicht.
+                onOpenImport = { navController.navigate(KrtDestination.FleetImport.route) },
+            )
         }
 
         KrtDestination.PersonalInventory -> {
@@ -528,6 +551,7 @@ private fun PushedDestination(
     bankAccount: (String) -> BankAccountViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
     settings: SettingsBindings,
@@ -581,6 +605,11 @@ private fun PushedDestination(
                 }
             SettingsScreen(
                 accountName = settings.accountName,
+                orgUnitName = settings.orgUnitName,
+                onSwitchOrgUnit = settings.onSwitchOrgUnit,
+                preferences = settings.preferences,
+                onPayout = settings.onPayout,
+                onSharing = settings.onSharing,
                 language = settings.language,
                 onLanguageChange = settings.onLanguageChange,
                 appLockEnabled = settings.appLockEnabled,
@@ -602,6 +631,25 @@ private fun PushedDestination(
 
         KrtDestination.Licenses -> {
             LicensesScreen(onOpenUrl = settings.onOpenUrl)
+        }
+
+        KrtDestination.FleetImport -> {
+            FleetImportRoute(viewModel = fleetImport)
+        }
+
+        KrtDestination.NotFound -> {
+            RouteNotFoundScreen(
+                onBackToBase = {
+                    // Back to the Übersicht that is already at the bottom of the stack, not a
+                    // second copy on top of it. Popping only this screen and pushing Home leaves
+                    // two, and then back on Übersicht lands on Übersicht instead of leaving the
+                    // app -- which is the one thing ch. 03 says back on Übersicht must do.
+                    navController.navigate(KrtDestination.Home.route) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
 
         else -> {
@@ -633,6 +681,13 @@ private fun PushedDestination(
  *   Returns `false` when nothing on the device handled it, which is what turns the licence
  *   action into a copy (design ch. 15).
  * @property versionCode the app's build number, from `BuildConfig`.
+ * @property orgUnitName the active org unit, as the top bar's chip names it, or `null` while the
+ *   scope is unknown. The settings row shows the same value rather than reading it again — two
+ *   copies of a scope are two things that can disagree.
+ * @property onSwitchOrgUnit opens the org switcher, the same sheet the chip opens.
+ * @property preferences the two standing choices that live on the server.
+ * @property onPayout sets where the member's share goes by default.
+ * @property onSharing shares or unshares the member's blueprints with the organisation.
  */
 @Immutable
 data class SettingsBindings(
@@ -649,4 +704,11 @@ data class SettingsBindings(
     val onOpenTerms: () -> Unit,
     val onOpenUrl: (String) -> Boolean,
     val versionCode: Int,
+    // Filled by `BasetoolApp`, not by the activity: the active scope and the switcher sheet both
+    // live in the shell, and a second copy in the activity would be a second thing to keep in step.
+    val orgUnitName: String? = null,
+    val onSwitchOrgUnit: () -> Unit = {},
+    val preferences: MemberPreferencesState,
+    val onPayout: (PayoutPreference) -> Unit,
+    val onSharing: (Boolean) -> Unit,
 )

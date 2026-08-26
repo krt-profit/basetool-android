@@ -386,6 +386,50 @@ the column is `numeric(_,4)` — and unreadable; the design's own figures are `+
 than by relaxing the no-`Double` rule that kept the raw string in the first place. Eight tests in
 `MissionAmountsTest`, one of them a 17-digit value that a `Double` would round.
 
+### REQ-APP-MISSION-014 — Signing up is a sheet, because two answers belong to the moment
+
+Design ch. 06, artboard 3 turns the one-tap sign-up into a bottom sheet. Two things go with joining
+and are awkward to find afterwards: **where the share goes**, and **which function** the member
+would like on board.
+
+**The function is a wish, not a claim.** The artboard writes it out — „Optional — Wunsch (desired),
+keine Zusage" — and the sheet repeats it under the chips, because a row of pickable roles reads like
+an assignment unless something says otherwise. The mission's leadership sets the *planned* function
+on the participants tab; this records only what was asked for. Tapping the chosen chip again clears
+it: a chip row with no way back makes an optional field compulsory in practice.
+
+**Sent through `participants/add`, not `join`.** `POST /missions/{id}/join` takes no body and cannot
+carry either answer. `POST /missions/{id}/participants/add` carries `desiredJobTypeId` and
+`payoutPreference`, and **both endpoints are guarded by `canSeeMission`** — the same permission
+through a door that fits. Verified against the running stack rather than inferred: a plain
+`KRT Member` adding themselves lands `DONATE` and their desired function on the roster.
+
+**The Funktionen catalogue is read when the sheet opens**, not with the mission — a member who never
+signs up should not pay for a list they will not see. A catalogue that fails to load hides the chips
+and leaves the rest of the sheet working, because the field is optional.
+
+**A refusal keeps the sheet and everything in it.** Nothing was written; re-answering two questions
+to retry would charge the member for the server's reply.
+
+**„Eigenes Schiff einbringen" is not shipped.** The artboard's third section offers the member's own
+ship. Adding a unit to a mission is `POST /missions/{id}/units`, guarded by `canManageMission`, and
+`AddParticipantPublicRequest` has no ship field at all — so there is no endpoint a participant can
+reach for it. It needs a server-side decision before it can exist here.
+
+**Acceptance**
+
+- [x] The sign-up tap opens the sheet and writes nothing; withdrawing still acts directly
+  (`MissionDetailViewModelTest`).
+- [x] The write carries the payout choice and the desired function; a second tap on the chosen chip
+  clears it (`MissionDetailViewModelTest`).
+- [x] A refusal keeps the sheet, its answers and its message (`MissionDetailViewModelTest`).
+- [x] A catalogue that cannot be read leaves the sheet usable (`MissionDetailViewModelTest`).
+- [x] Verified on a device against the test stack: picking „Org-Kasse" and „Pilot" and confirming
+  put `DONATE` and `Pilot` on the roster.
+- [ ] „Eigenes Schiff einbringen". **Open** — no endpoint a participant may call.
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **The segment "Einsätze / Operationen" now exists** and navigates rather than toggling — see

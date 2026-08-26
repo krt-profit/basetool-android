@@ -7,20 +7,25 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -39,8 +44,14 @@ import java.io.IOException
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class InventoryScreenTest {
     private companion object {
-        /** The group, the stack and the entry — three rows, each stating the same quality. */
-        const val QUALITY_ROWS = 3
+        /**
+         * The stack and the entry — two rows, each stating the same quality.
+         *
+         * Not three: design ch. 09 artboard 1 keeps quality off the material GROUP row, because an
+         * aggregate averages stacks that may be in different systems and the reading that matters
+         * is the one on the stack being booked.
+         */
+        const val QUALITY_ROWS = 2
     }
 
     @get:Rule
@@ -76,6 +87,9 @@ class InventoryScreenTest {
             version = 5L,
         )
 
+    /** A member with no grants at all — the caller every gated control is drawn for. */
+    private fun plainMember() = Identity(userId = "someone-else", logistician = false)
+
     private fun stack() =
         InventoryStack(
             holder = "Rhea",
@@ -108,8 +122,13 @@ class InventoryScreenTest {
                     state = state,
                     onToggleGroup = { toggled.add(it) },
                     onToggleStack = { _, stack -> stacksToggled.add(stack) },
+                    onToggleBranch = { _, _ -> },
                     onBookIn = { booked.add(Unit) },
                     onBookOut = { bookedOut.add(it) },
+                    onAllocate = {},
+                    selection = emptySet(),
+                    onToggleSelected = {},
+                    denials = DenialState(),
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
                     onRetryNow = {},
@@ -257,7 +276,7 @@ class InventoryScreenTest {
 
         compose.onAllNodesWithText("12,5").assertCountEquals(1)
         compose.onNodeWithText("Reserviert").assertIsDisplayed()
-        // The group, the stack and now the entry each state it.
+        // The stack and the entry state it; the group deliberately does not.
         compose.onAllNodesWithText("Q 880").assertCountEquals(QUALITY_ROWS)
     }
 
@@ -317,5 +336,45 @@ class InventoryScreenTest {
 
         compose.onNodeWithText("Signal Lost").assertIsDisplayed()
         compose.onNodeWithText("Erneut versuchen", ignoreCase = true).assertIsDisplayed()
+    }
+
+    /**
+     * The locked action answers instead of doing nothing.
+     *
+     * `enabled = false` would satisfy "does not write" just as well and is exactly what the design
+     * forbids (ADR-0011): a control that cannot be tapped cannot say which role is missing. So the
+     * assertion is deliberately about the *refusal*, not about the write being skipped.
+     */
+    @Test
+    fun `a caller without the Logistiker role gets an answer, not a dead button`() {
+        val denials = DenialState()
+        val allocated = mutableListOf<InventoryEntry>()
+        compose.setContent {
+            CompositionLocalProvider(LocalCaller provides plainMember()) {
+                KrtTheme {
+                    InventoryScreen(
+                        state = readyWithStack(EntriesPhase.Ready(listOf(entry()))),
+                        onToggleGroup = {},
+                        onToggleStack = { _, _ -> },
+                        onBookIn = {},
+                        onBookOut = {},
+                        onAllocate = { allocated.add(it) },
+                        onToggleBranch = { _, _ -> },
+                        selection = emptySet(),
+                        onToggleSelected = {},
+                        denials = denials,
+                        onWithStockOnlyChanged = {},
+                        onRefresh = {},
+                        onRetryNow = {},
+                        onLoadMore = {},
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithContentDescription("Zuordnen").performClick()
+
+        assertEquals(emptyList<InventoryEntry>(), allocated)
+        assertEquals("Dafür brauchst du die Rolle Logistiker.", denials.current?.title)
     }
 }

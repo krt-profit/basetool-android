@@ -700,3 +700,74 @@ written) and is dropped from the token client along with every other interceptor
 - [x] **Observed on a device (2026-08-22):** with the test realm's `accessTokenLifespan` lowered to
   60 s, screens kept loading three minutes and several expiries later, where the same walk-through
   had failed on every screen an hour into the previous session.
+### REQ-APP-AUTH-013 — The app knows what the caller may do, and says so instead of failing
+
+The app reads the caller's **permissions** from `/api/v1/users/me` — the same response it already
+reads the user id and the two membership grants from — and keeps them for the session in one
+app-wide holder. It is not a per-screen read: three of twelve ViewModels used to fetch the identity
+at all, which is why whole surfaces shipped with no permission awareness.
+
+A control the caller demonstrably may not use is **rendered in the disabled style, stays tappable,
+and names the missing grant when tapped**. It is not hidden, and it is not `enabled = false`:
+
+- **Not hidden**, because roles in this organisation are granted by hand. A member who cannot see
+  „Zuordnen" cannot discover that a Logistik role exists, and the person who could grant it is
+  never asked. The design system draws a disabled state for every rung of its button ladder and
+  this is what that state is for.
+- **Not `enabled = false`**, because a Compose control with that flag receives no tap, and a control
+  that cannot be tapped cannot explain itself. The disabled *appearance* plus a live tap target is
+  the whole mechanism.
+- The message **names the grant** — „Dafür brauchst du die Rolle Logistiker." — not the status
+  code. „403" tells a member nothing they can act on, and neither does „Keine Berechtigung". Role
+  names are the ones in `ROLES_AND_PERMISSIONS.md` (Logistiker, Missions-Manager, Officer, Admin),
+  so the sentence and the role the member goes on to ask for carry the same word.
+
+**How a lock is drawn** (design ch. 09, artboards 11–14):
+
+- **45 % opacity *and* a lock glyph — both, always.** Alpha alone is indistinguishable from a
+  loading state, so the glyph is what carries the meaning. It is drawn fully opaque on an opaque
+  fill and is never dimmed along with the control it marks.
+- An **icon button** takes a 14 dp lock badge in its corner; a **full-width call-to-action** has no
+  corner, so the lock leads the label instead. Row, sheet, menu and action bar otherwise show the
+  same picture.
+- The refusal appears in **one carrier**: the bracket toast at the foot of the screen, in the
+  warning tint `#FFD23F` with a lock — not the danger tint, because no error has occurred. It is a
+  **singleton** that stands for 4 s, and a second tap restarts that clock rather than stacking a
+  second bar.
+- **Two kinds of lock share that picture** and differ only in copy: a *role* lock, knowable before
+  the tap („Dafür brauchst du die Rolle Logistiker."), and a *row* lock on someone else's entry
+  („Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker.").
+- A locked control announces the refusal to TalkBack as its state description, so a screen reader
+  is told what the toast says rather than reading an unqualified label.
+- A caller who may **look but not save** keeps the values on screen and finds out at the CTA: the
+  editors recede to 55 %, the numbers stay legible.
+
+Where the server's rule depends on the **row** rather than the role, the app answers what it can
+from what it holds and lets the server settle the rest. The Lager's rule is *own row, or edit rights
+on that row's org unit*; the app has the holder, the org unit and the caller's grants, so the common
+cases are decided locally. Where it cannot know, the control stays fully enabled and the refusal is
+reported in the app's own words.
+
+**The permission list is a hint, never a gate.** The server remains the only authority — its
+org-unit scoping was measured against a two-of-each fixture on 2026-08-26 and holds, including
+against a spoofed `X-Active-Org-Unit-Id`
+([`docs/TENANCY_VERIFICATION.md`](../TENANCY_VERIFICATION.md)). A screen
+that treats a locally computed permission as sufficient to skip a check, or that hides a refusal it
+did not predict, is a defect. The list is re-read when the app resumes, so a role granted while the
+app is open takes effect without a sign-out.
+
+**Acceptance**
+
+- [ ] `Identity` carries the backend `permissions` alongside `userId`, `logistician` and
+  `missionManager`, read once per session from `/api/v1/users/me` and refreshed on resume.
+- [ ] Every screen reads it from one shared holder; no ViewModel fetches its own copy.
+- [ ] A permission-gated control renders at the ladder's disabled alpha, remains tappable, performs
+  no write on tap, and states the grant it needs.
+- [ ] No permission-gated control is hidden from a member who lacks the grant.
+- [ ] A plain `KRT Member` (`HANGAR_READ`, `HANGAR_WRITE`, `MISSION_READ`) can open the Lager and
+  reach no 403 by tapping what the screen offers on org-owned stock.
+- [ ] A row-dependent refusal the app could not predict is still reported in the app's own words,
+  never as a status code.
+
+**Enforced by:** `core/data/IdentityRepository.kt` · the shared identity holder ·
+**Decision:** [ADR-0011](../adr/0011-the-app-knows-its-permissions-and-refuses-in-place.md)

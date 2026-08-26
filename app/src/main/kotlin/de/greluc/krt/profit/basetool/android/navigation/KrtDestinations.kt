@@ -36,6 +36,7 @@ enum class KrtDestination(
     val route: String,
     @param:StringRes val titleRes: Int,
     @param:DrawableRes val iconRes: Int,
+    @param:StringRes private val navTitleRes: Int? = null,
 ) {
     /** The dashboard — the app's home and the target of every "back from a root". */
     Home("home", R.string.nav_home, DesignR.drawable.ic_krt_dashboard),
@@ -59,7 +60,15 @@ enum class KrtDestination(
     Hangar("hangar", R.string.nav_hangar, DesignR.drawable.ic_krt_ship),
 
     /** Materialbörse — offers and requests between members. */
-    Exchange("exchange", R.string.nav_exchange, DesignR.drawable.ic_krt_swap),
+    Exchange(
+        "exchange",
+        R.string.nav_exchange,
+        DesignR.drawable.ic_krt_swap,
+        // „BÖRSE" on the rail, „Materialbörse" everywhere else. Both the navigation map (ch. 03)
+        // and the tablet dashboard (ch. 05) label the rail entry with the short form, while the
+        // „Mehr" list spells it out — a rail column is 88 dp wide and the compound crowds it.
+        navTitleRes = R.string.nav_exchange_short,
+    ),
 
     /** Raffinerie — refinery runs and their yields. */
     Refinery("refinery", R.string.nav_refinery, DesignR.drawable.ic_krt_refinery),
@@ -78,6 +87,19 @@ enum class KrtDestination(
 
     /** The open-source notice, pushed from Einstellungen. */
     Licenses("licenses", R.string.licenses_title, DesignR.drawable.ic_krt_list),
+
+    /**
+     * Where a link this build does not know ends up — design ch. 03, „Unbekannte Route → 404
+     * in-fiction", drawn in ch. 14.
+     *
+     * Reached only through the catch-all deep link the graph registers for it, never by tapping
+     * anything. It carries the in-fiction wording rather than the placeholder's, because a link
+     * that goes nowhere *is* a failure, whereas an area with no screen yet is not.
+     */
+    NotFound("not-found", R.string.route_not_found_title, DesignR.drawable.ic_krt_warning),
+
+    /** The Fleetview import, pushed from the Hangar's overflow. */
+    FleetImport("hangar-import", R.string.fleet_import_title, DesignR.drawable.ic_krt_upload),
 
     /**
      * One Einsatz in full, pushed from the Einsatz list.
@@ -117,6 +139,15 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_refinery,
     ),
     ;
+
+    /**
+     * The label a bar or rail entry carries, which is not always the destination's name.
+     *
+     * Falls back to [titleRes], so only a destination whose navigation label the design shortens
+     * needs to say so.
+     */
+    @get:StringRes
+    val navLabelRes: Int get() = navTitleRes ?: titleRes
 
     /** The deep link that opens this destination, e.g. `basetool://missions`. */
     val deepLink: String get() = "$KRT_DEEP_LINK_SCHEME://$route"
@@ -184,6 +215,8 @@ val MORE_DESTINATIONS =
 val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
     mapOf(
         KrtDestination.Licenses to KrtDestination.Settings,
+        // Pushed from the Hangar's overflow, so the bar keeps saying Hangar while it is open.
+        KrtDestination.FleetImport to KrtDestination.Hangar,
         // Without this the bar would light up "Übersicht" — the fallback for an unknown
         // destination — while the member is looking at an Einsatz they opened from "Einsätze".
         KrtDestination.MissionDetail to KrtDestination.Missions,
@@ -265,7 +298,11 @@ fun rootOf(destination: KrtDestination): KrtDestination = SUB_DESTINATIONS[desti
  * Resolves a route back to its destination.
  *
  * @param route the route to look up, or `null` while the graph is still settling.
- * @return the destination, or `null` for an unknown route — which the caller renders as the
- *   in-fiction "Signal Lost" screen rather than silently falling back to the dashboard.
+ * @return the destination, or `null` while the graph is still settling — the caller falls back to
+ *   Übersicht for the **top bar's** identity, which is a question about chrome and not about
+ *   routing. An unknown *link* is a different question and is answered before the graph is asked
+ *   at all: `UnknownLinkGuard` sends it to [NotFound]. This KDoc used to claim the fallback was the
+ *   404, next to a call site reading `?: KrtDestination.Home`, and that mismatch is why the rule
+ *   went unimplemented for as long as it did.
  */
 fun destinationOf(route: String?): KrtDestination? = KrtDestination.entries.firstOrNull { it.route == route }

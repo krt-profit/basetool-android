@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
@@ -41,21 +42,33 @@ private val TOP_BAR_HEIGHT = 64.dp
  * There is deliberately no hamburger: the web app's drawer is replaced by the bottom bar and the
  * tablet rail.
  *
- * @param title screen title; uppercased for display.
+ * @param title screen title.
+ * @param subject whether the title names a THING rather than a section. A section is shouted in
+ *   orange caps ("EINSÄTZE"); a thing keeps its own spelling in white, because "EINSATZKASSE" is
+ *   not what the account is called. Independent of [subtitle] — an account with no status line is
+ *   still an account.
+ * @param subtitle drawn under the title, small. The chapters put a subject's status directly under
+ *   its name.
  * @param modifier layout modifier.
  * @param onBack when non-null a back arrow is shown and this is invoked; pass `null` on roots.
  * @param orgBadge optional org-context chip, typically a [KrtOrgBadge].
  * @param notificationCount unread notifications; `null` hides the bell, `0` shows it without badge.
  * @param onNotificationsClick invoked when the bell is tapped.
+ * @param actions trailing controls — the screen's own overflow, after the bell. A detail that owns
+ *   destructive or rarely used actions puts them here rather than in the content, which is where
+ *   design chapter 08 has the Hangar's `⋮`.
  */
 @Composable
 fun KrtTopBar(
     title: String,
     modifier: Modifier = Modifier,
+    subject: Boolean = false,
+    subtitle: (@Composable () -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     orgBadge: @Composable (() -> Unit)? = null,
     notificationCount: Int? = null,
     onNotificationsClick: (() -> Unit)? = null,
+    actions: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
         Row(
@@ -74,14 +87,21 @@ fun KrtTopBar(
                     style = KrtButtonStyles.chrome,
                 )
             }
-            Text(
-                text = title.krtUppercase(),
-                modifier = Modifier.weight(1f).padding(end = KrtSpacing.sm),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(modifier = Modifier.weight(1f).padding(end = KrtSpacing.sm)) {
+                Text(
+                    text = if (subject) title else title.krtUppercase(),
+                    style =
+                        if (subject) {
+                            MaterialTheme.typography.titleMedium
+                        } else {
+                            MaterialTheme.typography.headlineSmall
+                        },
+                    color = if (subject) KrtPalette.White else MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                subtitle?.invoke()
+            }
             orgBadge?.invoke()
             if (notificationCount != null && onNotificationsClick != null) {
                 Box(
@@ -102,6 +122,7 @@ fun KrtTopBar(
                     }
                 }
             }
+            actions?.invoke()
         }
         Box(
             modifier =
@@ -112,6 +133,58 @@ fun KrtTopBar(
         )
     }
 }
+
+/**
+ * The head a screen wears while a multi-selection is running.
+ *
+ * It **replaces** the normal bar rather than decorating it (design ch. 09, artboard 5): the org chip
+ * and the bell are for choosing what to look at, and a member picking rows has already chosen. What
+ * is left is the way out and the count, which together are the whole answer to "what am I in, and
+ * how do I leave".
+ *
+ * Shorter than [KrtTopBar] on purpose — the artboard measures 56 dp against the section bar's 64 —
+ * and it carries no accent rule underneath, because the action bar at the foot is the surface that
+ * frames this mode.
+ *
+ * @param label the selection rendered as words, e.g. „2 gewählt". The count itself stays with the
+ *   caller: the plural is a string resource and this module deliberately holds none.
+ * @param onClear leaves selection mode.
+ * @param closeLabel what the ✕ announces to TalkBack.
+ * @param modifier usually the status-bar inset padding.
+ */
+@Composable
+fun KrtSelectionTopBar(
+    label: String,
+    onClear: () -> Unit,
+    closeLabel: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(KrtPalette.SurfaceInput)
+                .height(SELECTION_BAR_HEIGHT)
+                .padding(start = KrtSpacing.xs, end = KrtSpacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtIconButton(
+            iconRes = R.drawable.ic_krt_close,
+            label = closeLabel,
+            onClick = onClear,
+            style = KrtButtonStyles.chrome,
+        )
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            color = KrtPalette.White,
+        )
+    }
+}
+
+/** Height of the selection bar — the artboard's 56 dp, shorter than the section bar's 64. */
+private val SELECTION_BAR_HEIGHT = 56.dp
 
 @Preview(name = "Top bar", showBackground = true, backgroundColor = 0xFF000000, widthDp = 412)
 @Composable

@@ -13,4 +13,11 @@
 
     <!-- Spoken description of the artwork; this one IS localizable. -->
     <string name="krt_fankit_logo_description">Star Citizen — Made by the Community</string>
+
+    <!--
+      The default label of a modal's secondary action. A shared component may not carry UI copy as
+      a literal: this one sat in KrtModal's parameter default as the German word, which every
+      caller happened to override and no locale could.
+    -->
+    <string name="krt_cancel">Abbrechen</string>
 </resources>

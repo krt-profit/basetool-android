@@ -10,6 +10,9 @@ package de.greluc.krt.profit.basetool.android.inventory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
+import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
@@ -17,6 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -107,6 +111,9 @@ sealed interface EntriesPhase {
  * @property withStockOnly whether groups holding nothing are hidden
  * @property openedStacks the state of each opened stack, keyed by [stackKey]
  * @property online whether a booking can be sent at all
+ * @property allocation the open Zuordnung sheet, or `null`
+ * @property selection the rows long-pressed into selection mode; empty means the mode is off
+ * @property bulk the open bulk-move sheet, or `null`
  */
 data class InventoryState(
     val groups: List<InventoryGroup> = emptyList(),
@@ -121,7 +128,55 @@ data class InventoryState(
     val withStockOnly: Boolean = false,
     val openedStacks: Map<String, EntriesPhase> = emptyMap(),
     val online: Boolean = true,
+    val allocation: AllocationSheetState? = null,
+    val selection: Set<String> = emptySet(),
+    val bulk: BulkMoveState? = null,
 ) {
+    /**
+     * The entries currently selected, as far as the tree has read them.
+     *
+     * Needed because the selection is a set of **ids** while the question a screen asks about it —
+     * "does this include somebody else's row?" — is about the rows. An id whose entry is no longer
+     * loaded is left out rather than guessed at; the server still refuses what it must.
+     *
+     * @return the selected entries.
+     */
+    fun selectedEntries(): List<InventoryEntry> =
+        openedStacks
+            .values
+            .filterIsInstance<EntriesPhase.Ready>()
+            .flatMap { it.entries }
+            .filter { it.id in selection }
+
+    /**
+     * How much of one material group is in the selection.
+     *
+     * Counted from the entries the tree has already read rather than from the group's own totals,
+     * because those are amounts and this is a count of rows. A group whose stacks were never opened
+     * has none loaded and reports `null` for the total — the chip then says „n gewählt" instead of
+     * „n/m gewählt", which is exactly the distinction design ch. 09, artboard 5 draws between an
+     * open and a collapsed group.
+     *
+     * Collapsing does not drop the entries, so a group closed after picking rows still counts them.
+     *
+     * @param materialId the group.
+     * @return how many of its rows are selected, and how many it has — the latter `null` when it
+     *   has never been opened.
+     */
+    fun selectionIn(materialId: String): Pair<Int, Int?> {
+        val prefix = "$materialId|"
+        val loaded =
+            openedStacks
+                .filterKeys { it.startsWith(prefix) }
+                .values
+                .filterIsInstance<EntriesPhase.Ready>()
+                .flatMap { it.entries }
+        if (loaded.isEmpty()) {
+            return 0 to null
+        }
+        return loaded.count { it.id in selection } to loaded.size
+    }
+
     /**
      * The rows the tree actually shows.
      *
@@ -139,6 +194,25 @@ data class InventoryState(
                 groups
             }
 }
+
+/**
+ * The open bulk-move sheet.
+ *
+ * @property place where the selected rows are being sent, or `null` until one is picked.
+ * @property places the org's locations.
+ * @property saving whether the move is running.
+ * @property error the last refusal.
+ * @property result what the server did, once it has — the sheet's **second step** rather than a
+ *   toast (design ch. 09, artboard 9). A skipped row needs its explaining sentence, and a toast is
+ *   too fleeting to carry one.
+ */
+data class BulkMoveState(
+    val place: LocationOption? = null,
+    val places: List<LocationOption> = emptyList(),
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+    val result: BulkRebookResult? = null,
+)
 
 /**
  * Drives the Lager tree.
@@ -410,6 +484,340 @@ class InventoryViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Puts a row into the selection, or takes it out.
+     *
+     * Long-press starts the mode (design ch. 02 §4) and an empty selection ends it: there is no
+     * separate "leave selection mode", because a mode a member can be in with nothing selected is a
+     * mode they have to notice they are in.
+     *
+     * @param entryId the row.
+     */
+    fun onToggleSelected(entryId: String) {
+        val current = mutableState.value.selection
+        val next = if (entryId in current) current - entryId else current + entryId
+        mutableState.value = mutableState.value.copy(selection = next)
+    }
+
+    /**
+     * Selects — or, when they are all in already, deselects — every entry under one branch.
+     *
+     * The design makes selection **always a set of entries** (design ch. 09, artboard 5: „Auswahl
+     * ist IMMER Eintrags-Menge"). A group or stack row therefore carries no selection state of its
+     * own; long-pressing one is shorthand for its leaves, which is what `bulk-rebook` takes — entry
+     * ids plus one target, and the source may differ per entry.
+     *
+     * A branch whose entries are not loaded selects nothing rather than guessing at ids. The row is
+     * still tappable to open it, so the member's next action reaches the same place.
+     *
+     * @param materialId the group, or the group a stack belongs to.
+     * @param stack the stack to limit to, or `null` for the whole group.
+     */
+    fun onToggleBranch(
+        materialId: String,
+        stack: InventoryStack? = null,
+    ) {
+        val prefix = if (stack == null) "$materialId|" else stackKey(materialId, stack)
+        val ids =
+            mutableState.value.openedStacks
+                .filterKeys { if (stack == null) it.startsWith(prefix) else it == prefix }
+                .values
+                .filterIsInstance<EntriesPhase.Ready>()
+                .flatMap { phase -> phase.entries.map { it.id } }
+                .toSet()
+        if (ids.isEmpty()) {
+            return
+        }
+        val current = mutableState.value.selection
+        val next = if (ids.all { it in current }) current - ids else current + ids
+        mutableState.value = mutableState.value.copy(selection = next)
+    }
+
+    /** Clears the selection, which leaves selection mode. */
+    fun onSelectionCleared() {
+        mutableState.value = mutableState.value.copy(selection = emptySet())
+    }
+
+    /**
+     * Closes the result step, which is what ends the whole batch.
+     *
+     * Only here does the selection go and the tree re-read. The opened stacks are dropped as well,
+     * not just the group list: their entries are cached per stack and the rows that just moved
+     * still carry the OLD place, so leaving them would show a member the move they just made as not
+     * having happened.
+     */
+    fun onBulkMoveFinished() {
+        mutableState.value =
+            mutableState.value.copy(bulk = null, selection = emptySet(), openedStacks = emptyMap())
+        reload(keepRows = true)
+    }
+
+    /** Opens the bulk-move sheet over the current selection. */
+    fun onBulkMoveRequested() {
+        if (mutableState.value.selection.isEmpty()) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(bulk = BulkMoveState())
+        viewModelScope.launch {
+            val places = source.locations("")
+            val open = mutableState.value.bulk ?: return@launch
+            mutableState.value =
+                mutableState.value.copy(
+                    bulk = open.copy(places = (places as? ApiResult.Success)?.value.orEmpty()),
+                )
+        }
+    }
+
+    /** Closes it. */
+    fun onBulkMoveDismissed() {
+        mutableState.value = mutableState.value.copy(bulk = null)
+    }
+
+    /**
+     * Records where the selection is being sent.
+     *
+     * @param place the chosen location.
+     */
+    fun onBulkMovePlace(place: LocationOption) {
+        val open = mutableState.value.bulk ?: return
+        mutableState.value = mutableState.value.copy(bulk = open.copy(place = place, error = null))
+    }
+
+    /**
+     * Moves every selected row to the chosen place.
+     *
+     * One call, not one per row: the endpoint is all-or-nothing on its own terms, which is what a
+     * member selecting twelve stacks expects — a half-applied move would leave them reading a list
+     * they can no longer reason about.
+     */
+    fun onBulkMoveConfirmed() {
+        val open = mutableState.value.bulk
+        val place = open?.place
+        val ids = mutableState.value.selection.toList()
+        val ready = place != null && ids.isNotEmpty() && !open.saving
+        if (!ready || !mutableState.value.online) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(bulk = open.copy(saving = true, error = null))
+        viewModelScope.launch {
+            when (val result = source.bulkRebook(entryIds = ids, locationId = place.id)) {
+                is ApiResult.Success -> {
+                    // The sheet stays open on its result step. Closing here and re-reading would
+                    // drop the one number a member cannot reconstruct — how many rows were skipped
+                    // because they already stood at the target, which is not a failure and needs
+                    // its sentence (design ch. 09, artboard 9).
+                    mutableState.value =
+                        mutableState.value.copy(bulk = open.copy(saving = false, result = result.value))
+                }
+
+                is ApiResult.Failure -> {
+                    // The selection is deliberately left standing: nothing was changed, and a
+                    // member who has just picked twelve rows must not have to pick them again to
+                    // retry (artboard 10).
+                    mutableState.value =
+                        mutableState.value.copy(bulk = open.copy(saving = false, error = result.error))
+                }
+            }
+        }
+    }
+
+    /**
+     * Opens the Zuordnung sheet on one entry.
+     *
+     * The targets are fetched when the sheet opens rather than with the list: they are two lookups
+     * a member who never splits a stack should not pay for on every Lager load.
+     *
+     * @param entry the stock entry to split.
+     */
+    fun onAllocate(entry: InventoryEntry) {
+        mutableState.value =
+            mutableState.value.copy(
+                allocation =
+                    AllocationSheetState(
+                        entry = entry,
+                        jobOrders = entry.jobOrderAllocations.toRows(),
+                        missions = entry.missionAllocations.toRows(),
+                    ),
+            )
+        viewModelScope.launch {
+            val orders = source.orderTargets()
+            val missions = source.missionTargets()
+            val open = mutableState.value.allocation ?: return@launch
+            mutableState.value =
+                mutableState.value.copy(
+                    allocation =
+                        open.copy(
+                            orderTargets = (orders as? ApiResult.Success)?.value.orEmpty(),
+                            missionTargets = (missions as? ApiResult.Success)?.value.orEmpty(),
+                        ),
+                )
+        }
+    }
+
+    /** Closes it, discarding anything not saved. */
+    fun onAllocationDismissed() {
+        mutableState.value = mutableState.value.copy(allocation = null)
+    }
+
+    /**
+     * Records a typed amount.
+     *
+     * @param kind which split.
+     * @param targetId the row.
+     * @param amount what was typed.
+     */
+    fun onAllocationAmount(
+        kind: AllocationKind,
+        targetId: String,
+        amount: String,
+    ) {
+        editAllocation(kind, targetId) { it.copy(amount = amount.filter { c -> c.isDigit() || c == '.' }) }
+    }
+
+    /**
+     * Steps a row up or down.
+     *
+     * @param kind which split.
+     * @param targetId the row.
+     * @param by `+1` or `-1`.
+     */
+    fun onAllocationStep(
+        kind: AllocationKind,
+        targetId: String,
+        by: Int,
+    ) {
+        editAllocation(kind, targetId) { row ->
+            val current = row.amount.trim().toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO
+            val next = (current + by.toBigDecimal()).coerceAtLeast(java.math.BigDecimal.ZERO)
+            row.copy(amount = next.stripTrailingZeros().toPlainString())
+        }
+    }
+
+    /**
+     * Adds a target to a split, at zero.
+     *
+     * At zero rather than at the whole rest: the member picked what to promise to, not how much,
+     * and a row that arrives pre-filled with everything left is one tap away from a split nobody
+     * intended.
+     *
+     * @param kind which split.
+     * @param target what was picked.
+     */
+    fun onAllocationAdd(
+        kind: AllocationKind,
+        target: AllocationTarget,
+    ) {
+        val open = mutableState.value.allocation ?: return
+        val row =
+            AllocationRow(
+                targetId = target.id,
+                label = target.label,
+                subtitle = target.subtitle,
+                amount = "0",
+                serverAmount = null,
+            )
+        val next =
+            if (kind == AllocationKind.JOB_ORDER) {
+                open.copy(jobOrders = open.jobOrders + row, picking = null)
+            } else {
+                open.copy(missions = open.missions + row, picking = null)
+            }
+        mutableState.value = mutableState.value.copy(allocation = next)
+    }
+
+    /**
+     * Opens or closes an add picker.
+     *
+     * @param kind the split whose picker to open, or `null` to close.
+     */
+    fun onAllocationPick(kind: AllocationKind?) {
+        val open = mutableState.value.allocation ?: return
+        mutableState.value = mutableState.value.copy(allocation = open.copy(picking = kind))
+    }
+
+    /**
+     * Writes every changed row, in sequence.
+     *
+     * Sequential and not parallel, because each write returns a new optimistic-locking version that
+     * the next one has to carry — firing them together would make all but the first collide with
+     * their own predecessor.
+     *
+     * A failure stops the sequence rather than pushing on. What already landed stays landed, and
+     * the count is reported: "three of five were written" is a fact the member needs, and pretending
+     * the save was atomic would leave them re-entering changes that are already in.
+     */
+    fun onAllocationSave() {
+        val open = mutableState.value.allocation ?: return
+        if (!open.submittable) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(allocation = open.copy(saving = true, error = null, partial = 0))
+        viewModelScope.launch {
+            var entry = open.entry
+            var written = 0
+            for ((kind, row) in open.pending) {
+                val result =
+                    source.setAllocation(
+                        entryId = entry.id,
+                        kind = kind,
+                        targetId = row.targetId,
+                        amount = row.amount,
+                        existing = row.existsOnServer,
+                        version = entry.version,
+                    )
+                when (result) {
+                    is ApiResult.Success -> {
+                        entry = result.value
+                        written++
+                    }
+
+                    is ApiResult.Failure -> {
+                        mutableState.value =
+                            mutableState.value.copy(
+                                allocation =
+                                    open.copy(
+                                        entry = entry,
+                                        jobOrders = entry.jobOrderAllocations.toRows(),
+                                        missions = entry.missionAllocations.toRows(),
+                                        saving = false,
+                                        error = result.error,
+                                        partial = written,
+                                    ),
+                            )
+                        return@launch
+                    }
+                }
+            }
+            mutableState.value = mutableState.value.copy(allocation = null)
+            reload(keepRows = true)
+        }
+    }
+
+    /**
+     * Rewrites one row of the open sheet.
+     *
+     * @param kind which split.
+     * @param targetId the row.
+     * @param change what to make of it.
+     */
+    private fun editAllocation(
+        kind: AllocationKind,
+        targetId: String,
+        change: (AllocationRow) -> AllocationRow,
+    ) {
+        val open = mutableState.value.allocation ?: return
+        val edit = { rows: List<AllocationRow> ->
+            rows.map { if (it.targetId == targetId) change(it) else it }
+        }
+        val next =
+            if (kind == AllocationKind.JOB_ORDER) {
+                open.copy(jobOrders = edit(open.jobOrders), error = null)
+            } else {
+                open.copy(missions = edit(open.missions), error = null)
+            }
+        mutableState.value = mutableState.value.copy(allocation = next)
     }
 
     /**

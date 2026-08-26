@@ -7,21 +7,27 @@
 
 package de.greluc.krt.profit.basetool.android.orders
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -66,6 +72,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModa
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadgeKind
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -75,8 +83,12 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -142,9 +154,12 @@ fun OrdersScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
+        // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
+        // breaks character by character („ABG ESC HLO SSE N").
+        FlowRow(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
             FILTERABLE_STATUSES.forEach { status ->
                 val selected = status in state.statuses
@@ -239,6 +254,7 @@ private fun OrdersList(
     onOpenOrder: (String) -> Unit,
 ) {
     LazyColumn(
+        state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG),
         contentPadding = PaddingValues(horizontal = KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -486,7 +502,7 @@ private fun orgBadgeKind(unit: String?): KrtOrgBadgeKind =
  * @param material the line.
  */
 @Composable
-private fun MaterialLine(material: JobOrderMaterial) {
+internal fun MaterialLine(material: JobOrderMaterial) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
@@ -591,21 +607,6 @@ private fun JobOrder.kindTone(): KrtChipTone =
         else -> KrtChipTone.Muted
     }
 
-/**
- * How long ago an instant is, in the platform's words.
- *
- * @return the localised relative span.
- */
-@Composable
-private fun Instant.relativeToNow(): String {
-    LocalConfiguration.current
-    return DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
-}
-
 /** The statuses offered as filter chips. */
 private val FILTERABLE_STATUSES =
     listOf(
@@ -681,6 +682,14 @@ fun OrderDetailScreen(
             ) {
                 OrderDetailBody(state = state, order = order, actions = actions)
             }
+            // Design ch. 14's conflict dialog -- but NOT for the note, which already has the
+            // richer recovery chapter 10 draws: a refused note comes back as `rejectedNote` with
+            // „Meine Fassung übernehmen", and a generic „Neu laden" over it would offer to throw
+            // away the very text that flow exists to preserve.
+            ConflictOn(
+                error = state.error?.takeIf { state.rejectedNote == null },
+                onReload = onRefresh,
+            )
             state.noteDraft?.let { draft ->
                 NoteSheet(draft = draft, state = state, actions = actions)
             }
@@ -746,6 +755,8 @@ data class OrderDetailActions(
     val onApplyStatus: () -> Unit,
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
     val onDismissStatusConfirm: () -> Unit,
+    /** Switches to another page of the order (design ch. 10 artboard 2). */
+    val onTabSelected: (OrderTab) -> Unit,
 )
 
 /**
@@ -770,33 +781,27 @@ private fun OrderDetailBody(
                 modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.orders_number, order.displayId),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = KrtPalette.White,
-                        modifier = Modifier.weight(1f),
-                    )
-                    KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
-                }
-                Text(
-                    text = order.parties(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
+                // The order's number and status live in the TOP BAR (design ch. 10 artboard 2),
+                // the same rule the Einsatz detail follows. The parties move to the facts bar.
+                ProvideScreenTopBar(
+                    title = stringResource(R.string.orders_number, order.displayId),
+                    subtitle = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 2.dp),
+                        ) {
+                            KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
+                            order.priority?.let {
+                                Text(
+                                    text = stringResource(R.string.order_detail_priority, it),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = KrtPalette.TextMuted,
+                                )
+                            }
+                        }
+                    },
                 )
-                // Said plainly, because the alternative is a member reading a partial order as a
-                // complete one (REQ-ORDERS-023).
-                if (order.redacted) {
-                    Text(
-                        text = stringResource(R.string.orders_redacted),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.Warning,
-                    )
-                }
                 state.error?.let { error -> WriteError(error = error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                     KrtCtaButton(
@@ -832,71 +837,22 @@ private fun OrderDetailBody(
                 }
             }
         }
-        order.comment?.let { comment ->
-            item(key = "comment") {
-                Section(title = stringResource(R.string.order_detail_comment)) {
-                    Body(text = comment)
-                }
-            }
-        }
-        item(key = "materials-title") {
-            KrtSectionTitle(
-                text = stringResource(R.string.order_detail_materials),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        item(key = "facts") { OrderFactsBar(order = order) }
+        item(key = "redaction") { RedactionNotice(order = order) }
+        item(key = "tabs") {
+            KrtPageTabs(
+                tabs =
+                    OrderTab.entries.map { tab ->
+                        KrtPageTab(label = stringResource(tab.labelRes), count = tab.countIn(order))
+                    },
+                selectedIndex = OrderTab.entries.indexOf(state.tab),
+                onSelect = { actions.onTabSelected(OrderTab.entries[it]) },
             )
         }
-        if (order.materials.isEmpty()) {
-            item(key = "materials-empty") {
-                Body(text = stringResource(R.string.order_detail_materials_empty))
-            }
-        } else {
-            items(order.materials, key = { it.name }) { material ->
-                Column(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
-                    MaterialLine(material = material)
-                }
-            }
-        }
-        item(key = "assignees-title") {
-            KrtSectionTitle(
-                text = stringResource(R.string.order_detail_assignees),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-            )
-        }
-        if (order.assignees.isEmpty()) {
-            item(key = "assignees-empty") {
-                Body(text = stringResource(R.string.order_detail_assignees_empty))
-            }
-        } else {
-            items(order.assignees, key = { it.userId }) { assignee ->
-                AssigneeRow(
-                    assignee = assignee,
-                    mine = assignee.userId == state.me?.userId,
-                    writable = state.writable,
-                    onEditNote = actions.onEditNote,
-                )
-            }
-        }
-        item(key = "handovers-title") {
-            KrtSectionTitle(
-                text = stringResource(R.string.order_detail_handovers),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-            )
-        }
-        if (order.handovers.isEmpty()) {
-            item(key = "handovers-empty") {
-                Body(text = stringResource(R.string.order_detail_handovers_empty))
-            }
-        } else {
-            items(order.handovers, key = { it.id }) { handover ->
-                Body(
-                    text =
-                        stringResource(
-                            R.string.order_detail_handover_row,
-                            handover.recipient.orEmpty(),
-                            handover.at?.relativeToNow().orEmpty(),
-                        ),
-                )
-            }
+        when (state.tab) {
+            OrderTab.POSITIONS -> positionsTab(order = order)
+            OrderTab.ASSIGNEES -> assigneesTab(order = order, state = state, actions = actions)
+            OrderTab.HANDOVERS -> handoversTab(order = order)
         }
     }
 }
@@ -913,7 +869,7 @@ private fun OrderDetailBody(
  * @param onEditNote the note action was taken.
  */
 @Composable
-private fun AssigneeRow(
+internal fun AssigneeRow(
     assignee: JobOrderAssignee,
     mine: Boolean,
     writable: Boolean,
@@ -1020,7 +976,14 @@ private fun NoteSheet(
                     text = stringResource(R.string.personal_inventory_save),
                     onClick = actions.onSaveNote,
                     modifier = Modifier.testTag(ORDER_NOTE_SAVE_TAG),
-                    enabled = state.writable,
+                    // Design ch. 10: the CTA is live only when the draft differs from what the
+                    // server holds. An enabled "Speichern" over an untouched field offers a write
+                    // that would change nothing — and on a first, empty note it invites one that
+                    // says nothing at all.
+                    enabled =
+                        state.writable &&
+                            !state.saving &&
+                            draft != state.myAssignment?.note.orEmpty(),
                 )
             }
         }
@@ -1041,7 +1004,7 @@ private fun WriteError(error: ApiError) {
         text =
             stringResource(
                 when (error) {
-                    is ApiError.OptimisticLock -> R.string.conflict_body
+                    is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.order_detail_not_allowed
                     else -> R.string.write_failed
                 },
@@ -1075,7 +1038,7 @@ private fun Section(
  * @param text what to say.
  */
 @Composable
-private fun Body(text: String) {
+internal fun Body(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
@@ -1175,6 +1138,7 @@ fun OrderDetailRoute(
                 onStatusSelected = viewModel::onStatusSelected,
                 onApplyStatus = viewModel::onApplyStatus,
                 onDismissStatusConfirm = viewModel::onDismissStatusConfirm,
+                onTabSelected = viewModel::onTabSelected,
             ),
         modifier = modifier,
     )

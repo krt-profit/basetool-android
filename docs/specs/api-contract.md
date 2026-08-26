@@ -146,10 +146,29 @@ so the badge is not tappable — the same rule the web sidebar applies. With no 
 badge is absent rather than showing a placeholder, because a placeholder would be a claim about a
 scope the app does not have.
 
+**„Alle Org-Einheiten" is a fourth state, and it is a *choice*, not the absence of one.** The
+switcher's last row (design ch. 02, artboard 7) sends no header at all, which the backend answers
+with the union of the caller's **own** memberships — never a unit they do not belong to, verified
+against a two-Staffel and a Staffel-plus-Spezialkommando member
+([`docs/TENANCY_VERIFICATION.md`](../TENANCY_VERIFICATION.md)). It therefore cannot be stored as a
+cleared pin: the rule above would fall through to the server default on the next cold start and put
+the member back into a single Staffel they never picked. A sentinel is stored instead, and the badge
+reads „Alle" — a known scope deserves a badge, and dropping it would read as "no scope resolved".
+
+**A unit is named by what it is.** A Staffel reads „IRI — IRIDIUM" (shorthand, em dash, name); every
+other kind leads with a marker for its kind — „SK Vanguard", „Bereich Profit" — because units are
+named by hand and „VANGUARD" the Staffel and „VANGUARD" the Spezialkommando are otherwise the same
+word in the one list whose job is telling them apart. The marker is added **at most once**: the
+organisation does name Spezialkommandos „SK Nebelkraehe", and an unconditional prefix rendered
+„SK SK NEBELKRAEHE" on the device.
+
 **Acceptance**
 
 - [x] The three-step rule, the dropped stale pin and the refusal to pin a foreign unit are covered
   (`OrgUnitViewModelTest`).
+- [x] „Alle Org-Einheiten" survives a restart rather than collapsing back to one unit, and picking a
+  unit again leaves the state (`OrgUnitViewModelTest`, `ActiveOrgUnitStoreTest`).
+- [x] The label forms, including the not-prefixed-twice case (`OrgUnitLabelsTest`).
 - [x] The pin is readable synchronously **from a fresh instance with no priming** — the way the
   interceptor reads it on the first request of a cold start — survives a restart and is cleared by
   a wipe (`ActiveOrgUnitStoreTest`).

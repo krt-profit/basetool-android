@@ -205,6 +205,19 @@ class BookingViewModel(
             )
     }
 
+    /**
+     * Answers the conflict dialog's „Neu laden": closes the form and makes the tree re-read itself.
+     *
+     * It reuses the `onSaved` hook the caller already supplies for a landed booking, because the
+     * tree needs exactly the same thing after a refused one: the row it is showing is stale either
+     * way. Reloading does **not** retry the write -- see [ConflictModal] for why a retry against a
+     * newer version would defeat the lock it just ran into.
+     */
+    fun onConflictReload() {
+        saved?.invoke()
+        onDismissed()
+    }
+
     /** Closes the form, discarding what was typed. */
     fun onDismissed() {
         searchJob?.cancel()

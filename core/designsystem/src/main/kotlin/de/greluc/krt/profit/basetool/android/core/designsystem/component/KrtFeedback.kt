@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +43,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -157,25 +161,28 @@ fun KrtLoadingIndicator(
 @Composable
 fun KrtOfflineBanner(
     title: String,
-    lastUpdated: String,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    lastUpdated: String? = null,
+    onRetry: (() -> Unit)? = null,
     retryText: String = "Erneut verbinden",
 ) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
+                .height(IntrinsicSize.Min)
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .defaultMinSize(minHeight = KrtSpacing.touchTarget),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The edge spans whatever the banner turns out to be, not one touch target: a two-line
+        // reason left the bar stopping short of the text it belongs to.
         Box(
             modifier =
                 Modifier
                     .width(BANNER_EDGE)
-                    .height(KrtSpacing.touchTarget)
+                    .fillMaxHeight()
                     .background(KrtTheme.colors.warning),
         )
         KrtIcon(
@@ -191,17 +198,24 @@ fun KrtOfflineBanner(
                 style = MaterialTheme.typography.labelMedium,
                 color = KrtTheme.colors.warning,
             )
-            Text(
-                text = lastUpdated,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
+            // Both optional, because a screen that shows live data it simply cannot refresh
+            // has neither a stamp to quote nor a retry that would mean anything. Rendering an
+            // empty second line under the title would read as a timestamp that failed to load.
+            lastUpdated?.let { stamp ->
+                Text(
+                    text = stamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        }
+        onRetry?.let { retry ->
+            KrtGhostButton(
+                text = retryText,
+                onClick = retry,
+                modifier = Modifier.padding(KrtSpacing.sm),
             )
         }
-        KrtGhostButton(
-            text = retryText,
-            onClick = onRetry,
-            modifier = Modifier.padding(KrtSpacing.sm),
-        )
     }
 }
 
@@ -296,9 +310,13 @@ fun KrtTotalTile(
     modifier: Modifier = Modifier,
     unit: String? = null,
 ) {
+    // `IntrinsicSize.Min` and `fillMaxHeight` are load-bearing: a Box given only a width is zero
+    // pixels tall, so the orange bar — the one thing that marks this figure as the screen's total —
+    // rendered as nothing at all. Invisible until something finally used the component.
     Row(
         modifier =
             modifier
+                .height(IntrinsicSize.Min)
                 .background(MaterialTheme.colorScheme.surface)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3),
     ) {
@@ -306,6 +324,7 @@ fun KrtTotalTile(
             modifier =
                 Modifier
                     .width(TOTAL_BAR)
+                    .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary),
         )
         Column(modifier = Modifier.padding(KrtSpacing.md)) {
@@ -330,6 +349,75 @@ fun KrtTotalTile(
 }
 
 /**
+ * One figure with a label and a coloured rail — a batch's outcome, or a screen's KPI band.
+ *
+ * Not [KrtTotalTile]: that one is a screen's *total*, framed and carrying the orange bar that marks
+ * it as such. This is one of a row of equals — „Umgebucht 11 / Übersprungen 1" after a batch
+ * (design ch. 09, artboard 9), „Schiffe 42 / Fitted 31" over an aggregate (ch. 08, artboard 1) —
+ * so it is bare except for a 4 dp rail in the tone of the number beside it. Give each sibling
+ * `Modifier.weight(1f)`.
+ *
+ * @param label what the figure counts, drawn small and muted above it.
+ * @param value the figure.
+ * @param tone the rail and the figure's colour.
+ * @param modifier usually the weight that pairs it with its siblings.
+ */
+@Composable
+fun KrtFigureTile(
+    label: String,
+    value: String,
+    tone: KrtFigureTone,
+    modifier: Modifier = Modifier,
+) {
+    val hue =
+        when (tone) {
+            KrtFigureTone.Primary -> KrtPalette.White
+            KrtFigureTone.Success -> KrtTheme.colors.successText
+            KrtFigureTone.Neutral -> KrtPalette.Gray1
+        }
+    val rail =
+        when (tone) {
+            KrtFigureTone.Primary -> MaterialTheme.colorScheme.primary
+            KrtFigureTone.Success -> KrtTheme.colors.success
+            KrtFigureTone.Neutral -> KrtPalette.Gray2
+        }
+    Row(modifier = modifier.height(IntrinsicSize.Min).background(KrtPalette.Gray4)) {
+        Box(modifier = Modifier.width(FIGURE_RAIL).fillMaxHeight().background(rail))
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = FIGURE_PAD)) {
+            Text(
+                text = label.krtUppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = KrtPalette.Gray2,
+            )
+            Text(
+                text = value,
+                modifier = Modifier.padding(top = KrtSpacing.xs),
+                style = MaterialTheme.typography.headlineMedium,
+                color = hue,
+            )
+        }
+    }
+}
+
+/** The tone a [KrtFigureTile] is drawn in. */
+enum class KrtFigureTone {
+    /** The headline figure of a band — the orange rail. */
+    Primary,
+
+    /** Something was done, or is ready — the green figure. */
+    Success,
+
+    /** A figure that is neither good nor bad: skipped, remaining, unclassified. */
+    Neutral,
+}
+
+/** Width of the tile's coloured rail. */
+private val FIGURE_RAIL = 4.dp
+
+/** Vertical padding inside it. */
+private val FIGURE_PAD = 10.dp
+
+/**
  * A KPI tile with an optional delta and sparkline.
  *
  * Deltas take the semantic text tints — positive green, negative red — matching the price rule of
@@ -341,6 +429,7 @@ fun KrtTotalTile(
  * @param delta optional change indicator, already formatted with its sign.
  * @param deltaPositive whether [delta] is an improvement; drives its colour.
  * @param sparkline optional series of values, oldest first, drawn as a plain line.
+ * @param sparklineDescription what a screen reader is told the sparkline shows.
  * @param onClick optional tap handler making the whole tile the target.
  */
 @Composable
@@ -352,6 +441,7 @@ fun KrtKpiCard(
     deltaPositive: Boolean = true,
     sparkline: List<Float>? = null,
     onClick: (() -> Unit)? = null,
+    sparklineDescription: String? = null,
 ) {
     KrtCard(modifier = modifier, onClick = onClick) {
         Text(
@@ -378,7 +468,7 @@ fun KrtKpiCard(
                     )
                 }
                 if (sparkline != null) {
-                    KrtSparkline(values = sparkline)
+                    KrtSparkline(values = sparkline, contentDescription = sparklineDescription)
                 }
             }
         }
@@ -394,26 +484,36 @@ fun KrtKpiCard(
  * @param values the series, oldest first. Fewer than two points render nothing.
  * @param modifier layout modifier.
  * @param color line colour; orange by default.
+ * @param contentDescription what a screen reader is told the line shows; a chart with none
+ *   is a blank to anyone not looking at it.
  */
 @Composable
 fun KrtSparkline(
     values: List<Float>,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
+    contentDescription: String? = null,
 ) {
     if (values.size < 2) return
-    Canvas(modifier = modifier.size(width = SPARKLINE_WIDTH, height = SPARKLINE_HEIGHT)) {
+    val described =
+        contentDescription?.let { text -> modifier.semantics { this.contentDescription = text } }
+            ?: modifier
+    Canvas(
+        modifier = described.defaultMinSize(minWidth = SPARKLINE_WIDTH, minHeight = SPARKLINE_HEIGHT),
+    ) {
         val min = values.min()
         val max = values.max()
-        val span = (max - min).takeIf { it > 0f } ?: 1f
+        val span = (max - min).takeIf { it > 0f }
         val stepX = size.width / (values.size - 1)
-        var previous = Offset(0f, size.height - (values[0] - min) / span * size.height)
+        // A flat series has no span to scale by. Halfway up is the honest picture of "it did not
+        // move"; dividing by a substituted 1f pins every point to the bottom edge and draws a fall
+        // that never happened.
+        val yFor = { value: Float ->
+            span?.let { size.height - (value - min) / it * size.height } ?: (size.height / 2f)
+        }
+        var previous = Offset(0f, yFor(values[0]))
         for (index in 1 until values.size) {
-            val point =
-                Offset(
-                    x = stepX * index,
-                    y = size.height - (values[index] - min) / span * size.height,
-                )
+            val point = Offset(x = stepX * index, y = yFor(values[index]))
             drawLine(
                 color = color,
                 start = previous,

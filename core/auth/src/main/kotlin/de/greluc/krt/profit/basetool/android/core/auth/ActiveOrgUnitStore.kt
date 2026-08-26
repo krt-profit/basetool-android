@@ -53,9 +53,23 @@ class ActiveOrgUnitStore(
      * Safe from any thread, including an OkHttp dispatcher one: `SharedPreferences` serves reads
      * from memory once the file is loaded, and that load happens when this object is built.
      *
-     * @return the pinned org-unit id, or `null` when the member has not chosen one.
+     * @return the pinned org-unit id, or `null` when the member has not chosen one **or** has
+     *   deliberately chosen all of them — the two are the same absent header on the wire and are
+     *   told apart by [isAllChosen], not here.
      */
-    fun current(): String? = preferences.getString(KEY, null)
+    fun current(): String? = preferences.getString(KEY, null)?.takeIf { it != ALL }
+
+    /**
+     * Whether the member deliberately chose to act across **all** their org units.
+     *
+     * Distinct from having no pin at all, and the distinction is load-bearing: with no pin the app
+     * resolves a unit and pins it, so "all" would silently collapse back to one Staffel on the next
+     * cold start. Both send the same request — no `X-Active-Org-Unit-Id` header, which the backend
+     * answers with the union of the caller's own units — but only one of them survives a restart.
+     *
+     * @return whether "Alle Org-Einheiten" is the standing choice.
+     */
+    fun isAllChosen(): Boolean = preferences.getString(KEY, null) == ALL
 
     /**
      * Pins an org unit.
@@ -71,7 +85,17 @@ class ActiveOrgUnitStore(
     }
 
     /**
-     * Removes the pin, so the backend decides the scope again.
+     * Records that the member wants **all** of their org units at once.
+     *
+     * No header goes out afterwards, so the backend answers with the union of their memberships —
+     * never a unit they do not belong to (design ch. 02, artboard 7: „Alle Org-Einheiten").
+     */
+    fun pinAll() {
+        preferences.edit().putString(KEY, ALL).apply()
+    }
+
+    /**
+     * Removes the pin **and** the "all" choice, so the app resolves a scope from scratch.
      */
     fun clear() {
         preferences.edit().remove(KEY).apply()
@@ -93,5 +117,14 @@ class ActiveOrgUnitStore(
 
         /** Preference key; the file holds nothing else. */
         private const val KEY = "active_org_unit_id"
+
+        /**
+         * Sentinel for „all org units", stored under the same key.
+         *
+         * Not a UUID and not a valid org-unit id, so it can never collide with one — and a build
+         * that failed to understand it would fall through to "no pin", which is the same scope on
+         * the wire rather than a wrong one.
+         */
+        private const val ALL = "__all__"
     }
 }

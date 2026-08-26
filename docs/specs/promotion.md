@@ -12,16 +12,32 @@ from the next rank. Both are me-scoped reads. The officers' matrix (`/promotion/
 (plan Q7), so this screen is read-only by nature — nobody assesses themselves, and there is no
 write, no version echo and nothing to disable when the device is offline.
 
-> **Status: withheld from the navigation** (owner decision, 2026-08-23). The repository, the
-> requirements and the tests below are live and green; the **screen is not reachable** and the
-> destination still renders its placeholder. It is released when a design chapter for this area
-> exists and the screen has been checked against it (#66).
+> **Status: removed from the app** (owner decision, 2026-08-25 — `24fa14d`). The screen, its view
+> model, its test, its destination and its strings are **gone**, not hidden. What remains is
+> `core:data`'s `PromotionRepository`, deliberately: it is the data layer's contract with the
+> backend, it costs nothing to keep correct, and re-adding the screen should not start from an empty
+> file. The deleted screen is one command away —
+> `git show 096cbdb^:app/src/main/kotlin/de/greluc/krt/profit/basetool/android/promotion/PromotionScreen.kt`.
 
-**Why it is withheld:** the design handoff has **no Beförderung chapter**. The screen is
-built from the DAS KARTELL design system's own components and from what the web page shows. That is
-derivation, not a chapter being followed, and it is written into the screen's own Javadoc as well as
-here so it cannot be discovered later as a surprise. If a chapter is authored, this screen is
-re-checked against it.
+**Why it was removed:** it had been built (`41fc01c`, 2026-08-23) but its route was never wired, so
+the „Mehr" entry fell through to the placeholder and read „Dieser Bereich wird gerade gebaut." A menu
+entry whose only content is an apology is worse than no entry, and unreachable code is worse than
+absent code: nothing exercises it and nothing keeps it honest against the API.
+
+**The design chapter it was once said to lack does exist.** Chapter 13, artboard 1
+(„Beförderung — Meine Bewertungen") has been in the handoff since the first import on 2026-08-17 and
+carries an owner correction dated 2026-08-25 reducing the matrix to *Thema · Bewertung · Ziel*. The
+removed screen had already been rebuilt against it. `#66` and
+[ADR-0009](../adr/0009-tablet-settings-ships-without-its-befoerderung-column.md) both still say the
+handoff has no chapter for this area; that premise is stale. It changes nothing: the removal was
+decided on other grounds and reaffirmed on 2026-08-26, and the chapter's existence is recorded here
+only so nobody re-derives the question from a wrong fact.
+
+**The decision stands: no Beförderung in the app** (owner, 2026-08-26). This is not a slice waiting
+for a slot. The requirements below are kept as the record of what was built and what chapter 13
+draws, so that a future reversal would not start from nothing — they are **not** a plan. Acceptance
+items that were ticked against `PromotionViewModelTest` are marked open again: that file went with
+the screen.
 
 ---
 
@@ -34,7 +50,8 @@ property of the endpoints rather than a rule the client has to keep.
 
 **Acceptance**
 
-- [x] Neither call takes a user id (`PromotionRepository`).
+- [x] Neither call takes a user id — the paths are constants ending in `/my`
+  (`PromotionRepository`). Read from the code: there is no `PromotionRepositoryTest`.
 - [x] No `/promotion/manage`, `/evaluations/all` or `/evaluations/members` path appears in the app.
 
 ---
@@ -51,10 +68,10 @@ trips would be a cost with nothing bought.
 
 **Acceptance**
 
-- [x] A failing standings read leaves the assessments on screen, and vice versa
-  (`PromotionViewModelTest`).
-- [x] `loadOnce` reads once however often it is called; a refresh reads again
-  (`PromotionViewModelTest`).
+- [ ] A failing standings read leaves the assessments on screen, and vice versa
+  **Open** — covered by the removed `PromotionViewModelTest`.
+- [ ] `loadOnce` reads once however often it is called; a refresh reads again
+  **Open** — covered by the removed `PromotionViewModelTest`.
 
 ---
 
@@ -77,12 +94,14 @@ has its own sentence for it.
 
 **Acceptance**
 
-- [x] Category order follows the server (`PromotionViewModelTest`).
-- [x] A step without rules survives the mapping and is marked as such (`PromotionViewModelTest`).
-- [x] A row missing its topic or its level is dropped rather than rendered with a gap
-  (`PromotionRepository`).
+- [ ] Category order follows the server. **Open** — covered by `PromotionViewModelTest`, removed with the screen.
+- [ ] A step without rules survives the mapping and is marked as such. **Open** — same test.
+- [x] A row missing its topic or its level is dropped rather than rendered with a gap —
+  `mapNotNull` in `PromotionRepository`. **Implemented, not covered:** this module has no
+  `PromotionRepositoryTest`, so the tick is read off the code rather than pinned by a test.
 
-**Code:** `core/data/…/PromotionRepository.kt`, `app/…/promotion/`
+**Code:** `core/data/…/PromotionRepository.kt`. The `app/…/promotion/` package no longer
+exists — see the status note above for the command that recovers it.
 
 ## Known gaps
 

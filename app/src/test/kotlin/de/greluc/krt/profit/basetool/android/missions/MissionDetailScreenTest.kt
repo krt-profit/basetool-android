@@ -15,6 +15,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -52,7 +54,7 @@ import java.time.Instant
  * German is pinned: it is the primary bundle and the copy rules are asserted against it.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [34], qualifiers = "de")
+@Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class MissionDetailScreenTest {
     @get:Rule
     val compose = createComposeRule()
@@ -121,6 +123,10 @@ class MissionDetailScreenTest {
                             onToggleSignUp = { signUps.add(Unit) },
                             onToggleCheckIn = { checkIns.add(Unit) },
                             onTogglePayoutPreference = { payouts.add(Unit) },
+                            onJoinPayout = {},
+                            onDesiredFunction = {},
+                            onJoinConfirmed = {},
+                            onJoinDismissed = {},
                         ),
                     finances =
                         MissionFinanceActions(
@@ -154,9 +160,16 @@ class MissionDetailScreenTest {
     fun `the head names the Einsatz and states its sign-ups`() {
         show(ready())
 
-        compose.onNodeWithText("Vertikaler Abbau").assertIsDisplayed()
-        compose.onNodeWithText("14 angemeldet, davon 9 eingecheckt").assertIsDisplayed()
-        compose.onNodeWithText("S1").assertIsDisplayed()
+        // The name, its status and the org badge live in the TOP BAR now (design ch. 06
+        // artboard 2), which this harness does not render — the screen publishes them through
+        // ProvideScreenTopBar. What the screen itself draws is the facts bar, the attendance
+        // block and the tabs, and those are what this asserts.
+        compose.onNodeWithText("14").assertIsDisplayed()
+        compose.onNodeWithText("ANGEMELDET").assertIsDisplayed()
+        compose.onNodeWithText("davon 9 eingecheckt").assertIsDisplayed()
+        // "ARC-L1" is in the facts bar AND in the briefing card, which is the point of both —
+        // take the first rather than asserting a uniqueness the design does not have.
+        compose.onAllNodesWithText("ARC-L1", substring = true).onFirst().assertIsDisplayed()
         compose.onNodeWithTag(MISSION_DETAIL_TABS_TAG).assertIsDisplayed()
     }
 
@@ -178,6 +191,14 @@ class MissionDetailScreenTest {
         // an Einsatz nobody bothered to describe, which is a different and wrong statement.
         show(ready(detail = detail(description = null)))
 
+        // Below the attendance block and the briefing card now, so it may sit off-screen in the
+        // test's viewport: assert it EXISTS rather than that it happens to be visible.
+        // The Übersicht is a LazyColumn and the description now sits under the attendance block
+        // and the briefing card, so it is not composed until it is scrolled to. Scrolling is what
+        // a member does; asserting without it would only be testing the viewport height.
+        compose
+            .onNodeWithTag(MISSION_DETAIL_CONTENT_TAG)
+            .performScrollToNode(hasText("Die Beschreibung ist nur für Mitglieder sichtbar."))
         compose.onNodeWithText("Die Beschreibung ist nur für Mitglieder sichtbar.").assertIsDisplayed()
     }
 
@@ -364,7 +385,9 @@ class MissionDetailScreenTest {
 
         compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithTag(MISSION_CHECK_IN_TAG).performClick()
-        compose.onNodeWithTag(MISSION_PAYOUT_TAG).performClick()
+        // The tag now sits on the radio PAIR, so the click goes to the option the caller is not in
+        // — choosing the state they already hold reports nothing, which is the point of a radio.
+        compose.onNodeWithText("Org-Kasse", ignoreCase = true).performClick()
 
         assertEquals(1, checked.size)
         assertEquals(1, paid.size)
@@ -381,7 +404,10 @@ class MissionDetailScreenTest {
     fun `a donating caller is offered the payout instead`() {
         show(readyForMe(mine(donating = true)))
 
-        compose.onNodeWithText("Auszahlen", ignoreCase = true).assertIsDisplayed()
+        // Both standing states are on screen as radios (ch. 02 §6), and the one the caller is in is
+        // the one that reads as chosen — a toggle labelled with the other state left that ambiguous.
+        compose.onNodeWithText("Org-Kasse", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Auszahlung", ignoreCase = true).assertIsDisplayed()
     }
 
     @Test
@@ -527,7 +553,7 @@ class MissionDetailScreenTest {
         )
 
         compose.onNodeWithTag(MISSION_FINANCE_SHEET_TAG).assertIsDisplayed()
-        compose.onNodeWithText("2500").assertIsDisplayed()
+        compose.onNodeWithText("2500").performScrollTo().assertIsDisplayed()
     }
 
     /**

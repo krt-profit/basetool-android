@@ -7,7 +7,6 @@
 
 package de.greluc.krt.profit.basetool.android.exchange
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -44,6 +46,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBott
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
@@ -52,6 +55,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -63,6 +67,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -199,6 +205,7 @@ fun MaterialBoardScreen(
                             }
                         } else {
                             LazyColumn(
+                                state = rememberRootListState(),
                                 modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
                                 contentPadding = PaddingValues(KrtSpacing.md),
                                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -375,19 +382,24 @@ private fun RowActions(
                 }
             // Outline when off, ghost when on: the design's toggle reads as pressed once the
             // member has committed, and a filled CTA on every row would make the list shout.
+            // Full width, with the glyph: artboard 10.3 gives the signal the whole card foot,
+            // because it is the only thing a member does on this screen and a button sized to its
+            // own label reads as one option among several.
             if (entry.viewerInterested) {
                 KrtGhostButton(
                     text = stringResource(label),
                     onClick = onSignalToggled,
                     enabled = enabled,
-                    modifier = Modifier.testTag(BOARD_SIGNAL_TAG),
+                    iconRes = DesignR.drawable.ic_krt_check,
+                    modifier = Modifier.fillMaxWidth().testTag(BOARD_SIGNAL_TAG),
                 )
             } else {
                 KrtOutlineButton(
                     text = stringResource(label),
                     onClick = onSignalToggled,
                     enabled = enabled,
-                    modifier = Modifier.testTag(BOARD_SIGNAL_TAG),
+                    iconRes = DesignR.drawable.ic_krt_login,
+                    modifier = Modifier.fillMaxWidth().testTag(BOARD_SIGNAL_TAG),
                 )
             }
         }
@@ -420,25 +432,18 @@ private fun ownerLine(entry: BoardEntry): String {
 }
 
 /**
- * How long ago the server's timestamp is, in the platform's words.
+ * How long ago an ISO timestamp is, on the ladder every screen in the app shares.
  *
- * Found on a device: the row printed `2026-08-24T09:29:53.187358Z` verbatim. The wire is UTC ISO
- * and the screen is the member's zone (`REQ-APP-API-004`) — the same rule the Bank's ledger and the
- * Einsatz list already follow, and the same helper they use.
+ * The value arrives as a string here rather than as an `Instant`, so the parse happens on the way
+ * in. An unparseable value is shown as it came rather than dropped: a server that changed its
+ * format is something to see, not to hide.
  *
- * An unparseable value is shown as it came rather than dropped: a server that changed its format is
- * something to see, not to hide.
- *
- * @return the localised relative span.
+ * @return the timestamp, or the raw string when it does not parse.
  */
+@Composable
 private fun String.relativeToNow(): String {
     val instant = runCatching { Instant.parse(this) }.getOrNull() ?: return this
-    return DateUtils
-        .getRelativeTimeSpanString(
-            instant.toEpochMilli(),
-            System.currentTimeMillis(),
-            DateUtils.MINUTE_IN_MILLIS,
-        ).toString()
+    return instant.relativeToNow()
 }
 
 /**
@@ -501,49 +506,61 @@ fun NewRequestSheet(
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
         )
-        KrtTextField(
-            value = sheet.materialName,
-            onValueChange = onQueryChanged,
-            label = stringResource(R.string.board_field_material),
+        var open by rememberSaveable { mutableStateOf(false) }
+        KrtCombobox(
+            query = sheet.materialName,
+            onQueryChange = {
+                onQueryChanged(it)
+                open = true
+            },
+            options = sheet.matches.map { KrtOption(it.id, it.name) },
+            onSelect = { option ->
+                sheet.matches.firstOrNull { it.id == option.value }?.let(onPicked)
+                open = false
+            },
+            expanded = open && sheet.matches.isNotEmpty(),
+            onExpandedChange = { open = it },
             modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.board_field_material),
+            placeholder = stringResource(R.string.board_field_material_hint),
+            selectedValue = sheet.materialId,
         )
-        sheet.matches.forEach { option ->
-            Text(
-                text = option.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { onPicked(option) }
-                        .padding(vertical = KrtSpacing.sm),
+        // Menge and Min. Qualitaet share a row (artboard 10.4): both are short numbers about the
+        // same stack, and full width each they pushed the CTA off the sheet on a phone.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            KrtTextField(
+                value = sheet.amount,
+                onValueChange = { value -> onEdit { it.copy(amount = value) } },
+                label = stringResource(R.string.board_field_amount),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.weight(1f),
+            )
+            KrtTextField(
+                value = sheet.minQuality,
+                onValueChange = { value -> onEdit { it.copy(minQuality = value) } },
+                label = stringResource(R.string.board_field_min_quality),
+                placeholder = stringResource(R.string.board_field_min_quality_hint),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f),
             )
         }
-        KrtTextField(
-            value = sheet.amount,
-            onValueChange = { value -> onEdit { it.copy(amount = value) } },
-            label = stringResource(R.string.board_field_amount),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        KrtTextField(
-            value = sheet.minQuality,
-            onValueChange = { value -> onEdit { it.copy(minQuality = value) } },
-            label = stringResource(R.string.board_field_min_quality),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-        )
         KrtTextField(
             value = sheet.remark,
             onValueChange = { value -> onEdit { it.copy(remark = value) } },
             label = stringResource(R.string.board_field_remark),
+            placeholder = stringResource(R.string.board_field_remark_hint),
             modifier = Modifier.fillMaxWidth(),
         )
-        KrtCtaButton(
-            text = stringResource(R.string.board_publish_request),
-            onClick = onSubmit,
+        SheetActions(
+            submit = stringResource(R.string.board_publish_request),
             enabled = sheet.submittable && !saving,
-            modifier = Modifier.fillMaxWidth().testTag(BOARD_SUBMIT_TAG),
+            saving = saving,
+            onSubmit = onSubmit,
+            onDismiss = onDismiss,
         )
     }
 }
@@ -607,13 +624,52 @@ fun NewOfferSheet(
             value = sheet.remark,
             onValueChange = { value -> onEdit { it.copy(remark = value) } },
             label = stringResource(R.string.board_field_remark),
+            placeholder = stringResource(R.string.board_field_remark_hint),
             modifier = Modifier.fillMaxWidth(),
         )
-        KrtCtaButton(
-            text = stringResource(R.string.board_publish_offer),
-            onClick = onSubmit,
+        SheetActions(
+            submit = stringResource(R.string.board_publish_offer),
             enabled = sheet.submittable && !saving,
-            modifier = Modifier.fillMaxWidth().testTag(BOARD_SUBMIT_TAG),
+            saving = saving,
+            onSubmit = onSubmit,
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+/**
+ * The two buttons that close a Boerse sheet.
+ *
+ * Both artboards of chapter 10 end in „ABBRECHEN" beside the publish CTA, and it is the same pair
+ * the Buchen and Schiff sheets already use. Publishing is org-wide and cannot be undone quietly, so
+ * the way out is a button and not only a swipe a member has to know about.
+ *
+ * @param submit label of the publish button.
+ * @param enabled whether the form may be submitted.
+ * @param saving whether a create is in flight - both buttons rest while it is.
+ * @param onSubmit publish was pressed.
+ * @param onDismiss abort was pressed.
+ */
+@Composable
+private fun SheetActions(
+    submit: String,
+    enabled: Boolean,
+    saving: Boolean,
+    onSubmit: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        KrtGhostButton(
+            text = stringResource(R.string.personal_inventory_cancel),
+            onClick = onDismiss,
+            enabled = !saving,
+        )
+        KrtCtaButton(
+            text = submit,
+            onClick = onSubmit,
+            enabled = enabled,
+            iconRes = DesignR.drawable.ic_krt_save,
+            modifier = Modifier.testTag(BOARD_SUBMIT_TAG),
         )
     }
 }

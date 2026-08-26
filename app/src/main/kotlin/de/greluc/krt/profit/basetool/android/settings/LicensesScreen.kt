@@ -58,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSpinner
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
@@ -176,8 +177,8 @@ private fun LicensesLoading(modifier: Modifier = Modifier) {
             KrtSpinner()
             Spacer(Modifier.height(KrtSpacing.md))
             Text(
-                text = stringResource(R.string.licenses_loading),
-                style = MaterialTheme.typography.bodyMedium,
+                text = stringResource(R.string.licenses_loading).krtUppercase(),
+                style = MaterialTheme.typography.labelMedium,
                 color = KrtPalette.TextMuted,
             )
         }
@@ -204,10 +205,21 @@ private fun LicensesFailed(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        // Artboard 15.5 leads with the danger triangle and states the failure uppercase: the
+        // report being unreadable is a fault in the installed app, not an empty list, and the two
+        // must not look alike.
+        KrtIcon(
+            id = DesignR.drawable.ic_krt_warning,
+            contentDescription = null,
+            size = FAILURE_ICON,
+            tint = KrtPalette.DangerText,
+        )
+        Spacer(Modifier.height(KrtSpacing.md))
         Text(
-            text = stringResource(R.string.licenses_error_title),
-            style = MaterialTheme.typography.titleMedium,
+            text = stringResource(R.string.licenses_error_title).krtUppercase(),
+            style = MaterialTheme.typography.titleLarge,
             color = KrtPalette.White,
+            textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(KrtSpacing.sm))
         Text(
@@ -482,3 +494,6 @@ private val ROW_MIN_HEIGHT = 40.dp
 
 /** The register's column on a tablet — the width design ch. 15 keeps from the settings pane. */
 private val TABLET_COLUMN = 480.dp
+
+/** Size of the danger glyph on the unreadable-report state (artboard 15.5). */
+private val FAILURE_ICON = 40.dp

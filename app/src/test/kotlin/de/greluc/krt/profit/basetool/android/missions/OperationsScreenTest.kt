@@ -226,10 +226,14 @@ class OperationsScreenTest {
             ),
         )
 
-        compose.onNodeWithText("1 Einsatz · 1 Teilnehmer").assertIsDisplayed()
+        // The name, the status badge and the counts live in the TOP BAR now (artboard 06.5), which
+        // this harness does not render — the screen publishes them through ProvideScreenTopBar.
+        // What the screen draws is the share band, the results and the rollup, and those are what
+        // this asserts.
         // Grouped and stripped of the padding zeros a numeric(_,4) column carries.
         compose.onNodeWithText("74.700").assertIsDisplayed()
-        compose.onNodeWithText("86.400").assertIsDisplayed()
+        // A result carries its sign now (artboard 06.5): a gain reads "+86.400", not "86.400".
+        compose.onNodeWithText("+86.400").assertIsDisplayed()
     }
 
     @Test
@@ -461,9 +465,13 @@ class OperationsScreenTest {
     fun `a confirmed payout offers the way back`() {
         showDetail(readyPayouts(paidOut = true, missionManager = true))
 
+        // Taking a confirmation back goes through a modal that names the consequence (design ch. 06
+        // §5, "Zurücknehmen nur mit Bestätigungs-Modal"): the box does not just flip.
         compose.onNodeWithTag(OPERATION_DETAIL_CONTENT_TAG)
-            .performScrollToNode(hasText("Zurücknehmen", ignoreCase = true))
-        compose.onNodeWithText("Zurücknehmen", ignoreCase = true).assertIsDisplayed()
+            .performScrollToNode(hasTestTag(OPERATION_PAID_OUT_TAG))
+        compose.onNodeWithTag(OPERATION_PAID_OUT_TAG).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("AUSZAHLUNG ZURÜCKNEHMEN?", substring = true).assertExists()
     }
 
     @Test

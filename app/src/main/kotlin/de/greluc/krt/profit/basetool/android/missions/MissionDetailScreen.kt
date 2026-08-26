@@ -7,17 +7,26 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,10 +37,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
@@ -39,29 +55,42 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSuccessButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import kotlinx.coroutines.launch
@@ -132,6 +161,11 @@ fun MissionDetailScreen(
     // Bound so the smart cast below survives; `state.phase` is a property read and Kotlin will not
     // narrow it across the branch.
     val phase = state.phase
+    // Design ch. 14's conflict dialog, once for the screen rather than at each place an error
+    // is drawn: every one of them reads this same state, and a member must not be able to miss
+    // a refused save under a scrolled form.
+    ConflictOn(error = state.error, onReload = onRefresh)
+    state.joinSheet?.let { ConflictOn(error = it.error, onReload = onRefresh) }
     Column(modifier = modifier.fillMaxSize()) {
         when {
             detail != null -> {
@@ -139,7 +173,6 @@ fun MissionDetailScreen(
                     OfflineBand()
                 }
                 MissionDetailHead(detail = detail)
-                SignUpBar(state = state, actions = actions)
                 MissionTabRow(
                     selected = state.tab,
                     detail = state.detail,
@@ -148,7 +181,10 @@ fun MissionDetailScreen(
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
                     onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
+                    // weight, not fillMaxSize: the tab content takes what is left after the head,
+                    // the tab row and the CTA bar, so the bar stays on screen instead of being
+                    // pushed off by a long Ablauf.
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                 ) {
                     MissionTabContent(
                         state = state,
@@ -157,8 +193,22 @@ fun MissionDetailScreen(
                         finances = finances,
                     )
                 }
+                // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
+                // tab row, where the screen's primary action scrolled away with the briefing and
+                // read as one more fact about the Einsatz.
+                SignUpBar(state = state, actions = actions)
                 state.entryDraft?.let { draft ->
                     FinanceEntrySheet(draft = draft, state = state, actions = finances)
+                }
+                state.joinSheet?.let { sheet ->
+                    MissionJoinSheet(
+                        sheet = sheet,
+                        subject = detail.name,
+                        onPayout = actions.onJoinPayout,
+                        onFunction = actions.onDesiredFunction,
+                        onConfirm = actions.onJoinConfirmed,
+                        onDismiss = actions.onJoinDismissed,
+                    )
                 }
             }
 
@@ -197,11 +247,19 @@ fun MissionDetailScreen(
  * @property onToggleSignUp they signed up, or withdrew.
  * @property onToggleCheckIn they checked in, or back out.
  * @property onTogglePayoutPreference they switched their share between paid out and donated.
+ * @property onJoinPayout the sign-up sheet's payout choice changed.
+ * @property onDesiredFunction a function chip in the sign-up sheet was tapped.
+ * @property onJoinConfirmed the sign-up sheet was sent.
+ * @property onJoinDismissed the sign-up sheet was closed without signing up.
  */
 data class MissionSignUpActions(
     val onToggleSignUp: () -> Unit,
     val onToggleCheckIn: () -> Unit,
     val onTogglePayoutPreference: () -> Unit,
+    val onJoinPayout: (Boolean) -> Unit,
+    val onDesiredFunction: (MissionJobType) -> Unit,
+    val onJoinConfirmed: () -> Unit,
+    val onJoinDismissed: () -> Unit,
 )
 
 /**
@@ -246,27 +304,10 @@ private fun SignUpBar(
     actions: MissionSignUpActions,
 ) {
     val mine = state.mySignUp
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-    ) {
-        state.error?.let { error -> SignUpError(error = error) }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            KrtCtaButton(
-                text =
-                    stringResource(
-                        if (mine == null) {
-                            R.string.mission_detail_sign_up
-                        } else {
-                            R.string.mission_detail_withdraw
-                        },
-                    ),
-                onClick = actions.onToggleSignUp,
-                modifier = Modifier.testTag(MISSION_SIGN_UP_TAG).writeAlpha(state.writable),
-                enabled = state.writable,
-            )
-            if (mine != null) {
-                SignUpRowActions(mine = mine, state = state, actions = actions)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        state.error?.let { error ->
+            Box(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+                SignUpError(error = error)
             }
         }
         // Only once the Einsatz has actually started: the server refuses a check-in before then,
@@ -277,7 +318,34 @@ private fun SignUpBar(
                 text = stringResource(R.string.mission_detail_check_in_not_yet),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
+                modifier = Modifier.padding(horizontal = KrtSpacing.md),
             )
+        }
+        KrtBottomCtaBar {
+            KrtCtaButton(
+                text =
+                    stringResource(
+                        if (mine == null) {
+                            R.string.mission_detail_sign_up
+                        } else {
+                            R.string.mission_detail_withdraw
+                        },
+                    ),
+                // The artboard's CTA carries the login glyph beside its label; signing up is an
+                // entry, and the icon says so before the word is read.
+                iconRes =
+                    if (mine == null) DesignR.drawable.ic_krt_login else DesignR.drawable.ic_krt_logout,
+                onClick = actions.onToggleSignUp,
+                modifier =
+                    Modifier
+                        .testTag(MISSION_SIGN_UP_TAG)
+                        .weight(1f)
+                        .writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+            if (mine != null) {
+                SignUpRowActions(mine = mine, state = state, actions = actions)
+            }
         }
     }
 }
@@ -296,33 +364,49 @@ private fun SignUpRowActions(
     actions: MissionSignUpActions,
 ) {
     if (state.checkInPossible) {
-        KrtGhostButton(
-            text =
-                stringResource(
-                    if (mine.checkedIn) {
-                        R.string.mission_detail_check_out
-                    } else {
-                        R.string.mission_detail_check_in
-                    },
-                ),
-            onClick = actions.onToggleCheckIn,
-            modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
+        // Check-In is the example the button ladder gives for the success style: green marks a
+        // transition INTO an active state, and this is the one the whole screen exists for.
+        // Checking out is the reverse and stays a ghost — green both ways would say nothing.
+        if (mine.checkedIn) {
+            KrtGhostButton(
+                text = stringResource(R.string.mission_detail_check_out),
+                onClick = actions.onToggleCheckIn,
+                iconRes = DesignR.drawable.ic_krt_logout,
+                modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+        } else {
+            KrtSuccessButton(
+                text = stringResource(R.string.mission_detail_check_in),
+                onClick = actions.onToggleCheckIn,
+                iconRes = DesignR.drawable.ic_krt_check,
+                modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+        }
+    }
+    // Two radios, not one toggle. The choice is between two standing states — the payout comes to
+    // you, or it goes to the org treasury — and a button labelled with the OTHER state leaves a
+    // member reading "Spenden" unsure whether that is what they have chosen or what they are being
+    // offered. The component sheet (ch. 02 §6) draws exactly this pair.
+    Row(
+        modifier = Modifier.testTag(MISSION_PAYOUT_TAG).writeAlpha(state.writable),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtRadioRow(
+            selected = mine.donating != true,
+            onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
+            label = stringResource(R.string.mission_detail_payout_self),
+            enabled = state.writable,
+        )
+        KrtRadioRow(
+            selected = mine.donating == true,
+            onSelect = { if (mine.donating != true) actions.onTogglePayoutPreference() },
+            label = stringResource(R.string.mission_detail_payout_org),
             enabled = state.writable,
         )
     }
-    KrtGhostButton(
-        text =
-            stringResource(
-                if (mine.donating == true) {
-                    R.string.mission_detail_take_payout
-                } else {
-                    R.string.mission_detail_donate
-                },
-            ),
-        onClick = actions.onTogglePayoutPreference,
-        modifier = Modifier.testTag(MISSION_PAYOUT_TAG).writeAlpha(state.writable),
-        enabled = state.writable,
-    )
 }
 
 /**
@@ -336,7 +420,7 @@ private fun SignUpError(error: ApiError) {
         text =
             stringResource(
                 when (error) {
-                    is ApiError.OptimisticLock -> R.string.conflict_body
+                    is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.mission_detail_not_allowed
                     else -> R.string.write_failed
                 },
@@ -354,65 +438,6 @@ private fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
- * The sticky head: title, status, org badge and the fact band.
- *
- * @param detail the Einsatz.
- */
-@Composable
-private fun MissionDetailHead(detail: MissionDetail) {
-    val zone = remember { ZoneId.systemDefault() }
-    val time = remember(zone) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone) }
-
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = detail.name,
-                style = MaterialTheme.typography.titleLarge,
-                color = KrtPalette.White,
-                modifier = Modifier.weight(1f),
-            )
-            KrtStatusBadge(text = detail.statusLabel(), tone = detail.statusTone())
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            detail.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
-            detail.operationName?.let { KrtChip(text = it, tone = KrtChipTone.Info) }
-        }
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.mission_detail_signups,
-                    detail.registeredParticipants,
-                    detail.registeredParticipants,
-                    detail.checkedInParticipants,
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
-        // Only the facts the server actually gave. An empty "Ort —" row states nothing and costs a
-        // line of a head that has to stay small enough to leave the content room.
-        val facts =
-            buildList {
-                detail.meetingTime?.let { add(stringResource(R.string.mission_detail_fact_meeting) to time.format(it)) }
-                detail.plannedStartTime?.let {
-                    add(stringResource(R.string.mission_detail_fact_join) to time.format(it))
-                }
-                detail.plannedEndTime?.let { add(stringResource(R.string.mission_detail_fact_end) to time.format(it)) }
-                detail.meetingPoint?.let { add(stringResource(R.string.mission_detail_fact_place) to it) }
-                detail.partyLeadName?.let { add(stringResource(R.string.mission_detail_fact_lead) to it) }
-            }
-        facts.forEach { (label, value) -> KrtKeyValueRow(label = label, value = value) }
-        KrtHairlineRule()
-    }
-}
-
-/**
  * The tab row.
  *
  * Horizontally scrollable because seven German tab labels do not fit a phone's width, and the
@@ -427,33 +452,15 @@ private fun MissionTabRow(
     detail: MissionDetail?,
     onTabSelected: (MissionTab) -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.md)
-                .testTag(MISSION_DETAIL_TABS_TAG),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-    ) {
-        MissionTab.entries.forEach { tab ->
-            // Design ch. 06 artboard 2 puts a count on every tab that holds a countable list, so a
-            // member can see there are three objectives without opening the tab. A tab whose
-            // content is not a list (Übersicht) carries none, and neither does one whose list has
-            // not been read yet.
-            val count = detail?.let(tab::countIn)
-            KrtFilterChip(
-                text =
-                    if (count == null) {
-                        stringResource(tab.labelRes())
-                    } else {
-                        stringResource(R.string.mission_tab_with_count, stringResource(tab.labelRes()), count)
-                    },
-                selected = tab == selected,
-                onClick = { onTabSelected(tab) },
-            )
-        }
-    }
+    KrtPageTabs(
+        tabs =
+            MissionTab.entries.map { tab ->
+                KrtPageTab(label = stringResource(tab.labelRes()), count = detail?.let(tab::countIn))
+            },
+        selectedIndex = MissionTab.entries.indexOf(selected),
+        onSelect = { onTabSelected(MissionTab.entries[it]) },
+        modifier = Modifier.testTag(MISSION_DETAIL_TABS_TAG),
+    )
 }
 
 /**
@@ -484,26 +491,6 @@ private fun MissionTabContent(
             MissionTab.FREQUENCIES -> frequenciesTab(detail)
             MissionTab.FINANCES -> financesTab(state, onRetryFinances, finances)
         }
-    }
-}
-
-/**
- * Übersicht: the briefing text, or the note that it is members-only.
- *
- * @param detail the Einsatz.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.overviewTab(detail: MissionDetail) {
-    item {
-        KrtSectionTitle(text = stringResource(R.string.mission_detail_description))
-    }
-    item {
-        // An outsider read carries no description (ADR-0034). Saying so beats a blank section,
-        // which reads as an Einsatz nobody bothered to describe.
-        Text(
-            text = detail.description ?: stringResource(R.string.mission_detail_description_hidden),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (detail.description != null) KrtPalette.White else KrtPalette.TextMuted,
-        )
     }
 }
 
@@ -900,37 +887,69 @@ private fun FinanceEntrySheet(
     state: MissionDetailState,
     actions: MissionFinanceActions,
 ) {
+    // Artboard 06.4 gives the entry one tone throughout: green for an Einnahme, red for an Ausgabe,
+    // on the chosen segment and on the amount alike. The sign is never typed - it IS the segment -
+    // and the hint under the field says so, which is why it changes with the choice.
+    val tone = if (draft.income) KrtPalette.Success else KrtPalette.Danger
+    val amountTone = if (draft.income) KrtPalette.SuccessText else KrtPalette.DangerText
     KrtBottomSheet(
         onDismiss = actions.onDismiss,
         modifier = Modifier.testTag(MISSION_FINANCE_SHEET_TAG),
-        title = stringResource(R.string.mission_detail_finance_add),
+        title = stringResource(R.string.mission_detail_finance_title),
     ) {
+        // The sheet scrolls: with the keyboard up on a small phone the form is taller than what is
+        // left of the screen, and a save button that cannot be reached is a form that cannot be
+        // submitted.
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(KrtSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
         ) {
+            KrtFieldLabel(text = stringResource(R.string.mission_detail_finance_type))
             KrtSegmentedControl(
                 options =
                     listOf(
-                        stringResource(R.string.mission_detail_finance_income),
-                        stringResource(R.string.mission_detail_finance_expense),
+                        stringResource(R.string.mission_detail_finance_type_income),
+                        stringResource(R.string.mission_detail_finance_type_expense),
                     ),
                 selectedIndex = if (draft.income) 0 else 1,
                 onSelect = { actions.onIncome(it == 0) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !state.saving,
                 stretch = true,
+                activeColor = tone,
+                activeContentColor = KrtPalette.White,
             )
             KrtTextField(
                 value = draft.amount,
                 onValueChange = actions.onAmount,
                 label = stringResource(R.string.mission_detail_finance_amount),
                 enabled = !state.saving,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textAlign = TextAlign.End,
+                tabularFigures = true,
+                valueStyle = MaterialTheme.typography.headlineSmall.copy(color = amountTone),
+            )
+            Text(
+                text =
+                    stringResource(
+                        if (draft.income) {
+                            R.string.mission_detail_finance_amount_hint_income
+                        } else {
+                            R.string.mission_detail_finance_amount_hint_expense
+                        },
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
             )
             KrtTextField(
                 value = draft.note,
                 onValueChange = actions.onNote,
                 label = stringResource(R.string.mission_detail_finance_note),
+                placeholder = stringResource(R.string.mission_detail_finance_note_hint),
                 enabled = !state.saving,
             )
             state.error?.let { error -> SignUpError(error = error) }
@@ -943,6 +962,7 @@ private fun FinanceEntrySheet(
                 KrtCtaButton(
                     text = stringResource(R.string.personal_inventory_save),
                     onClick = actions.onSave,
+                    iconRes = DesignR.drawable.ic_krt_save,
                     modifier = Modifier.testTag(MISSION_FINANCE_SAVE_TAG),
                     enabled = draft.submittable && state.writable,
                 )
@@ -1021,7 +1041,7 @@ private fun MissionTab.labelRes(): Int =
  * @return the translated status, or the raw server value when this build does not know it.
  */
 @Composable
-private fun MissionDetail.statusLabel(): String =
+internal fun MissionDetail.statusLabel(): String =
     if (status == MissionStatus.UNKNOWN) {
         rawStatus.orEmpty()
     } else {
@@ -1041,7 +1061,7 @@ private fun MissionDetail.statusLabel(): String =
  *
  * @return the design system's tone; an unknown status is drawn as planned rather than as a problem.
  */
-private fun MissionDetail.statusTone(): KrtStatusTone =
+internal fun MissionDetail.statusTone(): KrtStatusTone =
     when (status) {
         MissionStatus.PLANNED, MissionStatus.UNKNOWN -> KrtStatusTone.Planned
         MissionStatus.ACTIVE -> KrtStatusTone.Active
@@ -1072,6 +1092,10 @@ fun MissionDetailRoute(
                 onToggleSignUp = viewModel::onToggleSignUp,
                 onToggleCheckIn = viewModel::onToggleCheckIn,
                 onTogglePayoutPreference = viewModel::onTogglePayoutPreference,
+                onJoinPayout = viewModel::onJoinPayout,
+                onDesiredFunction = viewModel::onDesiredFunction,
+                onJoinConfirmed = viewModel::onJoinConfirmed,
+                onJoinDismissed = viewModel::onJoinSheetDismissed,
             ),
         finances =
             MissionFinanceActions(
@@ -1106,3 +1130,134 @@ private fun MissionTab.countIn(detail: MissionDetail): Int? =
         MissionTab.FREQUENCIES -> detail.frequencies.size
         MissionTab.FINANCES -> null
     }
+
+/**
+ * „Anmelden" — the sheet that collects what a sign-up carries with it.
+ *
+ * One tap used to do it. Design ch. 06, artboard 3 makes it a sheet because two answers belong to
+ * the moment of signing up and are awkward to find afterwards: where the share goes, and which
+ * function the member would like on board.
+ *
+ * **The function is a wish, not a claim.** The artboard says so in as many words — „Optional —
+ * Wunsch (desired), keine Zusage" — and the sheet repeats it under the chips, because a row of
+ * pickable roles reads like an assignment unless something says otherwise. The mission's leadership
+ * sets the planned function on the participants tab; this only records what was asked for.
+ *
+ * A refusal keeps the sheet and everything in it: nothing was written, and re-answering two
+ * questions to retry is a charge for the server's reply.
+ *
+ * @param sheet what has been collected so far.
+ * @param subject the mission and its time, drawn under the title.
+ * @param onPayout the share's destination changed.
+ * @param onFunction a function chip was tapped; the same one again clears it.
+ * @param onConfirm the sign-up was sent.
+ * @param onDismiss the sheet was closed without signing up.
+ */
+@Composable
+private fun MissionJoinSheet(
+    sheet: JoinSheet,
+    subject: String,
+    onPayout: (Boolean) -> Unit,
+    onFunction: (MissionJobType) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtBottomSheet(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.mission_join_title),
+        modifier = Modifier.testTag(MISSION_JOIN_SHEET_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            Text(
+                text = subject,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            JoinSectionLabel(text = stringResource(R.string.mission_join_payout))
+            KrtRadioRow(
+                selected = !sheet.donate,
+                onSelect = { onPayout(false) },
+                label = stringResource(R.string.mission_detail_payout_self),
+                supporting = stringResource(R.string.mission_join_payout_self_hint),
+                enabled = !sheet.saving,
+            )
+            KrtRadioRow(
+                selected = sheet.donate,
+                onSelect = { onPayout(true) },
+                label = stringResource(R.string.mission_detail_payout_org),
+                supporting = stringResource(R.string.mission_join_payout_org_hint),
+                enabled = !sheet.saving,
+            )
+            if (sheet.jobTypes.isNotEmpty()) {
+                JoinSectionLabel(text = stringResource(R.string.mission_join_function))
+                // FlowRow: five Funktionen do not fit one phone line, and a horizontal scroller
+                // would hide the ones past the edge behind a gesture nothing announces.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                ) {
+                    sheet.jobTypes.forEach { jobType ->
+                        KrtFilterChip(
+                            text = jobType.name,
+                            selected = sheet.desired?.id == jobType.id,
+                            onClick = { onFunction(jobType) },
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.mission_join_function_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.Gray2,
+                )
+            }
+            sheet.error?.let { SignUpError(error = it) }
+            KrtCtaButton(
+                text = stringResource(R.string.mission_join_confirm),
+                onClick = onConfirm,
+                iconRes = DesignR.drawable.ic_krt_login,
+                enabled = !sheet.saving,
+                modifier = Modifier.fillMaxWidth().testTag(MISSION_JOIN_CONFIRM_TAG),
+            )
+            KrtGhostButton(
+                text = stringResource(R.string.personal_inventory_cancel),
+                onClick = onDismiss,
+                enabled = !sheet.saving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = stringResource(R.string.mission_join_footnote),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+        }
+    }
+}
+
+/**
+ * A section heading inside the sign-up sheet.
+ *
+ * Neither [KrtFieldLabel][de.greluc.krt.profit.basetool.android.core.designsystem.component
+ * .KrtFieldLabel], which is sentence-case body text for a single field, nor
+ * [KrtSectionTitle][de.greluc.krt.profit.basetool.android.core.designsystem.component
+ * .KrtSectionTitle], which fills the rest of its line with a rule. The artboard's sheet headings
+ * are short uppercase labels with nothing after them.
+ *
+ * @param text the heading.
+ */
+@Composable
+private fun JoinSectionLabel(text: String) {
+    Text(
+        text = text.krtUppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        color = KrtPalette.Gray1,
+    )
+}
+
+/** Test handle for the sign-up sheet. */
+const val MISSION_JOIN_SHEET_TAG: String = "mission-join-sheet"
+
+/** Test handle for its confirm button. */
+const val MISSION_JOIN_CONFIRM_TAG: String = "mission-join-confirm"

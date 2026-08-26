@@ -177,3 +177,221 @@ plus Obtainium (plan Q1), so the button opens the release page the server names.
   an env var and a restart, and the variable reached nothing.
 
 **Code:** `UpdateGate`, `UpdateGateViewModel`, `AppVersionRepository`
+
+---
+
+### REQ-APP-UI-006 — A link that goes nowhere says so, and back behaves as chapter 03 draws it
+
+Chapter 03 is mostly rules rather than pixels, and rules are the part of a spec that rots without
+anyone noticing. Checked one by one against the running app:
+
+| rule | state |
+| --- | --- |
+| Phone: bottom bar, five destinations | holds |
+| Tablet: rail, seven + „Mehr" | holds — Hangar, Raffinerie and Börse move up, as drawn |
+| Each destination keeps its own back stack | holds |
+| Back on a destination root returns to Übersicht; back on Übersicht leaves the app | holds |
+| No hamburger anywhere; arrow-left only on pushed screens | holds (`REQ-APP-UI-005`) |
+| Transitions 200 ms, no parallax | holds — `KRT_MOTION_MS`, fade |
+| Push → target screen directly; cold start synthesises target + Übersicht | holds, **after** the crash in `REQ-APP-NOTIF-014` |
+| Unknown route → 404 in-fiction | **was broken**, see below |
+| Predictive back on every screen | **was partly broken**, see below |
+| Re-tap the active destination pops to its root *and scrolls to top* | holds — see below |
+
+**An unknown address used to land on the dashboard.** `basetool://voelligunbekannt` opened the app
+on Übersicht, silently — indistinguishable from a link that worked. Worse, `destinationOf`'s KDoc
+already claimed the caller "renders the in-fiction Signal Lost screen rather than silently falling
+back to the dashboard", which is the one comment state a reader cannot defend against: it described
+the intended behaviour of code that did the opposite.
+
+It is reachable in practice — a notification from a newer server, a hand-typed address, a web link
+into an area this build predates — so it gets chapter 14's 404: „Signal Lost", one plain German
+line, CTA „Zurück zur Basis".
+
+**The graph decides what it can match, not a second copy of the route table.** The first attempt
+registered a catch-all `basetool://{route}` deep link on the 404 destination, reasoning that a
+literal host would outrank a wildcard. It does not: Navigation ranks a match by how many arguments
+it fills, the wildcard fills one and every literal route fills none — so **every** deep link in the
+app landed on „Signal Lost". The code read correctly and only the device disagreed. Asking
+`navController.graph.hasDeepLink(uri)` cannot drift from the graph, because it *is* the graph.
+
+**The CTA returns to the Übersicht already on the stack**, not a second copy on top of it. Popping
+only the 404 and pushing Home leaves two, and then back on Übersicht lands on Übersicht — breaking
+the one thing chapter 03 says back on Übersicht must do.
+
+**Predictive back was off below Android 16.** targetSdk 37 makes the platform enable it by default
+on 16+, which is every emulator image in use here; minSdk is 30, and on a device running 13 through
+15 the preview only runs with `enableOnBackInvokedCallback`. The flag is now set. The one case it
+exists for is also the one a current emulator cannot show, so this rests on the platform contract
+rather than on a device pass.
+
+**Acceptance**
+
+- [x] Device-verified: `basetool://notifications` and `basetool://bank` open their screens;
+  `basetool://xyzunbekannt` shows „Signal Lost" + „Diese Adresse gibt es in dieser App nicht." +
+  „ZURÜCK ZUR BASIS"; the CTA lands on Übersicht and back from there leaves the app.
+- [x] Every destination has a distinct address, and the 404 is unreachable from the bar, the rail
+  and „Mehr" (`DeepLinkRoutingTest`).
+- [x] Re-tapping the active destination returns it to the top. Device-verified on „Aufträge",
+  the one bar destination whose list is longer than the screen: 36 rows from „MATERIAL", scrolled
+  to 32 rows from „OFFEN", re-tapped back to 36 from „MATERIAL". „Einsätze" and „Lager" cannot show
+  it — their content fits — which is worth writing down, because a pass on those two would have
+  meant nothing.
+- [x] The counter is per route, so a re-tap on „Lager" cannot make „Aufträge" lose its place
+  (`RootScrollSignalsTest`).
+
+**Why the scroll needed a counter at all.** The pop that precedes it tears the destination down and
+rebuilds it, and the rebuild restores the list from its saved state — so by the time the new screen
+exists it has already been put back where the member left it, and nothing about the rebuild
+distinguishes „I came back here" from „I asked for the top". The counter outlives the rebuild;
+each list remembers, in its own saveable state, which value it last acted on. One **shared** counter
+is the obvious version and is wrong: every screen watching it would jump to the top on its next
+composition, so returning to a list would silently lose the member's place because they had once
+re-tapped a different tab.
+
+---
+
+### REQ-APP-UI-007 — Five channels, the real wording, and a tap that opens the right screen
+
+Chapter 14 names five notification channels — Einsätze & Check-In and Aufträge & Zuweisungen at
+high importance, Materialbörse, Bank & Auszahlungen and System & Ankündigungen at default — so a
+member can silence one kind and keep another. Chapter 03 adds that a tap opens the target screen,
+and chapter 14's shade mockups show the notification's real wording rather than a fixed line.
+
+None of the three was possible: the stream event was `data="new"`, a bare ping with no kind, no
+entity and no parameters. Every push was the same message, four channels would have been switches
+that silence nothing, and every tap opened the inbox.
+
+**The backend now says what arrived** (main repo REQ-NOTIF-021, ADR-0146). The app reads the signal
+and everything else follows from the two fields it carries:
+
+- **The channel comes from `NotificationKind`**, which the inbox already uses to pick a row's glyph.
+  One classification, two uses — a kind that files a row under a glyph files a push under a channel,
+  and the five buckets it already had are the chapter's five channels.
+- **The wording is assembled on the device** from the type template and its parameters
+  (`REQ-APP-NOTIF-005`), so it is localised here and an unknown type degrades to the generic line
+  rather than to a blank. Owner decision, 2026-08-26: the shade carries the real wording, as drawn.
+- **The tap opens what the message is about**, through the same resolver the inbox row uses, so the
+  list and the push cannot disagree — and an entity this build has no screen for still falls back to
+  the inbox rather than to a route that does not exist.
+
+**The channels are created at start, not at the first push.** A channel Android has never been told
+about is absent from the app's notification settings, so the member's choice would only appear after
+the first message of that kind had already arrived — which is the one moment the choice is too late.
+
+**One notification id per channel**, so at most five entries and each replaced by the newest of its
+own kind. An Auftrag must not overwrite the Einsatz that starts in ten minutes.
+
+**The lock-screen rule matters more now than it did.** Every channel is `VISIBILITY_PRIVATE` and
+every notification carries a public replacement reading „Neue Benachrichtigung" and nothing else.
+That was belt-and-braces while the shade said nothing; it is now the only thing between the real
+wording and a locked screen, and it stays enforced by construction rather than per call site.
+
+**A push with no kind still lands somewhere.** The server degrades to the bare `new` on several
+paths, and a notification type this build has never seen classifies as `SYSTEM`. Both belong on
+„System & Ankündigungen", which is where "something happened and this build cannot say what" goes.
+
+**Acceptance**
+
+- [x] Each kind maps to its own channel — two kinds sharing one would mean a single switch silences
+  both — and an unknown or absent type lands on the system channel
+  (`NotificationChannelRoutingTest`).
+- [x] The shade and the inbox resolve the same destination, and an entity with no screen invents no
+  route (`NotificationChannelRoutingTest`).
+- [x] Every unreadable payload degrades to a bare refresh rather than throwing
+  (`NotificationSignalTest`).
+- [x] Device-verified end to end against a locally built backend: creating an Auftrag through the
+  API put an entry in the shade on **`channel=krt_orders`** at importance 4, coloured `#E77E23`,
+  `vis=PRIVATE` with a `publicVersion`, titled „Neuer Auftrag #9 für IRI" — and tapping it opened
+  Auftrag **#9**, not the inbox. The five channels appear in the system settings with the chapter's
+  names and importances before any notification arrives; the two channels this app used to create
+  are marked deleted.
+
+---
+
+### REQ-APP-UI-008 — A refused save raises the dialog chapter 14 draws
+
+Chapter 14 draws the 409 as a modal: **„KONFLIKT FESTGESTELLT"**, a sentence, and two actions. The
+app showed a `KrtFieldError` under the form at all eleven write surfaces — a line that is easy to
+miss under a scrolled sheet, and a member who misses it believes they saved.
+
+**Two of the chapter's sentences are not used, and neither is a translation question.**
+
+- *„…zwischenzeitlich von Rhea geändert"* — the 409 carries no identity. Naming somebody would be
+  inventing them.
+- *„Deine Eingaben bleiben in der Zwischenablage erhalten"* — nothing is put on the clipboard, and
+  making that sentence true would mean writing the member's input to the **system** clipboard, where
+  every other app on the device can read it. The wording used says what actually happens.
+
+**The primary action reloads; it does not retry.** The chapter labels it „NEU LADEN UND ERNEUT
+VERSUCHEN". A button that re-sent the same values against the newer version would overwrite whatever
+the other person changed without either of them seeing it — the exact outcome optimistic locking
+exists to prevent. So it reloads, the member sees the current state, and they decide.
+
+**The dialog lives at the host, not in the sheet.** Threading a reload down to each leaf that draws
+an error meant four parameters through composables with no business knowing about refresh; every one
+of those leaves reads the same screen-level state, so one `ConflictOn` per host covers them all and
+„Neu laden" can close the form and make the screen re-read.
+
+**The form keeps a short line, not the dialog's sentence.** The first wiring rendered both, so the
+same two sentences sat under one another. The inline line is now „Nicht gespeichert — gleichzeitig
+geändert." — enough to explain the state a member returns to after dismissing the dialog, without
+repeating it.
+
+**The Auftrag note is exempt.** Chapter 10 gives it a richer recovery — a refused note comes back as
+`rejectedNote` with „Meine Fassung übernehmen" — and a generic „Neu laden" over it would offer to
+throw away the very text that flow exists to preserve.
+
+**Dismissal is tracked by identity.** `ApiError.OptimisticLock` is a data class, so two separate
+refusals compare equal; a `remember(error)` key would treat the second as the first and a member who
+dismissed the dialog once would never see it again that session. The decision is a named function so
+the rule can be tested without going through two dialog windows.
+
+**Acceptance**
+
+- [x] Nine `ConflictOn` call sites cover all eleven refusal paths.
+- [x] The rule is pinned directly, including the case that matters: a **new** refusal equal to a
+  dismissed one is still raised (`ConflictModalTest`).
+- [x] Device-verified end to end against the test stack: an item was opened in „Mein Inventar", the
+  same record was changed through the API to move its version, and saving raised
+  „KONFLIKT FESTGESTELLT" with „ABBRECHEN" and „NEU LADEN". „Neu laden" closed the editor and the
+  list showed the other writer's value.
+
+---
+
+### REQ-APP-UI-005 — The top bar's two ends answer one question
+
+The bar has a left end — a back arrow, or nothing — and a right end: the org chip and the bell, or
+whatever the screen itself owns. Both answer the same question: **is this a destination the
+navigation offers, or something pushed on top of one?**
+
+They used to be asked differently. The arrow came from the destination; the chip and the bell came
+from whether a screen happened to publish a title. So every pushed screen that publishes none — the
+inbox, Einstellungen, the licences, the Fleetview import, and everything reached from „Mehr" — got a
+back arrow **and** the chip **and** the bell. The Hangar's title was truncated to „OPEN-SOURCE-LI…"
+shape to make room for a chip that does not belong there.
+
+**One predicate decides both:** whether the destination is in the navigation set for the current
+form factor — the bottom bar's five on a phone, the rail's eight on a tablet. A destination the
+navigation offers has no back arrow and carries the chip and the bell; anything else has the arrow
+and neither.
+
+The form factor is part of it, not an afterthought: Hangar, Raffinerie and Materialbörse sit behind
+„Mehr" on a phone and have their own rail entry on a tablet, so the same screen is pushed on one and
+a root on the other.
+
+**What a pushed screen puts on the right is its own.** The Hangar's overflow, the inbox's „3 NEU"
+chip, a detail's actions — the bar's right end is free precisely because the chip and the bell have
+left it (design ch. 07 artboard 1, ch. 08 artboard 4, ch. 13 artboard 1, ch. 15 artboard 1, which
+all draw the same head).
+
+**Acceptance**
+
+- [x] The five phone destinations and the eight tablet ones are the only ones without a back arrow;
+  the inbox is never among them (`TopBarOwnershipTest`).
+- [x] No destination is both a navigation entry and a sub-destination (`TopBarOwnershipTest`).
+- [x] Verified on a device: „← HANGAR ⋮" and „← OPEN-SOURCE-LIZENZEN" with the full title, no chip
+  and no bell on either.
+
+---
+

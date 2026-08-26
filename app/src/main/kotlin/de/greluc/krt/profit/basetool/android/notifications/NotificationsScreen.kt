@@ -7,7 +7,6 @@
 
 package de.greluc.krt.profit.basetool.android.notifications
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +40,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Notification
 import de.greluc.krt.profit.basetool.android.core.data.NotificationKind
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
@@ -56,7 +57,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToas
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
-import java.time.Instant
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the inbox list. */
@@ -115,19 +117,6 @@ fun NotificationsScreen(
         // maximum first, leaving widthIn nothing to shrink — the cap silently does nothing, which
         // is how it shipped and what a 1280 dp tablet showed: rows running the full width.
         Column(modifier = Modifier.widthIn(max = INBOX_COLUMN_MAX).fillMaxSize()) {
-            if (state.unread > 0) {
-                Text(
-                    text =
-                        pluralStringResource(
-                            R.plurals.notifications_unread,
-                            state.unread.toInt(),
-                            state.unread,
-                        ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-                )
-            }
             if (state.phase is NotificationsPhase.Ready && state.notifications.isNotEmpty()) {
                 Row(
                     modifier =
@@ -399,8 +388,8 @@ private fun Notification.sentence(): String =
 /**
  * How long ago this notification was raised, in the platform's words.
  *
- * The platform's formatter is localised and correctly pluralised in every language Android ships,
- * which a hand-written "vor %d Min." is not.
+ * The shared ladder of [relativeToNow], so the inbox, the Kartellbank and the dashboard cannot
+ * drift apart on what „gestern" looks like.
  *
  * @return e.g. "vor 4 Min.", or an empty string when the server sent no timestamp.
  */
@@ -408,20 +397,9 @@ private fun Notification.sentence(): String =
 private fun Notification.timeLabel(): String {
     // Read so the label recomposes on a locale change.
     LocalConfiguration.current
-    return createdAt?.relativeToNow().orEmpty()
+    val raised = createdAt ?: return ""
+    return raised.relativeToNow()
 }
-
-/**
- * How far in the past an instant is.
- *
- * @return the localised relative span.
- */
-private fun Instant.relativeToNow(): String =
-    DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
 
 /**
  * The icon for a notification's source area.
@@ -451,6 +429,29 @@ fun NotificationsRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // „3 NEU" belongs in the bar, not in the list (design ch. 07). It only has room there since the
+    // org chip and the bell stopped appearing on pushed screens — and on the inbox the bell would
+    // have pointed at the screen it was on anyway (`REQ-APP-UI-005`).
+    ProvideScreenTopBar(
+        actions =
+            if (state.unread > 0) {
+                {
+                    KrtChip(
+                        text =
+                            pluralStringResource(
+                                R.plurals.notifications_unread,
+                                state.unread.toInt(),
+                                state.unread,
+                            ),
+                        tone = KrtChipTone.Primary,
+                        modifier = Modifier.padding(end = KrtSpacing.lg),
+                    )
+                }
+            } else {
+                // Never „0 neu": an empty count is a fact the empty list already states.
+                null
+            },
+    )
     NotificationsScreen(
         state = state,
         onRefresh = viewModel::onRefresh,

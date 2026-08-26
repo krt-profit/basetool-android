@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 
 /** Test handle for the Items/Blueprints segment. */
 const val MEIN_INVENTAR_SEGMENT_TAG: String = "mein-inventar-segment"
@@ -105,6 +106,15 @@ fun MeinInventarRoute(
     }
 
     (itemsState.editor as? EditorState.Open)?.let { editor ->
+        // Design ch. 14's conflict dialog: a refused save must not be a line under a
+        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
+        ConflictOn(
+            error = editor.error,
+            onReload = {
+                items.onEditorDismissed()
+                items.onRefresh()
+            },
+        )
         PersonalInventoryEditor(
             editor = editor,
             locations = itemsState.locations,
@@ -128,6 +138,17 @@ fun MeinInventarRoute(
     }
 
     val blueprintEditor = blueprintsState.editor
+    // Design ch. 14's conflict dialog for both blueprint sheets: they share one editor state, so
+    // one dialog covers adding and editing.
+    ConflictOn(
+        error =
+            (blueprintEditor as? BlueprintEditor.Adding)?.error
+                ?: (blueprintEditor as? BlueprintEditor.Editing)?.error,
+        onReload = {
+            blueprints.onEditorDismissed()
+            blueprints.onRefresh()
+        },
+    )
     if (blueprintEditor is BlueprintEditor.Adding) {
         BlueprintAddSheet(
             editor = blueprintEditor,

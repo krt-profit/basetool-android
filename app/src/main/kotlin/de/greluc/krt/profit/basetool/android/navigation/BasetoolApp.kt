@@ -7,7 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.navigation
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +32,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,11 +49,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavigationRail
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionTopBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
@@ -59,10 +67,14 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewMode
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
+import de.greluc.krt.profit.basetool.android.orgunit.switcherLabel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
+import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
+import de.greluc.krt.profit.basetool.android.ui.LocalCaller
+import de.greluc.krt.profit.basetool.android.ui.RootScrollSignals
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -77,6 +89,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  *
  * @param onLogout ends the session; the caller opens the realm's end-session URL.
  * @param settings what the Einstellungen screen needs from the activity.
+ * @param caller who is signed in, for every screen that decides whether to offer an action.
  * @param missions drives the Einsatz list.
  * @param missionDetail builds a view model for one Einsatz.
  * @param operations drives the Operationen list.
@@ -94,6 +107,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
+ * @param onSelectAllOrgUnits drops the pin, so requests go out unscoped and the backend answers
+ *   with the union of the member's own units.
  * @param modifier layout modifier.
  * @param navController the controller driving the graph; injected for tests and previews.
  */
@@ -101,6 +116,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 fun BasetoolApp(
     onLogout: () -> Unit,
     settings: SettingsBindings,
+    caller: CallerViewModel,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
@@ -108,6 +124,7 @@ fun BasetoolApp(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
+    fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
@@ -121,6 +138,7 @@ fun BasetoolApp(
     booking: BookingViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
+    onSelectAllOrgUnits: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
@@ -144,6 +162,13 @@ fun BasetoolApp(
         onPauseOrDispose { notifications.onBackground() }
     }
 
+    UnknownLinkGuard(navController)
+
+    // Design ch. 03: "Re-tapping the active destination pops to its root and scrolls to top."
+    // The pop is navigation's; the scroll needs a signal that reaches the list, which is what this
+    // carries. Held here rather than inside the graph so it survives the graph's own rebuilds.
+    val rootScroll = remember { RootScrollSignals() }
+
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
     val selectedRoute = selectedTopLevelRoute(root, destinations)
 
@@ -158,9 +183,12 @@ fun BasetoolApp(
                 navController.navigateToTopLevel(item.route, restoreState = false)
             }
 
-            // Re-tapping the active destination goes back to that destination's own root.
+            // Re-tapping the active destination goes back to that destination's own root — and
+            // to the top of it. A member who taps the tab they are already on is asking to start
+            // over; popping alone leaves them mid-list, which looks like the tap did nothing.
             item.route == selectedRoute -> {
                 navController.popBackStack(item.route, inclusive = false)
+                rootScroll.request(item.route)
             }
 
             else -> {
@@ -173,7 +201,7 @@ fun BasetoolApp(
         destinations.map { destination ->
             KrtNavItem(
                 route = destination.route,
-                label = stringResource(destination.titleRes),
+                label = stringResource(destination.navLabelRes),
                 iconRes = destination.iconRes,
                 // No badge on any navigation entry. The Einsätze one carried a hardcoded 2 from
                 // the shell — a permanent claim that two of something were waiting, which no
@@ -189,6 +217,12 @@ fun BasetoolApp(
     BackHandler(enabled = current != KrtDestination.Home && navController.previousBackStackEntry == null) {
         navController.navigateToTopLevel(KrtDestination.Home.route)
     }
+
+    // What a pushed screen has published for the bar, if anything. A detail owns its head:
+    // chapters 06/10/11/12 all put the subject's own name there rather than its category.
+    val screenBar = remember { mutableStateOf<ScreenTopBar?>(null) }
+    val who by caller.caller.collectAsStateWithLifecycle()
+    val detail = screenBar.value
 
     Row(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (expanded) {
@@ -207,25 +241,15 @@ fun BasetoolApp(
             )
         }
         Column(modifier = Modifier.fillMaxSize()) {
-            KrtTopBar(
-                title = stringResource(current.titleRes),
-                modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-                onBack = if (isDetailRoute(current)) ({ navController.popBackStack() }) else null,
-                orgBadge = {
-                    // No badge at all until the scope is known. A placeholder would be a claim
-                    // about which unit the member is acting in, and the header that scopes every
-                    // request would disagree with it.
-                    orgUnit.active?.let { active ->
-                        KrtOrgBadge(
-                            text = active.name,
-                            // Not tappable with a single membership: the sheet would offer the
-                            // choice the member is already in. Same rule as the web sidebar.
-                            onClick = if (orgUnit.switchable) ({ orgSwitcherOpen = true }) else null,
-                        )
-                    }
-                },
-                notificationCount = unreadCount,
-                onNotificationsClick = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
+            AppTopBar(
+                destination = current,
+                detail = detail,
+                navigable = current in destinations,
+                orgUnit = orgUnit,
+                unreadCount = unreadCount,
+                onBack = { navController.popBackStack() },
+                onSwitchOrg = { orgSwitcherOpen = true },
+                onNotifications = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
             )
             // The content column caps at 1200 dp and centres; the top and bottom chrome keep
             // spanning the full width. Foundations ch. 01 § 5 asks for exactly this, and the
@@ -235,35 +259,56 @@ fun BasetoolApp(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.TopCenter,
             ) {
-                BasetoolNavHost(
-                    modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
-                    navController = navController,
-                    onOpenDestination = { navController.navigateToTopLevel(it.route) },
-                    onLogout = onLogout,
-                    settings = settings,
-                    missions = missions,
-                    missionDetail = missionDetail,
-                    operations = operations,
-                    operationDetail = operationDetail,
-                    notifications = notifications,
-                    dashboard = dashboard,
-                    hangar = hangar,
-                    bank = bank,
-                    bankAccount = bankAccount,
-                    orders = orders,
-                    orderDetail = orderDetail,
-                    exchange = exchange,
-                    refinery = refinery,
-                    refineryOrder = refineryOrder,
-                    inventory = inventory,
-                    personalInventory = personalInventory,
-                    personalBlueprints = personalBlueprints,
-                    booking = booking,
-                    memberName = settings.accountName,
-                    orgUnitName = orgUnit.active?.name,
-                )
+                CompositionLocalProvider(
+                    LocalScreenTopBar provides screenBar,
+                    LocalCaller provides who,
+                ) {
+                    BasetoolNavHost(
+                        modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
+                        navController = navController,
+                        rootScroll = rootScroll,
+                        onOpenDestination = { navController.navigateToTopLevel(it.route) },
+                        onLogout = onLogout,
+                        // The shell owns the scope and the switcher, so it fills those two in
+                        // rather than making the activity carry a copy of either.
+                        settings =
+                            settings.copy(
+                                orgUnitName =
+                                    if (orgUnit.allChosen) {
+                                        stringResource(R.string.org_switcher_all)
+                                    } else {
+                                        orgUnit.active?.name
+                                    },
+                                onSwitchOrgUnit = { orgSwitcherOpen = true },
+                            ),
+                        missions = missions,
+                        missionDetail = missionDetail,
+                        operations = operations,
+                        operationDetail = operationDetail,
+                        notifications = notifications,
+                        dashboard = dashboard,
+                        hangar = hangar,
+                        fleetImport = fleetImport,
+                        bank = bank,
+                        bankAccount = bankAccount,
+                        orders = orders,
+                        orderDetail = orderDetail,
+                        exchange = exchange,
+                        refinery = refinery,
+                        refineryOrder = refineryOrder,
+                        inventory = inventory,
+                        personalInventory = personalInventory,
+                        personalBlueprints = personalBlueprints,
+                        booking = booking,
+                        memberName = settings.accountName,
+                        orgUnitName = orgUnit.active?.name,
+                    )
+                }
             }
-            if (!expanded) {
+            // While a selection runs, the foot of the screen belongs to its action bar — the
+            // navigation would offer a way out that silently drops what was picked (design ch. 09,
+            // artboard 5: „FAB und Bottom-Nav weichen der Aktionsleiste").
+            if (!expanded && detail?.selection == null) {
                 KrtBottomBar(
                     items = navItems,
                     selectedRoute = selectedRoute,
@@ -281,7 +326,7 @@ fun BasetoolApp(
         ) {
             orgUnit.units.forEach { unit ->
                 KrtSheetOption(
-                    text = unit.name,
+                    text = unit.switcherLabel(),
                     selected = unit.id == orgUnit.activeId,
                     onClick = {
                         onSelectOrgUnit(unit.id)
@@ -289,6 +334,17 @@ fun BasetoolApp(
                     },
                 )
             }
+            // The row the app was missing: no pin at all, which the backend answers with the union
+            // of the member's own units — never a unit they do not belong to (design ch. 02,
+            // artboard 7, verified in docs/TENANCY_VERIFICATION.md).
+            KrtSheetOption(
+                text = stringResource(R.string.org_switcher_all),
+                selected = orgUnit.allChosen,
+                onClick = {
+                    onSelectAllOrgUnits()
+                    orgSwitcherOpen = false
+                },
+            )
         }
     }
 }
@@ -348,5 +404,128 @@ private fun NavHostController.navigateToTopLevel(
         popUpTo(graph.startDestinationId) { saveState = true }
         launchSingleTop = true
         this.restoreState = restoreState
+    }
+}
+
+/**
+ * The bar above every screen — either the destination's own title, or a pushed screen's head.
+ *
+ * Its own composable because assembling it is three decisions (which title, whether the org chip
+ * belongs there, whether the bell does) and folding them into `BasetoolApp` pushed that function
+ * past detekt's complexity cap. The cap was right: the bar is a thing, not a detail of the shell.
+ *
+ * @param destination the active destination, for its static title and for the back arrow.
+ * @param detail what a pushed screen published, or `null` on a root.
+ * @param orgUnit the active org context, for the chip.
+ * @param unreadCount unread notifications, for the bell's badge.
+ * @param navigable whether the navigation itself offers this destination — the bottom bar's five on
+ *   a phone, the rail's eight on a tablet. It decides who owns the bar's right-hand side.
+ * @param onBack pops the back stack.
+ * @param onSwitchOrg opens the org switcher.
+ * @param onNotifications opens the inbox.
+ */
+@Composable
+private fun AppTopBar(
+    destination: KrtDestination,
+    detail: ScreenTopBar?,
+    orgUnit: OrgUnitState,
+    unreadCount: Int?,
+    navigable: Boolean,
+    onBack: () -> Unit,
+    onSwitchOrg: () -> Unit,
+    onNotifications: () -> Unit,
+) {
+    // A running selection replaces the bar outright rather than decorating it: while a member is
+    // picking rows, the org chip and the bell offer a change of subject they did not ask for
+    // (design ch. 09, artboard 5). Checked first, because it outranks both other shapes.
+    detail?.selection?.let { selecting ->
+        KrtSelectionTopBar(
+            label = pluralStringResource(R.plurals.inventory_selected, selecting.count, selecting.count),
+            onClear = selecting.onClear,
+            closeLabel = stringResource(R.string.inventory_selection_leave),
+            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        )
+        return
+    }
+    // A published TITLE always names a thing; a destination title always names a section. A screen
+    // that publishes only actions — the Hangar's overflow — keeps its section bar, badge and bell.
+    val subject = detail?.title
+    KrtTopBar(
+        title = subject ?: stringResource(destination.titleRes),
+        subject = subject != null,
+        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        subtitle = detail?.subtitle,
+        // The back arrow and the right-hand side answer the same question and used to be asked
+        // differently: the arrow from the destination, the chip and the bell from whether a screen
+        // happened to publish a title. So every pushed screen that publishes none — the inbox, the
+        // settings, the licences, the Fleetview import, and everything reached from „Mehr" — got a
+        // back arrow AND the chip AND the bell. Artboards 07.1, 08.4, 13.1 and 15.1 all draw the
+        // same head: back arrow, title, and whatever that screen owns on the right. Nothing else.
+        onBack = if (navigable) null else onBack,
+        // The org chip and the bell are for choosing what to look at, so they belong to the
+        // destinations the navigation itself offers. On anything pushed they compete with the thing
+        // being looked at — and on the inbox the bell would point at the screen it is on.
+        orgBadge =
+            if (!navigable) {
+                null
+            } else {
+                {
+                    // No badge at all until the scope is known. A placeholder would be a
+                    // claim about which unit the member is acting in, and the header that
+                    // scopes every request would disagree with it. "All units" is a known
+                    // scope, not an unknown one, so it gets a badge of its own — dropping it
+                    // there would read as "no scope resolved" for a scope the member chose.
+                    // „Alle Einheiten" is the component sheet's own badge value (ch. 02 §3, which
+                    // lists it beside „Bereich Profit" and „SK VANGUARD"), not a short form invented
+                    // here for a chip that had to fit.
+                    val label =
+                        when {
+                            orgUnit.allChosen -> stringResource(R.string.org_switcher_all_short)
+                            else -> orgUnit.active?.name
+                        }
+                    label?.let { text ->
+                        KrtOrgBadge(
+                            text = text,
+                            // Not tappable with a single membership: the sheet would offer
+                            // the choice the member is already in. Same rule as the web
+                            // sidebar.
+                            onClick =
+                                if (orgUnit.switchable) onSwitchOrg else null,
+                        )
+                    }
+                }
+            },
+        notificationCount = unreadCount.takeIf { navigable },
+        onNotificationsClick = onNotifications,
+        actions = detail?.actions,
+    )
+}
+
+/**
+ * Sends a `basetool://…` address this build does not declare to the in-fiction 404.
+ *
+ * Design ch. 03 asks for exactly this — „Unbekannte Route → 404 in-fiction" — rather than the
+ * dashboard, so a link that goes nowhere says so instead of looking like a link that went home. It
+ * is reachable in practice: a notification from a newer server, a hand-typed address, a web link
+ * into an area this build predates.
+ *
+ * The **graph** answers the question rather than a second copy of the route table, so the two
+ * cannot drift apart. A catch-all `basetool://{route}` deep link was the first attempt and is
+ * wrong: Navigation ranks a match by how many arguments it fills, the wildcard fills one, every
+ * literal route fills none — so the wildcard outranked all of them and every deep link in the app
+ * landed on „Signal Lost". It read correctly in review and only the device showed it.
+ *
+ * @param navController the graph to ask and, when it has no answer, to navigate.
+ */
+@Composable
+private fun UnknownLinkGuard(navController: NavHostController) {
+    val activity = LocalActivity.current
+    LaunchedEffect(activity?.intent) {
+        val link =
+            activity?.intent?.takeIf { it.action == Intent.ACTION_VIEW }?.data
+                ?: return@LaunchedEffect
+        if (!navController.graph.hasDeepLink(link)) {
+            navController.navigate(KrtDestination.NotFound.route)
+        }
     }
 }

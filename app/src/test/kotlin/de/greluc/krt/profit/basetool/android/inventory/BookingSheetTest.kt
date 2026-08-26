@@ -38,6 +38,16 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class BookingSheetTest {
+    private companion object {
+        /**
+         * How often "Ausbuchen" appears when that mode is open.
+         *
+         * The sheet's title, the segment half, and the CTA — which names the move it makes rather
+         * than a generic "Buchen" (design ch. 09 artboard 2).
+         */
+        const val OUT_MENTIONS = 3
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
@@ -91,6 +101,7 @@ class BookingSheetTest {
                             onNote = {},
                             onSave = { saved.add(Unit) },
                             onDismiss = {},
+                            onConflictReload = {},
                         ),
                 )
             }
@@ -113,8 +124,11 @@ class BookingSheetTest {
         show(BookingState(mode = BookingMode.OUT, entry = entry()))
 
         compose.onAllNodesWithText("Umbuchen", ignoreCase = true).assertCountEquals(0)
-        // The sheet's title and the segment half both say it.
-        compose.onAllNodesWithText("Ausbuchen", ignoreCase = true).assertCountEquals(2)
+        // Three now: the sheet's title, the segment half, and the CTA — which names the move it
+        // makes rather than a generic "Buchen" (design ch. 09 artboard 2). On a form with three
+        // modes, a button that reads the same in all three is the one control that does not say
+        // which one is armed.
+        compose.onAllNodesWithText("Ausbuchen", ignoreCase = true).assertCountEquals(OUT_MENTIONS)
         compose.onNodeWithText("Notiz", ignoreCase = true).assertIsDisplayed()
     }
 

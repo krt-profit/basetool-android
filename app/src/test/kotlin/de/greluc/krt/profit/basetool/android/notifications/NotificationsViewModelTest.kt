@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.notifications
 import de.greluc.krt.profit.basetool.android.core.data.Notification
 import de.greluc.krt.profit.basetool.android.core.data.NotificationBulkResult
 import de.greluc.krt.profit.basetool.android.core.data.NotificationPage
+import de.greluc.krt.profit.basetool.android.core.data.NotificationSignal
 import de.greluc.krt.profit.basetool.android.core.data.NotificationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -60,7 +61,7 @@ class NotificationsViewModelTest {
         val inboxAnswers: MutableList<ApiResult<NotificationPage>> = mutableListOf(),
         private val countAnswers: MutableList<ApiResult<Long>> = mutableListOf(),
     ) : NotificationSource {
-        val signals = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
+        val signals = MutableSharedFlow<NotificationSignal>(extraBufferCapacity = 8)
         var inboxCalls = 0
         var countCalls = 0
         var streamOpens = 0
@@ -82,7 +83,7 @@ class NotificationsViewModelTest {
             return if (countAnswers.size > 1) countAnswers.removeAt(0) else countAnswers.first()
         }
 
-        override fun changes(): Flow<Unit> {
+        override fun changes(): Flow<NotificationSignal> {
             streamOpens++
             return signals
         }
@@ -221,7 +222,7 @@ class NotificationsViewModelTest {
             runCurrent()
             val before = source.countCalls
 
-            source.signals.emit(Unit)
+            source.signals.emit(NotificationSignal.refreshOnly())
             runCurrent()
 
             assertEquals(before + 1, source.countCalls)
@@ -237,13 +238,13 @@ class NotificationsViewModelTest {
             model.onForeground()
             runCurrent()
 
-            source.signals.emit(Unit)
+            source.signals.emit(NotificationSignal.refreshOnly())
             runCurrent()
             assertEquals(0, source.inboxCalls)
 
             model.loadOnce()
             runCurrent()
-            source.signals.emit(Unit)
+            source.signals.emit(NotificationSignal.refreshOnly())
             runCurrent()
 
             assertEquals(2, source.inboxCalls)
@@ -261,7 +262,7 @@ class NotificationsViewModelTest {
             runCurrent()
             assertEquals(UNREAD, model.state.value.unread)
 
-            source.signals.emit(Unit)
+            source.signals.emit(NotificationSignal.refreshOnly())
             runCurrent()
 
             assertEquals(UNREAD, model.state.value.unread)

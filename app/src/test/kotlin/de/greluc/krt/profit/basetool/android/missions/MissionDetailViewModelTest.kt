@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
@@ -31,6 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -125,8 +127,20 @@ class MissionDetailViewModelTest {
         var joinAnswer: ApiResult<MissionDetail>? = null
         var leaveAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
 
-        override suspend fun join(missionId: String): ApiResult<MissionDetail> {
+        var jobTypeAnswer: List<MissionJobType> = listOf(MissionJobType("j1", "Pilot"))
+        val joinRequests = mutableListOf<Triple<String, String?, Boolean>>()
+
+        override suspend fun jobTypes(): ApiResult<List<MissionJobType>> =
+            ApiResult.Success(jobTypeAnswer)
+
+        override suspend fun join(
+            missionId: String,
+            userId: String,
+            desiredJobTypeId: String?,
+            donate: Boolean,
+        ): ApiResult<MissionDetail> {
             joins.add(missionId)
+            joinRequests.add(Triple(userId, desiredJobTypeId, donate))
             return joinAnswer ?: detail(missionId)
         }
 
@@ -266,6 +280,8 @@ class MissionDetailViewModelTest {
     private class FakeIdentity(
         private val answer: ApiResult<Identity>,
     ) : IdentitySource {
+        override fun forget() = Unit
+
         override suspend fun myUserId(): ApiResult<String> =
             when (answer) {
                 is ApiResult.Failure -> answer
@@ -450,7 +466,7 @@ class MissionDetailViewModelTest {
         }
 
     @Test
-    fun `an Einsatz the caller is not on offers to sign up`() =
+    fun `signing up opens the sheet rather than joining outright`() =
         runTest(dispatcher) {
             source.queueDetail(ApiResult.Success(detail()))
             val model = viewModel()
@@ -462,7 +478,106 @@ class MissionDetailViewModelTest {
             model.onToggleSignUp()
             advanceUntilIdle()
 
-            assertEquals(listOf("m1"), source.joins)
+            // Two answers belong to the moment of signing up — where the share goes and which
+            // function is wanted — so the tap opens the sheet that collects them (design ch. 06,
+            // artboard 3) and nothing is written yet.
+            assertNotNull(model.state.value.joinSheet)
+            assertEquals(emptyList<String>(), source.joins)
+        }
+
+    @Test
+    fun `the sheet reads the Funktionen when it opens, not with the Einsatz`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onJoinSheetOpened()
+            advanceUntilIdle()
+
+            assertEquals(listOf("Pilot"), model.state.value.joinSheet?.jobTypes?.map { it.name })
+        }
+
+    @Test
+    fun `the sign-up carries the payout choice and the desired function`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onJoinSheetOpened()
+            advanceUntilIdle()
+            val pilot = model.state.value.joinSheet!!.jobTypes.first()
+
+            model.onDesiredFunction(pilot)
+            model.onJoinPayout(donate = true)
+            model.onJoinConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(listOf(Triple("u1", pilot.id, true)), source.joinRequests)
+            assertNull("a landed sign-up closes its sheet", model.state.value.joinSheet)
+        }
+
+    /**
+     * „Wunsch" has to be retractable.
+     *
+     * A chip row with no way back makes an optional field compulsory in practice — whichever chip
+     * was touched first would be sent.
+     */
+    @Test
+    fun `tapping the chosen function again clears it`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onJoinSheetOpened()
+            advanceUntilIdle()
+            val pilot = model.state.value.joinSheet!!.jobTypes.first()
+
+            model.onDesiredFunction(pilot)
+            model.onDesiredFunction(pilot)
+
+            assertNull(model.state.value.joinSheet?.desired)
+        }
+
+    @Test
+    fun `a refused sign-up keeps the sheet and the answers in it`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+            model.onJoinSheetOpened()
+            advanceUntilIdle()
+            model.onJoinPayout(donate = true)
+            source.joinAnswer = ApiResult.Failure(ApiError.Forbidden())
+
+            model.onJoinConfirmed()
+            advanceUntilIdle()
+
+            val sheet = model.state.value.joinSheet
+            assertNotNull("nothing was written, so nothing is taken away", sheet)
+            assertEquals(true, sheet?.donate)
+            assertEquals(ApiError.Forbidden(), sheet?.error)
+        }
+
+    /** A catalogue that will not load must not block an optional field. */
+    @Test
+    fun `the sheet still works when the Funktionen cannot be read`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail()))
+            source.jobTypeAnswer = emptyList()
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onJoinSheetOpened()
+            advanceUntilIdle()
+
+            assertNotNull(model.state.value.joinSheet)
+            assertEquals(emptyList<Any>(), model.state.value.joinSheet?.jobTypes)
         }
 
     @Test

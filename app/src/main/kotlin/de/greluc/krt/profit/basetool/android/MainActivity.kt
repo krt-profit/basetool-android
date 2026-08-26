@@ -53,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.gate.UpdateGate
 import de.greluc.krt.profit.basetool.android.gate.UpdateGateViewModel
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
@@ -75,9 +76,11 @@ import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventory
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
+import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
+import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
 import kotlinx.coroutines.launch
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -138,16 +141,21 @@ class MainActivity : AppCompatActivity() {
     /**
      * The member's screen-capture choice.
      *
-     * Held by the activity rather than a view model: it is applied to this window's flags, and a
-     * view model outliving a configuration change would only add a hop.
+     * Read from the application rather than built here, for the same reason [container] is: a
+     * second store on `krt_settings` throws, and every activity recreation would build one. The
+     * *flag* it drives is per-window; the store behind it is per-process.
      */
-    private val screenCapturePreference by lazy {
-        ScreenCapturePreference(ScreenCapturePreference.createStore(this))
-    }
+    private val screenCapturePreference: ScreenCapturePreference
+        get() = (application as BasetoolApplication).screenCapture
 
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
+
+    /** The two Einstellungen rows that live on the server (design ch. 13, artboard 2). */
+    private val memberPreferencesViewModel: MemberPreferencesViewModel by viewModels {
+        authViewModels(container)
+    }
     private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
 
     private val operationsViewModel: OperationsViewModel by viewModels { authViewModels(container) }
@@ -157,7 +165,9 @@ class MainActivity : AppCompatActivity() {
 
     private val dashboardViewModel: DashboardViewModel by viewModels { authViewModels(container) }
 
+    private val callerViewModel: CallerViewModel by viewModels { authViewModels(container) }
     private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
+    private val fleetImportViewModel: FleetImportViewModel by viewModels { authViewModels(container) }
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
 
@@ -292,6 +302,9 @@ class MainActivity : AppCompatActivity() {
                                 // usefully.
                                 RequestNotificationPermissionOnce()
                                 val orgUnit by orgUnitViewModel.state.collectAsState()
+                                val memberPreferences by
+                                    memberPreferencesViewModel.state.collectAsState()
+                                LaunchedEffect(Unit) { memberPreferencesViewModel.loadOnce() }
                                 BasetoolApp(
                                     orgUnit = orgUnit,
                                     missions = missionsViewModel,
@@ -307,7 +320,9 @@ class MainActivity : AppCompatActivity() {
                                     operations = operationsViewModel,
                                     notifications = notificationsViewModel,
                                     dashboard = dashboardViewModel,
+                                    caller = callerViewModel,
                                     hangar = hangarViewModel,
+                                    fleetImport = fleetImportViewModel,
                                     bank = bankViewModel,
                                     bankAccount = {
                                         BankAccountViewModel(
@@ -351,6 +366,7 @@ class MainActivity : AppCompatActivity() {
                                         )
                                     },
                                     onSelectOrgUnit = orgUnitViewModel::select,
+                                    onSelectAllOrgUnits = orgUnitViewModel::selectAll,
                                     onLogout = signOut,
                                     settings =
                                         SettingsBindings(
@@ -396,6 +412,9 @@ class MainActivity : AppCompatActivity() {
                                                 CustomTabLauncher.launch(this@MainActivity, url)
                                             },
                                             versionCode = BuildConfig.VERSION_CODE,
+                                            preferences = memberPreferences,
+                                            onPayout = memberPreferencesViewModel::onPayout,
+                                            onSharing = memberPreferencesViewModel::onSharing,
                                         ),
                                 )
                             }
@@ -549,6 +568,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
+                initializer { MemberPreferencesViewModel(container.memberPreferences) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer {
@@ -558,7 +578,9 @@ class MainActivity : AppCompatActivity() {
                         container.shadeTitle,
                     )
                 }
+                initializer { CallerViewModel(container.identity) }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
+                initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }

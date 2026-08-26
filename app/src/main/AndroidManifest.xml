@@ -4,7 +4,8 @@
   Copyright (C) 2026 Lucas Greuloch
   SPDX-License-Identifier: GPL-3.0-only
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!--
@@ -43,9 +44,21 @@
         </intent>
     </queries>
 
+    <!--
+      enableOnBackInvokedCallback: predictive back, which design ch. 03 asks of every screen.
+      targetSdk 37 makes the platform enable it by default on Android 16+, but minSdk is 30 and on
+      a device running 13 through 15 the back-preview only runs when the app opts in here. The one
+      case the flag exists for is therefore also the one a current emulator image cannot show.
+
+      tools:targetApi rather than a blanket ignore: lint is right that the attribute predates
+      minSdk 30, and wrong that this is a problem: being ignored below 33 is what an opt-in flag
+      is for. The marker says which level it starts mattering at instead of silencing the check.
+    -->
     <application
         android:name=".BasetoolApplication"
+        tools:targetApi="33"
         android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

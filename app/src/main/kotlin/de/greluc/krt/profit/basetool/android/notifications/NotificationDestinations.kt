@@ -26,9 +26,28 @@ import de.greluc.krt.profit.basetool.android.navigation.orderDetailRoute
  * @param notification the notification whose subject is wanted.
  * @return the route to navigate to, or `null` when this build has no screen for it.
  */
-fun notificationDestination(notification: Notification): String? {
-    val id = notification.entityId ?: return null
-    return when (notification.entityType) {
+fun notificationDestination(notification: Notification): String? =
+    notificationDestination(
+        entityType = notification.entityType,
+        entityId = notification.entityId,
+    )
+
+/**
+ * The same question asked of the two fields alone.
+ *
+ * The shade entry has a signal rather than a row, and both must land on the same screen: one
+ * resolver, two callers, no chance for the list and the push to disagree.
+ *
+ * @param entityType what the notification is about, e.g. `JOB_ORDER`.
+ * @param entityId that thing's id.
+ * @return the route to navigate to, or `null` when this build has no screen for it.
+ */
+fun notificationDestination(
+    entityType: String?,
+    entityId: String?,
+): String? {
+    val id = entityId ?: return null
+    return when (entityType) {
         // Filled in as each area's read-only screen lands. Written as an exhaustive-looking `when`
         // on purpose: the next slice adds a line here rather than discovering the mapping is
         // missing from a member's bug report.

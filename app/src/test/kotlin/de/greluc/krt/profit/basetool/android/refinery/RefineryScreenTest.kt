@@ -117,7 +117,11 @@ class RefineryScreenTest {
         // gone from the merged tree; and the tag sits on the pill's layout, whose label is a
         // child, so the tagged node carries no text of its own.
         assertPhase("IN ARBEIT")
-        compose.onNodeWithText("Dinyx-Solventierung · noch 2 Std. 41 Min.").assertIsDisplayed()
+        // The method is the subtitle and the countdown is in the card's FOOTER beside the value
+        // (design ch. 11 artboard 1). They used to be one line, which put the same clock on the
+        // card twice once the footer arrived.
+        compose.onNodeWithText("Dinyx-Solventierung").assertIsDisplayed()
+        compose.onNodeWithText("noch 2 Std. 41 Min.").assertIsDisplayed()
     }
 
     @Test
@@ -127,7 +131,7 @@ class RefineryScreenTest {
         // doing its job — Android Lint rejects a bare "%d Min." and it is right to.
         list(now = ALMOST)
 
-        compose.onNodeWithText("Dinyx-Solventierung · noch 1 Minute").assertIsDisplayed()
+        compose.onNodeWithText("noch 1 Minute").assertIsDisplayed()
     }
 
     @Test

@@ -13,11 +13,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,19 +39,24 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the booking sheet. */
 const val BOOKING_SHEET_TAG: String = "booking-sheet"
@@ -124,18 +134,31 @@ fun BookingSheet(
                     label = stringResource(R.string.inventory_entry_note),
                     enabled = !state.saving,
                 )
+            } else if (state.mode == BookingMode.IN) {
+                // Design ch. 09 artboard 2 puts the amount and the quality on ONE row: they are
+                // two readings of the same stack, and stacked full-width they read as two separate
+                // decisions. Quality is the narrow one — it is three digits.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    AmountField(
+                        state = state,
+                        onAmount = callbacks.onAmount,
+                        modifier = Modifier.weight(1f),
+                    )
+                    KrtTextField(
+                        value = state.quality,
+                        onValueChange = callbacks.onQuality,
+                        label = stringResource(R.string.booking_field_quality),
+                        enabled = !state.saving,
+                        modifier = Modifier.width(QUALITY_FIELD_WIDTH),
+                    )
+                }
+                PlaceField(state = state, callbacks = callbacks)
             } else {
                 AmountField(state = state, onAmount = callbacks.onAmount)
-            }
-
-            if (state.mode == BookingMode.IN) {
-                KrtTextField(
-                    value = state.quality,
-                    onValueChange = callbacks.onQuality,
-                    label = stringResource(R.string.booking_field_quality),
-                    enabled = !state.saving,
-                )
-                PlaceField(state = state, callbacks = callbacks)
             }
 
             if (state.mode == BookingMode.OUT) {
@@ -147,13 +170,14 @@ fun BookingSheet(
                     text =
                         stringResource(
                             if (error is ApiError.OptimisticLock) {
-                                R.string.conflict_body
+                                R.string.conflict_inline
                             } else {
                                 R.string.write_failed
                             },
                         ),
                 )
             }
+            ConflictOn(error = state.error, onReload = callbacks.onConflictReload)
             Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
@@ -161,8 +185,13 @@ fun BookingSheet(
                     enabled = !state.saving,
                 )
                 KrtCtaButton(
-                    text = stringResource(R.string.booking_save),
+                    // The CTA names the move it makes — "Einbuchen", "Ausbuchen" — rather than the
+                    // generic "Buchen" (artboard 09.2). On a form with three modes, a button that
+                    // reads the same in all three is the one control that does not say which one
+                    // is armed.
+                    text = stringResource(state.mode.titleRes()),
                     onClick = callbacks.onSave,
+                    iconRes = state.mode.iconRes(),
                     modifier =
                         Modifier
                             .testTag(BOOKING_SAVE_TAG)
@@ -212,6 +241,7 @@ data class BookingCallbacks(
     val onNote: (String) -> Unit,
     val onSave: () -> Unit,
     val onDismiss: () -> Unit,
+    val onConflictReload: () -> Unit,
 )
 
 /**
@@ -224,8 +254,9 @@ data class BookingCallbacks(
 private fun AmountField(
     state: BookingState,
     onAmount: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
@@ -240,9 +271,14 @@ private fun AmountField(
             )
             KrtHint(explanation = stringResource(R.string.booking_amount_hint))
         }
-        KrtTextField(
+        // A stepper, not a bare field: the artboard's `− 120 +` is what a member uses when the
+        // amount is one or two off, which on a booking form it usually is. Typing still works —
+        // the steps are an addition, not a replacement.
+        KrtStepperField(
             value = state.amount,
             onValueChange = onAmount,
+            onDecrement = { onAmount(state.amount.step(-1)) },
+            onIncrement = { onAmount(state.amount.step(1)) },
             enabled = !state.saving,
         )
         state.entry?.amount?.let { available ->
@@ -377,27 +413,29 @@ private fun Picker(
     onQuery: (String) -> Unit,
     onChosen: (String) -> Unit,
 ) {
+    var open by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        KrtTextField(value = query, onValueChange = onQuery, label = label, enabled = enabled)
+        KrtCombobox(
+            query = query,
+            onQueryChange = {
+                onQuery(it)
+                open = true
+            },
+            options = options.map { (id, text) -> KrtOption(id, text) },
+            onSelect = { option ->
+                onChosen(option.value)
+                open = false
+            },
+            expanded = open && options.isNotEmpty(),
+            onExpandedChange = { open = it },
+            label = label,
+            enabled = enabled,
+        )
         chosen?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        options.forEach { (id, text) ->
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = enabled) { onChosen(id) }
-                        .padding(vertical = KrtSpacing.sm),
             )
         }
     }
@@ -468,3 +506,34 @@ private fun MaterialOption.label(): String =
 private fun TerminalOption.label(): String =
     listOfNotNull(name.takeIf { it.isNotBlank() }, price?.let { formatAmount(it) })
         .joinToString(" · ")
+
+/**
+ * One step up or down from the amount currently typed.
+ *
+ * Whole units, because the sub-unit precision the Lager allows (cSCU, µSCU) is something a member
+ * types rather than steps to. A value that is not a number at all steps from zero rather than
+ * refusing — the field is mid-edit, and a dead button in that moment reads as broken.
+ *
+ * @param by `+1` or `-1`.
+ * @return the new value, never below zero.
+ */
+private fun String.step(by: Int): String {
+    val current = trim().replace(',', '.').toDoubleOrNull() ?: 0.0
+    val next = (current + by).coerceAtLeast(0.0)
+    return if (next % 1.0 == 0.0) next.toLong().toString() else next.toString()
+}
+
+/** Width of the quality field beside the amount — three digits and its label. */
+private val QUALITY_FIELD_WIDTH = 104.dp
+
+/**
+ * The glyph the CTA carries for each mode.
+ *
+ * @return the icon that shows which way the material moves.
+ */
+private fun BookingMode.iconRes(): Int =
+    when (this) {
+        BookingMode.IN -> DesignR.drawable.ic_krt_download
+        BookingMode.OUT -> DesignR.drawable.ic_krt_upload
+        BookingMode.NOTE -> DesignR.drawable.ic_krt_edit
+    }

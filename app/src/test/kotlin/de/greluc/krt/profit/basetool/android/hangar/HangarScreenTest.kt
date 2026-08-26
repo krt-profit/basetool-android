@@ -12,6 +12,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -80,6 +82,7 @@ class HangarScreenTest {
                     onCreate = { created.add(Unit) },
                     onEdit = { edited.add(it) },
                     onDelete = { deleted.add(it) },
+                    onTypeDrilldown = {},
                 )
             }
         }
@@ -125,8 +128,12 @@ class HangarScreenTest {
             ),
         )
 
+        // A three-column aggregate stays a table on the phone (design ch. 08, artboard 11), so the
+        // counts are their own cells rather than a sentence under the name.
         compose.onNodeWithText("Carrack").assertIsDisplayed()
-        compose.onNodeWithText("3 Schiffe · 2 fitted").assertIsDisplayed()
+        compose.onNodeWithText("SCHIFFSTYP").assertIsDisplayed()
+        compose.onAllNodesWithText(COUNT.toString()).onFirst().assertIsDisplayed()
+        compose.onAllNodesWithText(FITTED.toString()).onFirst().assertIsDisplayed()
     }
 
     @Test

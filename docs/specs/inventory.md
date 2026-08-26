@@ -6,7 +6,8 @@
 
 The org unit's stock, as a three-level tree — material, holding, entry — and the bookings that move
 it. Phase 2 shipped the two read levels; phase 3 added the entry level and the booking form
-(`007`–`012`). The bulk re-book and the quality slider remain out.
+(`007`–`012`); `013` and `014` added the selection mode and the bulk re-book behind it. The quality slider
+remains out.
 
 ---
 
@@ -259,12 +260,81 @@ member who cannot clear a note has to overwrite it with a space.
 
 ---
 
+### REQ-APP-INV-013 — Selection is a set of entries, and the mode says so on every surface
+
+Long-pressing a row starts a multi-selection; a plain tap then continues it, because having to keep
+long-pressing every further row makes picking twelve stacks a chore nobody finishes.
+
+**The selection is always a set of *entries*.** A group or stack row carries no selection state of
+its own — long-pressing one selects every leaf beneath it (design ch. 09, artboard 5: „Auswahl ist
+IMMER Eintrags-Menge"). That is also what the endpoint takes: `POST /inventory/bulk-rebook` in
+`LOCATION` mode wants entry ids plus **one** target, and the sources may differ per entry, so a
+group spanning three hangars is not a special case. A branch whose entries have not been read
+selects nothing rather than guessing at ids.
+
+**While it runs, the mode owns the frame.** The top bar is replaced by „✕ n gewählt", and the
+floating action button and the bottom navigation give way to the action bar at the foot. Nothing
+about the mode is subtle, because the alternative is a member who does not know why a tap now
+selects instead of opening. There are exactly two ways out — the ✕ and the system back gesture —
+and neither is "deselect the rows one at a time".
+
+**Row actions step aside for the checkbox.** Buchen and Zuordnen are not offered while selecting: a
+tap would otherwise mean two things at once.
+
+**Collapsing is a change of view, not of selection.** A collapsed group keeps its picked entries,
+its chip keeps counting them (`n gewählt`, against `n/m gewählt` while open), and the action bar
+keeps counting them too — otherwise rows in play would silently vanish with the branch.
+
+**A selection spanning rows that are not the caller's locks the bulk action**, in the same
+disabled-style-but-tappable form an individual row uses (`REQ-APP-AUTH-013`); the refusal names the
+rule and **the selection survives it**.
+
+**Acceptance**
+
+- [x] Long-pressing a group or stack selects all its leaves, and again clears them; an unopened
+  branch selects nothing (`InventoryViewModelTest`).
+- [x] Collapsing keeps the selection and the group's count (`InventoryViewModelTest`).
+- [x] Verified on a device against the test stack: the head becomes „✕ 1 gewählt", the group wears
+  „1/1 GEWÄHLT", the row wears its checkbox, the FAB and the navigation are gone, and „Umbuchen"
+  renders locked over somebody else's row.
+
+### REQ-APP-INV-014 — The batch reports what it did, in the sheet, before anything closes
+
+`POST /inventory/bulk-rebook` in `LOCATION` mode answers with two figures: **rebooked** and
+**skipped**. A row already standing at the target is *skipped*, which is not a failure — nothing
+needed doing.
+
+**The result is the sheet's second step, not a toast.** A skipped count without its sentence reads
+as that many failures, and a toast is too fleeting to carry the sentence (design ch. 09, artboard 9).
+Two tiles state the figures — the rebooked one in the success tint, the skipped one neutral — and a
+line underneath names the target and says in words that nothing was wrong. Only **Schließen** ends
+the batch: it leaves selection mode and re-reads the tree, dropping the cached entries as well as
+the group list, because the rows that just moved still carry their old place.
+
+**The skip is announced before the write, too**, under the target picker — a member told afterwards
+reads it as damage.
+
+**A refusal changes nothing and takes nothing away.** On `403` the sheet stays open, the message
+names what happened, and the **selection survives** (artboard 10). Re-picking twelve rows to retry
+would punish the member for the server's answer. Real failures — network, `5xx` — leave the sheet
+open the same way; there is no silent abort.
+
+**Acceptance**
+
+- [x] A finished batch keeps the sheet open on its result and keeps the selection; closing it clears
+  both and drops the cached entries (`InventoryViewModelTest`).
+- [x] A refused batch keeps the sheet, the error and the selection, and produces no result
+  (`InventoryViewModelTest`).
+- [x] Verified on a device against the test stack by re-booking a row onto the place it already
+  stood at: `UMGEBUCHT 0 / ÜBERSPRUNGEN 1`, the sentence naming ARC-L1, and Schließen returning the
+  tree to its normal head.
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No Material and no Ort filter.** Both need pickers (design ch. 02 bottom sheets) and a catalog
   read; they ship with the shared picker work, together with the Einsatz list's date range.
-- **No long-press selection and no bulk re-book.** The single-entry bookings ship; the multi-select
-  and the bulk re-book behind it do not.
 - **Private stock is not reachable from the app at all.** It needs the `my-inventory` read, which is
   its own screen in the web app and its own slice here. `POST /inventory/{id}/personal-rebook` is in
   the contract set and on the vhost allow-list ready for it, and no app code calls it today.

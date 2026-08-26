@@ -43,13 +43,28 @@ interface IdentitySource {
      *   caller's and must assume the narrower of the two roles, never the wider.
      */
     suspend fun me(): ApiResult<Identity>
+
+    /**
+     * Drops the cached record so the next [me] reads the server again.
+     *
+     * Called when the app comes back to the foreground: a role granted while it was in the
+     * background otherwise takes effect only after a sign-out, and "sign out and back in" is not an
+     * instruction anybody should have to be given (REQ-APP-AUTH-013).
+     */
+    fun forget()
 }
 
 /**
  * The caller, as far as any screen needs to know them.
  *
- * No name, no email and no role list: two facts answer every question the app asks of this record,
- * and holding the rest would put personal data in memory for the lifetime of the process.
+ * No name and no email: those are personal details the app has no question for, and the privacy gate
+ * (`ANDROID_APP_PLAN` §7) keeps them out of memory.
+ *
+ * The **permissions** are here on purpose, and the reasoning that once kept them out does not apply
+ * to them. They arrive in this very response, the access token the app must hold carries the realm
+ * roles anyway, and a capability list is a statement about the session rather than a detail about
+ * the person. Dropping them only ever meant the app could not read what it already had — and an app
+ * that cannot read its own permissions offers actions the server refuses (ADR-0011).
  *
  * @property userId the backend user id — the key an Operation's payout rows and an order's
  *   assignee rows are written against
@@ -57,11 +72,15 @@ interface IdentitySource {
  *   whether a screen offers a Logistician-only control at all
  * @property missionManager whether they hold the mission-manager grant, which decides the same
  *   for the Operation's payout confirmation
+ * @property permissions the backend's own capability vocabulary for this caller — `HANGAR_WRITE`,
+ *   `MISSION_READ` and the rest. A **hint, never a gate**: the server stays the authority, and a
+ *   screen that skips a check because this set said so is a defect rather than an optimisation
  */
 data class Identity(
     val userId: String,
     val logistician: Boolean,
     val missionManager: Boolean = false,
+    val permissions: Set<String> = emptySet(),
 )
 
 /**
@@ -132,6 +151,7 @@ class IdentityRepository(
                                 userId = id,
                                 logistician = result.value.isLogistician == true,
                                 missionManager = result.value.isMissionManager == true,
+                                permissions = result.value.permissions.orEmpty().toSet(),
                             )
                         cached = identity
                         ApiResult.Success(identity)
@@ -139,6 +159,10 @@ class IdentityRepository(
                 }
             }
         }
+
+    override fun forget() {
+        cached = null
+    }
 
     private companion object {
         /** Log subsystem. No name, email or id is ever logged. */

@@ -10,21 +10,27 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AggregatedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryAllocationWriteDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemBookOutDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemNoteUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryStackDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.LocationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialSellingTerminalDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseAggregatedInventoryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseLocationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseUserDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.serialization.builtins.ListSerializer
@@ -93,7 +99,13 @@ data class InventoryStack(
  * @property amount how much, as the server rendered it
  * @property quality the quality, or `null`
  * @property note the member's own note, or `null`
- * @property version the optimistic lock, echoed by every booking
+ * @property version optimistic-locking version
+ * @property jobOrderAllocations how much of this entry is promised to which Auftrag
+ * @property jobOrderRest what the server says is left after the Auftrag split, as it rendered it
+ * @property missionAllocations how much is promised to which Einsatz
+ * @property missionRest what is left after the Einsatz split. Independent of [jobOrderRest]: the
+ *   two splits are reconciled against the entry separately, so a unit can be promised to an Auftrag
+ *   AND to an Einsatz
  */
 data class InventoryEntry(
     val id: String,
@@ -109,6 +121,54 @@ data class InventoryEntry(
     val personal: Boolean,
     val note: String?,
     val version: Long?,
+    val jobOrderAllocations: List<InventoryAllocation> = emptyList(),
+    val jobOrderRest: String? = null,
+    val missionAllocations: List<InventoryAllocation> = emptyList(),
+    val missionRest: String? = null,
+)
+
+/**
+ * Which of an entry's two independent splits an allocation belongs to.
+ *
+ * The server reconciles Auftrag amounts and Einsatz amounts against the entry **separately**, so
+ * the same unit of Laranite can be promised to an Auftrag and to an Einsatz at once. Modelling them
+ * as one list would make the arithmetic wrong in both directions.
+ */
+enum class AllocationKind {
+    /** Promised to an Auftrag. */
+    JOB_ORDER,
+
+    /** Promised to an Einsatz. */
+    MISSION,
+}
+
+/**
+ * One promise made out of a stock entry.
+ *
+ * @property targetId the Auftrag or Einsatz it is promised to.
+ * @property label what to call that target on screen.
+ * @property subtitle a second line where the target has one - an Einsatz's planned start - else
+ *   `null`.
+ * @property amount how much, as the server rendered it.
+ */
+data class InventoryAllocation(
+    val targetId: String,
+    val label: String,
+    val subtitle: String?,
+    val amount: String,
+)
+
+/**
+ * Something an allocation can point at.
+ *
+ * @property id the Auftrag or Einsatz.
+ * @property label what to call it.
+ * @property subtitle a second line, or `null`.
+ */
+data class AllocationTarget(
+    val id: String,
+    val label: String,
+    val subtitle: String? = null,
 )
 
 /** What a book-out does with the material. */
@@ -248,9 +308,59 @@ fun interface MaterialLookup {
 }
 
 /**
+ * What a bulk rebook did.
+ *
+ * The two counts are reported apart because the server treats them apart: a row already at the
+ * target location is **skipped**, not failed, and telling a member "12 moved" when three of them
+ * were already there would be a number they cannot reconcile with the list in front of them.
+ *
+ * @property rebooked how many rows moved.
+ * @property skipped how many were already where they were being sent.
+ */
+data class BulkRebookResult(
+    val rebooked: Int,
+    val skipped: Int,
+)
+
+/**
+ * The allocation half of the Lager's API.
+ *
+ * Split out from [InventorySource] because it is a seam of its own: three endpoints that address a
+ * stock entry's promises rather than its stock, and a screen — the Zuordnung sheet — that needs
+ * only these. [InventorySource] extends it, so a caller that wants both still asks for one type.
+ */
+interface InventoryAllocationSource {
+    @Suppress("LongParameterList")
+    suspend fun setAllocation(
+        entryId: String,
+        kind: AllocationKind,
+        targetId: String,
+        amount: String,
+        existing: Boolean,
+        version: Long?,
+    ): ApiResult<InventoryEntry>
+
+    /**
+     * The Aufträge an allocation may point at.
+     *
+     * @return the open orders, or the classified failure.
+     */
+    suspend fun orderTargets(): ApiResult<List<AllocationTarget>>
+
+    /**
+     * The Einsätze an allocation may point at.
+     *
+     * @return the missions, or the classified failure.
+     */
+    suspend fun missionTargets(): ApiResult<List<AllocationTarget>>
+}
+
+/**
  * The Lager reads, as a seam.
  */
-interface InventorySource : MaterialLookup {
+interface InventorySource :
+    MaterialLookup,
+    InventoryAllocationSource {
     /**
      * Reads one page of material groups.
      *
@@ -297,6 +407,22 @@ interface InventorySource : MaterialLookup {
     suspend fun bookIn(draft: BookInDraft): ApiResult<Unit>
 
     /**
+     * Moves several of the caller's rows to one location at once.
+     *
+     * All or nothing on the server's terms: an unknown id, a row belonging to somebody else, or an
+     * earmarked row that blocks the move aborts the whole call rather than half-applying it. Rows
+     * already at the target are skipped and counted.
+     *
+     * @param entryIds the rows to move.
+     * @param locationId where they go.
+     * @return how many moved and how many were already there, or the classified failure.
+     */
+    suspend fun bulkRebook(
+        entryIds: List<String>,
+        locationId: String,
+    ): ApiResult<BulkRebookResult>
+
+    /**
      * Books material out of one entry.
      *
      * @param id the entry.
@@ -304,6 +430,7 @@ interface InventorySource : MaterialLookup {
      * @param draft what the member entered.
      * @return success, or the classified failure.
      */
+
     suspend fun bookOut(
         id: String,
         version: Long?,
@@ -468,6 +595,153 @@ class InventoryRepository(
             InventoryItemCreateDto.serializer(),
         )
 
+    override suspend fun setAllocation(
+        entryId: String,
+        kind: AllocationKind,
+        targetId: String,
+        amount: String,
+        existing: Boolean,
+        version: Long?,
+    ): ApiResult<InventoryEntry> {
+        val quantity = amount.trim().toDoubleOrNull() ?: 0.0
+        val body =
+            InventoryAllocationWriteDto(
+                field = kind.toWire(),
+                targetId = targetId,
+                amount = quantity.takeIf { it > 0.0 },
+                version = version,
+            )
+        val path = "$ALLOCATION_PATH_PREFIX/$entryId/allocation"
+        val result =
+            when {
+                quantity <= 0.0 -> {
+                    reader.send(
+                        path = path,
+                        method = "DELETE",
+                        body = body,
+                        bodySerializer = InventoryAllocationWriteDto.serializer(),
+                        deserializer = InventoryItemDto.serializer(),
+                    )
+                }
+
+                existing -> {
+                    reader.send(
+                        path = path,
+                        method = "PATCH",
+                        body = body,
+                        bodySerializer = InventoryAllocationWriteDto.serializer(),
+                        deserializer = InventoryItemDto.serializer(),
+                    )
+                }
+
+                else -> {
+                    reader.post(
+                        path = path,
+                        body = body,
+                        bodySerializer = InventoryAllocationWriteDto.serializer(),
+                        deserializer = InventoryItemDto.serializer(),
+                    )
+                }
+            }
+        return when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toEntry()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK))
+            }
+        }
+    }
+
+    override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
+        when (
+            val result =
+                reader.get(
+                    path = "/api/v1/orders/lookup",
+                    deserializer = ListSerializer(JobOrderReferenceDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { reference ->
+                        reference.id?.let { id ->
+                            AllocationTarget(
+                                id = id,
+                                label = reference.displayId?.let { "#A-$it" } ?: id,
+                                subtitle = reference.handle?.takeIf { it.isNotBlank() },
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+    override suspend fun missionTargets(): ApiResult<List<AllocationTarget>> =
+        when (
+            val result =
+                reader.get(
+                    path = "/api/v1/missions/lookup",
+                    deserializer = ListSerializer(MissionReferenceDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { reference ->
+                        reference.id?.let { id ->
+                            AllocationTarget(
+                                id = id,
+                                label = reference.name.orEmpty().ifBlank { id },
+                                subtitle = reference.status?.takeIf { it.isNotBlank() },
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+    override suspend fun bulkRebook(
+        entryIds: List<String>,
+        locationId: String,
+    ): ApiResult<BulkRebookResult> =
+        when (
+            val result =
+                reader.post(
+                    path = BULK_REBOOK_PATH,
+                    body =
+                        BulkRebookRequest(
+                            itemIds = entryIds,
+                            mode = BulkRebookRequest.Mode.LOCATION,
+                            targetLocationId = locationId,
+                            mergeStock = true,
+                        ),
+                    bodySerializer = BulkRebookRequest.serializer(),
+                    deserializer = BulkRebookResultDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    BulkRebookResult(
+                        rebooked = result.value.rebooked ?: 0,
+                        skipped = result.value.skipped ?: 0,
+                    ),
+                )
+            }
+        }
+
     override suspend fun bookOut(
         id: String,
         version: Long?,
@@ -614,6 +888,11 @@ class InventoryRepository(
         private const val GROUPED_PATH = "/api/v1/inventory/all/grouped"
         private const val ENTRIES_PATH = "/api/v1/inventory/all/stack/entries"
         private const val BOOK_IN_PATH = "/api/v1/inventory"
+        private const val ALLOCATION_PATH_PREFIX = "/api/v1/inventory"
+        private const val BULK_REBOOK_PATH = "/api/v1/inventory/bulk-rebook"
+
+        /** The status a 200 that could not be mapped is reported under. */
+        private const val HTTP_OK = 200
         private const val MATERIALS_PATH = "/api/v1/materials/search"
         private const val LOCATIONS_PATH = "/api/v1/locations/search"
         private const val MEMBERS_PATH = "/api/v1/users/search"
@@ -725,8 +1004,43 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
         personal = personal == true,
         note = note?.takeIf { it.isNotBlank() },
         version = version,
+        jobOrderAllocations =
+            jobOrderAllocations.orEmpty().mapNotNull { allocation ->
+                allocation.jobOrderId?.let { target ->
+                    InventoryAllocation(
+                        targetId = target,
+                        label = allocation.jobOrderDisplayId?.let { "#A-$it" } ?: target,
+                        subtitle = null,
+                        amount = allocation.amount?.toPlainString() ?: "0",
+                    )
+                }
+            },
+        jobOrderRest = jobOrderRest?.toPlainString(),
+        missionAllocations =
+            missionAllocations.orEmpty().mapNotNull { allocation ->
+                allocation.missionId?.let { target ->
+                    InventoryAllocation(
+                        targetId = target,
+                        label = allocation.missionName.orEmpty().ifBlank { target },
+                        subtitle = allocation.missionPlannedStartTime,
+                        amount = allocation.amount?.toPlainString() ?: "0",
+                    )
+                }
+            },
+        missionRest = missionRest?.toPlainString(),
     )
 }
+
+/**
+ * Maps the app's allocation kind onto the wire enum.
+ *
+ * @return the generated constant.
+ */
+private fun AllocationKind.toWire(): InventoryAllocationWriteDto.Field =
+    when (this) {
+        AllocationKind.JOB_ORDER -> InventoryAllocationWriteDto.Field.JOB_ORDER
+        AllocationKind.MISSION -> InventoryAllocationWriteDto.Field.MISSION
+    }
 
 /**
  * Maps the app's book-out kind onto the wire enum.

@@ -7,17 +7,21 @@
 
 package de.greluc.krt.profit.basetool.android.bank
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -49,6 +53,8 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
@@ -56,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFiel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -64,12 +71,15 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetr
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
-import java.time.Instant
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Konten list. */
@@ -92,12 +102,6 @@ const val BANK_ROLE_TAG: String = "bank-role"
 
 /** Test handle for one account's screen. */
 const val BANK_ACCOUNT_TAG: String = "bank-account"
-
-/** Height of the drawn balance line. */
-private val SPARKLINE_HEIGHT = 32.dp
-
-/** Stroke width of the drawn balance line, in device pixels. */
-private const val SPARKLINE_STROKE = 3f
 
 /**
  * The Konten list (design spec ch. 12 §1), read-only.
@@ -175,6 +179,9 @@ fun BankAccountsScreen(
                         contentPadding = PaddingValues(KrtSpacing.md),
                         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                     ) {
+                        item(key = "total") {
+                            TotalCard(accounts = state.accounts)
+                        }
                         items(state.accounts, key = { it.id }) { account ->
                             AccountCard(account = account, onClick = { onOpenAccount(account.id) })
                         }
@@ -183,6 +190,57 @@ fun BankAccountsScreen(
             }
         }
     }
+}
+
+/**
+ * The colour a 30-day change is stated in.
+ *
+ * Green up, red down, muted when it did not move — the direction is the fact, and a member reading
+ * a column of deltas should not have to parse a sign to see it. Both tints are the -text variants,
+ * which are the ones that hold contrast on black.
+ *
+ * @param delta the change as the server sent it.
+ * @return the tint for that reading.
+ */
+private fun deltaTone(delta: String): androidx.compose.ui.graphics.Color {
+    val value = delta.trim().toBigDecimalOrNull() ?: return KrtPalette.TextMuted
+    return when {
+        value.signum() > 0 -> KrtPalette.SuccessText
+        value.signum() < 0 -> KrtPalette.DangerText
+        else -> KrtPalette.TextMuted
+    }
+}
+
+/**
+ * What the visible accounts add up to.
+ *
+ * Design ch. 12 artboard 1 leads the list with it, and the reason is scope: a member with a
+ * view-grant on three accounts is being told how much the org holds *that they can see*, which is
+ * not the same as what the org holds. Summing the rows on screen keeps the two identical by
+ * construction — a server-side grand total would silently include accounts the caller is not shown.
+ *
+ * Accounts whose balance the server withheld are skipped rather than counted as zero: a redacted
+ * balance is unknown, and unknown is not nothing.
+ *
+ * @param accounts the accounts on screen.
+ */
+@Composable
+private fun TotalCard(accounts: List<BankAccountSummary>) {
+    val total = accounts.mapNotNull { it.balance?.trim()?.toBigDecimalOrNull() }
+    if (total.isEmpty()) {
+        return
+    }
+    val sum = total.reduce { a, b -> a + b }
+    // `KrtTotalTile` IS this tile — the orange leading bar that marks a figure as the sum of the
+    // screen, the muted label, the bright value. It was hand-built here before anyone noticed the
+    // component existed, and the copy lost two things the original has: the label uppercased, and
+    // the value in tabular figures so the digits hold their column while the total changes.
+    KrtTotalTile(
+        label = stringResource(R.string.bank_total),
+        value = formatAmount(sum.toPlainString()),
+        unit = stringResource(R.string.bank_total_unit),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /**
@@ -207,6 +265,7 @@ private fun AccountCard(
         delta = account.delta30d?.let { stringResource(R.string.bank_delta_30d, formatAmount(it)) },
         deltaPositive = account.delta30d.isPositiveDelta(),
         sparkline = account.sparkline.takeIf { it.isNotEmpty() }?.map(Double::toFloat),
+        sparklineDescription = stringResource(R.string.bank_sparkline_description),
         onClick = onClick,
     )
 }
@@ -224,53 +283,6 @@ private fun String?.isPositiveDelta(): Boolean {
     val first = this?.trimStart()?.firstOrNull() ?: return true
     return first !in MINUS_SIGNS
 }
-
-/**
- * The balance line, drawn rather than charted.
- *
- * The design says so explicitly (REQ-BANK-016 in the main repo): the server sends the points and
- * the client draws a polyline. No chart framework enters this app for one line on a card — it would
- * be a dependency, a theme to fight and, under this repo's privacy gate, a decision.
- *
- * A line needs two points; fewer draws nothing rather than a dot pretending to be a trend. A flat
- * series draws a straight line through the middle instead of dividing by a zero span.
- *
- * @param points the balance points, oldest first.
- */
-@Composable
-private fun Sparkline(points: List<Double>) {
-    if (points.size < MIN_POINTS) {
-        return
-    }
-    val description = stringResource(R.string.bank_sparkline_description)
-    val line = MaterialTheme.colorScheme.primary
-    Canvas(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(SPARKLINE_HEIGHT)
-                .semantics { contentDescription = description },
-    ) {
-        val min = points.min()
-        val max = points.max()
-        val span = (max - min).takeIf { it > 0.0 }
-        val stepX = size.width / (points.size - 1)
-        val offsets =
-            points.mapIndexed { index, value ->
-                val ratio = span?.let { (value - min) / it } ?: HALF
-                Offset(index * stepX, (size.height * (1.0 - ratio)).toFloat())
-            }
-        offsets.zipWithNext { from, to ->
-            drawLine(color = line, start = from, end = to, strokeWidth = SPARKLINE_STROKE, cap = StrokeCap.Round)
-        }
-    }
-}
-
-/** Fewer points than this is not a line. */
-private const val MIN_POINTS = 2
-
-/** Where a flat series is drawn. */
-private const val HALF = 0.5
 
 /**
  * One account with its ledger (design spec ch. 12 §2), read-only.
@@ -293,6 +305,15 @@ fun BankAccountScreen(
     val phase = state.phase
     if (state.settingsOpen) {
         state.settings?.let { settings ->
+            // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and
+            // makes the account re-read rather than re-sending a value against a newer version.
+            ConflictOn(
+                error = state.error,
+                onReload = {
+                    actions.onDismiss()
+                    onRefresh()
+                },
+            )
             BankSettingsSheet(settings = settings, state = state, actions = actions)
         }
     }
@@ -310,23 +331,53 @@ fun BankAccountScreen(
                     item(key = "head") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                         ) {
-                            Text(
-                                text = account.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = KrtPalette.White,
-                            )
-                            Text(
-                                text = stringResource(R.string.bank_balance),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = KrtPalette.TextMuted,
-                            )
-                            Text(
-                                text = formatAmount(account.balance.orEmpty()),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = KrtPalette.White,
-                            )
+                            // The account's name and its org sit in the TOP BAR (design ch. 12
+                            // artboard 2), the rule every detail in this app now follows.
+                            // The artboard also puts the owning unit under the name; the detail
+                            // DTO does not carry it (BankAccountDetail has no orgUnitName, only
+                            // the summary does), so it is left off rather than guessed from the
+                            // list the member may not have come through.
+                            ProvideScreenTopBar(title = account.name)
+                            // The balance is a HUD box with its sparkline, not three stacked
+                            // Texts: the artboard gives the one number a member came for the
+                            // heaviest treatment on the screen, and puts the 30-day shape under it
+                            // so "is this going up" is answered without reading the ledger.
+                            KrtHudBox(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = stringResource(R.string.bank_balance).uppercase(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = KrtPalette.TextMuted,
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                                    verticalAlignment = Alignment.Bottom,
+                                ) {
+                                    Text(
+                                        text = formatAmount(account.balance.orEmpty()),
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = KrtPalette.White,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.bank_total_unit),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = KrtPalette.TextMuted,
+                                        modifier = Modifier.padding(bottom = KrtSpacing.xs),
+                                    )
+                                }
+                                account.delta30d?.let { delta ->
+                                    Text(
+                                        text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = deltaTone(delta),
+                                    )
+                                }
+                                // The artboard draws a large sparkline here. BankAccountDetail
+                                // carries no series — only the list summary does — so it is a
+                                // mapping gap rather than a layout one, and inventing a shape from
+                                // one number would be a chart of nothing.
+                            }
                             // Only for the member responsible for this account, and only because
                             // the server said so in the settings answer: the app works out no role
                             // of its own here.
@@ -342,13 +393,6 @@ fun BankAccountScreen(
                                         enabled = state.writable,
                                     )
                                 }
-                            account.delta30d?.let { delta ->
-                                Text(
-                                    text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = KrtPalette.TextMuted,
-                                )
-                            }
                         }
                     }
                     item(key = "ledger-title") {
@@ -495,21 +539,10 @@ private fun BankBooking.amountColor(): Color =
 @Composable
 private fun BankBooking.subline(): String {
     LocalConfiguration.current
-    val time = createdAt?.relativeToNow()
+    val booked = createdAt
+    val time = if (booked == null) null else booked.relativeToNow()
     return listOfNotNull(holder?.takeIf { it.isNotBlank() }, time).joinToString(" · ")
 }
-
-/**
- * How long ago an instant is, in the platform's words.
- *
- * @return the localised relative span.
- */
-private fun Instant.relativeToNow(): String =
-    DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
 
 /**
  * The translated name of a booking kind.
@@ -693,7 +726,7 @@ private fun BankSettingsSheet(
                     text =
                         stringResource(
                             if (error is ApiError.OptimisticLock) {
-                                R.string.conflict_body
+                                R.string.conflict_inline
                             } else {
                                 R.string.write_failed
                             },

@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,11 +32,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.ApprovalStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -118,8 +122,11 @@ fun ApprovalPendingScreen(
                         tint = if (rejected) KrtPalette.DangerText else KrtPalette.Orange,
                     )
                     Spacer(Modifier.height(KrtSpacing.md))
+                    // Uppercase, as chapter 04 sets every gate heading. The source strings stay
+                    // sentence case so a screen reader is not handed shouting, and
+                    // `krtUppercase` folds with the device's locale rather than the JVM default.
                     Text(
-                        text = stringResource(titleRes),
+                        text = stringResource(titleRes).krtUppercase(),
                         style = MaterialTheme.typography.titleLarge,
                         color = KrtPalette.White,
                         textAlign = TextAlign.Center,
@@ -137,7 +144,21 @@ fun ApprovalPendingScreen(
                     // was never promised.
                     accountName?.let { name ->
                         Spacer(Modifier.height(KrtSpacing.lg))
-                        KrtKeyValueRow(label = stringResource(R.string.gate_account), value = name)
+                        // The name is set in a data chip, not printed as a value: it is the string
+                        // an administrator will search the approval queue for, and the artboard
+                        // frames it for exactly that reason. `Data` is the design system's tone for
+                        // it — white on the input surface, hairline border.
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.gate_account).krtUppercase(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = KrtPalette.TextMuted,
+                            )
+                            KrtChip(text = name, tone = KrtChipTone.Data)
+                        }
                     }
                 }
             }

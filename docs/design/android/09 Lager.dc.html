@@ -22,7 +22,7 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">09</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Lager & Blueprints</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Tree = DS tree-table (one header, depth rails); Zuordnung = locked Variante C (split with amounts, two independent groups, live Rest reconciliation). Live: group collapse, booking segment, allocation steppers, quality slider.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Tree = DS tree-table (one header, depth rails); Zuordnung = locked Variante C (split with amounts, two independent groups, live Rest reconciliation). Live: group collapse, booking segment, allocation steppers, quality slider. Neu: Auswahlmodus (Langdruck) + Bulk-Umbuchen (Artboards 5–10) · Gesperrt-aber-antippbar-Muster (Artboards 11–14).</div>
     </div>
   </header>
 
@@ -94,7 +94,7 @@
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>Material (group, orange 4 dp rail) → Nutzer/Stack (mid, gray rail) → Eintrag (leaf, dark inset)</li>
           <li>Quality = value + 44 dp mini-gauge (0–1000); amounts bright + dimmed unit, right-aligned tabular</li>
-          <li>Long-press starts selection mode (ch. 02 row) → bulk Umbuchen via bottom action bar</li>
+          <li>Long-press starts selection mode (ch. 02 row) → bulk Umbuchen via bottom action bar — Artboards 5–10</li>
           <li>Collapse state per group in localStorage (web idiom REQ-INV-002)</li>
         </ul>
       </div>
@@ -196,7 +196,7 @@
           <li><span class="chip chip--success" style="font-size:9px">Rest 0</span> voll zugeordnet</li>
           <li><span class="chip chip--muted" style="font-size:9px">… frei</span> unzugeordneter Rest — erlaubt</li>
           <li><span class="chip chip--danger" style="font-size:9px">Überbucht</span> Summe &gt; Eintrag — Speichern gesperrt</li>
-          <li>Persönliche Einträge tragen keine Zuordnung; ohne Logistik-Rolle read-only</li>
+          <li>Persönliche Einträge tragen keine Zuordnung. Ohne Rolle Logistiker: Aktionen im Gesperrt-Stil — sichtbar, antippbar, Toast nennt die Rolle (Artboards 11–14); nie versteckt</li>
         </ul>
       </div>
     </div>
@@ -259,6 +259,392 @@
           <li>Craftability chip: „Baubar" success / „N Materialien fehlen" danger with inline breakdown</li>
           <li>Batch import: SAF file pick → match preview (erkannt / unbekannt / Duplikat) → „Übernehmen" — same 3-step as ship import</li>
           <li>Recipe detail on tablet = master-detail with per-ingredient quality (next frame)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Auswahlmodus — Langdruck (Kanon 02 §4 im Baum)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#1C1C1C;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Auswahlmodus verlassen"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;letter-spacing:.5px;font-variant-numeric:tabular-nums">2 gewählt</div>
+          </div>
+          <div style="flex:none;padding:12px 16px;display:flex;gap:6px;opacity:.4">
+            <span class="chip chip--primary" style="font-size:10px;flex:none">Material: Alle</span>
+            <span class="chip" style="font-size:10px;flex:none">Nur mit Bestand</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:0 16px 12px">
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
+                <span class="chip chip--primary" style="font-size:9px;font-variant-numeric:tabular-nums;flex:none">1/3 gewählt</span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
+                <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Rhea</span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">642</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px 6px 44px;background:rgba(231,126,35,.08);border-bottom:1px solid #1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
+                  <div style="flex:1;min-width:0">
+                    <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU</div>
+                  </div>
+                  <span style="width:22px;height:22px;flex:none;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px 6px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C;">
+                  <div style="flex:1;min-width:0">
+                    <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 901 · 200 SCU</div>
+                  </div>
+                  <span style="width:22px;height:22px;flex:none;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center"></span>
+                </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
+                <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Dorn</span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px 6px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C;">
+                  <div style="flex:1;min-width:0">
+                    <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Lorville · geteilt</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 655 · 442 SCU</div>
+                  </div>
+                  <span style="width:22px;height:22px;flex:none;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center"></span>
+                </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span>
+                <span class="chip chip--primary" style="font-size:9px;font-variant-numeric:tabular-nums;flex:none">1 gewählt</span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">2.310</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+            </div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;margin-top:10px">Tap = Auswahl umschalten; Detail/Buchen ausgesetzt. FAB und Bottom-Nav weichen der Aktionsleiste.</div>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:10px;background:#141414;border-top:2px solid #E77E23;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.15)">
+            <span style="font:900 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;flex:none">2</span>
+            <span style="font:700 10px/1.2 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;flex:1">gewählt</span>
+            <button class="btn-ghost btn" style="background:transparent;min-height:48px">Aufheben</button>
+            <button class="btn btn--cta" style="min-height:48px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Umbuchen</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Auswahlmodus</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Auswahl ist IMMER Eintrags-Menge. Langdruck auf Gruppe/Stapel wählt alle Blatt-Einträge darunter — Gruppen-/Stapelzeilen tragen keinen eigenen Auswahlzustand. Gruppe über 3 Hangars: unkritisch — bulk-rebook nimmt Eintrags-IDs + EIN Ziel, die Quelle darf je Eintrag verschieden sein</li>
+          <li>Zeilenaktionen ausgesetzt: Tap = Auswahl umschalten statt Detail; Buchen/Zuordnen inaktiv, FAB und Bottom-Nav weichen der Aktionsleiste; Verlassen: X oder System-Zurück</li>
+          <li>Gruppenzeile zeigt „n/m gewählt" (offen) bzw. „n gewählt" (eingeklappt)</li>
+          <li>Auswahl überlebt das Einklappen: eingeklappte Gruppen behalten ihre gewählten Einträge (Chip zählt sie), die Leiste zählt weiter — Einklappen ist Ansicht, nicht Auswahl</li>
+          <li>Enthält die Auswahl fremde Zeilen, rendert „Umbuchen" für Nicht-Logistiker im Gesperrt-Stil (Muster Artboards 11–14) — Toast nennt die Regel, die Auswahl bleibt bestehen</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Bulk-Umbuchen — Ziel noch nicht gewählt</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Umbuchen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">12 Einträge · Modus LOCATION · POST inventory/bulk-rebook</div>
+              </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" placeholder="Ziel wählen…" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none">12 Einträge umbuchen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">7 · Bulk-Umbuchen — Ziel gewählt</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Umbuchen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">12 Einträge · Modus LOCATION · POST inventory/bulk-rebook</div>
+              </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>12 Einträge umbuchen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">8 · Bulk-Umbuchen — Speichern läuft</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Umbuchen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">12 Einträge · Modus LOCATION · POST inventory/bulk-rebook</div>
+              </div>
+              <div style="opacity:.55;pointer-events:none">
+                <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1;opacity:.45;pointer-events:none">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6;pointer-events:none"><span class="krt-spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,.25);border-top-color:#000"></span>Umbuchen…</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">9 · Bulk-Umbuchen — Ergebnis mit Übersprungenen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Umbuchen — Ergebnis</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">12 Einträge · Modus LOCATION · POST inventory/bulk-rebook</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="kpi-total" style="padding:10px 12px;border-left-color:#239E33"><div class="kpi-label" style="font-size:9px">Umgebucht</div><div class="kpi-value" style="font-size:24px;color:#2EBC3D">11</div></div>
+                <div class="kpi-total" style="padding:10px 12px;border-left-color:#646464"><div class="kpi-label" style="font-size:9px">Übersprungen</div><div class="kpi-value" style="font-size:24px;color:#D2D2D2">1</div></div>
+              </div>
+              <div style="font:300 12.5px/1.6 Lato,sans-serif;color:#D2D2D2">1 Eintrag stand bereits an <b style="color:#fff">ARC-L1</b> und wurde übersprungen — kein Fehler, keine Änderung nötig.</div>
+              <button class="btn btn--cta" style="min-height:52px;width:100%">Schließen</button>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · Bulk-Umbuchen — abgelehnt (403)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Umbuchen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">12 Einträge · Modus LOCATION · POST inventory/bulk-rebook</div>
+              </div>
+                <div style="border-left:4px solid #A3000A;background:rgba(163,0,10,.15);padding:10px 12px">
+                  <div style="font:700 11.5px/1.4 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.05em">Access Denied — Insufficient security clearance. This incident has been logged.</div>
+                  <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:4px">Der Server hat das Sammel-Umbuchen abgelehnt (403). Die Auswahl bleibt bestehen — nichts wurde geändert.</div>
+                </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>12 Einträge umbuchen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — BulkRebookSheet</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>POST /api/v1/inventory/bulk-rebook, Modus LOCATION: Eintrags-IDs + EIN Ziel-Ort; Antwort = rebooked + skipped (schon am Ziel = übersprungen, KEIN Fehler)</li>
+          <li>Ergebnis = EIGENER SCHRITT IM SHEET (Artboard 9), kein Toast, kein eigener Screen: skipped braucht den erklärenden Satz („stand bereits an …"), ein Toast ist dafür zu flüchtig. Schließen beendet den Auswahlmodus und aktualisiert den Baum</li>
+          <li>Warten auf Server: CTA-Spinner, Felder gesperrt; 403 (Artboard 10): Canon-Copy, Sheet bleibt offen, AUSWAHL BLEIBT BESTEHEN — nichts geht verloren</li>
+          <li>Echte Fehler (Netz, 5xx) lassen das Sheet ebenfalls offen — Fehlerbild nach Kap. 14, nie ein stiller Abbruch</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">11 · Gesperrte Aktion — Zeile, vor dem Tipp (KRT-Member, Org-Bestand)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Lager</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px">
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
+                <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">GrafRotz (du)</span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt · Org-Bestand</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Buchen" title="Buchen"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-bank-in"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828" aria-label="Zuordnen — gesperrt, Rolle fehlt" title="Zuordnen"><svg class="krt-icon" style="width:15px;height:15px;color:#D2D2D2;opacity:.45"><use href="#krt-icon-clipboard-list"></use></svg><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></button>
+                <span style="flex:1"></span>
+                <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#646464;text-align:right">Buchen: eigene Zeile → aktiv<br>Zuordnen: Rolle Logistiker → gesperrt</span>
+              </div>
+            </div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;margin-top:10px">Gesperrt-Stil = Alpha 45 % + Schloss-Badge (voll deckend). Das Element bleibt Tippziel — ausdrücklich KEIN enabled=false.</div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">12 · Dieselbe Zeile, unmittelbar nach dem Antippen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Lager</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px">
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
+                <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">GrafRotz (du)</span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt · Org-Bestand</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Buchen" title="Buchen"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-bank-in"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828" aria-label="Zuordnen — gesperrt, Rolle fehlt" title="Zuordnen"><svg class="krt-icon" style="width:15px;height:15px;color:#D2D2D2;opacity:.45"><use href="#krt-icon-clipboard-list"></use></svg><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></button>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#141414;border:1px solid #FFD23F;box-shadow:0 0 20px rgba(255,210,63,.25)">
+            <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-lock"></use></svg>
+            <div style="flex:1"><div style="font:700 13px/1.4 Lato,sans-serif;color:#FFFFFF">Dafür brauchst du die Rolle Logistiker.</div><div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Vergeben je Staffel durch die Administration. Toast steht 4 s; erneuter Tipp setzt die Zeit zurück.</div></div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">13 · Sheet mit gesperrtem CTA — Zuordnung ohne Rolle Logistiker</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Zuordnung</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · 442 SCU · Org-Bestand Bereich Profit</div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aufträge</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="font-size:9.5px;font-variant-numeric:tabular-nums">242 frei</span></div>
+                <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:8px 12px;min-height:48px;opacity:.55">
+                  <span style="flex:1;min-width:0;font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px">#A-1042 Laranite-Beschaffung</span>
+                  <span style="font:700 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">200</span>
+                </div>
+              </div>
+              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464">Werte sichtbar, Editoren gedimmt — der CTA erklärt beim Antippen, was fehlt.</div>
+              <button class="btn btn--cta" style="min-height:52px;width:100%;background:#282828;color:#646464;border-color:#282828;box-shadow:none;cursor:pointer"><svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg>Zuordnung speichern</button>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">14 · Zeilen-Sperre — eigene Zeile aktiv, fremde gesperrt (gleiches Bild)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Lager</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px">
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
+                <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
+                <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">GrafRotz (du)</span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt · Org-Bestand</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Buchen" title="Buchen"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-bank-in"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828" aria-label="Zuordnen — gesperrt, Rolle fehlt" title="Zuordnen"><svg class="krt-icon" style="width:15px;height:15px;color:#D2D2D2;opacity:.45"><use href="#krt-icon-clipboard-list"></use></svg><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></button>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
+                <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Dorn</span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
+                <div style="flex:1;min-width:0">
+                  <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Lorville · geteilt · Org-Bestand</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 655 · 442 SCU · Zeile von Dorn</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828" aria-label="Buchen — gesperrt, Rolle fehlt" title="Buchen"><svg class="krt-icon" style="width:15px;height:15px;color:#D2D2D2;opacity:.45"><use href="#krt-icon-bank-in"></use></svg><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828" aria-label="Zuordnen — gesperrt, Rolle fehlt" title="Zuordnen"><svg class="krt-icon" style="width:15px;height:15px;color:#D2D2D2;opacity:.45"><use href="#krt-icon-clipboard-list"></use></svg><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></button>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#141414;border:1px solid #FFD23F;box-shadow:0 0 20px rgba(255,210,63,.25)">
+            <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-lock"></use></svg>
+            <div style="flex:1"><div style="font:700 13px/1.4 Lato,sans-serif;color:#FFFFFF">Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker.</div><div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Regel: eigene Zeile oder Bearbeitungsrecht auf Bereich Profit (self-or-Logistician).</div></div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Entscheidung — Gesperrt, aber antippbar</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Korrektur der Rahmenbedingung: /api/v1/users/me liefert roles + permissions, der Access-Token realm_access.roles — die App wertet sie ab jetzt AUS statt sie zu verwerfen. Nachweislich verbotene Aktionen rendern im Disabled-Stil der Button-Leiter, das Tippziel bleibt — ausdrücklich KEIN enabled=false in Compose (klickbares Element mit Disabled-Optik + stateDescription für TalkBack). Versteckt wird nie: Rollen vergibt die Org von Hand, Unsichtbares wird nie angefragt</li>
+          <li>Grund: EIN Mittel — der Eckklammer-Toast (Kap. 02 §7) am unteren Rand, 4 s, Singleton; erneuter Tipp setzt den Timer zurück, nichts stapelt. Warnton #FFD23F mit Schloss — kein Danger, es ist kein Fehler passiert. Der Long-Press-Tooltip bleibt dem Aktions-Label der Icon-Buttons vorbehalten (eine Antwort, nicht zwei)</li>
+          <li>Vorab erkennbar: Alpha 45 % + Schloss-Glyphe OBLIGATORISCH — Alpha allein ist von einem Ladezustand nicht zu unterscheiden. Schloss am Element neutral #8A8A8A (voll deckend, nie mitgedimmt). Icon-Button (Zeile) → 14-dp-Schloss-Badge in der Ecke; Sheet-/Voll-CTA → Schloss inline vor dem Label. Gleiches Bild in Zeile, Sheet, Menü und Aktionsleiste</li>
+          <li>Zwei Sperr-Arten, EIN Bild: Rollen-Sperre (vorab bekannt — Zuordnen, „Auftrag anlegen") und Zeilen-Sperre (self-or-Logistician, für den Normalfall vorab entscheidbar) sehen GLEICH aus; nur die Toast-Copy unterscheidet — Rolle („Dafür brauchst du die Rolle Logistiker.") vs. Regel („Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker."). Kann die App es nicht vorher wissen, bleibt die Aktion AKTIV; ein 403 antwortet im selben Toast-Stil mit der Rolle</li>
+          <li>Rollennamen aus ROLES_AND_PERMISSIONS.md: Logistiker (LOGISTICIAN), Missions-Manager (MISSION_MANAGER), Officer, Admin — Text und anzufragende Rolle tragen denselben Namen. Nie „403", nie „Keine Berechtigung". Beispielfall hier: KRT-Member (HANGAR_READ, HANGAR_WRITE, MISSION_READ) auf Org-Bestand</li>
         </ul>
       </div>
     </div>

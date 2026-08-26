@@ -35,6 +35,7 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtCornerBrackets
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -125,7 +126,7 @@ fun LockScreen(
 
             Spacer(Modifier.height(KrtSpacing.xl))
             Text(
-                text = stringResource(R.string.lock_title),
+                text = stringResource(R.string.lock_title).krtUppercase(),
                 style = MaterialTheme.typography.titleLarge,
                 color = KrtPalette.White,
                 textAlign = TextAlign.Center,

@@ -307,6 +307,8 @@ data class OrderDetailState(
      * because a colleague saved first is the failure this whole mechanism exists to prevent.
      */
     val rejectedNote: String? = null,
+    /** Which page of the Auftrag is showing (design ch. 10 artboard 2). */
+    val tab: OrderTab = OrderTab.POSITIONS,
     val statusPickerOpen: Boolean = false,
     /**
      * The status the member has picked but not yet applied.
@@ -489,6 +491,15 @@ class OrderDetailViewModel(
         val current = mutableState.value
         val rejected = current.rejectedNote ?: return
         mutableState.value = current.copy(noteDraft = rejected, rejectedNote = null)
+    }
+
+    /**
+     * Switches to another page of the order.
+     *
+     * @param tab the page.
+     */
+    fun onTabSelected(tab: OrderTab) {
+        mutableState.value = mutableState.value.copy(tab = tab)
     }
 
     /** Closes the status picker, discarding an unapplied choice. */

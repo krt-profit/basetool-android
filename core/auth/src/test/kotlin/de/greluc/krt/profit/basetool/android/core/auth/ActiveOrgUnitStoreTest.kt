@@ -10,7 +10,9 @@ package de.greluc.krt.profit.basetool.android.core.auth
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -87,5 +89,44 @@ class ActiveOrgUnitStoreTest {
         // A rename here with no matching edit in the backup rules fails nothing at build time; it
         // just starts carrying one member's org scope onto another member's device.
         assertEquals("${ActiveOrgUnitStore.FILE_NAME}.xml", ActiveOrgUnitStore.BACKUP_PATH)
+    }
+
+    /**
+     * "All units" has to survive a restart as a *choice*.
+     *
+     * Storing it as the absence of a pin would work for exactly one session: the next cold start
+     * would see no pin, fall through to the server default, and quietly put the member back into a
+     * single Staffel they never chose.
+     */
+    @Test
+    fun `choosing all units is remembered, and is not the same as no pin`() {
+        val first = store()
+        first.pinAll()
+
+        val fresh = store()
+        assertTrue("the choice must survive a new instance", fresh.isAllChosen())
+        assertNull("there is no unit to pin, so no header goes out", fresh.current())
+    }
+
+    @Test
+    fun `pinning a unit takes back the all-units choice`() {
+        val subject = store()
+        subject.pinAll()
+
+        subject.pin("unit-7")
+
+        assertFalse(subject.isAllChosen())
+        assertEquals("unit-7", subject.current())
+    }
+
+    @Test
+    fun `clearing drops the all-units choice too`() {
+        val subject = store()
+        subject.pinAll()
+
+        subject.clear()
+
+        assertFalse(subject.isAllChosen())
+        assertNull(subject.current())
     }
 }

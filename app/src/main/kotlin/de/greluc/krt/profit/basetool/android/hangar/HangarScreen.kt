@@ -25,7 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,12 +38,16 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
@@ -47,23 +55,38 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTable
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableCell
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableColumn
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
+import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the hangar list. */
@@ -113,6 +136,7 @@ fun HangarScreen(
     onCreate: () -> Unit,
     onEdit: (Ship) -> Unit,
     onDelete: (Ship) -> Unit,
+    onTypeDrilldown: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -183,7 +207,13 @@ fun HangarScreen(
                         onRefresh = onRefresh,
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        HangarBody(state = state, onLoadMore = onLoadMore, onEdit = onEdit, onDelete = onDelete)
+                        HangarBody(
+                            state = state,
+                            onLoadMore = onLoadMore,
+                            onEdit = onEdit,
+                            onDelete = onDelete,
+                            onTypeDrilldown = onTypeDrilldown,
+                        )
                     }
                 }
             }
@@ -251,6 +281,7 @@ private fun ShipCardActions(
  * @param onLoadMore the next page was asked for.
  * @param onEdit a ship was tapped.
  * @param onDelete a ship's delete action was taken.
+ * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
  */
 @Composable
 private fun HangarBody(
@@ -258,6 +289,7 @@ private fun HangarBody(
     onLoadMore: () -> Unit,
     onEdit: (Ship) -> Unit,
     onDelete: (Ship) -> Unit,
+    onTypeDrilldown: (String) -> Unit,
 ) {
     val empty =
         if (state.segment == HangarSegment.MINE) state.ships.isEmpty() else state.types.isEmpty()
@@ -267,6 +299,7 @@ private fun HangarBody(
     }
     val wide = isWideWindow()
     LazyColumn(
+        state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(HANGAR_LIST_TAG),
         contentPadding = PaddingValues(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -293,7 +326,21 @@ private fun HangarBody(
                 )
             }
         } else {
-            items(state.types, key = { it.typeName }) { type -> ShipTypeRow(type = type) }
+            // A three-column aggregate stays a table on the phone as well. Design ch. 08,
+            // artboard 11 is explicit that the collapse to cards is about WIDTH, not about tables:
+            // „Schmale Aggregate … bleiben auch auf dem Telefon Tabelle."
+            item(key = "org-figures") { ShipTypeFigures(types = state.types) }
+            item(key = "org-table") {
+                ShipTypeTable(types = state.types, onPick = onTypeDrilldown)
+            }
+            item(key = "org-note") {
+                Text(
+                    text = stringResource(R.string.hangar_org_note),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.Gray2,
+                )
+            }
         }
         item(key = "footer") {
             if (state.hasMore) {
@@ -338,6 +385,7 @@ private fun HangarState.countLabel(): String =
  * @param online whether writes are possible; the actions disable with the rest of the screen.
  * @param onEdit opens the editor for a ship.
  * @param onDelete asks to delete one.
+ * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
  */
 @Composable
 private fun ShipTable(
@@ -367,12 +415,18 @@ private fun ShipTable(
         onRowClick = { onEdit(ships[it]) },
     ) { row, column ->
         val ship = ships[row]
+        // `cell` is a RowScope lambda: the weight is the CALLER's to apply, and without it every
+        // cell sizes to its own content while the header row — which does apply it — stays on the
+        // grid. The two disagreed, so figures drifted left of the titles they belong under. Only
+        // visible once the aggregate put two numeric columns side by side (ch. 08, artboard 11).
         if (column == columns.lastIndex) {
-            ShipCardActions(
-                online = online,
-                onEdit = { onEdit(ship) },
-                onDelete = { onDelete(ship) },
-            )
+            Box(modifier = Modifier.weight(columns[column].weight)) {
+                ShipCardActions(
+                    online = online,
+                    onEdit = { onEdit(ship) },
+                    onDelete = { onDelete(ship) },
+                )
+            }
         } else {
             KrtTableCell(
                 text =
@@ -384,6 +438,7 @@ private fun ShipTable(
                         else -> if (ship.fitted) fittedYes else fittedNo
                     },
                 column = columns[column],
+                modifier = Modifier.weight(columns[column].weight),
                 emphasis = column == 0,
             )
         }
@@ -542,34 +597,105 @@ private fun ShipCardBody(ship: Ship) {
 private fun Ship.headline(): String = name?.let { "$typeName „$it\"" } ?: typeName
 
 /**
- * One aggregate row.
+ * The band over the aggregate: how many ships the org unit has, and how many are ready.
  *
- * @param type the ship type and its counts.
+ * Design ch. 08, artboard 1 draws three figures — Schiffe, Fitted and LTI. Two of them ship: the
+ * aggregate endpoint carries `count` and `fittedCount` and **no insurance at all**
+ * (`SquadronShipDetailDto` has owner, location and fitted), so an LTI figure here would have to be
+ * invented. It is named as a gap in the spec rather than filled with a dash, because a KPI tile
+ * showing „—" claims the number exists and is merely missing today.
+ *
+ * @param types the aggregate rows, which are also what the figures are summed from.
  */
 @Composable
-private fun ShipTypeRow(type: ShipTypeSummary) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+private fun ShipTypeFigures(types: List<ShipTypeSummary>) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
-        Text(
-            text = type.typeName,
-            style = MaterialTheme.typography.titleMedium,
-            color = KrtPalette.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        KrtFigureTile(
+            label = stringResource(R.string.hangar_figure_ships),
+            value = types.sumOf { it.count }.toString(),
+            tone = KrtFigureTone.Primary,
+            modifier = Modifier.weight(1f),
         )
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.hangar_type_row,
-                    type.count.toInt(),
-                    type.count.toInt(),
-                    type.fittedCount.toInt(),
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
+        KrtFigureTile(
+            label = stringResource(R.string.hangar_figure_fitted),
+            value = types.sumOf { it.fittedCount }.toString(),
+            tone = KrtFigureTone.Success,
+            modifier = Modifier.weight(1f),
         )
+    }
+}
+
+/**
+ * The aggregate itself — ship type, how many, how many fitted.
+ *
+ * Three columns, so it stays a table on the phone (design ch. 08, artboard 11). Tapping a row is
+ * the artboard's own affordance: „Zeile antippen → gefilterte Schiffsliste" — it puts that type in
+ * the filter and moves to „Meine Schiffe", which is the list the member was reaching for.
+ *
+ * @param types the rows.
+ * @param onPick the type whose ships to show.
+ */
+@Composable
+private fun ShipTypeTable(
+    types: List<ShipTypeSummary>,
+    onPick: (String) -> Unit,
+) {
+    val columns =
+        listOf(
+            KrtTableColumn(stringResource(R.string.hangar_column_ship_type), weight = 2f),
+            // Both figures are numeric, so they sit right-aligned under their own headers — the
+            // artboard's columns line up, and two counts that drift left of their titles read as
+            // belonging to the name beside them instead.
+            KrtTableColumn(stringResource(R.string.hangar_column_count), weight = 0.7f, numeric = true),
+            // „FITTED", not the ship table's „Ausgebaut": the aggregate counts a state, the ship
+            // table names one. Artboard 1 writes them differently and so does this.
+            KrtTableColumn(stringResource(R.string.hangar_figure_fitted), weight = 0.7f, numeric = true),
+        )
+    KrtTable(
+        columns = columns,
+        rowCount = types.size,
+        onRowClick = { onPick(types[it].typeName) },
+    ) { row, column ->
+        val type = types[row]
+        when (column) {
+            0 -> {
+                Row(
+                    modifier = Modifier.weight(columns[0].weight),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ManufacturerMark(type.manufacturerName)
+                    KrtTableCell(text = type.typeName, column = columns[0], emphasis = true)
+                }
+            }
+
+            1 -> {
+                KrtTableCell(
+                    text = type.count.toString(),
+                    column = columns[1],
+                    modifier = Modifier.weight(columns[1].weight),
+                    emphasis = true,
+                )
+            }
+
+            // The fitted figure is the one the eye is looking for, and the artboard states it in
+            // the success tint rather than as another neutral number.
+            else -> {
+                Text(
+                    text = type.fittedCount.toString(),
+                    modifier =
+                        Modifier
+                            .weight(columns[2].weight)
+                            .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                    textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtTheme.colors.successText,
+                )
+            }
+        }
     }
 }
 
@@ -616,9 +742,66 @@ private fun HangarEmpty(
 @Composable
 fun HangarRoute(
     viewModel: HangarViewModel,
+    onOpenImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Design ch. 08 gives the Hangar a `⋮` with exactly these three: the bulk home location, the
+    // Fleetview import, and emptying the hangar. All three act on the fleet rather than on a row,
+    // which is why none of them belongs beside a ship.
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    val actionsLabel = stringResource(R.string.hangar_actions)
+    // A dimmed row without a reason reads as a broken menu (design ch. 08, artboard 5).
+    // Two things can dim these entries and they are not the same answer.
+    val offlineReason = if (state.online) null else stringResource(R.string.hangar_menu_reason_offline)
+    val fleetReason =
+        offlineReason
+            ?: stringResource(R.string.hangar_menu_reason_empty).takeIf { state.ships.isEmpty() }
+    val bulkLabel = stringResource(R.string.hangar_bulk_home_location)
+    val importLabel = stringResource(R.string.fleet_import_title)
+    val clearLabel = stringResource(R.string.hangar_clear)
+    // Only the actions: the Hangar is a top-level destination, so its bar keeps the section title,
+    // the org badge and the bell rather than turning into a subject bar.
+    ProvideScreenTopBar(
+        actions = {
+            KrtOverflowMenu(
+                contentDescription = actionsLabel,
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                items =
+                    listOf(
+                        // The order is the artboards' own: Home-Location, Hangar leeren, Import.
+                        // Destructive in the middle rather than last looks wrong by habit and is
+                        // what chapters 08.4 and 08.5 both draw, so it is followed rather than
+                        // tidied.
+                        KrtMenuItem(
+                            label = bulkLabel,
+                            iconRes = DesignR.drawable.ic_krt_map_pin,
+                            // The one entry that carries its purpose even when it can be used: a
+                            // member has to know it means the WHOLE fleet before tapping it.
+                            reason = fleetReason ?: stringResource(R.string.hangar_bulk_home_location_reason),
+                            enabled = state.online && state.ships.isNotEmpty(),
+                            onClick = viewModel::onBulkHomeLocationRequested,
+                        ),
+                        KrtMenuItem(
+                            label = clearLabel,
+                            iconRes = DesignR.drawable.ic_krt_trash,
+                            danger = true,
+                            reason = fleetReason,
+                            enabled = state.online && state.ships.isNotEmpty(),
+                            onClick = viewModel::onClearRequested,
+                        ),
+                        KrtMenuItem(
+                            label = importLabel,
+                            iconRes = DesignR.drawable.ic_krt_upload,
+                            reason = offlineReason,
+                            enabled = state.online,
+                            onClick = onOpenImport,
+                        ),
+                    ),
+            )
+        },
+    )
     HangarScreen(
         state = state,
         onSegmentSelected = viewModel::onSegmentSelected,
@@ -629,10 +812,20 @@ fun HangarRoute(
         onCreate = viewModel::onCreate,
         onEdit = viewModel::onEdit,
         onDelete = viewModel::onDeleteRequested,
+        onTypeDrilldown = viewModel::onTypeDrilldown,
         modifier = modifier,
     )
 
     (state.editor as? ShipEditor.Open)?.let { editor ->
+        // Design ch. 14's conflict dialog: a refused save must not be a line under a
+        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
+        ConflictOn(
+            error = editor.error,
+            onReload = {
+                viewModel.onEditorDismissed()
+                viewModel.onRefresh()
+            },
+        )
         ShipEditorSheet(
             editor = editor,
             hulls = state.hulls,
@@ -655,6 +848,174 @@ fun HangarRoute(
             onConfirm = viewModel::onDeleteConfirmed,
             onDismiss = viewModel::onDeleteDismissed,
         )
+    }
+    if (state.clearRequested) {
+        HangarClearModal(
+            count = state.ships.size,
+            onConfirm = viewModel::onClearConfirmed,
+            onDismiss = viewModel::onClearDismissed,
+        )
+    }
+    state.homeLocationSet?.let { affected ->
+        LaunchedEffect(affected) {
+            delay(CLEARED_TOAST_MS)
+            viewModel.onHomeLocationSetAcknowledged()
+        }
+        Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = Alignment.BottomCenter) {
+            KrtToast(
+                title = stringResource(R.string.hangar_bulk_home_location),
+                message = pluralStringResource(R.plurals.hangar_bulk_home_location_done, affected, affected),
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.lg)
+                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+            )
+        }
+    }
+    state.cleared?.let { emptied ->
+        // Success is a toast, not a step: nothing is left to read afterwards, and the empty state
+        // behind it is the rest of the answer (design ch. 08, artboard 6).
+        LaunchedEffect(emptied) {
+            delay(CLEARED_TOAST_MS)
+            viewModel.onClearedAcknowledged()
+        }
+        Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = Alignment.BottomCenter) {
+            KrtToast(
+                title = stringResource(R.string.hangar_clear_title),
+                message = pluralStringResource(R.plurals.hangar_clear_done, emptied, emptied),
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.lg)
+                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+            )
+        }
+    }
+    state.bulkHomeLocation?.let { bulk ->
+        BulkHomeLocationSheet(
+            bulk = bulk,
+            places = state.places,
+            count = state.ships.size,
+            onChosen = viewModel::onBulkHomeLocationChosen,
+            onApply = viewModel::onBulkHomeLocationApplied,
+            onDismiss = viewModel::onBulkHomeLocationDismissed,
+        )
+    }
+}
+
+/**
+ * „Alle N Schiffe löschen?" - the danger modal behind the overflow's last entry.
+ *
+ * The count is in the question because it is the only thing that distinguishes a member emptying a
+ * hangar of three from one emptying a hangar of ninety. Design ch. 08 spells that wording out.
+ *
+ * @param count how many ships would go.
+ * @param onConfirm empties the hangar.
+ * @param onDismiss leaves it alone.
+ */
+@Composable
+private fun HangarClearModal(
+    count: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    // Three guards, none of them a typing hurdle (design ch. 08, artboard 6, which resolves 08.1's
+    // „type-safe" against 08.3): the menu entry is already red, the modal names the count, the
+    // consequence AND the way back, and the confirm repeats the count. Chapter 02 §7 reserves the
+    // typing hurdle for irreversible admin actions on organisation-wide data — a personal hangar is
+    // the member's own and comes back from another import, and spending the hurdle here would blunt
+    // it where it is meant to bite.
+    KrtModal(
+        title = stringResource(R.string.hangar_clear_title),
+        confirmText = pluralStringResource(R.plurals.hangar_clear_confirm, count, count),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        tone = KrtModalTone.Danger,
+        cancelText = stringResource(R.string.personal_inventory_cancel),
+        modifier = Modifier.testTag(HANGAR_CLEAR_TAG),
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.hangar_clear_body, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+    }
+}
+
+/**
+ * The bulk home-location picker.
+ *
+ * One place for the whole fleet, which is what the endpoint does: a member who moves base moves
+ * every hull with it, and setting thirty ships one at a time is the workflow the chapter puts in
+ * the overflow to avoid.
+ *
+ * @param bulk what the sheet holds.
+ * @param places the org's home locations.
+ * @param count how many ships it would touch — the length of the loaded list, which is where the
+ *   figure comes from; there is no API field for it (design ch. 08, artboard 10).
+ * @param onChosen a place was picked.
+ * @param onApply the CTA was pressed.
+ * @param onDismiss the sheet was closed.
+ */
+@Composable
+private fun BulkHomeLocationSheet(
+    bulk: BulkHomeLocation,
+    places: List<HomeLocation>,
+    count: Int,
+    onChosen: (HomeLocation) -> Unit,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    KrtBottomSheet(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.hangar_bulk_home_location_title),
+        modifier = Modifier.testTag(HANGAR_BULK_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            KrtSelectField(
+                value = bulk.place?.name ?: stringResource(R.string.hangar_location_none),
+                options = places.map { KrtOption(it.id, it.name) },
+                onSelect = { option ->
+                    places.firstOrNull { it.id == option.value }?.let(onChosen)
+                    open = false
+                },
+                expanded = open,
+                onExpandedChange = { open = it },
+                label = stringResource(R.string.hangar_field_location),
+                selectedValue = bulk.place?.id,
+                enabled = !bulk.saving,
+            )
+            // The scope is stated here rather than behind a confirmation dialog. Nothing is lost —
+            // the write sets a location and can be repeated at will — so a second confirmation on
+            // top of a sheet would be a ceremony without a risk (design ch. 08, artboard 10).
+            Text(
+                text = pluralStringResource(R.plurals.hangar_bulk_home_location_scope, count, count),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+            bulk.error?.let {
+                KrtFieldError(text = stringResource(R.string.hangar_bulk_home_location_refused))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_cancel),
+                    onClick = onDismiss,
+                    enabled = !bulk.saving,
+                )
+                KrtCtaButton(
+                    text = pluralStringResource(R.plurals.hangar_bulk_home_location_apply, count, count),
+                    onClick = onApply,
+                    // The place marker, not the disk: the artboard's CTA carries the glyph of the
+                    // thing being set rather than the generic act of saving (design ch. 08, 7–10).
+                    iconRes = DesignR.drawable.ic_krt_map_pin,
+                    enabled = bulk.place != null && !bulk.saving,
+                    modifier = Modifier.testTag(HANGAR_BULK_APPLY_TAG),
+                )
+            }
+        }
     }
 }
 
@@ -682,3 +1043,15 @@ private fun Ship.insuranceLabel(): String {
         else -> raw
     }
 }
+
+/** Test handle for the empty-the-hangar modal. */
+const val HANGAR_CLEAR_TAG = "hangar-clear"
+
+/** Test handle for the bulk home-location sheet. */
+const val HANGAR_BULK_TAG = "hangar-bulk-home-location"
+
+/** Test handle for its apply button. */
+const val HANGAR_BULK_APPLY_TAG = "hangar-bulk-apply"
+
+/** How long the "hangar emptied" confirmation stands before it goes by itself. */
+private const val CLEARED_TOAST_MS = 4_000L

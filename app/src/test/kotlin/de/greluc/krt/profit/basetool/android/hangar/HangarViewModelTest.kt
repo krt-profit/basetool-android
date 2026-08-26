@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.hangar
 
+import de.greluc.krt.profit.basetool.android.core.data.FleetImportResult
 import de.greluc.krt.profit.basetool.android.core.data.HangarSource
 import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
@@ -30,6 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -87,6 +89,12 @@ class HangarViewModelTest {
         val created = mutableListOf<ShipDraft>()
         val updated = mutableListOf<Pair<String, Long?>>()
         val deleted = mutableListOf<String>()
+        val imported = mutableListOf<Pair<String, Int>>()
+        var cleared = false
+        var bulkHomeLocation: String? = null
+        var importResult: ApiResult<FleetImportResult> =
+            ApiResult.Success(FleetImportResult(0, 0, 0, emptyList(), emptyList()))
+        var clearResult: ApiResult<Unit> = ApiResult.Success(Unit)
         var saveAnswer: ApiResult<Ship> = ApiResult.Success(SAVED)
 
         override suspend fun create(draft: ShipDraft): ApiResult<Ship> {
@@ -106,6 +114,26 @@ class HangarViewModelTest {
         override suspend fun delete(id: String): ApiResult<Unit> {
             deleted.add(id)
             return ApiResult.Success(Unit)
+        }
+
+        override suspend fun importFleetview(
+            fileName: String,
+            bytes: ByteArray,
+        ): ApiResult<FleetImportResult> {
+            imported.add(fileName to bytes.size)
+            return importResult
+        }
+
+        override suspend fun clearHangar(): ApiResult<Unit> {
+            cleared = true
+            return clearResult
+        }
+
+        var bulkResult: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun setHomeLocationForAll(locationId: String): ApiResult<Unit> {
+            bulkHomeLocation = locationId
+            return bulkResult
         }
 
         override suspend fun shipTypes(query: String): ApiResult<List<ShipTypeOption>> =
@@ -445,5 +473,64 @@ class HangarViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf("s1"), source.deleted)
+        }
+
+    /**
+     * An emptied hangar and a hangar that was always empty look the same.
+     *
+     * The count is the only thing that says the write landed, and it has to be taken before the
+     * write — afterwards the list is gone (design ch. 08, artboard 6).
+     */
+    @Test
+    fun `emptying the hangar reports how many ships went`() =
+        runTest(dispatcher) {
+            val model = viewModel()
+            model.loadOnce()
+            advanceUntilIdle()
+            val had = model.state.value.ships.size
+
+            model.onClearRequested()
+            model.onClearConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(had, model.state.value.cleared)
+            model.onClearedAcknowledged()
+            assertNull(model.state.value.cleared)
+        }
+
+    @Test
+    fun `a refused bulk home location keeps the sheet and the place that was picked`() =
+        runTest(dispatcher) {
+            source.bulkResult = ApiResult.Failure(ApiError.Forbidden())
+            val model = viewModel()
+            model.loadOnce()
+            advanceUntilIdle()
+            model.onBulkHomeLocationRequested()
+            model.onBulkHomeLocationChosen(HomeLocation("l1", "ARC-L1"))
+
+            model.onBulkHomeLocationApplied()
+            advanceUntilIdle()
+
+            val sheet = model.state.value.bulkHomeLocation
+            assertEquals(ApiError.Forbidden(), sheet?.error)
+            assertEquals("ARC-L1", sheet?.place?.name)
+            assertNull("nothing was written, so nothing is confirmed", model.state.value.homeLocationSet)
+        }
+
+    @Test
+    fun `a bulk home location that lands closes the sheet and names the count`() =
+        runTest(dispatcher) {
+            val model = viewModel()
+            model.loadOnce()
+            advanceUntilIdle()
+            val had = model.state.value.ships.size
+            model.onBulkHomeLocationRequested()
+            model.onBulkHomeLocationChosen(HomeLocation("l1", "ARC-L1"))
+
+            model.onBulkHomeLocationApplied()
+            advanceUntilIdle()
+
+            assertNull(model.state.value.bulkHomeLocation)
+            assertEquals(had, model.state.value.homeLocationSet)
         }
 }

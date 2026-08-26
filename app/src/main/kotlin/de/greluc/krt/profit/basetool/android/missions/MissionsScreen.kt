@@ -7,10 +7,10 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
@@ -50,6 +51,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.carriesClock
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -210,7 +214,13 @@ private fun MissionsFilterBar(
             placeholder = stringResource(R.string.missions_search_placeholder),
             modifier = Modifier.fillMaxWidth().testTag(MISSIONS_SEARCH_TAG),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
+        // breaks character by character („ABGEB ROCHE N"). Wrapping by chip keeps every filter
+        // readable and reachable, which horizontal scrolling would not.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
             FILTERABLE_STATUSES.forEach { status ->
                 val selected = status in state.query.statuses
                 KrtFilterChip(
@@ -224,7 +234,10 @@ private fun MissionsFilterBar(
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
             KrtFilterChip(
                 text =
                     stringResource(
@@ -267,6 +280,7 @@ private fun MissionsList(
 ) {
     val sections = groupMissionsByDay(state.missions, zone, today)
     LazyColumn(
+        state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MISSIONS_LIST_TAG),
         contentPadding = PaddingValues(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -347,6 +361,14 @@ private fun MissionRow(
                 modifier = Modifier.weight(1f),
             )
             mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
+            // Design ch. 06 artboard 1 closes every row with a chevron. On a card whose whole
+            // surface is the tap target, it is the only thing that says the card HAS a target —
+            // without it the row reads as a summary rather than as a way in.
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_chevron_right,
+                contentDescription = null,
+                tint = KrtPalette.Gray2,
+            )
         }
     }
 }
@@ -469,28 +491,25 @@ private fun Mission.timeLabel(zone: ZoneId): String {
         }
 
         else -> {
-            val absolute =
-                if (meetingTime != null) {
-                    stringResource(R.string.missions_meeting_time, timeFormat.format(gathering))
-                } else {
-                    timeFormat.format(gathering)
-                }
-            "$absolute · ${gathering.relativeToNow()}"
+            val relative = gathering.relativeToNow()
+            // "TS 20:30 · in 2 Std." is the pair the design mock shows: a clock reading and a
+            // distance. Once the Einsatz is far enough back that the distance is itself a clock
+            // reading — „gestern, 20:44", „15.08., 18:17" — the pair prints 20:44 twice, so the
+            // absolute half drops out and the compound carries both.
+            if (gathering.carriesClock()) {
+                relative
+            } else {
+                val absolute =
+                    if (meetingTime != null) {
+                        stringResource(R.string.missions_meeting_time, timeFormat.format(gathering))
+                    } else {
+                        timeFormat.format(gathering)
+                    }
+                "$absolute · $relative"
+            }
         }
     }
 }
-
-/**
- * How far away an instant is, in the platform's words.
- *
- * @return e.g. "in 2 Std.", localised by the system.
- */
-private fun Instant.relativeToNow(): String =
-    DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
 
 /**
  * The heading text for a day section.
@@ -501,10 +520,25 @@ private fun Instant.relativeToNow(): String =
 @Composable
 private fun MissionDay.label(): String =
     when (this) {
-        MissionDay.Today -> stringResource(R.string.missions_day_today)
-        MissionDay.Tomorrow -> stringResource(R.string.missions_day_tomorrow)
-        MissionDay.Undated -> stringResource(R.string.missions_day_undated)
-        is MissionDay.On -> date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
+        MissionDay.Today -> {
+            stringResource(R.string.missions_day_today)
+        }
+
+        MissionDay.Tomorrow -> {
+            stringResource(R.string.missions_day_tomorrow)
+        }
+
+        MissionDay.Undated -> {
+            stringResource(R.string.missions_day_undated)
+        }
+
+        // Design ch. 06 artboard 1 writes it "DIENSTAG · 19.08." — the weekday, then the date in
+        // digits. FormatStyle.FULL spells the month out ("Donnerstag, 27. August 2026"), which on a
+        // 411 dp phone is a heading wider than the rows it groups. The year is dropped for the same
+        // reason it is missing from the artboard: this list only ever shows the near future.
+        is MissionDay.On -> {
+            date.format(DateTimeFormatter.ofPattern(stringResource(R.string.missions_day_pattern)))
+        }
     }
 
 /**

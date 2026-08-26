@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -119,7 +120,10 @@ class BankScreenTest {
         showAccounts(BankAccountsState(accounts = listOf(account()), phase = BankPhase.Ready))
 
         compose.onNodeWithText("Einsatzkasse").assertIsDisplayed()
-        compose.onNodeWithText("84.200").assertIsDisplayed()
+        // Twice on screen with a single account: once in the GESAMT card above the list (design
+        // ch. 12 artboard 1) and once on the card itself. That the two agree is the point.
+        compose.onAllNodesWithText("84.200").assertCountEquals(2)
+        compose.onNodeWithText("GESAMT").assertIsDisplayed()
         compose.onNodeWithTag(BANK_ACCOUNTS_TAG).assertIsDisplayed()
     }
 

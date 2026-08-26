@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -246,7 +247,12 @@ private fun OperationsFilterBar(
             placeholder = stringResource(R.string.operations_search_placeholder),
             modifier = Modifier.fillMaxWidth().testTag(OPERATIONS_SEARCH_TAG),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        // FlowRow, not Row -- see MissionsScreen: a Row breaks the last chip's label mid-word
+        // at font scale 1.3x.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
             FILTERABLE_OPERATION_STATUSES.forEach { status ->
                 val selected = status in state.query.statuses
                 KrtFilterChip(

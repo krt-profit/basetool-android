@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOfflineBanner
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
@@ -30,13 +31,17 @@ const val DISABLED_WRITE_ALPHA: Float = 0.45f
 /** The band that says why the write actions are greyed out. */
 @Composable
 fun OfflineBand() {
-    Text(
-        text = stringResource(R.string.offline_writes_disabled),
-        style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.TextMuted,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+    // Chapter 14's offline exemplar is a banner, not a sentence: a yellow edge, the wifi-off
+    // glyph, the state uppercase in the warning tint, and the reason under it. This was one muted
+    // line the eye skips — on a screen whose buttons have just gone grey, the notice that explains
+    // why has to be the thing you see first.
+    //
+    // No "Zuletzt aktualisiert" stamp: the artboard quotes one, and the app has nothing truthful to
+    // put there — it holds no cache and records no load time, so any timestamp would be invented.
+    // The same goes for the CACHE chip the artboard puts on the row beneath.
+    KrtOfflineBanner(
+        title = stringResource(R.string.offline_banner_title),
+        lastUpdated = stringResource(R.string.offline_writes_disabled),
+        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
     )
 }

@@ -44,6 +44,11 @@ class SettingsScreenTest {
         compose.setContent {
             KrtTheme {
                 SettingsScreen(
+                    orgUnitName = "Bereich Profit",
+                    onSwitchOrgUnit = {},
+                    preferences = MemberPreferencesState(),
+                    onPayout = {},
+                    onSharing = {},
                     accountName = "GrafRotz",
                     language = AppLanguage.German,
                     onLanguageChange = {},

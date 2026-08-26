@@ -138,6 +138,13 @@ sealed interface ShipEditor {
  * @property loadingMore whether it is in flight
  * @property refreshing whether a pull-to-refresh is running over rows already on screen
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
+ * @property clearRequested whether "Hangar leeren" is waiting on its danger modal
+ * @property homeLocationSet how many ships a just-finished bulk home-location write touched,
+ *   until it is acknowledged
+ * @property cleared how many ships a just-finished wipe removed, until it is acknowledged. An
+ *   emptied hangar and a hangar that was always empty look identical, so the count is the only
+ *   thing that says the write landed (design ch. 08, artboard 6)
+ * @property bulkHomeLocation the open bulk home-location sheet, or `null`
  */
 data class HangarState(
     val segment: HangarSegment = HangarSegment.MINE,
@@ -157,6 +164,10 @@ data class HangarState(
     val hulls: List<ShipTypeOption> = emptyList(),
     val places: List<HomeLocation> = emptyList(),
     val pendingDelete: Ship? = null,
+    val clearRequested: Boolean = false,
+    val cleared: Int? = null,
+    val homeLocationSet: Int? = null,
+    val bulkHomeLocation: BulkHomeLocation? = null,
     val deleting: Boolean = false,
     val lastFailure: ApiError? = null,
 ) {
@@ -177,8 +188,15 @@ data class HangarState(
  * last loaded — shows a member the aggregate they saw ten minutes ago while the header says it is
  * current.
  *
+ * **Why the function-count suppression:** the Hangar drives one list with two halves, a row editor,
+ * a delete confirmation and three bulk actions, and each of them is a handful of one-line intent
+ * methods. Splitting the class along those lines would put `onSave` in one object and the state it
+ * saves into in another; the count is high because the screen is wide, not because the class does
+ * two jobs.
+ *
  * @property source where the ships come from
  */
+@Suppress("TooManyFunctions")
 @OptIn(FlowPreview::class)
 class HangarViewModel(
     private val source: HangarSource,
@@ -261,6 +279,21 @@ class HangarViewModel(
     fun onSearchChanged(text: String) {
         mutableState.value = mutableState.value.copy(searchText = text)
         typedText.value = text
+    }
+
+    /**
+     * „Zeile antippen → gefilterte Schiffsliste" (design ch. 08, artboard 1).
+     *
+     * The aggregate answers *how many of this type the unit has*; the question a member asks next
+     * is *which ones*. So the row puts its type into the search and moves to „Meine Schiffe" rather
+     * than opening a screen of its own — the filtered list already exists and is where they were
+     * heading.
+     *
+     * @param typeName the ship type that was tapped.
+     */
+    fun onTypeDrilldown(typeName: String) {
+        onSearchChanged(typeName)
+        onSegmentSelected(HangarSegment.MINE)
     }
 
     /** Re-reads the showing half while keeping its rows on screen. */
@@ -585,6 +618,109 @@ class HangarViewModel(
         mutableState.value = mutableState.value.copy(pendingDelete = ship)
     }
 
+    /** Opens the danger modal behind "Hangar leeren". */
+    fun onClearRequested() {
+        mutableState.value = mutableState.value.copy(clearRequested = true)
+    }
+
+    /** Closes it without deleting anything. */
+    fun onClearDismissed() {
+        mutableState.value = mutableState.value.copy(clearRequested = false)
+    }
+
+    /**
+     * Deletes every ship the member owns.
+     *
+     * The list is reloaded rather than emptied locally: the endpoint deletes what the *server*
+     * considers the caller's fleet, and a screen that clears itself would claim to know that set
+     * matched the page it happened to be showing.
+     */
+    fun onClearConfirmed() {
+        if (!mutableState.value.online) {
+            return
+        }
+        // Counted before the write, because afterwards the list is empty and the number is gone.
+        val emptied = mutableState.value.ships.size
+        mutableState.value = mutableState.value.copy(deleting = true)
+        viewModelScope.launch {
+            val result = source.clearHangar()
+            mutableState.value =
+                mutableState.value.copy(
+                    clearRequested = false,
+                    deleting = false,
+                    lastFailure = (result as? ApiResult.Failure)?.error,
+                    // An emptied hangar and a hangar that was always empty look identical, so the
+                    // one thing that distinguishes "it worked" from "nothing happened" is being
+                    // told how many went (design ch. 08, artboard 6).
+                    cleared = (result as? ApiResult.Success)?.let { emptied },
+                )
+            if (result is ApiResult.Success) {
+                onRefresh()
+            }
+        }
+    }
+
+    /** Takes the "home location set" confirmation off screen once it has been read. */
+    fun onHomeLocationSetAcknowledged() {
+        mutableState.value = mutableState.value.copy(homeLocationSet = null)
+    }
+
+    /** Takes the "hangar emptied" confirmation off screen once it has been read. */
+    fun onClearedAcknowledged() {
+        mutableState.value = mutableState.value.copy(cleared = null)
+    }
+
+    /** Opens the bulk home-location sheet. */
+    fun onBulkHomeLocationRequested() {
+        mutableState.value = mutableState.value.copy(bulkHomeLocation = BulkHomeLocation())
+    }
+
+    /** Closes it. */
+    fun onBulkHomeLocationDismissed() {
+        mutableState.value = mutableState.value.copy(bulkHomeLocation = null)
+    }
+
+    /**
+     * Records the place the whole fleet is to move to.
+     *
+     * @param place the chosen home location.
+     */
+    fun onBulkHomeLocationChosen(place: HomeLocation) {
+        val bulk = mutableState.value.bulkHomeLocation ?: return
+        mutableState.value = mutableState.value.copy(bulkHomeLocation = bulk.copy(place = place))
+    }
+
+    /** Applies the chosen place to every ship. */
+    fun onBulkHomeLocationApplied() {
+        val bulk = mutableState.value.bulkHomeLocation
+        val place = bulk?.place
+        if (place == null || bulk.saving || !mutableState.value.online) {
+            return
+        }
+        val affected = mutableState.value.ships.size
+        mutableState.value =
+            mutableState.value.copy(bulkHomeLocation = bulk.copy(saving = true, error = null))
+        viewModelScope.launch {
+            when (val result = source.setHomeLocationForAll(place.id)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(bulkHomeLocation = null, homeLocationSet = affected)
+                    onRefresh()
+                }
+
+                is ApiResult.Failure -> {
+                    // The sheet stays, and so does the picked place. Nothing was written, and a
+                    // member who has to re-pick after a refusal is being charged for the server's
+                    // answer (design ch. 08, artboard 10).
+                    mutableState.value =
+                        mutableState.value.copy(
+                            bulkHomeLocation = bulk.copy(saving = false, error = result.error),
+                        )
+                }
+            }
+        }
+    }
+
     /** Abandons the removal. */
     fun onDeleteDismissed() {
         mutableState.value = mutableState.value.copy(pendingDelete = null)
@@ -654,3 +790,15 @@ class HangarViewModel(
         const val LOG_TAG = "hangar"
     }
 }
+
+/**
+ * The open bulk home-location sheet.
+ *
+ * @property place the chosen location, or `null` until the member picks one.
+ * @property saving whether the write is in flight.
+ */
+data class BulkHomeLocation(
+    val place: HomeLocation? = null,
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+)

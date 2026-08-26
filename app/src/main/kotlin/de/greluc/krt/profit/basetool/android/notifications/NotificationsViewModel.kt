@@ -426,7 +426,7 @@ class NotificationsViewModel(
         var backoff = MIN_BACKOFF_MS
         while (true) {
             var received = false
-            source.changes().collect {
+            source.changes().collect { signal ->
                 received = true
                 backoff = MIN_BACKOFF_MS
                 refreshUnread()
@@ -435,13 +435,13 @@ class NotificationsViewModel(
                 }
                 // The shade half of chapter 14. Posted here rather than from the screen, because
                 // the point is to reach a member who is NOT looking at the inbox; a screen-level
-                // hook would fire exactly when it is least needed. Nothing sensitive travels: the
-                // headline is a fixed string and the lock-screen version is fixed too.
-                notifier?.notify(
-                    title = notificationTitle,
-                    body = null,
-                    deepLinkRoute = null,
-                )
+                // hook would fire exactly when it is least needed.
+                //
+                // The signal goes through whole: the notifier owns the wording, the channel and the
+                // deep link, because all three are decided by the same two fields and splitting
+                // them across two files would give the shade and the inbox a way to disagree about
+                // what one push is.
+                notifier?.notify(signal)
             }
             // A stream that carried at least one event was working, so the next attempt starts
             // from the short delay; one that carried none may be refused outright — a 401 after a

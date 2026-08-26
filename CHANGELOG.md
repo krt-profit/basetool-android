@@ -2,7 +2,62 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Benachrichtigungen lassen sich jetzt einzeln stummschalten:** fünf Kategorien in den
+  Systemeinstellungen — Einsätze & Check-In, Aufträge & Zuweisungen, Materialbörse,
+  Bank & Auszahlungen, System & Ankündigungen.
+- **Der Hinweis im Benachrichtigungsschatten sagt jetzt, worum es geht** („Neuer Auftrag #9 für
+  IRI") statt nur „Neue Benachrichtigung", und ein Tipp öffnet direkt den passenden Bildschirm.
+  Auf dem **Sperrbildschirm** bleibt es weiterhin bei „Neue Benachrichtigung" — dort steht nie ein
+  Inhalt.
+
+- **Die Ankündigung auf der Übersicht zeigt jetzt, ob du sie schon gelesen hast**, und lässt sich
+  mit „Als gelesen markieren" abhaken — wie im Webtool.
+
+- **Einstellungen zeigt jetzt drei Konto-Zeilen mehr:** die aktive Org-Einheit (tippen öffnet
+  denselben Umschalter wie der Chip oben), deine Auszahlungspräferenz und ob deine Blueprints mit
+  der Org geteilt werden. Die letzten beiden liegen auf dem Server — du kannst sie auch im Browser
+  ändern, und die App zeigt, was dort steht.
+
+- **Beim Anmelden zu einem Einsatz fragt die App jetzt nach Auszahlung und Wunsch-Funktion.** Statt
+  eines Knopfs öffnet sich ein Blatt: Anteil an dich oder an die Org-Kasse, und optional die
+  Funktion an Bord, die du dir wünschst. Der Wunsch ist keine Zusage — die geplante Funktion setzt
+  weiterhin die Einsatzleitung.
+
 ### Changed
+
+- **Das Datum auf der Übersicht nennt jetzt beide Jahre:** „Mittwoch, 26.08.2026 (2956)" — das
+  echte und das Star-Citizen-Jahr.
+
+- **„Alle ansehen" und „Alle Einsätze" stehen jetzt in der Abschnittsüberschrift** statt als lose
+  Zeile unter der Liste, und die Tablet-Leiste schreibt „Börse" statt „Materialbörse".
+
+- **Wenn ein Speichern abgelehnt wird, weil jemand anderes den Eintrag inzwischen geändert hat,
+  erscheint jetzt ein Hinweisfenster** statt einer leicht zu übersehenden Zeile unter dem Formular.
+  „Neu laden" holt den aktuellen Stand; deine Eingabe bleibt bis dahin stehen.
+
+- **Die Übersicht sieht aus wie entworfen:** Begrüßung in Orange und Versalien, Datum in Kurzform,
+  die vier Schnellaktionen als 2×2-Raster mit ausgeschriebenen Beschriftungen („Einbuchen (Lager)"
+  statt „Einbuchen"), eine ruhigere Statusmarkierung auf der Einsatzkarte und eine Zeitangabe unter
+  jeder ungelesenen Meldung.
+
+- **Ein Tipp auf das Symbol des Bereichs, in dem du schon bist, bringt die Liste wieder nach oben** —
+  vorher blieb sie stehen, wo du warst.
+
+- **Die Zahl der ungelesenen Benachrichtigungen steht jetzt oben in der Leiste** statt über der
+  Liste — sie scrollt nicht mehr weg.
+- **Zeitangaben lesen sich kürzer und über einen Tag hinaus verständlich:** „vor 4 Min.",
+  „vor 2 Std.", „gestern, 21:14", „15.08., 09:30" — im Posteingang, in der Kartellbank und auf dem
+  Dashboard gleich.
+
+- **Bildschirme, die du aus „Mehr" öffnest, tragen oben keinen Org-Chip und keine Glocke mehr** —
+  nur noch Zurück-Pfeil, Titel und was der Bildschirm selbst anbietet. Der Hangar-Titel wurde
+  dadurch abgeschnitten, „Open-Source-Lizenzen" passt jetzt vollständig.
+
+- **Der Org-Einheit-Reiter im Hangar ist jetzt eine Tabelle mit Kennzahlen darüber** — Schiffstyp,
+  Anzahl und Fitted in Spalten statt als Fließtext unter dem Namen, mit „Schiffe" und „Fitted" als
+  Summen obendrüber. Eine Zeile antippen zeigt die gefilterte Schiffsliste.
 
 - **„Abmelden" in den Einstellungen fragt jetzt nach.** Ein Danger-Dialog nennt, was es kostet: Die
   Sitzung endet, der gespeicherte Anmelde-Schlüssel wird vom Gerät gelöscht, und die nächste
@@ -17,11 +72,92 @@
 
 ### Fixed
 
-- **„Mehr" führt wieder ins Menü.** Warst du auf Bank, Hangar oder den Lizenzen, passierte beim
-  Tippen auf „Mehr" nichts — ausgerechnet der Knopf, der dich da wieder herausbringen soll.
+- **Bei großer Schrift (1,3×) wurden Beschriftungen abgeschnitten** — „CHECK-IN NÄCHSTER EI…" — und
+  Filter brachen mitten im Wort („ABGEB ROCHE N"). Beides wächst jetzt sauber um.
+- **Zeitangaben waren in Einsätzen, Aufträgen und der Materialbörse noch in der alten Langform**
+  („Vor 20 Stunden"); sie folgen jetzt überall derselben Kurzform.
+
+- **Der Benachrichtigungskanal „Einsätze & System" wurde entfernt** — er stand in den
+  Systemeinstellungen, aber es kam nie etwas darauf an. Alle Hinweise laufen über „Allgemein".
+
+- **Ein Link, den diese App-Version nicht kennt, landete stillschweigend auf der Übersicht** — nicht
+  zu unterscheiden von einem Link, der funktioniert hat. Jetzt erscheint „Signal Lost" mit dem Weg
+  zurück zur Basis.
+
+- **Ein Tipp auf eine Benachrichtigung beendete die App**, statt den Posteingang zu öffnen — sie
+  verschwand kommentarlos zum Startbildschirm. Der Weg vom Systemhinweis in die App funktioniert
+  jetzt, und der Zurück-Schritt führt von dort auf die Übersicht.
+
+- **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
+  Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
+  alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf
+  einmal, jede Zeile trägt ein Kästchen, und die Gruppe zeigt „1/3 gewählt". Einklappen ändert nur
+  die Ansicht, nicht die Auswahl. Danach sagt das Blatt, was passiert ist — umgebucht und
+  übersprungen als zwei Zahlen, mit einem Satz dazu, dass Einträge am Zielort kein Fehler sind.
+  Lehnt der Server ab, bleibt die Auswahl stehen.
+
+- **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
+  Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als
+  Zahl daneben und wird rot, sobald mehr zugesagt ist als vorhanden. Persönliche Einträge tragen
+  keine Zuordnung.
+- **Der Hangar kann eine Fleetview-Datei importieren.** Hinter dem neuen `⋮` oben rechts: „Fleetview-Import"
+  nimmt eine JSON-Datei oder eingefügten Text und legt die Schiffe an; danach steht da, wie viele
+  importiert wurden, wie viele schon im Hangar waren und welche der Server nicht erkannt hat.
+  Erkannt werden CCU-Game-Fleetview, HangarXPLOR-Shiplist und Fleetyards-JSON.
+- **Zwei weitere Hangar-Aktionen im selben Menü:** „Home-Location setzen" ändert den Ort für die
+  ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe. Beide sagen jetzt vorher, wie viele
+  Schiffe betroffen sind, und was nicht angetastet wird; nach dem Leeren steht da, wie viele
+  gelöscht wurden. Einträge, die gerade nicht gehen, bleiben im Menü stehen und nennen den Grund.
+- **„Alle Org-Einheiten" im Umschalter.** Wer mehreren Staffeln oder einem Spezialkommando angehört,
+  kann jetzt alle auf einmal sehen statt nur eine — die Wahl bleibt über einen Neustart erhalten.
+  Der Umschalter benennt außerdem, um was für eine Einheit es geht („IRI — IRIDIUM", „SK Vanguard"),
+  damit gleichnamige Staffeln und Spezialkommandos unterscheidbar sind.
+- **Aktionen, die dir fehlende Rechte verwehren, sagen das jetzt.** Sie bleiben sichtbar, tragen ein
+  Schloss und antworten beim Antippen mit der Rolle, die dir fehlt — „Dafür brauchst du die Rolle
+  Logistiker." statt einer stummen grauen Schaltfläche oder einer 403 nach dem Absenden. Fremde
+  Lager-Einträge nennen stattdessen die Regel, nach der nur die eigene Zeile dir gehört.
 
 ### Changed
 
+- **Zustands- und Sperrbildschirme sehen aus wie im Entwurf.** „GESPERRT", „FREIGABE AUSSTEHEND",
+  „NUTZUNGSBEDINGUNGEN" und die Fehlermeldungen stehen jetzt in Versalien, wie jedes Kapitel des
+  Entwurfs sie zeichnet; die Freigabe-Ansicht setzt deinen Kontonamen in ein hervorgehobenes Feld.
+- **Der Offline-Hinweis ist ein Banner statt einer grauen Zeile** — gelbe Kante, Funk-aus-Symbol und
+  der Grund darunter. Auf einem Bildschirm, dessen Knöpfe gerade grau geworden sind, war die
+  Erklärung bisher das Unauffälligste.
+- **In der Statusleiste steht jetzt das Basetool-Zeichen**, nicht mehr eine allgemeine Glocke.
+- **Die Bank-Gesamtsumme hat ihren orangen Balken zurück** — er wurde bisher gar nicht gezeichnet —
+  und „Einchecken" ist grün, weil Grün im Entwurf genau für diesen Schritt reserviert ist.
+- **Jedes Suchfeld mit Vorschlägen sieht jetzt wie eines aus.** Schiffstyp, Ort, Material: die
+  Treffer stehen in einer abgesetzten Liste mit orangem Rahmen, der eingetippte Teil ist fett, und
+  am Feld sitzt ein Pfeil. Bisher waren es schlichte Textzeilen unter dem Feld. Die Liste öffnet
+  sich beim Tippen und schließt sich bei der Auswahl, statt danach offen stehen zu bleiben.
+- **Der Finanz-Eintrag eines Einsatzes zeigt die Richtung.** „+ Einnahme" ist grün, „− Ausgabe" rot,
+  und der Betrag ist in derselben Farbe groß und rechtsbündig. Getippt wird auf einem Zahlenfeld;
+  das Vorzeichen kommt aus der Auswahl darüber, nicht aus der Eingabe.
+- **Die Operation-Ansicht führt mit deinem Anteil.** Name und Status stehen oben in der Leiste, dein
+  Anteil darunter in einem hervorgehobenen Feld samt „offen" oder „ausgezahlt", und die Einsätze
+  stehen mit vorzeichenbehaftetem Ergebnis vor der Summe, die sie bildet. Eine bestätigte
+  Auszahlung zurückzunehmen fragt jetzt nach und nennt, was das bedeutet.
+- **„Gesuch erstellen" auf der Materialbörse** hat die Beispiele und Beschriftungen aus dem Entwurf,
+  Menge und Mindestqualität stehen nebeneinander, und es gibt einen Abbrechen-Knopf.
+- **In „Mein Inventar" steht die Einheit neben der Menge**, der Name ist hervorgehoben, und
+  Bearbeiten und Löschen sind zwei kleine Schaltflächen statt eines breiten „LÖSCHEN".
+
+- **Einsatz- und Auftrag-Detail sehen aus wie vorgesehen.** Der Einsatz zeigt jetzt oben seinen
+  Namen mit Status, eine Faktenzeile (TS · Join · Ort · Leiter), wie viele angemeldet und
+  eingecheckt sind, und „Einsatz auf einen Blick" mit sechs Angaben über der Beschreibung; die
+  Anmelde-Schaltfläche sitzt fest am unteren Rand. Der Auftrag hat Reiter statt einer langen Spalte.
+- **Die Raffinerie-Karte nennt ihre Waren** samt Qualität und Menge und daneben den geschätzten
+  Wert. Bisher stand da nur, dass es die Order gibt.
+- **Die Bank zeigt eine Gesamtsumme** über der Kontenliste, und das Konto-Detail hebt den
+  Kontostand hervor; die 30-Tage-Änderung ist grün oder rot statt grau.
+- **Im Lager steht neben jeder Qualität ein kleiner Balken**, damit „Q 874" auf einen Blick als hoch
+  lesbar ist.
+- **Beim Einbuchen lässt sich die Menge schrittweise ändern**, die Qualität steht daneben statt
+  darunter, und der Knopf heißt nach dem, was er tut — „Einbuchen" statt „Buchen".
+- **Der Schiff-Editor fragt zuerst nach dem Typ, dann nach dem Namen.** Versicherung und Ort stehen
+  nebeneinander, und bei „Fitted" steht jetzt dabei, was das zusagt.
 - **Die Open-Source-Lizenzen sind eine richtige Seite geworden.** Oben steht, wie viele Artefakte und
   Lizenzen der Bericht umfasst und zu welchem Build er gehört; die Lizenz-Überschrift bleibt beim
   Scrollen stehen und lässt sich antippen, um ihre Softwareliste ein- und wieder auszuklappen. Am
@@ -67,6 +203,15 @@
 - **Die Auftragsübersicht zeigt wieder das, was sie zeigen soll.** Jeder Auftrag steht jetzt als
   Kachel da — mit Prio-Block, Art (Material/Item), Status, farbig markiertem Alter und beiden
   beteiligten Einheiten als Abzeichen. Vorher war das eine Textzeile ohne Art und ohne Alter.
+
+### Removed
+- **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
+  gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
+  Er kommt zurück, wenn die Ansicht wirklich fertig ist.
+
+### Fixed
+- **„Mehr" führt wieder ins Menü.** Warst du auf Bank, Hangar oder den Lizenzen, passierte beim
+  Tippen auf „Mehr" nichts — ausgerechnet der Knopf, der dich da wieder herausbringen soll.
 
 ## [0.1.3] — 2026-08-25
 

@@ -7,8 +7,11 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
+import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
@@ -26,12 +29,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -143,6 +148,29 @@ class InventoryViewModelTest {
 
         override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
             ApiResult.Success(terminalAnswer)
+
+        var bulkAnswer: ApiResult<BulkRebookResult>? = null
+
+        override suspend fun bulkRebook(
+            entryIds: List<String>,
+            locationId: String,
+        ): ApiResult<BulkRebookResult> =
+            bulkAnswer ?: ApiResult.Success(BulkRebookResult(entryIds.size, 0))
+
+        override suspend fun setAllocation(
+            entryId: String,
+            kind: AllocationKind,
+            targetId: String,
+            amount: String,
+            existing: Boolean,
+            version: Long?,
+        ): ApiResult<InventoryEntry> = error("not used")
+
+        override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
+            ApiResult.Success(emptyList())
+
+        override suspend fun missionTargets(): ApiResult<List<AllocationTarget>> =
+            ApiResult.Success(emptyList())
     }
 
     private fun group(
@@ -166,6 +194,25 @@ class InventoryViewModelTest {
             quality = "880",
             entryCount = 1,
         )
+
+    private fun entry(
+        id: String,
+        holderId: String = "u1",
+    ) = InventoryEntry(
+        id = id,
+        materialName = "Quantainium",
+        materialId = "m1",
+        unit = "SCU",
+        locationName = "ARC-L1",
+        locationId = "l1",
+        holder = "Rhea",
+        holderId = holderId,
+        amount = "10",
+        quality = "880",
+        personal = false,
+        note = null,
+        version = 1L,
+    )
 
     private fun page(vararg rows: InventoryGroup) =
         InventoryPage(rows.toList(), page = 0, totalPages = 1, totalElements = rows.size.toLong())
@@ -339,5 +386,166 @@ class InventoryViewModelTest {
     private companion object {
         /** Two groups on the page. */
         const val TWO = 2L
+    }
+
+    /**
+     * A branch row is shorthand for its leaves.
+     *
+     * Design ch. 09, artboard 5 makes selection „IMMER Eintrags-Menge" — a group or stack row holds
+     * no selection state of its own, which is also what `bulk-rebook` needs: entry ids plus one
+     * target, sources free to differ.
+     */
+    @Test
+    fun `long-pressing a group selects every entry under it`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+
+            model.onToggleBranch("m1", null)
+
+            assertEquals(setOf("e1", "e2"), model.state.value.selection)
+        }
+
+    @Test
+    fun `long-pressing the same group again clears it`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+            model.onToggleBranch("m1", null)
+
+            model.onToggleBranch("m1", null)
+
+            assertTrue(model.state.value.selection.isEmpty())
+        }
+
+    /** A branch nobody opened has no ids to select, and must not invent any. */
+    @Test
+    fun `long-pressing an unopened group selects nothing`() =
+        runTest(dispatcher) {
+            val model = InventoryViewModel(source, AlwaysOnline)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onToggleBranch("m1", null)
+
+            assertTrue(model.state.value.selection.isEmpty())
+        }
+
+    /**
+     * „Einklappen ist Ansicht, nicht Auswahl" (design ch. 09, artboard 5).
+     *
+     * The chip on a collapsed group still counts its picked rows, so the group's entries have to
+     * survive the collapse — and with them the count that tells a member what is still in play
+     * behind a row they can no longer see.
+     */
+    @Test
+    fun `collapsing a group keeps its selection and its count`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+            model.onToggleBranch("m1", null)
+
+            model.onToggleGroup("m1")
+            advanceUntilIdle()
+
+            assertEquals(setOf("e1", "e2"), model.state.value.selection)
+            assertEquals(2 to 2, model.state.value.selectionIn("m1"))
+        }
+
+    @Test
+    fun `a group whose entries were never read reports no total`() =
+        runTest(dispatcher) {
+            val model = InventoryViewModel(source, AlwaysOnline)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            assertEquals(0 to null, model.state.value.selectionIn("m1"))
+        }
+
+    /** Opens the one group and its one stack, so the tree holds entries to select. */
+    private suspend fun TestScope.openedStackModel(): InventoryViewModel {
+        val model = InventoryViewModel(source, AlwaysOnline)
+        model.loadOnce()
+        advanceUntilIdle()
+        model.onToggleGroup("m1")
+        advanceUntilIdle()
+        val stack = (model.state.value.opened.getValue("m1") as StackPhase.Ready).stacks.first()
+        model.onToggleStack("m1", stack)
+        advanceUntilIdle()
+        return model
+    }
+
+    /**
+     * The result is a step in the sheet, not a toast on the way out.
+     *
+     * Closing on success would drop the one figure a member cannot reconstruct from the tree — how
+     * many rows were skipped because they already stood at the target (design ch. 09, artboard 9).
+     */
+    @Test
+    fun `a finished batch keeps the sheet open on its result`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            source.bulkAnswer = ApiResult.Success(BulkRebookResult(rebooked = 1, skipped = 1))
+            val model = pickedAndTargeted()
+
+            model.onBulkMoveConfirmed()
+            advanceUntilIdle()
+
+            val bulk = model.state.value.bulk
+            assertEquals(BulkRebookResult(1, 1), bulk?.result)
+            assertTrue("the selection is still what the result describes", model.state.value.selection.isNotEmpty())
+        }
+
+    @Test
+    fun `closing the result ends the mode and re-reads the moved rows`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"))))
+            val model = pickedAndTargeted()
+            model.onBulkMoveConfirmed()
+            advanceUntilIdle()
+
+            model.onBulkMoveFinished()
+            advanceUntilIdle()
+
+            assertNull(model.state.value.bulk)
+            assertTrue(model.state.value.selection.isEmpty())
+            // The cached entries carry the OLD place until something re-reads them, so a batch that
+            // left them behind would show a member their own move as not having happened.
+            assertTrue(model.state.value.openedStacks.isEmpty())
+        }
+
+    /**
+     * „Die Auswahl bleibt bestehen — nichts wurde geändert" (design ch. 09, artboard 10).
+     *
+     * Nothing was written, so making the member pick twelve rows again to retry punishes them for
+     * the server's answer.
+     */
+    @Test
+    fun `a refused batch keeps both the sheet and the selection`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            source.bulkAnswer = ApiResult.Failure(ApiError.Forbidden())
+            val model = pickedAndTargeted()
+            val picked = model.state.value.selection
+
+            model.onBulkMoveConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(ApiError.Forbidden(), model.state.value.bulk?.error)
+            assertNull("nothing was written, so there is no result", model.state.value.bulk?.result)
+            assertEquals(picked, model.state.value.selection)
+        }
+
+    /** Opens the tree, picks its entries and points the sheet at a target. */
+    private suspend fun TestScope.pickedAndTargeted(): InventoryViewModel {
+        // Without a target the confirm is a no-op by design, and the test would assert against a
+        // write that never left.
+        source.locationAnswer = listOf(LocationOption(id = "l2", name = "Everus Harbor"))
+        val model = openedStackModel()
+        model.onToggleBranch("m1", null)
+        model.onBulkMoveRequested()
+        advanceUntilIdle()
+        model.state.value.bulk?.places?.firstOrNull()?.let(model::onBulkMovePlace)
+        return model
     }
 }

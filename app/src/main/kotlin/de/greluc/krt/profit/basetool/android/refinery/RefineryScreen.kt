@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -57,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
@@ -166,6 +168,7 @@ fun RefineryOrdersScreen(
                         }
                     } else {
                         LazyColumn(
+                            state = rememberRootListState(),
                             modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
                             contentPadding = PaddingValues(KrtSpacing.md),
                             verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -248,7 +251,6 @@ private fun FilterRow(
  * One order row.
  *
  * @param order the order.
- * @param now the clock the phase and the countdown are judged against.
  * @param onClick opens it.
  */
 @Composable
@@ -287,11 +289,97 @@ private fun OrderRow(
             )
         }
         Text(
-            text = secondLine(order, phase, now),
+            text = secondLine(order, phase),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+        )
+        // Design ch. 11 artboard 1 lists the goods ON the card. Without them the card says an order
+        // exists at a station and nothing about what is in it — and "what is in it" is the reason a
+        // member opens the Raffinerie at all.
+        if (order.yields.isNotEmpty()) {
+            KrtHairlineRule()
+            order.yields.forEach { good -> GoodRow(good = good) }
+        }
+        CardFooter(order = order, phase = phase, now = now)
+    }
+}
+
+/**
+ * One refined good: its name, its quality in brackets, and how much of it there is.
+ *
+ * @param good the yield row.
+ */
+@Composable
+private fun GoodRow(good: RefineryYield) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text =
+                good.quality
+                    ?.let { stringResource(R.string.refinery_good_with_quality, good.materialName, it) }
+                    ?: good.materialName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = amountText(good.amount, good.unitIsPiece),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+        )
+    }
+}
+
+/**
+ * The card's last row: where the run stands, what it is worth, and the way in.
+ *
+ * The value is **data**, so it is white or green and never orange — chapter 11 is explicit, and the
+ * reason is that orange in this design system means *action*, which an estimate is not. It is an
+ * estimate (UEX), and the "≈" says so rather than a footnote nobody reads.
+ *
+ * @param order the order.
+ * @param phase which of the three states it is in.
+ * @param now the clock, for the remaining time.
+ */
+@Composable
+private fun CardFooter(
+    order: RefineryOrder,
+    phase: RefineryPhase,
+    now: OffsetDateTime,
+) {
+    val value = order.profit?.takeIf { it.isNotBlank() } ?: order.oreSales?.takeIf { it.isNotBlank() }
+    if (phase != RefineryPhase.RUNNING && value == null) {
+        return
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = if (phase == RefineryPhase.RUNNING) remainingText(order.endsAt, now) else "",
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.SuccessText,
+            modifier = Modifier.weight(1f),
+        )
+        value?.let {
+            Text(
+                text = stringResource(R.string.refinery_value, formatAmount(it)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.SuccessText,
+            )
+        }
+        KrtIcon(
+            id = DesignR.drawable.ic_krt_chevron_right,
+            contentDescription = null,
+            tint = KrtPalette.Gray2,
         )
     }
 }
@@ -311,12 +399,13 @@ private fun OrderRow(
 private fun secondLine(
     order: RefineryOrder,
     phase: RefineryPhase,
-    now: OffsetDateTime,
 ): String {
     val method = order.methodName.takeIf { it.isNotBlank() }
+    // A running order's remaining time belongs to the footer (artboard 11.1), where it sits beside
+    // the value. Repeating it here put the same clock on the card twice.
     val detail =
         if (phase == RefineryPhase.RUNNING) {
-            remainingText(order.endsAt, now)
+            null
         } else {
             // The order's own unit is not knowable across mixed goods, so the row states SCU —
             // which every refining run in practice is. A single-good order takes the good's unit.

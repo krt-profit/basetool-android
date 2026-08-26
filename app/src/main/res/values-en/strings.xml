@@ -41,7 +41,7 @@
     <string name="gate_rejected_body">Your access was not approved. Contact the administration if you believe this is a mistake.</string>
     <string name="gate_account">Account</string>
     <string name="gate_refresh">Refresh status</string>
-    <string name="gate_poll_hint">Checked automatically every 60 seconds.</string>
+    <string name="gate_poll_hint">Checked automatically every 60 s.</string>
 
     <string name="gate_offline_title">Verification Offline</string>
     <string name="gate_offline_body">Command did not respond. Your credentials remain valid.</string>
@@ -90,17 +90,26 @@
     <string name="nav_more">More</string>
     <string name="nav_hangar">Hangar</string>
     <string name="nav_exchange">Materialbörse</string>
+    <!-- The rail entry, which the design shortens (ch. 03, ch. 05). -->
+    <string name="nav_exchange_short">Börse</string>
     <string name="nav_refinery">Raffinerie</string>
     <string name="nav_personal_inventory">My inventory</string>
     <string name="nav_bank">Bank</string>
     <string name="nav_notifications">Notifications</string>
     <string name="nav_settings">Settings</string>
     <string name="org_switcher_title">Active org unit</string>
+    <string name="org_switcher_all">All org units</string>
+    <string name="org_switcher_all_short">All units</string>
     <string name="placeholder_under_construction">This area is still being built.</string>
 
     <string name="settings_section_account">Account</string>
     <string name="settings_section_app">App</string>
     <string name="settings_section_legal">Legal &amp; data</string>
+    <string name="settings_active_org_unit">Active org unit</string>
+    <string name="settings_payout_preference">Payout preference</string>
+    <string name="settings_payout_unset">Not chosen yet</string>
+    <string name="settings_blueprint_sharing">Share blueprints with the org</string>
+    <string name="settings_blueprint_sharing_hint">Visible in the availability overview</string>
     <string name="settings_language">Language</string>
     <string name="settings_privacy">Privacy policy</string>
     <string name="settings_imprint">Imprint</string>
@@ -142,6 +151,8 @@
     <string name="missions_status_active">Active</string>
     <string name="missions_status_completed">Completed</string>
     <string name="missions_status_cancelled">Cancelled</string>
+    <!-- Weekday and a numeric date, per design ch. 06 artboard 1. -->
+    <string name="missions_day_pattern">EEEE · dd/MM</string>
     <string name="missions_day_today">Today</string>
     <string name="missions_day_tomorrow">Tomorrow</string>
     <string name="missions_day_undated">No date</string>
@@ -180,6 +191,17 @@
         <item quantity="other">%1$d signed up, %2$d checked in</item>
     </plurals>
     <string name="mission_detail_briefing">At a glance</string>
+    <string name="mission_detail_registered">Registered</string>
+    <string name="mission_detail_checked_in_of">%1$s of them checked in</string>
+    <string name="mission_detail_start_at">Start %1$s</string>
+    <string name="mission_detail_at_a_glance">MISSION AT A GLANCE</string>
+    <string name="mission_detail_brief_goal">Goal</string>
+    <string name="mission_detail_brief_join">Server join</string>
+    <string name="mission_detail_brief_place">Rally point</string>
+    <string name="mission_detail_brief_duration">Duration</string>
+    <string name="mission_detail_brief_lead">Mission lead</string>
+    <string name="mission_detail_brief_duration_value">~%1$d h (ends %2$s)</string>
+    <string name="mission_detail_brief_end_only">Ends %1$s</string>
     <string name="mission_detail_description">Description</string>
     <string name="mission_detail_description_hidden">The description is visible to members only.</string>
     <string name="mission_detail_checked_in">Checked in</string>
@@ -242,6 +264,10 @@
     <string name="operation_detail_my_share">Your share</string>
     <string name="operation_detail_my_share_donated">Waived in favour of the org treasury</string>
     <string name="operation_detail_my_share_unknown">You did not take part in this Operation.</string>
+    <string name="operation_detail_my_share_pending">Loading your share …</string>
+    <string name="operation_detail_my_share_open">Payout open</string>
+    <string name="operation_detail_my_share_paid">Paid out</string>
+    <string name="operation_detail_amount_positive">+%1$s</string>
     <string name="operation_detail_preliminary">Preliminary: at least one Einsatz is still open, so the amounts may still shift.</string>
     <string name="operation_detail_rollup">Financial roll-up</string>
     <string name="operation_detail_rollup_net">Net</string>
@@ -259,6 +285,11 @@
     <string name="operation_detail_payout_paid">Paid out</string>
     <string name="operation_detail_payout_open">Open</string>
     <string name="operation_detail_payout_donated">Waived</string>
+    <string name="operation_detail_payout_line">Share %1$s · %2$s</string>
+    <string name="operation_detail_payout_route_member">Payout</string>
+    <string name="operation_detail_payout_route_org">Org treasury (waived)</string>
+    <string name="operation_detail_payout_undo_title">Take the payout back?</string>
+    <string name="operation_detail_payout_undo_body">%1$s is recorded as paid out. The row goes back to open.</string>
     <string name="operation_detail_description">Description</string>
     <string name="operation_detail_error_forbidden_title">Access Denied</string>
     <string name="operation_detail_error_forbidden_message">This Operation is not visible to you.</string>
@@ -312,6 +343,8 @@
     <string name="dashboard_context">%1$s · %2$s</string>
     <string name="dashboard_announcement">Information</string>
     <string name="dashboard_announcement_expand">Show the full announcement</string>
+    <string name="dashboard_announcement_unread">Unread</string>
+    <string name="dashboard_announcement_mark_read">Mark as read</string>
     <string name="dashboard_announcement_collapse">Collapse the announcement</string>
     <string name="dashboard_missions">Einsätze in the next 7 days</string>
     <string name="dashboard_missions_empty">Nothing is scheduled in the next 7 days.</string>
@@ -319,11 +352,16 @@
     <string name="mission_tab_with_count">%1$s %2$d</string>
     <string name="dashboard_mission_open">Open</string>
     <string name="dashboard_missions_all">All Einsätze</string>
+    <!-- Weekday spelled out, date numeric, as design ch. 05 writes it. Translatable so a
+         locale can reorder the fields. -->
+    <!-- The greeting's date: the real one, then the Star Citizen year in brackets. -->
+    <string name="dashboard_date">%1$s (%2$d)</string>
+    <string name="dashboard_date_pattern">EEEE, dd/MM/yyyy</string>
     <string name="dashboard_quick_actions">QUICK ACTIONS</string>
-    <string name="dashboard_quick_check_in">Check-in</string>
-    <string name="dashboard_quick_book_in">Book in</string>
-    <string name="dashboard_quick_order">Order</string>
-    <string name="dashboard_quick_offer">Offer</string>
+    <string name="dashboard_quick_check_in">Check-in next Einsatz</string>
+    <string name="dashboard_quick_book_in">Book in (Lager)</string>
+    <string name="dashboard_quick_order">Create Auftrag</string>
+    <string name="dashboard_quick_offer">Börse: offer</string>
     <string name="dashboard_notifications">Unread</string>
     <string name="dashboard_notifications_all">View all</string>
     <string name="dashboard_notifications_empty">Nothing unread.</string>
@@ -343,15 +381,16 @@
         <item quantity="one">%1$d of %2$d ship type</item>
         <item quantity="other">%1$d of %2$d ship types</item>
     </plurals>
-    <plurals name="hangar_type_row">
-        <item quantity="one">%1$d ship · %2$d fitted</item>
-        <item quantity="other">%1$d ships · %2$d fitted</item>
-    </plurals>
     <string name="hangar_column_type">Type</string>
     <string name="hangar_column_name">Name</string>
     <string name="hangar_column_insurance">Insurance</string>
     <string name="hangar_column_location">Location</string>
     <string name="hangar_column_fitted">Fitted</string>
+    <string name="hangar_column_count">Count</string>
+    <string name="hangar_column_ship_type">Ship type</string>
+    <string name="hangar_figure_ships">Ships</string>
+    <string name="hangar_figure_fitted">Fitted</string>
+    <string name="hangar_org_note">Aggregated over the active org unit. Tapping a row shows the filtered ship list.</string>
     <string name="hangar_column_actions">Actions</string>
     <string name="hangar_fitted_yes">Yes</string>
     <string name="hangar_fitted_no">No</string>
@@ -366,6 +405,9 @@
     <string name="hangar_error_title">Signal Lost</string>
     <string name="hangar_error_message">The hangar could not be loaded.</string>
     <!-- Bank (design chapter 12) -->
+    <string name="bank_total_for">TOTAL %1$s</string>
+    <string name="bank_total_unit">aUEC</string>
+    <string name="bank_total">TOTAL</string>
     <string name="bank_title">Bank</string>
     <string name="bank_accounts_empty_title">No accounts</string>
     <string name="bank_accounts_empty_message">No account of the org unit is visible to you.</string>
@@ -430,6 +472,13 @@
     <string name="orders_error_title">Signal Lost</string>
     <string name="orders_error_message">The Aufträge could not be loaded.</string>
     <string name="order_detail_title">Auftrag</string>
+    <string name="order_tab_positions">Positions</string>
+    <string name="order_tab_assignees">Assigned</string>
+    <string name="order_tab_handovers">Handovers</string>
+    <string name="order_detail_priority">Prio %1$d</string>
+    <string name="order_detail_fact_for">For</string>
+    <string name="order_detail_fact_by">By</string>
+    <string name="order_detail_fact_assignee">Assigned</string>
     <string name="order_detail_comment">Note</string>
     <string name="order_detail_materials">Material</string>
     <string name="order_detail_materials_empty">No material is recorded for this order.</string>
@@ -472,6 +521,7 @@
     <string name="personal_inventory_search">Search entry</string>
     <string name="personal_inventory_create">New entry</string>
     <string name="personal_inventory_edit">Edit entry</string>
+    <string name="personal_inventory_unit">pcs</string>
     <string name="personal_inventory_delete">Delete</string>
     <string name="personal_inventory_end_of_list">End of list</string>
     <string name="personal_inventory_empty_title">Nothing recorded</string>
@@ -491,10 +541,14 @@
     <string name="personal_inventory_delete_title">Delete entry</string>
     <string name="personal_inventory_delete_body">“%1$s” will be deleted. This cannot be undone.</string>
     <string name="personal_inventory_visible_only_to_you">Visible only to you.</string>
+    <string name="offline_banner_title">Offline</string>
     <string name="offline_writes_disabled">No network — editing is disabled until the connection is back.</string>
     <string name="value_absent">—</string>
-    <string name="conflict_title">Changed at the same time</string>
+    <string name="conflict_title">Conflict detected</string>
     <string name="conflict_body">Someone else changed this entry in the meantime. What you typed is still here — reload and save again.</string>
+    <!-- The line that stays under the form once the dialog is dismissed. -->
+    <string name="conflict_inline">Not saved — changed at the same time.</string>
+    <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
     <plurals name="personal_inventory_location_capped">
@@ -563,6 +617,63 @@
     <string name="hangar_insurance_months_range">0 to 120 months.</string>
     <string name="hangar_field_location">Location</string>
     <string name="hangar_location_none">No location</string>
+    <string name="fleet_import_title">Fleetview import</string>
+    <string name="fleet_import_intro">Import your ships from a CCU-Game Fleetview export. Pick a file, or paste the JSON.</string>
+    <string name="fleet_import_formats">CCU-Game Fleetview, HangarXPLOR Shiplist and Fleetyards JSON are recognised.</string>
+    <string name="fleet_import_pick">Choose a JSON file</string>
+    <string name="fleet_import_picked">Chosen: %1$s</string>
+    <string name="fleet_import_clear">Remove the file</string>
+    <string name="fleet_import_or">Or paste</string>
+    <string name="fleet_import_paste_hint">[{\"name\": \"Meridian\", \"type\": \"Carrack\"}]</string>
+    <string name="fleet_import_submit">Import</string>
+    <string name="fleet_import_note">Duplicates are skipped; unrecognised types show up in the result list.</string>
+    <string name="fleet_import_error_forbidden">You are not allowed to import ships.</string>
+    <string name="fleet_import_error_shape">This file is not a Fleetview export the server can read.</string>
+    <string name="fleet_import_result_title">Import finished</string>
+    <string name="fleet_import_result_close">Close</string>
+    <string name="fleet_import_result_imported">Imported</string>
+    <string name="fleet_import_result_duplicates">Duplicates</string>
+    <string name="fleet_import_result_skipped">Not recognised</string>
+    <string name="fleet_import_result_skipped_list">Not recognised:</string>
+    <string name="fleet_import_result_duplicate_list">Already in the hangar:</string>
+    <plurals name="fleet_import_result_more">
+        <item quantity="one">… and %1$d more</item>
+        <item quantity="other">… and %1$d more</item>
+    </plurals>
+    <string name="hangar_actions">More actions</string>
+    <string name="hangar_bulk_home_location">Set home location</string>
+    <string name="hangar_bulk_home_location_reason">One place for the whole fleet</string>
+    <string name="hangar_menu_reason_empty">No ships in the hangar</string>
+    <string name="hangar_menu_reason_offline">Not possible while offline</string>
+    <string name="hangar_bulk_home_location_title">Home location for every ship</string>
+    <plurals name="hangar_bulk_home_location_apply">
+        <item quantity="one">Apply to 1 ship</item>
+        <item quantity="other">Apply to %1$d ships</item>
+    </plurals>
+    <plurals name="hangar_bulk_home_location_scope">
+        <item quantity="one">Applies to the one ship in „Meine Schiffe“ — its existing place is overwritten.</item>
+        <item quantity="other">Applies to all %1$d ships in „Meine Schiffe“ — existing places are overwritten.</item>
+    </plurals>
+    <plurals name="hangar_bulk_home_location_done">
+        <item quantity="one">Home location set (1 ship).</item>
+        <item quantity="other">Home location set (%1$d ships).</item>
+    </plurals>
+    <string name="hangar_bulk_home_location_refused">The server refused it. Nothing was changed — the place you picked is still there.</string>
+    <string name="hangar_clear">Empty the hangar</string>
+    <string name="hangar_clear_title">Empty the hangar?</string>
+    <plurals name="hangar_clear_confirm">
+        <item quantity="one">Delete the one ship</item>
+        <item quantity="other">Delete all %1$d ships</item>
+    </plurals>
+    <plurals name="hangar_clear_done">
+        <item quantity="one">Hangar emptied (1 ship).</item>
+        <item quantity="other">Hangar emptied (%1$d ships).</item>
+    </plurals>
+    <plurals name="hangar_clear_body">
+        <item quantity="one">The one ship is removed from „Meine Schiffe“. No undo in the app — recovery only through another Fleetview import. Einsätze, Aufträge and Lager are untouched.</item>
+        <item quantity="other">All %1$d ships are removed from „Meine Schiffe“. No undo in the app — recovery only through another Fleetview import. Einsätze, Aufträge and Lager are untouched.</item>
+    </plurals>
+    <string name="hangar_field_fitted_hint">Fitted and ready for missions</string>
     <string name="hangar_field_fitted">Fitted</string>
     <string name="hangar_ship_delete_title">Delete ship</string>
     <string name="hangar_ship_delete_body">“%1$s” will be deleted from your hangar.</string>
@@ -608,6 +719,7 @@
     <string name="order_detail_status_current">CURRENT</string>
     <string name="order_detail_status_note_open">The order is opened for pledges again.</string>
     <string name="order_detail_status_note_terminal">Final — cannot be undone in the app.</string>
+    <string name="order_detail_status_confirm_reject_title">Reject the order?</string>
     <string name="order_detail_status_confirm_title">Close the order?</string>
     <string name="order_detail_status_confirm_body">The order moves to “%1$s”. This cannot be undone in the app.</string>
     <string name="order_detail_change_status">Change status</string>
@@ -621,10 +733,20 @@
     <string name="order_detail_assignee_unnamed">Unknown</string>
     <string name="order_detail_not_allowed">You are not allowed to change this order.</string>
     <string name="mission_detail_sign_up">Sign up</string>
+    <string name="mission_join_title">Sign up</string>
+    <string name="mission_join_payout">Payout preference</string>
+    <string name="mission_join_payout_self_hint">Your share goes to your account</string>
+    <string name="mission_join_payout_org_hint">Your share stays with the org treasury</string>
+    <string name="mission_join_function">Function on board (desired)</string>
+    <string name="mission_join_function_hint">Optional — a wish, not a promise. The planned function is set by the mission leadership on the participants tab.</string>
+    <string name="mission_join_confirm">Sign up bindingly</string>
+    <string name="mission_join_footnote">Withdrawing is possible until 60 min before the start. The mission leadership sees your preference.</string>
     <string name="mission_detail_withdraw">Withdraw</string>
     <string name="mission_detail_check_in">Check in</string>
     <string name="mission_detail_check_out">Check out</string>
     <string name="mission_detail_donate">Donate</string>
+    <string name="mission_detail_payout_self">Payout</string>
+    <string name="mission_detail_payout_org">Org treasury</string>
     <string name="mission_detail_take_payout">Take payout</string>
     <string name="mission_detail_not_allowed">You are not allowed to change this Einsatz.</string>
     <string name="mission_detail_check_in_not_yet">Checking in works once the Einsatz has started.</string>
@@ -632,7 +754,14 @@
     <string name="mission_detail_finance_edit">Edit</string>
     <string name="mission_detail_finance_delete">Delete</string>
     <string name="mission_detail_finance_amount">Amount (aUEC)</string>
-    <string name="mission_detail_finance_note">What for?</string>
+    <string name="mission_detail_finance_title">Finance entry</string>
+    <string name="mission_detail_finance_type">Type</string>
+    <string name="mission_detail_finance_type_income">+ INCOME</string>
+    <string name="mission_detail_finance_type_expense">− EXPENSE</string>
+    <string name="mission_detail_finance_amount_hint_income">Whole numbers · shown in green with a +</string>
+    <string name="mission_detail_finance_amount_hint_expense">Whole numbers · shown in red with a −</string>
+    <string name="mission_detail_finance_note_hint">e. g. refinery work order #7841</string>
+    <string name="mission_detail_finance_note">Purpose</string>
     <string name="mission_detail_finance_needs_signup">Booking works once you are signed up for the Einsatz.</string>
     <string name="operation_detail_payout_confirm">Confirm</string>
     <string name="operation_detail_payout_undo">Undo</string>
@@ -643,9 +772,14 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
-    <string name="notification_channel_operations">Operations &amp; system</string>
-    <string name="notification_channel_general">General</string>
-    <string name="notification_public_title">New notification</string>
+    <!-- The five channels of design ch. 14, so a member can silence one kind and keep
+         another. Their ids map onto NotificationKind. -->
+    <string name="notification_channel_missions">Einsätze &amp; check-in</string>
+    <string name="notification_channel_orders">Aufträge &amp; assignments</string>
+    <string name="notification_channel_exchange">Materialbörse</string>
+    <string name="notification_channel_bank">Bank &amp; payouts</string>
+    <string name="notification_channel_system">System &amp; announcements</string>
+        <string name="notification_public_title">New notification</string>
     <string name="notification_shade_title">Something new in the Basetool</string>
     <string name="retry_busy_title">Signal unstable</string>
     <string name="retry_busy_message">The server is busy. Retrying automatically in %1$d s.</string>
@@ -662,6 +796,8 @@
     <string name="refinery_phase_stored">Stored</string>
     <string name="refinery_phase_cancelled">Cancelled</string>
     <string name="refinery_station">Station</string>
+    <string name="refinery_good_with_quality">%1$s (Q %2$d)</string>
+    <string name="refinery_value">Value ≈ %1$s</string>
     <string name="refinery_station_unknown">Unknown station</string>
     <string name="refinery_method">Method</string>
     <string name="refinery_method_unknown">Unknown method</string>
@@ -719,10 +855,13 @@
     <string name="board_unit_piece">pcs</string>
     <string name="board_quality">Q %1$d</string>
     <string name="board_min_quality">Min. Q %1$d</string>
-    <string name="board_field_material">Material</string>
-    <string name="board_field_amount">Amount</string>
+    <string name="board_field_material">Material or item</string>
+    <string name="board_field_material_hint">e. g. Bexalite</string>
+    <string name="board_field_amount">Amount wanted</string>
     <string name="board_field_min_quality">Min. quality (optional)</string>
+    <string name="board_field_min_quality_hint">0–1000</string>
     <string name="board_field_remark">Remark (optional)</string>
+    <string name="board_field_remark_hint">e. g. for a Quantum Drive blueprint</string>
     <string name="board_publish_request">Publish request</string>
     <string name="board_publish_offer">Publish offer</string>
     <string name="board_stock_loading">Loading your own stock …</string>
@@ -745,4 +884,66 @@
     <string name="update_required_title">Update required</string>
     <string name="update_required_message">The server no longer serves this version. Download the current build to carry on. Your stored data is kept.</string>
     <string name="update_required_cta">Open the download page</string>
+    <string name="allocation_title">Allocation</string>
+    <string name="allocation_subject_amount">Entry %1$s %2$s</string>
+    <string name="allocation_orders">Orders</string>
+    <string name="allocation_missions">Missions</string>
+    <string name="allocation_add_order">Allocate to an order</string>
+    <string name="allocation_add_mission">Allocate to a mission</string>
+    <string name="allocation_add_cancel">Cancel</string>
+    <string name="allocation_rest_free">%1$s free</string>
+    <string name="allocation_rest_none">Nothing left</string>
+    <string name="allocation_overbooked">Over-allocated</string>
+    <string name="allocation_save">Save the allocation</string>
+    <string name="allocation_open">Allocate</string>
+    <string name="allocation_model_note">Orders and missions are reconciled against the entry separately. Leaving a remainder is fine; promising more than exists is not.</string>
+    <string name="allocation_error_forbidden">Allocating needs the logistics role.</string>
+    <string name="allocation_error_amount">The server refused the amount — the entry has probably changed. Close the allocation and open it again.</string>
+    <plurals name="allocation_error_partial">
+        <item quantity="one">One change was saved before it stopped. The list above shows what the server holds.</item>
+        <item quantity="other">%1$d changes were saved before it stopped. The list above shows what the server holds.</item>
+    </plurals>
+    <plurals name="inventory_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="inventory_selection_clear">Clear</string>
+    <string name="inventory_selected_word">selected</string>
+    <string name="inventory_selection_leave">Leave selection</string>
+    <plurals name="inventory_group_selected_of">
+        <item quantity="one">%1$d/%2$d selected</item>
+        <item quantity="other">%1$d/%2$d selected</item>
+    </plurals>
+    <string name="inventory_bulk_move">Rebook</string>
+    <string name="inventory_bulk_move_pick">Pick a location</string>
+    <string name="inventory_bulk_move_result">Rebooking — result</string>
+    <string name="inventory_bulk_move_skip_hint">Entries already at the target are skipped — not an error.</string>
+    <string name="inventory_bulk_move_refused">The server refused the batch rebooking. Your selection stands — nothing was changed.</string>
+    <string name="inventory_bulk_move_rebooked">Rebooked</string>
+    <string name="inventory_bulk_move_skipped">Skipped</string>
+    <string name="inventory_bulk_move_close">Close</string>
+    <plurals name="inventory_bulk_move_skipped_note">
+        <item quantity="one">%1$d entry already stood at %2$s and was skipped — not an error, nothing to change.</item>
+        <item quantity="other">%1$d entries already stood at %2$s and were skipped — not an error, nothing to change.</item>
+    </plurals>
+    <plurals name="inventory_bulk_move_confirm">
+        <item quantity="one">Rebook %1$d entry</item>
+        <item quantity="other">Rebook %1$d entries</item>
+    </plurals>
+    <plurals name="inventory_bulk_move_body">
+        <item quantity="one">One entry will be moved to the chosen location.</item>
+        <item quantity="other">%1$d entries will be moved to the chosen location.</item>
+    </plurals>
+    <string name="gate_role_logistician">That needs the Logistiker role.</string>
+    <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
+    <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>
+    <string name="gate_own_row_detail">Rule: your own entry, or edit rights on the entry’s org unit.</string>
+    <!-- Timestamps: the yesterday and older rungs of the design's relative-time ladder. -->
+    <string name="time_yesterday_at">yesterday, %1$s</string>
+    <string name="time_date_pattern">MMM d</string>
+    <string name="time_date_at">%1$s, %2$s</string>
+    <!-- Unknown deep link (design ch. 03 rule, ch. 14 wording). Title is product canon and stays English. -->
+    <string name="route_not_found_title">Signal Lost</string>
+    <string name="route_not_found_message">This address does not exist in this app.</string>
+    <string name="route_not_found_action">Back to base</string>
 </resources>

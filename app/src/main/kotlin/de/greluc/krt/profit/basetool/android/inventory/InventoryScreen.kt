@@ -7,8 +7,10 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +27,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,30 +40,57 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionCheckbox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.navigation.SelectionBar
+import de.greluc.krt.profit.basetool.android.ui.ConflictOn
+import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isLogistician
+import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
+import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
+import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the tree. */
@@ -93,6 +126,10 @@ private val RAIL_HEIGHT = 44.dp
  * @param onToggleStack a stack row was tapped.
  * @param onBookIn the booking action was taken.
  * @param onBookOut an entry's booking action was taken.
+ * @param onAllocate an entry's Zuordnung was opened.
+ * @param selection which rows are selected.
+ * @param onToggleSelected a row was long-pressed, or tapped while selecting.
+ * @param denials where a tapped lock raises its refusal.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
@@ -105,8 +142,13 @@ fun InventoryScreen(
     state: InventoryState,
     onToggleGroup: (String) -> Unit,
     onToggleStack: (String, InventoryStack) -> Unit,
+    onToggleBranch: (String, InventoryStack?) -> Unit,
     onBookIn: () -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
+    onAllocate: (InventoryEntry) -> Unit,
+    selection: Set<String>,
+    onToggleSelected: (String) -> Unit,
+    denials: DenialState,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -177,7 +219,12 @@ fun InventoryScreen(
                                 state = state,
                                 onToggleGroup = onToggleGroup,
                                 onToggleStack = onToggleStack,
+                                onToggleBranch = onToggleBranch,
                                 onBookOut = onBookOut,
+                                onAllocate = onAllocate,
+                                selection = selection,
+                                onToggleSelected = onToggleSelected,
+                                denials = denials,
                                 online = state.online,
                                 onLoadMore = onLoadMore,
                             )
@@ -186,18 +233,22 @@ fun InventoryScreen(
                 }
             }
         }
-        KrtFab(
-            iconRes = DesignR.drawable.ic_krt_plus,
-            label = stringResource(R.string.booking_mode_in),
-            onClick = onBookIn,
-            enabled = state.online,
-            modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(KrtSpacing.lg)
-                    .padding(bottom = LocalKrtBottomBarInset.current)
-                    .testTag(INVENTORY_BOOK_TAG),
-        )
+        // „FAB und Bottom-Nav weichen der Aktionsleiste" (design ch. 09, artboard 5). Two floating
+        // affordances at the same corner is one too many, and the one that belongs to a mode wins.
+        if (selection.isEmpty()) {
+            KrtFab(
+                iconRes = DesignR.drawable.ic_krt_plus,
+                label = stringResource(R.string.booking_mode_in),
+                onClick = onBookIn,
+                enabled = state.online,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(KrtSpacing.lg)
+                        .padding(bottom = LocalKrtBottomBarInset.current)
+                        .testTag(INVENTORY_BOOK_TAG),
+            )
+        }
     }
 }
 
@@ -207,7 +258,12 @@ fun InventoryScreen(
  * @param state what to draw.
  * @param onToggleGroup a group was tapped.
  * @param onToggleStack a stack was tapped.
+ * @param onToggleBranch a group or stack was long-pressed; selects every entry under it.
  * @param onBookOut an entry's booking action was taken.
+ * @param onAllocate an entry's Zuordnung was opened.
+ * @param selection which rows are selected.
+ * @param onToggleSelected a row was long-pressed, or tapped while selecting.
+ * @param denials where a tapped lock raises its refusal.
  * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
  */
@@ -216,19 +272,33 @@ private fun InventoryTree(
     state: InventoryState,
     onToggleGroup: (String) -> Unit,
     onToggleStack: (String, InventoryStack) -> Unit,
+    onToggleBranch: (String, InventoryStack?) -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
+    onAllocate: (InventoryEntry) -> Unit,
+    selection: Set<String>,
+    onToggleSelected: (String) -> Unit,
+    denials: DenialState,
     online: Boolean,
     onLoadMore: () -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG)) {
+    LazyColumn(
+        state = rememberRootListState(),
+        modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG),
+    ) {
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId
             item(key = "group-${materialId ?: group.name}") {
+                val (picked, known) = materialId?.let(state::selectionIn) ?: (0 to null)
                 GroupRow(
                     group = group,
                     // A group the server sent without a material id cannot be asked for, so it does
                     // not offer a tap that would do nothing.
                     onClick = materialId?.let { { onToggleGroup(it) } },
+                    onLongClick = materialId?.let { { onToggleBranch(it, null) } },
+                    selected = picked,
+                    // Only while the group is open does „n/m" mean anything: a collapsed group's
+                    // total is whatever was loaded before, not what it holds now.
+                    total = known.takeIf { materialId in state.opened },
                 )
             }
             // A group nobody opened contributes nothing, which is the point of loading one only
@@ -260,6 +330,7 @@ private fun InventoryTree(
                                         stack = stack,
                                         unit = group.unit,
                                         onClick = { onToggleStack(materialId, stack) },
+                                        onLongClick = { onToggleBranch(materialId, stack) },
                                     )
                                 }
                                 entryRows(
@@ -268,6 +339,10 @@ private fun InventoryTree(
                                     unit = group.unit,
                                     online = online,
                                     onBookOut = onBookOut,
+                                    onAllocate = onAllocate,
+                                    selection = selection,
+                                    onToggleSelected = onToggleSelected,
+                                    denials = denials,
                                 )
                             }
                         }
@@ -309,12 +384,24 @@ private fun InventoryTree(
 private fun GroupRow(
     group: InventoryGroup,
     onClick: (() -> Unit)?,
+    selected: Int = 0,
+    total: Int? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(
+                    // Long-press on a branch is shorthand for its leaves (artboard 5). The plain
+                    // tap keeps opening and closing it, because collapsing is a change of view and
+                    // must stay reachable while a selection runs.
+                    if (onClick != null) {
+                        Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                    } else {
+                        Modifier
+                    },
+                )
                 // Design ch. 09 fills the group header rather than leaving it on the page ground:
                 // it is what separates a group from the stacks underneath it in a long tree. The
                 // orange rail beside it is that artboard's `border-left: 4px solid #E77E23`.
@@ -340,7 +427,23 @@ private fun GroupRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        group.quality?.let { KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(it))) }
+        // What this group contributes to a running selection. „1/3" while it is open, „1" once it
+        // is collapsed — collapsing is a change of view, not of selection, and the count has to
+        // keep saying so or a member loses track of rows they can no longer see (artboard 5).
+        if (selected > 0) {
+            KrtChip(
+                text =
+                    if (total != null) {
+                        pluralStringResource(R.plurals.inventory_group_selected_of, total, selected, total)
+                    } else {
+                        pluralStringResource(R.plurals.inventory_selected, selected, selected)
+                    },
+                tone = KrtChipTone.Primary,
+            )
+        }
+        // The group row carries no quality in artboard 09.1 — a material's aggregate quality is an
+        // average of stacks that may be far apart, and the number that matters is the one on the
+        // stack a member is about to book. The gauge lives on the rows below.
         Amount(value = group.amount, unit = group.unit)
     }
 }
@@ -363,6 +466,10 @@ private fun LazyListScope.entryRows(
     unit: String?,
     online: Boolean,
     onBookOut: (InventoryEntry) -> Unit,
+    onAllocate: (InventoryEntry) -> Unit,
+    selection: Set<String>,
+    onToggleSelected: (String) -> Unit,
+    denials: DenialState,
 ) {
     when (phase) {
         // A closed stack contributes no rows at all.
@@ -395,6 +502,11 @@ private fun LazyListScope.entryRows(
                             unit = unit,
                             online = online,
                             onBookOut = { onBookOut(entry) },
+                            onAllocate = { onAllocate(entry) },
+                            selected = entry.id in selection,
+                            selecting = selection.isNotEmpty(),
+                            onToggleSelected = { onToggleSelected(entry.id) },
+                            denials = denials,
                         )
                     }
                 }
@@ -410,18 +522,34 @@ private fun LazyListScope.entryRows(
  * @param unit the group's quantity unit.
  * @param online whether a booking can be sent at all.
  * @param onBookOut opens the booking form on it.
+ * @param selected whether this row is in the selection.
+ * @param selecting whether the list is in selection mode at all.
+ * @param onToggleSelected the row was long-pressed, or tapped while selecting.
+ * @param denials where a tapped lock raises its refusal.
  */
 @Composable
 private fun EntryRow(
     entry: InventoryEntry,
     unit: String?,
     online: Boolean,
+    selected: Boolean,
+    selecting: Boolean,
     onBookOut: () -> Unit,
+    onAllocate: () -> Unit,
+    onToggleSelected: () -> Unit,
+    denials: DenialState,
 ) {
+    // Long-press starts selection mode and a plain tap continues it (design ch. 02 §4): once the
+    // mode is on, having to keep long-pressing every further row makes selecting twelve stacks a
+    // chore nobody finishes. A selected row wears the orange rail and a fill, as the artboard has it.
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { if (selecting) onToggleSelected() },
+                    onLongClick = onToggleSelected,
+                ).then(if (selected) Modifier.background(KrtPalette.SurfaceInput) else Modifier)
                 .padding(
                     start = ENTRY_INSET,
                     end = KrtSpacing.md,
@@ -431,7 +559,11 @@ private fun EntryRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
+        Rail(
+            width = if (selected) SELECT_RAIL else STACK_RAIL,
+            color = if (selected) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
+        )
+
         Column(modifier = Modifier.weight(1f)) {
             // Design ch. 09 leads a stack entry with WHERE it is, behind a map pin — the amount is
             // the figure on the right. Only the amount and the note were drawn, so two entries of
@@ -467,14 +599,129 @@ private fun EntryRow(
             }
         }
         entry.quality?.let { quality ->
-            KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(quality)))
+            QualityMark(quality = quality)
         }
-        KrtGhostButton(
-            text = stringResource(R.string.booking_open),
-            onClick = onBookOut,
-            modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
-            enabled = online,
+        // Selection mode replaces the row's own actions with its checkbox: with both on screen a
+        // tap would mean two things at once (design ch. 09, artboard 5: „Buchen/Zuordnen inaktiv").
+        if (selecting) {
+            KrtSelectionCheckbox(checked = selected)
+        } else {
+            EntryActions(
+                entry = entry,
+                online = online,
+                onBookOut = onBookOut,
+                onAllocate = onAllocate,
+                denials = denials,
+            )
+        }
+    }
+}
+
+/**
+ * The two writes a stock row offers, each behind the lock that actually governs it.
+ *
+ * *Buchen* asks whether the row is the caller's — own row, or edit rights on its org unit.
+ * *Zuordnen* asks for the Logistiker grant and stays locked even on the caller's own row (design
+ * ch. 09, artboard 11: „Buchen: eigene Zeile → aktiv; Zuordnen: Rolle Logistiker → gesperrt").
+ * Two locks, the same picture, different copy — only the refusal's wording separates them.
+ *
+ * Neither is `enabled = false`: both keep a live tap target so the refusal can name the grant to
+ * ask for, instead of arriving as a 403 after the write was already attempted (ADR-0011).
+ *
+ * A **personal** entry carries no allocation at all (design ch. 09 §3), so the split is not offered
+ * on one — offering it would be offering a refusal that no grant could ever lift.
+ *
+ * @param entry the row.
+ * @param online whether writes are possible at all right now.
+ * @param onBookOut opens the booking form.
+ * @param onAllocate opens the Zuordnung.
+ * @param denials where a tapped lock raises its refusal.
+ */
+@Composable
+private fun EntryActions(
+    entry: InventoryEntry,
+    online: Boolean,
+    onBookOut: () -> Unit,
+    onAllocate: () -> Unit,
+    denials: DenialState,
+) {
+    val roleGate =
+        Gate(
+            allowed = isLogistician(),
+            reason = stringResource(R.string.gate_role_logistician),
+            detail = stringResource(R.string.gate_role_logistician_detail),
         )
+    val rowGate =
+        Gate(
+            allowed = mayEditRowOf(entry.holderId),
+            reason = stringResource(R.string.gate_own_row),
+            detail = stringResource(R.string.gate_own_row_detail),
+        )
+    if (!entry.personal) {
+        val (dim, click) = rememberGated(roleGate, onAllocate, denials)
+        // The badge sits on the button's corner and is never dimmed with it: alpha alone reads as
+        // "loading", and the lock is what makes it read as "you may not" (artboard 14).
+        Box {
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_target,
+                label = stringResource(R.string.allocation_open),
+                onClick = click,
+                modifier = dim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+                enabled = online,
+            )
+            if (!roleGate.allowed) {
+                KrtLockBadge(modifier = Modifier.align(Alignment.BottomEnd))
+            }
+        }
+    }
+    val (bookDim, bookClick) = rememberGated(rowGate, onBookOut, denials)
+    KrtGhostButton(
+        text = stringResource(R.string.booking_open),
+        onClick = bookClick,
+        iconRes = if (rowGate.allowed) null else DesignR.drawable.ic_krt_lock,
+        modifier = bookDim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+        enabled = online,
+    )
+}
+
+/**
+ * A quality reading: the number, and a 44 dp bar showing where it sits on the 0–1000 scale.
+ *
+ * Design ch. 09: "Quality = value + 44 dp mini-gauge (0–1000)". The number alone is only meaningful
+ * to somebody who already knows the scale — the bar makes "Q 874" readable as *high* at a glance,
+ * which is the judgement a member makes when choosing which stack to book out.
+ *
+ * @param quality the reading, 0–1000.
+ */
+@Composable
+private fun QualityMark(quality: String) {
+    // The reading arrives as a string on the wire; a value the app cannot parse still shows its
+    // number and simply draws no bar, rather than guessing a position on the scale.
+    val share = quality.trim().toDoubleOrNull()?.div(QUALITY_MAX)?.toFloat()?.coerceIn(0f, 1f)
+    Column(horizontalAlignment = Alignment.Start) {
+        Text(
+            text = stringResource(R.string.inventory_quality, quality),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.Gray1,
+        )
+        share?.let { filled ->
+            Box(
+                modifier =
+                    Modifier
+                        .padding(top = 2.dp)
+                        .width(QUALITY_GAUGE_WIDTH)
+                        .height(QUALITY_GAUGE_HEIGHT)
+                        .background(KrtPalette.Gray3),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(filled)
+                            .height(QUALITY_GAUGE_HEIGHT)
+                            .background(MaterialTheme.colorScheme.primary),
+                )
+            }
+        }
     }
 }
 
@@ -484,18 +731,21 @@ private fun EntryRow(
  * @param stack the stack.
  * @param unit the group's quantity unit, since a stack carries none of its own.
  * @param onClick opens its entries.
+ * @param onLongClick selects every entry in it — a stack row carries no selection of its own
+ *   (design ch. 09, artboard 5).
  */
 @Composable
 private fun StackRow(
     stack: InventoryStack,
     unit: String?,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(start = STACK_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -523,7 +773,7 @@ private fun StackRow(
         if (stack.personal) {
             KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
         }
-        stack.quality?.let { KrtChip(text = stringResource(R.string.inventory_quality, formatAmount(it))) }
+        stack.quality?.let { QualityMark(quality = it) }
         Amount(value = stack.amount, unit = unit)
     }
 }
@@ -638,16 +888,333 @@ fun InventoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // One refusal at a time, at the foot of the screen — the design settled the open question of
+    // round 3 on the bracket toast in the warning tint (design ch. 09, artboards 12 and 14).
+    val denials = rememberDenialState()
+    // While rows are being picked the whole head becomes „✕ n gewählt" and the bottom navigation
+    // steps aside for the action bar (design ch. 09, artboard 5). Published rather than drawn here,
+    // because both surfaces belong to the shell.
+    ProvideScreenTopBar(
+        selection =
+            state.selection
+                .takeIf { it.isNotEmpty() }
+                ?.let { SelectionBar(count = it.size, onClear = viewModel::onSelectionCleared) },
+    )
+    // Two ways out and no third: the ✕ in the head, and the system back gesture. Deselecting the
+    // last row also ends the mode, but nobody leaves twelve rows one tap at a time.
+    BackHandler(enabled = state.selection.isNotEmpty(), onBack = viewModel::onSelectionCleared)
     InventoryScreen(
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
         onToggleStack = viewModel::onToggleStack,
+        onToggleBranch = viewModel::onToggleBranch,
         onBookIn = onBookIn,
         onBookOut = onBookOut,
+        onAllocate = viewModel::onAllocate,
+        selection = state.selection,
+        onToggleSelected = viewModel::onToggleSelected,
+        denials = denials,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         modifier = modifier,
     )
+
+    // The bottom action bar of chapter 02 §4: it exists only while something is selected, which is
+    // what makes the mode self-evident — nothing to leave, nothing to notice you are in.
+    if (state.selection.isNotEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            KrtBottomCtaBar {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // The artboard splits the count in two: the figure heavy and white, the word
+                    // small, muted and uppercase. One `Text` would have to pick one of them.
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(SELECTION_COUNT_GAP),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = state.selection.size.toString(),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = KrtPalette.White,
+                        )
+                        Text(
+                            text = stringResource(R.string.inventory_selected_word).krtUppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = KrtPalette.TextMuted,
+                        )
+                    }
+                    KrtGhostButton(
+                        text = stringResource(R.string.inventory_selection_clear),
+                        onClick = viewModel::onSelectionCleared,
+                    )
+                    // A selection may span rows that are not the caller's, and the same lock the
+                    // individual rows wear applies to the batch (design ch. 09, artboard 5:
+                    // „Enthält die Auswahl fremde Zeilen, rendert Umbuchen im Gesperrt-Stil …
+                    // die Auswahl bleibt bestehen"). Refusing does not clear what was picked.
+                    val ownsEveryRow = state.selectedEntries().all { mayEditRowOf(it.holderId) }
+                    val bulkGate =
+                        Gate(
+                            allowed = ownsEveryRow,
+                            reason = stringResource(R.string.gate_own_row),
+                            detail = stringResource(R.string.gate_own_row_detail),
+                        )
+                    val (bulkDim, bulkClick) =
+                        rememberGated(bulkGate, viewModel::onBulkMoveRequested, denials)
+                    KrtCtaButton(
+                        text = stringResource(R.string.inventory_bulk_move),
+                        onClick = bulkClick,
+                        iconRes =
+                            if (bulkGate.allowed) {
+                                DesignR.drawable.ic_krt_swap
+                            } else {
+                                DesignR.drawable.ic_krt_lock
+                            },
+                        enabled = state.online,
+                        modifier = bulkDim,
+                    )
+                }
+            }
+        }
+    }
+
+    denials.current?.let { denial ->
+        // Keyed on the tap, not on the text: a second tap of the same lock has to restart the clock
+        // rather than let the first tap's timer expire underneath it (design ch. 09, artboard 14).
+        LaunchedEffect(denial.serial) {
+            delay(DENIAL_TOAST_MS)
+            denials.clear()
+        }
+        // Above the FAB, not under it: the refusal is the one thing the member has to be able to
+        // read, and for its four seconds it outranks a button they may not be allowed to press
+        // anyway. 16 dp from both edges and clear of the bottom bar, as the artboard measures it.
+        Box(
+            modifier = Modifier.fillMaxSize().zIndex(1f),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            KrtLockToast(
+                title = denial.title,
+                detail = denial.detail,
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.lg)
+                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+            )
+        }
+    }
+
+    state.bulk?.let { bulk ->
+        BulkMoveSheet(
+            bulk = bulk,
+            count = state.selection.size,
+            onPlace = viewModel::onBulkMovePlace,
+            onConfirm = viewModel::onBulkMoveConfirmed,
+            onDismiss = viewModel::onBulkMoveDismissed,
+            onFinished = viewModel::onBulkMoveFinished,
+        )
+    }
+
+    state.allocation?.let { allocation ->
+        // Design ch. 14's conflict dialog: a refused save must not be a line under a
+        // scrolled form. „Neu laden" closes the form and makes the screen re-read.
+        ConflictOn(
+            error = allocation.error,
+            onReload = {
+                viewModel.onAllocationDismissed()
+                viewModel.onRefresh()
+            },
+        )
+        AllocationSheet(
+            state = allocation,
+            callbacks =
+                AllocationCallbacks(
+                    onAmount = viewModel::onAllocationAmount,
+                    onStep = viewModel::onAllocationStep,
+                    onAdd = viewModel::onAllocationAdd,
+                    onPick = viewModel::onAllocationPick,
+                    onSave = viewModel::onAllocationSave,
+                    onDismiss = viewModel::onAllocationDismissed,
+                ),
+            saveGate =
+                Gate(
+                    allowed = isLogistician(),
+                    reason = stringResource(R.string.gate_role_logistician),
+                    detail = stringResource(R.string.gate_role_logistician_detail),
+                ),
+            denials = denials,
+        )
+    }
 }
+
+/** Width of the quality mini-gauge — 44 dp per design ch. 09. */
+private val QUALITY_GAUGE_WIDTH = 44.dp
+
+/** Height of the quality mini-gauge; the same flat band the attendance meter uses. */
+private val QUALITY_GAUGE_HEIGHT = 4.dp
+
+/** Top of the quality scale the gauge maps onto. */
+private const val QUALITY_MAX = 1_000.0
+
+/** Width of the orange inset bar on a selected row (design ch. 02 §4). */
+private val SELECT_RAIL = 3.dp
+
+/**
+ * „Umbuchen" over a selection.
+ *
+ * One place for every selected row, because that is what the endpoint takes and what a member who
+ * has just moved a hangar's worth of stock actually wants. The count is in the CTA: a bulk action
+ * that does not say how much it will touch is one nobody should press.
+ *
+ * @param bulk the open sheet.
+ * @param count how many rows are selected.
+ * @param onPlace a place was picked.
+ * @param onConfirm the move was confirmed.
+ * @param onDismiss the sheet was closed.
+ */
+@Composable
+private fun BulkMoveSheet(
+    bulk: BulkMoveState,
+    count: Int,
+    onPlace: (LocationOption) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    onFinished: () -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    KrtBottomSheet(
+        // A finished batch is dismissed by finishing it, not by swiping past its own result: the
+        // skipped count is the one figure the tree cannot show afterwards.
+        onDismiss = if (bulk.result == null) onDismiss else onFinished,
+        title =
+            if (bulk.result == null) {
+                stringResource(R.string.inventory_bulk_move)
+            } else {
+                stringResource(R.string.inventory_bulk_move_result)
+            },
+        modifier = Modifier.testTag(INVENTORY_BULK_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            if (bulk.result != null) {
+                // No "n entries will be moved" over a batch that already ran — the tiles below say
+                // what happened, and the line above them would still be promising it.
+                BulkMoveOutcome(result = bulk.result, place = bulk.place?.name, onFinished = onFinished)
+                return@KrtBottomSheet
+            }
+            Text(
+                text = pluralStringResource(R.plurals.inventory_bulk_move_body, count, count),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            KrtSelectField(
+                value = bulk.place?.name ?: stringResource(R.string.inventory_bulk_move_pick),
+                options = bulk.places.map { KrtOption(it.id, it.name) },
+                onSelect = { option ->
+                    bulk.places.firstOrNull { it.id == option.value }?.let(onPlace)
+                    open = false
+                },
+                expanded = open,
+                onExpandedChange = { open = it },
+                label = stringResource(R.string.booking_field_place),
+                selectedValue = bulk.place?.id,
+                enabled = !bulk.saving,
+            )
+            // Said before the write rather than after it: a member told afterwards that four rows
+            // were skipped reads it as four failures (design ch. 09, artboard 6).
+            Text(
+                text = stringResource(R.string.inventory_bulk_move_skip_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+            // A refusal keeps the sheet open and the selection standing: nothing was changed, and
+            // re-picking twelve rows to retry punishes the member for the server's answer
+            // (artboard 10).
+            bulk.error?.let { KrtFieldError(text = stringResource(R.string.inventory_bulk_move_refused)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_cancel),
+                    onClick = onDismiss,
+                    enabled = !bulk.saving,
+                )
+                KrtCtaButton(
+                    text = pluralStringResource(R.plurals.inventory_bulk_move_confirm, count, count),
+                    onClick = onConfirm,
+                    iconRes = DesignR.drawable.ic_krt_swap,
+                    enabled = bulk.place != null && !bulk.saving,
+                    modifier = Modifier.testTag(INVENTORY_BULK_CONFIRM_TAG),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * What the batch did — its own step in the sheet, rather than a toast on the way out.
+ *
+ * Two figures and a sentence (design ch. 09, artboard 9). The skipped one is **not** an error: a row
+ * already standing at the target needs no move, and saying so in words is the difference between a
+ * member reading "1" as a failure and reading it as nothing to do. A toast is too fleeting to carry
+ * that sentence, which is why the result is a step and not a notification.
+ *
+ * @param result the counts the server returned.
+ * @param place where the rows were sent, for the sentence.
+ * @param onFinished closes the batch: ends selection mode and re-reads the tree.
+ */
+@Composable
+private fun BulkMoveOutcome(
+    result: BulkRebookResult,
+    place: String?,
+    onFinished: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        KrtFigureTile(
+            label = stringResource(R.string.inventory_bulk_move_rebooked),
+            value = result.rebooked.toString(),
+            tone = KrtFigureTone.Success,
+            modifier = Modifier.weight(1f),
+        )
+        KrtFigureTile(
+            label = stringResource(R.string.inventory_bulk_move_skipped),
+            value = result.skipped.toString(),
+            tone = KrtFigureTone.Neutral,
+            modifier = Modifier.weight(1f),
+        )
+    }
+    if (result.skipped > 0 && place != null) {
+        Text(
+            text =
+                pluralStringResource(
+                    R.plurals.inventory_bulk_move_skipped_note,
+                    result.skipped,
+                    result.skipped,
+                    place,
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+    }
+    KrtCtaButton(
+        text = stringResource(R.string.inventory_bulk_move_close),
+        onClick = onFinished,
+        modifier = Modifier.fillMaxWidth().testTag(INVENTORY_BULK_CLOSE_TAG),
+    )
+}
+
+/** Test handle for the bulk-move sheet. */
+const val INVENTORY_BULK_TAG = "inventory-bulk-move"
+
+/** Test handle for its confirm button. */
+const val INVENTORY_BULK_CONFIRM_TAG = "inventory-bulk-confirm"
+
+/** Gap between the action bar's figure and the word beside it — design ch. 09, artboard 5. */
+private val SELECTION_COUNT_GAP = 10.dp
+
+/** Test handle for the result step's closing button. */
+const val INVENTORY_BULK_CLOSE_TAG = "inventory-bulk-close"

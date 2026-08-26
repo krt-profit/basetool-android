@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Only what differs from the default bundle. The Fan Kit trademark notice is translatable="false"
+      and must NOT appear here: repeating it in a locale is an Untranslatable lint error, and the
+      whole point of the flag is that the wording is prescribed and identical everywhere.
+    -->
+    <string name="krt_cancel">Cancel</string>
+
+    <!-- Spoken description of the Fan Kit artwork; this one IS localizable. -->
+    <string name="krt_fankit_logo_description">Star Citizen — Made by the Community</string>
+</resources>

@@ -22,7 +22,7 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">08</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Hangar</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Web canon: Hersteller · Typ · Versicherung · Ort · Fitted · Name (+ edit). Live: segment „Meine Schiffe / Org-Einheit", Fitted-Toggle im Formular, Import-Ergebnis-Modal. Manufacturer marks = lettermark placeholders BY NECESSITY: the repo ships white SVGs only for Anvil/Drake/MISC (META-INF/resources/images/*_white.svg) and they embed raster data — devs must re-export clean vectors; until then the lettermark is the spec.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Web canon: Hersteller · Typ · Versicherung · Ort · Fitted · Name (+ edit). Live: segment „Meine Schiffe / Org-Einheit", Fitted-Toggle im Formular, Import-Ergebnis-Modal. Neu: Overflow offen, Home-Location-Sheet, Leeren-Modal (Artboards 4–11). Manufacturer marks = lettermark placeholders BY NECESSITY: the repo ships white SVGs only for Anvil/Drake/MISC (META-INF/resources/images/*_white.svg) and they embed raster data — devs must re-export clean vectors; until then the lettermark is the spec.</div>
     </div>
   </header>
 
@@ -112,7 +112,7 @@
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>Web table → cards: Typ + Name headline; Versicherung/Fitted as chips; Ort with map-pin; edit = 44 dp icon button</li>
           <li>Hangar reached via „Mehr" (phone) — top bar shows back, not the bottom bar? No: pushed from Mehr keeps the bottom bar; back returns to Mehr</li>
-          <li>Overflow (⋮): Home-Location setzen (bulk), Hangar leeren (type-safe danger modal), Import</li>
+          <li>Overflow (⋮): Home-Location setzen (bulk), Hangar leeren (Danger-Modal mit Anzahl, OHNE Tipp-Hürde — Entscheidung in Artboard 6), Import — offen gezeichnet in Artboards 4–5</li>
           <li>FAB „Schiff hinzufügen" only on „Meine Schiffe"; server search identical to web (REQ-HANGAR-002)</li>
         </ul>
       </div>
@@ -163,10 +163,10 @@
             <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Fleetview-Import</div>
           </div>
           <div style="flex:1;overflow:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px">
-            <div style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:60ch">Importiere deine Schiffe aus einem CCU-Game-Fleetview-Export. Datei wählen oder JSON direkt einfügen.</div>
+            <div style="font:300 13px/1.6 Lato,sans-serif;color:#D2D2D2;max-width:60ch">Importiere deine Schiffe aus CCU Game Fleetview, HangarXPLOR Shiplist oder Fleetyards JSON. Datei wählen oder JSON direkt einfügen — die Wurzel ist ein Array.</div>
             <button class="btn-outline btn" style="background:transparent;min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-upload"></use></svg>JSON-Datei wählen</button>
             <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:1px;background:#282828"></span><span style="font:700 10px/1 Lato,sans-serif;color:#646464;letter-spacing:.1em">Oder einfügen</span><span style="flex:1;height:1px;background:#282828"></span></div>
-            <div style="background:#1C1C1C;border:1px solid #282828;padding:12px 14px;min-height:160px;font:400 12px/1.7 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">{"ships": [{"name": "Meridian", "type": "Carrack", "insurance": "LTI"}, {"name": "Digger 2", "type": "Prospector"}, …]}</div>
+            <div style="background:#1C1C1C;border:1px solid #282828;padding:12px 14px;min-height:160px;font:400 12px/1.7 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">[{"name": "Meridian", "type": "Carrack", "insurance": "LTI"}, {"name": "Digger 2", "type": "Prospector"}, …]</div>
             <button class="btn btn--cta" style="min-height:52px;width:100%" onClick="{{ runImport }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-clipboard-check"></use></svg>Importieren</button>
             <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Duplikate werden übersprungen; nicht erkannte Typen landen in der Ergebnisliste. Kein Netz → Aktion deaktiviert + Offline-Banner.</div>
           </div>
@@ -190,12 +190,289 @@
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — FleetImportScreen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>SAF file picker (.json) OR paste field — both feed the same web endpoint</li>
+          <li><b style="color:#FFD23F">Korrektur (26.08.2026):</b> Wurzel ist ein JSON-ARRAY — die Objektform {"ships": […]} beantwortet der Endpoint mit 400 („must contain a JSON array at the root"; gegen den laufenden Stack verifiziert). Erkannte Formate, wie der Server sie nennt: CCU Game Fleetview, HangarXPLOR Shiplist, Fleetyards JSON</li>
           <li>Result modal mirrors the web stats exactly: Importiert / Nicht erkannt / Duplikate + skip list</li>
-          <li>„Hangar leeren" lives in the overflow; danger modal names the count („Alle 3 Schiffe löschen?")</li>
+          <li>„Hangar leeren" lives in the overflow; danger modal names the count („Alle 3 Schiffe löschen?") — Auflösung des Widerspruchs zu 08.1 in Artboard 6</li>
         </ul>
       </div>
     </div>
 
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Overflow offen — 3 Schiffe, alle Einträge aktiv</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Hangar</div>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2;background:#1C1C1C" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:12px 16px;display:flex;flex-direction:column;gap:10px;opacity:.55">
+            <div style="border:1px solid #282828;background:#141414;display:flex;align-items:center;gap:14px;padding:12px 14px;min-height:72px">
+                <span style="width:44px;height:44px;flex:none;border:1px solid #282828;background:#1C1C1C;display:flex;align-items:center;justify-content:center;font:900 11px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px">ANVL</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Carrack <span style="font-weight:300;color:#8A8A8A">„Meridian"</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap"><span class="chip chip--primary" style="font-size:9px">LTI</span><span class="chip chip--success" style="font-size:9px">Fitted</span><span style="display:inline-flex;align-items:center;gap:4px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A"><svg class="krt-icon" style="width:12px;height:12px"><use href="#krt-icon-map-pin"></use></svg>ARC-L1</span></div>
+                </div>
+                <button style="all:unset;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;flex:none" aria-label="Bearbeiten"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-edit"></use></svg></button>
+              </div>
+            <div style="border:1px solid #282828;background:#141414;display:flex;align-items:center;gap:14px;padding:12px 14px;min-height:72px">
+                <span style="width:44px;height:44px;flex:none;border:1px solid #282828;background:#1C1C1C;display:flex;align-items:center;justify-content:center;font:900 11px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px">MISC</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Prospector <span style="font-weight:300;color:#8A8A8A">„Digger 2"</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap"><span class="chip chip--primary" style="font-size:9px">6 Monate</span><span class="chip chip--success" style="font-size:9px">Fitted</span><span style="display:inline-flex;align-items:center;gap:4px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A"><svg class="krt-icon" style="width:12px;height:12px"><use href="#krt-icon-map-pin"></use></svg>Lorville</span></div>
+                </div>
+                <button style="all:unset;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;flex:none" aria-label="Bearbeiten"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-edit"></use></svg></button>
+              </div>
+          </div>
+          <div style="position:absolute;top:52px;right:8px;width:268px;background:#141414;border:1px solid #282828;box-shadow:0 10px 30px rgba(0,0,0,.75);z-index:5">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C;" style-hover="background:#1C1C1C">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A;flex:none"><use href="#krt-icon-map-pin"></use></svg>
+                <span style="flex:1;text-align:left"><span style="display:block;font:700 12px/1.3 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase">Home-Location setzen</span><span style="display:block;font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-transform:none;margin-top:2px">Ein Ort für die gesamte Flotte</span></span>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C;" style-hover="background:#1C1C1C">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#F2564B;flex:none"><use href="#krt-icon-trash"></use></svg>
+                <span style="flex:1;text-align:left"><span style="display:block;font:700 12px/1.3 Lato,sans-serif;color:#F2564B;letter-spacing:.5px;text-transform:uppercase">Hangar leeren</span></span>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 16px;" style-hover="background:#1C1C1C">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A;flex:none"><use href="#krt-icon-upload"></use></svg>
+                <span style="flex:1;text-align:left"><span style="display:block;font:700 12px/1.3 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase">Import</span></span>
+              </button>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Overflow — leerer Hangar: 2 Einträge gesperrt, sichtbar</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Hangar</div>
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2;background:#1C1C1C" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;opacity:.55">
+            <svg class="krt-icon" style="width:44px;height:44px;color:#646464"><use href="#krt-icon-ship"></use></svg>
+            <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.7px">Keine Schiffe im Hangar</div>
+            <div style="font:300 12.5px/1.6 Lato,sans-serif;color:#8A8A8A;max-width:32ch">Füge ein Schiff hinzu oder importiere deine Flotte.</div>
+          </div>
+          <div style="position:absolute;top:52px;right:8px;width:268px;background:#141414;border:1px solid #282828;box-shadow:0 10px 30px rgba(0,0,0,.75);z-index:5">
+              <button style="all:unset;box-sizing:border-box;cursor:default;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C;opacity:.45;">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A;flex:none"><use href="#krt-icon-map-pin"></use></svg>
+                <span style="flex:1;text-align:left"><span style="display:block;font:700 12px/1.3 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase">Home-Location setzen</span><span style="display:block;font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-transform:none;margin-top:2px">Keine Schiffe im Hangar</span></span>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:default;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 16px;border-bottom:1px solid #1C1C1C;opacity:.45;">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#F2564B;flex:none"><use href="#krt-icon-trash"></use></svg>
+                <span style="flex:1;text-align:left"><span style="display:block;font:700 12px/1.3 Lato,sans-serif;color:#F2564B;letter-spacing:.5px;text-transform:uppercase">Hangar leeren</span><span style="display:block;font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;text-transform:none;margin-top:2px">Keine Schiffe im Hangar</span></span>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 16px;" style-hover="background:#1C1C1C">
+                <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A;flex:none"><use href="#krt-icon-upload"></use></svg>
+                <span style="flex:1;text-align:left"><span style="display:block;font:700 12px/1.3 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase">Import</span></span>
+              </button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Overflow-Menü</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Anker: Dropdown am ⋮ (rechtsbündig unter der Leiste, 268 dp) — Phone wie Tablet; KEIN Bottom-Sheet, 3 Einträge rechtfertigen keins. Tablet-⋮ trägt nur „Hangar leeren" — Home-Location ist dort Header-Button, Import steht im Inhalt</li>
+          <li>Führende Glyphen: JA (map-pin / trash / upload), 18 dp, currentColor — Icon+Text-Regel des DS</li>
+          <li>Destruktiv: „Hangar leeren" ist SCHON IM MENÜ rot (#F2564B Text-Tint) — die Farbe warnt, das Modal (Artboard 6) bestätigt; Rot erst im Modal wäre eine Überraschung zweiter Stufe</li>
+          <li>Nicht wählbar (leerer Hangar): Einträge BLEIBEN STEHEN — gedimmt 45 % mit Grundzeile. Rechte-bedingte Sperren (Korrektur 26.08.: /users/me liefert roles/permissions) nutzen dasselbe Bild PLUS Schloss-Glyphe und erklären sich beim Antippen mit dem Rollennamen — Muster Kap. 09, Artboards 11–14; versteckt wird nie</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Hangar leeren — Danger-Modal (Auflösung 08.1 ↔ 08.3)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px">
+            <div class="krt-modal krt-modal--danger" style="max-width:360px;width:100%">
+              <div class="krt-modal-head"><h2>Hangar leeren?</h2></div>
+              <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Alle <b style="color:#F2564B">3 Schiffe</b> werden aus „Meine Schiffe" gelöscht. Kein Undo in der App — Wiederherstellung nur über erneuten Fleetview-Import. Einsätze, Aufträge und Lager bleiben unberührt.</p></div>
+              <div class="krt-modal-foot">
+                <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
+                <button class="btn" style="min-height:48px;background:#A3000A;border:1px solid #A3000A;color:#FFFFFF">Alle 3 Schiffe löschen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Entscheidung — „Hangar leeren"</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Widerspruch 08.1 („type-safe") ↔ 08.3 („Alle 3 Schiffe löschen?") aufgelöst: es gilt das Danger-Modal MIT Anzahl, OHNE Tipp-Hürde — 08.1 ist korrigiert</li>
+          <li>Begründung: Kap. 02 §7 reserviert die Tipp-Hürde für irreversible Admin-Aktionen auf organisationsweiten Daten (Wipe-Grade). Der persönliche Hangar ist eigene Daten und über erneuten Import wiederherstellbar — eine Tipp-Hürde hier würde die echte entwerten</li>
+          <li>Schutz dreifach: roter Menü-Eintrag → Modal nennt Anzahl + Konsequenz + Wiederherstellungsweg → CTA wiederholt die Anzahl</li>
+          <li>DELETE wartet auf den Server; Erfolg → Toast „Hangar geleert (3 Schiffe)." + leerer Zustand</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">7 · Home-Location — Ort noch nicht gewählt</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Home-Location setzen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Ein Ort für die gesamte Flotte · POST hangar/ships/home-location</div>
+              </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Ort</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" placeholder="Ort wählen…" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Gilt für alle 3 Schiffe in „Meine Schiffe" — vorhandene Orte werden überschrieben.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none">Für 3 Schiffe übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">8 · Home-Location — Ort gewählt</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Home-Location setzen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Ein Ort für die gesamte Flotte · POST hangar/ships/home-location</div>
+              </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Ort</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Gilt für alle 3 Schiffe in „Meine Schiffe" — vorhandene Orte werden überschrieben.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-map-pin"></use></svg>Für 3 Schiffe übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">9 · Home-Location — Speichern läuft</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Home-Location setzen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Ein Ort für die gesamte Flotte · POST hangar/ships/home-location</div>
+              </div>
+              <div style="opacity:.55;pointer-events:none">
+                <label style="font-size:13px;margin-bottom:6px">Ort</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Gilt für alle 3 Schiffe in „Meine Schiffe" — vorhandene Orte werden überschrieben.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1;opacity:.45;pointer-events:none">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6;pointer-events:none"><span class="krt-spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,.25);border-top-color:#000"></span>Übernehmen…</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · Home-Location — abgelehnt (403)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+            <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Home-Location setzen</div>
+                <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Ein Ort für die gesamte Flotte · POST hangar/ships/home-location</div>
+              </div>
+                <div style="border-left:4px solid #A3000A;background:rgba(163,0,10,.15);padding:10px 12px">
+                  <div style="font:700 11.5px/1.4 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.05em">Access Denied — Insufficient security clearance. This incident has been logged.</div>
+                  <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:4px">Der Server hat den Massen-Schreibvorgang abgelehnt (403). Es wurde nichts geändert.</div>
+                </div>
+              <div>
+                <label style="font-size:13px;margin-bottom:6px">Ort</label>
+                <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Gilt für alle 3 Schiffe in „Meine Schiffe" — vorhandene Orte werden überschrieben.</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-map-pin"></use></svg>Für 3 Schiffe übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — HomeLocationSheet</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Zahl: JA — der CTA nennt sie („Für 3 Schiffe übernehmen"), die Helper-Zeile das Überschreiben; Quelle = Länge der geladenen Schiffsliste, kein neues API-Feld</li>
+          <li>Rückfrage: NEIN — kein Datenverlust (setzt nur locationId, jederzeit erneut setzbar), der Umfang steht im Sheet selbst; ein Confirm auf ein Sheet wäre Doppel-Bestätigung</li>
+          <li>Warten auf Server (wie Kap.-10-Sheets): CTA-Spinner, Felder gesperrt; 2xx schließt + Toast „Home-Location gesetzt (3 Schiffe)."; 403 hält das Sheet offen — Canon-Copy + deutsche Erklärung, nichts geändert</li>
+          <li>Aktion wird nie versteckt — Korrektur 26.08.: /users/me liefert roles/permissions. Fehlt das Recht, rendert der CTA im Gesperrt-Stil (antippbar, Toast nennt die Rolle; Muster Kap. 09, Artboards 11–14); ein 403 trotz aktiver Zeichnung nutzt dieselbe Toast-Vokabel</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">11 · Regel 02 §5 im Screen — Tabellenzeile ↔ Telefon-Karte</div>
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet — eine Zeile der Schiffstabelle (7 Spalten)</div>
+        <div style="border:1px solid #282828;background:#141414">
+          <div style="display:grid;grid-template-columns:52px 1fr 46px 54px 34px 1fr 34px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Hrst.</div>
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Schiffstyp</div>
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Vers.</div>
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Ort</div>
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Fit.</div>
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Name</div>
+            <div style="padding:6px 8px;font:700 8px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Akt.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:52px 1fr 46px 54px 34px 1fr 34px;min-height:40px;align-items:center">
+            <div style="padding:4px 8px;font:900 8px/1 Lato,sans-serif;color:#8A8A8A">ANVL</div>
+            <div style="padding:4px 8px;font:700 11px/1.2 Lato,sans-serif;color:#FFFFFF">Carrack</div>
+            <div style="padding:4px 8px"><span class="chip chip--primary" style="font-size:7.5px;padding:1px 4px">LTI</span></div>
+            <div style="padding:4px 8px;font:300 10px/1.2 Lato,sans-serif;color:#D2D2D2">ARC-L1</div>
+            <div style="padding:4px 8px"><span class="chip chip--success" style="font-size:7.5px;padding:1px 4px">Ja</span></div>
+            <div style="padding:4px 8px;font:300 10px/1.2 Lato,sans-serif;color:#D2D2D2">„Meridian"</div>
+            <div style="padding:4px 8px"><span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2"><svg class="krt-icon" style="width:11px;height:11px"><use href="#krt-icon-edit"></use></svg></span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#E77E23;letter-spacing:.1em;text-transform:uppercase"><svg class="krt-icon" style="width:14px;height:14px;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>Wird auf dem Telefon zu</div>
+        <div style="border:1px solid #282828;background:#141414;display:flex;align-items:center;gap:14px;padding:12px 14px;min-height:72px">
+                <span style="width:44px;height:44px;flex:none;border:1px solid #282828;background:#1C1C1C;display:flex;align-items:center;justify-content:center;font:900 11px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px">ANVL</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 15px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Carrack <span style="font-weight:300;color:#8A8A8A">„Meridian"</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap"><span class="chip chip--primary" style="font-size:9px">LTI</span><span class="chip chip--success" style="font-size:9px">Fitted</span><span style="display:inline-flex;align-items:center;gap:4px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A"><svg class="krt-icon" style="width:12px;height:12px"><use href="#krt-icon-map-pin"></use></svg>ARC-L1</span></div>
+                </div>
+                <button style="all:unset;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;flex:none" aria-label="Bearbeiten"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-edit"></use></svg></button>
+              </div>
+        <div style="font:300 11px/1.6 Lato,sans-serif;color:#8A8A8A">Headline = Schiffstyp + „Name" · Versicherung &amp; Fitted → Chips · Ort → Pin-Zeile · Aktion → 44-dp-Icon-Button rechts. Hersteller = Lettermark-Kachel.</div>
+      </div>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Regel 02 §5 — Zusammenfall</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Breite Datentabellen (≥5 Spalten) fallen auf dem Telefon zu Key-Value-Karten zusammen — dieses Paar (Tablet-Tabelle ↔ 08.1-Karte) ist das Screen-Beispiel der Regel</li>
+          <li>Schmale Aggregate (3 Spalten, z. B. Org-Einheit in 08.1) bleiben auch auf dem Telefon Tabelle — der Zusammenfall gilt der Breite, nicht der Tabelle an sich</li>
+        </ul>
+      </div>
+    </div>
     <div style="flex:none;display:flex;flex-direction:column;gap:12px">
       <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — full table (web columns) + import below</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
@@ -214,6 +491,7 @@
               <h2 style="flex:1;margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Hangar</h2>
               <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px">Home-Location setzen</button>
               <button class="btn btn--cta" style="min-height:44px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-plus"></use></svg>Schiff hinzufügen</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
             <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
               <div style="display:flex;align-items:center;gap:10px;height:44px;background:#1C1C1C;border:1px solid #282828;padding:0 12px;max-width:360px">
@@ -243,7 +521,7 @@
                 </sc-for>
               </div>
               <div class="hud-box" style="padding:14px 16px;display:flex;align-items:center;gap:16px;max-width:720px">
-                <div style="flex:1"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Fleetview-Import</div><div style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">CCU-Game-Export (.json) — Duplikate werden übersprungen.</div></div>
+                <div style="flex:1"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Fleetview-Import</div><div style="font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">CCU Game Fleetview · HangarXPLOR Shiplist · Fleetyards JSON — Wurzel: Array; Duplikate werden übersprungen.</div></div>
                 <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-upload"></use></svg>Importieren</button>
               </div>
             </div>

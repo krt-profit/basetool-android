@@ -17,23 +17,24 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import de.greluc.krt.profit.basetool.android.MainActivity
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.NotificationKind
+import de.greluc.krt.profit.basetool.android.core.data.NotificationSignal
 import de.greluc.krt.profit.basetool.android.navigation.KRT_DEEP_LINK_SCHEME
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Posts a system notification for something that arrived while the app was running. */
 interface SystemNotifications {
     /**
-     * Tells the member about one unread item.
+     * Tells the member what arrived.
      *
-     * @param title the headline, already localised and free of anything sensitive.
-     * @param body the line under it, or `null`.
-     * @param deepLinkRoute the app route to open, or `null` for the inbox.
+     * Takes the signal rather than a rendered headline: the wording is assembled from the type and
+     * its parameters (REQ-APP-NOTIF-005), which needs resources, and the channel and the deep link
+     * are decided by the same two fields. Splitting that across the caller and here would give two
+     * places a chance to disagree about what one push is.
+     *
+     * @param signal what the server said arrived.
      */
-    fun notify(
-        title: String,
-        body: String?,
-        deepLinkRoute: String?,
-    )
+    fun notify(signal: NotificationSignal)
 }
 
 /**
@@ -62,38 +63,79 @@ class SystemNotifier(
      * post, which lint cannot follow across the call; the check is real and covers both gates.
      */
     @SuppressLint("MissingPermission")
-    override fun notify(
-        title: String,
-        body: String?,
-        deepLinkRoute: String?,
-    ) {
+    override fun notify(signal: NotificationSignal) {
         if (!KrtNotificationChannels.canPost(context)) {
             return
         }
         KrtNotificationChannels.ensure(context)
 
+        val kind = NotificationKind.from(signal.type)
+        val channel = KrtNotificationChannels.channelFor(kind)
         val builder =
-            NotificationCompat.Builder(context, KrtNotificationChannels.CHANNEL_GENERAL)
+            NotificationCompat.Builder(context, channel)
                 // The 24 dp alpha-only silhouette of chapter 14, tinted with the brand accent.
-                .setSmallIcon(DesignR.drawable.ic_krt_bell)
+                // A bell stood here, which is every app's notification icon and therefore nobody's:
+                // in a full status bar the point of a small icon is saying WHICH app posted.
+                .setSmallIcon(DesignR.drawable.ic_krt_notification)
                 .setColor(ACCENT)
-                .setContentTitle(title)
+                .setContentTitle(headline(signal))
                 .setAutoCancel(true)
                 .setCategory(NotificationCompat.CATEGORY_SOCIAL)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 // The lock-screen stand-in. Set unconditionally: a builder that only added it for
-                // notifications it judged sensitive would be one judgement call away from a leak.
+                // notifications it judged sensitive would be one judgement call away from a leak --
+                // and since the shade now carries the real wording, this is the only thing between
+                // that wording and a locked screen.
                 .setPublicVersion(
-                    NotificationCompat.Builder(context, KrtNotificationChannels.CHANNEL_GENERAL)
-                        .setSmallIcon(DesignR.drawable.ic_krt_bell)
+                    NotificationCompat.Builder(context, channel)
+                        .setSmallIcon(DesignR.drawable.ic_krt_notification)
                         .setContentTitle(context.getString(R.string.notification_public_title))
                         .build(),
                 )
-                .setContentIntent(intentFor(deepLinkRoute))
-        body?.let { builder.setContentText(it) }
+                .setContentIntent(intentFor(routeFor(signal)))
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+        // One id per channel, not one for the whole app. Five entries at most, each replaced by the
+        // newest of its own kind: an Auftrag must not overwrite the Einsatz that starts in ten
+        // minutes, and a growing stack would outlive its own truth (the app cannot clear entries it
+        // posted before a restart).
+        NotificationManagerCompat.from(context).notify(channel.hashCode(), builder.build())
     }
+
+    /**
+     * The sentence the shade shows.
+     *
+     * The same wording the inbox row carries, assembled from the type and its parameters so it is
+     * localised here rather than on the server, and so an unknown type degrades to the generic
+     * line instead of to a blank (REQ-APP-NOTIF-005). A refresh-only push has no type and keeps the
+     * fixed headline the app used before the payload existed.
+     *
+     * @param signal what the server said arrived.
+     * @return the headline.
+     */
+    private fun headline(signal: NotificationSignal): String {
+        val type = signal.type
+        if (type.isNullOrBlank()) {
+            return context.getString(R.string.notifications_type_generic)
+        }
+        return fillTemplate(
+            template = context.getString(notificationTypeRes(type)),
+            params = signal.params,
+            fallback = context.getString(R.string.notifications_type_generic),
+        )
+    }
+
+    /**
+     * Where a tap should land.
+     *
+     * The same resolver the inbox row uses, so the shade and the list cannot disagree about which
+     * screen a notification belongs to — and so an entity this build has no screen for falls back
+     * to the inbox rather than to a route that does not exist.
+     *
+     * @param signal what the server said arrived.
+     * @return the route, or `null` for the inbox.
+     */
+    private fun routeFor(signal: NotificationSignal): String? =
+        notificationDestination(entityType = signal.entityType, entityId = signal.entityId)
 
     /**
      * Builds the tap target.

@@ -70,6 +70,8 @@ class OrderDetailViewModelTest {
     private class FakeIdentity(
         private val answer: ApiResult<Identity>,
     ) : IdentitySource {
+        override fun forget() = Unit
+
         override suspend fun myUserId(): ApiResult<String> =
             when (answer) {
                 is ApiResult.Failure -> answer
