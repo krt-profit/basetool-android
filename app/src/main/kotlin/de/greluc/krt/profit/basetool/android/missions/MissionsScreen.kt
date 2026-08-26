@@ -7,10 +7,10 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +51,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import java.time.LocalDate
@@ -212,7 +213,13 @@ private fun MissionsFilterBar(
             placeholder = stringResource(R.string.missions_search_placeholder),
             modifier = Modifier.fillMaxWidth().testTag(MISSIONS_SEARCH_TAG),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
+        // breaks character by character („ABGEB ROCHE N"). Wrapping by chip keeps every filter
+        // readable and reachable, which horizontal scrolling would not.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
             FILTERABLE_STATUSES.forEach { status ->
                 val selected = status in state.query.statuses
                 KrtFilterChip(
@@ -226,7 +233,10 @@ private fun MissionsFilterBar(
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
             KrtFilterChip(
                 text =
                     stringResource(
@@ -490,18 +500,6 @@ private fun Mission.timeLabel(zone: ZoneId): String {
         }
     }
 }
-
-/**
- * How far away an instant is, in the platform's words.
- *
- * @return e.g. "in 2 Std.", localised by the system.
- */
-internal fun Instant.relativeToNow(): String =
-    DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
 
 /**
  * The heading text for a day section.

@@ -1034,6 +1034,44 @@ somewhere every other app on the device can read. The app's existing sentence is
 So the gap is presentation only: eleven write surfaces show an inline `KrtFieldError` where a modal
 belongs, and each needs a reload path it does not have.
 
+## Chapter 01 against the delivered bundle (2026-08-26)
+
+The token layer needed nothing. All nineteen Material 3 slots match the chapter's table value by
+value, including the two that carry a rule rather than a colour: `secondaryContainer` mapped to
+orange with black `on`, so every stock M3 selection surface renders the brand rule without a call
+site remembering to, and `surfaceTint = surface` so tonal elevation renders flat. Comparing them
+mechanically took a minute and was worth doing precisely because a wrong value there is invisible
+until it is everywhere.
+
+The chapter's one **untestable-by-artboard** rule is where it broke: *„Must survive font scale 1.3×
+without truncation — never fix label widths (German compounds)."* No artboard can show this — they
+are all drawn at 1.0× — so it is exactly the kind of rule a parity sweep skips.
+
+Setting the device to 1.3× broke two things immediately, and one of them was **mine, from an hour
+earlier**: the shortcut tiles I had just rebuilt to hold the artboard's full labels showed
+„CHECK-IN NÄCHSTER EI…". A `maxLines = 2` that fits at 1.0× is a fixed label width by another name.
+That is worth recording as a method note: the device pass has to be repeated at the accessibility
+settings the spec names, not only at the default, and a change that fixes a truncation at 1.0× can
+introduce one at 1.3×.
+
+The second was older and worse. Filter chips in a plain `Row` get squeezed, and a `Text` with no
+room breaks **per character**: „ABGEB ROCHE N", „ABG ESC HLO SSE N". That does not read as a layout
+that ran out of room; it reads as corruption. Fixed at two levels — `FlowRow` so chips wrap by chip,
+and `maxLines = 1, softWrap = false` on the chip component so the failure mode, if a caller ever
+squeezes one, is a clipped label rather than a scrambled one.
+
+The same pass closed a loose end from chapter 07. The relative-time ladder's lower rungs could not
+be device-verified there because every fixture notification is minutes old. The Auftrags-Queue
+reaches further back: „gestern, 21:44" was on screen in the chip screenshot, and ageing one row in
+the throwaway stack's database produced „15.08., 18:17". All four rungs are now confirmed on a
+device rather than only in a test.
+
+It also found three formatters the first sweep missed. That sweep grepped for
+`private fun Instant.relativeToNow` and found three; these are shaped differently — one takes a
+`String`, two are `internal` — so „Vor 20 Stunden" was still sitting in the Aufträge queue next to
+„vor 6 Std." on the dashboard. A grep for the declaration finds declarations; a grep for
+`getRelativeTimeSpanString` finds the behaviour, and would have found all six.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

@@ -240,6 +240,12 @@ fun KrtFilterChip(
             text = text.krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = hue,
+            // A chip's label is one word or one short phrase and is atomic: it either fits or the
+            // layout around it is wrong. Without this a squeezed chip breaks „Abgebrochen" into
+            // „ABGEB ROCHE N", which is unreadable and looks like corruption rather than a layout
+            // that ran out of room. Callers lay chips out in a FlowRow so this never has to clip.
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }

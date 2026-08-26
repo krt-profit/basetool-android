@@ -54,6 +54,11 @@
 
 ### Fixed
 
+- **Bei großer Schrift (1,3×) wurden Beschriftungen abgeschnitten** — „CHECK-IN NÄCHSTER EI…" — und
+  Filter brachen mitten im Wort („ABGEB ROCHE N"). Beides wächst jetzt sauber um.
+- **Zeitangaben waren in Einsätzen, Aufträgen und der Materialbörse noch in der alten Langform**
+  („Vor 20 Stunden"); sie folgen jetzt überall derselben Kurzform.
+
 - **Der Benachrichtigungskanal „Einsätze & System" wurde entfernt** — er stand in den
   Systemeinstellungen, aber es kam nie etwas darauf an. Alle Hinweise laufen über „Allgemein".
 

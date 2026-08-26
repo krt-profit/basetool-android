@@ -7,13 +7,13 @@
 
 package de.greluc.krt.profit.basetool.android.orders
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -86,6 +86,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -152,9 +153,12 @@ fun OrdersScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
+        // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
+        // breaks character by character („ABG ESC HLO SSE N").
+        FlowRow(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
             FILTERABLE_STATUSES.forEach { status ->
                 val selected = status in state.statuses
@@ -601,21 +605,6 @@ private fun JobOrder.kindTone(): KrtChipTone =
         TYPE_ITEM -> KrtChipTone.Info
         else -> KrtChipTone.Muted
     }
-
-/**
- * How long ago an instant is, in the platform's words.
- *
- * @return the localised relative span.
- */
-@Composable
-internal fun Instant.relativeToNow(): String {
-    LocalConfiguration.current
-    return DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
-}
 
 /** The statuses offered as filter chips. */
 private val FILTERABLE_STATUSES =

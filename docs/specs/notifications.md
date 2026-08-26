@@ -337,9 +337,10 @@ formatter is how „gestern" ends up looking different on two screens of the sam
   (`NotificationsScreenTest`).
 - [x] Verified on a device: „← BENACHRICHTIGUNGEN [7 NEU]" in the bar, „vor 5 Std." in the rows,
   „morgen · TS 21:44" on the dashboard.
-- [ ] The two lower rungs are **not** device-verified: every fixture notification in the test stack
-  is minutes old, and the emulator's clock cannot be moved without root on a Play image. The code
-  path is the same one the upper rungs take.
+- [x] All four rungs device-verified. The inbox could only show the top one — every fixture
+  notification is minutes old — but the Auftrags-Queue reaches further back: „vor 6 Std.",
+  „gestern, 21:44" and, after ageing one row in the throwaway stack's database, „15.08., 18:17".
+  The future rung shows on the dashboard as „morgen · TS 21:44".
 
 ---
 

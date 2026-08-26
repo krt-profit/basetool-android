@@ -7,7 +7,6 @@
 
 package de.greluc.krt.profit.basetool.android.exchange
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,6 +67,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -432,25 +432,18 @@ private fun ownerLine(entry: BoardEntry): String {
 }
 
 /**
- * How long ago the server's timestamp is, in the platform's words.
+ * How long ago an ISO timestamp is, on the ladder every screen in the app shares.
  *
- * Found on a device: the row printed `2026-08-24T09:29:53.187358Z` verbatim. The wire is UTC ISO
- * and the screen is the member's zone (`REQ-APP-API-004`) — the same rule the Bank's ledger and the
- * Einsatz list already follow, and the same helper they use.
+ * The value arrives as a string here rather than as an `Instant`, so the parse happens on the way
+ * in. An unparseable value is shown as it came rather than dropped: a server that changed its
+ * format is something to see, not to hide.
  *
- * An unparseable value is shown as it came rather than dropped: a server that changed its format is
- * something to see, not to hide.
- *
- * @return the localised relative span.
+ * @return the timestamp, or the raw string when it does not parse.
  */
+@Composable
 private fun String.relativeToNow(): String {
     val instant = runCatching { Instant.parse(this) }.getOrNull() ?: return this
-    return DateUtils
-        .getRelativeTimeSpanString(
-            instant.toEpochMilli(),
-            System.currentTimeMillis(),
-            DateUtils.MINUTE_IN_MILLIS,
-        ).toString()
+    return instant.relativeToNow()
 }
 
 /**

@@ -322,6 +322,46 @@ composable; the eleven reload paths are the work.
 
 ---
 
+### REQ-APP-UI-009 — Nothing truncates at font scale 1.3×
+
+Foundations ch. 01 states it as a hard rule: *„Must survive font scale 1.3× without truncation —
+never fix label widths (German compounds)."* It is the one rule in the whole handoff that no
+artboard can show, because every artboard is drawn at 1.0×.
+
+Setting the device to 1.3× found two failures at once, and both were invisible at 1.0×.
+
+**A shortcut lost its meaning.** „CHECK-IN NÄCHSTER EINSATZ" came out as „CHECK-IN NÄCHSTER EI…".
+The tile had `maxLines = 2`, which held at 1.0× and cut at 1.3×. The cap is gone: the tile has a
+minimum height and grows, and the pair share the taller one's height through `IntrinsicSize.Min` so
+a row of two does not read as two different components.
+
+**Filter chips broke inside the word.** „ABGEBROCHEN" rendered as „ABGEB ROCHE N" and
+„ABGESCHLOSSEN" as „ABG ESC HLO SSE N". A plain `Row` squeezes its last child, and a `Text` with no
+room breaks per character — which does not look like a layout out of room, it looks like corruption.
+
+Two changes, at two levels:
+
+- The chip rows are `FlowRow`, which is what this codebase already reaches for in the same
+  situation. Wrapping **by chip** keeps every filter both readable and reachable; horizontal
+  scrolling would keep it readable and hide half of it.
+- A chip's label is atomic — `maxLines = 1, softWrap = false` on the component. Callers lay chips
+  out so it never has to clip, and if one ever does, a clipped chip is a visible bug where a
+  character-broken one reads as a rendering fault.
+
+**The token layer needed nothing.** All nineteen Material 3 slots in the app's `darkColorScheme`
+match chapter 01's table exactly, checked value by value — including the two that carry the brand
+rule rather than a colour: `secondaryContainer` mapped to orange with black `on`, so every stock M3
+selection surface renders "orange background, black text" without a call site remembering to, and
+`surfaceTint = surface` so tonal elevation renders flat.
+
+**Acceptance**
+
+- [x] Device-verified at `font_scale 1.3`: the shortcut wraps to three lines with no ellipsis,
+  Einsatz and Auftrag filters wrap whole words, Einstellungen holds.
+- [x] All nineteen M3 slots compared against the chapter's table; zero mismatches.
+
+---
+
 ### REQ-APP-UI-005 — The top bar's two ends answer one question
 
 The bar has a left end — a back arrow, or nothing — and a right end: the org chip and the bell, or

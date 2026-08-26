@@ -13,11 +13,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -237,7 +239,13 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
             QuickAction.entries.chunked(2).forEach { pair ->
-                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                // IntrinsicSize.Min so the pair share the taller tile's height. Without it the
+                // shorter label's tile keeps its own smaller box and the row reads as two
+                // different components.
+                Row(
+                    modifier = Modifier.height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                ) {
                     pair.forEach { action ->
                         QuickActionTile(
                             action = action,
@@ -272,6 +280,7 @@ private fun QuickActionTile(
     Row(
         modifier =
             modifier
+                .fillMaxHeight()
                 .heightIn(min = QUICK_TILE_MIN_HEIGHT)
                 .background(KrtPalette.Gray4)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
@@ -290,8 +299,10 @@ private fun QuickActionTile(
             text = stringResource(action.labelRes).krtUppercase(),
             style = MaterialTheme.typography.labelLarge,
             color = KrtPalette.Gray1,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            // No line cap. Foundations ch. 01: "Must survive font scale 1.3x without truncation —
+            // never fix label widths (German compounds)." A cap of two lines held at 1.0x and cut
+            // „CHECK-IN NÄCHSTER EI…" at 1.3x, which leaves a shortcut whose label no longer says
+            // what it does. The tile grows instead; that is what heightIn(min=) means.
         )
     }
 }
