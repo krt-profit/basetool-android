@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.ui
 
 import android.content.Context
+import android.text.format.DateFormat
 import android.text.format.DateUtils
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -16,7 +17,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Which rung this instant falls on, against [now].
@@ -66,7 +69,19 @@ fun Instant.relativeTo(
     zone: ZoneId,
 ): String {
     val millis = toEpochMilli()
-    val time = DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_TIME)
+    // Formatted in the zone this function was GIVEN, not in the device's.
+    //
+    // `DateUtils.formatDateTime` ignores any zone and uses the system default, so the function took
+    // a zone for the day boundary and then printed the clock in a different one. On a device the
+    // two are the same and nothing shows; on a CI runner defaulted to UTC the „gestern, 21:14" and
+    // „15.08., 09:30" rungs came out two hours early, and the tests that assert a clock reading
+    // were the only thing that noticed.
+    //
+    // `DateFormat.getTimeFormat` keeps what `DateUtils` was here for -- the member's own 12/24-hour
+    // setting -- and accepts a zone.
+    val time =
+        DateFormat.getTimeFormat(context).apply { timeZone = TimeZone.getTimeZone(zone) }
+            .format(Date(millis))
     return when (timeRung(now, zone)) {
         KrtTimeRung.DISTANCE -> {
             DateUtils.getRelativeTimeSpanString(

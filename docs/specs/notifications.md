@@ -329,6 +329,13 @@ count — „übermorgen" over „in 2 Tagen".
 One ladder serves the inbox, the Kartellbank and the dashboard. Three private copies of the
 formatter is how „gestern" ends up looking different on two screens of the same app.
 
+**The clock is printed in the zone the caller passes.** `DateUtils.formatDateTime` ignores any zone
+and uses the system default, so the formatter took a zone for the day boundary and printed the time
+in a different one. On a device the two are the same and nothing shows; CI, whose runner defaults to
+UTC, rendered „gestern, 21:14" two hours early. `DateFormat.getTimeFormat` keeps what `DateUtils` was
+here for — the member's own 12/24-hour setting — and accepts a zone. The test now pins a **foreign**
+default zone so the mismatch fails locally instead of remotely.
+
 **Acceptance**
 
 - [x] All four rungs pinned against the real `DateUtils` and real resources, plus the two future

@@ -12,6 +12,7 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,6 +20,7 @@ import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.TimeZone
 
 /**
  * The four rungs of chapter 07's timestamp ladder, in German.
@@ -32,6 +34,20 @@ import java.time.ZoneId
 @Config(sdk = [34], qualifiers = "de-rDE")
 class RelativeTimeTest {
     private val zone: ZoneId = ZoneId.of("Europe/Berlin")
+
+    /**
+     * The device's own zone, deliberately **not** the one under test.
+     *
+     * The formatter takes a zone for the day boundary; it must print the clock in that zone too.
+     * While it used `DateUtils.formatDateTime`, which silently uses the system default, the two
+     * agreed on any German machine and disagreed on a CI runner set to UTC — where „09:30" came out
+     * as „07:30". Pinning a different default here makes the mismatch a local failure instead of a
+     * remote one.
+     */
+    @Before
+    fun useAForeignDefaultZone() {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+    }
 
     /** A fixed „now" so the rungs do not move with the wall clock. */
     private val now: Instant = local("2026-08-20T12:00")
