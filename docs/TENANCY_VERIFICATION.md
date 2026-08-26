@@ -59,6 +59,29 @@ per row rather than accepted from the shape of the table:
 
 Bank returned nothing to any plain member; balances need an explicit visibility grant.
 
+## Switching between two units
+
+Single-membership members prove that scoping filters. They cannot prove that the **pin** works, so
+two more were added: `test-multi-staffel` (IRIDIUM + VANGUARD) and `test-multi-mixed`
+(IRIDIUM + SK NEBELKRAEHE).
+
+| Active unit | Lager | Einsätze | Aufträge | Raffinerie |
+| --- | --- | --- | --- | --- |
+| *(no pin)* | 11 : IRI, VGD | 5 : IRI, VGD | 8 : IRI, SKN, SKR, VGD | 7 : IRI, VGD |
+| IRIDIUM | 7 : IRI | 4 : IRI | 7 : IRI, SKN, SKR | 4 : IRI |
+| VANGUARD | 4 : VGD | 3 : IRI, VGD | 3 : VGD, SKN, SKR | 3 : VGD |
+| SK ROTFUCHS *(not theirs)* | 11 : IRI, VGD | 5 : IRI, VGD | 8 : IRI, SKN, SKR, VGD | 7 : IRI, VGD |
+
+Three answers, all of them the right one: **no pin** gives the union of the member's own units, a
+pin on one of their own narrows to exactly it, and a pin on a unit they do **not** belong to falls
+back to their own — it neither errors nor grants. `test-multi-mixed` behaves identically with its
+Spezialkommando in place of the second Staffel.
+
+Verified on the device as well, signed in as each of the two: the badge is tappable, the sheet lists
+both units, and switching narrows the Lager visibly — under IRIDIUM four material groups, under
+VANGUARD one. Choosing „Alle Org-Einheiten" shows Agricium (Ore) at 200 SCU where each single unit
+shows 100, which is the union rather than one unit's list.
+
 ## The header is not trusted
 
 The app sends `X-Active-Org-Unit-Id` on every call, so the obvious question is whether pinning

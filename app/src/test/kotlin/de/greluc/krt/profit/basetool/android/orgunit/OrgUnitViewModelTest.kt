@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -211,5 +212,61 @@ class OrgUnitViewModelTest {
 
             assertTrue(viewModel.state.value.loaded)
             assertEquals(emptyList<OrgUnit>(), viewModel.state.value.units)
+        }
+
+    @Test
+    fun `choosing all units drops the pin and sends no scope`() =
+        runTest(dispatcher) {
+            val source = FakeSource(units = listOf(staffel, kommando), default = staffel.id)
+            val viewModel = OrgUnitViewModel(source, store)
+            viewModel.load()
+            advanceUntilIdle()
+
+            viewModel.selectAll()
+            advanceUntilIdle()
+
+            assertTrue(viewModel.state.value.allChosen)
+            assertNull("no unit is active, so the interceptor sends no header", viewModel.state.value.activeId)
+            assertNull(store.current())
+        }
+
+    /**
+     * The reason "all" is a stored choice rather than a cleared pin.
+     *
+     * With the pin merely removed, this second load would fall through to the server default and
+     * put the member back into one Staffel they never chose — a scope change with no interaction.
+     */
+    @Test
+    fun `all units survives a restart instead of collapsing back to one`() =
+        runTest(dispatcher) {
+            val source = FakeSource(units = listOf(staffel, kommando), default = staffel.id)
+            OrgUnitViewModel(source, store).also {
+                it.load()
+                advanceUntilIdle()
+                it.selectAll()
+            }
+
+            val restarted = OrgUnitViewModel(source, store)
+            restarted.load()
+            advanceUntilIdle()
+
+            assertTrue(restarted.state.value.allChosen)
+            assertNull(restarted.state.value.activeId)
+        }
+
+    @Test
+    fun `picking a unit again leaves the all-units state`() =
+        runTest(dispatcher) {
+            val source = FakeSource(units = listOf(staffel, kommando), default = staffel.id)
+            val viewModel = OrgUnitViewModel(source, store)
+            viewModel.load()
+            advanceUntilIdle()
+            viewModel.selectAll()
+
+            viewModel.select(kommando.id)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.state.value.allChosen)
+            assertEquals(kommando.id, viewModel.state.value.activeId)
         }
 }

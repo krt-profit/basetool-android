@@ -92,6 +92,8 @@
     <string name="nav_notifications">Notifications</string>
     <string name="nav_settings">Settings</string>
     <string name="org_switcher_title">Active org unit</string>
+    <string name="org_switcher_all">All org units</string>
+    <string name="org_switcher_all_short">All</string>
     <string name="placeholder_under_construction">This area is still being built.</string>
 
     <string name="settings_section_account">Account</string>

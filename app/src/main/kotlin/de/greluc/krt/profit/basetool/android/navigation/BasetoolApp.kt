@@ -61,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewMode
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
+import de.greluc.krt.profit.basetool.android.orgunit.switcherLabel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
@@ -99,6 +100,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
  * @param onSelectOrgUnit pins the chosen org unit; every later request carries it.
+ * @param onSelectAllOrgUnits drops the pin, so requests go out unscoped and the backend answers
+ *   with the union of the member's own units.
  * @param modifier layout modifier.
  * @param navController the controller driving the graph; injected for tests and previews.
  */
@@ -128,6 +131,7 @@ fun BasetoolApp(
     booking: BookingViewModel,
     orgUnit: OrgUnitState,
     onSelectOrgUnit: (String) -> Unit,
+    onSelectAllOrgUnits: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
@@ -289,7 +293,7 @@ fun BasetoolApp(
         ) {
             orgUnit.units.forEach { unit ->
                 KrtSheetOption(
-                    text = unit.name,
+                    text = unit.switcherLabel(),
                     selected = unit.id == orgUnit.activeId,
                     onClick = {
                         onSelectOrgUnit(unit.id)
@@ -297,6 +301,17 @@ fun BasetoolApp(
                     },
                 )
             }
+            // The row the app was missing: no pin at all, which the backend answers with the union
+            // of the member's own units — never a unit they do not belong to (design ch. 02,
+            // artboard 7, verified in docs/TENANCY_VERIFICATION.md).
+            KrtSheetOption(
+                text = stringResource(R.string.org_switcher_all),
+                selected = orgUnit.allChosen,
+                onClick = {
+                    onSelectAllOrgUnits()
+                    orgSwitcherOpen = false
+                },
+            )
         }
     }
 }
@@ -402,10 +417,17 @@ private fun AppTopBar(
                 {
                     // No badge at all until the scope is known. A placeholder would be a
                     // claim about which unit the member is acting in, and the header that
-                    // scopes every request would disagree with it.
-                    orgUnit.active?.let { active ->
+                    // scopes every request would disagree with it. "All units" is a known
+                    // scope, not an unknown one, so it gets a badge of its own — dropping it
+                    // there would read as "no scope resolved" for a scope the member chose.
+                    val label =
+                        when {
+                            orgUnit.allChosen -> stringResource(R.string.org_switcher_all_short)
+                            else -> orgUnit.active?.name
+                        }
+                    label?.let { text ->
                         KrtOrgBadge(
-                            text = active.name,
+                            text = text,
                             // Not tappable with a single membership: the sheet would offer
                             // the choice the member is already in. Same rule as the web
                             // sidebar.

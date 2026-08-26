@@ -23,13 +23,16 @@ import kotlinx.coroutines.launch
  * What the shell shows for the active org unit, and what the switcher offers.
  *
  * @property units the member's org units, in the order the server returned them.
- * @property activeId the unit currently pinned, or `null` while none is known.
+ * @property activeId the unit currently pinned, or `null` while none is known or when [allChosen].
+ * @property allChosen whether the member deliberately chose to act across all their units at once
+ *   (design ch. 02, artboard 7). Distinct from "no unit resolved yet", which renders no badge.
  * @property loaded whether the list has been read at least once — `false` is "not asked yet",
  *   which is a different thing from "asked and there are none" and must not render the same way.
  */
 data class OrgUnitState(
     val units: List<OrgUnit> = emptyList(),
     val activeId: String? = null,
+    val allChosen: Boolean = false,
     val loaded: Boolean = false,
 ) {
     /** The active unit, or `null` when none is pinned or the pin names a unit that is gone. */
@@ -55,6 +58,10 @@ data class OrgUnitState(
  *    unit happens to sort first.
  * 3. **Otherwise the first membership**, so a member with exactly one unit never sees an empty
  *    badge for a scope that was never in doubt.
+ *
+ * „Alle Org-Einheiten" sits outside those three: it sends no header, which the backend answers with
+ * the union of the member's own units. It has to be *remembered as a choice* rather than stored as
+ * the absence of one, or step 2 would quietly resolve a single unit again on the next cold start.
  *
  * A pin naming a unit the member no longer belongs to is dropped rather than kept: an administrator
  * can remove a membership, and a stale pin would send `X-Active-Org-Unit-Id` for a unit the backend
@@ -84,6 +91,7 @@ class OrgUnitViewModel(
      */
     fun load() {
         viewModelScope.launch {
+            val wantsAll = store.isAllChosen()
             val units =
                 when (val result = source.memberships()) {
                     is ApiResult.Success -> {
@@ -97,6 +105,10 @@ class OrgUnitViewModel(
                     }
                 }
 
+            if (wantsAll) {
+                mutableState.value = OrgUnitState(units = units, allChosen = true, loaded = true)
+                return@launch
+            }
             val active = resolveActive(units)
             // Written back so the interceptor and the next cold start agree with what is on screen.
             // Resolving to a unit and NOT storing it would leave the header absent while the badge
@@ -122,7 +134,19 @@ class OrgUnitViewModel(
         // No coroutine: the store is synchronous now, and the badge should move on the tap
         // rather than a frame later.
         store.pin(orgUnitId)
-        mutableState.value = mutableState.value.copy(activeId = orgUnitId)
+        mutableState.value = mutableState.value.copy(activeId = orgUnitId, allChosen = false)
+    }
+
+    /**
+     * Drops the pin so the member acts across every unit they belong to.
+     *
+     * Nothing widens: with no `X-Active-Org-Unit-Id` the backend answers with the union of the
+     * caller's **own** memberships — verified against a two-Staffel member, see
+     * `docs/TENANCY_VERIFICATION.md`.
+     */
+    fun selectAll() {
+        store.pinAll()
+        mutableState.value = mutableState.value.copy(activeId = null, allChosen = true)
     }
 
     /**

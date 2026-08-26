@@ -357,6 +357,7 @@ class MainActivity : AppCompatActivity() {
                                         )
                                     },
                                     onSelectOrgUnit = orgUnitViewModel::select,
+                                    onSelectAllOrgUnits = orgUnitViewModel::selectAll,
                                     onLogout = signOut,
                                     settings =
                                         SettingsBindings(

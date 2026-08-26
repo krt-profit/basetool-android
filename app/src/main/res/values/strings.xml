@@ -107,6 +107,8 @@
     <string name="nav_notifications">Benachrichtigungen</string>
     <string name="nav_settings">Einstellungen</string>
     <string name="org_switcher_title">Aktive Org-Einheit</string>
+    <string name="org_switcher_all">Alle Org-Einheiten</string>
+    <string name="org_switcher_all_short">Alle</string>
     <string name="placeholder_under_construction">Dieser Bereich wird gerade gebaut.</string>
 
     <!-- Einstellungen (design spec ch. 13) -->
