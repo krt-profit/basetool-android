@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantPublicRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryDto
@@ -17,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceT
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
@@ -60,6 +62,20 @@ data class MissionQuery(
 }
 
 /**
+ * One function a member can ask to fill on board.
+ *
+ * The organisation calls these Funktionen and the API calls them job types; the app follows the
+ * organisation, because that is the word on the artboard and in the room.
+ *
+ * @property id what the sign-up sends as `desiredJobTypeId`.
+ * @property name what the member reads.
+ */
+data class MissionJobType(
+    val id: String,
+    val name: String,
+)
+
+/**
  * The Einsatz list, as a seam.
  *
  * Separate from its HTTP implementation so the list screen's rules — debouncing, paging, what an
@@ -100,12 +116,36 @@ interface MissionSource {
     suspend fun finances(missionId: String): ApiResult<MissionFinances>
 
     /**
-     * Signs the caller up for an Einsatz.
+     * The functions a member can ask to fill on board.
      *
-     * @param missionId the Einsatz.
-     * @return the Einsatz as it now stands, or the classified failure.
+     * Read when the sign-up sheet opens rather than with the mission: a member who never signs up
+     * should not pay for a catalogue they will not see (design ch. 06, artboard 3).
+     *
+     * @return the active functions, or the classified failure.
      */
-    suspend fun join(missionId: String): ApiResult<MissionDetail>
+    suspend fun jobTypes(): ApiResult<List<MissionJobType>>
+
+    /**
+     * Signs the caller up, with what they asked for.
+     *
+     * Sent through `participants/add` rather than `join`, because `join` takes no body and the
+     * sheet has two answers to carry: the payout preference and the desired function. Both
+     * endpoints are guarded by `canSeeMission`, so this is the same permission through a door that
+     * fits — verified against the running stack rather than inferred.
+     *
+     * @param missionId the mission.
+     * @param userId the caller's own id; this endpoint can name anybody, and the app names only the
+     *   member using it.
+     * @param desiredJobTypeId the function they would like, or `null` for no preference.
+     * @param donate whether their share goes to the org treasury instead of to them.
+     * @return the mission as it now stands, or the classified failure.
+     */
+    suspend fun join(
+        missionId: String,
+        userId: String,
+        desiredJobTypeId: String?,
+        donate: Boolean,
+    ): ApiResult<MissionDetail>
 
     /**
      * Withdraws one sign-up.
@@ -308,10 +348,49 @@ class MissionRepository(
             is ApiResult.Success -> financesWith(missionId, summary.value)
         }
 
-    override suspend fun join(missionId: String): ApiResult<MissionDetail> =
+    override suspend fun jobTypes(): ApiResult<List<MissionJobType>> =
         when (
             val result =
-                reader.post("${missionPath(missionId)}/join", MissionDto.serializer())
+                reader.get(JOB_TYPES_PATH, PageResponseJobTypeDto.serializer())
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.content
+                        .orEmpty()
+                        .filter { it.active != false }
+                        .mapNotNull { dto -> dto.id?.let { MissionJobType(id = it, name = dto.name) } },
+                )
+            }
+        }
+
+    override suspend fun join(
+        missionId: String,
+        userId: String,
+        desiredJobTypeId: String?,
+        donate: Boolean,
+    ): ApiResult<MissionDetail> =
+        when (
+            val result =
+                reader.post(
+                    path = "${missionPath(missionId)}/participants/add",
+                    body =
+                        AddParticipantPublicRequest(
+                            userId = userId,
+                            desiredJobTypeId = desiredJobTypeId,
+                            payoutPreference =
+                                if (donate) {
+                                    AddParticipantPublicRequest.PayoutPreference.DONATE
+                                } else {
+                                    AddParticipantPublicRequest.PayoutPreference.PAYOUT
+                                },
+                        ),
+                    bodySerializer = AddParticipantPublicRequest.serializer(),
+                    deserializer = MissionDto.serializer(),
+                )
         ) {
             is ApiResult.Failure -> result
             is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
@@ -520,6 +599,9 @@ class MissionRepository(
         const val FINANCE_PAGE_SIZE: Int = 50
 
         private const val SEARCH_PATH = "/api/v1/missions/search"
+
+        /** The Funktionen catalogue, read only when the sign-up sheet opens. */
+        private const val JOB_TYPES_PATH = "/api/v1/job-types?page=0&size=200"
 
         /**
          * Where a booking is written.

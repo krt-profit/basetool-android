@@ -737,6 +737,14 @@
     <string name="order_detail_assignee_unnamed">Unbekannt</string>
     <string name="order_detail_not_allowed">Für diesen Auftrag fehlt dir die Berechtigung.</string>
     <string name="mission_detail_sign_up">Anmelden</string>
+    <string name="mission_join_title">Anmelden</string>
+    <string name="mission_join_payout">Auszahlungspräferenz</string>
+    <string name="mission_join_payout_self_hint">Anteil geht auf dein Konto</string>
+    <string name="mission_join_payout_org_hint">Anteil bleibt bei der Org-Kasse</string>
+    <string name="mission_join_function">Funktion an Bord (Wunsch)</string>
+    <string name="mission_join_function_hint">Optional — Wunsch, keine Zusage. Die geplante Funktion setzt die Einsatzleitung im Teilnehmer-Reiter.</string>
+    <string name="mission_join_confirm">Verbindlich anmelden</string>
+    <string name="mission_join_footnote">Abmelden bis 60 Min. vor Start möglich. Die Einsatzleitung sieht deine Präferenz.</string>
     <string name="mission_detail_withdraw">Abmelden</string>
     <string name="mission_detail_check_in">Einchecken</string>
     <string name="mission_detail_check_out">Auschecken</string>

@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AnnouncementSource
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
@@ -77,8 +78,15 @@ class DashboardViewModelTest {
 
         override suspend fun finances(missionId: String): ApiResult<MissionFinances> = error("not used")
 
-        override suspend fun join(missionId: String): ApiResult<MissionDetail> =
-            error("this fake never signs anybody up")
+        override suspend fun jobTypes(): ApiResult<List<MissionJobType>> =
+            error("this fake never reads the Funktionen catalogue")
+
+        override suspend fun join(
+            missionId: String,
+            userId: String,
+            desiredJobTypeId: String?,
+            donate: Boolean,
+        ): ApiResult<MissionDetail> = error("this fake never signs anybody up")
 
         override suspend fun leave(
             missionId: String,

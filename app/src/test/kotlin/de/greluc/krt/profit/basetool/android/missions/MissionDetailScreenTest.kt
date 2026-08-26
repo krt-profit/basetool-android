@@ -123,6 +123,10 @@ class MissionDetailScreenTest {
                             onToggleSignUp = { signUps.add(Unit) },
                             onToggleCheckIn = { checkIns.add(Unit) },
                             onTogglePayoutPreference = { payouts.add(Unit) },
+                            onJoinPayout = {},
+                            onDesiredFunction = {},
+                            onJoinConfirmed = {},
+                            onJoinDismissed = {},
                         ),
                     finances =
                         MissionFinanceActions(

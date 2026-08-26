@@ -14,6 +14,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,6 +55,7 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
@@ -83,6 +85,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSuccessButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -191,6 +194,16 @@ fun MissionDetailScreen(
                 state.entryDraft?.let { draft ->
                     FinanceEntrySheet(draft = draft, state = state, actions = finances)
                 }
+                state.joinSheet?.let { sheet ->
+                    MissionJoinSheet(
+                        sheet = sheet,
+                        subject = detail.name,
+                        onPayout = actions.onJoinPayout,
+                        onFunction = actions.onDesiredFunction,
+                        onConfirm = actions.onJoinConfirmed,
+                        onDismiss = actions.onJoinDismissed,
+                    )
+                }
             }
 
             phase is MissionDetailPhase.Failed -> {
@@ -228,11 +241,19 @@ fun MissionDetailScreen(
  * @property onToggleSignUp they signed up, or withdrew.
  * @property onToggleCheckIn they checked in, or back out.
  * @property onTogglePayoutPreference they switched their share between paid out and donated.
+ * @property onJoinPayout the sign-up sheet's payout choice changed.
+ * @property onDesiredFunction a function chip in the sign-up sheet was tapped.
+ * @property onJoinConfirmed the sign-up sheet was sent.
+ * @property onJoinDismissed the sign-up sheet was closed without signing up.
  */
 data class MissionSignUpActions(
     val onToggleSignUp: () -> Unit,
     val onToggleCheckIn: () -> Unit,
     val onTogglePayoutPreference: () -> Unit,
+    val onJoinPayout: (Boolean) -> Unit,
+    val onDesiredFunction: (MissionJobType) -> Unit,
+    val onJoinConfirmed: () -> Unit,
+    val onJoinDismissed: () -> Unit,
 )
 
 /**
@@ -1065,6 +1086,10 @@ fun MissionDetailRoute(
                 onToggleSignUp = viewModel::onToggleSignUp,
                 onToggleCheckIn = viewModel::onToggleCheckIn,
                 onTogglePayoutPreference = viewModel::onTogglePayoutPreference,
+                onJoinPayout = viewModel::onJoinPayout,
+                onDesiredFunction = viewModel::onDesiredFunction,
+                onJoinConfirmed = viewModel::onJoinConfirmed,
+                onJoinDismissed = viewModel::onJoinSheetDismissed,
             ),
         finances =
             MissionFinanceActions(
@@ -1099,3 +1124,134 @@ private fun MissionTab.countIn(detail: MissionDetail): Int? =
         MissionTab.FREQUENCIES -> detail.frequencies.size
         MissionTab.FINANCES -> null
     }
+
+/**
+ * „Anmelden" — the sheet that collects what a sign-up carries with it.
+ *
+ * One tap used to do it. Design ch. 06, artboard 3 makes it a sheet because two answers belong to
+ * the moment of signing up and are awkward to find afterwards: where the share goes, and which
+ * function the member would like on board.
+ *
+ * **The function is a wish, not a claim.** The artboard says so in as many words — „Optional —
+ * Wunsch (desired), keine Zusage" — and the sheet repeats it under the chips, because a row of
+ * pickable roles reads like an assignment unless something says otherwise. The mission's leadership
+ * sets the planned function on the participants tab; this only records what was asked for.
+ *
+ * A refusal keeps the sheet and everything in it: nothing was written, and re-answering two
+ * questions to retry is a charge for the server's reply.
+ *
+ * @param sheet what has been collected so far.
+ * @param subject the mission and its time, drawn under the title.
+ * @param onPayout the share's destination changed.
+ * @param onFunction a function chip was tapped; the same one again clears it.
+ * @param onConfirm the sign-up was sent.
+ * @param onDismiss the sheet was closed without signing up.
+ */
+@Composable
+private fun MissionJoinSheet(
+    sheet: JoinSheet,
+    subject: String,
+    onPayout: (Boolean) -> Unit,
+    onFunction: (MissionJobType) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtBottomSheet(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.mission_join_title),
+        modifier = Modifier.testTag(MISSION_JOIN_SHEET_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            Text(
+                text = subject,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            JoinSectionLabel(text = stringResource(R.string.mission_join_payout))
+            KrtRadioRow(
+                selected = !sheet.donate,
+                onSelect = { onPayout(false) },
+                label = stringResource(R.string.mission_detail_payout_self),
+                supporting = stringResource(R.string.mission_join_payout_self_hint),
+                enabled = !sheet.saving,
+            )
+            KrtRadioRow(
+                selected = sheet.donate,
+                onSelect = { onPayout(true) },
+                label = stringResource(R.string.mission_detail_payout_org),
+                supporting = stringResource(R.string.mission_join_payout_org_hint),
+                enabled = !sheet.saving,
+            )
+            if (sheet.jobTypes.isNotEmpty()) {
+                JoinSectionLabel(text = stringResource(R.string.mission_join_function))
+                // FlowRow: five Funktionen do not fit one phone line, and a horizontal scroller
+                // would hide the ones past the edge behind a gesture nothing announces.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                ) {
+                    sheet.jobTypes.forEach { jobType ->
+                        KrtFilterChip(
+                            text = jobType.name,
+                            selected = sheet.desired?.id == jobType.id,
+                            onClick = { onFunction(jobType) },
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.mission_join_function_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.Gray2,
+                )
+            }
+            sheet.error?.let { SignUpError(error = it) }
+            KrtCtaButton(
+                text = stringResource(R.string.mission_join_confirm),
+                onClick = onConfirm,
+                iconRes = DesignR.drawable.ic_krt_login,
+                enabled = !sheet.saving,
+                modifier = Modifier.fillMaxWidth().testTag(MISSION_JOIN_CONFIRM_TAG),
+            )
+            KrtGhostButton(
+                text = stringResource(R.string.personal_inventory_cancel),
+                onClick = onDismiss,
+                enabled = !sheet.saving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = stringResource(R.string.mission_join_footnote),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+        }
+    }
+}
+
+/**
+ * A section heading inside the sign-up sheet.
+ *
+ * Neither [KrtFieldLabel][de.greluc.krt.profit.basetool.android.core.designsystem.component
+ * .KrtFieldLabel], which is sentence-case body text for a single field, nor
+ * [KrtSectionTitle][de.greluc.krt.profit.basetool.android.core.designsystem.component
+ * .KrtSectionTitle], which fills the rest of its line with a rule. The artboard's sheet headings
+ * are short uppercase labels with nothing after them.
+ *
+ * @param text the heading.
+ */
+@Composable
+private fun JoinSectionLabel(text: String) {
+    Text(
+        text = text.krtUppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        color = KrtPalette.Gray1,
+    )
+}
+
+/** Test handle for the sign-up sheet. */
+const val MISSION_JOIN_SHEET_TAG: String = "mission-join-sheet"
+
+/** Test handle for its confirm button. */
+const val MISSION_JOIN_CONFIRM_TAG: String = "mission-join-confirm"

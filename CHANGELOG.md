@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Beim Anmelden zu einem Einsatz fragt die App jetzt nach Auszahlung und Wunsch-Funktion.** Statt
+  eines Knopfs öffnet sich ein Blatt: Anteil an dich oder an die Org-Kasse, und optional die
+  Funktion an Bord, die du dir wünschst. Der Wunsch ist keine Zusage — die geplante Funktion setzt
+  weiterhin die Einsatzleitung.
+
 ### Changed
 
 - **Der Org-Einheit-Reiter im Hangar ist jetzt eine Tabelle mit Kennzahlen darüber** — Schiffstyp,

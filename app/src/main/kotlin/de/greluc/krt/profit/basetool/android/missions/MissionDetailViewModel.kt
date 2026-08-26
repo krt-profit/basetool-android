@@ -18,6 +18,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -115,6 +116,27 @@ sealed interface MissionFinancesPhase {
 }
 
 /**
+ * The open sign-up sheet.
+ *
+ * Signing up used to be one tap. Design ch. 06, artboard 3 makes it a sheet, because two answers go
+ * with it that nobody can give afterwards without hunting for them: where the share goes, and which
+ * function the member would like on board.
+ *
+ * @property jobTypes the Funktionen catalogue, read when the sheet opens; empty until it arrives.
+ * @property desired the function they picked, or `null` — the field is optional and stays optional.
+ * @property donate whether the share goes to the org treasury.
+ * @property saving whether the write is running.
+ * @property error the last refusal, kept **in the sheet** so the answers are not lost with it.
+ */
+data class JoinSheet(
+    val jobTypes: List<MissionJobType> = emptyList(),
+    val desired: MissionJobType? = null,
+    val donate: Boolean = false,
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+)
+
+/**
  * Everything the detail screen draws.
  *
  * @property missionId which Einsatz this is about, known before anything has loaded
@@ -137,6 +159,7 @@ data class MissionDetailState(
     val saving: Boolean = false,
     val online: Boolean = true,
     val entryDraft: FinanceEntryDraft? = null,
+    val joinSheet: JoinSheet? = null,
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -300,12 +323,17 @@ class MissionDetailViewModel(
             return
         }
         val mine = current.mySignUp
+        // Signing up opens the sheet; withdrawing does not. Asking a member to confirm leaving
+        // through a form that collects preferences they are about to discard would be a question
+        // about nothing (design ch. 06, artboard 3).
+        if (mine == null) {
+            onJoinSheetOpened()
+            return
+        }
         mutableState.value = current.copy(saving = true, error = null)
         viewModelScope.launch {
             val result =
-                if (mine == null) {
-                    source.join(missionId)
-                } else {
+                run {
                     // The withdrawal answers 204, so the roster is re-read rather than patched:
                     // the counts above it move too, and inventing them here would put two numbers
                     // on screen that disagree.
@@ -315,6 +343,94 @@ class MissionDetailViewModel(
                     }
                 }
             settle(result)
+        }
+    }
+
+    /**
+     * Opens the sign-up sheet and reads the Funktionen it offers.
+     *
+     * The catalogue is read here rather than with the mission: a member who never signs up should
+     * not pay for a list they will not see.
+     */
+    fun onJoinSheetOpened() {
+        mutableState.value = mutableState.value.copy(joinSheet = JoinSheet(), error = null)
+        viewModelScope.launch {
+            when (val result = source.jobTypes()) {
+                is ApiResult.Success -> {
+                    val open = mutableState.value.joinSheet ?: return@launch
+                    mutableState.value =
+                        mutableState.value.copy(joinSheet = open.copy(jobTypes = result.value))
+                }
+
+                is ApiResult.Failure -> {
+                    // The function is optional, so a catalogue that will not load must not block a
+                    // sign-up. The chips simply do not appear and the rest of the sheet works.
+                    KrtLog.w(LOG_TAG) { "the Funktionen catalogue could not be read: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    /** Closes the sheet without signing up. */
+    fun onJoinSheetDismissed() {
+        mutableState.value = mutableState.value.copy(joinSheet = null)
+    }
+
+    /**
+     * Picks — or unpicks — the function the member would like.
+     *
+     * @param jobType the function; the same one again clears it, because „Wunsch" is optional and
+     *   a chip row with no way back would make it compulsory in practice.
+     */
+    fun onDesiredFunction(jobType: MissionJobType) {
+        val open = mutableState.value.joinSheet ?: return
+        val next = if (open.desired?.id == jobType.id) null else jobType
+        mutableState.value = mutableState.value.copy(joinSheet = open.copy(desired = next))
+    }
+
+    /**
+     * Sets where the member's share goes.
+     *
+     * @param donate `true` for the org treasury, `false` for their own account.
+     */
+    fun onJoinPayout(donate: Boolean) {
+        val open = mutableState.value.joinSheet ?: return
+        mutableState.value = mutableState.value.copy(joinSheet = open.copy(donate = donate))
+    }
+
+    /** Sends the sign-up with what the sheet collected. */
+    fun onJoinConfirmed() {
+        val current = mutableState.value
+        val open = current.joinSheet ?: return
+        val userId = current.me?.userId
+        if (open.saving || !current.writable || userId == null) {
+            return
+        }
+        mutableState.value = current.copy(joinSheet = open.copy(saving = true, error = null))
+        viewModelScope.launch {
+            when (
+                val result =
+                    source.join(
+                        missionId = missionId,
+                        userId = userId,
+                        desiredJobTypeId = open.desired?.id,
+                        donate = open.donate,
+                    )
+            ) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(joinSheet = null)
+                    settle(result)
+                }
+
+                is ApiResult.Failure -> {
+                    // The sheet stays and so do the answers: nothing was written, and a member who
+                    // has to re-pick after a refusal is paying for the server's reply.
+                    mutableState.value =
+                        mutableState.value.copy(
+                            joinSheet = open.copy(saving = false, error = result.error),
+                        )
+                }
+            }
         }
     }
 

@@ -716,6 +716,14 @@
     <string name="order_detail_assignee_unnamed">Unknown</string>
     <string name="order_detail_not_allowed">You are not allowed to change this order.</string>
     <string name="mission_detail_sign_up">Sign up</string>
+    <string name="mission_join_title">Sign up</string>
+    <string name="mission_join_payout">Payout preference</string>
+    <string name="mission_join_payout_self_hint">Your share goes to your account</string>
+    <string name="mission_join_payout_org_hint">Your share stays with the org treasury</string>
+    <string name="mission_join_function">Function on board (desired)</string>
+    <string name="mission_join_function_hint">Optional — a wish, not a promise. The planned function is set by the mission leadership on the participants tab.</string>
+    <string name="mission_join_confirm">Sign up bindingly</string>
+    <string name="mission_join_footnote">Withdrawing is possible until 60 min before the start. The mission leadership sees your preference.</string>
     <string name="mission_detail_withdraw">Withdraw</string>
     <string name="mission_detail_check_in">Check in</string>
     <string name="mission_detail_check_out">Check out</string>

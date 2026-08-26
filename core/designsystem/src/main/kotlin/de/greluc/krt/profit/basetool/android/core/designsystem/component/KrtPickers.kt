@@ -49,6 +49,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
@@ -507,6 +508,7 @@ fun KrtRadioRow(
     onSelect: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    supporting: String? = null,
     enabled: Boolean = true,
 ) {
     Row(
@@ -545,13 +547,39 @@ fun KrtRadioRow(
                 )
             }
         }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.Gray1,
-        )
+        // The label and its supporting line are one column, so a two-line explanation stays under
+        // its own choice instead of drifting toward the sibling radio (design ch. 06, artboard 3).
+        Column {
+            Text(
+                text = label,
+                style =
+                    if (supporting == null) {
+                        MaterialTheme.typography.bodyMedium
+                    } else {
+                        MaterialTheme.typography.titleSmall
+                    },
+                color = if (supporting == null) KrtPalette.Gray1 else KrtPalette.White,
+            )
+            supporting?.let { line ->
+                Text(
+                    text = line,
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontSize = RADIO_SUPPORTING_SIZE,
+                            lineHeight = RADIO_SUPPORTING_LINE,
+                        ),
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        }
     }
 }
+
+/** Size of a radio's supporting line — the design system's `--fs-2xs` rung in Light. */
+private val RADIO_SUPPORTING_SIZE = 11.sp
+
+/** Its line height, the 1.4 ratio the whole scale uses. */
+private val RADIO_SUPPORTING_LINE = 15.sp
 
 /** Diameter of the inner dot of a selected radio button. */
 private val RADIO_DOT = 8.dp
