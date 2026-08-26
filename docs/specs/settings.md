@@ -243,6 +243,9 @@ nowhere else — and neither half of the unit may be moved or removed on its own
 
 ### REQ-APP-SET-010 — Sign-out asks before it wipes
 
+> Decision: [`ADR-0012`](../adr/0012-sign-out-asks-before-it-wipes.md) — the confirmation is a
+> deviation from design ch. 13, which draws the button without one.
+
 Sign-out is the only control on this screen whose cost cannot be undone by tapping it again.
 `REQ-APP-AUTH-005` destroys the encrypted refresh token, the Keystore key that decrypts it and the
 DPoP signing key; nothing local restores the session, and the way back is the browser's sign-in
