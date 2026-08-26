@@ -72,6 +72,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetr
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -230,43 +231,16 @@ private fun TotalCard(accounts: List<BankAccountSummary>) {
         return
     }
     val sum = total.reduce { a, b -> a + b }
-    // The artboard's total card carries an orange rail on its LEFT edge; KrtCardVariant.Accent
-    // puts its bar across the top, which is a different mark for a different purpose. Composed
-    // here rather than by widening the shared component, because nothing else asks for this.
-    KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Flush) {
-        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            Box(
-                modifier =
-                    Modifier
-                        .width(KrtSpacing.xs)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary),
-            )
-            Column(modifier = Modifier.padding(KrtSpacing.lg)) {
-                Text(
-                    text = stringResource(R.string.bank_total),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = KrtPalette.TextMuted,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    Text(
-                        text = formatAmount(sum.toPlainString()),
-                        style = MaterialTheme.typography.displaySmall,
-                        color = KrtPalette.White,
-                    )
-                    Text(
-                        text = stringResource(R.string.bank_total_unit),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = KrtPalette.TextMuted,
-                        modifier = Modifier.padding(bottom = KrtSpacing.xs),
-                    )
-                }
-            }
-        }
-    }
+    // `KrtTotalTile` IS this tile — the orange leading bar that marks a figure as the sum of the
+    // screen, the muted label, the bright value. It was hand-built here before anyone noticed the
+    // component existed, and the copy lost two things the original has: the label uppercased, and
+    // the value in tabular figures so the digits hold their column while the total changes.
+    KrtTotalTile(
+        label = stringResource(R.string.bank_total),
+        value = formatAmount(sum.toPlainString()),
+        unit = stringResource(R.string.bank_total_unit),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /**

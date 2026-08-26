@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -168,16 +170,19 @@ fun KrtOfflineBanner(
         modifier =
             modifier
                 .fillMaxWidth()
+                .height(IntrinsicSize.Min)
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .defaultMinSize(minHeight = KrtSpacing.touchTarget),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The edge spans whatever the banner turns out to be, not one touch target: a two-line
+        // reason left the bar stopping short of the text it belongs to.
         Box(
             modifier =
                 Modifier
                     .width(BANNER_EDGE)
-                    .height(KrtSpacing.touchTarget)
+                    .fillMaxHeight()
                     .background(KrtTheme.colors.warning),
         )
         KrtIcon(
@@ -305,9 +310,13 @@ fun KrtTotalTile(
     modifier: Modifier = Modifier,
     unit: String? = null,
 ) {
+    // `IntrinsicSize.Min` and `fillMaxHeight` are load-bearing: a Box given only a width is zero
+    // pixels tall, so the orange bar — the one thing that marks this figure as the screen's total —
+    // rendered as nothing at all. Invisible until something finally used the component.
     Row(
         modifier =
             modifier
+                .height(IntrinsicSize.Min)
                 .background(MaterialTheme.colorScheme.surface)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3),
     ) {
@@ -315,6 +324,7 @@ fun KrtTotalTile(
             modifier =
                 Modifier
                     .width(TOTAL_BAR)
+                    .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary),
         )
         Column(modifier = Modifier.padding(KrtSpacing.md)) {

@@ -80,6 +80,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSect
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSuccessButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -335,19 +336,26 @@ private fun SignUpRowActions(
     actions: MissionSignUpActions,
 ) {
     if (state.checkInPossible) {
-        KrtGhostButton(
-            text =
-                stringResource(
-                    if (mine.checkedIn) {
-                        R.string.mission_detail_check_out
-                    } else {
-                        R.string.mission_detail_check_in
-                    },
-                ),
-            onClick = actions.onToggleCheckIn,
-            modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
-            enabled = state.writable,
-        )
+        // Check-In is the example the button ladder gives for the success style: green marks a
+        // transition INTO an active state, and this is the one the whole screen exists for.
+        // Checking out is the reverse and stays a ghost — green both ways would say nothing.
+        if (mine.checkedIn) {
+            KrtGhostButton(
+                text = stringResource(R.string.mission_detail_check_out),
+                onClick = actions.onToggleCheckIn,
+                iconRes = DesignR.drawable.ic_krt_logout,
+                modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+        } else {
+            KrtSuccessButton(
+                text = stringResource(R.string.mission_detail_check_in),
+                onClick = actions.onToggleCheckIn,
+                iconRes = DesignR.drawable.ic_krt_check,
+                modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
+                enabled = state.writable,
+            )
+        }
     }
     KrtGhostButton(
         text =
