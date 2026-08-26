@@ -340,10 +340,78 @@ edit one. This is the same shape as the Materialbedarf tab: data on the wire, un
 `core:data`. Building it means the mapping, a split sheet with two independent stepper lists, the
 live rest with its three states (REST 0 / … FREI / ÜBERBUCHT), and two remote pickers.
 
+### Third pass (2026-08-26) — chapters 02, 04, 14, 15
+
+Chapter 04's five artboards are laid out in a row rather than a column, which is why the clipping
+script had been returning their captions and nothing else — worth stating, because "the chapter has
+no mocks" was the wrong conclusion and would have closed five rows unchecked.
+
+| artboard | what differed | state |
+| :-- | :-- | :-- |
+| 04.3 Freigabe ausstehend | title sentence case; the account name printed rather than set in a chip | **built** |
+| 04.4 Nutzungsbedingungen | eyebrow and document title sentence case | **built** |
+| 04.5 Gesperrt | title sentence case | **built**, verified on the device |
+| 14.1 App-Icon | the adaptive layers were right; the **status-bar icon was a bell** where the chapter specifies the reduced mark | **built** |
+| 14.2 Ruhezustand | the retry heading rendered small and neutral where the chapter has it uppercase at title size in warning yellow | **built** |
+| 14.2 Offline-Exemplar | one muted sentence where the chapter has a banner: yellow edge, wifi-off glyph, state uppercase | **built**, verified offline on the device |
+| 15.4 Laden | caption sentence case (the 300 ms spinner delay was already right) | **built** |
+| 15.5 Bericht nicht lesbar | no danger glyph, title sentence case | **built** |
+
+**The casing is not a style preference.** Every one of those headings computes to
+`text-transform: uppercase` at weight 900 in the rendered chapter — checked, not inferred. The
+source strings stay sentence case and `krtUppercase` folds with the device locale, so a screen
+reader is not handed shouting and Turkish still gets its dotted I.
+
+### The unused-component scan
+
+Chapter 02 is the component canon, and reading it against the design system found almost nothing —
+the ladder, the disabled alpha, the focus-ring rule, the chip casing are all built. The useful
+question turned out to be a different one: **which canon components does the design system have that
+no screen calls?** Fourteen, and the answers split three ways.
+
+| component | verdict |
+| :-- | :-- |
+| `KrtTotalTile` | the Bank was **hand-rebuilding it**; now uses it |
+| `KrtSuccessButton` | Check-In is the ladder's own example for it and was a ghost button; now uses it |
+| `KrtSparkline` | the Bank had a **private copy** — dead code, never called, beside an unused import |
+| `KrtOfflineBanner` | the app had its own one-line notice; now uses it |
+| `KrtUpdateAvailablePill` | not built, and correctly so: the app reloads in place on a live signal and preserves an open draft, so there is no yanked state to warn about. A pill would mean *withholding* the peer's change — a behaviour change, not a visual one |
+| `KrtButton`, `KrtCountBadge` | internal — the ladder's base and the top bar's badge |
+| `KrtPanelHeader`, `KrtRecordCard`, `KrtDataValue`, `KrtChipSelect`, `KrtRadioRow`, `KrtDepartmentTag`, `KrtPresenceIndicator` | still unused; each needs its own artboard read before a screen adopts it |
+
+**Two of them had never worked, and nothing had noticed because nothing called them.**
+`KrtTotalTile`'s orange leading bar — the one mark that says a figure is the screen's total — drew
+*nothing*: a `Box` given only a width is zero pixels tall. `KrtOfflineBanner`'s edge had the same
+bug in a milder form, pinned to one touch target so a two-line reason left the bar short of its own
+text. Both were found the moment a screen used them. That is the argument against copying a
+component instead of calling it: a component nothing calls is a component nothing tests.
+
+The reverse also happened twice. The Bank's private sparkline handled a flat series correctly where
+the canon divided by a substituted `1f` and drew a fall that never happened, and it carried a
+content description the canon lacked. Both went **into** the design system rather than into the bin.
+
+### Where the app is deliberately not the artboard
+
+Three, each with the reason in the code:
+
+- **"Push bei Freigabe"** (04.3) — the app has no push channel at all (resolved decision Q2), so an
+  approval arrives through the poll or not at all. Promising a notification that cannot come would
+  leave a member watching a lock screen.
+- **"Gerätesperre verwenden"** (04.5) — `DEVICE_CREDENTIAL` is already an allowed authenticator, so
+  the system prompt offers the PIN itself. A second button would be a second door to one room.
+- **The Fleetview paste hint** (08.3) — the artboard's `{"ships": […]}` is refused by the endpoint,
+  which wants an array at the root. Verified against the live stack.
+
+And two the app cannot show rather than will not: the offline banner's **"Zuletzt aktualisiert"**
+stamp and the **CACHE** chip beside it. The app holds no cache and records no load time, so both
+would be invented.
+
 ### Still not compared
 
-04.2–04.5 (Keycloak tab, approval pending, terms, app lock), 14.1 app icon, 15.3–15.5 (no-browser,
-loading and error states of the licence page), and chapter 02's component canon as a whole.
+09.3 Zuordnung (recorded above as buildable and unbuilt), 15.3 the no-browser state — which needs
+a device with no browser at all — and the seven canon components in the table above that no screen
+has adopted yet. 04.2 is the Keycloak page itself: a web surface owned by the realm theme, not by
+this app.
 
 ## Rendering the artboards — the method that actually catches this
 

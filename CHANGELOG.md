@@ -11,6 +11,16 @@
   ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe — mit Rückfrage, die die Anzahl nennt.
 
 ### Changed
+
+- **Zustands- und Sperrbildschirme sehen aus wie im Entwurf.** „GESPERRT", „FREIGABE AUSSTEHEND",
+  „NUTZUNGSBEDINGUNGEN" und die Fehlermeldungen stehen jetzt in Versalien, wie jedes Kapitel des
+  Entwurfs sie zeichnet; die Freigabe-Ansicht setzt deinen Kontonamen in ein hervorgehobenes Feld.
+- **Der Offline-Hinweis ist ein Banner statt einer grauen Zeile** — gelbe Kante, Funk-aus-Symbol und
+  der Grund darunter. Auf einem Bildschirm, dessen Knöpfe gerade grau geworden sind, war die
+  Erklärung bisher das Unauffälligste.
+- **In der Statusleiste steht jetzt das Basetool-Zeichen**, nicht mehr eine allgemeine Glocke.
+- **Die Bank-Gesamtsumme hat ihren orangen Balken zurück** — er wurde bisher gar nicht gezeichnet —
+  und „Einchecken" ist grün, weil Grün im Entwurf genau für diesen Schritt reserviert ist.
 - **Jedes Suchfeld mit Vorschlägen sieht jetzt wie eines aus.** Schiffstyp, Ort, Material: die
   Treffer stehen in einer abgesetzten Liste mit orangem Rahmen, der eingetippte Teil ist fett, und
   am Feld sitzt ein Pfeil. Bisher waren es schlichte Textzeilen unter dem Feld. Die Liste öffnet
