@@ -54,6 +54,9 @@
 
 ### Fixed
 
+- **Der Benachrichtigungskanal „Einsätze & System" wurde entfernt** — er stand in den
+  Systemeinstellungen, aber es kam nie etwas darauf an. Alle Hinweise laufen über „Allgemein".
+
 - **Ein Link, den diese App-Version nicht kennt, landete stillschweigend auf der Übersicht** — nicht
   zu unterscheiden von einem Link, der funktioniert hat. Jetzt erscheint „Signal Lost" mit dem Weg
   zurück zur Basis.

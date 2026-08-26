@@ -786,7 +786,6 @@
     <string name="bank_settings_visibility">Sichtbarkeit</string>
     <string name="bank_settings_visibility_fixed">Für diesen Kontotyp ist die Sichtbarkeit fest vorgegeben.</string>
     <string name="bank_settings_all_members">Alle Mitglieder der Einheit</string>
-    <string name="notification_channel_operations">Einsätze &amp; System</string>
     <string name="notification_channel_general">Allgemein</string>
     <string name="notification_public_title">Neue Benachrichtigung</string>
     <string name="notification_shade_title">Neues im Basetool</string>

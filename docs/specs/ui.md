@@ -251,6 +251,77 @@ re-tapped a different tab.
 
 ---
 
+### REQ-APP-UI-007 — The shade posts on one channel, because one is all it can fill
+
+Chapter 14 names five notification channels — Einsätze & Check-In and Aufträge & Zuweisungen at
+high importance, Materialbörse, Bank & Auszahlungen and System & Ankündigungen at default — so a
+member can silence one kind of message and keep another.
+
+**This build posts on one, and the reason is upstream.** The notification stream's event is
+`name="notification"` carrying the literal string `"new"`: a bare ping with no type, no id and no
+content. Everything that reaches the shade is therefore the same message — "the inbox has something
+new" — and it has no kind to be filed under. Five channels cannot be populated from a signal that
+does not say what happened.
+
+**A second channel existed and nothing ever posted to it.** `krt_operations` was created at high
+importance on every start and no code path ever used it. That is worse than having one channel: it
+puts a switch in the member's system settings that silences nothing, and nothing tells them so. It
+is now deleted on start rather than left standing — Android remembers a deleted channel's settings
+if it is recreated, so nobody loses a preference when the split lands.
+
+**What the split needs**, stated so it is a decision and not a discovery: the stream event has to
+carry the notification's type (and ideally its id, which would also let the shade entry deep-link
+to the target screen instead of always to the inbox, as chapter 03 asks). That is a change to the
+main repo's `NotificationStreamService`, not something this app can arrange.
+
+**Not adopted without a decision:** chapter 14's shade mockups show the notification's real title
+and body („Einsatz beginnt in 30 Minuten / Vertikaler Abbau — Lyria · Treffpunkt ARC-L1 · 12
+angemeldet"). This build posts a fixed headline instead. Putting org content on the shade is a
+change in what leaves the app's own surface, and the privacy gate makes that the owner's call —
+even though chapter 14's lock-screen rule (private channel plus a „Neue Benachrichtigung" public
+version, both already enforced here by construction) is exactly its mitigation.
+
+**Acceptance**
+
+- [x] One channel is created and the unused one is removed on start.
+- [ ] Five channels, typed shade entries and per-notification deep links: **blocked** on the stream
+  carrying a type, and on the owner's decision about content in the shade.
+
+---
+
+### REQ-APP-UI-008 — A refused save is an inline error, where the chapter draws a dialog
+
+Chapter 14 draws the 409 as a modal: **„KONFLIKT FESTGESTELLT"**, a sentence, and two actions —
+„ABBRECHEN" and „NEU LADEN UND ERNEUT VERSUCHEN". The app shows a `KrtFieldError` under the form,
+at all eleven write surfaces.
+
+The presentation gap is real. A conflict means the save did not happen and the member must reload;
+an inline line under a scrolled sheet is easy to miss, and a member who misses it believes they
+saved.
+
+**The chapter's copy cannot be taken verbatim, and that is not a translation problem.** It makes two
+claims this app cannot honour:
+
+- *„…zwischenzeitlich von Rhea geändert"* — the 409 carries no identity. The app does not know who
+  changed the record and would be inventing a name.
+- *„Deine Eingaben bleiben in der Zwischenablage erhalten"* — nothing is put on the clipboard. The
+  app's own wording, „Deine Eingabe bleibt stehen — lade neu und speichere erneut", describes what
+  actually happens. Making the artboard's sentence true would mean writing the member's input to the
+  **system** clipboard, which every other app on the device can read — a data-exposure change that
+  the privacy gate puts with the owner, not in a parity sweep.
+
+**What the presentation change needs:** each of the eleven sites is a save inside a sheet or a
+detail form, and „neu laden und erneut versuchen" needs a reload path per surface that does not
+exist today — the sheets are opened with a snapshot and offer only dismiss. The modal itself is one
+composable; the eleven reload paths are the work.
+
+**Acceptance**
+
+- [ ] **Open.** The modal presentation, with the app's accurate wording and a reload per write
+  surface. Not blocked by anything external — it is the largest single item chapter 14 leaves.
+
+---
+
 ### REQ-APP-UI-005 — The top bar's two ends answer one question
 
 The bar has a left end — a back arrow, or nothing — and a right end: the org chip and the bell, or

@@ -765,7 +765,6 @@
     <string name="bank_settings_visibility">Visibility</string>
     <string name="bank_settings_visibility_fixed">Visibility is fixed for this account type.</string>
     <string name="bank_settings_all_members">Every member of the unit</string>
-    <string name="notification_channel_operations">Operations &amp; system</string>
     <string name="notification_channel_general">General</string>
     <string name="notification_public_title">New notification</string>
     <string name="notification_shade_title">Something new in the Basetool</string>

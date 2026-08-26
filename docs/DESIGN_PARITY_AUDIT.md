@@ -999,6 +999,41 @@ Not adopted: the artboard's date reads „Sonntag, 17.08.2956" — the in-fictio
 The numeric **format** is adopted; the year is not. Writing error copy in character is a different
 decision from misstating today's date, and that one is the owner's.
 
+## Chapter 14 against the delivered bundle (2026-08-26)
+
+The chapter's rules held better than any other so far, and the two places they did not are both
+places where the app cannot simply be corrected.
+
+**Held:** the lock-screen rule, enforced by construction rather than per call site — the channel is
+`VISIBILITY_PRIVATE` and every posted notification carries a „Neue Benachrichtigung" public version,
+so no amount or name can be read off a locked device. The 24 dp alpha-only small icon with the brand
+accent. The forced-update wall standing outside every other gate, with its store-button deviation
+already recorded. The 429/503 countdown with its 3→6→12→30 backoff. The in-fiction titles („Access
+Denied", „Signal Lost", „System Malfunction") over one plain German line, which is the shape the
+chapter asks for.
+
+The offline band deserves a note for a different reason: it already **records what it leaves out**.
+Its KDoc says there is no „Zuletzt aktualisiert" stamp and no CACHE chip because "the app holds no
+cache and records no load time, so any timestamp would be invented". That is the discipline this
+audit is for, applied before the audit reached it.
+
+**The dead channel.** `krt_operations` was created at high importance on every start and nothing
+ever posted to it — every notification went to `krt_general`. A channel nothing uses is not a
+harmless leftover: it is a switch in the member's system settings that silences nothing, and they
+have no way to discover that. Deleted on start.
+
+Behind it sits the reason the five channels the chapter names cannot exist yet, and it is not in
+this repo: the stream event is `name="notification", data="new"`. A bare ping. Everything in the
+shade is the same message because the signal carries no kind — and the same absence is why a tapped
+notification always opens the inbox rather than the target screen chapter 03 asks for.
+
+**The 409 dialog** is the largest thing chapter 14 leaves open, and the interesting part is that its
+copy cannot be adopted. The artboard names the other editor („von Rhea") — the 409 carries no
+identity — and promises the input is on the clipboard, which would mean writing a member's data
+somewhere every other app on the device can read. The app's existing sentence is the accurate one.
+So the gap is presentation only: eleven write surfaces show an inline `KrtFieldError` where a modal
+belongs, and each needs a reload path it does not have.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

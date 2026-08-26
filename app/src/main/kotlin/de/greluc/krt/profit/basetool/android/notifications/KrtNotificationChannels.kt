@@ -33,11 +33,31 @@ import de.greluc.krt.profit.basetool.android.R
  * forgot would put a member's amounts on a locked screen and nothing would flag it.
  */
 object KrtNotificationChannels {
-    /** Einsätze and the system's own messages: the channel chapter 14 names first. */
-    const val CHANNEL_OPERATIONS: String = "krt_operations"
-
-    /** Everything else the inbox carries. */
+    /**
+     * The one channel this build posts on.
+     *
+     * Chapter 14 names five — Einsätze & Check-In, Aufträge & Zuweisungen, Materialbörse, Bank &
+     * Auszahlungen, System & Ankündigungen — so a member can silence one kind and keep another.
+     * This build can populate exactly one of them, and the reason is upstream: the notification
+     * stream's event is `name="notification", data="new"`, a bare ping with no type, no id and no
+     * content. Everything that reaches the shade is therefore the same message — "the inbox has
+     * something new" — and it has no kind to be filed under.
+     *
+     * A second channel **was** created here and nothing ever posted to it. That is worse than
+     * having one: it puts a switch in the member's system settings that silences nothing, and the
+     * member has no way to find that out. It is removed below rather than left standing until the
+     * stream can say what kind of thing arrived.
+     */
     const val CHANNEL_GENERAL: String = "krt_general"
+
+    /**
+     * The channel this build used to create and never posted to.
+     *
+     * Kept only so [ensure] can delete it from devices that already have it. Android remembers a
+     * deleted channel's settings if it is ever recreated, so a member who had configured it loses
+     * nothing when the five-channel split lands.
+     */
+    private const val CHANNEL_OPERATIONS_LEGACY: String = "krt_operations"
 
     /**
      * Creates the channels, if they do not exist yet.
@@ -52,19 +72,14 @@ object KrtNotificationChannels {
         manager.createNotificationChannel(
             channel(
                 context,
-                CHANNEL_OPERATIONS,
-                R.string.notification_channel_operations,
-                NotificationManager.IMPORTANCE_HIGH,
-            ),
-        )
-        manager.createNotificationChannel(
-            channel(
-                context,
                 CHANNEL_GENERAL,
                 R.string.notification_channel_general,
                 NotificationManager.IMPORTANCE_DEFAULT,
             ),
         )
+        // Removes the channel that was created and never used. Harmless on a device that never
+        // had it, and on one that did it takes a dead switch out of the member's settings.
+        manager.deleteNotificationChannel(CHANNEL_OPERATIONS_LEGACY)
     }
 
     /**
