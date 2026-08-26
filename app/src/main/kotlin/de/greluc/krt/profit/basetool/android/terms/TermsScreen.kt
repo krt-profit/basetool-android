@@ -47,6 +47,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -239,13 +240,15 @@ private fun Header(document: TermsDocument) {
                 .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
     ) {
         Text(
-            text = stringResource(R.string.terms_eyebrow),
+            text = stringResource(R.string.terms_eyebrow).krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = KrtPalette.TextMuted,
         )
         Spacer(Modifier.height(KrtSpacing.xs))
+        // The document's own title, uppercased for display only: the server sends it in sentence
+        // case and the chapter renders it as a heading, the same way the top bar treats a title.
         Text(
-            text = document.title,
+            text = document.title.krtUppercase(),
             style = MaterialTheme.typography.titleLarge,
             color = KrtPalette.Orange,
         )

@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 
 /**
  * The full-screen retry state of design chapter 14: a live countdown inside the orange ring
@@ -74,9 +75,14 @@ fun KrtRetryCountdown(
                 modifier = Modifier.testTag("krt-retry-seconds"),
             )
         }
+        // Chapter 14 draws this state's heading uppercase at title size in the warning tint
+        // (`#FFD23F`), not as a small neutral line. It is the difference between a screen that
+        // says the app is retrying and one that looks like it has nothing to show: the same words
+        // in `titleSmall` grey read as a caption under a spinner.
         Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
+            text = title.krtUppercase(),
+            style = MaterialTheme.typography.titleLarge,
+            color = KrtTheme.colors.warning,
             textAlign = TextAlign.Center,
         )
         Text(

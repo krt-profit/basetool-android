@@ -67,7 +67,9 @@ class KrtRetryCountdownTest {
     fun `both sentences of chapter 14 are shown`() {
         setContent(secondsLeft = 3)
 
-        compose.onNodeWithText("Signal instabil").assertIsDisplayed()
+        // The heading is uppercased for display (chapter 14 draws every state title that way);
+        // the caller still passes it in sentence case, which is what a screen reader gets.
+        compose.onNodeWithText("SIGNAL INSTABIL").assertIsDisplayed()
         compose.onNodeWithText("Der Server ist ausgelastet.").assertIsDisplayed()
     }
 
