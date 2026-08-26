@@ -921,4 +921,8 @@
     <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
     <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>
     <string name="gate_own_row_detail">Rule: your own entry, or edit rights on the entry’s org unit.</string>
+    <!-- Timestamps: the yesterday and older rungs of the design's relative-time ladder. -->
+    <string name="time_yesterday_at">yesterday, %1$s</string>
+    <string name="time_date_pattern">MMM d</string>
+    <string name="time_date_at">%1$s, %2$s</string>
 </resources>

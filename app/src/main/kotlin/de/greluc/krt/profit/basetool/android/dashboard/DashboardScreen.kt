@@ -7,7 +7,6 @@
 
 package de.greluc.krt.profit.basetool.android.dashboard
 
-import android.text.format.DateUtils
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -61,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import de.greluc.krt.profit.basetool.android.ui.relativeTo
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -492,9 +493,12 @@ private fun MissionFactsRow(mission: Mission) {
             value += 1
         }
     }
+    val context = LocalContext.current
     val meeting =
         mission.meetingTime?.let { at ->
-            remember(at, tick) { at.relativeToNow() + " · TS " + formatter.format(at) }
+            remember(at, tick, context, zone) {
+                at.relativeTo(Instant.now(), context, zone) + " · TS " + formatter.format(at)
+            }
         }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
@@ -622,22 +626,6 @@ private fun Notification.preview(): String =
 
 /** Smallest a shortcut tile gets, so a wrapped label never squeezes the glyph out. */
 private val QUICK_TILE_MIN_HEIGHT = 72.dp
-
-/**
- * When the Einsatz starts, in words, relative to now.
- *
- * `DateUtils` rather than a hand-written "in %d Std.": it is localised for every locale the system
- * carries and it picks the unit a reader expects, which a hand-rolled version gets wrong the moment
- * the gap crosses a day.
- *
- * @return e.g. "in 2 Std.".
- */
-private fun Instant.relativeToNow(): String =
-    DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
 
 /** How often the seven-day band re-reads its countdowns (design ch. 05: "each minute"). */
 private const val COUNTDOWN_TICK_MS = 60_000L

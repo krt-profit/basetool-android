@@ -7,7 +7,6 @@
 
 package de.greluc.krt.profit.basetool.android.bank
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,7 +78,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
-import java.time.Instant
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Konten list. */
@@ -530,21 +529,10 @@ private fun BankBooking.amountColor(): Color =
 @Composable
 private fun BankBooking.subline(): String {
     LocalConfiguration.current
-    val time = createdAt?.relativeToNow()
+    val booked = createdAt
+    val time = if (booked == null) null else booked.relativeToNow()
     return listOfNotNull(holder?.takeIf { it.isNotBlank() }, time).joinToString(" · ")
 }
-
-/**
- * How long ago an instant is, in the platform's words.
- *
- * @return the localised relative span.
- */
-private fun Instant.relativeToNow(): String =
-    DateUtils.getRelativeTimeSpanString(
-        toEpochMilli(),
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
 
 /**
  * The translated name of a booking kind.

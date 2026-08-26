@@ -292,6 +292,57 @@ a motor impairment, and the design's own handoff says the buttons remain for ass
 **Code:** `core/designsystem/…/component/KrtRows.kt` (`KrtSwipeableRow`),
 `app/…/notifications/NotificationsScreen.kt`
 
+### REQ-APP-NOTIF-013 — The count sits in the bar, and time is told in four forms
+
+Two details of artboard 1 that the first build read past.
+
+**The unread count is a chip in the top bar, not a line in the list.** It rode above the first row
+as plain orange text, which scrolls away — and a count that disappears when the member scrolls is
+worth less than no count at all, because they now have to scroll back to answer „wie viele noch?".
+The bar is the one surface that stays. It also puts the count next to the title it qualifies, which
+is where the eye goes when a screen is opened from a badge.
+
+**Timestamps use the ladder chapter 07 writes out**, and it has four rungs:
+
+| distance | form |
+| --- | --- |
+| under an hour | `vor 4 Min.` |
+| earlier today | `vor 2 Std.` |
+| the previous calendar day | `gestern, 21:14` |
+| older | `15.08., 09:30` |
+
+The platform supplies the first two and nothing else: `getRelativeDateTimeString` never says
+„gestern" in German — it answers with `25.8.2026, 22:19` — and the plain span calls an evening two
+days back `Vor 39 Std.`, which is a number a reader has to convert into a day. The upper rungs stay
+with the platform, which knows the abbreviations and plural rules of every locale; the lower two are
+composed, from a **translatable** date pattern so a locale can reorder the fields.
+
+The boundary between the rungs is the **calendar day**, not a count of elapsed hours. That is what
+makes 21:14 read as „gestern" at two in the morning instead of as „vor 5 Std." — the reader thinks
+in days, and at 02:00 „vor 5 Std." and „vor 5 Std." mean two different evenings.
+
+**Anything in the future stays relative on every rung.** A countdown reads „morgen" or „übermorgen";
+an absolute date is a correct answer to a question nobody asked about something that has not
+happened yet. Where German has a word for the distance, the platform's word wins over a literal
+count — „übermorgen" over „in 2 Tagen".
+
+One ladder serves the inbox, the Kartellbank and the dashboard. Three private copies of the
+formatter is how „gestern" ends up looking different on two screens of the same app.
+
+**Acceptance**
+
+- [x] All four rungs pinned against the real `DateUtils` and real resources, plus the two future
+  forms (`RelativeTimeTest`).
+- [x] The list body carries no count — the assertion is inverted, so putting one back fails
+  (`NotificationsScreenTest`).
+- [x] Verified on a device: „← BENACHRICHTIGUNGEN [7 NEU]" in the bar, „vor 5 Std." in the rows,
+  „morgen · TS 21:44" on the dashboard.
+- [ ] The two lower rungs are **not** device-verified: every fixture notification in the test stack
+  is minutes old, and the emulator's clock cannot be moved without root on a Play image. The code
+  path is the same one the upper rungs take.
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No system notification shade.** Design ch. 14, and the plan's Q2 decision rules out a push

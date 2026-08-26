@@ -872,6 +872,50 @@ factor — which also makes the phone/tablet split fall out for free: Hangar, Ra
 Materialbörse are pushed behind „Mehr" on a phone and roots on a tablet's rail, and the bar follows
 without a second rule. `REQ-APP-UI-005` and `TopBarOwnershipTest`.
 
+## Chapter 07 against the delivered bundle (2026-08-26)
+
+The inbox matched on everything structural — the type glyph per kind, the 3 dp orange rail on an
+unread row, both swipe directions, „Alle als gelesen markieren" / „Gelesene löschen", the `99+` cap
+and the „Zeige die neuesten n von m" line. Two things did not.
+
+**The unread count was in the wrong place.** The app drew it as an orange line above the first row;
+artboard 1 puts it in the top bar as a chip beside the title. The difference only shows up once the
+list is scrolled: the app's count scrolled away with the content, which is precisely when a member
+wants it. Moved to `ProvideScreenTopBar(actions = …)`, and the screen test now asserts the list body
+has **no** count, so the old placement cannot come back unnoticed.
+
+**Timestamps were one rung of a four-rung ladder.** The app rendered everything through
+`DateUtils.getRelativeTimeSpanString` with default flags — „Vor 5 Stunden" — where the chapter writes
+`vor 4 Min.`, `vor 2 Std.`, `gestern, 21:14` and `15.08., 09:30`.
+
+Three separate things were wrong there, and only the first was obvious:
+
+1. **Not abbreviated.** One flag, `FORMAT_ABBREV_RELATIVE`.
+2. **Capitalised.** The platform capitalises a standalone span; every artboard writes it lower-case.
+   Lowered on the first character only, in the resolved locale, so a locale opening on a proper noun
+   keeps it. English is unaffected — its abbreviated spans start with the number.
+3. **No day rungs at all.** This is the one that needed measuring rather than reading. The obvious
+   candidate, `getRelativeDateTimeString`, was probed with a throwaway Robolectric test before any
+   code was written, and it turned out to answer *every* distance with a fully qualified date —
+   `26.8.2026, 18:15` even for four minutes ago — and to never say „gestern" in German. So the lower
+   two rungs are composed here, from a translatable date pattern, while the upper two stay with the
+   platform.
+
+That probe paid for itself twice more. `FORMAT_NUMERIC_DATE` renders „15.8." in German where the
+artboard writes „15.08.", which is why the date is a padded pattern and not a platform flag. And a
+countdown two days out comes back as „Übermorgen", not „in 2 Tagen" — the platform's word, kept,
+because German has one and a literal count is what a language without the word falls back to.
+
+The formatter existed **three times**, privately, in the inbox, the Kartellbank and the dashboard.
+All three now share one ladder; three copies is how „gestern" ends up looking different on two
+screens of the same app.
+
+Device-verified: „← BENACHRICHTIGUNGEN [7 NEU]" in the bar, „vor 5 Std." on the rows, and
+„morgen · TS 21:44" on the dashboard, which had read „Morgen · TS 21:44" before. The „gestern" and
+„15.08." rungs are **not** device-verified and are recorded as such in `REQ-APP-NOTIF-013`: every
+notification in the test stack is minutes old, and the emulator runs a Play image that cannot be
+rooted to move its clock.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

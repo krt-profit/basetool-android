@@ -16,6 +16,12 @@
 
 ### Changed
 
+- **Die Zahl der ungelesenen Benachrichtigungen steht jetzt oben in der Leiste** statt über der
+  Liste — sie scrollt nicht mehr weg.
+- **Zeitangaben lesen sich kürzer und über einen Tag hinaus verständlich:** „vor 4 Min.",
+  „vor 2 Std.", „gestern, 21:14", „15.08., 09:30" — im Posteingang, in der Kartellbank und auf dem
+  Dashboard gleich.
+
 - **Bildschirme, die du aus „Mehr" öffnest, tragen oben keinen Org-Chip und keine Glocke mehr** —
   nur noch Zurück-Pfeil, Titel und was der Bildschirm selbst anbietet. Der Hangar-Titel wurde
   dadurch abgeschnitten, „Open-Source-Lizenzen" passt jetzt vollständig.
