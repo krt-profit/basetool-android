@@ -74,6 +74,7 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
 import de.greluc.krt.profit.basetool.android.ui.LocalCaller
+import de.greluc.krt.profit.basetool.android.ui.RootScrollSignals
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -163,6 +164,11 @@ fun BasetoolApp(
 
     UnknownLinkGuard(navController)
 
+    // Design ch. 03: "Re-tapping the active destination pops to its root and scrolls to top."
+    // The pop is navigation's; the scroll needs a signal that reaches the list, which is what this
+    // carries. Held here rather than inside the graph so it survives the graph's own rebuilds.
+    val rootScroll = remember { RootScrollSignals() }
+
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
     val selectedRoute = selectedTopLevelRoute(root, destinations)
 
@@ -177,9 +183,12 @@ fun BasetoolApp(
                 navController.navigateToTopLevel(item.route, restoreState = false)
             }
 
-            // Re-tapping the active destination goes back to that destination's own root.
+            // Re-tapping the active destination goes back to that destination's own root — and
+            // to the top of it. A member who taps the tab they are already on is asking to start
+            // over; popping alone leaves them mid-list, which looks like the tap did nothing.
             item.route == selectedRoute -> {
                 navController.popBackStack(item.route, inclusive = false)
+                rootScroll.request(item.route)
             }
 
             else -> {
@@ -257,6 +266,7 @@ fun BasetoolApp(
                     BasetoolNavHost(
                         modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
                         navController = navController,
+                        rootScroll = rootScroll,
                         onOpenDestination = { navController.navigateToTopLevel(it.route) },
                         onLogout = onLogout,
                         // The shell owns the scope and the switcher, so it fills those two in

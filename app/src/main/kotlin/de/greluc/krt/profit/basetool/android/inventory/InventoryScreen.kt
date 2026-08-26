@@ -88,6 +88,7 @@ import de.greluc.krt.profit.basetool.android.ui.isLogistician
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -279,7 +280,10 @@ private fun InventoryTree(
     online: Boolean,
     onLoadMore: () -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG)) {
+    LazyColumn(
+        state = rememberRootListState(),
+        modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG),
+    ) {
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId
             item(key = "group-${materialId ?: group.name}") {

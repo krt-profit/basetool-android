@@ -62,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeTo
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -136,14 +137,20 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
                 ) {
-                    LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    LazyColumn(
+                        state = rememberRootListState(),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    ) {
                         missionsSection(
                             state = state,
                             onOpenMission = onOpenMission,
                             onOpenMissions = onOpenMissions,
                         )
                     }
-                    LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    LazyColumn(
+                        state = rememberRootListState(),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    ) {
                         quickActionsSection(onQuickAction = onQuickAction)
                         notificationsSection(
                             unread = unread,
@@ -154,7 +161,10 @@ fun DashboardScreen(
                 }
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
+            LazyColumn(
+                state = rememberRootListState(),
+                modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG),
+            ) {
                 item(key = "greeting") {
                     Greeting(memberName = memberName, orgUnitName = orgUnitName)
                 }

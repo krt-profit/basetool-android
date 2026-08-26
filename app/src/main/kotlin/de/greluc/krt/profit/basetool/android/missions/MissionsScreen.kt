@@ -51,6 +51,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -268,6 +269,7 @@ private fun MissionsList(
 ) {
     val sections = groupMissionsByDay(state.missions, zone, today)
     LazyColumn(
+        state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MISSIONS_LIST_TAG),
         contentPadding = PaddingValues(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),

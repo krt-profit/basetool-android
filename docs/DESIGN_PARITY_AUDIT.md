@@ -952,10 +952,19 @@ blanket lint ignore — lint is right that the attribute predates minSdk and wro
 problem. This is the one item in the chapter that cannot be device-verified here, and it is recorded
 as resting on the platform contract.
 
-**Still open: re-tap scrolls to top.** Re-tapping the active destination pops to that destination's
-root, which it does. The second half does not happen and cannot: no screen in the app holds a
-`LazyListState`, and `animateScrollToItem` appears nowhere. That is a mechanism, not a fix, and it
-is recorded as open in `REQ-APP-UI-006` rather than quietly dropped.
+**Re-tap scrolls to top** — closed in the same pass. Popping already happened; scrolling could not,
+because no screen held a `LazyListState` and `animateScrollToItem` appeared nowhere in the app. The
+part worth recording is why a flag would not do: the pop *rebuilds* the destination, and the rebuild
+restores the list from saved state, so the new screen is already back where the member left it and
+has no way to tell „I came back" from „I asked for the top". A per-route counter that outlives the
+rebuild does, and each list remembers in its own saveable state which value it last acted on. One
+shared counter — the obvious version — would make every screen jump to the top on its next
+composition, so a member who once re-tapped „Lager" would afterwards lose their place in „Aufträge"
+for no visible reason.
+
+Verified on „Aufträge", which is the only bar destination whose list is longer than the screen.
+„Einsätze" and „Lager" fit, so they scroll nowhere and a pass on them would have proved nothing —
+the first attempt at verification did exactly that and looked like a success.
 
 ## How this audit was made
 

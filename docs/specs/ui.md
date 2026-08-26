@@ -196,7 +196,7 @@ anyone noticing. Checked one by one against the running app:
 | Push → target screen directly; cold start synthesises target + Übersicht | holds, **after** the crash in `REQ-APP-NOTIF-014` |
 | Unknown route → 404 in-fiction | **was broken**, see below |
 | Predictive back on every screen | **was partly broken**, see below |
-| Re-tap the active destination pops to its root *and scrolls to top* | pops; **does not scroll** — open, below |
+| Re-tap the active destination pops to its root *and scrolls to top* | holds — see below |
 
 **An unknown address used to land on the dashboard.** `basetool://voelligunbekannt` opened the app
 on Übersicht, silently — indistinguishable from a link that worked. Worse, `destinationOf`'s KDoc
@@ -232,9 +232,22 @@ rather than on a device pass.
   „ZURÜCK ZUR BASIS"; the CTA lands on Übersicht and back from there leaves the app.
 - [x] Every destination has a distinct address, and the 404 is unreachable from the bar, the rail
   and „Mehr" (`DeepLinkRoutingTest`).
-- [ ] **Open: re-tapping the active destination does not scroll to top.** It pops to the
-  destination's root, which is the other half of the rule. No screen holds a `LazyListState`, so
-  nothing in the app can scroll one — this needs a mechanism, not a fix.
+- [x] Re-tapping the active destination returns it to the top. Device-verified on „Aufträge",
+  the one bar destination whose list is longer than the screen: 36 rows from „MATERIAL", scrolled
+  to 32 rows from „OFFEN", re-tapped back to 36 from „MATERIAL". „Einsätze" and „Lager" cannot show
+  it — their content fits — which is worth writing down, because a pass on those two would have
+  meant nothing.
+- [x] The counter is per route, so a re-tap on „Lager" cannot make „Aufträge" lose its place
+  (`RootScrollSignalsTest`).
+
+**Why the scroll needed a counter at all.** The pop that precedes it tears the destination down and
+rebuilds it, and the rebuild restores the list from its saved state — so by the time the new screen
+exists it has already been put back where the member left it, and nothing about the rebuild
+distinguishes „I came back here" from „I asked for the top". The counter outlives the rebuild;
+each list remembers, in its own saveable state, which value it last acted on. One **shared** counter
+is the obvious version and is wrong: every screen watching it would jump to the top on its next
+composition, so returning to a list would silently lose the member's place because they had once
+re-tapped a different tab.
 
 ---
 

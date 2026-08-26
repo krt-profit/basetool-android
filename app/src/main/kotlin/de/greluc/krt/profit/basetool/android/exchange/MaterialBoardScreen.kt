@@ -68,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -204,6 +205,7 @@ fun MaterialBoardScreen(
                             }
                         } else {
                             LazyColumn(
+                                state = rememberRootListState(),
                                 modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
                                 contentPadding = PaddingValues(KrtSpacing.md),
                                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),

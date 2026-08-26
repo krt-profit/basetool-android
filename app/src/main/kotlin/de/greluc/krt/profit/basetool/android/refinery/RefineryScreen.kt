@@ -58,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
@@ -167,6 +168,7 @@ fun RefineryOrdersScreen(
                         }
                     } else {
                         LazyColumn(
+                            state = rememberRootListState(),
                             modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
                             contentPadding = PaddingValues(KrtSpacing.md),
                             verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),

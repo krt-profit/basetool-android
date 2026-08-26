@@ -16,6 +16,9 @@
 
 ### Changed
 
+- **Ein Tipp auf das Symbol des Bereichs, in dem du schon bist, bringt die Liste wieder nach oben** —
+  vorher blieb sie stehen, wo du warst.
+
 - **Die Zahl der ungelesenen Benachrichtigungen steht jetzt oben in der Leiste** statt über der
   Liste — sie scrollt nicht mehr weg.
 - **Zeitangaben lesen sich kürzer und über einen Tag hinaus verständlich:** „vor 4 Min.",

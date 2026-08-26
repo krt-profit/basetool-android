@@ -86,6 +86,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -248,6 +249,7 @@ private fun OrdersList(
     onOpenOrder: (String) -> Unit,
 ) {
     LazyColumn(
+        state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG),
         contentPadding = PaddingValues(horizontal = KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),

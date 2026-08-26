@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,8 +75,10 @@ import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
+import de.greluc.krt.profit.basetool.android.ui.LocalRootScrollTick
 import de.greluc.krt.profit.basetool.android.ui.MoreScreen
 import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
+import de.greluc.krt.profit.basetool.android.ui.RootScrollSignals
 import de.greluc.krt.profit.basetool.android.ui.RouteNotFoundScreen
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 
@@ -114,6 +117,7 @@ import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 @Composable
 fun BasetoolNavHost(
     navController: NavHostController,
+    rootScroll: RootScrollSignals,
     onOpenDestination: (KrtDestination) -> Unit,
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
@@ -157,50 +161,56 @@ fun BasetoolNavHost(
                 route = destination.route,
                 deepLinks = listOf(navDeepLink { uriPattern = destination.deepLink }),
             ) { backStackEntry ->
-                // Two functions rather than one: nine areas hang off this graph, and the split
-                // follows a real seam — a LIST destination is one a member reaches from the bar or
-                // from "Mehr" and that loads itself; a PUSHED one is opened with an id from
-                // somewhere else. Anything neither handles is still a screen this build does not
-                // have, and says so.
-                val handled =
-                    listDestination(
-                        destination = destination,
-                        navController = navController,
-                        missions = missions,
-                        missionDetail = missionDetail,
-                        operations = operations,
-                        notifications = notifications,
-                        dashboard = dashboard,
-                        hangar = hangar,
-                        bank = bank,
-                        bankAccount = bankAccount,
-                        orders = orders,
-                        orderDetail = orderDetail,
-                        inventory = inventory,
-                        exchange = exchange,
-                        refinery = refinery,
-                        refineryOrder = refineryOrder,
-                        personalInventory = personalInventory,
-                        personalBlueprints = personalBlueprints,
-                        booking = booking,
-                        memberName = memberName,
-                        orgUnitName = orgUnitName,
-                    )
-                if (!handled) {
-                    PushedDestination(
-                        destination = destination,
-                        backStackEntry = backStackEntry,
-                        navController = navController,
-                        missionDetail = missionDetail,
-                        operationDetail = operationDetail,
-                        bankAccount = bankAccount,
-                        orderDetail = orderDetail,
-                        refineryOrder = refineryOrder,
-                        fleetImport = fleetImport,
-                        onOpenDestination = onOpenDestination,
-                        onLogout = onLogout,
-                        settings = settings,
-                    )
+                // Each destination sees only its own re-tap counter, so a re-tap on „Lager" cannot
+                // scroll „Einsätze" -- and a root screen obeys the rule without knowing its route.
+                CompositionLocalProvider(
+                    LocalRootScrollTick provides rootScroll.ticksFor(destination.route),
+                ) {
+                    // Two functions rather than one: nine areas hang off this graph, and the split
+                    // follows a real seam — a LIST destination is one a member reaches from the bar or
+                    // from "Mehr" and that loads itself; a PUSHED one is opened with an id from
+                    // somewhere else. Anything neither handles is still a screen this build does not
+                    // have, and says so.
+                    val handled =
+                        listDestination(
+                            destination = destination,
+                            navController = navController,
+                            missions = missions,
+                            missionDetail = missionDetail,
+                            operations = operations,
+                            notifications = notifications,
+                            dashboard = dashboard,
+                            hangar = hangar,
+                            bank = bank,
+                            bankAccount = bankAccount,
+                            orders = orders,
+                            orderDetail = orderDetail,
+                            inventory = inventory,
+                            exchange = exchange,
+                            refinery = refinery,
+                            refineryOrder = refineryOrder,
+                            personalInventory = personalInventory,
+                            personalBlueprints = personalBlueprints,
+                            booking = booking,
+                            memberName = memberName,
+                            orgUnitName = orgUnitName,
+                        )
+                    if (!handled) {
+                        PushedDestination(
+                            destination = destination,
+                            backStackEntry = backStackEntry,
+                            navController = navController,
+                            missionDetail = missionDetail,
+                            operationDetail = operationDetail,
+                            bankAccount = bankAccount,
+                            orderDetail = orderDetail,
+                            refineryOrder = refineryOrder,
+                            fleetImport = fleetImport,
+                            onOpenDestination = onOpenDestination,
+                            onLogout = onLogout,
+                            settings = settings,
+                        )
+                    }
                 }
             }
         }
