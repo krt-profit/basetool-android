@@ -747,6 +747,12 @@ for the record of what was asked and what came back:
 
 Prompts for these three: [`docs/design/android/MISSING_ARTBOARD_PROMPTS.md`](design/android/MISSING_ARTBOARD_PROMPTS.md).
 
+**Round 2** — eight artboards and two corrections the parity pass turned up, none of them a
+missing *screen*: the Hangar's overflow and its two sheets, the Lager in selection mode and its
+bulk sheet, and the five canon components no screen places. Plus two artboards the running
+system contradicts. See
+[`docs/design/android/MISSING_ARTBOARD_PROMPTS_2.md`](design/android/MISSING_ARTBOARD_PROMPTS_2.md).
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

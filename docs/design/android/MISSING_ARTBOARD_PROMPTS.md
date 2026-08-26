@@ -4,6 +4,9 @@
 these prompts asked for. The prompts are kept as the record of what was requested, so the delivered
 artboards can be read against the brief that produced them.
 
+A second round — out of the artboard-by-artboard parity pass — is in
+[`MISSING_ARTBOARD_PROMPTS_2.md`](MISSING_ARTBOARD_PROMPTS_2.md).
+
 | requested | delivered |
 | :-- | :-- |
 | Open-Source-Lizenzen | **chapter 15**, five artboards (list start, sticky group change, no-browser fallback, loading, error) + tablet |
