@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **„Abmelden" in den Einstellungen fragt jetzt nach.** Ein Danger-Dialog nennt, was es kostet: Die
+  Sitzung endet, der gespeicherte Anmelde-Schlüssel wird vom Gerät gelöscht, und die nächste
+  Anmeldung läuft wieder über das Anmeldeformular im Browser. Auf den Sperr- und Freigabe-Bildschirmen
+  bleibt „Abmelden" absichtlich ohne Rückfrage — dort ist es der einzige Weg weiter.
+
 ### Removed
 
 - **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
