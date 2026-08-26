@@ -601,6 +601,7 @@
     <string name="hangar_insurance_months_range">0 bis 120 Monate.</string>
     <string name="hangar_field_location">Ort</string>
     <string name="hangar_location_none">Kein Ort</string>
+    <string name="hangar_field_fitted_hint">Ausgerüstet und startklar für Einsätze</string>
     <string name="hangar_field_fitted">Fitted</string>
     <string name="hangar_ship_delete_title">Schiff löschen</string>
     <string name="hangar_ship_delete_body">„%1$s“ wird aus deinem Hangar gelöscht.</string>

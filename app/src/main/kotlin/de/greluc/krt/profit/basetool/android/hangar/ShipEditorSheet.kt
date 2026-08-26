@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.hangar
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +30,7 @@ import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
@@ -106,12 +108,8 @@ fun ShipEditorSheet(
                     .padding(KrtSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
         ) {
-            KrtTextField(
-                value = editor.name,
-                onValueChange = onName,
-                label = stringResource(R.string.hangar_field_name),
-                enabled = !editor.saving,
-            )
+            // Artboard 08.2's order: identify the ship, then name it, then state its facts.
+            // Name-first asked a member to name a thing they had not chosen yet.
             HullPicker(
                 chosen = editor.hull,
                 query = editor.hullQuery,
@@ -120,28 +118,52 @@ fun ShipEditorSheet(
                 onQuery = onHullQuery,
                 onChosen = onHull,
             )
-            InsuranceField(
-                lti = editor.insuranceLti,
-                months = editor.insuranceMonths,
+            KrtTextField(
+                value = editor.name,
+                onValueChange = onName,
+                label = stringResource(R.string.hangar_field_name),
                 enabled = !editor.saving,
-                onLti = onLti,
-                onMonths = onMonths,
             )
-            PlacePicker(
-                chosen = editor.place,
-                places = places,
-                enabled = !editor.saving,
-                onChosen = onPlace,
-            )
+            // Versicherung and Ort share a row in the artboard: both are short facts about where
+            // the hull stands, and full-width each they pushed Fitted off a phone screen.
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
-                KrtToggle(checked = editor.fitted, onCheckedChange = onFitted, enabled = !editor.saving)
+                Box(modifier = Modifier.weight(1f)) {
+                    InsuranceField(
+                        lti = editor.insuranceLti,
+                        months = editor.insuranceMonths,
+                        enabled = !editor.saving,
+                        onLti = onLti,
+                        onMonths = onMonths,
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    PlacePicker(
+                        chosen = editor.place,
+                        places = places,
+                        enabled = !editor.saving,
+                        onChosen = onPlace,
+                    )
+                }
+            }
+            // A bordered row that lights up when set, not a toggle on a bare line: the artboard
+            // gives Fitted its own box with a second line saying what it means, because
+            // "einsatzbereit" is a claim about the ship that somebody else will rely on.
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+                KrtCheckboxRow(
+                    checked = editor.fitted,
+                    onCheckedChange = onFitted,
+                    label = stringResource(R.string.hangar_field_fitted),
+                    enabled = !editor.saving,
+                )
                 Text(
-                    text = stringResource(R.string.hangar_field_fitted),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = KrtPalette.White,
+                    text = stringResource(R.string.hangar_field_fitted_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                    modifier = Modifier.padding(start = KrtSpacing.xl),
                 )
             }
             editor.error?.let { error ->
