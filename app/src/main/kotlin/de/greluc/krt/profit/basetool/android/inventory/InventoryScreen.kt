@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -68,9 +69,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOpti
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionCheckbox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.navigation.SelectionBar
 import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.DenialState
@@ -132,6 +137,7 @@ fun InventoryScreen(
     state: InventoryState,
     onToggleGroup: (String) -> Unit,
     onToggleStack: (String, InventoryStack) -> Unit,
+    onToggleBranch: (String, InventoryStack?) -> Unit,
     onBookIn: () -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
     onAllocate: (InventoryEntry) -> Unit,
@@ -208,6 +214,7 @@ fun InventoryScreen(
                                 state = state,
                                 onToggleGroup = onToggleGroup,
                                 onToggleStack = onToggleStack,
+                                onToggleBranch = onToggleBranch,
                                 onBookOut = onBookOut,
                                 onAllocate = onAllocate,
                                 selection = selection,
@@ -221,18 +228,22 @@ fun InventoryScreen(
                 }
             }
         }
-        KrtFab(
-            iconRes = DesignR.drawable.ic_krt_plus,
-            label = stringResource(R.string.booking_mode_in),
-            onClick = onBookIn,
-            enabled = state.online,
-            modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(KrtSpacing.lg)
-                    .padding(bottom = LocalKrtBottomBarInset.current)
-                    .testTag(INVENTORY_BOOK_TAG),
-        )
+        // „FAB und Bottom-Nav weichen der Aktionsleiste" (design ch. 09, artboard 5). Two floating
+        // affordances at the same corner is one too many, and the one that belongs to a mode wins.
+        if (selection.isEmpty()) {
+            KrtFab(
+                iconRes = DesignR.drawable.ic_krt_plus,
+                label = stringResource(R.string.booking_mode_in),
+                onClick = onBookIn,
+                enabled = state.online,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(KrtSpacing.lg)
+                        .padding(bottom = LocalKrtBottomBarInset.current)
+                        .testTag(INVENTORY_BOOK_TAG),
+            )
+        }
     }
 }
 
@@ -242,6 +253,7 @@ fun InventoryScreen(
  * @param state what to draw.
  * @param onToggleGroup a group was tapped.
  * @param onToggleStack a stack was tapped.
+ * @param onToggleBranch a group or stack was long-pressed; selects every entry under it.
  * @param onBookOut an entry's booking action was taken.
  * @param onAllocate an entry's Zuordnung was opened.
  * @param selection which rows are selected.
@@ -255,6 +267,7 @@ private fun InventoryTree(
     state: InventoryState,
     onToggleGroup: (String) -> Unit,
     onToggleStack: (String, InventoryStack) -> Unit,
+    onToggleBranch: (String, InventoryStack?) -> Unit,
     onBookOut: (InventoryEntry) -> Unit,
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
@@ -267,11 +280,17 @@ private fun InventoryTree(
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId
             item(key = "group-${materialId ?: group.name}") {
+                val (picked, known) = materialId?.let(state::selectionIn) ?: (0 to null)
                 GroupRow(
                     group = group,
                     // A group the server sent without a material id cannot be asked for, so it does
                     // not offer a tap that would do nothing.
                     onClick = materialId?.let { { onToggleGroup(it) } },
+                    onLongClick = materialId?.let { { onToggleBranch(it, null) } },
+                    selected = picked,
+                    // Only while the group is open does „n/m" mean anything: a collapsed group's
+                    // total is whatever was loaded before, not what it holds now.
+                    total = known.takeIf { materialId in state.opened },
                 )
             }
             // A group nobody opened contributes nothing, which is the point of loading one only
@@ -303,6 +322,7 @@ private fun InventoryTree(
                                         stack = stack,
                                         unit = group.unit,
                                         onClick = { onToggleStack(materialId, stack) },
+                                        onLongClick = { onToggleBranch(materialId, stack) },
                                     )
                                 }
                                 entryRows(
@@ -356,12 +376,24 @@ private fun InventoryTree(
 private fun GroupRow(
     group: InventoryGroup,
     onClick: (() -> Unit)?,
+    selected: Int = 0,
+    total: Int? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(
+                    // Long-press on a branch is shorthand for its leaves (artboard 5). The plain
+                    // tap keeps opening and closing it, because collapsing is a change of view and
+                    // must stay reachable while a selection runs.
+                    if (onClick != null) {
+                        Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                    } else {
+                        Modifier
+                    },
+                )
                 // Design ch. 09 fills the group header rather than leaving it on the page ground:
                 // it is what separates a group from the stacks underneath it in a long tree. The
                 // orange rail beside it is that artboard's `border-left: 4px solid #E77E23`.
@@ -387,6 +419,20 @@ private fun GroupRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        // What this group contributes to a running selection. „1/3" while it is open, „1" once it
+        // is collapsed — collapsing is a change of view, not of selection, and the count has to
+        // keep saying so or a member loses track of rows they can no longer see (artboard 5).
+        if (selected > 0) {
+            KrtChip(
+                text =
+                    if (total != null) {
+                        pluralStringResource(R.plurals.inventory_group_selected_of, total, selected, total)
+                    } else {
+                        pluralStringResource(R.plurals.inventory_selected, selected, selected)
+                    },
+                tone = KrtChipTone.Primary,
+            )
+        }
         // The group row carries no quality in artboard 09.1 — a material's aggregate quality is an
         // average of stacks that may be far apart, and the number that matters is the one on the
         // stack a member is about to book. The gauge lives on the rows below.
@@ -509,14 +555,7 @@ private fun EntryRow(
             width = if (selected) SELECT_RAIL else STACK_RAIL,
             color = if (selected) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
         )
-        if (selecting && selected) {
-            KrtIcon(
-                id = DesignR.drawable.ic_krt_check,
-                contentDescription = null,
-                size = SELECT_MARK,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+
         Column(modifier = Modifier.weight(1f)) {
             // Design ch. 09 leads a stack entry with WHERE it is, behind a map pin — the amount is
             // the figure on the right. Only the amount and the note were drawn, so two entries of
@@ -554,13 +593,19 @@ private fun EntryRow(
         entry.quality?.let { quality ->
             QualityMark(quality = quality)
         }
-        EntryActions(
-            entry = entry,
-            online = online,
-            onBookOut = onBookOut,
-            onAllocate = onAllocate,
-            denials = denials,
-        )
+        // Selection mode replaces the row's own actions with its checkbox: with both on screen a
+        // tap would mean two things at once (design ch. 09, artboard 5: „Buchen/Zuordnen inaktiv").
+        if (selecting) {
+            KrtSelectionCheckbox(checked = selected)
+        } else {
+            EntryActions(
+                entry = entry,
+                online = online,
+                onBookOut = onBookOut,
+                onAllocate = onAllocate,
+                denials = denials,
+            )
+        }
     }
 }
 
@@ -678,18 +723,21 @@ private fun QualityMark(quality: String) {
  * @param stack the stack.
  * @param unit the group's quantity unit, since a stack carries none of its own.
  * @param onClick opens its entries.
+ * @param onLongClick selects every entry in it — a stack row carries no selection of its own
+ *   (design ch. 09, artboard 5).
  */
 @Composable
 private fun StackRow(
     stack: InventoryStack,
     unit: String?,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(start = STACK_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -835,10 +883,23 @@ fun InventoryRoute(
     // One refusal at a time, at the foot of the screen — the design settled the open question of
     // round 3 on the bracket toast in the warning tint (design ch. 09, artboards 12 and 14).
     val denials = rememberDenialState()
+    // While rows are being picked the whole head becomes „✕ n gewählt" and the bottom navigation
+    // steps aside for the action bar (design ch. 09, artboard 5). Published rather than drawn here,
+    // because both surfaces belong to the shell.
+    ProvideScreenTopBar(
+        selection =
+            state.selection
+                .takeIf { it.isNotEmpty() }
+                ?.let { SelectionBar(count = it.size, onClear = viewModel::onSelectionCleared) },
+    )
+    // Two ways out and no third: the ✕ in the head, and the system back gesture. Deselecting the
+    // last row also ends the mode, but nobody leaves twelve rows one tap at a time.
+    BackHandler(enabled = state.selection.isNotEmpty(), onBack = viewModel::onSelectionCleared)
     InventoryScreen(
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
         onToggleStack = viewModel::onToggleStack,
+        onToggleBranch = viewModel::onToggleBranch,
         onBookIn = onBookIn,
         onBookOut = onBookOut,
         onAllocate = viewModel::onAllocate,
@@ -862,26 +923,52 @@ fun InventoryRoute(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text =
-                            pluralStringResource(
-                                R.plurals.inventory_selected,
-                                state.selection.size,
-                                state.selection.size,
-                            ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = KrtPalette.White,
+                    // The artboard splits the count in two: the figure heavy and white, the word
+                    // small, muted and uppercase. One `Text` would have to pick one of them.
+                    Row(
                         modifier = Modifier.weight(1f),
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(SELECTION_COUNT_GAP),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = state.selection.size.toString(),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = KrtPalette.White,
+                        )
+                        Text(
+                            text = stringResource(R.string.inventory_selected_word).krtUppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = KrtPalette.TextMuted,
+                        )
+                    }
                     KrtGhostButton(
                         text = stringResource(R.string.inventory_selection_clear),
                         onClick = viewModel::onSelectionCleared,
                     )
+                    // A selection may span rows that are not the caller's, and the same lock the
+                    // individual rows wear applies to the batch (design ch. 09, artboard 5:
+                    // „Enthält die Auswahl fremde Zeilen, rendert Umbuchen im Gesperrt-Stil …
+                    // die Auswahl bleibt bestehen"). Refusing does not clear what was picked.
+                    val ownsEveryRow = state.selectedEntries().all { mayEditRowOf(it.holderId) }
+                    val bulkGate =
+                        Gate(
+                            allowed = ownsEveryRow,
+                            reason = stringResource(R.string.gate_own_row),
+                            detail = stringResource(R.string.gate_own_row_detail),
+                        )
+                    val (bulkDim, bulkClick) =
+                        rememberGated(bulkGate, viewModel::onBulkMoveRequested, denials)
                     KrtCtaButton(
                         text = stringResource(R.string.inventory_bulk_move),
-                        onClick = viewModel::onBulkMoveRequested,
-                        iconRes = DesignR.drawable.ic_krt_swap,
+                        onClick = bulkClick,
+                        iconRes =
+                            if (bulkGate.allowed) {
+                                DesignR.drawable.ic_krt_swap
+                            } else {
+                                DesignR.drawable.ic_krt_lock
+                            },
                         enabled = state.online,
+                        modifier = bulkDim,
                     )
                 }
             }
@@ -958,9 +1045,6 @@ private const val QUALITY_MAX = 1_000.0
 /** Width of the orange inset bar on a selected row (design ch. 02 §4). */
 private val SELECT_RAIL = 3.dp
 
-/** Size of the check beside it. */
-private val SELECT_MARK = 18.dp
-
 /**
  * „Umbuchen" over a selection.
  *
@@ -1034,3 +1118,6 @@ const val INVENTORY_BULK_TAG = "inventory-bulk-move"
 
 /** Test handle for its confirm button. */
 const val INVENTORY_BULK_CONFIRM_TAG = "inventory-bulk-confirm"
+
+/** Gap between the action bar's figure and the word beside it — design ch. 09, artboard 5. */
+private val SELECTION_COUNT_GAP = 10.dp

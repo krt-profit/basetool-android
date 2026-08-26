@@ -134,6 +134,58 @@ fun KrtTopBar(
     }
 }
 
+/**
+ * The head a screen wears while a multi-selection is running.
+ *
+ * It **replaces** the normal bar rather than decorating it (design ch. 09, artboard 5): the org chip
+ * and the bell are for choosing what to look at, and a member picking rows has already chosen. What
+ * is left is the way out and the count, which together are the whole answer to "what am I in, and
+ * how do I leave".
+ *
+ * Shorter than [KrtTopBar] on purpose — the artboard measures 56 dp against the section bar's 64 —
+ * and it carries no accent rule underneath, because the action bar at the foot is the surface that
+ * frames this mode.
+ *
+ * @param label the selection rendered as words, e.g. „2 gewählt". The count itself stays with the
+ *   caller: the plural is a string resource and this module deliberately holds none.
+ * @param onClear leaves selection mode.
+ * @param closeLabel what the ✕ announces to TalkBack.
+ * @param modifier usually the status-bar inset padding.
+ */
+@Composable
+fun KrtSelectionTopBar(
+    label: String,
+    onClear: () -> Unit,
+    closeLabel: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(KrtPalette.SurfaceInput)
+                .height(SELECTION_BAR_HEIGHT)
+                .padding(start = KrtSpacing.xs, end = KrtSpacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtIconButton(
+            iconRes = R.drawable.ic_krt_close,
+            label = closeLabel,
+            onClick = onClear,
+            style = KrtButtonStyles.chrome,
+        )
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            color = KrtPalette.White,
+        )
+    }
+}
+
+/** Height of the selection bar — the artboard's 56 dp, shorter than the section bar's 64. */
+private val SELECTION_BAR_HEIGHT = 56.dp
+
 @Preview(name = "Top bar", showBackground = true, backgroundColor = 0xFF000000, widthDp = 412)
 @Composable
 private fun TopBarPreview() {

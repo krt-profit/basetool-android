@@ -6,7 +6,9 @@
 
 - **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
   Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
-  alle Ausgewählten.
+  alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf
+  einmal, jede Zeile trägt ein Kästchen, und die Gruppe zeigt „1/3 gewählt". Einklappen ändert nur
+  die Ansicht, nicht die Auswahl.
 
 - **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
   Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als

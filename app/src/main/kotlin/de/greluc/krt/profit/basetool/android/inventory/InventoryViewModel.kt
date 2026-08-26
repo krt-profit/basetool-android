@@ -132,6 +132,51 @@ data class InventoryState(
     val bulk: BulkMoveState? = null,
 ) {
     /**
+     * The entries currently selected, as far as the tree has read them.
+     *
+     * Needed because the selection is a set of **ids** while the question a screen asks about it —
+     * "does this include somebody else's row?" — is about the rows. An id whose entry is no longer
+     * loaded is left out rather than guessed at; the server still refuses what it must.
+     *
+     * @return the selected entries.
+     */
+    fun selectedEntries(): List<InventoryEntry> =
+        openedStacks
+            .values
+            .filterIsInstance<EntriesPhase.Ready>()
+            .flatMap { it.entries }
+            .filter { it.id in selection }
+
+    /**
+     * How much of one material group is in the selection.
+     *
+     * Counted from the entries the tree has already read rather than from the group's own totals,
+     * because those are amounts and this is a count of rows. A group whose stacks were never opened
+     * has none loaded and reports `null` for the total — the chip then says „n gewählt" instead of
+     * „n/m gewählt", which is exactly the distinction design ch. 09, artboard 5 draws between an
+     * open and a collapsed group.
+     *
+     * Collapsing does not drop the entries, so a group closed after picking rows still counts them.
+     *
+     * @param materialId the group.
+     * @return how many of its rows are selected, and how many it has — the latter `null` when it
+     *   has never been opened.
+     */
+    fun selectionIn(materialId: String): Pair<Int, Int?> {
+        val prefix = "$materialId|"
+        val loaded =
+            openedStacks
+                .filterKeys { it.startsWith(prefix) }
+                .values
+                .filterIsInstance<EntriesPhase.Ready>()
+                .flatMap { it.entries }
+        if (loaded.isEmpty()) {
+            return 0 to null
+        }
+        return loaded.count { it.id in selection } to loaded.size
+    }
+
+    /**
      * The rows the tree actually shows.
      *
      * "Nur mit Bestand" is applied **on the device**, and that is deliberate rather than an
@@ -448,6 +493,40 @@ class InventoryViewModel(
     fun onToggleSelected(entryId: String) {
         val current = mutableState.value.selection
         val next = if (entryId in current) current - entryId else current + entryId
+        mutableState.value = mutableState.value.copy(selection = next)
+    }
+
+    /**
+     * Selects — or, when they are all in already, deselects — every entry under one branch.
+     *
+     * The design makes selection **always a set of entries** (design ch. 09, artboard 5: „Auswahl
+     * ist IMMER Eintrags-Menge"). A group or stack row therefore carries no selection state of its
+     * own; long-pressing one is shorthand for its leaves, which is what `bulk-rebook` takes — entry
+     * ids plus one target, and the source may differ per entry.
+     *
+     * A branch whose entries are not loaded selects nothing rather than guessing at ids. The row is
+     * still tappable to open it, so the member's next action reaches the same place.
+     *
+     * @param materialId the group, or the group a stack belongs to.
+     * @param stack the stack to limit to, or `null` for the whole group.
+     */
+    fun onToggleBranch(
+        materialId: String,
+        stack: InventoryStack? = null,
+    ) {
+        val prefix = if (stack == null) "$materialId|" else stackKey(materialId, stack)
+        val ids =
+            mutableState.value.openedStacks
+                .filterKeys { if (stack == null) it.startsWith(prefix) else it == prefix }
+                .values
+                .filterIsInstance<EntriesPhase.Ready>()
+                .flatMap { phase -> phase.entries.map { it.id } }
+                .toSet()
+        if (ids.isEmpty()) {
+            return
+        }
+        val current = mutableState.value.selection
+        val next = if (ids.all { it in current }) current - ids else current + ids
         mutableState.value = mutableState.value.copy(selection = next)
     }
 

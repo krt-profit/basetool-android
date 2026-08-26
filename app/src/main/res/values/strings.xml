@@ -864,10 +864,16 @@
         <item quantity="other">%1$d Änderungen wurden gespeichert, dann brach es ab. Die Liste oben zeigt den Stand des Servers.</item>
     </plurals>
     <plurals name="inventory_selected">
-        <item quantity="one">%1$d ausgewählt</item>
-        <item quantity="other">%1$d ausgewählt</item>
+        <item quantity="one">%1$d gewählt</item>
+        <item quantity="other">%1$d gewählt</item>
     </plurals>
     <string name="inventory_selection_clear">Aufheben</string>
+    <string name="inventory_selected_word">gewählt</string>
+    <string name="inventory_selection_leave">Auswahl verlassen</string>
+    <plurals name="inventory_group_selected_of">
+        <item quantity="one">%1$d/%2$d gewählt</item>
+        <item quantity="other">%1$d/%2$d gewählt</item>
+    </plurals>
     <string name="inventory_bulk_move">Umbuchen</string>
     <string name="inventory_bulk_move_pick">Ort wählen</string>
     <string name="inventory_bulk_move_confirm">Verschieben</string>

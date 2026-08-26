@@ -385,6 +385,55 @@ fun KrtSelectField(
 }
 
 /**
+ * The checkbox a list row wears while a multi-selection is running.
+ *
+ * Deliberately **not** [KrtCheckboxRow]'s mark. That one is the form control of design ch. 02: 18 dp,
+ * a filled `SurfaceInput` well with a `Gray3` edge, sized to sit beside a label on a page ground.
+ * Chapter 09's tree draws a different one — 22 dp, no fill at all and a `Gray2` edge — because it
+ * sits **on** a filled row, where the form control's own fill disappears into the row behind it and
+ * its edge is barely a shade off it. Same idea, two grounds, two marks.
+ *
+ * It renders the state only. The tap belongs to the whole row, which is what the artboard makes
+ * tappable („Tap = Auswahl umschalten"), so this carries no click of its own and no semantics —
+ * the row's `toggleable` owns both.
+ *
+ * @param checked whether the row is in the selection.
+ * @param modifier placement within the row.
+ */
+@Composable
+fun KrtSelectionCheckbox(
+    checked: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(SELECTION_CHECKBOX_SIZE)
+                .then(if (checked) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier)
+                .border(
+                    KrtSpacing.hairline,
+                    if (checked) MaterialTheme.colorScheme.primary else KrtPalette.Gray2,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) {
+            KrtIcon(
+                id = R.drawable.ic_krt_check,
+                contentDescription = null,
+                size = SELECTION_CHECK_GLYPH,
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+}
+
+/** Edge length of the tree's selection mark — design ch. 09, artboard 5. */
+private val SELECTION_CHECKBOX_SIZE = 22.dp
+
+/** The check inside it. */
+private val SELECTION_CHECK_GLYPH = 15.dp
+
+/**
  * The square checkbox of the design system.
  *
  * Material's checkbox is rounded and animates a checkmark stroke; this one is a square that fills

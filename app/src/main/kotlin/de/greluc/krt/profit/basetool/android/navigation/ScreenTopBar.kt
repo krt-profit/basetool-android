@@ -30,11 +30,27 @@ import androidx.compose.runtime.rememberUpdatedState
  *   rendering as one.
  * @property subtitle drawn under the title, small — usually a status pill.
  * @property actions trailing controls the screen owns, such as its overflow menu.
+ * @property selection a running multi-selection, which **replaces** the whole bar rather than
+ *   decorating it (design ch. 09, artboard 5). The org chip and the bell are for choosing what to
+ *   look at, and while a member is picking rows they are picking within one scope already.
  */
 data class ScreenTopBar(
     val title: String? = null,
     val subtitle: (@Composable () -> Unit)? = null,
     val actions: (@Composable () -> Unit)? = null,
+    val selection: SelectionBar? = null,
+)
+
+/**
+ * The head a screen wears while a multi-selection is running.
+ *
+ * @property count how many rows are selected — the bar's whole text, „n gewählt".
+ * @property onClear leaves selection mode; the design offers exactly two ways out, this ✕ and the
+ *   system back gesture, and never "deselect everything one by one".
+ */
+data class SelectionBar(
+    val count: Int,
+    val onClear: () -> Unit,
 )
 
 /**
@@ -57,15 +73,20 @@ val LocalScreenTopBar: androidx.compose.runtime.ProvidableCompositionLocal<Mutab
  * @param title the subject's name, or `null` to keep the destination's own section title.
  * @param subtitle drawn under it.
  * @param actions trailing controls the screen owns, such as its overflow menu.
+ * @param selection a running multi-selection, which replaces the bar entirely while it lasts.
  */
 @Composable
 fun ProvideScreenTopBar(
     title: String? = null,
     subtitle: (@Composable () -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
+    selection: SelectionBar? = null,
 ) {
     val slot = LocalScreenTopBar.current
-    val published by rememberUpdatedState(ScreenTopBar(title = title, subtitle = subtitle, actions = actions))
+    val published by
+        rememberUpdatedState(
+            ScreenTopBar(title = title, subtitle = subtitle, actions = actions, selection = selection),
+        )
     // Published on every successful recomposition, cleared once on the way out. Keying a
     // DisposableEffect on the slots instead looks tidier and is a trap: a `subtitle` or `actions`
     // lambda is a fresh instance each frame, so the effect disposed and re-ran continuously — which

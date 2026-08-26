@@ -29,6 +29,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -189,6 +190,25 @@ class InventoryViewModelTest {
             quality = "880",
             entryCount = 1,
         )
+
+    private fun entry(
+        id: String,
+        holderId: String = "u1",
+    ) = InventoryEntry(
+        id = id,
+        materialName = "Quantainium",
+        materialId = "m1",
+        unit = "SCU",
+        locationName = "ARC-L1",
+        locationId = "l1",
+        holder = "Rhea",
+        holderId = holderId,
+        amount = "10",
+        quality = "880",
+        personal = false,
+        note = null,
+        version = 1L,
+    )
 
     private fun page(vararg rows: InventoryGroup) =
         InventoryPage(rows.toList(), page = 0, totalPages = 1, totalElements = rows.size.toLong())
@@ -362,5 +382,92 @@ class InventoryViewModelTest {
     private companion object {
         /** Two groups on the page. */
         const val TWO = 2L
+    }
+
+    /**
+     * A branch row is shorthand for its leaves.
+     *
+     * Design ch. 09, artboard 5 makes selection „IMMER Eintrags-Menge" — a group or stack row holds
+     * no selection state of its own, which is also what `bulk-rebook` needs: entry ids plus one
+     * target, sources free to differ.
+     */
+    @Test
+    fun `long-pressing a group selects every entry under it`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+
+            model.onToggleBranch("m1", null)
+
+            assertEquals(setOf("e1", "e2"), model.state.value.selection)
+        }
+
+    @Test
+    fun `long-pressing the same group again clears it`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+            model.onToggleBranch("m1", null)
+
+            model.onToggleBranch("m1", null)
+
+            assertTrue(model.state.value.selection.isEmpty())
+        }
+
+    /** A branch nobody opened has no ids to select, and must not invent any. */
+    @Test
+    fun `long-pressing an unopened group selects nothing`() =
+        runTest(dispatcher) {
+            val model = InventoryViewModel(source, AlwaysOnline)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onToggleBranch("m1", null)
+
+            assertTrue(model.state.value.selection.isEmpty())
+        }
+
+    /**
+     * „Einklappen ist Ansicht, nicht Auswahl" (design ch. 09, artboard 5).
+     *
+     * The chip on a collapsed group still counts its picked rows, so the group's entries have to
+     * survive the collapse — and with them the count that tells a member what is still in play
+     * behind a row they can no longer see.
+     */
+    @Test
+    fun `collapsing a group keeps its selection and its count`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+            model.onToggleBranch("m1", null)
+
+            model.onToggleGroup("m1")
+            advanceUntilIdle()
+
+            assertEquals(setOf("e1", "e2"), model.state.value.selection)
+            assertEquals(2 to 2, model.state.value.selectionIn("m1"))
+        }
+
+    @Test
+    fun `a group whose entries were never read reports no total`() =
+        runTest(dispatcher) {
+            val model = InventoryViewModel(source, AlwaysOnline)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            assertEquals(0 to null, model.state.value.selectionIn("m1"))
+        }
+
+    /** Opens the one group and its one stack, so the tree holds entries to select. */
+    private suspend fun TestScope.openedStackModel(): InventoryViewModel {
+        val model = InventoryViewModel(source, AlwaysOnline)
+        model.loadOnce()
+        advanceUntilIdle()
+        model.onToggleGroup("m1")
+        advanceUntilIdle()
+        val stack = (model.state.value.opened.getValue("m1") as StackPhase.Ready).stacks.first()
+        model.onToggleStack("m1", stack)
+        advanceUntilIdle()
+        return model
     }
 }

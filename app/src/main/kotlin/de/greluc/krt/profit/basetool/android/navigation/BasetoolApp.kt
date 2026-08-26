@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtNavigationRail
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionTopBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -275,7 +277,10 @@ fun BasetoolApp(
                     )
                 }
             }
-            if (!expanded) {
+            // While a selection runs, the foot of the screen belongs to its action bar — the
+            // navigation would offer a way out that silently drops what was picked (design ch. 09,
+            // artboard 5: „FAB und Bottom-Nav weichen der Aktionsleiste").
+            if (!expanded && detail?.selection == null) {
                 KrtBottomBar(
                     items = navItems,
                     selectedRoute = selectedRoute,
@@ -399,6 +404,18 @@ private fun AppTopBar(
     onSwitchOrg: () -> Unit,
     onNotifications: () -> Unit,
 ) {
+    // A running selection replaces the bar outright rather than decorating it: while a member is
+    // picking rows, the org chip and the bell offer a change of subject they did not ask for
+    // (design ch. 09, artboard 5). Checked first, because it outranks both other shapes.
+    detail?.selection?.let { selecting ->
+        KrtSelectionTopBar(
+            label = pluralStringResource(R.plurals.inventory_selected, selecting.count, selecting.count),
+            onClear = selecting.onClear,
+            closeLabel = stringResource(R.string.inventory_selection_leave),
+            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        )
+        return
+    }
     // A published TITLE always names a thing; a destination title always names a section. A screen
     // that publishes only actions — the Hangar's overflow — keeps its section bar, badge and bell.
     val subject = detail?.title

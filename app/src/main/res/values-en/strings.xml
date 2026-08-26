@@ -849,6 +849,12 @@
         <item quantity="other">%1$d selected</item>
     </plurals>
     <string name="inventory_selection_clear">Clear</string>
+    <string name="inventory_selected_word">selected</string>
+    <string name="inventory_selection_leave">Leave selection</string>
+    <plurals name="inventory_group_selected_of">
+        <item quantity="one">%1$d/%2$d selected</item>
+        <item quantity="other">%1$d/%2$d selected</item>
+    </plurals>
     <string name="inventory_bulk_move">Rebook</string>
     <string name="inventory_bulk_move_pick">Pick a location</string>
     <string name="inventory_bulk_move_confirm">Move</string>
