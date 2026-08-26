@@ -20,8 +20,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,6 +37,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFanKitBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
@@ -55,7 +62,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * destructive-looking button that does nothing teaches members to distrust the ones that do.
  *
  * Sign-out lives at the bottom of this screen, which is where the design puts it and where it stops
- * being reachable by mis-tapping a settings row.
+ * being reachable by mis-tapping a settings row. It asks before it acts: see [SignOutConfirmModal].
  *
  * @param accountName the signed-in member's username, from the ID token; `null` while unknown.
  * @param language the language currently on screen.
@@ -67,7 +74,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param onOpenImprint opens the imprint in a browser.
  * @param onOpenTerms opens the terms of use in a browser.
  * @param onOpenLicenses opens the in-app open-source notice.
- * @param onLogout ends the session.
+ * @param onLogout ends the session; invoked only after the member confirms.
  * @param versionName the app's version name.
  * @param versionCode the app's build number.
  * @param modifier layout modifier.
@@ -140,7 +147,7 @@ fun SettingsScreen(
  * @param onOpenImprint opens the imprint.
  * @param onOpenTerms opens the terms of use.
  * @param onOpenLicenses opens the open-source notice.
- * @param onLogout ends the session.
+ * @param onLogout ends the session; invoked only after the member confirms.
  * @param versionName the app's version name.
  * @param versionCode the app's build number.
  */
@@ -251,12 +258,29 @@ private fun SettingsColumn(
 
         KrtFanKitBand()
 
+        // The button asks rather than acts: sign-out destroys the stored key, so the way back is the
+        // full browser flow, and this is the one control on the screen whose cost is not undoable by
+        // tapping it again. Confirmation is deliberately NOT added to the gates' sign-out
+        // (approval-pending, gate-unavailable, locked): there it is the only way forward, and a
+        // confirmation on an escape hatch is friction, not safety.
+        var confirmingSignOut by rememberSaveable { mutableStateOf(false) }
+
         KrtQuietDangerButton(
             text = stringResource(R.string.logout),
-            onClick = onLogout,
+            onClick = { confirmingSignOut = true },
             iconRes = DesignR.drawable.ic_krt_logout,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag(SETTINGS_LOGOUT_TAG),
         )
+
+        if (confirmingSignOut) {
+            SignOutConfirmModal(
+                onConfirm = {
+                    confirmingSignOut = false
+                    onLogout()
+                },
+                onDismiss = { confirmingSignOut = false },
+            )
+        }
 
         // App version and API version. The design's footer also carries a server-status dot; that
         // half stays undrawn because this build has no health signal to read it from, and an
@@ -330,6 +354,46 @@ private fun TrailingGlyph(iconRes: Int) {
         tint = KrtPalette.Gray2,
     )
 }
+
+/**
+ * The confirmation in front of sign-out.
+ *
+ * Danger tone, because the action destroys something: the encrypted refresh token and the Keystore
+ * key that decrypts it are both deleted (`REQ-APP-AUTH-005`), and no local step brings the session
+ * back. The body says exactly that in the member's own terms — what ends, and that the way back is
+ * the browser sign-in form rather than a tap — instead of asking "are you sure?", which is the rule
+ * [KrtModalTone.Danger] carries.
+ *
+ * @param onConfirm the member confirmed; the caller signs out.
+ * @param onDismiss cancel, back or a scrim tap; nothing happens.
+ */
+@Composable
+private fun SignOutConfirmModal(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtModal(
+        title = stringResource(R.string.logout_confirm_title),
+        confirmText = stringResource(R.string.logout_confirm_action),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        tone = KrtModalTone.Danger,
+        cancelText = stringResource(R.string.logout_confirm_cancel),
+        modifier = Modifier.testTag(SETTINGS_LOGOUT_CONFIRM_TAG),
+    ) {
+        Text(
+            text = stringResource(R.string.logout_confirm_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+    }
+}
+
+/** Test tag of the sign-out button at the foot of the screen. */
+const val SETTINGS_LOGOUT_TAG: String = "settings-logout"
+
+/** Test tag of the sign-out confirmation modal. */
+const val SETTINGS_LOGOUT_CONFIRM_TAG: String = "settings-logout-confirm"
 
 /** Size of a settings row's trailing glyph. */
 private val TRAILING_ICON = 16.dp

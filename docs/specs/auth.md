@@ -144,6 +144,10 @@ entry, in addition to the Keycloak end-session call and the best-effort refresh-
 - [x] The DPoP signing key is destroyed with the rest. It lives outside `AuthSession`'s reach, so
   `AuthContainer.logout()` deletes it after the session wipe; the refresh token is bound to it and
   leaving it alive would leave the binding alive.
+- [x] Because none of this is reversible from the device, the wipe is **confirmed before it runs**
+  wherever sign-out is a mis-tap rather than the only way forward — that is, on the settings screen
+  (`REQ-APP-SET-010`). The gates' sign-out (`REQ-APP-AUTH-009`, `REQ-APP-AUTH-010`) stays direct on
+  purpose: there it is the escape hatch.
 
 ### REQ-APP-AUTH-006 — Token requests use their own HTTP client, and every answer is a named state
 

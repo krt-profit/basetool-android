@@ -240,3 +240,39 @@ nowhere else — and neither half of the unit may be moved or removed on its own
 
 - [x] The band is rendered above sign-out on this screen.
 - [x] It is not added to any further screen by this change.
+
+### REQ-APP-SET-010 — Sign-out asks before it wipes
+
+Sign-out is the only control on this screen whose cost cannot be undone by tapping it again.
+`REQ-APP-AUTH-005` destroys the encrypted refresh token, the Keystore key that decrypts it and the
+DPoP signing key; nothing local restores the session, and the way back is the browser's sign-in
+form. A full-width button sitting directly under a scrollable list of harmless toggles is one
+mis-tap away from that, so it opens a confirmation instead of acting.
+
+The confirmation is a `KrtModal` in the **danger** tone, whose copy rule is to name the consequence
+rather than ask a yes/no question: the body says the session ends, the stored sign-in key is deleted
+from the device, and the next sign-in runs through the browser form again.
+
+The button itself stays on the quiet-danger rung of the ladder and stays where the design puts it —
+below the Fan Kit band, above the version footer (design ch. 13, `REQ-APP-SET-007`). This
+requirement adds the question, not a new control.
+
+**The gates' sign-out is deliberately left unconfirmed.** On the approval-pending, gate-unavailable
+and locked screens (`REQ-APP-AUTH-009`, `REQ-APP-AUTH-010`) sign-out is the only way forward, not a
+mis-tap risk; a confirmation on an escape hatch is friction rather than safety.
+
+**Acceptance**
+
+- [x] Tapping sign-out opens the confirmation and does **not** call `onLogout`
+  (`SettingsScreenTest`).
+- [x] Confirming calls it exactly once, and cancelling leaves the session alone and closes the
+  modal (`SettingsScreenTest`). Back and a scrim tap reach the same `onDismiss` through
+  `KrtModal`'s `onDismissRequest`, so they cannot sign anybody out.
+- [x] The modal renders in `KrtModalTone.Danger`, and its body names the consequence rather than
+  asking a yes/no question — asserted on the copy, so a later edit cannot quietly empty it.
+- [x] Title, body, confirm and cancel are string resources in DE and EN (`REQ-APP-SET-003`,
+  `StringsParityTest`). The confirm label does not repeat the screen button's own label, so the two
+  are never ambiguous on screen at once.
+- [x] The open/closed state is held in `rememberSaveable`, so a rotation with the question open
+  re-asks it rather than dropping it silently.
+- [x] The gates' sign-out keeps its direct path — this change touches only the settings screen.
