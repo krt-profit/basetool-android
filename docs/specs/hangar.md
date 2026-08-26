@@ -232,6 +232,35 @@ it touched.
 
 ---
 
+### REQ-APP-HANGAR-013 — The org-unit aggregate stays a table, and says what it cannot show
+
+Design ch. 08, artboard 11 states the collapse rule and its limit in one breath: wide data tables
+(≥ 5 columns) fall together into key-value cards on the phone — that is „Meine Schiffe" — but
+**narrow aggregates stay tables**, because the collapse is about width, not about tables as such.
+
+So the org-unit half renders as a table on the phone too: `SCHIFFSTYP | ANZAHL | FITTED`, each row
+led by the manufacturer's lettermark, the fitted figure in the success tint. Above it sits the
+figure band of artboard 1. Tapping a row is the artboard's own affordance — „Zeile antippen →
+gefilterte Schiffsliste" — and it puts the type into the search and moves to „Meine Schiffe" rather
+than opening a screen of its own.
+
+**The LTI figure is not shown, and that is stated rather than faked.** Artboard 1 draws three tiles:
+Schiffe, Fitted and LTI. The aggregate endpoint carries `count` and `fittedCount`, and
+`SquadronShipDetailDto` carries owner, location and `fitted` — **no insurance at all**. A third tile
+would have to invent the number or show a dash, and a dash claims the figure exists and is merely
+missing today. It needs a field on the aggregate in the main repo before it can ship here.
+
+**Acceptance**
+
+- [x] The aggregate renders as a table on a phone, with its own headers (`HangarScreenTest`).
+- [x] Every cell carries its column's weight. `KrtTable` passes `cell` a `RowScope` and leaves the
+  weight to the caller; the header row applies it, so a table that forgets it puts its figures
+  beside the wrong titles. Both tables here had that defect and it was invisible until two numeric
+  columns sat side by side.
+- [ ] The LTI figure. **Open** — blocked on the aggregate endpoint (main repo).
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No FAB, no overflow, no import.** Adding, editing, deleting, "Home-Location setzen", "Hangar

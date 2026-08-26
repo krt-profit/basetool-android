@@ -281,6 +281,21 @@ class HangarViewModel(
         typedText.value = text
     }
 
+    /**
+     * „Zeile antippen → gefilterte Schiffsliste" (design ch. 08, artboard 1).
+     *
+     * The aggregate answers *how many of this type the unit has*; the question a member asks next
+     * is *which ones*. So the row puts its type into the search and moves to „Meine Schiffe" rather
+     * than opening a screen of its own — the filtered list already exists and is where they were
+     * heading.
+     *
+     * @param typeName the ship type that was tapped.
+     */
+    fun onTypeDrilldown(typeName: String) {
+        onSearchChanged(typeName)
+        onSegmentSelected(HangarSegment.MINE)
+    }
+
     /** Re-reads the showing half while keeping its rows on screen. */
     fun onRefresh() {
         mutableState.value = mutableState.value.copy(refreshing = true)

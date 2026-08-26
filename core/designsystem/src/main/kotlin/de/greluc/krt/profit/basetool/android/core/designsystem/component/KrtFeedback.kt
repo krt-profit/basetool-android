@@ -349,38 +349,41 @@ fun KrtTotalTile(
 }
 
 /**
- * One figure of an outcome — how many rows a batch moved, how many it skipped.
+ * One figure with a label and a coloured rail — a batch's outcome, or a screen's KPI band.
  *
  * Not [KrtTotalTile]: that one is a screen's *total*, framed and carrying the orange bar that marks
- * it as such. This is one of a pair reporting what a write just did, so it is bare except for a
- * 4 dp rail in the tone of the number beside it (design ch. 09, artboard 9). Two tiles of equal
- * width sit side by side; give each `Modifier.weight(1f)`.
+ * it as such. This is one of a row of equals — „Umgebucht 11 / Übersprungen 1" after a batch
+ * (design ch. 09, artboard 9), „Schiffe 42 / Fitted 31" over an aggregate (ch. 08, artboard 1) —
+ * so it is bare except for a 4 dp rail in the tone of the number beside it. Give each sibling
+ * `Modifier.weight(1f)`.
  *
  * @param label what the figure counts, drawn small and muted above it.
  * @param value the figure.
- * @param tone the rail and the figure's colour — success for what happened, muted for what did not.
- * @param modifier usually the weight that pairs it with its sibling.
+ * @param tone the rail and the figure's colour.
+ * @param modifier usually the weight that pairs it with its siblings.
  */
 @Composable
-fun KrtOutcomeTile(
+fun KrtFigureTile(
     label: String,
     value: String,
-    tone: KrtOutcomeTone,
+    tone: KrtFigureTone,
     modifier: Modifier = Modifier,
 ) {
     val hue =
         when (tone) {
-            KrtOutcomeTone.Success -> KrtTheme.colors.successText
-            KrtOutcomeTone.Neutral -> KrtPalette.Gray1
+            KrtFigureTone.Primary -> KrtPalette.White
+            KrtFigureTone.Success -> KrtTheme.colors.successText
+            KrtFigureTone.Neutral -> KrtPalette.Gray1
         }
     val rail =
         when (tone) {
-            KrtOutcomeTone.Success -> KrtTheme.colors.success
-            KrtOutcomeTone.Neutral -> KrtPalette.Gray2
+            KrtFigureTone.Primary -> MaterialTheme.colorScheme.primary
+            KrtFigureTone.Success -> KrtTheme.colors.success
+            KrtFigureTone.Neutral -> KrtPalette.Gray2
         }
     Row(modifier = modifier.height(IntrinsicSize.Min).background(KrtPalette.Gray4)) {
-        Box(modifier = Modifier.width(OUTCOME_RAIL).fillMaxHeight().background(rail))
-        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = OUTCOME_PAD)) {
+        Box(modifier = Modifier.width(FIGURE_RAIL).fillMaxHeight().background(rail))
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = FIGURE_PAD)) {
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -396,20 +399,23 @@ fun KrtOutcomeTile(
     }
 }
 
-/** Which of the two figures an [KrtOutcomeTile] is reporting. */
-enum class KrtOutcomeTone {
-    /** Something was done — the green figure. */
+/** The tone a [KrtFigureTile] is drawn in. */
+enum class KrtFigureTone {
+    /** The headline figure of a band — the orange rail. */
+    Primary,
+
+    /** Something was done, or is ready — the green figure. */
     Success,
 
-    /** Something was deliberately not done, which is not a failure. */
+    /** A figure that is neither good nor bad: skipped, remaining, unclassified. */
     Neutral,
 }
 
 /** Width of the tile's coloured rail. */
-private val OUTCOME_RAIL = 4.dp
+private val FIGURE_RAIL = 4.dp
 
 /** Vertical padding inside it. */
-private val OUTCOME_PAD = 10.dp
+private val FIGURE_PAD = 10.dp
 
 /**
  * A KPI tile with an optional delta and sparkline.

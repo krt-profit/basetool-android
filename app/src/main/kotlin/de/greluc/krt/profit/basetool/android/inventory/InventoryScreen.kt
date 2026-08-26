@@ -58,6 +58,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
@@ -67,8 +69,6 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutcomeTile
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutcomeTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
@@ -1160,16 +1160,16 @@ private fun BulkMoveOutcome(
     onFinished: () -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
-        KrtOutcomeTile(
+        KrtFigureTile(
             label = stringResource(R.string.inventory_bulk_move_rebooked),
             value = result.rebooked.toString(),
-            tone = KrtOutcomeTone.Success,
+            tone = KrtFigureTone.Success,
             modifier = Modifier.weight(1f),
         )
-        KrtOutcomeTile(
+        KrtFigureTile(
             label = stringResource(R.string.inventory_bulk_move_skipped),
             value = result.skipped.toString(),
-            tone = KrtOutcomeTone.Neutral,
+            tone = KrtFigureTone.Neutral,
             modifier = Modifier.weight(1f),
         )
     }

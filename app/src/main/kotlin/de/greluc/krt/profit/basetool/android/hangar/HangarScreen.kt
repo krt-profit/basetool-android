@@ -38,6 +38,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -55,6 +56,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
@@ -75,6 +78,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
@@ -130,6 +134,7 @@ fun HangarScreen(
     onCreate: () -> Unit,
     onEdit: (Ship) -> Unit,
     onDelete: (Ship) -> Unit,
+    onTypeDrilldown: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -200,7 +205,13 @@ fun HangarScreen(
                         onRefresh = onRefresh,
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        HangarBody(state = state, onLoadMore = onLoadMore, onEdit = onEdit, onDelete = onDelete)
+                        HangarBody(
+                            state = state,
+                            onLoadMore = onLoadMore,
+                            onEdit = onEdit,
+                            onDelete = onDelete,
+                            onTypeDrilldown = onTypeDrilldown,
+                        )
                     }
                 }
             }
@@ -268,6 +279,7 @@ private fun ShipCardActions(
  * @param onLoadMore the next page was asked for.
  * @param onEdit a ship was tapped.
  * @param onDelete a ship's delete action was taken.
+ * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
  */
 @Composable
 private fun HangarBody(
@@ -275,6 +287,7 @@ private fun HangarBody(
     onLoadMore: () -> Unit,
     onEdit: (Ship) -> Unit,
     onDelete: (Ship) -> Unit,
+    onTypeDrilldown: (String) -> Unit,
 ) {
     val empty =
         if (state.segment == HangarSegment.MINE) state.ships.isEmpty() else state.types.isEmpty()
@@ -310,7 +323,21 @@ private fun HangarBody(
                 )
             }
         } else {
-            items(state.types, key = { it.typeName }) { type -> ShipTypeRow(type = type) }
+            // A three-column aggregate stays a table on the phone as well. Design ch. 08,
+            // artboard 11 is explicit that the collapse to cards is about WIDTH, not about tables:
+            // „Schmale Aggregate … bleiben auch auf dem Telefon Tabelle."
+            item(key = "org-figures") { ShipTypeFigures(types = state.types) }
+            item(key = "org-table") {
+                ShipTypeTable(types = state.types, onPick = onTypeDrilldown)
+            }
+            item(key = "org-note") {
+                Text(
+                    text = stringResource(R.string.hangar_org_note),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.Gray2,
+                )
+            }
         }
         item(key = "footer") {
             if (state.hasMore) {
@@ -355,6 +382,7 @@ private fun HangarState.countLabel(): String =
  * @param online whether writes are possible; the actions disable with the rest of the screen.
  * @param onEdit opens the editor for a ship.
  * @param onDelete asks to delete one.
+ * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
  */
 @Composable
 private fun ShipTable(
@@ -384,12 +412,18 @@ private fun ShipTable(
         onRowClick = { onEdit(ships[it]) },
     ) { row, column ->
         val ship = ships[row]
+        // `cell` is a RowScope lambda: the weight is the CALLER's to apply, and without it every
+        // cell sizes to its own content while the header row — which does apply it — stays on the
+        // grid. The two disagreed, so figures drifted left of the titles they belong under. Only
+        // visible once the aggregate put two numeric columns side by side (ch. 08, artboard 11).
         if (column == columns.lastIndex) {
-            ShipCardActions(
-                online = online,
-                onEdit = { onEdit(ship) },
-                onDelete = { onDelete(ship) },
-            )
+            Box(modifier = Modifier.weight(columns[column].weight)) {
+                ShipCardActions(
+                    online = online,
+                    onEdit = { onEdit(ship) },
+                    onDelete = { onDelete(ship) },
+                )
+            }
         } else {
             KrtTableCell(
                 text =
@@ -401,6 +435,7 @@ private fun ShipTable(
                         else -> if (ship.fitted) fittedYes else fittedNo
                     },
                 column = columns[column],
+                modifier = Modifier.weight(columns[column].weight),
                 emphasis = column == 0,
             )
         }
@@ -559,34 +594,105 @@ private fun ShipCardBody(ship: Ship) {
 private fun Ship.headline(): String = name?.let { "$typeName „$it\"" } ?: typeName
 
 /**
- * One aggregate row.
+ * The band over the aggregate: how many ships the org unit has, and how many are ready.
  *
- * @param type the ship type and its counts.
+ * Design ch. 08, artboard 1 draws three figures — Schiffe, Fitted and LTI. Two of them ship: the
+ * aggregate endpoint carries `count` and `fittedCount` and **no insurance at all**
+ * (`SquadronShipDetailDto` has owner, location and fitted), so an LTI figure here would have to be
+ * invented. It is named as a gap in the spec rather than filled with a dash, because a KPI tile
+ * showing „—" claims the number exists and is merely missing today.
+ *
+ * @param types the aggregate rows, which are also what the figures are summed from.
  */
 @Composable
-private fun ShipTypeRow(type: ShipTypeSummary) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+private fun ShipTypeFigures(types: List<ShipTypeSummary>) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
-        Text(
-            text = type.typeName,
-            style = MaterialTheme.typography.titleMedium,
-            color = KrtPalette.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        KrtFigureTile(
+            label = stringResource(R.string.hangar_figure_ships),
+            value = types.sumOf { it.count }.toString(),
+            tone = KrtFigureTone.Primary,
+            modifier = Modifier.weight(1f),
         )
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.hangar_type_row,
-                    type.count.toInt(),
-                    type.count.toInt(),
-                    type.fittedCount.toInt(),
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
+        KrtFigureTile(
+            label = stringResource(R.string.hangar_figure_fitted),
+            value = types.sumOf { it.fittedCount }.toString(),
+            tone = KrtFigureTone.Success,
+            modifier = Modifier.weight(1f),
         )
+    }
+}
+
+/**
+ * The aggregate itself — ship type, how many, how many fitted.
+ *
+ * Three columns, so it stays a table on the phone (design ch. 08, artboard 11). Tapping a row is
+ * the artboard's own affordance: „Zeile antippen → gefilterte Schiffsliste" — it puts that type in
+ * the filter and moves to „Meine Schiffe", which is the list the member was reaching for.
+ *
+ * @param types the rows.
+ * @param onPick the type whose ships to show.
+ */
+@Composable
+private fun ShipTypeTable(
+    types: List<ShipTypeSummary>,
+    onPick: (String) -> Unit,
+) {
+    val columns =
+        listOf(
+            KrtTableColumn(stringResource(R.string.hangar_column_ship_type), weight = 2f),
+            // Both figures are numeric, so they sit right-aligned under their own headers — the
+            // artboard's columns line up, and two counts that drift left of their titles read as
+            // belonging to the name beside them instead.
+            KrtTableColumn(stringResource(R.string.hangar_column_count), weight = 0.7f, numeric = true),
+            // „FITTED", not the ship table's „Ausgebaut": the aggregate counts a state, the ship
+            // table names one. Artboard 1 writes them differently and so does this.
+            KrtTableColumn(stringResource(R.string.hangar_figure_fitted), weight = 0.7f, numeric = true),
+        )
+    KrtTable(
+        columns = columns,
+        rowCount = types.size,
+        onRowClick = { onPick(types[it].typeName) },
+    ) { row, column ->
+        val type = types[row]
+        when (column) {
+            0 -> {
+                Row(
+                    modifier = Modifier.weight(columns[0].weight),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ManufacturerMark(type.manufacturerName)
+                    KrtTableCell(text = type.typeName, column = columns[0], emphasis = true)
+                }
+            }
+
+            1 -> {
+                KrtTableCell(
+                    text = type.count.toString(),
+                    column = columns[1],
+                    modifier = Modifier.weight(columns[1].weight),
+                    emphasis = true,
+                )
+            }
+
+            // The fitted figure is the one the eye is looking for, and the artboard states it in
+            // the success tint rather than as another neutral number.
+            else -> {
+                Text(
+                    text = type.fittedCount.toString(),
+                    modifier =
+                        Modifier
+                            .weight(columns[2].weight)
+                            .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                    textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtTheme.colors.successText,
+                )
+            }
+        }
     }
 }
 
@@ -703,6 +809,7 @@ fun HangarRoute(
         onCreate = viewModel::onCreate,
         onEdit = viewModel::onEdit,
         onDelete = viewModel::onDeleteRequested,
+        onTypeDrilldown = viewModel::onTypeDrilldown,
         modifier = modifier,
     )
 

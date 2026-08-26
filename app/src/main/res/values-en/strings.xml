@@ -367,15 +367,16 @@
         <item quantity="one">%1$d of %2$d ship type</item>
         <item quantity="other">%1$d of %2$d ship types</item>
     </plurals>
-    <plurals name="hangar_type_row">
-        <item quantity="one">%1$d ship · %2$d fitted</item>
-        <item quantity="other">%1$d ships · %2$d fitted</item>
-    </plurals>
     <string name="hangar_column_type">Type</string>
     <string name="hangar_column_name">Name</string>
     <string name="hangar_column_insurance">Insurance</string>
     <string name="hangar_column_location">Location</string>
     <string name="hangar_column_fitted">Fitted</string>
+    <string name="hangar_column_count">Count</string>
+    <string name="hangar_column_ship_type">Ship type</string>
+    <string name="hangar_figure_ships">Ships</string>
+    <string name="hangar_figure_fitted">Fitted</string>
+    <string name="hangar_org_note">Aggregated over the active org unit. Tapping a row shows the filtered ship list.</string>
     <string name="hangar_column_actions">Actions</string>
     <string name="hangar_fitted_yes">Yes</string>
     <string name="hangar_fitted_no">No</string>

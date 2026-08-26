@@ -388,15 +388,16 @@
         <item quantity="one">%1$d von %2$d Schiffstyp</item>
         <item quantity="other">%1$d von %2$d Schiffstypen</item>
     </plurals>
-    <plurals name="hangar_type_row">
-        <item quantity="one">%1$d Schiff · %2$d fitted</item>
-        <item quantity="other">%1$d Schiffe · %2$d fitted</item>
-    </plurals>
     <string name="hangar_column_type">Typ</string>
     <string name="hangar_column_name">Name</string>
     <string name="hangar_column_insurance">Versicherung</string>
     <string name="hangar_column_location">Ort</string>
     <string name="hangar_column_fitted">Ausgebaut</string>
+    <string name="hangar_column_count">Anzahl</string>
+    <string name="hangar_column_ship_type">Schiffstyp</string>
+    <string name="hangar_figure_ships">Schiffe</string>
+    <string name="hangar_figure_fitted">Fitted</string>
+    <string name="hangar_org_note">Aggregation über die aktive Org-Einheit. Zeile antippen zeigt die gefilterte Schiffsliste.</string>
     <string name="hangar_column_actions">Aktionen</string>
     <string name="hangar_fitted_yes">Ja</string>
     <string name="hangar_fitted_no">Nein</string>

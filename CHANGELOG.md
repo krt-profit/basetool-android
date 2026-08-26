@@ -6,6 +6,10 @@
 
 ### Changed
 
+- **Der Org-Einheit-Reiter im Hangar ist jetzt eine Tabelle mit Kennzahlen darüber** — Schiffstyp,
+  Anzahl und Fitted in Spalten statt als Fließtext unter dem Namen, mit „Schiffe" und „Fitted" als
+  Summen obendrüber. Eine Zeile antippen zeigt die gefilterte Schiffsliste.
+
 - **„Abmelden" in den Einstellungen fragt jetzt nach.** Ein Danger-Dialog nennt, was es kostet: Die
   Sitzung endet, der gespeicherte Anmelde-Schlüssel wird vom Gerät gelöscht, und die nächste
   Anmeldung läuft wieder über das Anmeldeformular im Browser. Auf den Sperr- und Freigabe-Bildschirmen
