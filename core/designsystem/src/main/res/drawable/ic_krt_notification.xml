@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Status-bar small icon — the Basetool mark reduced to what survives 24 dp.
+
+  Design chapter 14 artboard 1 states the reduction exactly: ring + swoosh, the yield bars and the
+  Kartell star drop out at this size. They are 13x16..58 px features in a 240 px viewport, so at
+  24 dp they land on roughly one pixel each and turn the mark into a smudge rather than reading as
+  four bars.
+
+  Geometry is lifted unchanged from krt_basetool_logo.xml so the two stay comparable when the source
+  SVG is revised; only the two surviving paths are here, and the ring's stroke is thickened from 7
+  to 11 because a 7 px stroke in a 240 px viewport is sub-pixel at status-bar size.
+
+  White rather than the brand orange, and that is not a brand deviation: Android renders a small
+  icon from its ALPHA CHANNEL only and tints it with the notification's own accent colour. A path
+  filled #E77E23 here would be flattened to the same silhouette and then tinted anyway — the colour
+  is set at the call site with `setColor`, which is the only place it can actually take effect.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <!-- Orbit ring, stroke-only, thickened for the size. -->
+    <path
+        android:pathData="M34,130 a76,76 0 1,0 152,0 a76,76 0 1,0 -152,0"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="11" />
+    <!-- Wedge / rising course line. -->
+    <path
+        android:pathData="M20.46,178.66 L47.54,213.34 L199.48,66.71 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

@@ -75,7 +75,9 @@ class SystemNotifier(
         val builder =
             NotificationCompat.Builder(context, KrtNotificationChannels.CHANNEL_GENERAL)
                 // The 24 dp alpha-only silhouette of chapter 14, tinted with the brand accent.
-                .setSmallIcon(DesignR.drawable.ic_krt_bell)
+                // A bell stood here, which is every app's notification icon and therefore nobody's:
+                // in a full status bar the point of a small icon is saying WHICH app posted.
+                .setSmallIcon(DesignR.drawable.ic_krt_notification)
                 .setColor(ACCENT)
                 .setContentTitle(title)
                 .setAutoCancel(true)
@@ -85,7 +87,7 @@ class SystemNotifier(
                 // notifications it judged sensitive would be one judgement call away from a leak.
                 .setPublicVersion(
                     NotificationCompat.Builder(context, KrtNotificationChannels.CHANNEL_GENERAL)
-                        .setSmallIcon(DesignR.drawable.ic_krt_bell)
+                        .setSmallIcon(DesignR.drawable.ic_krt_notification)
                         .setContentTitle(context.getString(R.string.notification_public_title))
                         .build(),
                 )
