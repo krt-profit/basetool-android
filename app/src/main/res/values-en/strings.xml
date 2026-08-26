@@ -520,6 +520,7 @@
     <string name="personal_inventory_delete_title">Delete entry</string>
     <string name="personal_inventory_delete_body">“%1$s” will be deleted. This cannot be undone.</string>
     <string name="personal_inventory_visible_only_to_you">Visible only to you.</string>
+    <string name="offline_banner_title">Offline</string>
     <string name="offline_writes_disabled">No network — editing is disabled until the connection is back.</string>
     <string name="value_absent">—</string>
     <string name="conflict_title">Changed at the same time</string>

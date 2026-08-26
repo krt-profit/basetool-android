@@ -539,6 +539,7 @@
     <string name="personal_inventory_delete_title">Eintrag löschen</string>
     <string name="personal_inventory_delete_body">„%1$s“ wird gelöscht. Das lässt sich nicht rückgängig machen.</string>
     <string name="personal_inventory_visible_only_to_you">Nur für dich sichtbar.</string>
+    <string name="offline_banner_title">Offline</string>
     <string name="offline_writes_disabled">Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.</string>
     <string name="value_absent">—</string>
     <string name="conflict_title">Gleichzeitig geändert</string>

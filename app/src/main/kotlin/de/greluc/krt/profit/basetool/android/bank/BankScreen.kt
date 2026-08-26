@@ -70,7 +70,6 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSparkline
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -102,12 +101,6 @@ const val BANK_ROLE_TAG: String = "bank-role"
 
 /** Test handle for one account's screen. */
 const val BANK_ACCOUNT_TAG: String = "bank-account"
-
-/** Height of the drawn balance line. */
-private val SPARKLINE_HEIGHT = 32.dp
-
-/** Stroke width of the drawn balance line, in device pixels. */
-private const val SPARKLINE_STROKE = 3f
 
 /**
  * The Konten list (design spec ch. 12 §1), read-only.
@@ -298,6 +291,7 @@ private fun AccountCard(
         delta = account.delta30d?.let { stringResource(R.string.bank_delta_30d, formatAmount(it)) },
         deltaPositive = account.delta30d.isPositiveDelta(),
         sparkline = account.sparkline.takeIf { it.isNotEmpty() }?.map(Double::toFloat),
+        sparklineDescription = stringResource(R.string.bank_sparkline_description),
         onClick = onClick,
     )
 }
@@ -315,53 +309,6 @@ private fun String?.isPositiveDelta(): Boolean {
     val first = this?.trimStart()?.firstOrNull() ?: return true
     return first !in MINUS_SIGNS
 }
-
-/**
- * The balance line, drawn rather than charted.
- *
- * The design says so explicitly (REQ-BANK-016 in the main repo): the server sends the points and
- * the client draws a polyline. No chart framework enters this app for one line on a card — it would
- * be a dependency, a theme to fight and, under this repo's privacy gate, a decision.
- *
- * A line needs two points; fewer draws nothing rather than a dot pretending to be a trend. A flat
- * series draws a straight line through the middle instead of dividing by a zero span.
- *
- * @param points the balance points, oldest first.
- */
-@Composable
-private fun Sparkline(points: List<Double>) {
-    if (points.size < MIN_POINTS) {
-        return
-    }
-    val description = stringResource(R.string.bank_sparkline_description)
-    val line = MaterialTheme.colorScheme.primary
-    Canvas(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(SPARKLINE_HEIGHT)
-                .semantics { contentDescription = description },
-    ) {
-        val min = points.min()
-        val max = points.max()
-        val span = (max - min).takeIf { it > 0.0 }
-        val stepX = size.width / (points.size - 1)
-        val offsets =
-            points.mapIndexed { index, value ->
-                val ratio = span?.let { (value - min) / it } ?: HALF
-                Offset(index * stepX, (size.height * (1.0 - ratio)).toFloat())
-            }
-        offsets.zipWithNext { from, to ->
-            drawLine(color = line, start = from, end = to, strokeWidth = SPARKLINE_STROKE, cap = StrokeCap.Round)
-        }
-    }
-}
-
-/** Fewer points than this is not a line. */
-private const val MIN_POINTS = 2
-
-/** Where a flat series is drawn. */
-private const val HALF = 0.5
 
 /**
  * One account with its ledger (design spec ch. 12 §2), read-only.

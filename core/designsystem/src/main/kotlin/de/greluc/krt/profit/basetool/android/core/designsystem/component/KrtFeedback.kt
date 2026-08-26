@@ -41,6 +41,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -157,9 +159,9 @@ fun KrtLoadingIndicator(
 @Composable
 fun KrtOfflineBanner(
     title: String,
-    lastUpdated: String,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    lastUpdated: String? = null,
+    onRetry: (() -> Unit)? = null,
     retryText: String = "Erneut verbinden",
 ) {
     Row(
@@ -191,17 +193,24 @@ fun KrtOfflineBanner(
                 style = MaterialTheme.typography.labelMedium,
                 color = KrtTheme.colors.warning,
             )
-            Text(
-                text = lastUpdated,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
+            // Both optional, because a screen that shows live data it simply cannot refresh
+            // has neither a stamp to quote nor a retry that would mean anything. Rendering an
+            // empty second line under the title would read as a timestamp that failed to load.
+            lastUpdated?.let { stamp ->
+                Text(
+                    text = stamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        }
+        onRetry?.let { retry ->
+            KrtGhostButton(
+                text = retryText,
+                onClick = retry,
+                modifier = Modifier.padding(KrtSpacing.sm),
             )
         }
-        KrtGhostButton(
-            text = retryText,
-            onClick = onRetry,
-            modifier = Modifier.padding(KrtSpacing.sm),
-        )
     }
 }
 
@@ -341,6 +350,7 @@ fun KrtTotalTile(
  * @param delta optional change indicator, already formatted with its sign.
  * @param deltaPositive whether [delta] is an improvement; drives its colour.
  * @param sparkline optional series of values, oldest first, drawn as a plain line.
+ * @param sparklineDescription what a screen reader is told the sparkline shows.
  * @param onClick optional tap handler making the whole tile the target.
  */
 @Composable
@@ -352,6 +362,7 @@ fun KrtKpiCard(
     deltaPositive: Boolean = true,
     sparkline: List<Float>? = null,
     onClick: (() -> Unit)? = null,
+    sparklineDescription: String? = null,
 ) {
     KrtCard(modifier = modifier, onClick = onClick) {
         Text(
@@ -378,7 +389,7 @@ fun KrtKpiCard(
                     )
                 }
                 if (sparkline != null) {
-                    KrtSparkline(values = sparkline)
+                    KrtSparkline(values = sparkline, contentDescription = sparklineDescription)
                 }
             }
         }
@@ -394,26 +405,36 @@ fun KrtKpiCard(
  * @param values the series, oldest first. Fewer than two points render nothing.
  * @param modifier layout modifier.
  * @param color line colour; orange by default.
+ * @param contentDescription what a screen reader is told the line shows; a chart with none
+ *   is a blank to anyone not looking at it.
  */
 @Composable
 fun KrtSparkline(
     values: List<Float>,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
+    contentDescription: String? = null,
 ) {
     if (values.size < 2) return
-    Canvas(modifier = modifier.size(width = SPARKLINE_WIDTH, height = SPARKLINE_HEIGHT)) {
+    val described =
+        contentDescription?.let { text -> modifier.semantics { this.contentDescription = text } }
+            ?: modifier
+    Canvas(
+        modifier = described.defaultMinSize(minWidth = SPARKLINE_WIDTH, minHeight = SPARKLINE_HEIGHT),
+    ) {
         val min = values.min()
         val max = values.max()
-        val span = (max - min).takeIf { it > 0f } ?: 1f
+        val span = (max - min).takeIf { it > 0f }
         val stepX = size.width / (values.size - 1)
-        var previous = Offset(0f, size.height - (values[0] - min) / span * size.height)
+        // A flat series has no span to scale by. Halfway up is the honest picture of "it did not
+        // move"; dividing by a substituted 1f pins every point to the bottom edge and draws a fall
+        // that never happened.
+        val yFor = { value: Float ->
+            span?.let { size.height - (value - min) / it * size.height } ?: (size.height / 2f)
+        }
+        var previous = Offset(0f, yFor(values[0]))
         for (index in 1 until values.size) {
-            val point =
-                Offset(
-                    x = stepX * index,
-                    y = size.height - (values[index] - min) / span * size.height,
-                )
+            val point = Offset(x = stepX * index, y = yFor(values[index]))
             drawLine(
                 color = color,
                 start = previous,
