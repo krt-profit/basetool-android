@@ -799,6 +799,50 @@ Artboards 6–9 carry the line „12 Einträge · Modus LOCATION · POST invento
 sheet's title. Only „12 Einträge" was shipped: the mode name and the endpoint are handoff
 annotation, and no member needs the HTTP verb of the thing they just tapped.
 
+## Chapters 02, 04, 06 and 08 against the delivered bundle (2026-08-26)
+
+| Chapter | What arrived | Verdict |
+| --- | --- | --- |
+| 02 · Components | Presence and the Bereich tag marked **web-only** | app draws neither; badge value corrected to „Alle Einheiten" |
+| 04 · Auth | the push-promise correction | **already right in the app** — the artboard is the stale half |
+| 06 · Missionen | „Funktion an Bord" (artboard 3) | **was a gap** — signing up was one tap with no sheet at all |
+| 08 · Hangar | overflow, wipe, bulk place, the collapse rule (4–11) | **six gaps** — all closed |
+
+### Four artboards that could not be built, and why
+
+Each of these is drawn in the bundle and has **no data or no endpoint** this app can reach. None is
+faked with a dash or a disabled control, because both claim the thing exists and is merely missing
+today:
+
+- **The LTI tile** over the Hangar's org aggregate (ch. 08, artboard 1). `SquadronShipOverviewDto`
+  carries `count` and `fittedCount`; `SquadronShipDetailDto` carries owner, location and `fitted` —
+  no insurance anywhere.
+- **„Eigenes Schiff einbringen"** in the sign-up sheet (ch. 06, artboard 3). Adding a unit is
+  `POST /missions/{id}/units`, guarded by `canManageMission`, and `AddParticipantPublicRequest` has
+  no ship field. No participant can reach it.
+- **„EINGEREICHT · vor 2 Std. · via Discord"** on the approval screen (ch. 04, artboard 3).
+  `RegistrationStatusDto` carries exactly one field: `approvalStatus`.
+- **„Du wirst benachrichtigt"** in the same card's body — this one is not a gap but a
+  contradiction: the artboard's own annotation beside it reads *„Never promise a notification
+  here"*, and the shipped copy already follows the annotation. Sweeping both string bundles for the
+  same shape found no other instance.
+
+### One deviation, recorded rather than absorbed
+
+The lock screen draws **one** unlock button where artboard 5 draws two — the second one opens the
+same system prompt as the first, which already carries the device-credential fallback inside it.
+[ADR-0013](adr/0013-the-lock-screen-has-one-button-because-the-prompt-has-two.md) has the reasoning
+and what was rejected.
+
+### What the chapter-02 note gets half right
+
+Its web-only annotation groups „Presence/Live-Sync". **Presence** is correct: no production screen
+draws the indicator or the update pill — `KrtPresenceIndicator` exists in the design system and is
+called only from the dev showcase. **Live-sync** is a different thing and does ship: eight
+ViewModels observe `/ws/sync` rooms and refresh silently, which draws nothing at all. The reason
+given in the note — „openapi.json führt keine Presence-Daten" — is true of presence and not of the
+sync rooms.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

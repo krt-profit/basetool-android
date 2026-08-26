@@ -437,6 +437,9 @@ private fun AppTopBar(
                     // scopes every request would disagree with it. "All units" is a known
                     // scope, not an unknown one, so it gets a badge of its own — dropping it
                     // there would read as "no scope resolved" for a scope the member chose.
+                    // „Alle Einheiten" is the component sheet's own badge value (ch. 02 §3, which
+                    // lists it beside „Bereich Profit" and „SK VANGUARD"), not a short form invented
+                    // here for a chip that had to fit.
                     val label =
                         when {
                             orgUnit.allChosen -> stringResource(R.string.org_switcher_all_short)

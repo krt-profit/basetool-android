@@ -41,7 +41,7 @@
     <string name="gate_rejected_body">Your access was not approved. Contact the administration if you believe this is a mistake.</string>
     <string name="gate_account">Account</string>
     <string name="gate_refresh">Refresh status</string>
-    <string name="gate_poll_hint">Checked automatically every 60 seconds.</string>
+    <string name="gate_poll_hint">Checked automatically every 60 s.</string>
 
     <string name="gate_offline_title">Verification Offline</string>
     <string name="gate_offline_body">Command did not respond. Your credentials remain valid.</string>
@@ -97,7 +97,7 @@
     <string name="nav_settings">Settings</string>
     <string name="org_switcher_title">Active org unit</string>
     <string name="org_switcher_all">All org units</string>
-    <string name="org_switcher_all_short">All</string>
+    <string name="org_switcher_all_short">All units</string>
     <string name="placeholder_under_construction">This area is still being built.</string>
 
     <string name="settings_section_account">Account</string>

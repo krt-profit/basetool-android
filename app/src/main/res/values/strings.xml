@@ -54,7 +54,7 @@
     <string name="gate_rejected_body">Dein Zugang wurde nicht freigegeben. Wende dich an die Administration, wenn du das für einen Irrtum hältst.</string>
     <string name="gate_account">Konto</string>
     <string name="gate_refresh">Status aktualisieren</string>
-    <string name="gate_poll_hint">Automatische Prüfung alle 60 Sekunden.</string>
+    <string name="gate_poll_hint">Automatische Prüfung alle 60 s.</string>
 
     <!-- Gate could not be read at all. Never claims the account is waiting. -->
     <string name="gate_offline_title">Verification Offline</string>
@@ -114,7 +114,7 @@
     <string name="nav_settings">Einstellungen</string>
     <string name="org_switcher_title">Aktive Org-Einheit</string>
     <string name="org_switcher_all">Alle Org-Einheiten</string>
-    <string name="org_switcher_all_short">Alle</string>
+    <string name="org_switcher_all_short">Alle Einheiten</string>
     <string name="placeholder_under_construction">Dieser Bereich wird gerade gebaut.</string>
 
     <!-- Einstellungen (design spec ch. 13) -->
