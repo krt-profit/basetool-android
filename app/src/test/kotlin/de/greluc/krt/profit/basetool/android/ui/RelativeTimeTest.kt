@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.ui
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -71,6 +73,25 @@ class RelativeTimeTest {
     @Test
     fun `yesterday evening is named, not counted in hours`() {
         assertEquals("gestern, 21:14", at("2026-08-19T21:14"))
+    }
+
+    /**
+     * The question a row asks before pairing a clock with a distance.
+     *
+     * Design ch. 06 pairs an Einsatz as „TS 20:30 · in 2 Std."; its examples are all upcoming, so
+     * the distance never carries a time of its own. The lower rungs do, and a row that printed both
+     * read „TS 20:44 · gestern, 20:44".
+     */
+    @Test
+    fun `the rung says whether the form already prints a clock`() {
+        assertEquals(KrtTimeRung.DISTANCE, local("2026-08-20T10:00").timeRung(now, zone))
+        assertEquals(KrtTimeRung.DISTANCE, local("2026-08-22T12:00").timeRung(now, zone))
+        assertEquals(KrtTimeRung.YESTERDAY, local("2026-08-19T21:14").timeRung(now, zone))
+        assertEquals(KrtTimeRung.DATED, local("2026-08-15T09:30").timeRung(now, zone))
+
+        assertFalse(KrtTimeRung.DISTANCE.carriesClock)
+        assertTrue(KrtTimeRung.YESTERDAY.carriesClock)
+        assertTrue(KrtTimeRung.DATED.carriesClock)
     }
 
     @Test

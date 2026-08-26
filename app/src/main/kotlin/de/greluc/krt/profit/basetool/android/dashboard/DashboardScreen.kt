@@ -65,6 +65,7 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusLabel
 import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
+import de.greluc.krt.profit.basetool.android.ui.carriesClock
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeTo
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -596,7 +597,10 @@ private fun MissionFactsRow(mission: Mission) {
     val meeting =
         mission.meetingTime?.let { at ->
             remember(at, tick, context, zone) {
-                at.relativeTo(Instant.now(), context, zone) + " · TS " + formatter.format(at)
+                val relative = at.relativeTo(Instant.now(), context, zone)
+                // Same rule as the Einsatz list: once the relative half is itself a clock reading
+                // („gestern, 21:14"), appending „· TS 21:14" prints the time twice.
+                if (at.carriesClock()) relative else "$relative · TS " + formatter.format(at)
             }
         }
     Row(

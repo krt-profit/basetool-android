@@ -19,6 +19,28 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /**
+ * Which rung this instant falls on, against [now].
+ *
+ * Same boundary as [relativeTo] and deliberately the same expression, so the two cannot disagree
+ * about what „gestern" means.
+ *
+ * @param now the instant to measure against.
+ * @param zone the zone whose midnights separate the days.
+ * @return the rung.
+ */
+fun Instant.timeRung(
+    now: Instant,
+    zone: ZoneId,
+): KrtTimeRung {
+    val days = ChronoUnit.DAYS.between(atZone(zone).toLocalDate(), now.atZone(zone).toLocalDate())
+    return when {
+        !isBefore(now) || days <= 0L -> KrtTimeRung.DISTANCE
+        days == 1L -> KrtTimeRung.YESTERDAY
+        else -> KrtTimeRung.DATED
+    }
+}
+
+/**
  * The four forms the design's timestamps take, as chapter 07 writes them.
  *
  * `vor 4 Min.` · `vor 2 Std.` · `gestern, 21:14` · `15.08., 09:30`
@@ -44,14 +66,9 @@ fun Instant.relativeTo(
     zone: ZoneId,
 ): String {
     val millis = toEpochMilli()
-    val days =
-        ChronoUnit.DAYS.between(
-            atZone(zone).toLocalDate(),
-            now.atZone(zone).toLocalDate(),
-        )
     val time = DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_TIME)
-    return when {
-        !isBefore(now) || days <= 0L -> {
+    return when (timeRung(now, zone)) {
+        KrtTimeRung.DISTANCE -> {
             DateUtils.getRelativeTimeSpanString(
                 millis,
                 now.toEpochMilli(),
@@ -60,11 +77,11 @@ fun Instant.relativeTo(
             ).toString().decapitalised(context)
         }
 
-        days == 1L -> {
+        KrtTimeRung.YESTERDAY -> {
             context.getString(R.string.time_yesterday_at, time)
         }
 
-        else -> {
+        KrtTimeRung.DATED -> {
             context.getString(
                 R.string.time_date_at,
                 // A pattern rather than DateUtils.FORMAT_NUMERIC_DATE, which drops the leading
@@ -89,6 +106,15 @@ fun Instant.relativeTo(
 @Composable
 fun Instant.relativeToNow(now: Instant = Instant.now()): String =
     relativeTo(now, LocalContext.current, ZoneId.systemDefault())
+
+/**
+ * Whether this instant's rendered form already prints a time of day.
+ *
+ * @param now the instant to measure against.
+ * @return `true` for the „gestern, 21:14" and „15.08., 09:30" rungs.
+ */
+fun Instant.carriesClock(now: Instant = Instant.now()): Boolean =
+    timeRung(now, ZoneId.systemDefault()).carriesClock
 
 /**
  * Lowers the leading capital the platform puts on a standalone span.

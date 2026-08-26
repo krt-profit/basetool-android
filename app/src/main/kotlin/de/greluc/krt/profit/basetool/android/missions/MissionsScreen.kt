@@ -51,6 +51,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.carriesClock
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
@@ -490,13 +491,22 @@ private fun Mission.timeLabel(zone: ZoneId): String {
         }
 
         else -> {
-            val absolute =
-                if (meetingTime != null) {
-                    stringResource(R.string.missions_meeting_time, timeFormat.format(gathering))
-                } else {
-                    timeFormat.format(gathering)
-                }
-            "$absolute · ${gathering.relativeToNow()}"
+            val relative = gathering.relativeToNow()
+            // "TS 20:30 · in 2 Std." is the pair the design mock shows: a clock reading and a
+            // distance. Once the Einsatz is far enough back that the distance is itself a clock
+            // reading — „gestern, 20:44", „15.08., 18:17" — the pair prints 20:44 twice, so the
+            // absolute half drops out and the compound carries both.
+            if (gathering.carriesClock()) {
+                relative
+            } else {
+                val absolute =
+                    if (meetingTime != null) {
+                        stringResource(R.string.missions_meeting_time, timeFormat.format(gathering))
+                    } else {
+                        timeFormat.format(gathering)
+                    }
+                "$absolute · $relative"
+            }
         }
     }
 }
