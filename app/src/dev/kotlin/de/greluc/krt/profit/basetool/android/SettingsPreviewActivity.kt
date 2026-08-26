@@ -25,6 +25,7 @@ import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
+import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import kotlinx.coroutines.launch
@@ -78,6 +79,11 @@ class SettingsPreviewActivity : AppCompatActivity() {
                     )
                 } else {
                     SettingsScreen(
+                        orgUnitName = null,
+                        onSwitchOrgUnit = {},
+                        preferences = MemberPreferencesState(),
+                        onPayout = {},
+                        onSharing = {},
                         accountName = "GrafRotz",
                         language = language,
                         onLanguageChange = { chosen ->

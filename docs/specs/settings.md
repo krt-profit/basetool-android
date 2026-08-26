@@ -36,12 +36,52 @@ here" is worth answering.
   Impressum, Nutzungsbedingungen, Open-Source-Lizenzen), the Fan Kit band, sign-out and the version
   are rendered; nothing else is.
 - [x] No value on the screen comes from a placeholder constant.
-- [ ] Rank, active org unit, payout preference and blueprint sharing. **Open** — they arrive with
-  the read-only member core, each with the endpoint that feeds it.
+- [x] Active org unit, payout preference and blueprint sharing (`REQ-APP-SET-010`).
+- [ ] **Rank.** Open, and it will stay open: `UserDto.rank` is an integer and the only place that
+  turns one into „Specialist" is `/promotion/*`, which is not in this app (owner decision,
+  2026-08-25). The KONTO row therefore names the member and nothing else.
 - [ ] "Lokale Daten löschen". **Open, and deliberately so** — it needs something to delete first.
 - [ ] The version footer's **server-status dot and API version**. **Open** — both describe the link
   to the backend, and the app has no health signal to read them from. An always-green dot would be
   decoration that reads as a diagnosis.
+
+### REQ-APP-SET-010 — Three account rows, and the one version two of them share
+
+Design ch. 13, artboard 2 puts three things in **KONTO** beyond the member's name. Two of them are
+server values; the third is the scope the top bar already shows.
+
+**„Aktive Org-Einheit" opens the switcher the chip opens.** It shows the same value the chip shows
+and holds no copy of it — one switcher behind two doors, so the header and the settings row cannot
+disagree about the scope every request carries.
+
+**„Auszahlungspräferenz" and „Blueprints mit Org teilen" are optimistically locked**, which is
+unusual for settings rows and is why they are a repository rather than a preference store: the same
+member can change either in a browser, and the server is entitled to refuse the second write.
+
+**They share one version, because they share one row.** Both are columns of the backend's `User`
+entity, so writing either bumps the same counter. A version per setting compiles, passes a test
+suite whose fakes make the same assumption, and fails on a device the moment a member touches both:
+setting the payout preference took the entity from 1 to 2, and every later blueprint-sharing write
+was refused with `expected=1 persisted=2` — **permanently**, because the row kept re-sending the
+number it read at start-up. The state therefore keeps one version, every read updates it and every
+successful write adopts the one it gets back.
+
+**A refused write leaves the row showing what the server confirmed**, not what was tapped. A
+settings row that displays the member's rejected choice is lying about the state of their account.
+
+**An unread row shows nothing rather than a default.** „Auszahlung an mich" is a decision, not the
+absence of one, so a row whose value has not arrived reads „Noch nicht gewählt".
+
+**Acceptance**
+
+- [x] Writing one setting leaves the other writable — the regression above, pinned by a fake that
+  models one version for both (`MemberPreferencesViewModelTest`).
+- [x] A refusal is shown and the row keeps the confirmed value; setting a value to what it already
+  is writes nothing (`MemberPreferencesViewModelTest`).
+- [x] Verified on a device against the test stack: both writes landed in one session, the entity's
+  version moving 2 → 3 → 4.
+
+---
 
 ### REQ-APP-SET-002 — The in-app language is the platform's per-app language
 

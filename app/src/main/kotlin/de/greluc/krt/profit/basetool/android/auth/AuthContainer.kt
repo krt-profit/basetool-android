@@ -37,6 +37,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
+import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
@@ -295,6 +296,16 @@ class AuthContainer(
      * caller can make say anything.
      */
     val shadeTitle: String by lazy { appContext.getString(R.string.notification_shade_title) }
+
+    /**
+     * The member's own standing choices — payout preference and blueprint sharing.
+     *
+     * Both are me-scoped and optimistically locked, which is why they are a repository rather than
+     * a device preference store (design ch. 13, artboard 2).
+     */
+    val memberPreferences: MemberPreferencesRepository by lazy {
+        MemberPreferencesRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
 
     /**
      * The member's own Beförderung record.

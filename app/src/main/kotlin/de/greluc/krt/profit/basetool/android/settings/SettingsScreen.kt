@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.PayoutPreference
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFanKitBand
@@ -82,6 +83,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 @Composable
 fun SettingsScreen(
     accountName: String?,
+    orgUnitName: String?,
+    onSwitchOrgUnit: () -> Unit,
+    preferences: MemberPreferencesState,
+    onPayout: (PayoutPreference) -> Unit,
+    onSharing: (Boolean) -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     appLockEnabled: Boolean,
@@ -101,6 +107,11 @@ fun SettingsScreen(
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         SettingsColumn(
             accountName = accountName,
+            orgUnitName = orgUnitName,
+            onSwitchOrgUnit = onSwitchOrgUnit,
+            preferences = preferences,
+            onPayout = onPayout,
+            onSharing = onSharing,
             language = language,
             onLanguageChange = onLanguageChange,
             appLockEnabled = appLockEnabled,
@@ -154,6 +165,11 @@ fun SettingsScreen(
 @Composable
 private fun SettingsColumn(
     accountName: String?,
+    orgUnitName: String?,
+    onSwitchOrgUnit: () -> Unit,
+    preferences: MemberPreferencesState,
+    onPayout: (PayoutPreference) -> Unit,
+    onSharing: (Boolean) -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     appLockEnabled: Boolean,
@@ -185,6 +201,54 @@ private fun SettingsColumn(
                     tone = KrtPalette.White,
                     leadingIcon = DesignR.drawable.ic_krt_user,
                 )
+                KrtHairlineRule(color = KrtPalette.SurfaceInput)
+                // The same scope the top bar's chip names, in the place a member goes looking for a
+                // setting. It opens the very sheet the chip opens — one switcher, two doors, and no
+                // second copy of the state to disagree with the header (design ch. 13, artboard 2).
+                KrtSettingRow(
+                    title = stringResource(R.string.settings_active_org_unit),
+                    subtitle = orgUnitName,
+                    leadingIcon = DesignR.drawable.ic_krt_users,
+                    onClick = onSwitchOrgUnit,
+                ) {
+                    KrtIcon(
+                        id = DesignR.drawable.ic_krt_chevron_right,
+                        contentDescription = null,
+                        tint = KrtPalette.TextMuted,
+                    )
+                }
+                KrtHairlineRule(color = KrtPalette.SurfaceInput)
+                // The standing answer a sign-up starts from. It is a server value with a version, not a
+                // device preference: the same member can change it in a browser, so an unread row shows
+                // nothing rather than guessing „Auszahlung an mich" — which is a decision, not a default.
+                KrtSettingRow(
+                    title = stringResource(R.string.settings_payout_preference),
+                    subtitle =
+                        stringResource(
+                            when (preferences.payout) {
+                                PayoutPreference.PAYOUT -> R.string.mission_detail_payout_self
+                                PayoutPreference.DONATE -> R.string.mission_detail_payout_org
+                                null -> R.string.settings_payout_unset
+                            },
+                        ),
+                    leadingIcon = DesignR.drawable.ic_krt_bank,
+                    enabled = preferences.payout != null && !preferences.saving,
+                    onClick = {
+                        onPayout(
+                            if (preferences.payout == PayoutPreference.DONATE) {
+                                PayoutPreference.PAYOUT
+                            } else {
+                                PayoutPreference.DONATE
+                            },
+                        )
+                    },
+                ) {
+                    KrtIcon(
+                        id = DesignR.drawable.ic_krt_chevron_right,
+                        contentDescription = null,
+                        tint = KrtPalette.TextMuted,
+                    )
+                }
             }
         }
 
@@ -237,6 +301,21 @@ private fun SettingsColumn(
                 onClick = { onScreenCaptureChange(!screenCaptureAllowed) },
             ) {
                 KrtToggle(checked = screenCaptureAllowed)
+            }
+            KrtHairlineRule(color = KrtPalette.SurfaceInput)
+            // Also a server value with a version. Unread reads as NOT sharing: the safe reading of
+            // a flag that did not arrive is that nothing of the member's is being published.
+            KrtSettingRow(
+                title = stringResource(R.string.settings_blueprint_sharing),
+                subtitle = stringResource(R.string.settings_blueprint_sharing_hint),
+                leadingIcon = DesignR.drawable.ic_krt_blueprint,
+                enabled = preferences.sharing != null && !preferences.saving,
+                onClick = { onSharing(preferences.sharing != true) },
+            ) {
+                KrtToggle(
+                    checked = preferences.sharing == true,
+                    enabled = preferences.sharing != null && !preferences.saving,
+                )
             }
         }
 
@@ -416,6 +495,16 @@ private fun SettingsPreview() {
                 screenCaptureAllowed = false,
                 onScreenCaptureChange = {},
                 onOpenPrivacy = {},
+                orgUnitName = "Bereich Profit",
+                onSwitchOrgUnit = {},
+                preferences =
+                    MemberPreferencesState(
+                        payout = PayoutPreference.PAYOUT,
+                        sharing = true,
+                        version = 1,
+                    ),
+                onPayout = {},
+                onSharing = {},
                 onOpenImprint = {},
                 onOpenTerms = {},
                 onOpenLicenses = {},

@@ -76,6 +76,7 @@ import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventory
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
+import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
 import de.greluc.krt.profit.basetool.android.settings.ScreenCapturePreference
 import de.greluc.krt.profit.basetool.android.terms.TermsGate
 import de.greluc.krt.profit.basetool.android.terms.TermsGateViewModel
@@ -150,6 +151,11 @@ class MainActivity : AppCompatActivity() {
     private val lockViewModel: AppLockViewModel by viewModels { authViewModels(container) }
     private val termsViewModel: TermsGateViewModel by viewModels { authViewModels(container) }
     private val orgUnitViewModel: OrgUnitViewModel by viewModels { authViewModels(container) }
+
+    /** The two Einstellungen rows that live on the server (design ch. 13, artboard 2). */
+    private val memberPreferencesViewModel: MemberPreferencesViewModel by viewModels {
+        authViewModels(container)
+    }
     private val missionsViewModel: MissionsViewModel by viewModels { authViewModels(container) }
 
     private val operationsViewModel: OperationsViewModel by viewModels { authViewModels(container) }
@@ -296,6 +302,9 @@ class MainActivity : AppCompatActivity() {
                                 // usefully.
                                 RequestNotificationPermissionOnce()
                                 val orgUnit by orgUnitViewModel.state.collectAsState()
+                                val memberPreferences by
+                                    memberPreferencesViewModel.state.collectAsState()
+                                LaunchedEffect(Unit) { memberPreferencesViewModel.loadOnce() }
                                 BasetoolApp(
                                     orgUnit = orgUnit,
                                     missions = missionsViewModel,
@@ -403,6 +412,9 @@ class MainActivity : AppCompatActivity() {
                                                 CustomTabLauncher.launch(this@MainActivity, url)
                                             },
                                             versionCode = BuildConfig.VERSION_CODE,
+                                            preferences = memberPreferences,
+                                            onPayout = memberPreferencesViewModel::onPayout,
+                                            onSharing = memberPreferencesViewModel::onSharing,
                                         ),
                                 )
                             }
@@ -556,6 +568,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
                 initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
+                initializer { MemberPreferencesViewModel(container.memberPreferences) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer {

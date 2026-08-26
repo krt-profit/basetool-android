@@ -253,7 +253,18 @@ fun BasetoolApp(
                         navController = navController,
                         onOpenDestination = { navController.navigateToTopLevel(it.route) },
                         onLogout = onLogout,
-                        settings = settings,
+                        // The shell owns the scope and the switcher, so it fills those two in
+                        // rather than making the activity carry a copy of either.
+                        settings =
+                            settings.copy(
+                                orgUnitName =
+                                    if (orgUnit.allChosen) {
+                                        stringResource(R.string.org_switcher_all)
+                                    } else {
+                                        orgUnit.active?.name
+                                    },
+                                onSwitchOrgUnit = { orgSwitcherOpen = true },
+                            ),
                         missions = missions,
                         missionDetail = missionDetail,
                         operations = operations,

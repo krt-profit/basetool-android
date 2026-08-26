@@ -30,6 +30,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankAccountRoute
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountsRoute
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
+import de.greluc.krt.profit.basetool.android.core.data.PayoutPreference
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardScreen
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
@@ -70,6 +71,7 @@ import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.AppLanguage
 import de.greluc.krt.profit.basetool.android.settings.LicensesScreen
+import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesState
 import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.MoreScreen
@@ -591,6 +593,11 @@ private fun PushedDestination(
                 }
             SettingsScreen(
                 accountName = settings.accountName,
+                orgUnitName = settings.orgUnitName,
+                onSwitchOrgUnit = settings.onSwitchOrgUnit,
+                preferences = settings.preferences,
+                onPayout = settings.onPayout,
+                onSharing = settings.onSharing,
                 language = settings.language,
                 onLanguageChange = settings.onLanguageChange,
                 appLockEnabled = settings.appLockEnabled,
@@ -647,6 +654,13 @@ private fun PushedDestination(
  *   Returns `false` when nothing on the device handled it, which is what turns the licence
  *   action into a copy (design ch. 15).
  * @property versionCode the app's build number, from `BuildConfig`.
+ * @property orgUnitName the active org unit, as the top bar's chip names it, or `null` while the
+ *   scope is unknown. The settings row shows the same value rather than reading it again — two
+ *   copies of a scope are two things that can disagree.
+ * @property onSwitchOrgUnit opens the org switcher, the same sheet the chip opens.
+ * @property preferences the two standing choices that live on the server.
+ * @property onPayout sets where the member's share goes by default.
+ * @property onSharing shares or unshares the member's blueprints with the organisation.
  */
 @Immutable
 data class SettingsBindings(
@@ -663,4 +677,11 @@ data class SettingsBindings(
     val onOpenTerms: () -> Unit,
     val onOpenUrl: (String) -> Boolean,
     val versionCode: Int,
+    // Filled by `BasetoolApp`, not by the activity: the active scope and the switcher sheet both
+    // live in the shell, and a second copy in the activity would be a second thing to keep in step.
+    val orgUnitName: String? = null,
+    val onSwitchOrgUnit: () -> Unit = {},
+    val preferences: MemberPreferencesState,
+    val onPayout: (PayoutPreference) -> Unit,
+    val onSharing: (Boolean) -> Unit,
 )

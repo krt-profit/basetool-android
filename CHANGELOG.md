@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Einstellungen zeigt jetzt drei Konto-Zeilen mehr:** die aktive Org-Einheit (tippen öffnet
+  denselben Umschalter wie der Chip oben), deine Auszahlungspräferenz und ob deine Blueprints mit
+  der Org geteilt werden. Die letzten beiden liegen auf dem Server — du kannst sie auch im Browser
+  ändern, und die App zeigt, was dort steht.
+
 - **Beim Anmelden zu einem Einsatz fragt die App jetzt nach Auszahlung und Wunsch-Funktion.** Statt
   eines Knopfs öffnet sich ein Blatt: Anteil an dich oder an die Org-Kasse, und optional die
   Funktion an Bord, die du dir wünschst. Der Wunsch ist keine Zusage — die geplante Funktion setzt

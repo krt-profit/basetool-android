@@ -103,6 +103,11 @@
     <string name="settings_section_account">Account</string>
     <string name="settings_section_app">App</string>
     <string name="settings_section_legal">Legal &amp; data</string>
+    <string name="settings_active_org_unit">Active org unit</string>
+    <string name="settings_payout_preference">Payout preference</string>
+    <string name="settings_payout_unset">Not chosen yet</string>
+    <string name="settings_blueprint_sharing">Share blueprints with the org</string>
+    <string name="settings_blueprint_sharing_hint">Visible in the availability overview</string>
     <string name="settings_language">Language</string>
     <string name="settings_privacy">Privacy policy</string>
     <string name="settings_imprint">Imprint</string>
