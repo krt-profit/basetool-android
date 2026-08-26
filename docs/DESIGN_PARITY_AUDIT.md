@@ -244,6 +244,46 @@ four things:
   im Org-Discord." plus the button becoming „Jetzt erneut versuchen" — is missing. The chapter is
   emphatic that nothing else changes: no red, no error face, the state stays *waiting*, not *blame*.
 
+## Artboard-by-artboard pass (2026-08-26)
+
+Every screen below was read against its **rendered** artboard and then against the emulator, in that
+order. What the two passes before this one could not see is in the table; what is still open is
+under it, split by whether it is a layout question at all.
+
+| artboard | what differed | state |
+| :-- | :-- | :-- |
+| 06.2 Einsatz-Detail | no attendance block, no briefing card, tabs as chips, category in the bar, CTA mid-content | **built** |
+| 10.2 Auftrag-Detail | one long column — no head, no facts strip, no tabs | **built** |
+| 11.1 Raffinerie | card never listed its goods, no value footer | **built** |
+| 12.1 Bank | no grand total | **built** |
+| 12.2 Konto-Detail | three stacked Texts where the artboard has a HUD box | **built** |
+| 09.1 Lager | quality as a bare number, and on the wrong row | **built** |
+| 09.2 Buchen | amount as a plain field, quality full width below it, CTA said "Buchen" in every mode | **built** |
+| 08.2 Schiff bearbeiten | name asked before the hull; Versicherung and Ort full width each | **built** |
+| 10.3 Materialbörse | the signal button sized to its own label | **built** |
+| 06.1 Einsatz-Liste | no chevron; month spelled out in the date headings | **built** |
+
+### Deliberately not built, with the reason
+
+| artboard | why not |
+| :-- | :-- |
+| 10.2 **Materialbedarf** tab | `JobOrderDto.aggregatedMaterials` is on the wire but unmapped in `core:data` |
+| 10.2 **Verlauf** tab | the API exposes no activity trail at all |
+| 10.8 status **gating** | `JobOrderDto` has no `transitions[]`; guessing the rules client-side is what the chapter forbids |
+| 12.1 **Anträge** tab, 12.3 **Buchungsantrag** | the app knows booking requests only as notification *types* — there is no list and no create |
+| 12.2 **Verwahrung**, org line, sparkline | `BankAccountDetail` carries none of the three; only the list summary does |
+| 09.2 **Notiz (optional)** | `InventoryItemCreateDto` has no note field, so the box would discard what a member types |
+| 06.1 **„Einsatz erstellen"** FAB | the app cannot create an Einsatz at all — a missing feature, not a missing button |
+| 06.3 **Anmelden-Sheet** | signing up applies immediately; the payout radios and the ship picker are unbuilt, and the ship has no field on `AddParticipantRequest` |
+| 14.2 **five notification channels** | the SSE event is `data="new"` with no kind, so every ping would land in one channel and the other four would be decoration a member could silence to no effect. Needs the kind on the wire |
+| 08.2 **Hersteller** combobox | the type picker already searches across manufacturers and names the maker beside the hull; a second cascading field would narrow a search that does not need narrowing |
+
+### Not yet compared
+
+Chapter 02's component canon (nine artboards), 04.2–04.5, 06.4 Finanz-Eintrag, 06.5 Operation,
+08.3 Fleetview-Import, 09.3 Zuordnung, 09.4 Mein Inventar, 10.4 Gesuch erstellen, 14.1 app icon,
+15.3–15.5.
+
 ## Rendering the artboards — the method that actually catches this
 
 Two passes of this audit read the chapters as **text** — the linearised handoff prose — and checked

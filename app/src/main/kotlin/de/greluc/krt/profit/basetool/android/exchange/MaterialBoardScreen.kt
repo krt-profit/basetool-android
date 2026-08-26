@@ -375,19 +375,24 @@ private fun RowActions(
                 }
             // Outline when off, ghost when on: the design's toggle reads as pressed once the
             // member has committed, and a filled CTA on every row would make the list shout.
+            // Full width, with the glyph: artboard 10.3 gives the signal the whole card foot,
+            // because it is the only thing a member does on this screen and a button sized to its
+            // own label reads as one option among several.
             if (entry.viewerInterested) {
                 KrtGhostButton(
                     text = stringResource(label),
                     onClick = onSignalToggled,
                     enabled = enabled,
-                    modifier = Modifier.testTag(BOARD_SIGNAL_TAG),
+                    iconRes = DesignR.drawable.ic_krt_check,
+                    modifier = Modifier.fillMaxWidth().testTag(BOARD_SIGNAL_TAG),
                 )
             } else {
                 KrtOutlineButton(
                     text = stringResource(label),
                     onClick = onSignalToggled,
                     enabled = enabled,
-                    modifier = Modifier.testTag(BOARD_SIGNAL_TAG),
+                    iconRes = DesignR.drawable.ic_krt_login,
+                    modifier = Modifier.fillMaxWidth().testTag(BOARD_SIGNAL_TAG),
                 )
             }
         }

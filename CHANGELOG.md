@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Einsatz- und Auftrag-Detail sehen aus wie vorgesehen.** Der Einsatz zeigt jetzt oben seinen
+  Namen mit Status, eine Faktenzeile (TS · Join · Ort · Leiter), wie viele angemeldet und
+  eingecheckt sind, und „Einsatz auf einen Blick" mit sechs Angaben über der Beschreibung; die
+  Anmelde-Schaltfläche sitzt fest am unteren Rand. Der Auftrag hat Reiter statt einer langen Spalte.
+- **Die Raffinerie-Karte nennt ihre Waren** samt Qualität und Menge und daneben den geschätzten
+  Wert. Bisher stand da nur, dass es die Order gibt.
+- **Die Bank zeigt eine Gesamtsumme** über der Kontenliste, und das Konto-Detail hebt den
+  Kontostand hervor; die 30-Tage-Änderung ist grün oder rot statt grau.
+- **Im Lager steht neben jeder Qualität ein kleiner Balken**, damit „Q 874" auf einen Blick als hoch
+  lesbar ist.
+- **Beim Einbuchen lässt sich die Menge schrittweise ändern**, die Qualität steht daneben statt
+  darunter, und der Knopf heißt nach dem, was er tut — „Einbuchen" statt „Buchen".
+- **Der Schiff-Editor fragt zuerst nach dem Typ, dann nach dem Namen.** Versicherung und Ort stehen
+  nebeneinander, und bei „Fitted" steht jetzt dabei, was das zusagt.
+
 ### Removed
 
 - **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
