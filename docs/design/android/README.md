@@ -39,6 +39,16 @@ corrections, not preferences — preserve them verbatim in every re-export.
 4. **`assets/basetool-logo.svg` ships in the bundle**: `ic_launcher_foreground.xml` and
    `krt_basetool_logo.xml` name it in their header comments as the artwork they were traced
    from — the raster and favicon variants do not replace the source geometry.
+5. **Fleetview import root is a JSON ARRAY** — the object form {"ships": [...]} gets 400
+   ("must contain a JSON array at the root"). Server-named formats: CCU Game Fleetview,
+   HangarXPLOR Shiplist, Fleetyards JSON (ch. 08.3, verified against the running stack).
+6. **Locked-but-tappable permission pattern** (ch. 09, artboards 11–14): actions the caller
+   provably may not perform render disabled-STYLE but stay tappable and name the missing role
+   from ROLES_AND_PERMISSIONS.md ("Dafür brauchst du die Rolle Logistiker.") — never hidden,
+   never Compose enabled=false. Roles come from /api/v1/users/me (roles/permissions) and
+   realm_access.roles — the app must consume them, not discard them.
+7. **No push promises anywhere** (decision Q2: the app has no push channel): the approval
+   screen polls every 60 s — a promised notification that cannot arrive is copy that lies (ch. 04.3).
 
 ## Binding sources & precedence
 1. **DAS KARTELL design system** (`krt-profit/design-system`, mirrored in `_ds/…` here) —

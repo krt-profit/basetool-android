@@ -22,7 +22,7 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">06</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Einsätze & Operationen</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Live: list segment switch, all 7 detail tabs, payout radios, manager payout toggles. Detail pattern = Einsatz-Übersicht V. B (locked, #818): status badge + attendance + 6-field briefing + Ablauf checklist.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Live: list segment switch, all 7 detail tabs, payout radios, manager payout toggles, Funktion an Bord, Panel-Header-Abschnitte (06.5). Detail pattern = Einsatz-Übersicht V. B (locked, #818): status badge + attendance + 6-field briefing + Ablauf checklist.</div>
     </div>
   </header>
 
@@ -147,7 +147,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span><span class="krt-presence-indicator" style="font-size:9.5px;margin-left:0;padding:1px 8px 1px 5px"><span class="krt-presence-dot" style="width:7px;height:7px"></span><span class="krt-presence-count">1</span></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -201,12 +201,14 @@
                     <div style="flex:1;min-width:0">
                       <div style="font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</div>
                       <div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ p.sub }}</div>
+                      <sc-if value="{{ p.jobWish }}" hint-placeholder-val="{{ false }}"><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#FFD23F;margin-top:2px">Wunsch: {{ p.jobWish }}</div></sc-if>
                     </div>
+                    <select class="chip-select" style="{{ p.jobStyle }}" aria-label="Geplante Funktion"><option>{{ p.job }}</option><option>Pilot</option><option>Turret</option><option>Cargo</option><option>Scan</option><option>Medic</option></select>
                     <span class="chip {{ p.payCls }}" style="font-size:9.5px;flex:none">{{ p.pay }}</span>
                     <sc-if value="{{ p.checkable }}" hint-placeholder-val="{{ false }}"><button class="btn-ghost" style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Check-In" title="Check-In"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-login"></use></svg></button></sc-if>
                   </div>
                 </sc-for>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen Status.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen Status. Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast nennt die Rolle (Muster Kap. 09).</div>
               </div>
             </sc-if>
             <sc-if value="{{ t2 }}" hint-placeholder-val="{{ false }}">
@@ -302,13 +304,15 @@
           <li>Head + facts + tab row stay pinned; only tab content scrolls; ?tab= deeplink</li>
           <li>ONE filled CTA, bottom-anchored: Anmelden → signed up it becomes green „Check-In", then ghost „Check-Out"</li>
           <li>Dauer in the briefing = computed Ende − Teamspeak; Einsatzleiter = username</li>
-          <li>Presence pill in the title row; live-sync „Aktualisierung verfügbar" pill floats above the CTA bar</li>
+          <li>Funktion an Bord: Teilnehmerzeile zeigt die GEPLANTE Funktion als chip-select; geplant leer → Wunsch gedämpft-gestrichelt; Abweichung → gelbe „Wunsch:"-Zeile. Felder: MissionParticipantDto.desiredMissionJobType / plannedMissionJobType, Schreiben via UpdateParticipantRequest</li>
+          <li>Geplant ändern — Korrektur 26.08.2026: /api/v1/users/me liefert roles/permissions (bisher verworfen; Token trägt realm_access.roles). Ohne Rolle Missions-Manager rendert das Select im Gesperrt-Stil (Kap. 09, Artboards 11–14): sichtbar, ANTIPPBAR, Toast „Dafür brauchst du die Rolle Missions-Manager." Eigenen Wunsch ändern: eigene Zeile oder Anmelden-Sheet (Artboard 3)</li>
+          <li>Presence/Live-Sync entfernt (26.08.2026): Android konsumiert den Presence-Socket nicht, openapi.json führt keine Presence-Daten — Komponente web-only (Kap. 02 §3). Backend-Anforderung, falls gewünscht: Presence-Feed im API-Vertrag</li>
         </ul>
       </div>
     </div>
 
     <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
-      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Anmelden — bottom sheet (live radios)</div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Anmelden — bottom sheet (live: Radios + Funktion)</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4)">
@@ -338,6 +342,15 @@
                     <span style="flex:1"><span style="display:block;font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Verzicht zugunsten Org-Kasse</span><span style="display:block;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Anteil bleibt bei Bereich Profit</span></span>
                   </label>
                 </div>
+              </div>
+              <div>
+                <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Funktion an Bord (Wunsch)</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ jobChips }}" as="j" hint-placeholder-count="5">
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;min-height:36px;padding:0 14px;border:1px solid {{ j.bd }};background:{{ j.bg }};color:{{ j.fg }};font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase" onClick="{{ j.onTap }}">{{ j.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Optional — Wunsch (desired), keine Zusage. Die geplante Funktion setzt die Einsatzleitung im Teilnehmer-Reiter.</div>
               </div>
               <div>
                 <div style="font:700 12px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Eigenes Schiff einbringen (optional)</div>
@@ -402,7 +415,7 @@
     </div>
 
     <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
-      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Operation — Detail + Auszahlung (live toggles)</div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Operation — Detail: Panel-Header-Abschnitte (live einklappen; Auszahlungen startet zu)</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif">
           <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:1px solid #282828;flex:none">
@@ -416,8 +429,9 @@
           <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
             <div class="status-badge {{ myPayBadgeCls }}" style="width:100%;box-sizing:border-box;justify-content:flex-start;font-size:13px;padding:12px 14px"><span class="status-badge-text">Dein Anteil: {{ myPayLabel }}</span><span style="flex:1"></span><span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;text-transform:none">4.150 aUEC</span></div>
             <div>
-              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Einsätze in dieser Operation</div>
-              <div class="card card--flush" style="padding:0">
+              <button class="panel-header" style="width:100%;min-height:48px" onClick="{{ sec0Toggle }}"><h3 style="font-size:13px">Einsätze in dieser Operation<span class="panel-count">2</span></h3><svg class="krt-icon toggle-icon" style="width:16px;height:16px;transform:rotate({{ sec0Rot }});transition:transform .15s"><use href="#krt-icon-chevron-right"></use></svg></button>
+              <sc-if value="{{ sec0Open }}" hint-placeholder-val="{{ true }}">
+              <div class="card card--flush" style="padding:0;border-top:none">
                 <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border-bottom:1px solid #1C1C1C">
                   <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">14 Teilnehmer · abgeschlossen</div></div>
                   <span style="font:700 13px/1 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">+74.700</span>
@@ -429,9 +443,11 @@
                   <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
                 </div>
               </div>
+              </sc-if>
             </div>
             <div>
-              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Finanz-Rollup</div>
+              <button class="panel-header" style="width:100%;min-height:48px" onClick="{{ sec1Toggle }}"><h3 style="font-size:13px">Finanz-Rollup</h3><svg class="krt-icon toggle-icon" style="width:16px;height:16px;transform:rotate({{ sec1Rot }});transition:transform .15s"><use href="#krt-icon-chevron-right"></use></svg></button>
+              <sc-if value="{{ sec1Open }}" hint-placeholder-val="{{ true }}">
               <div class="card card--accent" style="padding:12px 16px">
                 <dl class="kv-list" style="gap:8px 16px;font-size:13px">
                   <dt style="font-size:11px">Einnahmen</dt><dd style="font-size:14px;color:#2EBC3D">+89.600 aUEC</dd>
@@ -440,9 +456,11 @@
                   <dt style="font-size:11px">Anteil (18)</dt><dd style="font-size:14px">4.150 aUEC</dd>
                 </dl>
               </div>
+              </sc-if>
             </div>
             <div>
-              <div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px"><span style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Auszahlungen</span><span class="chip chip--primary" style="font-size:9px">Manager-Ansicht</span></div>
+              <button class="panel-header" style="width:100%;min-height:48px" onClick="{{ sec2Toggle }}"><h3 style="font-size:13px">Auszahlungen<span class="panel-count">18</span></h3><span class="chip chip--primary" style="font-size:9px;margin-left:8px">Manager-Ansicht</span><span style="flex:1"></span><svg class="krt-icon toggle-icon" style="width:16px;height:16px;transform:rotate({{ sec2Rot }});transition:transform .15s"><use href="#krt-icon-chevron-right"></use></svg></button>
+              <sc-if value="{{ sec2Open }}" hint-placeholder-val="{{ false }}">
               <div class="card card--flush" style="padding:0">
                 <sc-for list="{{ payouts }}" as="p" hint-placeholder-count="3">
                   <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border-bottom:1px solid #1C1C1C">
@@ -453,10 +471,19 @@
                 </sc-for>
               </div>
               <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:8px">Asymmetrisches Gate: Markieren sofort, Zurücknehmen nur mit Bestätigungs-Modal (nennt Konsequenz).</div>
+              </sc-if>
             </div>
           </div>
         </div>
       </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Entscheidung — KrtPanelHeader</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Verhältnis zu Reitern: EINE EBENE DARUNTER — keine Alternative, nicht die Tablet-Antwort. Reiter (06.2) für gleichrangige, deeplinkbare Bereiche des Einsatz-Details; Panel-Header für sekundäre Detailscreens mit wenigen heterogenen Abschnitten in EINEM Scroll — die Operation ist der kanonische Fall. Das Tablet behält die Reiter (Artboard unten)</li>
+          <li>Zugeklappt starten: NUR „Auszahlungen" (18 Zeilen, Manager-Werkzeug — panel-count macht den Umfang sichtbar); „Einsätze" + „Finanz-Rollup" offen. Zustand je Screen in rememberSaveable, nicht persistiert</li>
+          <li>„Dein Anteil"-Badge bleibt außerhalb der Abschnitte immer sichtbar; Chevron rotiert 0→90°</li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -500,7 +527,7 @@
             <div style="display:flex;align-items:center;gap:12px;padding:14px 20px 8px">
               <div style="flex:1;min-width:0">
                 <div style="font:700 19px/1.2 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:10px;margin-top:4px"><span class="status-pill status-planned" style="font-size:10px">Geplant</span><span class="krt-presence-indicator" style="font-size:10px;margin-left:0"><span class="krt-presence-dot" style="width:8px;height:8px"></span><span class="krt-presence-count">1</span> Rhea bearbeitet</span></div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:4px"><span class="status-pill status-planned" style="font-size:10px">Geplant</span></div>
               </div>
               <button class="btn btn--cta" style="min-height:48px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-login"></use></svg>Anmelden</button>
             </div>
@@ -559,7 +586,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { seg: 0, tab: 0, pay: 0, fin: 0, paid: [true, false, false] };
+  state = { seg: 0, tab: 0, pay: 0, fin: 0, paid: [true, false, false], job: 0, sec0: true, sec1: true, sec2: false };
   renderVals() {
     const tabDefs = [
       { label: 'Übersicht' }, { label: 'Teilnehmer', count: '14' }, { label: 'Einheiten', count: '3' },
@@ -573,10 +600,10 @@ class Component extends DCLogic {
       { k: 'Einsatzleiter', v: 'Rhea' },
     ];
     const people = [
-      { name: 'Rhea', sub: 'Einsatzleiterin · Staffel 1', dotCls: 'status-dot--on', pay: 'Auszahlung', payCls: 'chip--muted', checkable: false },
-      { name: 'Dorn', sub: 'Staffel 1', dotCls: 'status-dot--on', pay: 'Org-Kasse', payCls: 'chip--primary', checkable: false },
-      { name: 'Vex', sub: 'SK Vanguard', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true },
-      { name: 'Mara', sub: 'Staffel 2', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true },
+      { name: 'Rhea', sub: 'Einsatzleiterin · Staffel 1', dotCls: 'status-dot--on', pay: 'Auszahlung', payCls: 'chip--muted', checkable: false, job: 'Pilot', jobWish: false, jobStyle: 'min-height:32px;flex:none' },
+      { name: 'Dorn', sub: 'Staffel 1', dotCls: 'status-dot--on', pay: 'Org-Kasse', payCls: 'chip--primary', checkable: false, job: 'Turret', jobWish: 'Cargo', jobStyle: 'min-height:32px;flex:none' },
+      { name: 'Vex', sub: 'SK Vanguard', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true, job: 'Pilot', jobWish: false, jobStyle: 'min-height:32px;flex:none;opacity:.55;border-style:dashed' },
+      { name: 'Mara', sub: 'Staffel 2', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true, job: '—', jobWish: false, jobStyle: 'min-height:32px;flex:none;opacity:.55' },
     ];
     const goals = [
       { text: '600 SCU Quantainium eingelagert', kind: 'Primär', chipCls: 'chip--primary', flagCls: 'on', mark: '✓', color: '#8A8A8A' },
@@ -608,6 +635,8 @@ class Component extends DCLogic {
     const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 1 ? '#E77E23' : 'transparent', iconColor: i === 1 ? '#000' : '#8A8A8A', labelColor: i === 1 ? '#FFFFFF' : '#8A8A8A' }));
     const seg = this.state.seg, fin = this.state.fin, pay = this.state.pay;
     const myPaid = this.state.paid[2];
+    const jobNames = ['Pilot', 'Turret', 'Cargo', 'Scan', 'Medic'];
+    const jobChips = jobNames.map((label, i) => { const sel = this.state.job === i; return { label, bd: sel ? '#E77E23' : '#282828', bg: sel ? 'rgba(231,126,35,.12)' : 'transparent', fg: sel ? '#E77E23' : '#8A8A8A', onTap: () => this.setState(s => ({ job: s.job === i ? -1 : i })) }; });
     return {
       tabs, briefing, people, goals, freqs, finance, payouts, nav, railNav,
       t0: this.state.tab === 0, t1: this.state.tab === 1, t2: this.state.tab === 2, t3: this.state.tab === 3,
@@ -617,6 +646,10 @@ class Component extends DCLogic {
       segMissionBg: seg === 0 ? '#E77E23' : 'transparent', segMissionFg: seg === 0 ? '#000' : '#8A8A8A',
       segOpsBg: seg === 1 ? '#E77E23' : 'transparent', segOpsFg: seg === 1 ? '#000' : '#8A8A8A',
       searchPlaceholder: seg === 0 ? 'Einsätze durchsuchen…' : 'Operationen durchsuchen…',
+      jobChips,
+      sec0Open: this.state.sec0, sec1Open: this.state.sec1, sec2Open: this.state.sec2,
+      sec0Rot: this.state.sec0 ? '90deg' : '0deg', sec1Rot: this.state.sec1 ? '90deg' : '0deg', sec2Rot: this.state.sec2 ? '90deg' : '0deg',
+      sec0Toggle: () => this.setState(s => ({ sec0: !s.sec0 })), sec1Toggle: () => this.setState(s => ({ sec1: !s.sec1 })), sec2Toggle: () => this.setState(s => ({ sec2: !s.sec2 })),
       pay0: pay === 0, pay1: pay === 1,
       selPay0: () => this.setState({ pay: 0 }), selPay1: () => this.setState({ pay: 1 }),
       pay0Border: pay === 0 ? '#E77E23' : '#282828', pay0Bg: pay === 0 ? 'rgba(231,126,35,.08)' : '#141414',
