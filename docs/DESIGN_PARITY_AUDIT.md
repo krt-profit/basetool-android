@@ -747,10 +747,14 @@ for the record of what was asked and what came back:
 
 Prompts for these three: [`docs/design/android/MISSING_ARTBOARD_PROMPTS.md`](design/android/MISSING_ARTBOARD_PROMPTS.md).
 
-**Round 2** — eight artboards and two corrections the parity pass turned up, none of them a
-missing *screen*: the Hangar's overflow and its two sheets, the Lager in selection mode and its
-bulk sheet, and the five canon components no screen places. Plus two artboards the running
-system contradicts. See
+**Round 2** — nine artboards and two corrections the parity pass turned up, **none of them a
+missing screen**: every artboard in the bundle has a screen behind it as of 2026-08-26. What is
+missing is the drawing for eleven decisions the implementation had to make alone — the Hangar's
+overflow and its two sheets, the Lager in selection mode and its bulk sheet, „Funktion an Bord"
+(the API carries the field, no artboard places it), a detail screen that actually folds, one
+table's phone collapse, and a verdict on the two components with neither placement nor data. Plus
+two artboards the running system contradicts. The prompt is written as one continuous brief for the
+Claude Design session:
 [`docs/design/android/MISSING_ARTBOARD_PROMPTS_2.md`](design/android/MISSING_ARTBOARD_PROMPTS_2.md).
 
 ## How this audit was made
