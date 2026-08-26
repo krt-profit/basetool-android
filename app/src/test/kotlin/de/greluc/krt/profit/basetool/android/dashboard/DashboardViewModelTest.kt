@@ -126,14 +126,34 @@ class DashboardViewModelTest {
     }
 
     /**
-     * Answers the announcement read.
+     * Answers the announcement read, and remembers what the member has marked.
      *
-     * @property answer what to return.
+     * The read flag lives on the member rather than on the notice, so this fake models both
+     * halves: `lastRead` is the id the server holds, and `markRead` moves it.
+     *
+     * @property answer what the announcement read returns.
+     * @property lastReadId the id the member has already marked, or `null`.
+     * @property fail whether the mark-read call refuses.
      */
     private class FixedAnnouncement(
         private val answer: ApiResult<Announcement?>,
+        var lastReadId: String? = null,
+        private val fail: Boolean = false,
     ) : AnnouncementSource {
+        var marked = 0
+
         override suspend fun current(): ApiResult<Announcement?> = answer
+
+        override suspend fun lastRead(): ApiResult<String?> = ApiResult.Success(lastReadId)
+
+        override suspend fun markRead(id: String): ApiResult<String?> {
+            marked += 1
+            if (fail) {
+                return ApiResult.Failure(ApiError.Network(IOException("no route")))
+            }
+            lastReadId = id
+            return ApiResult.Success(id)
+        }
     }
 
     private fun mission(id: String) =
@@ -171,12 +191,82 @@ class DashboardViewModelTest {
         announcements: AnnouncementSource,
     ) = DashboardViewModel(missions, announcements, ServerClock())
 
+    /**
+     * The marker is off until the app knows, not on.
+     *
+     * "Unread" is an invitation to act. Showing one for the frames before the read flag lands, and
+     * then taking it back, teaches a member that the marker means nothing.
+     */
+    @Test
+    fun `an unmarked notice reads as unread once the flag lands`() =
+        runTest(dispatcher) {
+            val notice = Announcement("a-1", "Wartung", null)
+            val source = FixedAnnouncement(ApiResult.Success(notice), lastReadId = null)
+            val model = viewModel(RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1"))))), source)
+
+            assertTrue("starts counted as read", model.state.value.announcementRead)
+            model.load()
+            advanceUntilIdle()
+
+            assertEquals(false, model.state.value.announcementRead)
+        }
+
+    @Test
+    fun `a notice the member already marked reads as read`() =
+        runTest(dispatcher) {
+            val notice = Announcement("a-1", "Wartung", null)
+            val source = FixedAnnouncement(ApiResult.Success(notice), lastReadId = "a-1")
+            val model = viewModel(RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1"))))), source)
+
+            model.load()
+            advanceUntilIdle()
+
+            assertTrue(model.state.value.announcementRead)
+        }
+
+    @Test
+    fun `marking clears the marker and is sent once`() =
+        runTest(dispatcher) {
+            val source = FixedAnnouncement(ApiResult.Success(Announcement("a-1", "Wartung", null)))
+            val model = viewModel(RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1"))))), source)
+            model.load()
+            advanceUntilIdle()
+
+            model.onAnnouncementRead()
+            model.onAnnouncementRead()
+            advanceUntilIdle()
+
+            assertTrue(model.state.value.announcementRead)
+            assertEquals("a second tap has nothing left to send", 1, source.marked)
+            assertEquals("a-1", source.lastReadId)
+        }
+
+    /**
+     * A refused mark puts the marker back.
+     *
+     * A band that says "gelesen" while the server disagrees will say „UNGELESEN" again at the next
+     * start, and the member will have learnt that the button does not stick.
+     */
+    @Test
+    fun `a refused mark restores the marker`() =
+        runTest(dispatcher) {
+            val source = FixedAnnouncement(ApiResult.Success(Announcement("a-1", "Wartung", null)), fail = true)
+            val model = viewModel(RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1"))))), source)
+            model.load()
+            advanceUntilIdle()
+
+            model.onAnnouncementRead()
+            advanceUntilIdle()
+
+            assertEquals(false, model.state.value.announcementRead)
+        }
+
     @Test
     fun `both parts load`() =
         runTest(dispatcher) {
             val missions = RecordingMissions(mutableListOf(ApiResult.Success(page(mission("m1")))))
             val model =
-                viewModel(missions, FixedAnnouncement(ApiResult.Success(Announcement("Wartung", null))))
+                viewModel(missions, FixedAnnouncement(ApiResult.Success(Announcement("a-1", "Wartung", null))))
 
             model.load()
             advanceUntilIdle()
@@ -227,7 +317,7 @@ class DashboardViewModelTest {
             val missions =
                 RecordingMissions(mutableListOf(ApiResult.Failure(ApiError.Network(IOException("offline")))))
             val model =
-                viewModel(missions, FixedAnnouncement(ApiResult.Success(Announcement("Wartung", null))))
+                viewModel(missions, FixedAnnouncement(ApiResult.Success(Announcement("a-1", "Wartung", null))))
 
             model.load()
             advanceUntilIdle()

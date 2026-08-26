@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.dashboard
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,9 +52,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHeading
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.missions.missionStatusLabel
@@ -62,6 +65,7 @@ import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeTo
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -96,6 +100,7 @@ private const val PREVIEW_ROWS = 3
  * @param unread the newest unread notifications, already limited by the caller.
  * @param unreadKnown whether the inbox has answered at all — "nothing unread" is a claim and
  *   may only be made once it has.
+ * @param onMarkAnnouncementRead the notice's own action; clears its unread marker.
  * @param onRefresh pull-to-refresh.
  * @param onOpenMission an Einsatz row was tapped.
  * @param onOpenMissions the Einsatz band's header action.
@@ -110,6 +115,7 @@ fun DashboardScreen(
     orgUnitName: String?,
     unread: List<Notification>,
     unreadKnown: Boolean,
+    onMarkAnnouncementRead: () -> Unit,
     onRefresh: () -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenMissions: () -> Unit,
@@ -132,7 +138,13 @@ fun DashboardScreen(
             // whatever notification happens to sit beside it.
             Column(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
                 Greeting(memberName = memberName, orgUnitName = orgUnitName)
-                state.announcement?.let { AnnouncementBand(text = it.content) }
+                state.announcement?.let {
+                    AnnouncementBand(
+                        text = it.content,
+                        read = state.announcementRead,
+                        onMarkRead = onMarkAnnouncementRead,
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
@@ -170,7 +182,11 @@ fun DashboardScreen(
                 }
                 state.announcement?.let { announcement ->
                     item(key = "announcement") {
-                        AnnouncementBand(text = announcement.content)
+                        AnnouncementBand(
+                            text = announcement.content,
+                            read = state.announcementRead,
+                            onMarkRead = onMarkAnnouncementRead,
+                        )
                     }
                 }
                 missionsSection(
@@ -211,23 +227,37 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
         )
     }
     item(key = "quick-tiles") {
-        Row(
+        // Two by two, not four across. The artboard's tiles are 194 dp on a 412 dp frame, which is
+        // half the width, and that is what buys the labels their own words: "Einbuchen (Lager)"
+        // says which Lager, "Boerse: Angebot" says an offer on what. Four across leaves about
+        // 90 dp per tile, which is why they had been cut to "Einbuchen" and "Angebot" - a shortcut
+        // whose label needs its icon to disambiguate it is not much of a shortcut.
+        Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
-            QuickAction.entries.forEach { action ->
-                QuickActionTile(
-                    action = action,
-                    onClick = { onQuickAction(action) },
-                    modifier = Modifier.weight(1f),
-                )
+            QuickAction.entries.chunked(2).forEach { pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                    pair.forEach { action ->
+                        QuickActionTile(
+                            action = action,
+                            onClick = { onQuickAction(action) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 /**
- * One shortcut tile: the glyph over its label, square, on the input surface.
+ * One shortcut tile: the glyph **beside** its label, square, outlined.
+ *
+ * The artboard draws a flex row - a 22 dp orange glyph, then the label - on `Gray4` behind a
+ * hairline `Gray3` outline, rather than a filled square with the glyph stacked over centred text.
+ * The difference is not decoration: a row lets a long label wrap under itself and stay readable,
+ * which is what makes the full wording fit at all.
  *
  * @param action which shortcut this is.
  * @param onClick opens it.
@@ -239,27 +269,28 @@ private fun QuickActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Row(
         modifier =
             modifier
                 .heightIn(min = QUICK_TILE_MIN_HEIGHT)
-                .background(KrtPalette.SurfaceInput)
+                .background(KrtPalette.Gray4)
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .clickable(onClick = onClick)
-                .padding(vertical = KrtSpacing.md, horizontal = KrtSpacing.xs),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIcon(
             id = action.iconRes,
             contentDescription = null,
+            size = QUICK_TILE_ICON,
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = stringResource(action.labelRes),
-            style = MaterialTheme.typography.labelMedium,
-            color = KrtPalette.White,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
+            text = stringResource(action.labelRes).krtUppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = KrtPalette.Gray1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
     }
@@ -341,7 +372,10 @@ private fun LazyListScope.notificationsSection(
         }
     } else {
         items(unread.take(PREVIEW_ROWS), key = { it.id }) { notification ->
-            MutedLine(text = notification.preview())
+            // Sentence over timestamp, as artboard 1 stacks them. Without the time a preview row
+            // says that something happened but not whether it is still worth acting on, which is
+            // the one thing a member skimming the dashboard is deciding.
+            PreviewLine(text = notification.preview(), time = notification.dashboardTime())
         }
         item(key = "notifications-all") {
             LinkLine(
@@ -367,21 +401,30 @@ private fun Greeting(
     // "today" stops being today when the day rolls over with the app open.
     LocalConfiguration.current
     val zone = remember { ZoneId.systemDefault() }
-    val today = LocalDate.now(zone).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
+    // Weekday spelled out, date numeric, which is the artboard's form. FormatStyle.FULL renders
+    // the month as a word and is a rung longer than the line has room for beside the org unit.
+    // The pattern is translatable so a locale can reorder the fields.
+    val today =
+        LocalDate.now(zone)
+            .format(DateTimeFormatter.ofPattern(stringResource(R.string.dashboard_date_pattern)))
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
     ) {
-        Text(
+        // Uppercase and orange, which is what artboard 1 draws and what the token artifact's
+        // headline entries are annotated with. `headlineSmall` rather than a one-off style: the
+        // mockup measures 20 sp at weight 900 with 1 sp of tracking, the scale has no such entry,
+        // and headlineSmall (19/25/0.95, annotated "h3 - UPPERCASE") is the nearest token. A
+        // hand-rolled TextStyle would match the mockup by a dp and leave the system by a rung.
+        KrtHeading(
             text =
                 if (memberName.isNullOrBlank()) {
                     stringResource(R.string.dashboard_greeting_anonymous)
                 } else {
                     stringResource(R.string.dashboard_greeting, memberName)
                 },
-            style = MaterialTheme.typography.titleLarge,
-            color = KrtPalette.White,
+            style = MaterialTheme.typography.headlineSmall,
         )
         orgUnitName?.takeIf { it.isNotBlank() }?.let { unit ->
             Text(
@@ -404,8 +447,14 @@ private fun Greeting(
  * @param text the announcement.
  */
 @Composable
-private fun AnnouncementBand(text: String) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+private fun AnnouncementBand(
+    text: String,
+    read: Boolean,
+    onMarkRead: () -> Unit,
+) {
+    // Unread opens expanded. The whole reason a notice is marked unread is that the member has not
+    // taken it in yet, and greeting them with three lines and an ellipsis asks them to work for it.
+    var expanded by rememberSaveable(read) { mutableStateOf(!read) }
     val action =
         stringResource(
             if (expanded) R.string.dashboard_announcement_collapse else R.string.dashboard_announcement_expand,
@@ -419,11 +468,22 @@ private fun AnnouncementBand(text: String) {
                 .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
     ) {
-        Text(
-            text = stringResource(R.string.dashboard_announcement),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // White and uppercase, as artboard 1 draws it. Orange would put the emphasis on the
+            // word „Information" when the chip beside it is the thing worth noticing, and the
+            // system reserves orange for the one thing on a screen a member should act on.
+            Text(
+                text = stringResource(R.string.dashboard_announcement).krtUppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = KrtPalette.White,
+            )
+            if (!read) {
+                KrtChip(text = stringResource(R.string.dashboard_announcement_unread), tone = KrtChipTone.Primary)
+            }
+        }
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
@@ -431,6 +491,19 @@ private fun AnnouncementBand(text: String) {
             maxLines = if (expanded) Int.MAX_VALUE else ANNOUNCEMENT_COLLAPSED_LINES,
             overflow = TextOverflow.Ellipsis,
         )
+        if (!read) {
+            // Its own tap target, not the card's: the card toggles the fold, and a member who
+            // taps to read the rest of a notice must not thereby declare they have read it.
+            Text(
+                text = stringResource(R.string.dashboard_announcement_mark_read).krtUppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = KrtPalette.Gray1,
+                modifier =
+                    Modifier
+                        .clickable(onClick = onMarkRead)
+                        .padding(vertical = KrtSpacing.sm),
+            )
+        }
         KrtHairlineRule()
     }
 }
@@ -474,7 +547,12 @@ private fun MissionBandRow(
                     )
                 }
             }
-            KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
+            // The row-level pill, not the page-level badge. The design system says which is
+            // which in as many words -- the pill is "the row-level status indicator ... inside a
+            // list the status must not compete with the record's name", the badge "belongs at the
+            // top of a detail screen where a single status describes the whole record" -- and this
+            // is a list. Artboard 1 draws the pill here too.
+            KrtStatusPill(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
         MissionFactsRow(mission = mission)
         MissionBandFooter(mission = mission)
@@ -586,6 +664,48 @@ private fun GlyphFact(
  * @param text what to say.
  */
 @Composable
+private fun PreviewLine(
+    text: String,
+    time: String,
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (time.isNotBlank()) {
+            Text(
+                text = time,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+        }
+    }
+}
+
+/**
+ * When this notification was raised, on the ladder every screen in the app shares.
+ *
+ * @return the timestamp, or an empty string when the server sent none.
+ */
+@Composable
+private fun Notification.dashboardTime(): String {
+    val raised = createdAt ?: return ""
+    return raised.relativeToNow()
+}
+
+/**
+ * A quiet single line, for the states that have no timestamp to show.
+ *
+ * @param text the line.
+ */
+@Composable
 private fun MutedLine(text: String) {
     Text(
         text = text,
@@ -634,8 +754,11 @@ private fun Notification.preview(): String =
         generic = stringResource(R.string.notifications_type_generic),
     )
 
-/** Smallest a shortcut tile gets, so a wrapped label never squeezes the glyph out. */
-private val QUICK_TILE_MIN_HEIGHT = 72.dp
+/** Smallest a shortcut tile gets, so a wrapped label never squeezes the glyph out (artboard: 64). */
+private val QUICK_TILE_MIN_HEIGHT = 64.dp
+
+/** The glyph beside a shortcut's label, at the artboard's size. */
+private val QUICK_TILE_ICON = 22.dp
 
 /** How often the seven-day band re-reads its countdowns (design ch. 05: "each minute"). */
 private const val COUNTDOWN_TICK_MS = 60_000L

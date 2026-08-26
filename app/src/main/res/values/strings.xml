@@ -362,6 +362,8 @@
     <string name="dashboard_context">%1$s · %2$s</string>
     <string name="dashboard_announcement">Information</string>
     <string name="dashboard_announcement_expand">Ganze Information anzeigen</string>
+    <string name="dashboard_announcement_unread">Ungelesen</string>
+    <string name="dashboard_announcement_mark_read">Als gelesen markieren</string>
     <string name="dashboard_announcement_collapse">Information einklappen</string>
     <string name="dashboard_missions">Einsätze der nächsten 7 Tage</string>
     <string name="dashboard_missions_empty">In den nächsten 7 Tagen ist nichts geplant.</string>
@@ -369,11 +371,14 @@
     <string name="mission_tab_with_count">%1$s %2$d</string>
     <string name="dashboard_mission_open">Öffnen</string>
     <string name="dashboard_missions_all">Alle Einsätze</string>
+    <!-- Weekday spelled out, date numeric, as design ch. 05 writes it. Translatable so a
+         locale can reorder the fields. -->
+    <string name="dashboard_date_pattern">EEEE, dd.MM.yyyy</string>
     <string name="dashboard_quick_actions">SCHNELLAKTIONEN</string>
-    <string name="dashboard_quick_check_in">Check-In</string>
-    <string name="dashboard_quick_book_in">Einbuchen</string>
-    <string name="dashboard_quick_order">Auftrag</string>
-    <string name="dashboard_quick_offer">Angebot</string>
+    <string name="dashboard_quick_check_in">Check-In nächster Einsatz</string>
+    <string name="dashboard_quick_book_in">Einbuchen (Lager)</string>
+    <string name="dashboard_quick_order">Auftrag erstellen</string>
+    <string name="dashboard_quick_offer">Börse: Angebot</string>
     <string name="dashboard_notifications">Ungelesen</string>
     <string name="dashboard_notifications_all">Alle ansehen</string>
     <string name="dashboard_notifications_empty">Nichts Ungelesenes.</string>

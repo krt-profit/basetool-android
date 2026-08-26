@@ -92,6 +92,7 @@ class DashboardScreenTest {
                     orgUnitName = "Bereich Profit",
                     unread = unread,
                     unreadKnown = unreadKnown,
+                    onMarkAnnouncementRead = { taps.add("announcement-read") },
                     onRefresh = {},
                     onOpenMission = { opened.add(it) },
                     onOpenMissions = { taps.add("missions") },
@@ -103,10 +104,12 @@ class DashboardScreenTest {
     }
 
     @Test
-    fun `the greeting names the member and their org unit`() {
+    fun `the greeting names the member and their org unit, uppercase`() {
         show(DashboardState(phase = DashboardPhase.Ready))
 
-        compose.onNodeWithText("Willkommen, GrafRotz").assertIsDisplayed()
+        // Uppercase, because artboard 1 draws it that way and the assertion is the only thing
+        // standing between the design and a sentence-case greeting that nobody would call a bug.
+        compose.onNodeWithText("WILLKOMMEN, GRAFROTZ").assertIsDisplayed()
         compose.onNodeWithText("Bereich Profit", substring = true).assertIsDisplayed()
     }
 
@@ -114,7 +117,7 @@ class DashboardScreenTest {
     fun `an announcement is shown, and nothing is shown when there is none`() {
         show(
             DashboardState(
-                announcement = Announcement("Flottenweite Wartung am Dienstag", null),
+                announcement = Announcement("a-1", "Flottenweite Wartung am Dienstag", null),
                 phase = DashboardPhase.Ready,
             ),
         )

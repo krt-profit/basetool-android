@@ -966,6 +966,39 @@ Verified on „Aufträge", which is the only bar destination whose list is longe
 „Einsätze" and „Lager" fit, so they scroll nowhere and a pass on them would have proved nothing —
 the first attempt at verification did exactly that and looked like a success.
 
+## Chapter 05 against the delivered bundle (2026-08-26)
+
+The dashboard had every element the chapter asks for and looked like a different screen, which is
+the interesting kind of miss: nothing was absent, six things were slightly off, and slightly off
+six times over is a redesign.
+
+**Measuring beat reading, twice.** The shortcut tiles looked like a copy problem — „Einbuchen" where
+the artboard writes „Einbuchen (Lager)" — and the obvious fix would have been to lengthen the
+strings into tiles that cannot hold them. Querying the DOM gave 194 dp tiles in a 2-column grid on a
+412 dp frame, and the tile itself a flex **row** with a 22 dp glyph beside the label rather than
+above it. The labels were short because the layout was wrong; lengthening them alone would have
+produced four ellipses.
+
+**A rendering artifact nearly became a finding.** The mission card's status marker measured
+`background: transparent, border: 0` in this chapter, which reads as "the app's bordered chip is
+wrong". Chapter 02 — the component canon — shows the same class *with* its 8 dp square dot, next to
+a separate larger badge that does have the border and the uppercase. So the difference was real but
+not the one it first looked like: the app was using the **page-level badge inside a list**, and the
+design system's own KDoc had already said which of the two belongs where. Checking the canon chapter
+rather than trusting one chapter's computed style is what separated those two readings.
+
+**The announcement was the one real gap**, and it was invisible because the test stack had no
+announcement at all: `GET /announcement` answers `204`, the band hides, and the screen looks
+complete. Creating one through the API surfaced that the unread marker and the mark-read action
+were never built. Probing the contract first paid for itself again — `lastReadAnnouncementId` lives
+on `/users/me`, not on the notice, and **editing an announcement keeps its id**, so a rewritten
+notice stays read. That last one is the server's model, shared with the web app; the app reports it
+rather than inventing a second notion of freshness.
+
+Not adopted: the artboard's date reads „Sonntag, 17.08.2956" — the in-fiction Star Citizen year.
+The numeric **format** is adopted; the year is not. Writing error copy in character is a different
+decision from misstating today's date, and that one is the owner's.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Die Ankündigung auf der Übersicht zeigt jetzt, ob du sie schon gelesen hast**, und lässt sich
+  mit „Als gelesen markieren" abhaken — wie im Webtool.
+
 - **Einstellungen zeigt jetzt drei Konto-Zeilen mehr:** die aktive Org-Einheit (tippen öffnet
   denselben Umschalter wie der Chip oben), deine Auszahlungspräferenz und ob deine Blueprints mit
   der Org geteilt werden. Die letzten beiden liegen auf dem Server — du kannst sie auch im Browser
@@ -15,6 +18,11 @@
   weiterhin die Einsatzleitung.
 
 ### Changed
+
+- **Die Übersicht sieht aus wie entworfen:** Begrüßung in Orange und Versalien, Datum in Kurzform,
+  die vier Schnellaktionen als 2×2-Raster mit ausgeschriebenen Beschriftungen („Einbuchen (Lager)"
+  statt „Einbuchen"), eine ruhigere Statusmarkierung auf der Einsatzkarte und eine Zeitangabe unter
+  jeder ungelesenen Meldung.
 
 - **Ein Tipp auf das Symbol des Bereichs, in dem du schon bist, bringt die Liste wieder nach oben** —
   vorher blieb sie stehen, wo du warst.

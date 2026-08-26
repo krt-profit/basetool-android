@@ -42,6 +42,9 @@ sealed interface DashboardPhase {
  * switcher, both of which the shell already holds. Copying them into this state would give the
  * screen two sources for one fact.
  *
+ * @property announcementRead whether the caller has marked the current notice read. Defaults to
+ *   `true` so the band never flashes „UNGELESEN" during the frames before the answer lands —
+ *   claiming something is unread and taking it back is worse than being a beat late to say so.
  * @property announcement the org-wide notice, or `null` when there is none — an ordinary answer
  * @property missions the Einsätze starting within the next seven days
  * @property phase how far that read has got
@@ -49,6 +52,7 @@ sealed interface DashboardPhase {
  */
 data class DashboardState(
     val announcement: Announcement? = null,
+    val announcementRead: Boolean = true,
     val missions: List<Mission> = emptyList(),
     val phase: DashboardPhase = DashboardPhase.Loading,
     val refreshing: Boolean = false,
@@ -103,12 +107,63 @@ class DashboardViewModel(
         loadMissions()
     }
 
+    /**
+     * Reads whether the caller has marked this notice read.
+     *
+     * A failure leaves it counted as read. The unread marker is an invitation to act, and showing
+     * one because a request failed asks a member to clear something the app is not sure about.
+     *
+     * @param id the notice currently on screen.
+     */
+    private suspend fun readState(id: String) {
+        when (val result = announcements.lastRead()) {
+            is ApiResult.Success -> {
+                mutableState.value = mutableState.value.copy(announcementRead = result.value == id)
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "the announcement read state could not be read: ${result.error}" }
+            }
+        }
+    }
+
+    /**
+     * Marks the notice on screen read.
+     *
+     * Optimistic: the marker disappears on the tap and the request follows. A refusal puts it
+     * back, because a band that says „gelesen" while the server disagrees will say „UNGELESEN"
+     * again at the next start, and the member will have learnt that the button does not stick.
+     */
+    fun onAnnouncementRead() {
+        val notice = mutableState.value.announcement ?: return
+        if (mutableState.value.announcementRead) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(announcementRead = true)
+        viewModelScope.launch {
+            // Only the refusal needs handling: the state already says read, which is the whole
+            // point of marking it optimistically.
+            val result = announcements.markRead(notice.id)
+            if (result is ApiResult.Failure) {
+                KrtLog.w(LOG_TAG) { "the announcement could not be marked read: ${result.error}" }
+                mutableState.value = mutableState.value.copy(announcementRead = false)
+            }
+        }
+    }
+
     /** Reads the announcement; a failure hides the band rather than failing the screen. */
     private fun loadAnnouncement() {
         viewModelScope.launch {
             when (val result = announcements.current()) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(announcement = result.value)
+                    val notice = result.value
+                    mutableState.value = mutableState.value.copy(announcement = notice)
+                    if (notice != null) {
+                        // Sequential, and only when there is something to be unread about: the
+                        // read flag costs a second request and answers a question that does not
+                        // arise on a dashboard with no notice on it.
+                        readState(notice.id)
+                    }
                 }
 
                 is ApiResult.Failure -> {

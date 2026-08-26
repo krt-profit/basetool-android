@@ -306,6 +306,7 @@ private fun listDestination(
                 // "Nichts Ungelesenes" is a claim, and it may only be made once the inbox has
                 // actually answered. Before that the band shows nothing at all.
                 unreadKnown = notificationState.phase is NotificationsPhase.Ready,
+                onMarkAnnouncementRead = dashboard::onAnnouncementRead,
                 onRefresh = dashboard::onRefresh,
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
