@@ -49,6 +49,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTopB
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
@@ -109,6 +110,7 @@ fun BasetoolApp(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
+    fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
@@ -244,6 +246,7 @@ fun BasetoolApp(
                         notifications = notifications,
                         dashboard = dashboard,
                         hangar = hangar,
+                        fleetImport = fleetImport,
                         bank = bank,
                         bankAccount = bankAccount,
                         orders = orders,
@@ -373,17 +376,19 @@ private fun AppTopBar(
     onSwitchOrg: () -> Unit,
     onNotifications: () -> Unit,
 ) {
+    // A published TITLE always names a thing; a destination title always names a section. A screen
+    // that publishes only actions — the Hangar's overflow — keeps its section bar, badge and bell.
+    val subject = detail?.title
     KrtTopBar(
-        title = detail?.title ?: stringResource(destination.titleRes),
-        // A published head always names a thing; a destination title always names a section.
-        subject = detail != null,
+        title = subject ?: stringResource(destination.titleRes),
+        subject = subject != null,
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         subtitle = detail?.subtitle,
         onBack = if (isDetailRoute(destination)) onBack else null,
         // A detail's bar carries neither: the org chip and the bell are for choosing what
         // to look at, and on a detail they compete with the thing being looked at.
         orgBadge =
-            if (detail != null) {
+            if (subject != null) {
                 null
             } else {
                 {
@@ -402,7 +407,8 @@ private fun AppTopBar(
                     }
                 }
             },
-        notificationCount = unreadCount.takeIf { detail == null },
+        notificationCount = unreadCount.takeIf { subject == null },
         onNotificationsClick = onNotifications,
+        actions = detail?.actions,
     )
 }

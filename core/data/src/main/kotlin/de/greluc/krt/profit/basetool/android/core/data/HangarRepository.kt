@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.SquadronShipOve
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
@@ -222,6 +223,34 @@ interface HangarSource {
      * @return the places; the server returns the whole list, which is short.
      */
     suspend fun homeLocations(): ApiResult<List<HomeLocation>>
+
+    /**
+     * Imports ships from a CCU-Game Fleetview export.
+     *
+     * @param fileName what the export was called, sent with the part so the server's log says
+     *   where the rows came from.
+     * @param bytes the export's content, whether picked as a file or pasted into the box.
+     * @return what the server made of it, or the classified failure.
+     */
+    suspend fun importFleetview(
+        fileName: String,
+        bytes: ByteArray,
+    ): ApiResult<FleetImportResult>
+
+    /**
+     * Deletes every ship the caller owns.
+     *
+     * @return success, or the classified failure.
+     */
+    suspend fun clearHangar(): ApiResult<Unit>
+
+    /**
+     * Moves the caller's whole fleet to one home location.
+     *
+     * @param locationId the location every ship is to be based at.
+     * @return success, or the classified failure.
+     */
+    suspend fun setHomeLocationForAll(locationId: String): ApiResult<Unit>
 }
 
 /**
@@ -328,6 +357,34 @@ class HangarRepository(
 
     override suspend fun delete(id: String): ApiResult<Unit> = reader.delete("$SHIPS_PATH/$id")
 
+    override suspend fun importFleetview(
+        fileName: String,
+        bytes: ByteArray,
+    ): ApiResult<FleetImportResult> =
+        when (
+            val result =
+                reader.postFile(
+                    path = FLEETVIEW_IMPORT_PATH,
+                    partName = "file",
+                    fileName = fileName,
+                    bytes = bytes,
+                    mediaType = JSON_MEDIA_TYPE,
+                    deserializer = FleetImportResponse.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
+    override suspend fun clearHangar(): ApiResult<Unit> = reader.delete(SHIPS_PATH)
+
+    override suspend fun setHomeLocationForAll(locationId: String): ApiResult<Unit> =
+        reader.postAccepted(
+            path = BULK_HOME_LOCATION_PATH,
+            body = SetHomeLocationRequest(locationId = locationId),
+            bodySerializer = SetHomeLocationRequest.serializer(),
+        )
+
     override suspend fun shipTypes(query: String): ApiResult<List<ShipTypeOption>> {
         // The catalogue endpoint has no search parameter of its own — the app asks for one page and
         // narrows it here. That is honest only because the page is the whole visible catalogue at
@@ -403,6 +460,9 @@ class HangarRepository(
         private const val MY_SHIPS_PATH = "/api/v1/hangar/my-ships"
         private const val SHIPS_PATH = "/api/v1/hangar/ships"
         private const val SHIP_TYPES_PATH = "/api/v1/ship-types"
+        private const val FLEETVIEW_IMPORT_PATH = "/api/v1/hangar/import/fleetview"
+        private const val BULK_HOME_LOCATION_PATH = "/api/v1/hangar/ships/home-location"
+        private const val JSON_MEDIA_TYPE = "application/json"
         private const val HOME_LOCATIONS_PATH = "/api/v1/locations/home-locations"
         private const val SORT_PARAM = "sort"
         private const val TYPE_SORT = "name,asc"
@@ -535,3 +595,68 @@ private fun LocationDto.toModel(): HomeLocation? {
     val placeId = id ?: return null
     return HomeLocation(id = placeId, name = name.orEmpty())
 }
+
+/**
+ * What the server made of a Fleetview export.
+ *
+ * The three counts are reported separately rather than summed because they mean different things
+ * to the member: imported rows are new ships, duplicates were already in the hangar and are not a
+ * fault, and skipped rows are hulls the catalogue does not know — the only group that needs them
+ * to do anything. The two lists name the rows behind the last two counts, which is what turns
+ * "3 nicht erkannt" into something actionable.
+ *
+ * @property imported how many ships were created.
+ * @property skipped how many rows the server could not match to a hull.
+ * @property duplicates how many rows the hangar already held.
+ * @property skippedShips the names behind [skipped].
+ * @property duplicateShips the names behind [duplicates].
+ */
+data class FleetImportResult(
+    val imported: Int,
+    val skipped: Int,
+    val duplicates: Int,
+    val skippedShips: List<String>,
+    val duplicateShips: List<String>,
+)
+
+/**
+ * The wire shape of a Fleetview import answer.
+ *
+ * @property importedCount how many ships were created.
+ * @property skippedCount how many rows were not recognised.
+ * @property duplicateCount how many rows were already present.
+ * @property skippedShips the names behind [skippedCount].
+ * @property duplicateShips the names behind [duplicateCount].
+ */
+@Serializable
+internal data class FleetImportResponse(
+    val importedCount: Int = 0,
+    val skippedCount: Int = 0,
+    val duplicateCount: Int = 0,
+    val skippedShips: List<String> = emptyList(),
+    val duplicateShips: List<String> = emptyList(),
+) {
+    /**
+     * Maps the wire shape onto the model.
+     *
+     * @return the result as the screen reads it.
+     */
+    fun toModel(): FleetImportResult =
+        FleetImportResult(
+            imported = importedCount,
+            skipped = skippedCount,
+            duplicates = duplicateCount,
+            skippedShips = skippedShips,
+            duplicateShips = duplicateShips,
+        )
+}
+
+/**
+ * The wire shape of the bulk home-location write.
+ *
+ * @property locationId the location every ship is to be based at.
+ */
+@Serializable
+internal data class SetHomeLocationRequest(
+    val locationId: String,
+)

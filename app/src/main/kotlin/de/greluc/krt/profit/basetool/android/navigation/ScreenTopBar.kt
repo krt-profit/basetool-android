@@ -10,8 +10,11 @@ package de.greluc.krt.profit.basetool.android.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 
 /**
  * What a pushed screen puts in the top bar instead of its destination's static title.
@@ -22,12 +25,16 @@ import androidx.compose.runtime.mutableStateOf
  * compete with the thing being looked at, and the name ends up repeated once in the bar as a
  * category ("EINSATZ") and once below it as a fact.
  *
- * @property title the subject's name.
+ * @property title the subject's name, or `null` when the screen only wants to add actions to the
+ *   section bar it already has — a top-level destination is not a subject and must not start
+ *   rendering as one.
  * @property subtitle drawn under the title, small — usually a status pill.
+ * @property actions trailing controls the screen owns, such as its overflow menu.
  */
 data class ScreenTopBar(
-    val title: String,
+    val title: String? = null,
     val subtitle: (@Composable () -> Unit)? = null,
+    val actions: (@Composable () -> Unit)? = null,
 )
 
 /**
@@ -47,17 +54,23 @@ val LocalScreenTopBar: androidx.compose.runtime.ProvidableCompositionLocal<Mutab
  * name in the bar of whatever screen came next, which reads as a navigation bug rather than a
  * rendering one.
  *
- * @param title the subject's name.
+ * @param title the subject's name, or `null` to keep the destination's own section title.
  * @param subtitle drawn under it.
+ * @param actions trailing controls the screen owns, such as its overflow menu.
  */
 @Composable
 fun ProvideScreenTopBar(
-    title: String,
+    title: String? = null,
     subtitle: (@Composable () -> Unit)? = null,
+    actions: (@Composable () -> Unit)? = null,
 ) {
     val slot = LocalScreenTopBar.current
-    DisposableEffect(title, subtitle) {
-        slot.value = ScreenTopBar(title = title, subtitle = subtitle)
-        onDispose { slot.value = null }
-    }
+    val published by rememberUpdatedState(ScreenTopBar(title = title, subtitle = subtitle, actions = actions))
+    // Published on every successful recomposition, cleared once on the way out. Keying a
+    // DisposableEffect on the slots instead looks tidier and is a trap: a `subtitle` or `actions`
+    // lambda is a fresh instance each frame, so the effect disposed and re-ran continuously — which
+    // replaced the composition group behind `actions` and reset any state inside it, an overflow
+    // menu that would not stay open (found on a device, 2026-08-26).
+    SideEffect { slot.value = published }
+    DisposableEffect(Unit) { onDispose { slot.value = null } }
 }

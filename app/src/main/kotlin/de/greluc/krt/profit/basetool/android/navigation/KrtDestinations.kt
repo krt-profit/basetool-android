@@ -79,6 +79,9 @@ enum class KrtDestination(
     /** The open-source notice, pushed from Einstellungen. */
     Licenses("licenses", R.string.licenses_title, DesignR.drawable.ic_krt_list),
 
+    /** The Fleetview import, pushed from the Hangar's overflow. */
+    FleetImport("hangar-import", R.string.fleet_import_title, DesignR.drawable.ic_krt_upload),
+
     /**
      * One Einsatz in full, pushed from the Einsatz list.
      *
@@ -184,6 +187,8 @@ val MORE_DESTINATIONS =
 val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
     mapOf(
         KrtDestination.Licenses to KrtDestination.Settings,
+        // Pushed from the Hangar's overflow, so the bar keeps saying Hangar while it is open.
+        KrtDestination.FleetImport to KrtDestination.Hangar,
         // Without this the bar would light up "Übersicht" — the fallback for an unknown
         // destination — while the member is looking at an Einsatz they opened from "Einsätze".
         KrtDestination.MissionDetail to KrtDestination.Missions,

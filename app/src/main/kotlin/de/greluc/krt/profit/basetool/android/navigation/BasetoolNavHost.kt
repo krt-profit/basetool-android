@@ -36,6 +36,8 @@ import de.greluc.krt.profit.basetool.android.dashboard.DashboardViewModel
 import de.greluc.krt.profit.basetool.android.dashboard.QuickAction
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardRoute
 import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportRoute
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarRoute
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
@@ -117,6 +119,7 @@ fun BasetoolNavHost(
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
+    fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
@@ -190,6 +193,7 @@ fun BasetoolNavHost(
                         bankAccount = bankAccount,
                         orderDetail = orderDetail,
                         refineryOrder = refineryOrder,
+                        fleetImport = fleetImport,
                         onOpenDestination = onOpenDestination,
                         onLogout = onLogout,
                         settings = settings,
@@ -319,7 +323,12 @@ private fun listDestination(
 
         KrtDestination.Hangar -> {
             LaunchedEffect(Unit) { hangar.loadOnce() }
-            HangarRoute(viewModel = hangar)
+            HangarRoute(
+                viewModel = hangar,
+                // A plain push, NOT navigateToTopLevel: the import is a sub-page of the Hangar, so
+                // back has to return here rather than to Übersicht.
+                onOpenImport = { navController.navigate(KrtDestination.FleetImport.route) },
+            )
         }
 
         KrtDestination.PersonalInventory -> {
@@ -528,6 +537,7 @@ private fun PushedDestination(
     bankAccount: (String) -> BankAccountViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
     settings: SettingsBindings,
@@ -602,6 +612,10 @@ private fun PushedDestination(
 
         KrtDestination.Licenses -> {
             LicensesScreen(onOpenUrl = settings.onOpenUrl)
+        }
+
+        KrtDestination.FleetImport -> {
+            FleetImportRoute(viewModel = fleetImport)
         }
 
         else -> {

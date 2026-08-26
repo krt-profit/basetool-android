@@ -16,6 +16,7 @@ import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -244,6 +245,41 @@ class ApiReader(
             Request.Builder().url("$baseUrl$path".toHttpUrl()).post(EMPTY_BODY),
             deserializer,
         )
+
+    /**
+     * Uploads one file as `multipart/form-data` and parses what comes back.
+     *
+     * The hangar's Fleetview endpoint takes a file part rather than a JSON body, and it takes the
+     * same part whether the member picked a file or pasted the export into a box — the paste is
+     * turned into bytes here rather than becoming a second endpoint.
+     *
+     * @param T the response type
+     * @param path the API path, beginning with a slash
+     * @param partName the form field the server reads, `file` for every current caller
+     * @param fileName the name sent with the part; servers log it, so it should say where the
+     *   bytes came from rather than be invented
+     * @param bytes the file's content
+     * @param mediaType the part's content type
+     * @param deserializer the serializer for [T]
+     * @return the parsed answer, or the classified failure
+     */
+    @Suppress("LongParameterList")
+    suspend fun <T> postFile(
+        path: String,
+        partName: String,
+        fileName: String,
+        bytes: ByteArray,
+        mediaType: String,
+        deserializer: DeserializationStrategy<T>,
+    ): ApiResult<T> {
+        val body =
+            MultipartBody
+                .Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(partName, fileName, bytes.toRequestBody(mediaType.toMediaType()))
+                .build()
+        return call(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).post(body), deserializer)
+    }
 
     /**
      * Sends a `PUT` that carries no body and parses what comes back.

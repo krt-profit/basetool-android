@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.hangar
 
+import de.greluc.krt.profit.basetool.android.core.data.FleetImportResult
 import de.greluc.krt.profit.basetool.android.core.data.HangarSource
 import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
@@ -87,6 +88,12 @@ class HangarViewModelTest {
         val created = mutableListOf<ShipDraft>()
         val updated = mutableListOf<Pair<String, Long?>>()
         val deleted = mutableListOf<String>()
+        val imported = mutableListOf<Pair<String, Int>>()
+        var cleared = false
+        var bulkHomeLocation: String? = null
+        var importResult: ApiResult<FleetImportResult> =
+            ApiResult.Success(FleetImportResult(0, 0, 0, emptyList(), emptyList()))
+        var clearResult: ApiResult<Unit> = ApiResult.Success(Unit)
         var saveAnswer: ApiResult<Ship> = ApiResult.Success(SAVED)
 
         override suspend fun create(draft: ShipDraft): ApiResult<Ship> {
@@ -105,6 +112,24 @@ class HangarViewModelTest {
 
         override suspend fun delete(id: String): ApiResult<Unit> {
             deleted.add(id)
+            return ApiResult.Success(Unit)
+        }
+
+        override suspend fun importFleetview(
+            fileName: String,
+            bytes: ByteArray,
+        ): ApiResult<FleetImportResult> {
+            imported.add(fileName to bytes.size)
+            return importResult
+        }
+
+        override suspend fun clearHangar(): ApiResult<Unit> {
+            cleared = true
+            return clearResult
+        }
+
+        override suspend fun setHomeLocationForAll(locationId: String): ApiResult<Unit> {
+            bulkHomeLocation = locationId
             return ApiResult.Success(Unit)
         }
 

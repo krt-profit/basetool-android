@@ -26,6 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -38,8 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.HomeLocation
 import de.greluc.krt.profit.basetool.android.core.data.Ship
 import de.greluc.krt.profit.basetool.android.core.data.ShipTypeSummary
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
@@ -52,8 +57,14 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTable
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableCell
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTableColumn
@@ -61,6 +72,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
@@ -616,9 +628,51 @@ private fun HangarEmpty(
 @Composable
 fun HangarRoute(
     viewModel: HangarViewModel,
+    onOpenImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Design ch. 08 gives the Hangar a `⋮` with exactly these three: the bulk home location, the
+    // Fleetview import, and emptying the hangar. All three act on the fleet rather than on a row,
+    // which is why none of them belongs beside a ship.
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    val actionsLabel = stringResource(R.string.hangar_actions)
+    val bulkLabel = stringResource(R.string.hangar_bulk_home_location)
+    val importLabel = stringResource(R.string.fleet_import_title)
+    val clearLabel = stringResource(R.string.hangar_clear)
+    // Only the actions: the Hangar is a top-level destination, so its bar keeps the section title,
+    // the org badge and the bell rather than turning into a subject bar.
+    ProvideScreenTopBar(
+        actions = {
+            KrtOverflowMenu(
+                contentDescription = actionsLabel,
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                items =
+                    listOf(
+                        KrtMenuItem(
+                            label = bulkLabel,
+                            iconRes = DesignR.drawable.ic_krt_map_pin,
+                            enabled = state.online && state.ships.isNotEmpty(),
+                            onClick = viewModel::onBulkHomeLocationRequested,
+                        ),
+                        KrtMenuItem(
+                            label = importLabel,
+                            iconRes = DesignR.drawable.ic_krt_upload,
+                            enabled = state.online,
+                            onClick = onOpenImport,
+                        ),
+                        KrtMenuItem(
+                            label = clearLabel,
+                            iconRes = DesignR.drawable.ic_krt_trash,
+                            danger = true,
+                            enabled = state.online && state.ships.isNotEmpty(),
+                            onClick = viewModel::onClearRequested,
+                        ),
+                    ),
+            )
+        },
+    )
     HangarScreen(
         state = state,
         onSegmentSelected = viewModel::onSegmentSelected,
@@ -656,6 +710,117 @@ fun HangarRoute(
             onDismiss = viewModel::onDeleteDismissed,
         )
     }
+    if (state.clearRequested) {
+        HangarClearModal(
+            count = state.ships.size,
+            onConfirm = viewModel::onClearConfirmed,
+            onDismiss = viewModel::onClearDismissed,
+        )
+    }
+    state.bulkHomeLocation?.let { bulk ->
+        BulkHomeLocationSheet(
+            bulk = bulk,
+            places = state.places,
+            onChosen = viewModel::onBulkHomeLocationChosen,
+            onApply = viewModel::onBulkHomeLocationApplied,
+            onDismiss = viewModel::onBulkHomeLocationDismissed,
+        )
+    }
+}
+
+/**
+ * „Alle N Schiffe löschen?" - the danger modal behind the overflow's last entry.
+ *
+ * The count is in the question because it is the only thing that distinguishes a member emptying a
+ * hangar of three from one emptying a hangar of ninety. Design ch. 08 spells that wording out.
+ *
+ * @param count how many ships would go.
+ * @param onConfirm empties the hangar.
+ * @param onDismiss leaves it alone.
+ */
+@Composable
+private fun HangarClearModal(
+    count: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtModal(
+        title = stringResource(R.string.hangar_clear),
+        confirmText = stringResource(R.string.hangar_clear),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        tone = KrtModalTone.Danger,
+        cancelText = stringResource(R.string.personal_inventory_cancel),
+        modifier = Modifier.testTag(HANGAR_CLEAR_TAG),
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.hangar_clear_body, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+        )
+    }
+}
+
+/**
+ * The bulk home-location picker.
+ *
+ * One place for the whole fleet, which is what the endpoint does: a member who moves base moves
+ * every hull with it, and setting thirty ships one at a time is the workflow the chapter puts in
+ * the overflow to avoid.
+ *
+ * @param bulk what the sheet holds.
+ * @param places the org's home locations.
+ * @param onChosen a place was picked.
+ * @param onApply the CTA was pressed.
+ * @param onDismiss the sheet was closed.
+ */
+@Composable
+private fun BulkHomeLocationSheet(
+    bulk: BulkHomeLocation,
+    places: List<HomeLocation>,
+    onChosen: (HomeLocation) -> Unit,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    KrtBottomSheet(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.hangar_bulk_home_location_title),
+        modifier = Modifier.testTag(HANGAR_BULK_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            KrtSelectField(
+                value = bulk.place?.name ?: stringResource(R.string.hangar_location_none),
+                options = places.map { KrtOption(it.id, it.name) },
+                onSelect = { option ->
+                    places.firstOrNull { it.id == option.value }?.let(onChosen)
+                    open = false
+                },
+                expanded = open,
+                onExpandedChange = { open = it },
+                label = stringResource(R.string.hangar_field_location),
+                selectedValue = bulk.place?.id,
+                enabled = !bulk.saving,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_cancel),
+                    onClick = onDismiss,
+                    enabled = !bulk.saving,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.hangar_bulk_home_location_apply),
+                    onClick = onApply,
+                    iconRes = DesignR.drawable.ic_krt_save,
+                    enabled = bulk.place != null && !bulk.saving,
+                    modifier = Modifier.testTag(HANGAR_BULK_APPLY_TAG),
+                )
+            }
+        }
+    }
 }
 
 /** Edge of the manufacturer lettermark square (design ch. 08). */
@@ -682,3 +847,12 @@ private fun Ship.insuranceLabel(): String {
         else -> raw
     }
 }
+
+/** Test handle for the empty-the-hangar modal. */
+const val HANGAR_CLEAR_TAG = "hangar-clear"
+
+/** Test handle for the bulk home-location sheet. */
+const val HANGAR_BULK_TAG = "hangar-bulk-home-location"
+
+/** Test handle for its apply button. */
+const val HANGAR_BULK_APPLY_TAG = "hangar-bulk-apply"

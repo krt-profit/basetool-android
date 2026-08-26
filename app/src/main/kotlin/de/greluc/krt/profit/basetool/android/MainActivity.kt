@@ -53,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.gate.AccountGate
 import de.greluc.krt.profit.basetool.android.gate.AccountGateViewModel
 import de.greluc.krt.profit.basetool.android.gate.UpdateGate
 import de.greluc.krt.profit.basetool.android.gate.UpdateGateViewModel
+import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
@@ -158,6 +159,7 @@ class MainActivity : AppCompatActivity() {
     private val dashboardViewModel: DashboardViewModel by viewModels { authViewModels(container) }
 
     private val hangarViewModel: HangarViewModel by viewModels { authViewModels(container) }
+    private val fleetImportViewModel: FleetImportViewModel by viewModels { authViewModels(container) }
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
 
@@ -308,6 +310,7 @@ class MainActivity : AppCompatActivity() {
                                     notifications = notificationsViewModel,
                                     dashboard = dashboardViewModel,
                                     hangar = hangarViewModel,
+                                    fleetImport = fleetImportViewModel,
                                     bank = bankViewModel,
                                     bankAccount = {
                                         BankAccountViewModel(
@@ -559,6 +562,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
+                initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }

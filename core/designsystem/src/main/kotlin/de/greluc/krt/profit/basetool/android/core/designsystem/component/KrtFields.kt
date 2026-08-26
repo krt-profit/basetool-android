@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.contentDescription
@@ -153,6 +154,8 @@ fun KrtFieldError(
  * @param keyboardOptions keyboard configuration, e.g. a numeric keyboard for amounts.
  * @param textAlign horizontal alignment of the text; centre it for stepper-style numeric inputs.
  * @param tabularFigures whether digits render with fixed width; switch on for amounts.
+ * @param minLines how many lines the field stands at before it grows. Above one it takes multi-line
+ *   input — a pasted export, a briefing — and the value sits at the top rather than centred.
  * @param valueStyle overrides how the typed value is rendered - size, weight and colour. Reach for
  *   it when the number IS the screen, as the aUEC amount is on the Finanz-Eintrag sheet; leave it
  *   null everywhere else so fields stay uniform.
@@ -174,6 +177,7 @@ fun KrtTextField(
     tabularFigures: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
     valueStyle: TextStyle? = null,
+    minLines: Int = 1,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -193,23 +197,18 @@ fun KrtTextField(
         }
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .alpha(if (enabled) 1f else DISABLED_FIELD_ALPHA)
-                    .then(
-                        if (focused && enabled) {
-                            Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.xs)
-                        } else {
-                            Modifier
-                        },
-                    )
-                    .background(KrtPalette.SurfaceInput)
-                    .border(KrtSpacing.hairline, borderColor)
-                    .defaultMinSize(minHeight = KrtSpacing.touchTarget)
-                    .padding(horizontal = KrtSpacing.md),
-            contentAlignment = Alignment.CenterStart,
+                Modifier.krtFieldFrame(
+                    enabled = enabled,
+                    glow = focused && enabled,
+                    border = borderColor,
+                    minLines = minLines,
+                ),
+            contentAlignment = if (minLines > 1) Alignment.TopStart else Alignment.CenterStart,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment =
+                    if (minLines > 1) Alignment.Top else Alignment.CenterVertically,
+            ) {
                 BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
@@ -222,12 +221,14 @@ fun KrtTextField(
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = keyboardOptions,
                     interactionSource = interactionSource,
-                    singleLine = true,
+                    singleLine = minLines == 1,
+                    minLines = minLines,
                     decorationBox = { innerTextField ->
                         KrtFieldDecoration(
                             showPlaceholder = value.isEmpty(),
                             placeholder = placeholder,
                             textAlign = textAlign,
+                            top = minLines > 1,
                             innerTextField = innerTextField,
                         )
                     },
@@ -265,6 +266,35 @@ private fun Modifier.krtFieldSemantics(
         accessibleName?.let { contentDescription = it }
         errorMessage?.let { error(it) }
     }
+
+/**
+ * The field's own frame: fill, border, glow and the room its content needs.
+ *
+ * Pulled out of [KrtTextField] so the composable itself stays under the complexity gate. Every
+ * branch here is a state the field can be in rather than a variation a caller picked.
+ *
+ * @param enabled whether the field takes input; a disabled one is dimmed rather than recoloured, so
+ *   its error border stays legible.
+ * @param glow whether the focus bloom is on.
+ * @param border the frame colour, already resolved for error and focus.
+ * @param minLines how many lines tall the field stands.
+ * @return the modifier the frame is drawn with.
+ */
+@Composable
+private fun Modifier.krtFieldFrame(
+    enabled: Boolean,
+    glow: Boolean,
+    border: Color,
+    minLines: Int,
+): Modifier =
+    this
+        .fillMaxWidth()
+        .alpha(if (enabled) 1f else DISABLED_FIELD_ALPHA)
+        .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.xs) else Modifier)
+        .background(KrtPalette.SurfaceInput)
+        .border(KrtSpacing.hairline, border)
+        .defaultMinSize(minHeight = KrtSpacing.touchTarget * minLines)
+        .padding(horizontal = KrtSpacing.md, vertical = if (minLines > 1) KrtSpacing.sm else 0.dp)
 
 /**
  * How the typed value is rendered.
@@ -307,6 +337,7 @@ private fun krtValueStyle(
  * @param showPlaceholder whether the field is empty and the hint should therefore be visible.
  * @param placeholder the hint, or `null` when the field has none.
  * @param textAlign which edge the value and its hint sit against.
+ * @param top whether the field is multi-line, in which case both start at its first line.
  * @param innerTextField the editable text, supplied by `BasicTextField`.
  */
 @Composable
@@ -314,17 +345,21 @@ private fun KrtFieldDecoration(
     showPlaceholder: Boolean,
     placeholder: String?,
     textAlign: TextAlign,
+    top: Boolean,
     innerTextField: @Composable () -> Unit,
 ) {
     // Full width and aligned by the field's own `textAlign`: without it the box wraps its content,
     // an End-aligned value has no room to move into and renders mid-field, and the placeholder of
     // such a field would sit on the opposite side from the value that replaces it.
+    // A multi-line field is as tall as its `minLines`, and the box wraps that height: centring the
+    // hint in it puts it three lines below the caret that will replace it.
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment =
-            when (textAlign) {
-                TextAlign.End -> Alignment.CenterEnd
-                TextAlign.Center -> Alignment.Center
+            when {
+                top -> Alignment.TopStart
+                textAlign == TextAlign.End -> Alignment.CenterEnd
+                textAlign == TextAlign.Center -> Alignment.Center
                 else -> Alignment.CenterStart
             },
     ) {

@@ -54,6 +54,9 @@ private val TOP_BAR_HEIGHT = 64.dp
  * @param orgBadge optional org-context chip, typically a [KrtOrgBadge].
  * @param notificationCount unread notifications; `null` hides the bell, `0` shows it without badge.
  * @param onNotificationsClick invoked when the bell is tapped.
+ * @param actions trailing controls — the screen's own overflow, after the bell. A detail that owns
+ *   destructive or rarely used actions puts them here rather than in the content, which is where
+ *   design chapter 08 has the Hangar's `⋮`.
  */
 @Composable
 fun KrtTopBar(
@@ -65,6 +68,7 @@ fun KrtTopBar(
     orgBadge: @Composable (() -> Unit)? = null,
     notificationCount: Int? = null,
     onNotificationsClick: (() -> Unit)? = null,
+    actions: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
         Row(
@@ -118,6 +122,7 @@ fun KrtTopBar(
                     }
                 }
             }
+            actions?.invoke()
         }
         Box(
             modifier =
