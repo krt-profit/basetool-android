@@ -761,6 +761,44 @@ Claude Design session:
 round 2 told the designer it could not) and the gated-state artboards that ADR-0011 calls for:
 [`docs/design/android/MISSING_ARTBOARD_PROMPTS_3.md`](design/android/MISSING_ARTBOARD_PROMPTS_3.md).
 
+## Chapter 09 against the delivered bundle (2026-08-26)
+
+The answers to rounds 2 and 3 arrived as ten new artboards in chapter 09 (5–14). Every one was
+rendered, measured in the DOM rather than read off the picture, built, and then checked on the
+emulator as a plain `KRT Member` against stock that belongs to somebody else — which is the only
+caller who sees both lock kinds at once.
+
+| Artboard | What it asked for | Verdict |
+| --- | --- | --- |
+| 5 · Auswahlmodus | „✕ n gewählt" head, entry-level selection, group chip, checkboxes, no row actions, no FAB or nav | **was six gaps** — all closed |
+| 6–7 · Ziel wählen | count in the CTA, skip hint before the write | **was two gaps** — closed |
+| 8 · Speichern läuft | CTA spinner, fields locked | already right |
+| 9 · Ergebnis | result as a step in the sheet, two tiles, the sentence | **was a gap** — the sheet closed silently |
+| 10 · Abgelehnt (403) | canon copy, sheet open, selection survives | **was a gap** — generic „write failed" |
+| 11–12 · Gesperrte Zeile | 45 % + an obligatory lock badge, refusal toast in the warning tint | **was three gaps** — closed |
+| 13 · Sheet mit gesperrtem CTA | values legible, editors at 55 %, lock inline before the label | **was a gap** — closed |
+| 14 · Zwei Sperr-Arten | one picture, two copies: role lock and row lock | **was a gap** — both ran off one gate |
+
+### What only the device found
+
+Four defects survived the measurement and died on the emulator:
+
+- The refusal toast's bloom was several times the artboard's 25 %, because `krtBloom` scales from
+  the colour's own alpha and the warning tint was passed at full strength.
+- The toast passed **under** the floating action button rather than over it.
+- The switcher's kind marker was added unconditionally, and the organisation names a
+  Spezialkommando „SK Nebelkraehe" — the sheet read „SK SK NEBELKRAEHE".
+- The selection plural said „ausgewählt" where every artboard writes „gewählt".
+
+None of these is visible in a DOM measurement, a unit test or a screenshot of the artboard. They
+are the reason the optical pass on a real device is a separate step and not a formality.
+
+### One judgement call, stated rather than buried
+
+Artboards 6–9 carry the line „12 Einträge · Modus LOCATION · POST inventory/bulk-rebook" under the
+sheet's title. Only „12 Einträge" was shipped: the mode name and the endpoint are handoff
+annotation, and no member needs the HTTP verb of the thing they just tapped.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.
