@@ -713,8 +713,30 @@ and names the missing grant when tapped**. It is not hidden, and it is not `enab
 - **Not `enabled = false`**, because a Compose control with that flag receives no tap, and a control
   that cannot be tapped cannot explain itself. The disabled *appearance* plus a live tap target is
   the whole mechanism.
-- The message **names the grant** — „Dafür brauchst du die Logistik-Rolle" — not the status code.
-  „403" tells a member nothing they can act on.
+- The message **names the grant** — „Dafür brauchst du die Rolle Logistiker." — not the status
+  code. „403" tells a member nothing they can act on, and neither does „Keine Berechtigung". Role
+  names are the ones in `ROLES_AND_PERMISSIONS.md` (Logistiker, Missions-Manager, Officer, Admin),
+  so the sentence and the role the member goes on to ask for carry the same word.
+
+**How a lock is drawn** (design ch. 09, artboards 11–14):
+
+- **45 % opacity *and* a lock glyph — both, always.** Alpha alone is indistinguishable from a
+  loading state, so the glyph is what carries the meaning. It is drawn fully opaque on an opaque
+  fill and is never dimmed along with the control it marks.
+- An **icon button** takes a 14 dp lock badge in its corner; a **full-width call-to-action** has no
+  corner, so the lock leads the label instead. Row, sheet, menu and action bar otherwise show the
+  same picture.
+- The refusal appears in **one carrier**: the bracket toast at the foot of the screen, in the
+  warning tint `#FFD23F` with a lock — not the danger tint, because no error has occurred. It is a
+  **singleton** that stands for 4 s, and a second tap restarts that clock rather than stacking a
+  second bar.
+- **Two kinds of lock share that picture** and differ only in copy: a *role* lock, knowable before
+  the tap („Dafür brauchst du die Rolle Logistiker."), and a *row* lock on someone else's entry
+  („Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker.").
+- A locked control announces the refusal to TalkBack as its state description, so a screen reader
+  is told what the toast says rather than reading an unqualified label.
+- A caller who may **look but not save** keeps the values on screen and finds out at the CTA: the
+  editors recede to 55 %, the numbers stay legible.
 
 Where the server's rule depends on the **row** rather than the role, the app answers what it can
 from what it holds and lets the server settle the rest. The Lager's rule is *own row, or edit rights

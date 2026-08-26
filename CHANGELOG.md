@@ -18,6 +18,10 @@
   Erkannt werden CCU-Game-Fleetview, HangarXPLOR-Shiplist und Fleetyards-JSON.
 - **Zwei weitere Hangar-Aktionen im selben Menü:** „Home-Location setzen" ändert den Ort für die
   ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe — mit Rückfrage, die die Anzahl nennt.
+- **Aktionen, die dir fehlende Rechte verwehren, sagen das jetzt.** Sie bleiben sichtbar, tragen ein
+  Schloss und antworten beim Antippen mit der Rolle, die dir fehlt — „Dafür brauchst du die Rolle
+  Logistiker." statt einer stummen grauen Schaltfläche oder einer 403 nach dem Absenden. Fremde
+  Lager-Einträge nennen stattdessen die Regel, nach der nur die eigene Zeile dir gehört.
 
 ### Changed
 

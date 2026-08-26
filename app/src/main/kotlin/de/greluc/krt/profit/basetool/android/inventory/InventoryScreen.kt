@@ -39,6 +39,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
@@ -61,19 +62,23 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isLogistician
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
-import de.greluc.krt.profit.basetool.android.ui.rememberDenial
+import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -114,7 +119,7 @@ private val RAIL_HEIGHT = 44.dp
  * @param onAllocate an entry's Zuordnung was opened.
  * @param selection which rows are selected.
  * @param onToggleSelected a row was long-pressed, or tapped while selecting.
- * @param onDenied a gated action was tapped; carries the reason to show.
+ * @param denials where a tapped lock raises its refusal.
  * @param onWithStockOnlyChanged the "Nur mit Bestand" chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
@@ -132,7 +137,7 @@ fun InventoryScreen(
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
     onToggleSelected: (String) -> Unit,
-    onDenied: (String) -> Unit,
+    denials: DenialState,
     onWithStockOnlyChanged: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -207,7 +212,7 @@ fun InventoryScreen(
                                 onAllocate = onAllocate,
                                 selection = selection,
                                 onToggleSelected = onToggleSelected,
-                                onDenied = onDenied,
+                                denials = denials,
                                 online = state.online,
                                 onLoadMore = onLoadMore,
                             )
@@ -241,7 +246,7 @@ fun InventoryScreen(
  * @param onAllocate an entry's Zuordnung was opened.
  * @param selection which rows are selected.
  * @param onToggleSelected a row was long-pressed, or tapped while selecting.
- * @param onDenied a gated action was tapped; carries the reason to show.
+ * @param denials where a tapped lock raises its refusal.
  * @param online whether a booking can be sent at all.
  * @param onLoadMore the next page was asked for.
  */
@@ -254,7 +259,7 @@ private fun InventoryTree(
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
     onToggleSelected: (String) -> Unit,
-    onDenied: (String) -> Unit,
+    denials: DenialState,
     online: Boolean,
     onLoadMore: () -> Unit,
 ) {
@@ -309,7 +314,7 @@ private fun InventoryTree(
                                     onAllocate = onAllocate,
                                     selection = selection,
                                     onToggleSelected = onToggleSelected,
-                                    onDenied = onDenied,
+                                    denials = denials,
                                 )
                             }
                         }
@@ -410,7 +415,7 @@ private fun LazyListScope.entryRows(
     onAllocate: (InventoryEntry) -> Unit,
     selection: Set<String>,
     onToggleSelected: (String) -> Unit,
-    onDenied: (String) -> Unit,
+    denials: DenialState,
 ) {
     when (phase) {
         // A closed stack contributes no rows at all.
@@ -447,7 +452,7 @@ private fun LazyListScope.entryRows(
                             selected = entry.id in selection,
                             selecting = selection.isNotEmpty(),
                             onToggleSelected = { onToggleSelected(entry.id) },
-                            onDenied = onDenied,
+                            denials = denials,
                         )
                     }
                 }
@@ -466,7 +471,7 @@ private fun LazyListScope.entryRows(
  * @param selected whether this row is in the selection.
  * @param selecting whether the list is in selection mode at all.
  * @param onToggleSelected the row was long-pressed, or tapped while selecting.
- * @param onDenied a gated action was tapped; carries the reason to show.
+ * @param denials where a tapped lock raises its refusal.
  */
 @Composable
 private fun EntryRow(
@@ -478,7 +483,7 @@ private fun EntryRow(
     onBookOut: () -> Unit,
     onAllocate: () -> Unit,
     onToggleSelected: () -> Unit,
-    onDenied: (String) -> Unit,
+    denials: DenialState,
 ) {
     // Long-press starts selection mode and a plain tap continues it (design ch. 02 §4): once the
     // mode is on, having to keep long-pressing every further row makes selecting twelve stacks a
@@ -549,16 +554,61 @@ private fun EntryRow(
         entry.quality?.let { quality ->
             QualityMark(quality = quality)
         }
-        // Two actions, and one of them does not apply to every row: a personal entry carries no
-        // allocation at all (design ch. 09 §3), so offering the split on one would be offering a
-        // refusal. Whether the caller may split a SHARED entry is the server's call — the app holds
-        // no role list on purpose — so the sheet opens and a 403 is reported in its own words.
-        // Both writes go through the same gate the server applies — own row, or edit rights on the
-        // row's org unit. Drawn as disabled and still tappable, so the refusal can name the role
-        // that is missing instead of arriving as a 403 after the fact (ADR-0011).
-        val gate = Gate(allowed = mayEditRowOf(entry.holderId), reason = stringResource(R.string.gate_logistician))
-        if (!entry.personal) {
-            val (dim, click) = rememberGated(gate, onAllocate, onDenied)
+        EntryActions(
+            entry = entry,
+            online = online,
+            onBookOut = onBookOut,
+            onAllocate = onAllocate,
+            denials = denials,
+        )
+    }
+}
+
+/**
+ * The two writes a stock row offers, each behind the lock that actually governs it.
+ *
+ * *Buchen* asks whether the row is the caller's — own row, or edit rights on its org unit.
+ * *Zuordnen* asks for the Logistiker grant and stays locked even on the caller's own row (design
+ * ch. 09, artboard 11: „Buchen: eigene Zeile → aktiv; Zuordnen: Rolle Logistiker → gesperrt").
+ * Two locks, the same picture, different copy — only the refusal's wording separates them.
+ *
+ * Neither is `enabled = false`: both keep a live tap target so the refusal can name the grant to
+ * ask for, instead of arriving as a 403 after the write was already attempted (ADR-0011).
+ *
+ * A **personal** entry carries no allocation at all (design ch. 09 §3), so the split is not offered
+ * on one — offering it would be offering a refusal that no grant could ever lift.
+ *
+ * @param entry the row.
+ * @param online whether writes are possible at all right now.
+ * @param onBookOut opens the booking form.
+ * @param onAllocate opens the Zuordnung.
+ * @param denials where a tapped lock raises its refusal.
+ */
+@Composable
+private fun EntryActions(
+    entry: InventoryEntry,
+    online: Boolean,
+    onBookOut: () -> Unit,
+    onAllocate: () -> Unit,
+    denials: DenialState,
+) {
+    val roleGate =
+        Gate(
+            allowed = isLogistician(),
+            reason = stringResource(R.string.gate_role_logistician),
+            detail = stringResource(R.string.gate_role_logistician_detail),
+        )
+    val rowGate =
+        Gate(
+            allowed = mayEditRowOf(entry.holderId),
+            reason = stringResource(R.string.gate_own_row),
+            detail = stringResource(R.string.gate_own_row_detail),
+        )
+    if (!entry.personal) {
+        val (dim, click) = rememberGated(roleGate, onAllocate, denials)
+        // The badge sits on the button's corner and is never dimmed with it: alpha alone reads as
+        // "loading", and the lock is what makes it read as "you may not" (artboard 14).
+        Box {
             KrtIconButton(
                 iconRes = DesignR.drawable.ic_krt_target,
                 label = stringResource(R.string.allocation_open),
@@ -566,15 +616,19 @@ private fun EntryRow(
                 modifier = dim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
                 enabled = online,
             )
+            if (!roleGate.allowed) {
+                KrtLockBadge(modifier = Modifier.align(Alignment.BottomEnd))
+            }
         }
-        val (bookDim, bookClick) = rememberGated(gate, onBookOut, onDenied)
-        KrtGhostButton(
-            text = stringResource(R.string.booking_open),
-            onClick = bookClick,
-            modifier = bookDim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
-            enabled = online,
-        )
     }
+    val (bookDim, bookClick) = rememberGated(rowGate, onBookOut, denials)
+    KrtGhostButton(
+        text = stringResource(R.string.booking_open),
+        onClick = bookClick,
+        iconRes = if (rowGate.allowed) null else DesignR.drawable.ic_krt_lock,
+        modifier = bookDim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+        enabled = online,
+    )
 }
 
 /**
@@ -778,10 +832,9 @@ fun InventoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // Where this sentence belongs — a tooltip on the control, a toast, a line under the button — is
-    // the open question in round 3 of the design prompt. The toast is the one carrier the system
-    // already draws for a transient sentence (ch. 02 §7), so it stands in until that is answered.
-    val (denial, setDenial) = rememberDenial()
+    // One refusal at a time, at the foot of the screen — the design settled the open question of
+    // round 3 on the bracket toast in the warning tint (design ch. 09, artboards 12 and 14).
+    val denials = rememberDenialState()
     InventoryScreen(
         state = state,
         onToggleGroup = viewModel::onToggleGroup,
@@ -791,7 +844,7 @@ fun InventoryRoute(
         onAllocate = viewModel::onAllocate,
         selection = state.selection,
         onToggleSelected = viewModel::onToggleSelected,
-        onDenied = setDenial,
+        denials = denials,
         onWithStockOnlyChanged = viewModel::onWithStockOnlyChanged,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
@@ -835,16 +888,27 @@ fun InventoryRoute(
         }
     }
 
-    denial?.let { reason ->
-        LaunchedEffect(reason) {
+    denials.current?.let { denial ->
+        // Keyed on the tap, not on the text: a second tap of the same lock has to restart the clock
+        // rather than let the first tap's timer expire underneath it (design ch. 09, artboard 14).
+        LaunchedEffect(denial.serial) {
             delay(DENIAL_TOAST_MS)
-            setDenial(null)
+            denials.clear()
         }
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            KrtToast(
-                title = stringResource(R.string.gate_denied_title),
-                message = reason,
-                modifier = Modifier.padding(KrtSpacing.lg),
+        // Above the FAB, not under it: the refusal is the one thing the member has to be able to
+        // read, and for its four seconds it outranks a button they may not be allowed to press
+        // anyway. 16 dp from both edges and clear of the bottom bar, as the artboard measures it.
+        Box(
+            modifier = Modifier.fillMaxSize().zIndex(1f),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            KrtLockToast(
+                title = denial.title,
+                detail = denial.detail,
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.lg)
+                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
             )
         }
     }
@@ -871,6 +935,13 @@ fun InventoryRoute(
                     onSave = viewModel::onAllocationSave,
                     onDismiss = viewModel::onAllocationDismissed,
                 ),
+            saveGate =
+                Gate(
+                    allowed = isLogistician(),
+                    reason = stringResource(R.string.gate_role_logistician),
+                    detail = stringResource(R.string.gate_role_logistician_detail),
+                ),
+            denials = denials,
         )
     }
 }
@@ -963,6 +1034,3 @@ const val INVENTORY_BULK_TAG = "inventory-bulk-move"
 
 /** Test handle for its confirm button. */
 const val INVENTORY_BULK_CONFIRM_TAG = "inventory-bulk-confirm"
-
-/** How long a refusal stands before it goes away by itself. */
-private const val DENIAL_TOAST_MS = 4000L

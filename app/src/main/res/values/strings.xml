@@ -873,6 +873,8 @@
         <item quantity="one">Ein Eintrag wird an den gewählten Ort verschoben.</item>
         <item quantity="other">%1$d Einträge werden an den gewählten Ort verschoben.</item>
     </plurals>
-    <string name="gate_denied_title">Nicht erlaubt</string>
-    <string name="gate_logistician">Dafür brauchst du die Logistik-Rolle — oder es ist nicht dein Eintrag.</string>
+    <string name="gate_role_logistician">Dafür brauchst du die Rolle Logistiker.</string>
+    <string name="gate_role_logistician_detail">Vergeben je Staffel durch die Administration.</string>
+    <string name="gate_own_row">Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker.</string>
+    <string name="gate_own_row_detail">Regel: eigene Zeile oder Bearbeitungsrecht auf die Einheit des Eintrags.</string>
 </resources>

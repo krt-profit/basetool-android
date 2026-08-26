@@ -45,6 +45,22 @@ fun mayEditRowOf(ownerId: String?): Boolean {
 }
 
 /**
+ * Whether the caller holds the Logistiker role.
+ *
+ * A row lock asks "is this yours?"; this asks "do you hold the grant?" — the design draws them with
+ * the same picture and different copy (design ch. 09, artboard 14), and the Zuordnung needs this one
+ * even on the caller's own row (artboard 11: „Buchen: eigene Zeile → aktiv; Zuordnen: Rolle
+ * Logistiker → gesperrt").
+ *
+ * @return whether the role is held. Unknown reads as held, for the reason in [LocalCaller].
+ */
+@Composable
+fun isLogistician(): Boolean {
+    val caller = LocalCaller.current ?: return true
+    return caller.logistician
+}
+
+/**
  * Whether the caller holds a backend capability.
  *
  * @param permission one of the backend's own constants — `HANGAR_WRITE`, `MISSION_READ`, …

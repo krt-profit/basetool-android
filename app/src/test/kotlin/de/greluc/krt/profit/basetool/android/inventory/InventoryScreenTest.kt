@@ -7,20 +7,25 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -82,6 +87,9 @@ class InventoryScreenTest {
             version = 5L,
         )
 
+    /** A member with no grants at all — the caller every gated control is drawn for. */
+    private fun plainMember() = Identity(userId = "someone-else", logistician = false)
+
     private fun stack() =
         InventoryStack(
             holder = "Rhea",
@@ -119,7 +127,7 @@ class InventoryScreenTest {
                     onAllocate = {},
                     selection = emptySet(),
                     onToggleSelected = {},
-                    onDenied = {},
+                    denials = DenialState(),
                     onWithStockOnlyChanged = {},
                     onRefresh = {},
                     onRetryNow = {},
@@ -327,5 +335,44 @@ class InventoryScreenTest {
 
         compose.onNodeWithText("Signal Lost").assertIsDisplayed()
         compose.onNodeWithText("Erneut versuchen", ignoreCase = true).assertIsDisplayed()
+    }
+
+    /**
+     * The locked action answers instead of doing nothing.
+     *
+     * `enabled = false` would satisfy "does not write" just as well and is exactly what the design
+     * forbids (ADR-0011): a control that cannot be tapped cannot say which role is missing. So the
+     * assertion is deliberately about the *refusal*, not about the write being skipped.
+     */
+    @Test
+    fun `a caller without the Logistiker role gets an answer, not a dead button`() {
+        val denials = DenialState()
+        val allocated = mutableListOf<InventoryEntry>()
+        compose.setContent {
+            CompositionLocalProvider(LocalCaller provides plainMember()) {
+                KrtTheme {
+                    InventoryScreen(
+                        state = readyWithStack(EntriesPhase.Ready(listOf(entry()))),
+                        onToggleGroup = {},
+                        onToggleStack = { _, _ -> },
+                        onBookIn = {},
+                        onBookOut = {},
+                        onAllocate = { allocated.add(it) },
+                        selection = emptySet(),
+                        onToggleSelected = {},
+                        denials = denials,
+                        onWithStockOnlyChanged = {},
+                        onRefresh = {},
+                        onRetryNow = {},
+                        onLoadMore = {},
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithContentDescription("Zuordnen").performClick()
+
+        assertEquals(emptyList<InventoryEntry>(), allocated)
+        assertEquals("Dafür brauchst du die Rolle Logistiker.", denials.current?.title)
     }
 }

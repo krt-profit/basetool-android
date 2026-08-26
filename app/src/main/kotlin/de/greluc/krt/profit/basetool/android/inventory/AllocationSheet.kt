@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,8 +22,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -39,12 +42,18 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
+import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Zuordnung sheet. */
@@ -84,11 +93,17 @@ data class AllocationCallbacks(
  *
  * @param state the open sheet.
  * @param callbacks what it reports back.
+ * @param saveGate whether the caller may commit the split — a caller without the Logistiker role
+ *   still opens the sheet and reads the numbers, and finds out at the CTA (design ch. 09,
+ *   artboard 13: „Werte sichtbar, Editoren gedimmt — der CTA erklärt beim Antippen, was fehlt").
+ * @param denials where that CTA raises its refusal.
  */
 @Composable
 fun AllocationSheet(
     state: AllocationSheetState,
     callbacks: AllocationCallbacks,
+    saveGate: Gate,
+    denials: DenialState,
 ) {
     KrtBottomSheet(
         onDismiss = callbacks.onDismiss,
@@ -108,21 +123,42 @@ fun AllocationSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
-            Split(kind = AllocationKind.JOB_ORDER, state = state, callbacks = callbacks)
-            Split(kind = AllocationKind.MISSION, state = state, callbacks = callbacks)
+            // Read-only, not hidden: the numbers are the reason to open this sheet at all, so a
+            // caller without the grant still sees them — only the editors recede (artboard 13).
+            Box(modifier = Modifier.alpha(if (saveGate.allowed) 1f else LOCKED_EDITOR_ALPHA)) {
+                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+                    Split(kind = AllocationKind.JOB_ORDER, state = state, callbacks = callbacks)
+                    Split(kind = AllocationKind.MISSION, state = state, callbacks = callbacks)
+                }
+            }
             Text(
                 text = stringResource(R.string.allocation_model_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
             state.error?.let { error -> KrtFieldError(text = state.errorText(error)) }
+            // A full-width CTA has no corner for a badge, so the lock leads the label instead, and
+            // the button keeps its tap target so it can name the missing grant (artboard 13).
+            val (dim, click) = rememberGated(saveGate, callbacks.onSave, denials)
             KrtCtaButton(
                 text = stringResource(R.string.allocation_save),
-                onClick = callbacks.onSave,
-                iconRes = DesignR.drawable.ic_krt_save,
-                enabled = state.submittable,
-                modifier = Modifier.fillMaxWidth().testTag(ALLOCATION_SAVE_TAG),
+                onClick = click,
+                iconRes =
+                    if (saveGate.allowed) DesignR.drawable.ic_krt_save else DesignR.drawable.ic_krt_lock,
+                enabled = state.submittable || !saveGate.allowed,
+                modifier = dim.fillMaxWidth().testTag(ALLOCATION_SAVE_TAG),
             )
+            // The sheet is a window of its own, so the screen's toast would raise itself *behind*
+            // it. Same holder, same single refusal — a second view of it, at the foot of whichever
+            // surface the member is actually looking at („gleiches Bild in Zeile, Sheet, Menü und
+            // Aktionsleiste", design ch. 09, artboard 14).
+            denials.current?.let { denial ->
+                LaunchedEffect(denial.serial) {
+                    delay(DENIAL_TOAST_MS)
+                    denials.clear()
+                }
+                KrtLockToast(title = denial.title, detail = denial.detail)
+            }
         }
     }
 }
@@ -408,3 +444,6 @@ private fun AllocationSheetState.errorText(error: ApiError): String =
             },
         )
     }
+
+/** How far the editors recede when the caller may look but not save (design ch. 09, artboard 13). */
+private const val LOCKED_EDITOR_ALPHA = 0.55f

@@ -854,6 +854,8 @@
         <item quantity="one">One entry will be moved to the chosen location.</item>
         <item quantity="other">%1$d entries will be moved to the chosen location.</item>
     </plurals>
-    <string name="gate_denied_title">Not allowed</string>
-    <string name="gate_logistician">That needs the logistics role — or the entry has to be yours.</string>
+    <string name="gate_role_logistician">That needs the Logistiker role.</string>
+    <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
+    <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>
+    <string name="gate_own_row_detail">Rule: your own entry, or edit rights on the entry’s org unit.</string>
 </resources>
