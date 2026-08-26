@@ -946,4 +946,8 @@
     <string name="time_yesterday_at">gestern, %1$s</string>
     <string name="time_date_pattern">dd.MM.</string>
     <string name="time_date_at">%1$s, %2$s</string>
+    <!-- Unknown deep link (design ch. 03 rule, ch. 14 wording). Title is product canon and stays English. -->
+    <string name="route_not_found_title">Signal Lost</string>
+    <string name="route_not_found_message">Diese Adresse gibt es in dieser App nicht.</string>
+    <string name="route_not_found_action">Zurück zur Basis</string>
 </resources>

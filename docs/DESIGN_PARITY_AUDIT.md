@@ -916,6 +916,47 @@ Device-verified: „← BENACHRICHTIGUNGEN [7 NEU]" in the bar, „vor 5 Std." o
 notification in the test stack is minutes old, and the emulator runs a Play image that cannot be
 rooted to move its clock.
 
+## Chapter 03 against the delivered bundle (2026-08-26)
+
+Two frames — the phone bar and the tablet rail — plus ten binding rules. Both frames match, down to
+the rail promoting Hangar, Raffinerie and Börse out of „Mehr" on the larger screen. Of the rules,
+six held, one was crashing, two were broken and one is still open.
+
+The crash is written up separately (`REQ-APP-NOTIF-014`, ADR-0014): the chapter's „Push →
+Ziel-Screen direkt" was not merely unverified, it killed the app, and the whole rule could only be
+checked once that was fixed. It then held on the first try, back stack and all.
+
+**Unknown route → 404.** `basetool://voelligunbekannt` opened the dashboard, silently. The
+uncomfortable part is that `destinationOf`'s KDoc already described the correct behaviour — "the
+caller renders the in-fiction Signal Lost screen rather than silently falling back to the
+dashboard" — next to a call site reading `destinationOf(route) ?: KrtDestination.Home`. A comment
+that describes the opposite of its code is worse than no comment: it answers the reader's question
+and sends them away.
+
+The first fix was wrong in an instructive way. Registering a catch-all `basetool://{route}` on the
+404 destination looked exactly right — a literal host is more specific than a wildcard, so the
+literal should win. Navigation does not rank by specificity but by **how many arguments a match
+fills**: the wildcard fills one, every literal route fills none, and the wildcard outranked all of
+them. Every deep link in the app landed on „Signal Lost", which is a total inversion of the intent
+and produced no warning at compile time and none in review. The device found it in one command.
+Asking `navController.graph.hasDeepLink(uri)` instead cannot drift, because it is the graph.
+
+A second detail only the device showed: the „ZURÜCK ZUR BASIS" CTA pushed a *second* Übersicht on
+top of the first, so afterwards back on Übersicht landed on Übersicht rather than leaving the app —
+quietly breaking a different rule of the same chapter while fixing this one.
+
+**Predictive back** is asked of every screen. targetSdk 37 gets it free on Android 16+, which is
+what the emulator runs; minSdk 30 means members on 13 through 15 needed
+`enableOnBackInvokedCallback`, which was not set. Now set, with `tools:targetApi="33"` rather than a
+blanket lint ignore — lint is right that the attribute predates minSdk and wrong that it is a
+problem. This is the one item in the chapter that cannot be device-verified here, and it is recorded
+as resting on the platform contract.
+
+**Still open: re-tap scrolls to top.** Re-tapping the active destination pops to that destination's
+root, which it does. The second half does not happen and cannot: no screen in the app holds a
+`LazyListState`, and `animateScrollToItem` appears nowhere. That is a mechanism, not a fix, and it
+is recorded as open in `REQ-APP-UI-006` rather than quietly dropped.
+
 ## How this audit was made
 
 - Chapters parsed for their `<sc-for>` templates: what each list repeats and which fields it shows.

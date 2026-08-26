@@ -7,7 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.navigation
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -156,6 +160,8 @@ fun BasetoolApp(
         notifications.onForeground()
         onPauseOrDispose { notifications.onBackground() }
     }
+
+    UnknownLinkGuard(navController)
 
     val destinations = if (expanded) TABLET_DESTINATIONS else PHONE_DESTINATIONS
     val selectedRoute = selectedTopLevelRoute(root, destinations)
@@ -483,4 +489,33 @@ private fun AppTopBar(
         onNotificationsClick = onNotifications,
         actions = detail?.actions,
     )
+}
+
+/**
+ * Sends a `basetool://…` address this build does not declare to the in-fiction 404.
+ *
+ * Design ch. 03 asks for exactly this — „Unbekannte Route → 404 in-fiction" — rather than the
+ * dashboard, so a link that goes nowhere says so instead of looking like a link that went home. It
+ * is reachable in practice: a notification from a newer server, a hand-typed address, a web link
+ * into an area this build predates.
+ *
+ * The **graph** answers the question rather than a second copy of the route table, so the two
+ * cannot drift apart. A catch-all `basetool://{route}` deep link was the first attempt and is
+ * wrong: Navigation ranks a match by how many arguments it fills, the wildcard fills one, every
+ * literal route fills none — so the wildcard outranked all of them and every deep link in the app
+ * landed on „Signal Lost". It read correctly in review and only the device showed it.
+ *
+ * @param navController the graph to ask and, when it has no answer, to navigate.
+ */
+@Composable
+private fun UnknownLinkGuard(navController: NavHostController) {
+    val activity = LocalActivity.current
+    LaunchedEffect(activity?.intent) {
+        val link =
+            activity?.intent?.takeIf { it.action == Intent.ACTION_VIEW }?.data
+                ?: return@LaunchedEffect
+        if (!navController.graph.hasDeepLink(link)) {
+            navController.navigate(KrtDestination.NotFound.route)
+        }
+    }
 }

@@ -76,6 +76,7 @@ import de.greluc.krt.profit.basetool.android.settings.SettingsScreen
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.MoreScreen
 import de.greluc.krt.profit.basetool.android.ui.PlaceholderScreen
+import de.greluc.krt.profit.basetool.android.ui.RouteNotFoundScreen
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 
 /**
@@ -623,6 +624,21 @@ private fun PushedDestination(
 
         KrtDestination.FleetImport -> {
             FleetImportRoute(viewModel = fleetImport)
+        }
+
+        KrtDestination.NotFound -> {
+            RouteNotFoundScreen(
+                onBackToBase = {
+                    // Back to the Übersicht that is already at the bottom of the stack, not a
+                    // second copy on top of it. Popping only this screen and pushing Home leaves
+                    // two, and then back on Übersicht lands on Übersicht instead of leaving the
+                    // app -- which is the one thing ch. 03 says back on Übersicht must do.
+                    navController.navigate(KrtDestination.Home.route) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
 
         else -> {

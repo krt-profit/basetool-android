@@ -43,6 +43,10 @@
 
 ### Fixed
 
+- **Ein Link, den diese App-Version nicht kennt, landete stillschweigend auf der Übersicht** — nicht
+  zu unterscheiden von einem Link, der funktioniert hat. Jetzt erscheint „Signal Lost" mit dem Weg
+  zurück zur Basis.
+
 - **Ein Tipp auf eine Benachrichtigung beendete die App**, statt den Posteingang zu öffnen — sie
   verschwand kommentarlos zum Startbildschirm. Der Weg vom Systemhinweis in die App funktioniert
   jetzt, und der Zurück-Schritt führt von dort auf die Übersicht.

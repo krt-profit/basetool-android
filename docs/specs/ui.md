@@ -180,6 +180,64 @@ plus Obtainium (plan Q1), so the button opens the release page the server names.
 
 ---
 
+### REQ-APP-UI-006 — A link that goes nowhere says so, and back behaves as chapter 03 draws it
+
+Chapter 03 is mostly rules rather than pixels, and rules are the part of a spec that rots without
+anyone noticing. Checked one by one against the running app:
+
+| rule | state |
+| --- | --- |
+| Phone: bottom bar, five destinations | holds |
+| Tablet: rail, seven + „Mehr" | holds — Hangar, Raffinerie and Börse move up, as drawn |
+| Each destination keeps its own back stack | holds |
+| Back on a destination root returns to Übersicht; back on Übersicht leaves the app | holds |
+| No hamburger anywhere; arrow-left only on pushed screens | holds (`REQ-APP-UI-005`) |
+| Transitions 200 ms, no parallax | holds — `KRT_MOTION_MS`, fade |
+| Push → target screen directly; cold start synthesises target + Übersicht | holds, **after** the crash in `REQ-APP-NOTIF-014` |
+| Unknown route → 404 in-fiction | **was broken**, see below |
+| Predictive back on every screen | **was partly broken**, see below |
+| Re-tap the active destination pops to its root *and scrolls to top* | pops; **does not scroll** — open, below |
+
+**An unknown address used to land on the dashboard.** `basetool://voelligunbekannt` opened the app
+on Übersicht, silently — indistinguishable from a link that worked. Worse, `destinationOf`'s KDoc
+already claimed the caller "renders the in-fiction Signal Lost screen rather than silently falling
+back to the dashboard", which is the one comment state a reader cannot defend against: it described
+the intended behaviour of code that did the opposite.
+
+It is reachable in practice — a notification from a newer server, a hand-typed address, a web link
+into an area this build predates — so it gets chapter 14's 404: „Signal Lost", one plain German
+line, CTA „Zurück zur Basis".
+
+**The graph decides what it can match, not a second copy of the route table.** The first attempt
+registered a catch-all `basetool://{route}` deep link on the 404 destination, reasoning that a
+literal host would outrank a wildcard. It does not: Navigation ranks a match by how many arguments
+it fills, the wildcard fills one and every literal route fills none — so **every** deep link in the
+app landed on „Signal Lost". The code read correctly and only the device disagreed. Asking
+`navController.graph.hasDeepLink(uri)` cannot drift from the graph, because it *is* the graph.
+
+**The CTA returns to the Übersicht already on the stack**, not a second copy on top of it. Popping
+only the 404 and pushing Home leaves two, and then back on Übersicht lands on Übersicht — breaking
+the one thing chapter 03 says back on Übersicht must do.
+
+**Predictive back was off below Android 16.** targetSdk 37 makes the platform enable it by default
+on 16+, which is every emulator image in use here; minSdk is 30, and on a device running 13 through
+15 the preview only runs with `enableOnBackInvokedCallback`. The flag is now set. The one case it
+exists for is also the one a current emulator cannot show, so this rests on the platform contract
+rather than on a device pass.
+
+**Acceptance**
+
+- [x] Device-verified: `basetool://notifications` and `basetool://bank` open their screens;
+  `basetool://xyzunbekannt` shows „Signal Lost" + „Diese Adresse gibt es in dieser App nicht." +
+  „ZURÜCK ZUR BASIS"; the CTA lands on Übersicht and back from there leaves the app.
+- [x] Every destination has a distinct address, and the 404 is unreachable from the bar, the rail
+  and „Mehr" (`DeepLinkRoutingTest`).
+- [ ] **Open: re-tapping the active destination does not scroll to top.** It pops to the
+  destination's root, which is the other half of the rule. No screen holds a `LazyListState`, so
+  nothing in the app can scroll one — this needs a mechanism, not a fix.
+
+---
+
 ### REQ-APP-UI-005 — The top bar's two ends answer one question
 
 The bar has a left end — a back arrow, or nothing — and a right end: the org chip and the bell, or
