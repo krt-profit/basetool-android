@@ -27,6 +27,9 @@
 
 ### Changed
 
+- **Das Datum auf der Übersicht nennt jetzt beide Jahre:** „Mittwoch, 26.08.2026 (2956)" — das
+  echte und das Star-Citizen-Jahr.
+
 - **„Alle ansehen" und „Alle Einsätze" stehen jetzt in der Abschnittsüberschrift** statt als lose
   Zeile unter der Liste, und die Tablet-Leiste schreibt „Börse" statt „Materialbörse".
 

@@ -149,11 +149,13 @@ tracking; the scale carries no such entry, so `headlineSmall` (19/25/0.95, annot
 UPPERCASE") is used rather than a hand-rolled style that would match the mockup by a dp and leave
 the system by a rung.
 
-**The date is numeric.** `FormatStyle.FULL` writes „Mittwoch, 26. August 2026"; the artboard writes
-„Sonntag, 17.08.2956". The pattern is translatable so a locale can reorder the fields. The **year**
-is not adopted: the artboard's 2956 is the in-fiction Star Citizen year, and a dashboard that
-misstates today's date to stay in character is a different decision from writing error copy in
-character — recorded as a gap rather than taken unilaterally.
+**The date is numeric, and it names both years.** `FormatStyle.FULL` writes „Mittwoch, 26. August
+2026"; the artboard writes „Sonntag, 17.08.2956" — the in-fiction Star Citizen year, which runs 930
+ahead of ours. Owner decision, 2026-08-26: **both**, as „Mittwoch, 26.08.2026 (2956)". Writing error
+copy in character is one thing; a start screen that misstates today's date is another, and a member
+reading it beside a calendar, Discord and the web tool would otherwise find three different years.
+The pattern is translatable so a locale can reorder the fields; the offset is a named constant with
+the reason attached.
 
 **The shortcuts are a 2×2 grid of icon-beside-label tiles.** They were four across, which leaves
 about 90 dp per tile and is why their labels had been cut to „Einbuchen" and „Angebot" — a shortcut
