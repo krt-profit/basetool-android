@@ -7,27 +7,41 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
@@ -42,14 +56,19 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -150,48 +169,50 @@ private fun OperationDetailHead(
     detail: OperationDetail,
     overview: OperationOverview,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = detail.name,
-                style = MaterialTheme.typography.titleLarge,
-                color = KrtPalette.White,
-                modifier = Modifier.weight(1f),
+    // Artboard 06.5 puts the Operation's own name in the TOP BAR with its status and counts under
+    // it, the way every other detail in this app now reads. The bar used to say "OPERATION" - the
+    // category, which the member picked two taps ago and already knows.
+    val facts =
+        pluralStringResource(
+            R.plurals.operation_detail_missions,
+            overview.rollup.missions.size,
+            overview.rollup.missions.size,
+        ) + " · " +
+            pluralStringResource(
+                R.plurals.operation_detail_participants,
+                overview.payouts.participants,
+                overview.payouts.participants,
             )
-            KrtStatusBadge(text = detail.statusLabel(), tone = detail.status.tone())
-        }
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.operation_detail_missions,
-                    overview.rollup.missions.size,
-                    overview.rollup.missions.size,
-                ) + " · " +
-                    pluralStringResource(
-                        R.plurals.operation_detail_participants,
-                        overview.payouts.participants,
-                        overview.payouts.participants,
-                    ),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
-        // Shown only when the server said so. `null` means the flag was not computed, and a warning
-        // invented from an absent field would put a caveat on a figure that may well be final.
-        if (detail.payoutPreliminary == true) {
+    ProvideScreenTopBar(
+        title = detail.name,
+        subtitle = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                KrtStatusBadge(text = detail.statusLabel(), tone = detail.status.tone())
+                Text(
+                    text = facts,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        },
+    )
+    // Shown only when the server said so. `null` means the flag was not computed, and a warning
+    // invented from an absent field would put a caveat on a figure that may well be final.
+    if (detail.payoutPreliminary == true) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
             Text(
                 text = stringResource(R.string.operation_detail_preliminary),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.Warning,
             )
+            KrtHairlineRule()
         }
-        KrtHairlineRule()
     }
 }
 
@@ -236,15 +257,6 @@ private fun OperationDetailBody(
         item(key = "my-share") {
             MyShareBand(payout = myPayout, identityKnown = identityKnown)
         }
-        item(key = "rollup-title") {
-            KrtSectionTitle(
-                text = stringResource(R.string.operation_detail_rollup),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-            )
-        }
-        item(key = "rollup") {
-            RollupBlock(overview = overview)
-        }
         item(key = "missions-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_missions_title),
@@ -272,6 +284,17 @@ private fun OperationDetailBody(
                     modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
                 )
             }
+        }
+        // The rollup follows the Einsätze it is a rollup OF (artboard 06.5). Above them it was a
+        // total with nothing yet to total.
+        item(key = "rollup-title") {
+            KrtSectionTitle(
+                text = stringResource(R.string.operation_detail_rollup),
+                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            )
+        }
+        item(key = "rollup") {
+            RollupBlock(overview = overview)
         }
         item(key = "payouts-title") {
             KrtSectionTitle(
@@ -306,50 +329,80 @@ private fun MyShareBand(
     payout: OperationPayout?,
     identityKnown: Boolean,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-    ) {
-        Text(
-            text = stringResource(R.string.operation_detail_my_share),
-            style = MaterialTheme.typography.labelMedium,
-            color = KrtPalette.TextMuted,
-        )
-        when {
-            payout != null -> {
-                Text(
-                    text = formatAmount(payout.payout.orEmpty()),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = KrtPalette.White,
-                )
-                if (payout.donating) {
-                    Text(
-                        text = stringResource(R.string.operation_detail_my_share_donated),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.TextMuted,
-                    )
+    // The band the artboard leads with: a HUD box behind an orange rail, saying in one line what
+    // the member is owed and whether it has been paid. It was a muted caption and a plain number,
+    // which on a screen of other people's money did not read as the member's own row.
+    Box(modifier = Modifier.padding(KrtSpacing.md)) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            Box(
+                modifier =
+                    Modifier
+                        .width(SHARE_RAIL)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.primary),
+            )
+            KrtHudBox(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.operation_detail_my_share).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = KrtPalette.White,
+                        )
+                        MyShareSubline(payout = payout, identityKnown = identityKnown)
+                    }
+                    if (payout != null) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = formatAmount(payout.payout.orEmpty()),
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = KrtPalette.White,
+                            )
+                            Text(
+                                text = stringResource(R.string.bank_total_unit),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = KrtPalette.TextMuted,
+                            )
+                        }
+                    }
                 }
-            }
-
-            // Only claimed when the id is actually known. Saying "you did not take part" because a
-            // request failed would be a statement about the member made out of an outage.
-            identityKnown -> {
-                Text(
-                    text = stringResource(R.string.operation_detail_my_share_unknown),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            }
-
-            else -> {
-                Text(
-                    text = "—",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = KrtPalette.TextMuted,
-                )
             }
         }
     }
+}
+
+/**
+ * The line under "DEIN ANTEIL" - what state the member's own payout is in.
+ *
+ * Split out because the three cases it distinguishes are not the same kind of statement: two are
+ * facts about the payout, and the third is an admission that the identity read failed. Only the
+ * identity case may claim the member took no part; a failed request saying so would be a statement
+ * about them made out of an outage.
+ *
+ * @param payout the member's own row, if it could be found.
+ * @param identityKnown whether the caller's own id was read at all.
+ */
+@Composable
+private fun MyShareSubline(
+    payout: OperationPayout?,
+    identityKnown: Boolean,
+) {
+    val text =
+        when {
+            payout == null && identityKnown -> stringResource(R.string.operation_detail_my_share_unknown)
+            payout == null -> stringResource(R.string.operation_detail_my_share_pending)
+            payout.donating -> stringResource(R.string.operation_detail_my_share_donated)
+            payout.paidOut -> stringResource(R.string.operation_detail_my_share_paid)
+            else -> stringResource(R.string.operation_detail_my_share_open)
+        }
+    Text(text = text, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
 }
 
 /**
@@ -425,13 +478,53 @@ private fun MissionResultRow(
             color = KrtPalette.White,
             modifier = Modifier.weight(1f),
         )
+        // Signed and tinted, as the artboard has it: on a list of results the direction is the
+        // fact, and a column of unsigned figures makes a losing Einsatz look like a winning one.
         Text(
-            text = formatAmount(result.total),
+            text = signedAmount(result.total),
             style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
+            color = amountTone(result.total),
         )
+        if (id != null) {
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_chevron_right,
+                contentDescription = null,
+                size = CHEVRON_SIZE,
+                tint = KrtPalette.TextMuted,
+            )
+        }
     }
 }
+
+/**
+ * An amount with its sign in front of it.
+ *
+ * The server sends a plain decimal; a positive result carries no `+`, and on a list where the next
+ * row may be negative that absence is easy to read as "no change" rather than "gain".
+ *
+ * @param raw the amount as the server rendered it.
+ * @return the formatted amount, prefixed with `+` when it is positive.
+ */
+@Composable
+private fun signedAmount(raw: String): String {
+    val formatted = formatAmount(raw)
+    val positive = raw.trim().toBigDecimalOrNull()?.signum() == 1
+    return if (positive) stringResource(R.string.operation_detail_amount_positive, formatted) else formatted
+}
+
+/**
+ * The colour an operation result is stated in.
+ *
+ * @param raw the amount as the server rendered it.
+ * @return green for a gain, red for a loss, plain white when it is zero or unparseable - a
+ *   tint on a number nobody could read would be an assertion the app cannot back.
+ */
+private fun amountTone(raw: String): androidx.compose.ui.graphics.Color =
+    when (raw.trim().toBigDecimalOrNull()?.signum()) {
+        1 -> KrtPalette.SuccessText
+        -1 -> KrtPalette.DangerText
+        else -> KrtPalette.White
+    }
 
 /**
  * One participant's payout row.
@@ -458,35 +551,111 @@ private fun PayoutRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = row.participantName,
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
+        Column(
             modifier = Modifier.weight(1f),
-        )
-        KrtChip(text = row.payoutLabel(), tone = row.payoutTone())
-        Text(
-            text = formatAmount(row.payout.orEmpty()),
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
-        )
-        if (state.missionManager && row.participantId != null) {
-            val writable = state.online && !state.saving
-            KrtGhostButton(
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        ) {
+            Text(
+                text = row.participantName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+            // "Anteil 4.150 · Auszahlung" (artboard 06.5): the row's own amount and where it goes.
+            // A bare name beside a chip left the figure to be inferred from the column heading.
+            Text(
                 text =
                     stringResource(
-                        if (row.paidOut) {
-                            R.string.operation_detail_payout_undo
-                        } else {
-                            R.string.operation_detail_payout_confirm
-                        },
+                        R.string.operation_detail_payout_line,
+                        formatAmount(row.earnedShare.orEmpty()),
+                        stringResource(
+                            if (row.donating) {
+                                R.string.operation_detail_payout_route_org
+                            } else {
+                                R.string.operation_detail_payout_route_member
+                            },
+                        ),
                     ),
-                onClick = { onTogglePaidOut(row) },
-                modifier =
-                    Modifier
-                        .testTag(OPERATION_PAID_OUT_TAG)
-                        .alpha(if (writable) 1f else DISABLED_WRITE_ALPHA),
-                enabled = writable,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
+        KrtChip(text = row.payoutLabel(), tone = row.payoutTone())
+        if (state.missionManager && row.participantId != null) {
+            PayoutCheckbox(row = row, state = state, onTogglePaidOut = onTogglePaidOut)
+        }
+    }
+}
+
+/**
+ * The manager's confirm box on a payout row.
+ *
+ * Asymmetric on purpose, and the design chapter is explicit about it: marking a payout is one tap,
+ * taking the mark back goes through a modal that names what it undoes. The two directions are not
+ * equally recoverable - the member has been told they were paid.
+ *
+ * @param row the payout row.
+ * @param state the screen, for the write gate.
+ * @param onTogglePaidOut invoked once the direction is settled.
+ */
+@Composable
+private fun PayoutCheckbox(
+    row: OperationPayout,
+    state: OperationDetailState,
+    onTogglePaidOut: (OperationPayout) -> Unit,
+) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    val writable = state.online && !state.saving
+    Box(
+        modifier =
+            Modifier
+                .size(KrtSpacing.touchTarget)
+                .testTag(OPERATION_PAID_OUT_TAG)
+                .alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
+                .toggleable(
+                    value = row.paidOut,
+                    enabled = writable,
+                    role = Role.Checkbox,
+                    onValueChange = { if (row.paidOut) confirming = true else onTogglePaidOut(row) },
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(PAYOUT_BOX)
+                    .background(if (row.paidOut) MaterialTheme.colorScheme.primary else KrtPalette.SurfaceInput)
+                    .border(
+                        KrtSpacing.hairline,
+                        if (row.paidOut) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (row.paidOut) {
+                KrtIcon(
+                    id = DesignR.drawable.ic_krt_check,
+                    contentDescription = stringResource(R.string.operation_detail_payout_undo),
+                    size = PAYOUT_CHECK,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+    }
+    if (confirming) {
+        KrtModal(
+            title = stringResource(R.string.operation_detail_payout_undo_title),
+            confirmText = stringResource(R.string.operation_detail_payout_undo),
+            onConfirm = {
+                confirming = false
+                onTogglePaidOut(row)
+            },
+            onDismiss = { confirming = false },
+            tone = KrtModalTone.Danger,
+            cancelText = stringResource(R.string.personal_inventory_cancel),
+        ) {
+            Text(
+                text = stringResource(R.string.operation_detail_payout_undo_body, row.participantName),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
             )
         }
     }
@@ -605,3 +774,15 @@ fun OperationDetailRoute(
         modifier = modifier,
     )
 }
+
+/** Width of the orange rail beside "Dein Anteil". */
+private val SHARE_RAIL = 4.dp
+
+/** Edge length of the payout confirm box. */
+private val PAYOUT_BOX = 24.dp
+
+/** Size of the check inside it. */
+private val PAYOUT_CHECK = 16.dp
+
+/** Size of the chevron on a result row. */
+private val CHEVRON_SIZE = 16.dp

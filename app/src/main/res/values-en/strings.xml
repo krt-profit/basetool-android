@@ -251,6 +251,10 @@
     <string name="operation_detail_my_share">Your share</string>
     <string name="operation_detail_my_share_donated">Waived in favour of the org treasury</string>
     <string name="operation_detail_my_share_unknown">You did not take part in this Operation.</string>
+    <string name="operation_detail_my_share_pending">Loading your share …</string>
+    <string name="operation_detail_my_share_open">Payout open</string>
+    <string name="operation_detail_my_share_paid">Paid out</string>
+    <string name="operation_detail_amount_positive">+%1$s</string>
     <string name="operation_detail_preliminary">Preliminary: at least one Einsatz is still open, so the amounts may still shift.</string>
     <string name="operation_detail_rollup">Financial roll-up</string>
     <string name="operation_detail_rollup_net">Net</string>
@@ -268,6 +272,11 @@
     <string name="operation_detail_payout_paid">Paid out</string>
     <string name="operation_detail_payout_open">Open</string>
     <string name="operation_detail_payout_donated">Waived</string>
+    <string name="operation_detail_payout_line">Share %1$s · %2$s</string>
+    <string name="operation_detail_payout_route_member">Payout</string>
+    <string name="operation_detail_payout_route_org">Org treasury (waived)</string>
+    <string name="operation_detail_payout_undo_title">Take the payout back?</string>
+    <string name="operation_detail_payout_undo_body">%1$s is recorded as paid out. The row goes back to open.</string>
     <string name="operation_detail_description">Description</string>
     <string name="operation_detail_error_forbidden_title">Access Denied</string>
     <string name="operation_detail_error_forbidden_message">This Operation is not visible to you.</string>

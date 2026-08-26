@@ -270,6 +270,10 @@
     <string name="operation_detail_my_share">Dein Anteil</string>
     <string name="operation_detail_my_share_donated">Verzicht zugunsten Org-Kasse</string>
     <string name="operation_detail_my_share_unknown">Du bist an dieser Operation nicht beteiligt.</string>
+    <string name="operation_detail_my_share_pending">Anteil wird geladen …</string>
+    <string name="operation_detail_my_share_open">Auszahlung offen</string>
+    <string name="operation_detail_my_share_paid">Ausgezahlt</string>
+    <string name="operation_detail_amount_positive">+%1$s</string>
     <string name="operation_detail_preliminary">Vorläufig: mindestens ein Einsatz ist noch nicht abgeschlossen, die Beträge können sich noch verschieben.</string>
     <string name="operation_detail_rollup">Finanz-Rollup</string>
     <string name="operation_detail_rollup_net">Netto</string>
@@ -287,6 +291,11 @@
     <string name="operation_detail_payout_paid">Ausgezahlt</string>
     <string name="operation_detail_payout_open">Offen</string>
     <string name="operation_detail_payout_donated">Verzicht</string>
+    <string name="operation_detail_payout_line">Anteil %1$s · %2$s</string>
+    <string name="operation_detail_payout_route_member">Auszahlung</string>
+    <string name="operation_detail_payout_route_org">Org-Kasse (Verzicht)</string>
+    <string name="operation_detail_payout_undo_title">Auszahlung zurücknehmen?</string>
+    <string name="operation_detail_payout_undo_body">%1$s wurde als ausgezahlt geführt. Die Zeile steht danach wieder offen.</string>
     <string name="operation_detail_description">Beschreibung</string>
     <string name="operation_detail_error_forbidden_title">Access Denied</string>
     <string name="operation_detail_error_forbidden_message">Diese Operation ist für dich nicht einsehbar.</string>
