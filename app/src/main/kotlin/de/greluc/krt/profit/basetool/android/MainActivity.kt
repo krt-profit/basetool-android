@@ -41,6 +41,7 @@ import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
@@ -170,6 +171,9 @@ class MainActivity : AppCompatActivity() {
     private val fleetImportViewModel: FleetImportViewModel by viewModels { authViewModels(container) }
 
     private val bankViewModel: BankViewModel by viewModels { authViewModels(container) }
+    private val bankRequestsViewModel: BankRequestsViewModel by viewModels {
+        authViewModels(container)
+    }
 
     /** Beförderung — the member's own assessments and rank standings (#66). */
 
@@ -324,6 +328,7 @@ class MainActivity : AppCompatActivity() {
                                     hangar = hangarViewModel,
                                     fleetImport = fleetImportViewModel,
                                     bank = bankViewModel,
+                                    bankRequests = bankRequestsViewModel,
                                     bankAccount = {
                                         BankAccountViewModel(
                                             container.bank,
@@ -582,6 +587,17 @@ class MainActivity : AppCompatActivity() {
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 initializer { BankViewModel(container.bank, container.liveSync) }
+                initializer {
+                    BankRequestsViewModel(
+                        container.bank,
+                        // The sheet's account picker is the Konten list; reading it through
+                        // the same call keeps the two from ever disagreeing about which
+                        // accounts exist or what a member may raise a request against.
+                        container.bank::balances,
+                        container.connectivity,
+                        container.liveSync,
+                    )
+                }
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
                 initializer {
