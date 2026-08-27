@@ -74,6 +74,7 @@ import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.orgunit.switcherLabel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
@@ -111,6 +112,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param exchange drives the Materialbörse.
  * @param refinery drives the member's own Raffinerie orders.
  * @param refineryOrder builds a view model for one Raffinerie order.
+ * @param refineryCreate builds the view model of the create form.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
@@ -144,6 +146,7 @@ fun BasetoolApp(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    refineryCreate: () -> RefineryCreateViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -312,6 +315,7 @@ fun BasetoolApp(
                         exchange = exchange,
                         refinery = refinery,
                         refineryOrder = refineryOrder,
+                        refineryCreate = refineryCreate,
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,

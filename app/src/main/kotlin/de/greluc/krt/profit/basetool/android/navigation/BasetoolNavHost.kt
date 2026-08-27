@@ -71,6 +71,8 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateRoute
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryOrderDetailRoute
 import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
@@ -148,6 +150,7 @@ fun BasetoolNavHost(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    refineryCreate: () -> RefineryCreateViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -223,6 +226,7 @@ fun BasetoolNavHost(
                             bankStaff = bankStaff,
                             orderDetail = orderDetail,
                             refineryOrder = refineryOrder,
+                            refineryCreate = refineryCreate,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -593,6 +597,7 @@ private fun PushedDestination(
     bankStaff: BankStaffViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    refineryCreate: () -> RefineryCreateViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -616,21 +621,18 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.BankAccount -> {
-            val accountId = backStackEntry.arguments?.getString(ACCOUNT_ID_ARG).orEmpty()
-            val viewModel = remember(accountId) { bankAccount(accountId) }
-            LaunchedEffect(accountId) { viewModel.load() }
-            BankAccountRoute(viewModel = viewModel)
+        KrtDestination.BankAccount, KrtDestination.BankHolder -> {
+            BankPushedDestination(
+                destination = destination,
+                backStackEntry = backStackEntry,
+                bankAccount = bankAccount,
+                bankHolder = bankHolder,
+                bankStaff = bankStaff,
+            )
         }
 
-        KrtDestination.BankHolder -> {
-            val holderId = backStackEntry.arguments?.getString(HOLDER_ID_ARG).orEmpty()
-            val viewModel = remember(holderId) { bankHolder(holderId) }
-            LaunchedEffect(holderId) { viewModel.loadOnce() }
-            // Whether custody may be moved is the staff dashboard's answer, not a role this screen
-            // works out — the same source the rest of the Verwaltung scope draws from.
-            val staff by bankStaff.state.collectAsStateWithLifecycle()
-            BankHolderRoute(viewModel = viewModel, management = staff.management)
+        KrtDestination.RefineryCreate -> {
+            RefineryCreateDestination(navController = navController, build = refineryCreate)
         }
 
         KrtDestination.OrderDetail -> {
@@ -764,3 +766,70 @@ data class SettingsBindings(
     val onPayout: (PayoutPreference) -> Unit,
     val onSharing: (Boolean) -> Unit,
 )
+
+/**
+ * The „Neuer Raffinerieauftrag" form as a pushed destination.
+ *
+ * Its own composable so the host's `when` stays under detekt's complexity limit, and because the
+ * navigation on success is a rule of its own: the form's job ends when the order exists, and the
+ * member wants to look at the order, not at an emptied form.
+ *
+ * @param navController where to go afterwards.
+ * @param build builds the view model.
+ */
+@Composable
+private fun RefineryCreateDestination(
+    navController: NavHostController,
+    build: () -> RefineryCreateViewModel,
+) {
+    val viewModel = remember { build() }
+    LaunchedEffect(Unit) { viewModel.loadOnce() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.created) {
+        state.created?.let {
+            navController.popBackStack()
+            navController.navigate(refineryOrderRoute(it))
+        }
+    }
+    RefineryCreateRoute(viewModel = viewModel)
+}
+
+/**
+ * The two bank records that are pushed rather than paned.
+ *
+ * Split out of the host's `when` so it stays under detekt's complexity limit; the two belong
+ * together anyway, since both read through the office when the caller has one.
+ *
+ * @param destination which of the two.
+ * @param backStackEntry carries the record's id.
+ * @param bankAccount builds the account detail's view model.
+ * @param bankHolder builds the holder detail's view model.
+ * @param bankStaff answers whether the caller may move custody.
+ */
+@Composable
+private fun BankPushedDestination(
+    destination: KrtDestination,
+    backStackEntry: NavBackStackEntry,
+    bankAccount: (String) -> BankAccountViewModel,
+    bankHolder: (String) -> BankHolderViewModel,
+    bankStaff: BankStaffViewModel,
+) {
+    when (destination) {
+        KrtDestination.BankHolder -> {
+            val holderId = backStackEntry.arguments?.getString(HOLDER_ID_ARG).orEmpty()
+            val viewModel = remember(holderId) { bankHolder(holderId) }
+            LaunchedEffect(holderId) { viewModel.loadOnce() }
+            // Whether custody may be moved is the staff dashboard's answer, not a role this screen
+            // works out — the same source the rest of the Verwaltung scope draws from.
+            val staff by bankStaff.state.collectAsStateWithLifecycle()
+            BankHolderRoute(viewModel = viewModel, management = staff.management)
+        }
+
+        else -> {
+            val accountId = backStackEntry.arguments?.getString(ACCOUNT_ID_ARG).orEmpty()
+            val viewModel = remember(accountId) { bankAccount(accountId) }
+            LaunchedEffect(accountId) { viewModel.load() }
+            BankAccountRoute(viewModel = viewModel)
+        }
+    }
+}

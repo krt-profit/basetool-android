@@ -997,7 +997,7 @@
     <string name="retry_now">Retry now</string>
     <!-- Raffinerie (design ch. 11) -->
     <string name="refinery_title">Raffinerie</string>
-    <string name="refinery_order_title">Raffinerie order</string>
+    <string name="refinery_order_title">Refinery order</string>
     <string name="refinery_filter_all">All</string>
     <string name="refinery_filter_running">Refining</string>
     <string name="refinery_filter_ready">Ready</string>
@@ -1008,7 +1008,7 @@
     <string name="refinery_phase_cancelled">Cancelled</string>
     <string name="refinery_station">Station</string>
     <string name="refinery_good_with_quality">%1$s (Q %2$d)</string>
-    <string name="refinery_value">Value ≈ %1$s</string>
+    <string name="refinery_value">Estimated value</string>
     <string name="refinery_station_unknown">Unknown station</string>
     <string name="refinery_method">Method</string>
     <string name="refinery_method_unknown">Unknown method</string>
@@ -1029,7 +1029,37 @@
     <string name="refinery_remaining_unknown">Time left unknown</string>
     <string name="refinery_ore_sales">Ore sales</string>
     <string name="refinery_profit">Profit/loss</string>
-    <string name="refinery_store">Book into Lager</string>
+    <string name="refinery_store">Store</string>
+    <string name="refinery_create_title">New refinery order</string>
+    <string name="refinery_create_location">Refinery (required)</string>
+    <string name="refinery_create_method">Method (required)</string>
+    <string name="refinery_create_ratings">Cost %1$d · Speed %2$d · Yield %3$d</string>
+    <string name="refinery_create_goods">Goods (at least 1)</string>
+    <string name="refinery_create_input_material">Input material</string>
+    <string name="refinery_create_input_quantity">Input (SCU)</string>
+    <string name="refinery_create_output_material">Output material</string>
+    <string name="refinery_create_output_quantity">Output (SCU)</string>
+    <string name="refinery_create_quality">Quality (0–1000)</string>
+    <string name="refinery_create_bonus">Yield bonus (%)</string>
+    <string name="refinery_create_add_good">+ Good</string>
+    <string name="refinery_create_remove_good">Remove good</string>
+    <string name="refinery_create_timing">Timing</string>
+    <string name="refinery_create_started_date">Started — date</string>
+    <string name="refinery_create_started_date_hint">DD.MM.YYYY</string>
+    <string name="refinery_create_started_time">Time</string>
+    <string name="refinery_create_started_time_hint">HH:MM</string>
+    <string name="refinery_create_hours">Hours</string>
+    <string name="refinery_create_minutes">Minutes</string>
+    <string name="refinery_create_ends">Ends %1$s</string>
+    <string name="refinery_create_money_show">Show money</string>
+    <string name="refinery_create_money_hide">Hide money</string>
+    <string name="refinery_create_expenses">Costs</string>
+    <string name="refinery_create_other_expenses">Other costs</string>
+    <string name="refinery_create_ore_sales">Ore sales</string>
+    <string name="refinery_create_profit">Profit preview: %1$s aUEC</string>
+    <string name="refinery_create_profit_help">Calculated automatically: ore sales less the order\'s costs and other costs.</string>
+    <string name="refinery_create_submit">Create refinery order</string>
+    <string name="refinery_create_failed">The refinery order could not be created.</string>
     <string name="refinery_store_computed">calculated %1$s SCU</string>
     <string name="refinery_store_amount">Amount (SCU)</string>
     <string name="refinery_store_all">Store all items</string>
@@ -1043,7 +1073,7 @@
         <item quantity="one">Creates %1$d Lager entry at %2$s and marks the order stored.</item>
         <item quantity="other">Creates %1$d Lager entries at %2$s and marks the order stored.</item>
     </plurals>
-    <string name="refinery_stored_notice">Yield stored. Assignment to Aufträge and Einsätze happens in the Lager.</string>
+    <string name="refinery_stored_notice">Refinery order successfully transferred to the Lager.</string>
     <string name="refinery_empty_title">No orders</string>
     <string name="refinery_empty_message">No Raffinerie order matches this filter.</string>
     <string name="refinery_error_title">Signal Lost — Raffinerie</string>

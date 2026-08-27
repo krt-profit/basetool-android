@@ -78,6 +78,7 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
@@ -375,6 +376,9 @@ class MainActivity : AppCompatActivity() {
                                     inventory = inventoryViewModel,
                                     exchange = exchangeViewModel,
                                     refinery = refineryViewModel,
+                                    refineryCreate = {
+                                        RefineryCreateViewModel(container.refinery)
+                                    },
                                     refineryOrder = {
                                         RefineryDetailViewModel(
                                             container.refinery,
