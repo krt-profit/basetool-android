@@ -270,7 +270,15 @@ app swaps both the surface note and the removal modal on that account rather tha
 it cannot take away.
 
 **The Danger-Modal is implemented as asked** — the removal is the one action here that takes
-something away which no checkbox mentions.
+something away which no checkbox mentions. Its copy does **not** offer to re-add the entry, because
+„+ Grant hinzufügen" is not implemented yet: the server requires the grantee to hold the Bank
+Employee role (REQ-BANK-008), so the create path needs a picker restricted to those members. That is
+the one part of this artboard still owed.
+
+**Two defects only the device could show**, both now fixed and covered: deciding create-vs-patch on
+`version == 0` sent the first edit of every untouched grant as a creation (a new row's `@Version`
+*is* zero) and came back `409 DUPLICATE_ENTITY`; and the refusal was silent, so the checkbox snapped
+back with nothing said.
 
 **Layout:** three capability columns plus a handle do not fit a phone's width the way two short ones
 did, so the table becomes a per-member card. The account chip row stays as drawn, made horizontally

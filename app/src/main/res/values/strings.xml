@@ -596,7 +596,7 @@
     <string name="bank_grants_transfer">Transfer</string>
     <string name="bank_grants_revoke">Eintrag entfernen</string>
     <string name="bank_grants_revoke_title">Eintrag entfernen?</string>
-    <string name="bank_grants_revoke_text">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto — und das Sehen des Kontos gleich mit. Du kannst den Eintrag jederzeit neu anlegen.</string>
+    <string name="bank_grants_revoke_text">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto — und das Sehen des Kontos gleich mit. Neu eintragen kannst du es derzeit nur im Web-Frontend.</string>
     <string name="bank_grants_revoke_text_cartel">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto. Das KRT-Konto sieht weiterhin jedes Mitglied — dieses Sehen hing nie am Eintrag.</string>
     <string name="bank_grants_view_note_cartel">Das KRT-Konto sieht jedes Mitglied ohnehin. Ein Eintrag hier vergibt deshalb nur Buchungsrechte, kein Sehen.</string>
     <!-- Aufträge (design chapter 10) -->

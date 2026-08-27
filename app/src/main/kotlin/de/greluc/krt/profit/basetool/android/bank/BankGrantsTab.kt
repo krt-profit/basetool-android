@@ -134,6 +134,17 @@ fun BankGrantsTab(
             contentPadding = PaddingValues(KrtSpacing.md),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
+            state.error?.let { error ->
+                item(key = "error") {
+                    // A refused flag change used to snap the checkbox back and say nothing, which
+                    // reads as "the app is broken" rather than "the server said no".
+                    Text(
+                        text = bankRequestErrorMessage(error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.DangerText,
+                    )
+                }
+            }
             item(key = "note") {
                 Text(
                     text =

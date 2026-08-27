@@ -575,7 +575,7 @@
     <string name="bank_grants_transfer">Transfer</string>
     <string name="bank_grants_revoke">Remove the entry</string>
     <string name="bank_grants_revoke_title">Remove entry?</string>
-    <string name="bank_grants_revoke_text">Takes every booking right on this account away from the member — and their sight of the account with it. You can add the entry again at any time.</string>
+    <string name="bank_grants_revoke_text">Takes every booking right on this account away from the member — and their sight of the account with it. Adding the entry back is currently only possible in the web frontend.</string>
     <string name="bank_grants_revoke_text_cartel">Takes every booking right on this account away from the member. Every member still sees the KRT account — that sight never hung on the entry.</string>
     <string name="bank_grants_view_note_cartel">Every member sees the KRT account anyway. An entry here therefore grants booking rights only, not sight.</string>
     <!-- Aufträge (design chapter 10) -->

@@ -464,8 +464,22 @@ cannot be violated: every capability check runs through `hasCapability`, which r
 the row is the sight. No UI coupling and no backend requirement follow from it.
 
 **Reads are the employee's, writes are Bank-Management's**, and as everywhere in the staff surface
-the app draws what the server answered (ADR-0016). Without the role the boxes and the removal are
-drawn **locked, not hidden** — the chapter-09 padlock that answers when tapped.
+the app draws what the server answered (ADR-0016). Without the role the **tab** is locked-tappable
+and answers with a toast naming the role (artboards 4 and 7); the padlocked controls inside it are
+the fallback for the case where the role is lost while the tab is already open.
+
+**Whether a change is a creation or a patch comes from the matrix read, never from the version.** A
+freshly inserted `bank_account_grant` carries `@Version` zero, so `version == 0` does not mean "not
+on the server yet" — deciding on it sends the first edit of every untouched grant as a creation and
+earns `409 DUPLICATE_ENTITY`. `BankGrant.exists` carries the fact instead.
+
+**A refused change is stated, not swallowed.** Without it the checkbox simply snaps back, which
+reads as a broken app rather than a server that said no.
+
+**Known gap: the tab cannot add an entry.** Artboard 7's „+ Grant hinzufügen" is not implemented —
+it needs a member picker restricted to holders of the Bank Employee role, which the server requires
+for a creation (REQ-BANK-008). Until it lands, the removal modal says so instead of promising a
+re-entry the app cannot perform.
 
 A **per-member card** replaces the drawn table: three capability columns plus a handle do not fit a
 phone's width the way two short ones did. The account selector stays the drawn chip row, made
@@ -483,5 +497,14 @@ horizontally scrollable so a unit with many accounts does not lose its last one 
   (`BankGrantsScreenTest`).
 - [x] Switching accounts replaces the matrix rather than appending to it
   (`BankLifecycleViewModelTest`).
+- [x] A row the server already holds is patched even when its version is zero
+  (`BankLifecycleViewModelTest`).
+- [x] A refused flag change reaches the state rather than being swallowed
+  (`BankLifecycleViewModelTest`).
+- [x] Verified on a device against the local test stack: a Bank Employee **without** Bank Management
+  (`test-admin`) gets the locked-tappable tab and the role toast; Bank Management
+  (`test-bank-management`) gets the KPI band, the matrix, a `PATCH` that lands (`200`, version
+  bumped, both directions) and the danger modal.
+- [ ] „+ Grant hinzufügen" (artboard 7) — not implemented; see the known gap above.
 
 **Code:** `BankStaffRepository` (`BankGrantSource`), `BankLifecycleViewModel`, `BankGrantsTab`

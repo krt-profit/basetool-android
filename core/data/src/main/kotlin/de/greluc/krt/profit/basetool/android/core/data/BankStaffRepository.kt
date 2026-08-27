@@ -311,7 +311,7 @@ class BankStaffRepository(
 
     override suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant> {
         val result =
-            if (grant.version == 0L) {
+            if (!grant.exists) {
                 reader.post(
                     path = STAFF_GRANTS_PATH,
                     body =
@@ -516,10 +516,10 @@ private fun BankGrantDto.toModel(): BankGrant? {
             canDeposit = canDeposit == true,
             canWithdraw = canWithdraw == true,
             canTransfer = canTransfer == true,
-            // A row that came back without one is still a row: the flags are what it says, and a
-            // change against version zero is sent as a creation, which the server treats as an
-            // upsert of the same pair.
+            // Absent means zero here, which is what a freshly inserted row carries. That is exactly
+            // why `exists` is a field of its own rather than a test on this number.
             version = version ?: 0,
+            exists = true,
         )
     }
 }

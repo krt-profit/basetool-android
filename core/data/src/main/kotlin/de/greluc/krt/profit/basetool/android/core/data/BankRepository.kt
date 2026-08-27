@@ -762,6 +762,10 @@ const val ACCOUNTS_PAGE_SIZE: Int = 100
  * @property canWithdraw whether they may book money out.
  * @property canTransfer whether they may move money to another account, judged on the **source**.
  * @property version the optimistic-locking version a flag change echoes.
+ * @property exists whether the server already holds this row, which decides whether a change is a
+ *   creation or a patch. **Not derivable from [version]**: a freshly inserted row's `@Version` is
+ *   zero, so treating zero as "new" sends every first edit of an untouched grant as a creation and
+ *   earns a 409.
  */
 data class BankGrant(
     val userId: String,
@@ -771,6 +775,7 @@ data class BankGrant(
     val canWithdraw: Boolean,
     val canTransfer: Boolean,
     val version: Long,
+    val exists: Boolean = true,
 )
 
 /**
@@ -794,8 +799,8 @@ interface BankGrantSource {
      *
      * Creating with all three flags false is the deliberate "may see, may book nothing" case.
      *
-     * @param grant what the matrix now says. A `version` of zero means the row does not exist yet
-     *   and is created rather than patched.
+     * @param grant what the matrix now says. A grant whose `exists` is false is created rather
+     *   than patched — the version cannot say, because a new row's version is zero too.
      * @return the grant as the server recorded it.
      */
     suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant>

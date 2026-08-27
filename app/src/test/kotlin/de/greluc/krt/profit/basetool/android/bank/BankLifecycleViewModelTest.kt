@@ -139,6 +139,7 @@ class BankLifecycleViewModelTest {
     /** Answers the grants matrix and records every change. */
     private class RecordingGrants : BankGrantSource {
         var matrix: ApiResult<List<BankGrant>> = ApiResult.Success(emptyList())
+        var answer: ApiResult<BankGrant>? = null
         val written = mutableListOf<BankGrant>()
         val revoked = mutableListOf<Pair<String, String>>()
 
@@ -146,7 +147,7 @@ class BankLifecycleViewModelTest {
 
         override suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant> {
             written.add(grant)
-            return ApiResult.Success(grant)
+            return answer ?: ApiResult.Success(grant)
         }
 
         override suspend fun revokeGrant(
@@ -410,6 +411,40 @@ class BankLifecycleViewModelTest {
 
             assertEquals("a2", viewModel.state.value.grantAccountId)
             assertTrue(viewModel.state.value.grants.isEmpty())
+        }
+
+    @Test
+    fun `a row the server already holds is patched even when its version is zero`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            // A freshly inserted row carries version 0. Deciding create-vs-patch on that number
+            // sent every first edit of an untouched grant as a creation — 409 DUPLICATE_ENTITY.
+            grants.matrix = ApiResult.Success(listOf(grant(version = 0)))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            advanceUntilIdle()
+
+            viewModel.onSetGrant(viewModel.state.value.grants.single().copy(canTransfer = true))
+            advanceUntilIdle()
+
+            assertTrue(grants.written.single().exists)
+        }
+
+    @Test
+    fun `a refused flag change is reported rather than swallowed`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.matrix = ApiResult.Success(listOf(grant()))
+            grants.answer = ApiResult.Failure(ApiError.Server(status = 409))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            advanceUntilIdle()
+
+            viewModel.onSetGrant(viewModel.state.value.grants.single().copy(canDeposit = true))
+            advanceUntilIdle()
+
+            // Without this the checkbox just snaps back, which reads as a broken app.
+            assertTrue(viewModel.state.value.error is ApiError.Server)
         }
 
     private companion object {

@@ -8,7 +8,8 @@
   auszahlen und umbuchen darf, und kannst es ändern. Wer im Konto steht, darf es auch sehen — auch
   ohne ein einziges Häkchen; das Sehen entziehst du, indem du den Eintrag entfernst, und dafür
   fragt die App vorher nach. Beim KRT-Konto entfällt das: das sieht ohnehin jedes Mitglied. Ohne
-  die Rolle Bank-Management sind die Schalter mit einem Schloss versehen statt unsichtbar.
+  die Rolle Bank-Management ist der Tab gesperrt statt unsichtbar und sagt dir, welche Rolle fehlt.
+  Neue Einträge anlegen geht vorerst nur im Web-Frontend.
 
 - **Die Bankverwaltung hat jetzt einen Tab „Konten".** Konten anlegen, umbenennen, schließen und
   wieder öffnen, dazu das Halter-Register der Einheit mit Deaktivieren und Reaktivieren. Ohne die
