@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankAccountRoute
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountsRoute
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.data.PayoutPreference
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -103,6 +104,7 @@ import de.greluc.krt.profit.basetool.android.ui.isWideWindow
  * @param hangar drives the Hangar.
  * @param bank drives the Konten list.
  * @param bankRequests drives the Anträge tab and the request sheet.
+ * @param bankStaff drives the Verwaltung scope.
  * @param bankAccount builds a view model for one account.
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
@@ -131,6 +133,7 @@ fun BasetoolNavHost(
     fleetImport: FleetImportViewModel,
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
+    bankStaff: BankStaffViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
@@ -186,6 +189,7 @@ fun BasetoolNavHost(
                             hangar = hangar,
                             bank = bank,
                             bankRequests = bankRequests,
+                            bankStaff = bankStaff,
                             bankAccount = bankAccount,
                             orders = orders,
                             orderDetail = orderDetail,
@@ -238,6 +242,7 @@ fun BasetoolNavHost(
  * @param hangar drives the Hangar.
  * @param bank drives the Konten list.
  * @param bankRequests drives the Anträge tab and the request sheet.
+ * @param bankStaff drives the Verwaltung scope.
  * @param orders drives the Auftrag queue.
  * @param inventory drives the Lager tree.
  * @param memberName the member's name, for the greeting.
@@ -260,6 +265,7 @@ private fun listDestination(
     hangar: HangarViewModel,
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
+    bankStaff: BankStaffViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
@@ -281,6 +287,7 @@ private fun listDestination(
             missionDetail = missionDetail,
             bank = bank,
             bankRequests = bankRequests,
+            bankStaff = bankStaff,
             bankAccount = bankAccount,
             orders = orders,
             orderDetail = orderDetail,
@@ -413,6 +420,7 @@ private fun listDetailDestination(
     missionDetail: (String) -> MissionDetailViewModel,
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
+    bankStaff: BankStaffViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
@@ -468,6 +476,7 @@ private fun listDetailDestination(
                 BankAccountsRoute(
                     viewModel = bank,
                     requestsViewModel = bankRequests,
+                    staffViewModel = bankStaff,
                     onOpenAccount = {
                         if (wide) selected = it else navController.navigate(bankAccountRoute(it))
                     },

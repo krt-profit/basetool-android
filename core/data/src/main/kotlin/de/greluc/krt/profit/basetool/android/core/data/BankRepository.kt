@@ -12,6 +12,8 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBalanceTargetRequest
@@ -19,6 +21,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAcco
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountSettingsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -478,20 +481,147 @@ interface BankRequestSource {
 }
 
 /**
+ * Where an account stands in its life.
+ *
+ * A closed account still appears on the staff dashboard, dimmed. That is a **data** difference
+ * rather than a rights lock, which is why the design draws it without a padlock.
+ */
+enum class BankAccountStatus {
+    /** Takes bookings. */
+    ACTIVE,
+
+    /** Takes none, and can be reopened. */
+    CLOSED,
+}
+
+/**
+ * One account as the staff dashboard lists it.
+ *
+ * Staff see **every** account of the unit, including ones they hold no view grant on and ones that
+ * are closed — the delta to the member list, which shows only what the caller may see.
+ *
+ * @property id the account.
+ * @property accountNo the number a member quotes when asking about it.
+ * @property name its display name.
+ * @property type the account kind as the server names it; `CARTEL` is the one visible to everyone
+ *   (REQ-BANK-037), which is what earns the row its visible-to-all chip.
+ * @property status active or closed.
+ * @property balance the balance as the server rendered it, unformatted.
+ * @property delta30d how it moved over thirty days, or `null`.
+ * @property sparkline the points the design draws as a polyline; empty when none came.
+ */
+data class BankStaffAccount(
+    val id: String,
+    val accountNo: String?,
+    val name: String,
+    val type: String?,
+    val status: BankAccountStatus,
+    val balance: String?,
+    val delta30d: String?,
+    val sparkline: List<Double>,
+)
+
+/**
+ * What the dashboard's KPI band states.
+ *
+ * @property totalBalance the sum over the **open** accounts, as the server computed it.
+ * @property activeAccounts how many are open.
+ * @property closedAccounts how many are closed.
+ */
+data class BankStaffTotals(
+    val totalBalance: String?,
+    val activeAccounts: Long,
+    val closedAccounts: Long,
+)
+
+/**
+ * The staff dashboard.
+ *
+ * @property management whether the **server** grants this caller Bank-Management. Preferred over
+ *   anything the app derived from role names for deciding what a loaded screen offers: this is the
+ *   server stating what the caller may do, and it is its answer for this very surface.
+ * @property accounts every account of the unit.
+ * @property totals the KPI band.
+ */
+data class BankStaffDashboard(
+    val management: Boolean,
+    val accounts: List<BankStaffAccount>,
+    val totals: BankStaffTotals,
+)
+
+/**
+ * One page of the bank-staff request queue.
+ *
+ * @property requests the rows.
+ * @property page which page this is, zero-based.
+ * @property totalPages how many exist.
+ * @property totalElements how many rows the whole queue holds.
+ */
+data class BankRequestPage(
+    val requests: List<BankBookingRequest>,
+    val page: Int,
+    val totalPages: Int,
+    val totalElements: Long,
+) {
+    /** Whether another page follows. */
+    val hasMore: Boolean get() = page + 1 < totalPages
+}
+
+/**
+ * The bank-staff surface — design chapter 12, artboards 4 to 8.
+ *
+ * Everything here is `hasRole(BANK_EMPLOYEE)` or narrower, and everything here was out of the
+ * app's reach until `REQ-APP-BANK-007` was amended. Everything under `/api/v1/bank/admin` stays
+ * out permanently.
+ */
+interface BankStaffSource {
+    /**
+     * Reads the staff dashboard: every account of the unit, the KPI band, and whether the server
+     * grants this caller Bank-Management.
+     *
+     * @return the dashboard, or the classified failure - `Forbidden` for a caller who is not a
+     *   bank employee, which is the ordinary answer rather than a defect.
+     */
+    suspend fun staffDashboard(): ApiResult<BankStaffDashboard>
+
+    /**
+     * Reads one page of the request queue.
+     *
+     * @param statuses which states to include; empty asks the server for its default, which is
+     *   `PENDING` alone.
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the page, or the classified failure.
+     */
+    suspend fun requestQueue(
+        statuses: Set<BankRequestStatus> = emptySet(),
+        page: Int = 0,
+        pageSize: Int = QUEUE_PAGE_SIZE,
+    ): ApiResult<BankRequestPage>
+}
+
+/** How many queue rows one page carries; the counter walks whole pages of this size. */
+const val QUEUE_PAGE_SIZE: Int = 50
+
+/**
  * Reads the org bank from the backend.
  *
- * **The member-facing bank paths, never the bank-employee ones.** `/bank/accounts/…` lists every
- * account in the organisation and is gated on a bank role; `/org-units/bank/…` answers with the
- * accounts this caller may actually see — the ones public to everyone plus those they hold a view
- * grant for.
+ * **Two surfaces, and the paths are what separate them.** `/org-units/bank/…` is the member one:
+ * it answers with the accounts this caller may actually see — the ones public to everyone plus
+ * those they hold a view grant for. `/bank/…` is the staff one: it lists every account in the
+ * organisation and is gated on a bank role. The staff half arrived with the amendment of
+ * `REQ-APP-BANK-007`; before it, this class deliberately reached only the member paths.
+ *
+ * Everything under `/api/v1/bank/admin` is reached by neither and never will be — that is the
+ * admin area, which is web-only by owner decision.
  *
  * @property reader performs the calls and classifies their failures
  */
-
 class BankRepository(
     private val reader: ApiReader,
 ) : BankSource,
-    BankRequestSource {
+    BankRequestSource,
+    BankStaffSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -607,6 +737,48 @@ class BankRepository(
             is ApiResult.Failure -> result
             is ApiResult.Success -> ApiResult.Success(result.value.toModel())
         }
+
+    override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> =
+        when (val result = reader.get(STAFF_DASHBOARD_PATH, BankDashboardDto.serializer())) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
+    override suspend fun requestQueue(
+        statuses: Set<BankRequestStatus>,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BankRequestPage> {
+        val query =
+            buildList {
+                statuses.forEach { add(STATUS_PARAM to it.name) }
+                add(PAGE_PARAM to page.toString())
+                add(SIZE_PARAM to pageSize.toString())
+            }
+        return when (
+            val result =
+                reader.get(
+                    STAFF_REQUESTS_PATH,
+                    query,
+                    PageResponseBankBookingRequestDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    BankRequestPage(
+                        requests = result.value.content.orEmpty().mapNotNull { it.toModel() },
+                        page = result.value.page ?: page,
+                        totalPages = result.value.totalPages ?: 0,
+                        totalElements = result.value.totalElements ?: 0,
+                    ),
+                )
+            }
+        }
+    }
 
     override suspend fun ownRequests(): ApiResult<List<BankBookingRequest>> =
         requestList("$REQUESTS_PATH")
@@ -763,6 +935,15 @@ class BankRepository(
         /** Log subsystem. No amount, handle or note is ever logged. */
         private const val LOG_TAG = "bank"
 
+        /** The staff dashboard: every account of the unit plus the KPI band. */
+        const val STAFF_DASHBOARD_PATH = "/api/v1/bank/dashboard"
+
+        /** The staff request queue. */
+        const val STAFF_REQUESTS_PATH = "/api/v1/bank/requests"
+
+        /** The queue's status filter; repeated once per state. */
+        const val STATUS_PARAM = "status"
+
         /** The member surface's prefix; the staff bank lives under `/api/v1/bank`. */
         private const val ORG_UNIT_BANK = "/api/v1/org-units/bank"
 
@@ -836,6 +1017,50 @@ private fun OrgUnitBankAccountDetailDto.toModel(requestedId: String): BankAccoun
         applicableLimit = applicableLimit?.toString(),
         approvalExempt = approvalExempt == true,
     )
+
+/**
+ * Maps the staff dashboard onto the model.
+ *
+ * @return the dashboard; a missing `totals` reads as a bank with nothing in it rather than a
+ *   failure, because an organisation that has closed every account is a real state.
+ */
+private fun BankDashboardDto.toModel(): BankStaffDashboard =
+    BankStaffDashboard(
+        management = management == true,
+        accounts = accounts.orEmpty().mapNotNull { it.toModel() },
+        totals =
+            BankStaffTotals(
+                totalBalance = totals?.totalBalance?.toString(),
+                activeAccounts = totals?.activeAccounts ?: 0,
+                closedAccounts = totals?.closedAccounts ?: 0,
+            ),
+    )
+
+/**
+ * Maps one dashboard row onto the model.
+ *
+ * @return the account, or `null` without an id - one nothing could open.
+ */
+private fun BankDashboardAccountDto.toModel(): BankStaffAccount? {
+    val accountId = id ?: return null
+    return BankStaffAccount(
+        id = accountId,
+        accountNo = accountNo,
+        name = name.orEmpty(),
+        type = type?.value,
+        // An unknown status reads as active: a row that takes bookings is the one a staff member
+        // must not be talked out of acting on by a value this build predates.
+        status =
+            if (status == BankDashboardAccountDto.Status.CLOSED) {
+                BankAccountStatus.CLOSED
+            } else {
+                BankAccountStatus.ACTIVE
+            },
+        balance = balance?.toString(),
+        delta30d = delta30d?.toString(),
+        sparkline = sparkline.orEmpty().mapNotNull { it.toString().toDoubleOrNull() },
+    )
+}
 
 /**
  * Maps a request onto the model.

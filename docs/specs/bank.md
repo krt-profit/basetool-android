@@ -6,16 +6,24 @@
 
 The Konten list, one account with its ledger, and the member's own booking requests — raising one,
 correcting it, withdrawing it, and granting the responsible holder's approval on somebody else's.
-**Rejecting** a request is not here and never will be: it is a bank employee's act on a surface the
-app does not carry ([`REQ-APP-BANK-007`](bank.md)).
+**Rejecting** a request is not on the member surface: it is a bank employee's act, and it lives on
+the staff one ([`REQ-APP-BANK-007`](bank.md)) — which the app now carries, but which a plain member
+never sees.
 
 ---
 
-### REQ-APP-BANK-001 — The member-facing paths, never the bank-employee ones
+### REQ-APP-BANK-001 — The member surface reads the member paths
 
 `/api/v1/bank/accounts/…` lists **every** account in the organisation and is gated on a bank role.
-The app reads `/api/v1/org-units/bank/…`, which answers with the accounts this caller may actually
-see: the ones public to everyone (`REQ-BANK-037`) plus those they hold a view grant for.
+The member surface reads `/api/v1/org-units/bank/…`, which answers with the accounts this caller
+may actually see: the ones public to everyone (`REQ-BANK-037`) plus those they hold a view grant
+for.
+
+> [!note] Amended 2026-08-27 alongside [`REQ-APP-BANK-007`](bank.md)
+> This used to read "never the bank-employee ones", when the app had no staff surface at all. It
+> now has one, and the rule it was really protecting is unchanged: **the member half never reads a
+> staff path.** A caller who is not a bank employee sees exactly what they saw before, because the
+> wider list is behind a scope segment the server's own roles decide.
 
 **Acceptance**
 
@@ -169,20 +177,49 @@ is the field that tells them apart.
 
 ---
 
-### REQ-APP-BANK-007 — The bank-employee surface stays out
+### REQ-APP-BANK-007 — The bank-employee surface, and the line that still holds
 
-`/api/v1/bank/**` — deposits, withdrawals, transfers, the request queue, the reversal — is
-`hasRole(BANK_EMPLOYEE)` throughout and is **not** on the app's allow-list. This is the same
-decision as [`REQ-APP-BANK-001`](bank.md), restated because phase 3 is when it would have been easy
-to slip: the member-facing `/org-units/bank/**` paths gained writes, and the employee ones sit one
-prefix away.
+> [!note] **Amended 2026-08-27, owner-approved.** This requirement previously read "the
+> bank-employee surface stays out" and kept **all** of `/api/v1/bank/**` off the app. The owner
+> named the staff bank as a required function — „die bank für bankmitarbeiter und bankleitung mit
+> allen funktionen die die bank und ihre unterseiten im web frontend haben" — and, asked separately
+> which endpoints that should put on the public mobile vhost, chose the full set the design draws.
+> The amendment is recorded here **before** the code that depends on it, per `CLAUDE.md`.
 
-A bank employee uses the web app. The app carries what a member has.
+The app carries the staff bank that **design chapter 12 draws** — artboards 4 to 8: the dashboard,
+the request queue with confirm and reject, the account lifecycle, the grants matrix, the holder
+detail with its transfer, plus the staff account detail's two additions over the member one
+(reversal and the two reports).
+
+**The design defines the scope, and three things stay out because of it.**
+
+1. **`/api/v1/bank/admin/**` — permanently.** Wipe-reset and the bank audit log are the admin
+   area, which is web-only by owner decision (`ANDROID_APP_PLAN` Q6) and is named in the owner's
+   own carve-out („außer beförderung und admin bereich").
+2. **The direct booking forms** — `POST /bank/deposits`, `/withdrawals`, `/transfers` and
+   `GET /transfer-fee-rate`. No artboard draws them, and artboard 4's handoff is explicit about
+   what the staff account detail adds over the member one: „+ Storno + Berichte". A booking that
+   had no request is therefore still a browser act. **This is a known delta to the web frontend**
+   and is raised with the design side rather than guessed at
+   ([`MISSING_ARTBOARD_PROMPTS_7.md`](../design/android/MISSING_ARTBOARD_PROMPTS_7.md)).
+3. **`PATCH /bank/accounts/{id}/approval-tiers`** — the KRT ladder editor. The app's four tabs are
+   ÜBERSICHT · ANTRÄGE · KONTEN · GRANTS; the web's „KRT-Freigaben" tab is not among them.
+
+**Every admitted path is named individually and anchored.** `/api/v1/bank` is **not** in the
+vhost's read-only family, so naming a path opens every verb the backend serves on it — which is
+what the lifecycle and grants writes need. The safety comes from the allow-list defaulting to
+`404`: nothing under `/bank` is reachable that is not named, and `/bank/admin/**` is never named.
 
 **Acceptance**
 
-- [x] No `/api/v1/bank/**` path is in the contract set or the vhost allow-list (main repo
-  `ExternalContractTest`, `docs/API_VHOST_ROLLOUT_RUNBOOK.md`).
+- [x] `/api/v1/bank/admin/**` is in neither the contract set nor the vhost allow-list, and the
+  nightly edge probe asserts it still answers `404` (main repo `ExternalContractTest`,
+  `docs/API_VHOST_ROLLOUT_RUNBOOK.md`, `edge-deny-probe`).
+- [x] No direct booking path (`/bank/deposits`, `/bank/withdrawals`, `/bank/transfers`,
+  `/bank/transfer-fee-rate`) is admitted, and the probe asserts each still answers `404`.
+- [x] The staff surface is reached only by a caller the **server** calls a bank employee; the app
+  derives the flag from the roles on `GET /api/v1/users/me` and treats it as a hint, never a gate
+  (ADR-0011).
 
 ---
 

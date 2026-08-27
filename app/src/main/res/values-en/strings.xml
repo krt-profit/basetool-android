@@ -414,7 +414,7 @@
     <string name="bank_accounts_empty_message">No account of the org unit is visible to you.</string>
     <string name="bank_error_title">Signal Lost</string>
     <string name="bank_error_message">The bank could not be loaded.</string>
-    <string name="bank_delta_30d">%1$s · 30 days</string>
+    <string name="bank_delta_30d">%1$s · 30 d</string>
     <string name="bank_balance">Balance</string>
     <string name="bank_transactions">Transactions</string>
     <string name="bank_transactions_empty">No bookings yet.</string>
@@ -478,6 +478,43 @@
     <string name="bank_request_withdraw_confirm_title">Withdraw the request?</string>
     <string name="bank_request_withdraw_confirm_message">It will not be booked and disappears from the approval list.</string>
     <string name="bank_request_error_amount">The amount or the destination account is not valid.</string>
+    <!-- Bank staff surface (design chapter 12, artboards 4-8) -->
+    <string name="bank_scope_member">Mitglied</string>
+    <string name="bank_scope_staff">Verwaltung</string>
+    <string name="action_ok">Got it</string>
+    <string name="bank_scope_locked">You need a role in the bank for that.</string>
+    <string name="bank_staff_tab_overview">Overview</string>
+    <string name="bank_staff_tab_requests">Requests</string>
+    <string name="bank_staff_tab_accounts">Konten</string>
+    <string name="bank_staff_tab_grants">Grants</string>
+    <string name="bank_staff_grants_locked">You need the Bank-Management role for that.</string>
+    <string name="bank_staff_kpi_label">Total %1$s · open accounts</string>
+    <string name="bank_staff_kpi_label_plain">Total · open accounts</string>
+    <plurals name="bank_staff_accounts_count">
+        <item quantity="one">%1$d account</item>
+        <item quantity="other">%1$d accounts</item>
+    </plurals>
+    <plurals name="bank_staff_counts_closed">
+        <item quantity="one">%1$d closed</item>
+        <item quantity="other">%1$d closed</item>
+    </plurals>
+    <plurals name="bank_staff_counts_requests">
+        <item quantity="one">%1$d open request</item>
+        <item quantity="other">%1$d open requests</item>
+    </plurals>
+    <string name="bank_staff_counts_separator"> · </string>
+    <string name="bank_staff_counts_partial">at least</string>
+    <string name="bank_staff_chip_public">Visible to everyone</string>
+    <string name="bank_staff_chip_no_grant">no view grant of your own</string>
+    <string name="bank_staff_chip_closed">Closed</string>
+    <plurals name="bank_staff_chip_requests">
+        <item quantity="one">%1$d open request</item>
+        <item quantity="other">%1$d open requests</item>
+    </plurals>
+    <string name="bank_staff_error_forbidden_title">Access Denied</string>
+    <string name="bank_staff_error_forbidden_message">The bank\'s staff view is not open to you.</string>
+    <string name="bank_staff_empty_title">No accounts</string>
+    <string name="bank_staff_empty_message">This org unit runs no bank account.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Open</string>

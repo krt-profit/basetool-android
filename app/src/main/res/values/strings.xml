@@ -435,7 +435,7 @@
     <string name="bank_accounts_empty_message">Für dich ist kein Konto der Org-Einheit sichtbar.</string>
     <string name="bank_error_title">Signal Lost</string>
     <string name="bank_error_message">Die Bank konnte nicht geladen werden.</string>
-    <string name="bank_delta_30d">%1$s · 30 Tage</string>
+    <string name="bank_delta_30d">%1$s · 30 T.</string>
     <string name="bank_balance">Kontostand</string>
     <string name="bank_transactions">Transaktionen</string>
     <string name="bank_transactions_empty">Noch keine Buchungen.</string>
@@ -499,6 +499,43 @@
     <string name="bank_request_withdraw_confirm_title">Antrag zurückziehen?</string>
     <string name="bank_request_withdraw_confirm_message">Der Antrag wird nicht gebucht und verschwindet aus der Liste der Verantwortlichen.</string>
     <string name="bank_request_error_amount">Betrag oder Zielkonto sind nicht gültig.</string>
+    <!-- Bank-Verwaltung (design chapter 12, artboards 4-8) -->
+    <string name="bank_scope_member">Mitglied</string>
+    <string name="bank_scope_staff">Verwaltung</string>
+    <string name="action_ok">Verstanden</string>
+    <string name="bank_scope_locked">Dafür brauchst du eine Rolle in der Bank.</string>
+    <string name="bank_staff_tab_overview">Übersicht</string>
+    <string name="bank_staff_tab_requests">Anträge</string>
+    <string name="bank_staff_tab_accounts">Konten</string>
+    <string name="bank_staff_tab_grants">Grants</string>
+    <string name="bank_staff_grants_locked">Dafür brauchst du die Rolle Bank-Management.</string>
+    <string name="bank_staff_kpi_label">Gesamt %1$s · offene Konten</string>
+    <string name="bank_staff_kpi_label_plain">Gesamt · offene Konten</string>
+    <plurals name="bank_staff_accounts_count">
+        <item quantity="one">%1$d Konto</item>
+        <item quantity="other">%1$d Konten</item>
+    </plurals>
+    <plurals name="bank_staff_counts_closed">
+        <item quantity="one">%1$d geschlossen</item>
+        <item quantity="other">%1$d geschlossen</item>
+    </plurals>
+    <plurals name="bank_staff_counts_requests">
+        <item quantity="one">%1$d offener Antrag</item>
+        <item quantity="other">%1$d offene Anträge</item>
+    </plurals>
+    <string name="bank_staff_counts_separator"> · </string>
+    <string name="bank_staff_counts_partial">mindestens</string>
+    <string name="bank_staff_chip_public">Für alle sichtbar</string>
+    <string name="bank_staff_chip_no_grant">ohne eigenen View-Grant</string>
+    <string name="bank_staff_chip_closed">Geschlossen</string>
+    <plurals name="bank_staff_chip_requests">
+        <item quantity="one">%1$d offener Antrag</item>
+        <item quantity="other">%1$d offene Anträge</item>
+    </plurals>
+    <string name="bank_staff_error_forbidden_title">Access Denied</string>
+    <string name="bank_staff_error_forbidden_message">Die Verwaltungsansicht der Bank ist für dich nicht freigegeben.</string>
+    <string name="bank_staff_empty_title">Keine Konten</string>
+    <string name="bank_staff_empty_message">Diese Org-Einheit führt kein Bankkonto.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Offen</string>

@@ -34,6 +34,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.InitializerViewModelFactoryBuilder
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import de.greluc.krt.profit.basetool.android.auth.AuthContainer
@@ -42,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
@@ -174,6 +176,7 @@ class MainActivity : AppCompatActivity() {
     private val bankRequestsViewModel: BankRequestsViewModel by viewModels {
         authViewModels(container)
     }
+    private val bankStaffViewModel: BankStaffViewModel by viewModels { authViewModels(container) }
 
     /** Beförderung — the member's own assessments and rank standings (#66). */
 
@@ -329,6 +332,7 @@ class MainActivity : AppCompatActivity() {
                                     fleetImport = fleetImportViewModel,
                                     bank = bankViewModel,
                                     bankRequests = bankRequestsViewModel,
+                                    bankStaff = bankStaffViewModel,
                                     bankAccount = {
                                         BankAccountViewModel(
                                             container.bank,
@@ -558,6 +562,40 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         /**
+         * Registers the bank's three view models.
+         *
+         * Split out because the bank alone now carries a member list, a request surface and a
+         * staff surface, and three initializers with the comment that explains the third were
+         * enough to push the factory past its length budget.
+         *
+         * @param container the auth object graph.
+         */
+        private fun InitializerViewModelFactoryBuilder.bankViewModels(container: AuthContainer) {
+            initializer { BankViewModel(container.bank, container.liveSync) }
+            initializer {
+                BankStaffViewModel(
+                    container.bank,
+                    // The member-visible list is what makes "ohne eigenen View-Grant"
+                    // answerable: an account on the staff list but not on this one is one the
+                    // caller reaches only through their office.
+                    container.bank::balances,
+                    container.liveSync,
+                )
+            }
+            initializer {
+                BankRequestsViewModel(
+                    container.bank,
+                    // The sheet's account picker is the Konten list; reading it through
+                    // the same call keeps the two from ever disagreeing about which
+                    // accounts exist or what a member may raise a request against.
+                    container.bank::balances,
+                    container.connectivity,
+                    container.liveSync,
+                )
+            }
+        }
+
+        /**
          * Builds the four view models from the process-wide auth graph.
          *
          * @param container the auth object graph
@@ -586,18 +624,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { CallerViewModel(container.identity) }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { FleetImportViewModel(container.hangar, container.connectivity) }
-                initializer { BankViewModel(container.bank, container.liveSync) }
-                initializer {
-                    BankRequestsViewModel(
-                        container.bank,
-                        // The sheet's account picker is the Konten list; reading it through
-                        // the same call keeps the two from ever disagreeing about which
-                        // accounts exist or what a member may raise a request against.
-                        container.bank::balances,
-                        container.connectivity,
-                        container.liveSync,
-                    )
-                }
+                bankViewModels(container)
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
                 initializer {
