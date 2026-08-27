@@ -463,15 +463,17 @@ interface BankRequestSource {
     /**
      * Grants or revokes this member's approval on someone else's request.
      *
+     * **No version, unlike every other write here.** The server takes no body on either verb of
+     * `…/owner-approval`, so there is nothing to echo: the grant is idempotent and the state it
+     * sets does not depend on what the client last read.
+     *
      * @param id the request.
      * @param granted whether to grant.
-     * @param version the version it was read at; echoed so a concurrent change 409s.
      * @return the request in its new state.
      */
     suspend fun setOwnerApproval(
         id: String,
         granted: Boolean,
-        version: Long,
     ): ApiResult<BankBookingRequest>
 }
 
@@ -710,25 +712,13 @@ class BankRepository(
     override suspend fun setOwnerApproval(
         id: String,
         granted: Boolean,
-        version: Long,
     ): ApiResult<BankBookingRequest> {
         val path = "$REQUESTS_PATH/$id/owner-approval"
         val result =
             if (granted) {
-                reader.post(
-                    path = path,
-                    body = CancelBankBookingRequest(version = version),
-                    bodySerializer = CancelBankBookingRequest.serializer(),
-                    deserializer = BankBookingRequestDto.serializer(),
-                )
+                reader.post(path = path, deserializer = BankBookingRequestDto.serializer())
             } else {
-                reader.send(
-                    path = path,
-                    method = "DELETE",
-                    body = CancelBankBookingRequest(version = version),
-                    bodySerializer = CancelBankBookingRequest.serializer(),
-                    deserializer = BankBookingRequestDto.serializer(),
-                )
+                reader.delete(path = path, deserializer = BankBookingRequestDto.serializer())
             }
         return single(result)
     }

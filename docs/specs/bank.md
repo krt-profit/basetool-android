@@ -194,7 +194,11 @@ The Anträge tab and the request sheet — design chapter 12, artboards 1 and 3.
 while it is still pending and unapproved (`PUT …/{id}`), withdraw it (`POST …/{id}/cancel`), and —
 on an account they are responsible for — grant or revoke the owner approval
 (`POST` / `DELETE …/{id}/owner-approval`). That is the whole member surface, and it is the whole
-of what the web frontend offers a member. Every write echoes the request's `version`.
+of what the web frontend offers a member.
+
+The create, the edit and the withdrawal echo the request's `version`; **the two approval verbs do
+not, because the server takes no body on either**. The grant is idempotent and the state it sets
+does not depend on what the client last read, so there is nothing to collide over.
 
 **Own and foreign are two reads, one list.** `GET …/requests` returns what the caller raised;
 `GET …/requests/foreign` returns what sits on accounts they are responsible for. The **server**
@@ -225,7 +229,8 @@ the account sets no limit. Otherwise it states the account's own `approvalLimit`
   reads stays the caller's (`BankRequestsViewModelTest`).
 - [x] The tab badge counts only `PENDING` requests, so nothing the member cannot clear leaves a
   badge behind (`BankRequestsViewModelTest`).
-- [x] Every write echoes the version it read (`BankRequestsViewModelTest`).
+- [x] The create, the edit and the withdrawal echo the version they read; the two approval
+  verbs send no body at all (`BankRequestsViewModelTest`).
 - [x] No state of the sheet or of a row states a number of approvals; the chip names the approver
   class (`BankRequestScreenTest`).
 - [x] A deposit, an exempt caller and a limitless account each get no threshold line
@@ -235,6 +240,12 @@ the account sets no limit. Otherwise it states the account's own `approvalLimit`
   (`BankRequestScreenTest`).
 - [x] The edit sheet opens on a typeable amount rather than the server's storage scale
   (`BankRequestsViewModelTest`).
+
+**Reachability.** None of these paths were on the mobile vhost's allow-list, and the local test
+stack is reached **directly**, with no vhost in front of it — so a full device verification cannot
+show the gap. The main repo's `API_VHOST_ROLLOUT_RUNBOOK.md` § Phase K adds them, and until that
+block is applied to the host the feature works in development and answers `404` in production.
+The same is true of `/api/v1/users/{id}/memberships`, which the Lager's Umbuchen picker needs.
 
 **Code:** `BankRepository` (`BankRequestSource`), `BankRequestsViewModel`, `BankRequestsTab`,
 `BankRequestSheet`

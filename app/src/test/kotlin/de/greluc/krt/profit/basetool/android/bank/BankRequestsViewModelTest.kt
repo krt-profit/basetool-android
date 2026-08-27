@@ -78,7 +78,7 @@ class BankRequestsViewModelTest {
     ) : BankRequestSource {
         val created = mutableListOf<BankRequestDraft>()
         val cancelled = mutableListOf<Pair<String, Long>>()
-        val approvals = mutableListOf<Triple<String, Boolean, Long>>()
+        val approvals = mutableListOf<Pair<String, Boolean>>()
         val edits = mutableListOf<Triple<String, String, Long>>()
         var writeAnswer: ApiResult<BankBookingRequest>? = null
 
@@ -116,9 +116,8 @@ class BankRequestsViewModelTest {
         override suspend fun setOwnerApproval(
             id: String,
             granted: Boolean,
-            version: Long,
         ): ApiResult<BankBookingRequest> {
-            approvals.add(Triple(id, granted, version))
+            approvals.add(id to granted)
             return writeAnswer ?: ApiResult.Success(request(id))
         }
     }
@@ -205,10 +204,9 @@ class BankRequestsViewModelTest {
         }
 
     @Test
-    fun `granting an approval echoes the version it read`() =
+    fun `granting an approval sends no version, because the endpoint takes no body`() =
         runTest(dispatcher) {
-            val source =
-                RecordingRequests(foreign = ApiResult.Success(listOf(request("r9", version = APPROVAL_VERSION))))
+            val source = RecordingRequests(foreign = ApiResult.Success(listOf(request("r9"))))
             val viewModel = model(source)
             viewModel.loadOnce()
             advanceUntilIdle()
@@ -216,7 +214,7 @@ class BankRequestsViewModelTest {
             viewModel.onSetApproval(viewModel.state.value.rows.single().request, granted = true)
             advanceUntilIdle()
 
-            assertEquals(listOf(Triple("r9", true, APPROVAL_VERSION)), source.approvals)
+            assertEquals(listOf("r9" to true), source.approvals)
         }
 
     @Test
@@ -337,7 +335,6 @@ class BankRequestsViewModelTest {
 
     private companion object {
         /** The version each write must echo, distinct per test so a mix-up shows up. */
-        const val APPROVAL_VERSION = 7L
         const val WITHDRAW_VERSION = 3L
         const val EDIT_VERSION = 11L
 

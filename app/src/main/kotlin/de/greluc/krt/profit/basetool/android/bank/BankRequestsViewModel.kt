@@ -359,7 +359,7 @@ class BankRequestsViewModel(
         request: BankBookingRequest,
         granted: Boolean,
     ) {
-        write(request.id) { source.setOwnerApproval(request.id, granted, request.version) }
+        write(request.id) { source.setOwnerApproval(request.id, granted) }
     }
 
     /**
