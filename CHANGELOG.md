@@ -37,6 +37,11 @@
 
 ### Changed
 
+- **Die Anmeldung stürzt nicht mehr ab, wenn das Gerät keine Bildschirmsperre hat** — sie sagt
+  jetzt, dass eine eingerichtet werden muss. Vorher verschwand die App beim Tippen auf „Anmelden".
+- **Die Fehlermeldung behauptet nicht mehr, die Administration sei informiert worden.** Das war
+  nicht der Fall: die App meldet nichts nach außen. Sie nennt jetzt, was zu tun ist.
+
 - **„Übergeben" heißt jetzt „Umbuchen"** — so wie im Webtool und im Designbild. Der Knopf unten
   nennt außerdem die Buchung, die er auslöst, statt immer „Ausbuchen".
 

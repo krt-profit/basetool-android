@@ -22,7 +22,8 @@
     <string name="login_error_denied">Sign-in was refused.</string>
     <string name="login_error_expired">The sign-in expired. Please try again.</string>
     <string name="login_error_unreachable">Server unreachable.</string>
-    <string name="login_error_config">Sign-in is not possible right now. The administration has been notified.</string>
+    <string name="login_error_config">Sign-in is not possible right now. Trying again will not help — please contact the administration.</string>
+    <string name="login_error_device_key">This device cannot store the sign-in securely. Set a screen lock and try again.</string>
 
     <string name="more_section_secondary">Secondary targets</string>
     <string name="logout">Sign out</string>

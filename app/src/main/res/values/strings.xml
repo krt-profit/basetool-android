@@ -30,7 +30,8 @@
     <string name="login_error_denied">Die Anmeldung wurde abgelehnt.</string>
     <string name="login_error_expired">Die Anmeldung ist abgelaufen. Bitte erneut versuchen.</string>
     <string name="login_error_unreachable">Server nicht erreichbar.</string>
-    <string name="login_error_config">Anmeldung derzeit nicht möglich. Die Administration wurde informiert.</string>
+    <string name="login_error_config">Anmeldung derzeit nicht möglich. Ein erneuter Versuch hilft nicht — bitte an die Administration wenden.</string>
+    <string name="login_error_device_key">Dieses Gerät kann die Anmeldung nicht sicher speichern. Richte eine Bildschirmsperre ein und versuche es erneut.</string>
 
     <!-- Session -->
     <string name="more_section_secondary">Sekundärziele</string>
