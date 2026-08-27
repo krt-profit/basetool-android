@@ -34,6 +34,9 @@ round asks for the artboards to follow.
 | Artboard 1, footnote | „Gestaffelte Freigabe-Leiter: ab 100.000 aUEC zwei Freigaben, ab 1.000.000 drei. Eigene Anträge kann man nie selbst freigeben." |
 | Artboard 1, handoff | „Bestätigen … zählt die Leiter hoch (1/2 → 2/2)" |
 | Artboard 3, under the amount | „Ab 100.000 aUEC sind 2 Freigaben nötig — der Antrag erscheint im Tab „Anträge"." |
+| Artboard 5, three row chips | `1 / 2 FREIGABEN`, `0 / 1 FREIGABEN`, `1 / 3 FREIGABEN` |
+| Artboard 5, row 1 button | `✓ BESTÄTIGEN (2/2)` |
+| Artboard 5, footnote | „Leiter: ab 100.000 aUEC zwei, ab 1.000.000 drei Freigaben — nie den eigenen Antrag." |
 
 **What the API has.** `BankBookingRequestDto` carries no count of any kind. Its approval fields
 are `requiresOwnerApproval`, `requiredApprover`, `ownerApprovalGranted` and
@@ -69,11 +72,20 @@ one, and rendering the approval chip beside a status chip overflowed on a 393 dp
 and „Ablehnen" is an endpoint the member does not have. The app draws `FREIGABE ERTEILEN`
 (success) and, once granted, `FREIGABE ZURÜCKNEHMEN` (ghost).
 
+**Artboard 5 has the same chips but different buttons, and only the chips are wrong.** That
+screen is the bank employee's queue, and `ABLEHNEN` + `BESTÄTIGEN` are exactly right there:
+`POST /api/v1/bank/requests/{id}/(confirm|reject)` both exist and are `BANK_EMPLOYEE`. What has to
+go is the `(2/2)` in the button label and the three `n / m FREIGABEN` chips, which should name the
+approver class and whether it has granted — the same vocabulary as artboard 1.
+
 ### What we would like drawn
 
 - Artboard 1's flagged row: **one** trailing chip naming the class being waited on, and a single
   `FREIGABE ERTEILEN` button in its place. A variant showing the granted state with
   `FREIGABE ZURÜCKNEHMEN`.
+- Artboard 5's three chips in the same vocabulary, and `BESTÄTIGEN` without its counter. Its
+  footnote rewritten like artboard 1's — its second half („nie den eigenen Antrag") is correct and
+  is drawn correctly beside it, in the locked own-request row.
 - The footnote rewritten to describe the escalation of approver class, and to keep its true second
   half („Eigene Anträge kann man nie selbst freigeben" — that part is correct and is implemented).
 - The handoff note's „zählt die Leiter hoch (1/2 → 2/2)" removed.
@@ -115,6 +127,16 @@ what the artboard's own note meant by „Leiter aus Server-Konfig". It is never 
 - Optionally a fourth state: over the limit, in warning rather than info tone.
 
 ---
+
+## 2b — One question artboard 5 raises and we cannot answer from the API
+
+Artboard 5's handoff says: „Ablehnen bleibt aktiv gezeichnet — ob der Server Self-Reject zulässt,
+ist als Backend-Klärung notiert; bis dahin entscheidet der Server (403-Muster)."
+
+That clarification is still open, and it is a backend question rather than a drawing one. We will
+answer it from `BankBookingRequestService` when the staff queue is built and report back; the
+drawn behaviour (draw it active, let the server decide) is the right stance until then and needs
+no change.
 
 ## 3 — Two smaller questions, no strong opinion
 
