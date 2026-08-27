@@ -536,6 +536,7 @@
     <string name="bank_staff_error_forbidden_message">Die Verwaltungsansicht der Bank ist für dich nicht freigegeben.</string>
     <string name="bank_staff_empty_title">Keine Konten</string>
     <string name="bank_staff_empty_message">Diese Org-Einheit führt kein Bankkonto.</string>
+    <string name="bank_staff_empty_message_no_grant">Für dich ist kein Konto freigegeben. Die Bankleitung vergibt die Freigaben.</string>
     <!-- Bank-Verwaltung: Antrags-Queue (design chapter 12, artboard 5) -->
     <string name="bank_staff_confirm">Bestätigen</string>
     <string name="bank_staff_reject">Ablehnen</string>

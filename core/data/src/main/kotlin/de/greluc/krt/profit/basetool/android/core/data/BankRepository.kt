@@ -540,16 +540,19 @@ data class BankStaffTotals(
 /**
  * The staff dashboard.
  *
- * @property management whether the **server** grants this caller Bank-Management. Preferred over
- *   anything the app derived from role names for deciding what a loaded screen offers: this is the
- *   server stating what the caller may do, and it is its answer for this very surface.
- * @property accounts every account of the unit.
- * @property totals the KPI band.
+ * @property management whether the **server** grants this caller Bank-Management. It decides what
+ *   the dashboard even contains (REQ-BANK-010): management sees every account plus the aggregate
+ *   strip, a plain bank employee sees exactly the accounts they hold a grant for and no strip at
+ *   all.
+ * @property accounts the accounts this caller may see — every one for management, the granted ones
+ *   for an employee.
+ * @property totals the KPI band, or **`null` when the caller is not management**. Absent means
+ *   "not for you", which is a different statement from zero and must not be rendered as one.
  */
 data class BankStaffDashboard(
     val management: Boolean,
     val accounts: List<BankStaffAccount>,
-    val totals: BankStaffTotals,
+    val totals: BankStaffTotals?,
 )
 
 /**
@@ -1164,12 +1167,16 @@ private fun BankDashboardDto.toModel(): BankStaffDashboard =
     BankStaffDashboard(
         management = management == true,
         accounts = accounts.orEmpty().mapNotNull { it.toModel() },
+        // Null stays null. The server omits the strip for a non-management caller, and folding
+        // that into zeroes would have the screen assert an empty bank.
         totals =
-            BankStaffTotals(
-                totalBalance = totals?.totalBalance?.toString(),
-                activeAccounts = totals?.activeAccounts ?: 0,
-                closedAccounts = totals?.closedAccounts ?: 0,
-            ),
+            totals?.let {
+                BankStaffTotals(
+                    totalBalance = it.totalBalance?.toString(),
+                    activeAccounts = it.activeAccounts ?: 0,
+                    closedAccounts = it.closedAccounts ?: 0,
+                )
+            },
     )
 
 /**

@@ -343,3 +343,45 @@ has `POST …/confirm` and `POST …/reject` behind it; the member surface has n
   (`BankStaffScreenTest`, ADR-0104).
 
 **Code:** `BankRepository` (`BankStaffSource`), `BankStaffViewModel`, `BankStaffQueue`
+
+---
+
+### REQ-APP-BANK-010 — The staff dashboard is two screens, and the second one has no totals
+
+`GET /api/v1/bank/dashboard` answers differently by role (main repo REQ-BANK-010), and the app has
+to render both shapes rather than one:
+
+| Caller | Accounts | `totals` |
+| --- | --- | --- |
+| **Bank-Management** (or admin) | **every** account in the organisation | the aggregate strip |
+| a plain **bank employee** | exactly the accounts they hold a bank grant for | **`null`** |
+
+**An absent strip is not a strip of zeroes.** Folding `null` into `BankStaffTotals(null, 0, 0)` had
+the screen tell an employee „GESAMT 0 aUEC · 0 Konten" — a claim that the organisation's bank is
+empty, made to the person least able to check it. Found by running it: the member tab showed an
+account while the staff tab showed none and asserted zero underneath.
+
+Three consequences the screen honours:
+
+1. The KPI band renders **only** when the server sent one.
+2. The empty state distinguishes the two emptinesses. For management, no accounts means the
+   organisation runs none. For an employee it almost always means **they hold no grant**, and
+   saying "this org unit runs no bank account" would be false.
+3. **„ohne eigenen View-Grant" is management-only.** An employee's list is already grant-shaped, so
+   every row would carry the mark and it would say nothing. Only a caller who sees beyond their own
+   grants can have a row they reach purely through their office.
+
+Note the two grant systems are **different**: the staff list is shaped by `bank_account_grant`, the
+member list by the org-unit visibility of `REQ-BANK-037`. An account can therefore be on the member
+list and absent from the staff one — the reverse of the naive assumption.
+
+**Acceptance**
+
+- [x] An employee gets no aggregate strip, and no zeroes standing in for one
+  (`BankStaffScreenTest`).
+- [x] An employee's rows carry no view-grant mark; management's do (`BankStaffScreenTest`).
+- [x] The empty state names the right emptiness for each (`BankStaffOverview`).
+- [x] Verified on a device against a locally built backend: a bank employee with no grant sees the
+  refusal-shaped empty state, and one with a grant sees the account and still no strip.
+
+**Code:** `BankRepository` (`BankStaffDashboard.totals` is nullable), `BankStaffOverview`

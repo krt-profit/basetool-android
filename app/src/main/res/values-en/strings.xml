@@ -515,6 +515,7 @@
     <string name="bank_staff_error_forbidden_message">The bank\'s staff view is not open to you.</string>
     <string name="bank_staff_empty_title">No accounts</string>
     <string name="bank_staff_empty_message">This org unit runs no bank account.</string>
+    <string name="bank_staff_empty_message_no_grant">No account is granted to you. Bank Management assigns the grants.</string>
     <!-- Bank staff: the request queue (design chapter 12, artboard 5) -->
     <string name="bank_staff_confirm">Confirm</string>
     <string name="bank_staff_reject">Reject</string>
