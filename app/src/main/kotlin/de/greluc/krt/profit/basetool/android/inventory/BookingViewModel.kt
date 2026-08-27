@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -40,6 +41,9 @@ enum class BookingMode {
     NOTE,
 }
 
+/** What the server calls a material measured in standard cargo units rather than in pieces. */
+private const val SCU_UNIT = "SCU"
+
 /**
  * What the booking form holds.
  *
@@ -62,6 +66,10 @@ enum class BookingMode {
  * @property members what that search returned.
  * @property terminal the terminal a sale happens at.
  * @property terminals the terminals that buy this material.
+ * @property orgUnit the org-unit pool a transfer's moved row lands in.
+ * @property orgUnits the pools the receiving member belongs to.
+ * @property mergeStock whether the server may merge the moved amount into an identical
+ *   entry at the target; only meaningful for an SCU material.
  * @property sellAmount what the sale fetched, as typed.
  * @property note the entry's note, as typed.
  * @property online whether a booking can be sent at all.
@@ -85,6 +93,9 @@ data class BookingState(
     val members: List<MemberOption> = emptyList(),
     val terminal: TerminalOption? = null,
     val terminals: List<TerminalOption> = emptyList(),
+    val orgUnit: OrgUnitOption? = null,
+    val orgUnits: List<OrgUnitOption> = emptyList(),
+    val mergeStock: Boolean = false,
     val sellAmount: String = "",
     val note: String = "",
     val online: Boolean = true,
@@ -123,6 +134,16 @@ data class BookingState(
                 BookOutKind.TRANSFER -> transferMoves
                 BookOutKind.SELL -> terminal != null
             }
+
+    /**
+     * Whether the material is counted in SCU rather than as pieces.
+     *
+     * It decides one thing: whether the stock-merge opt-in is offered. The server merges a `PIECE`
+     * transfer into an identical target stack either way, so a checkbox there would be a control
+     * that changes nothing — which is worse than no checkbox, because the member cannot tell.
+     */
+    val materialIsScu: Boolean
+        get() = (entry?.unit ?: material?.unit)?.equals(SCU_UNIT, ignoreCase = true) == true
 
     /**
      * Whether the transfer would actually move the material.
@@ -281,8 +302,10 @@ class BookingViewModel(
      */
     fun onOutKindChanged(kind: BookOutKind) {
         update { it.copy(outKind = kind, error = null) }
-        if (kind == BookOutKind.SELL) {
-            loadTerminals()
+        when (kind) {
+            BookOutKind.SELL -> loadTerminals()
+            BookOutKind.TRANSFER -> loadOrgUnits()
+            BookOutKind.DISCARD -> Unit
         }
     }
 
@@ -337,8 +360,26 @@ class BookingViewModel(
      *
      * @param member the recipient.
      */
-    fun onMemberChosen(member: MemberOption) =
+    fun onMemberChosen(member: MemberOption) {
         update { it.copy(member = member, members = emptyList(), error = null) }
+        // The pool picker offers the RECEIVING member's memberships, so a new recipient means a
+        // new set of legal choices. Keeping the old ones would offer a unit the write refuses.
+        loadOrgUnits()
+    }
+
+    /**
+     * Picks the org-unit pool the moved stock lands in.
+     *
+     * @param orgUnit the pool.
+     */
+    fun onOrgUnitChosen(orgUnit: OrgUnitOption) = update { it.copy(orgUnit = orgUnit, error = null) }
+
+    /**
+     * Sets whether the server may fold the moved amount into an identical entry at the target.
+     *
+     * @param merge whether to merge.
+     */
+    fun onMergeStockChanged(merge: Boolean) = update { it.copy(mergeStock = merge, error = null) }
 
     /**
      * Picks a terminal.
@@ -402,6 +443,12 @@ class BookingViewModel(
                             targetLocationId = current.place?.id,
                             terminal = current.terminal?.name,
                             sellAmount = current.sellAmount.takeIf { it.isNotBlank() },
+                            targetOwningOrgUnitId =
+                                current.orgUnit?.id.takeIf { current.outKind == BookOutKind.TRANSFER },
+                            mergeStock =
+                                current.mergeStock &&
+                                    current.outKind == BookOutKind.TRANSFER &&
+                                    current.materialIsScu,
                         ),
                 )
             }
@@ -414,6 +461,36 @@ class BookingViewModel(
                 )
             }
         }
+
+    /**
+     * Reads the org units the transfer may hand stock to, and presets the pool.
+     *
+     * Asked for whoever will hold the stock — the picked recipient, or the entry's current holder
+     * when the member picker was left alone, because leaving it alone means „keep the holder".
+     *
+     * The preset matters more than it looks: a submit that never touches this picker has to leave
+     * the stock in the unit it is already in. Without it, every transfer that only changed the
+     * place would silently re-pool the row and drop it out of sight of everyone scoped to the old
+     * unit.
+     */
+    private fun loadOrgUnits() {
+        val current = mutableState.value ?: return
+        val receiver = current.member?.id ?: current.entry?.holderId ?: return
+        viewModelScope.launch {
+            val options = (source.orgUnitsFor(receiver) as? ApiResult.Success)?.value ?: return@launch
+            update { state ->
+                state.copy(
+                    orgUnits = options,
+                    // Keep an explicit choice that is still legal; otherwise fall back to the
+                    // entry's own pool. A membershipless receiver leaves both null, and the
+                    // server stamps the row ownerless — which is the correct outcome, not a gap.
+                    orgUnit =
+                        options.firstOrNull { it.id == state.orgUnit?.id }
+                            ?: options.firstOrNull { it.id == state.entry?.owningOrgUnitId },
+                )
+            }
+        }
+    }
 
     /**
      * Runs a debounced material search.

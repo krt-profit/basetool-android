@@ -97,6 +97,8 @@ class BookingSheetTest {
                             onMemberQuery = {},
                             onMember = {},
                             onTerminal = {},
+                            onOrgUnit = {},
+                            onMergeStock = {},
                             onSellAmount = {},
                             onNote = {},
                             onSave = { saved.add(Unit) },
@@ -118,12 +120,18 @@ class BookingSheetTest {
 
     @Test
     fun `an entry is offered booking out and its note, and no rebooking`() {
-        // Rebooking turns private stock into shared stock, and the Lager reads exclude private
-        // stock — so no entry that could be rebooked ever reaches this sheet, and the segment half
-        // would only ever return a refusal.
+        // „Umbuchen" is a KIND of booking out here, not a mode of its own — exactly as the web's
+        // org-wide Lager has it, where the Umbuchen dialog is the TRANSFER (Nutzer / Ort /
+        // Org-Einheit). So the word belongs in the out-kind segment and must appear there once.
+        //
+        // What is deliberately absent is the OTHER rebooking, private stock ↔ shared: the Lager
+        // reads exclude private stock entirely, so no entry that could be rebooked that way ever
+        // reaches this sheet. It is owner-scoped and lives on „Mein Lager" — which is why finding
+        // „Umbuchen" as a top-level mode here would be the defect, and finding it in the out-kind
+        // segment is the fix.
         show(BookingState(mode = BookingMode.OUT, entry = entry()))
 
-        compose.onAllNodesWithText("Umbuchen", ignoreCase = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Umbuchen", ignoreCase = true).assertCountEquals(1)
         // Three now: the sheet's title, the segment half, and the CTA — which names the move it
         // makes rather than a generic "Buchen" (design ch. 09 artboard 2). On a form with three
         // modes, a button that reads the same in all three is the one control that does not say

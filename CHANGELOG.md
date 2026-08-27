@@ -25,7 +25,15 @@
   Funktion an Bord, die du dir wünschst. Der Wunsch ist keine Zusage — die geplante Funktion setzt
   weiterhin die Einsatzleitung.
 
+- **Umbuchen im Lager kann jetzt alles, was das Webtool kann:** neben Nutzer und Ort lässt sich
+  auch die **Org-Einheit** wählen, in deren Bestand der Eintrag wandert — voreingestellt ist die
+  aktuelle, damit ein reiner Ortswechsel den Bestand nicht unbemerkt in eine andere Einheit schiebt.
+  Bei SCU-Material kommt die Option „Mit vorhandenem Bestand zusammenlegen" dazu.
+
 ### Changed
+
+- **„Übergeben" heißt jetzt „Umbuchen"** — so wie im Webtool und im Designbild. Der Knopf unten
+  nennt außerdem die Buchung, die er auslöst, statt immer „Ausbuchen".
 
 - **Das Datum auf der Übersicht nennt jetzt beide Jahre:** „Mittwoch, 26.08.2026 (2956)" — das
   echte und das Star-Citizen-Jahr.

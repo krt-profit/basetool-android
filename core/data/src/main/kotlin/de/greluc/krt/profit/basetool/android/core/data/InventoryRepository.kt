@@ -24,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.LocationReferen
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialSellingTerminalDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitMembershipOptionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseAggregatedInventoryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseLocationReferenceDto
@@ -106,6 +107,9 @@ data class InventoryStack(
  * @property missionRest what is left after the Einsatz split. Independent of [jobOrderRest]: the
  *   two splits are reconciled against the entry separately, so a unit can be promised to an Auftrag
  *   AND to an Einsatz
+ * @property owningOrgUnitId which org-unit pool the entry sits in, or `null` for an unpooled row.
+ *   A transfer's org-unit picker presets to it, so submitting without touching the picker leaves
+ *   the stock in the unit it is already in
  */
 data class InventoryEntry(
     val id: String,
@@ -125,6 +129,25 @@ data class InventoryEntry(
     val jobOrderRest: String? = null,
     val missionAllocations: List<InventoryAllocation> = emptyList(),
     val missionRest: String? = null,
+    val owningOrgUnitId: String? = null,
+)
+
+/**
+ * An org unit a transfer may hand stock to.
+ *
+ * The picker's options are the **destination** member's memberships, not the caller's: the server
+ * validates the choice against the receiving user, which is what makes a cross-org transfer legal
+ * at all — a member of one Staffel may book into another member's Spezialkommando stock as long as
+ * that member belongs to it.
+ *
+ * @property id what the booking sends
+ * @property name the unit as it is called
+ * @property shorthand its abbreviation, or `null` — shown beside the name where there is room
+ */
+data class OrgUnitOption(
+    val id: String,
+    val name: String,
+    val shorthand: String? = null,
 )
 
 /**
@@ -213,6 +236,12 @@ data class BookInDraft(
  * @property targetLocationId where it goes, for a transfer
  * @property terminal the terminal it is sold at, for a sale
  * @property sellAmount what it fetched, for a sale
+ * @property targetOwningOrgUnitId which org-unit pool the moved row lands in, for a transfer.
+ *   `null` lets the server resolve it, which it can only do unambiguously when the receiving
+ *   member belongs to exactly one unit
+ * @property mergeStock whether the server may fold the moved amount into an identical entry at the
+ *   target. Only meaningful for an `SCU` material — a `PIECE` transfer merges either way, so
+ *   sending it there changes nothing
  */
 data class BookOutDraft(
     val amount: String,
@@ -221,6 +250,8 @@ data class BookOutDraft(
     val targetLocationId: String? = null,
     val terminal: String? = null,
     val sellAmount: String? = null,
+    val targetOwningOrgUnitId: String? = null,
+    val mergeStock: Boolean = false,
 )
 
 /**
@@ -466,6 +497,18 @@ interface InventorySource :
      * @return the matches.
      */
     suspend fun members(query: String): ApiResult<List<MemberOption>>
+
+    /**
+     * Reads the org units a transfer may hand stock to.
+     *
+     * Asked for the **receiving** member, not the caller: the server validates the picked unit
+     * against that member's own memberships, so offering the caller's would offer choices the
+     * write then refuses.
+     *
+     * @param userId the member who would receive the stock.
+     * @return their memberships across all four org-unit kinds.
+     */
+    suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>>
 
     /**
      * Reads the terminals that buy a material.
@@ -757,6 +800,8 @@ class InventoryRepository(
                 targetLocationId = draft.targetLocationId,
                 terminal = draft.terminal,
                 sellAmount = draft.sellAmount?.toBigDecimalOrNull()?.let(::KrtDecimal),
+                targetOwningOrgUnitId = draft.targetOwningOrgUnitId,
+                mergeStock = draft.mergeStock,
             ),
             InventoryItemBookOutDto.serializer(),
         )
@@ -840,6 +885,22 @@ class InventoryRepository(
         }
     }
 
+    override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
+        when (
+            val result =
+                reader.get(
+                    // `allKinds=true` spans Staffel, SK, Bereich and Organisationsleitung. The
+                    // default returns Staffel and SK only, which would hide a Bereich or OL
+                    // member's own pool from a picker the server would have accepted it in.
+                    path = "/api/v1/users/$userId/memberships",
+                    query = listOf(ALL_KINDS_PARAM to "true"),
+                    deserializer = ListSerializer(OrgUnitMembershipOptionDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toOption() })
+        }
+
     override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
         when (
             val result =
@@ -901,6 +962,9 @@ class InventoryRepository(
         private const val USER_ID_PARAM = "userId"
         private const val QUALITY_PARAM = "quality"
         private const val OWNING_ORG_UNIT_PARAM = "owningOrgUnitId"
+
+        /** Widens the membership lookup from Staffel/SK to all four org-unit kinds. */
+        private const val ALL_KINDS_PARAM = "allKinds"
         private const val SEARCH_PARAM = "search"
         private const val QUERY_PARAM = "query"
 
@@ -967,6 +1031,20 @@ private fun InventoryStackDto.toModel(): InventoryStack =
     )
 
 /**
+ * Maps one membership row onto a picker option.
+ *
+ * @return the option, or `null` without an id — a choice a booking cannot send.
+ */
+private fun OrgUnitMembershipOptionDto.toOption(): OrgUnitOption? {
+    val unitId = orgUnitId ?: return null
+    return OrgUnitOption(
+        id = unitId,
+        name = orgUnitName.orEmpty().ifBlank { orgUnitShorthand.orEmpty() },
+        shorthand = orgUnitShorthand?.takeIf { it.isNotBlank() },
+    )
+}
+
+/**
  * Reduces a server-rendered quality to the whole number its query parameter takes.
  *
  * @return the digits before the decimal point, or `null` when the text is not a number at all.
@@ -1002,6 +1080,7 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
         amount = amount?.toPlainString(),
         quality = quality?.toString(),
         personal = personal == true,
+        owningOrgUnitId = owningSquadron?.id,
         note = note?.takeIf { it.isNotBlank() },
         version = version,
         jobOrderAllocations =

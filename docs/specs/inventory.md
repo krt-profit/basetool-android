@@ -331,13 +331,78 @@ open the same way; there is no silent abort.
 
 ---
 
+### REQ-APP-INV-015 — A transfer names all three of its targets, and the pool defaults to the one it is in
+
+„Umbuchen" is a **kind** of booking out, not an operation of its own: the server takes it as
+`POST /inventory/{id}/book-out` with `type: TRANSFER`. It carries **three** targets, and the app
+offers all three, because the web frontend's Umbuchen dialog does:
+
+| Target | Field | Offered as |
+| --- | --- | --- |
+| The recipient | `targetUserId` | the member picker |
+| The place | `targetLocationId` | the place picker |
+| The org-unit pool the moved row lands in | `targetOwningOrgUnitId` | a list of the **receiving** member's memberships |
+
+**The pool picker asks about the receiving member, not the caller.** The server validates the
+choice against the destination user's own memberships
+(`OwnerScopeService.resolveOrgUnitForPickerOutputNullable`), so a picker filled from anyone else
+would offer units the write then refuses. It reads
+`GET /api/v1/users/{id}/memberships?allKinds=true` — **all four** org-unit kinds, Staffel and SK
+and Bereich and Organisationsleitung. The default (`allKinds=false`) returns Staffel and SK only
+and would hide a Bereich or OL member's own pool from a picker the server accepts it in.
+
+**It presets to the pool the entry is already in.** This is the load-bearing half. A member who
+changes only the place must not silently re-pool the row — everyone scoped to the old unit would
+lose sight of stock that never left, with nothing on screen having said so. An explicit choice
+survives a re-read that still offers it; otherwise the preset is restored.
+
+**It is not drawn when there is nothing to choose.** A receiver with one membership has no decision
+to make and the server resolves it; a receiver with none leaves the row unpooled, which is the
+server's own outcome and not something a form can fix.
+
+**`mergeStock` is offered only for an SCU material.** The server merges a `PIECE` transfer into a
+matching target stack unconditionally, so a toggle there would be a control that changes nothing —
+which a member cannot tell from one that does. The app also does not *send* the flag for a `PIECE`
+material, nor for a discard or a sale, both of which terminate the row and create no stamp.
+
+**The call to action names the move, not the mode.** Ausbuchen, Umbuchen and Verkaufen are three
+different events in the ledger reached through one segment, and the button is the last thing a
+member reads before committing one.
+
+**Acceptance**
+
+- [x] The pool options come from the receiving member, and change when the recipient does
+  (`BookingViewModelTest`).
+- [x] The pool presets to the entry's own (`BookingViewModelTest` — verified to fail without it).
+- [x] An explicit pick survives a re-read that still offers it (`BookingViewModelTest`).
+- [x] A receiver with no membership leaves it unset rather than guessing (`BookingViewModelTest`).
+- [x] A transfer sends the pool and the merge opt-in (`BookingViewModelTest`).
+- [x] A `PIECE` material never sends the merge opt-in (`BookingViewModelTest`).
+- [x] A discard sends no pool even when one was picked (`BookingViewModelTest`).
+- [x] „Umbuchen" is an out-kind and not a top-level mode (`BookingSheetTest`).
+- [x] Walked on a device against the test stack: 12 SCU moved to another member's
+  **Spezialkommando** pool, confirmed in the database as `SPECIAL_COMMAND`.
+
+**Code:** `BookingViewModel`, `BookingSheet`, `InventoryRepository.orgUnitsFor`
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No Material and no Ort filter.** Both need pickers (design ch. 02 bottom sheets) and a catalog
   read; they ship with the shared picker work, together with the Einsatz list's date range.
 - **Private stock is not reachable from the app at all.** It needs the `my-inventory` read, which is
-  its own screen in the web app and its own slice here. `POST /inventory/{id}/personal-rebook` is in
-  the contract set and on the vhost allow-list ready for it, and no app code calls it today.
+  its own screen in the web app („Mein Lager", `/inventory/my`) and its own slice here.
+  `POST /inventory/{id}/personal-rebook` is in the contract set and on the vhost allow-list ready
+  for it, and no app code calls it today. The same slice carries the bulk bar's
+  `POST /inventory/bulk-checkout` and the `PERSONALIZE` / `DEPERSONALIZE` modes of
+  `POST /inventory/bulk-rebook` — the app sends only `LOCATION` today.
+- **The „Herkunft" deduct-from plan is not offered** (REQ-INV-027 in the main repo). A book-out may
+  name how much of the deducted amount comes from each job-order and each mission earmark, with the
+  remainder taken from that dimension's rest; on a sale the mission reductions additionally split
+  the proceeds. The app sends no plan, which the server reads as „take it from the rest first" — the
+  documented default, and correct as far as it goes, but it is a choice a member cannot make here.
+  A phone form for it is an open question in the design spec (round 5, part A3).
 - **The quality of an existing entry cannot be corrected.** The correction endpoint is not in the
   contract set, and booking in is the only place a quality is set.
 - **The quality mini-gauge is a chip, not a gauge.** The 44 dp 0–1000 gauge of the design is a

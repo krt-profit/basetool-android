@@ -20,6 +20,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -145,6 +146,9 @@ class InventoryViewModelTest {
 
         override suspend fun members(query: String): ApiResult<List<MemberOption>> =
             ApiResult.Success(memberAnswer)
+
+        override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
+            ApiResult.Success(emptyList())
 
         override suspend fun terminals(materialId: String): ApiResult<List<TerminalOption>> =
             ApiResult.Success(terminalAnswer)
