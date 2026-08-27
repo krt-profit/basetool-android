@@ -153,6 +153,26 @@ state on artboard 5's own-request row is **not** a case of "you may not approve 
 request that carries no approval to give. If the row is ever redrawn, „Freigabe nicht nötig" would
 be truer than a lock.
 
+## 2c — The staff bank has no direct booking form, and we think that is deliberate
+
+The owner's parity brief asks for „alle funktionen die die bank und ihre unterseiten im web
+frontend haben". The web's staff bank has three direct booking forms — `POST /bank/deposits`,
+`/withdrawals`, `/transfers`, plus `GET /transfer-fee-rate` — for a booking that had no request
+behind it. **No artboard in chapter 12 draws any of them.**
+
+We read the omission as intentional rather than as a gap, on the strength of artboard 4's own
+handoff, which is precise about what the staff account detail adds over the member one: „das
+Staff-Konto-Detail selbst = Mitglieder-Detail (Artboard 2) + Storno + Berichte". Booking is not on
+that list, and the confirming of a request *is* the booking — the direct forms only cover the case
+where nobody filed one.
+
+So the app does not carry them, and this is recorded as a **known delta to the web frontend** in
+`REQ-APP-BANK-007` rather than filled in by guesswork.
+
+**Please confirm, or draw them.** If they belong in the app, they need an artboard: a deposit and a
+withdrawal name a counterparty, a transfer names a target account and shows the fee rate, and none
+of that has a drawn form to follow.
+
 ## 3 — Two smaller questions, no strong opinion
 
 **3.1 — Does the amount field group while you type?** Artboard 3 shows `120.000` in the input. We
