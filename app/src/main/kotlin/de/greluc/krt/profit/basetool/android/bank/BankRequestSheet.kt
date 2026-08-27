@@ -218,7 +218,7 @@ private fun KindField(
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
         KrtFieldLabel(stringResource(R.string.bank_request_field_kind))
         KrtSegmentedControl(
-            options = kinds.map { stringResource(it.labelRes()).uppercase() },
+            options = kinds.map { stringResource(it.labelRes()) },
             selectedIndex = kinds.indexOf(kind),
             onSelect = { onKind(kinds[it]) },
             modifier = Modifier.fillMaxWidth(),

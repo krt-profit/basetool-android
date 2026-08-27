@@ -280,6 +280,25 @@ the one part of this artboard still owed.
 *is* zero) and came back `409 DUPLICATE_ENTITY`; and the refusal was silent, so the checkbox snapped
 back with nothing said.
 
+**And two the artboard comparison turned up, both app-wide and both in the design system rather than
+in the bank:**
+
+- **The open tab had no underline.** `KrtPageTabs` draws one — `.tab-nav .tab.active` is 3 px of
+  accent — but the tab row scrolls horizontally, so it hands its children an *unbounded* width
+  constraint, and `fillMaxWidth()` collapses to zero under an infinite maximum. The marker was in
+  the composition, answered every semantics query, and was zero pixels wide on screen. Measuring the
+  tab at `IntrinsicSize.Max` gives it something finite to fill.
+- **Segment labels were not uppercase.** Every artboard renders them through
+  `text-transform: uppercase` and the copy rules ask for uppercase labels, but the string resources
+  are sentence case and only one call site (the request sheet) uppercased them by hand — so the
+  bank's scope switch read „Mitglied / Verwaltung" beside a sheet that shouted. The transform now
+  lives in `KrtSegmentedControl`, and the hand-rolled call site is gone.
+
+Neither was visible in a semantics-based test, which is why both survived four tabs' worth of
+screen tests. The regressions are pinned by measurement instead: `KrtPageTabsUnderlineTest` asserts
+the underline is at least as wide as the tab's own padding (it measured **0.0 dp** against the old
+code), and `KrtSegmentedControlCaseTest` asserts a sentence-case label is drawn uppercase.
+
 **Layout:** three capability columns plus a handle do not fit a phone's width the way two short ones
 did, so the table becomes a per-member card. The account chip row stays as drawn, made horizontally
 scrollable — a unit with many accounts would otherwise lose its last one off the edge.

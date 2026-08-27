@@ -132,6 +132,11 @@
 
 ### Fixed
 
+- **Der offene Tab ist wieder als solcher zu erkennen.** Die orange Unterstreichung unter dem
+  aktiven Tab wurde in der ganzen App nicht gezeichnet. Ebenfalls überall: die Umschalter
+  („Mitglied / Verwaltung", „Meine Schiffe / Org-Einheit" …) stehen jetzt wie im Design in
+  Großbuchstaben.
+
 - **Bei großer Schrift (1,3×) wurden Beschriftungen abgeschnitten** — „CHECK-IN NÄCHSTER EI…" — und
   Filter brachen mitten im Wort („ABGEB ROCHE N"). Beides wächst jetzt sauber um.
 - **Zeitangaben waren in Einsätzen, Aufträgen und der Materialbörse noch in der alten Langform**

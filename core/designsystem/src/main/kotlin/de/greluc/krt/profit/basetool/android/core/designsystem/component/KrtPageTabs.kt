@@ -13,11 +13,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -81,7 +84,16 @@ private fun PageTab(
     onClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.clickable(onClick = onClick).heightIn(min = KrtSpacing.touchTarget),
+        modifier =
+            Modifier
+                .clickable(onClick = onClick)
+                .heightIn(min = KrtSpacing.touchTarget)
+                // The tab row scrolls horizontally, so it hands its children an unbounded width.
+                // `fillMaxWidth()` on the underline collapses to zero under an infinite constraint,
+                // which drew the marker at 0 px wide — present in the tree, invisible on screen.
+                // Measuring the column at its own intrinsic width gives the underline something
+                // finite to fill.
+                .width(IntrinsicSize.Max),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom,
     ) {
@@ -108,10 +120,14 @@ private fun PageTab(
                 Modifier
                     .fillMaxWidth()
                     .height(TAB_UNDERLINE)
+                    .testTag(if (selected) TAB_UNDERLINE_TAG else "")
                     .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
         )
     }
 }
+
+/** The open tab's underline, for the test that measures it is not zero pixels wide. */
+const val TAB_UNDERLINE_TAG: String = "krt-page-tab-underline"
 
 /** Horizontal padding of a tab label — `.tab-nav .tab` is 14 px. */
 private val TAB_PADDING_H = 14.dp
