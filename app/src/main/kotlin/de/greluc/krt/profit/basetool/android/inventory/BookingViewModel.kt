@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.inventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.data.AllocationReduction
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
@@ -66,6 +67,9 @@ private const val SCU_UNIT = "SCU"
  * @property members what that search returned.
  * @property terminal the terminal a sale happens at.
  * @property terminals the terminals that buy this material.
+ * @property jobOrderPlan what the member typed into each Auftrag earmark, keyed by target id.
+ * @property missionPlan the same for the Einsatz earmarks — a separate map, because the two
+ *   taggings are independent and a shared one would make the arithmetic wrong in both.
  * @property orgUnit the org-unit pool a transfer's moved row lands in.
  * @property orgUnits the pools the receiving member belongs to.
  * @property mergeStock whether the server may merge the moved amount into an identical
@@ -93,6 +97,8 @@ data class BookingState(
     val members: List<MemberOption> = emptyList(),
     val terminal: TerminalOption? = null,
     val terminals: List<TerminalOption> = emptyList(),
+    val jobOrderPlan: Map<String, String> = emptyMap(),
+    val missionPlan: Map<String, String> = emptyMap(),
     val orgUnit: OrgUnitOption? = null,
     val orgUnits: List<OrgUnitOption> = emptyList(),
     val mergeStock: Boolean = false,
@@ -119,7 +125,7 @@ data class BookingState(
 
                 BookingMode.IN -> positiveAmount && material != null && place != null
 
-                BookingMode.OUT -> positiveAmount && entry != null && outKindSatisfied
+                BookingMode.OUT -> positiveAmount && entry != null && outKindSatisfied && herkunftValid
             }
 
     /** Whether the amount is a quantity and not zero. */
@@ -134,6 +140,41 @@ data class BookingState(
                 BookOutKind.TRANSFER -> transferMoves
                 BookOutKind.SELL -> terminal != null
             }
+
+    /** How much is leaving the entry, as a number the plan can be measured against. */
+    val deducted: Double
+        get() = amount.toDoubleOrNull() ?: 0.0
+
+    /** The Auftrag half of the deduct-from plan. */
+    val jobOrderDimension: HerkunftDimension
+        get() =
+            herkunftDimension(
+                tags = entry?.jobOrderAllocations.orEmpty(),
+                rest = entry?.jobOrderRest,
+                deducted = deducted,
+                typed = jobOrderPlan,
+            )
+
+    /** The Einsatz half. */
+    val missionDimension: HerkunftDimension
+        get() =
+            herkunftDimension(
+                tags = entry?.missionAllocations.orEmpty(),
+                rest = entry?.missionRest,
+                deducted = deducted,
+                typed = missionPlan,
+            )
+
+    /**
+     * Whether the plan is one the server would accept.
+     *
+     * Only asked of a book-out that moves stock. A note changes no quantity, and booking in has no
+     * earmarks to source from.
+     */
+    val herkunftValid: Boolean
+        get() =
+            mode != BookingMode.OUT ||
+                (jobOrderDimension.valid && missionDimension.valid)
 
     /**
      * Whether the material is counted in SCU rather than as pieces.
@@ -375,6 +416,28 @@ class BookingViewModel(
     fun onOrgUnitChosen(orgUnit: OrgUnitOption) = update { it.copy(orgUnit = orgUnit, error = null) }
 
     /**
+     * Records how much of the deduction comes from one Auftrag earmark.
+     *
+     * @param targetId the Auftrag.
+     * @param amount what the member typed.
+     */
+    fun onJobOrderShare(
+        targetId: String,
+        amount: String,
+    ) = update { it.copy(jobOrderPlan = it.jobOrderPlan + (targetId to amount), error = null) }
+
+    /**
+     * Records how much comes from one Einsatz earmark.
+     *
+     * @param targetId the Einsatz.
+     * @param amount what the member typed.
+     */
+    fun onMissionShare(
+        targetId: String,
+        amount: String,
+    ) = update { it.copy(missionPlan = it.missionPlan + (targetId to amount), error = null) }
+
+    /**
      * Sets whether the server may fold the moved amount into an identical entry at the target.
      *
      * @param merge whether to merge.
@@ -449,6 +512,14 @@ class BookingViewModel(
                                 current.mergeStock &&
                                     current.outKind == BookOutKind.TRANSFER &&
                                     current.materialIsScu,
+                            jobOrderReductions =
+                                current.jobOrderDimension
+                                    .reductions(current.deducted, current.jobOrderPlan)
+                                    .map { (id, share) -> AllocationReduction(id, share) },
+                            missionReductions =
+                                current.missionDimension
+                                    .reductions(current.deducted, current.missionPlan)
+                                    .map { (id, share) -> AllocationReduction(id, share) },
                         ),
                 )
             }
