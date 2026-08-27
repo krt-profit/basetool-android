@@ -1030,6 +1030,14 @@
     <string name="refinery_ore_sales">Ore sales</string>
     <string name="refinery_profit">Profit/loss</string>
     <string name="refinery_store">Book into Lager</string>
+    <string name="refinery_store_computed">calculated %1$s SCU</string>
+    <string name="refinery_store_amount">Amount (SCU)</string>
+    <string name="refinery_store_all">Store all items</string>
+    <string name="refinery_store_personal">Store as a personal entry</string>
+    <string name="refinery_store_personal_note">Personal excludes a job order, and a personal line gets none of the order\'s mission earmark.</string>
+    <string name="refinery_store_note">Note</string>
+    <string name="refinery_store_line_done">Stored</string>
+    <string name="refinery_store_failed">This item could not be stored.</string>
     <string name="refinery_store_confirm">Book</string>
     <plurals name="refinery_store_question">
         <item quantity="one">Creates %1$d Lager entry at %2$s and marks the order stored.</item>

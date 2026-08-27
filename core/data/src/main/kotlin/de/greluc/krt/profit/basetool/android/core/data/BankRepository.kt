@@ -1149,7 +1149,7 @@ class BankRepository(
                 OrgUnitBalanceTargetRequest(
                     // No target IS the clear. Sending zero would set a target of nothing, which is
                     // a different instruction and one the screen never offers.
-                    target = target?.toBigDecimalOrNull()?.let(::KrtDecimal),
+                    target = parseTypedDecimal(target)?.let(::KrtDecimal),
                     version = version ?: 0L,
                 ),
                 OrgUnitBalanceTargetRequest.serializer(),
@@ -1254,7 +1254,7 @@ class BankRepository(
                     CreateBankBookingRequest(
                         sourceAccountId = draft.accountId,
                         type = draft.kind.toWire(),
-                        amount = KrtDecimal(draft.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                        amount = KrtDecimal(parseTypedDecimal(draft.amount) ?: BigDecimal.ZERO),
                         // Only a transfer names a second account; the server ignores it otherwise,
                         // and sending it anyway would put a value on the wire describing nothing.
                         targetAccountId = draft.targetAccountId.takeIf { draft.kind == BankRequestKind.TRANSFER },
@@ -1278,7 +1278,7 @@ class BankRepository(
                 method = "PUT",
                 body =
                     UpdateBankBookingRequest(
-                        amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                        amount = KrtDecimal(parseTypedDecimal(amount) ?: BigDecimal.ZERO),
                         note = note?.takeIf { it.isNotBlank() },
                         targetAccountId = targetAccountId,
                         version = version,

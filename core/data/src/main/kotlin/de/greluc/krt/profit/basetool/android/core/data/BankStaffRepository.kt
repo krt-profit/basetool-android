@@ -440,7 +440,7 @@ class BankStaffRepository(
                         BankHolderTransferRequest(
                             sourceHolderId = sourceHolderId,
                             destinationHolderId = destinationHolderId,
-                            amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                            amount = KrtDecimal(parseTypedDecimal(amount) ?: BigDecimal.ZERO),
                             note = note?.takeIf { it.isNotBlank() },
                         ),
                     bodySerializer = BankHolderTransferRequest.serializer(),

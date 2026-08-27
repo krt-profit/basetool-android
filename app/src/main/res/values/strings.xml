@@ -1051,6 +1051,14 @@
     <string name="refinery_ore_sales">Ore Sales</string>
     <string name="refinery_profit">Gewinn/Verlust</string>
     <string name="refinery_store">In Lager buchen</string>
+    <string name="refinery_store_computed">berechnet %1$s SCU</string>
+    <string name="refinery_store_amount">Menge (SCU)</string>
+    <string name="refinery_store_all">Alle Positionen einlagern</string>
+    <string name="refinery_store_personal">Als persönlichen Eintrag einlagern</string>
+    <string name="refinery_store_personal_note">Persönlich schließt einen Auftrag aus, und eine persönliche Zeile erhält kein Einsatz-Earmark der Order.</string>
+    <string name="refinery_store_note">Notiz</string>
+    <string name="refinery_store_line_done">Eingelagert</string>
+    <string name="refinery_store_failed">Diese Position konnte nicht eingelagert werden.</string>
     <string name="refinery_store_confirm">Buchen</string>
     <plurals name="refinery_store_question">
         <item quantity="one">Legt %1$d Lager-Eintrag bei %2$s an und markiert die Order als eingelagert.</item>

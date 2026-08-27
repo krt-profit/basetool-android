@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Raffinerieaufträge lassen sich jetzt mit allen Angaben einlagern.** Pro Material kannst du die
+  Menge korrigieren — die berechnete steht daneben —, eine Notiz setzen und die Position als
+  persönlichen Eintrag buchen. Gebucht wird der ganze Auftrag in einem Zug.
+
+- **Zahlenfelder akzeptieren jetzt das Komma.** Auf einer deutschen Tastatur liefert die
+  Dezimaltaste ein Komma; die App hat das bisher nicht gelesen — im Lager und in der Bank wurde
+  daraus stillschweigend eine 0, in der Raffinerie passierte gar nichts.
+
 - **Bankmitarbeiter können eine Buchung stornieren.** Im Kontodetail hat jede Buchung eine
   Storno-Aktion; sie erzeugt eine negierte Gegenbuchung, die Originalbuchung bleibt unverändert im
   Ledger. Eine bereits stornierte Buchung ist als solche markiert und bietet die Aktion nicht mehr

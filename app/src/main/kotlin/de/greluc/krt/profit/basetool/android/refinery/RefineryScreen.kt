@@ -819,9 +819,22 @@ fun RefineryOrderDetailRoute(
         state = state,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
-        onStoreRequested = viewModel::onStoreRequested,
+        onStoreRequested = viewModel::onStoreFormRequested,
         onStoreConfirmed = viewModel::onStoreConfirmed,
         onStoreDismissed = viewModel::onStoreDismissed,
         modifier = modifier,
     )
+    if (state.lines.isNotEmpty()) {
+        RefineryStoreSheet(
+            lines = state.lines,
+            busy = state.busy != null,
+            error = state.error,
+            actions =
+                RefineryStoreActions(
+                    onLineChanged = viewModel::onLineChanged,
+                    onStoreAll = viewModel::onStoreAll,
+                    onDismiss = viewModel::onStoreFormDismissed,
+                ),
+        )
+    }
 }

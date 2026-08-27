@@ -212,6 +212,102 @@ interface RefinerySource {
 }
 
 /**
+ * Maps one line onto the item the server books.
+ *
+ * @return the item, or `null` when the line names no location or carries no readable amount.
+ */
+private fun RefineryStoreLine.toItem(): RefineryOrderStoreItemDto? {
+    val where = locationId
+    val figure = parseTypedAmount(amount)?.takeIf { it > 0 }
+    if (where == null || figure == null) {
+        return null
+    }
+    return RefineryOrderStoreItemDto(
+        materialId = materialId,
+        locationId = where,
+        quality = quality,
+        // SCU, not wire units: the endpoint reads this as the member's own figure and writes it
+        // into the Lager as-is.
+        amount = figure,
+        userId = userId,
+        // The server refuses the pair; the form must not send it either, or the 400 arrives as a
+        // mystery rather than as the rule it is.
+        jobOrderId = jobOrderId?.takeIf { !personal },
+        note = note.trim().takeIf { it.isNotEmpty() },
+        owningOrgUnitId = owningOrgUnitId,
+        personal = personal,
+    )
+}
+
+/**
+ * One material of a finished run, on its way into the Lager.
+ *
+ * @property materialId which material — fixed by the run, never chosen here.
+ * @property materialName what to show.
+ * @property computed what the run calculated, in SCU.
+ * @property amount what is actually being booked, in SCU. Pre-filled with [computed] and meant to be
+ *   overridden: that is the whole reason this form exists.
+ * @property quality the grade, 0–1000.
+ * @property locationId where it goes. Mandatory; pre-filled with the order's refinery.
+ * @property personal whether it becomes the member's own entry rather than the unit's.
+ * @property jobOrderId the Auftrag to earmark it against, or `null`. **Excludes [personal]** — the
+ *   server answers 400 for the pair, and a personal line never inherits the order's mission earmark
+ *   either.
+ * @property note free text, at most 1000 characters.
+ * @property userId who receives it, or `null` for the caller.
+ * @property owningOrgUnitId which unit to book into. The server requires it when the receiver holds
+ *   more than one membership; pre-filled with the order's unit.
+ */
+data class RefineryStoreLine(
+    val materialId: String,
+    val materialName: String,
+    val computed: Double,
+    val amount: String,
+    val quality: Int,
+    val locationId: String?,
+    val personal: Boolean = false,
+    val jobOrderId: String? = null,
+    val note: String = "",
+    val userId: String? = null,
+    val owningOrgUnitId: String? = null,
+) {
+    /**
+     * What identifies this line among the run's others.
+     *
+     * **Not the material alone.** A run can yield the same material at two grades — Agricium at 733
+     * and at 874 — and keying on the material makes them one line, which Compose rejects outright as
+     * a duplicate list key and which would otherwise edit and acknowledge both at once.
+     */
+    val key: String get() = "$materialId@$quality"
+}
+
+/** How long a store note may be, as the server counts it. */
+const val REFINERY_NOTE_LIMIT: Int = 1000
+
+/**
+ * Booking a finished run's materials into the Lager.
+ *
+ * **One call for the whole run, not one per material.** The server books whatever the call carries
+ * and then marks the order completed; every later call is refused with „Refinery order is already
+ * completed and stored." A per-card submit therefore loses every material after the first — which
+ * is what a device showed before this was one call.
+ */
+interface RefineryStoreSource {
+    /**
+     * Books every material of a run.
+     *
+     * @param orderId the run.
+     * @param lines what to book. A line whose amount is not a figure is refused rather than sent,
+     *   because the call closes the order and there is no second chance at it.
+     * @return nothing usable beyond success, or the classified failure.
+     */
+    suspend fun storeLines(
+        orderId: String,
+        lines: List<RefineryStoreLine>,
+    ): ApiResult<Unit>
+}
+
+/**
  * The member's own Raffinerie orders (REQ-APP-REF-001…006).
  *
  * **Only `my-orders`.** The controller also serves `/all`, `/users/{id}` and `/mission/{id}`, which
@@ -227,7 +323,8 @@ interface RefinerySource {
  */
 class RefineryRepository(
     private val reader: ApiReader,
-) : RefinerySource {
+) : RefinerySource,
+    RefineryStoreSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -277,6 +374,23 @@ class RefineryRepository(
         }
 
     /** {@inheritDoc} */
+    override suspend fun storeLines(
+        orderId: String,
+        lines: List<RefineryStoreLine>,
+    ): ApiResult<Unit> {
+        val items = lines.mapNotNull { it.toItem() }
+        // All or nothing: the call closes the order, so a line the app could not read must stop the
+        // whole submit rather than quietly leave one material behind.
+        if (items.isEmpty() || items.size != lines.size) {
+            return ApiResult.Failure(ApiError.Validation())
+        }
+        return reader.postAccepted(
+            storePath(orderId),
+            RefineryOrderStoreDto(items = items),
+            RefineryOrderStoreDto.serializer(),
+        )
+    }
+
     override suspend fun store(order: RefineryOrder): ApiResult<Unit> {
         val locationId = order.locationId
         val items =

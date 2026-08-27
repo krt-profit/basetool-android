@@ -381,6 +381,7 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
+                                            container.refinery,
                                         )
                                     },
                                     personalInventory = personalInventoryViewModel,

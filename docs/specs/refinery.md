@@ -189,3 +189,71 @@ data, white, never orange.
 - [x] Both figures use the shared `formatAmount`, so the app and the web read the same number.
 
 **Code:** `RefineryScreen`
+
+---
+
+### REQ-APP-REF-007 — Einlagern is a form, and it is one call
+
+„Einlagern" — design chapter 11, artboard 3. The app booked a finished run with a single
+confirmation that could only send what the run had calculated; the web has a form.
+
+**The amount is the reason the screen exists** (handoff, verbatim: „amount (Pflicht, überschreibt
+die Berechnung — der Grund, warum der Screen existiert)"). Every line opens at the computed figure
+with that figure still shown beside it, and is meant to be corrected: what a refinery calculated and
+what came out of it are not always the same number.
+
+Each line also carries what the item has always allowed and the app never sent: a personal entry, a
+job order, a note (≤ 1000), a receiving member, and the org unit to book into. **`personal` and
+`jobOrderId` exclude each other** — the server answers 400 — so ticking personal clears the order
+rather than letting the pair be assembled, and a personal line never inherits the order's mission
+earmark.
+
+**One call for the run, not one per card.** The handoff has each card book and acknowledge on its
+own. `RefineryOrderService.storeOrder` books whatever the call carries and then sets the order
+`COMPLETED`, refusing every later call with „Refinery order is already completed and stored." Built
+per card, the second material is lost — which is what happened on a device: line one booked, order
+closed, line two refused with 400. The editing stays per line; only the submit is shared, and a line
+the app cannot read stops the whole submit rather than quietly leaving one material behind.
+
+**A line is identified by material *and* grade.** A run yields the same material at several
+qualities — Agricium at 733 and at 874 — and keying on the material alone is a duplicate list key,
+which Compose treats as fatal. It crashed the app the first time a real order was opened.
+
+**Acceptance**
+
+- [x] The same material at two grades is two lines, and a line's identity survives an edit
+  (`RefineryStoreTest`).
+- [x] A personal line carries no job order (`RefineryStoreTest`).
+- [x] A German decimal is read as one (`AmountsTest`).
+- [x] Verified on a device against the local test stack: a corrected amount of „1,9" against a
+  computed 1,8 books **1.9** into the Lager, and a run with two Agricium lines books both in a
+  single `POST …/store -> 200`.
+
+**Code:** `RefineryRepository` (`RefineryStoreSource`), `RefineryDetailViewModel`,
+`RefineryStoreSheet`
+
+---
+
+### REQ-APP-REF-008 — What a member typed is not what `toDoubleOrNull` expects
+
+The app is German-first. On a German locale the decimal key of the keyboard is a comma, and every
+numeric field in this app parsed with `toDoubleOrNull()` / `toBigDecimalOrNull()`, which reject it.
+
+Two shapes of harm, both found on a device:
+
+- the refinery's Einlagern sent **no request at all** — the parse failed and the write was refused
+  before it left, with a generic message;
+- the Lager's booking draft and every bank amount fall through to `0.0` / `BigDecimal.ZERO`, which
+  does not refuse anything: it books zero and reports success.
+
+`parseTypedAmount` / `parseTypedDecimal` accept both separators and treat blank as `null` rather
+than zero — "nothing typed" and "zero" are different answers and only the caller knows which is
+acceptable. Every member-typed figure goes through them.
+
+**Acceptance**
+
+- [x] „1,9" and „1.9" both read as 1.9, blank reads as `null`, and text that is not a figure stays
+  refused (`AmountsTest`).
+
+**Code:** `core/data/Amounts.kt`, `RefineryRepository`, `InventoryRepository`, `BankRepository`,
+`BankStaffRepository`
