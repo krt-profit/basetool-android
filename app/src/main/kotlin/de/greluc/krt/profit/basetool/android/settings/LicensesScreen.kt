@@ -291,9 +291,12 @@ private fun LicensesList(
                             BuildConfig.VERSION_NAME,
                             BuildConfig.VERSION_CODE,
                             BuildConfig.FLAVOR.replaceFirstChar { it.uppercase() },
-                        ),
+                        ).krtUppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    // Muted and uppercase, as artboard 1 draws it — not orange. This line states
+                    // what the register covers; the screen's orange belongs to the „LIZENZTEXT"
+                    // links, which are the only things on it a member can act on.
+                    color = KrtPalette.TextMuted,
                 )
             }
         }
@@ -409,7 +412,9 @@ private fun LicenseHeader(
                         .padding(vertical = KrtSpacing.xs),
             ) {
                 Text(
-                    text = license.displayName,
+                    // Uppercase, as artboard 1 draws it and as the design system words every
+                    // heading of this weight.
+                    text = license.displayName.krtUppercase(),
                     style = MaterialTheme.typography.titleSmall,
                     color = KrtPalette.White,
                 )
