@@ -642,6 +642,7 @@ fun BankAccountsRoute(
     viewModel: BankViewModel,
     requestsViewModel: BankRequestsViewModel,
     staffViewModel: BankStaffViewModel,
+    lifecycleViewModel: BankLifecycleViewModel,
     onOpenAccount: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -686,6 +687,7 @@ fun BankAccountsRoute(
         if (scope == STAFF_SCOPE) {
             BankStaffScope(
                 viewModel = staffViewModel,
+                lifecycleViewModel = lifecycleViewModel,
                 onOpenAccount = onOpenAccount,
                 modifier = Modifier.weight(1f),
             )
@@ -799,11 +801,19 @@ fun BankAccountsRoute(
 @Composable
 private fun BankStaffScope(
     viewModel: BankStaffViewModel,
+    lifecycleViewModel: BankLifecycleViewModel,
     onOpenAccount: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val lifecycle by lifecycleViewModel.state.collectAsStateWithLifecycle()
     var staffTab by rememberSaveable { mutableIntStateOf(0) }
+    var managementToast by remember { mutableStateOf(false) }
+    LaunchedEffect(staffTab) {
+        if (staffTab == LIFECYCLE_TAB) {
+            lifecycleViewModel.loadOnce()
+        }
+    }
     Column(modifier = modifier.fillMaxSize()) {
         KrtPageTabs(
             tabs =
@@ -813,6 +823,7 @@ private fun BankStaffScope(
                         label = stringResource(R.string.bank_staff_tab_requests),
                         count = state.openRequestTotal.takeIf { it > 0 },
                     ),
+                    KrtPageTab(label = stringResource(R.string.bank_staff_tab_lifecycle)),
                 ),
             selectedIndex = staffTab,
             onSelect = { staffTab = it },
@@ -821,29 +832,78 @@ private fun BankStaffScope(
         Box(modifier = Modifier.weight(1f)) {
             StaffScopeContent(
                 state = state,
+                lifecycle = lifecycle,
                 viewModel = viewModel,
+                lifecycleViewModel = lifecycleViewModel,
                 tab = staffTab,
                 onOpenAccount = onOpenAccount,
+                onLocked = { managementToast = true },
             )
+        }
+        if (staffTab == LIFECYCLE_TAB) {
+            KrtBottomCtaBar(
+                modifier =
+                    if (isWideWindow()) {
+                        Modifier.padding(bottom = LocalKrtBottomBarInset.current)
+                    } else {
+                        Modifier
+                    },
+            ) {
+                KrtCtaButton(
+                    text = stringResource(R.string.bank_lifecycle_create),
+                    onClick = {
+                        if (state.management) {
+                            lifecycleViewModel.onPrompt(BankLifecyclePrompt.Create(""))
+                        } else {
+                            managementToast = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    iconRes =
+                        if (state.management) {
+                            DesignR.drawable.ic_krt_plus
+                        } else {
+                            DesignR.drawable.ic_krt_lock
+                        },
+                )
+            }
         }
     }
     StaffScopeDialogs(state = state, viewModel = viewModel)
+    BankLifecycleDialogs(state = lifecycle, viewModel = lifecycleViewModel)
+    if (managementToast) {
+        KrtToast(
+            title = stringResource(R.string.bank_staff_tab_lifecycle),
+            message = stringResource(R.string.bank_staff_grants_locked),
+            actionLabel = stringResource(R.string.action_ok),
+            onAction = { managementToast = false },
+        )
+    }
 }
+
+/** Which of the Verwaltung tabs the lifecycle sits on. */
+private const val LIFECYCLE_TAB = 2
 
 /**
  * What the selected staff tab shows, once the read has resolved.
  *
  * @param state what the scope holds.
- * @param viewModel drives it.
+ * @param lifecycle what the Konten tab holds.
+ * @param viewModel drives the dashboard and the queue.
+ * @param lifecycleViewModel drives the Konten tab.
  * @param tab which tab is selected.
  * @param onOpenAccount a row was tapped.
+ * @param onLocked a locked lifecycle action was tapped.
  */
 @Composable
 private fun StaffScopeContent(
     state: BankStaffState,
+    lifecycle: BankLifecycleState,
     viewModel: BankStaffViewModel,
+    lifecycleViewModel: BankLifecycleViewModel,
     tab: Int,
     onOpenAccount: (String) -> Unit,
+    onLocked: () -> Unit,
 ) {
     val modifier = Modifier.fillMaxSize()
     when (val phase = state.phase) {
@@ -883,7 +943,21 @@ private fun StaffScopeContent(
         }
 
         is BankPhase.Ready -> {
-            if (tab == 0) {
+            if (tab == LIFECYCLE_TAB) {
+                BankLifecycleTab(
+                    state = lifecycle,
+                    management = state.management,
+                    onRefresh = lifecycleViewModel::onRefresh,
+                    actions =
+                        BankLifecycleActions(
+                            onExpand = lifecycleViewModel::onExpand,
+                            onPrompt = lifecycleViewModel::onPrompt,
+                            onOpenHolder = { },
+                            onLocked = onLocked,
+                        ),
+                    modifier = modifier,
+                )
+            } else if (tab == 0) {
                 BankStaffOverview(
                     state = state,
                     onRefresh = viewModel::onRefresh,
@@ -968,6 +1042,166 @@ private fun StaffScopeDialogs(
 
 /** Which segment the staff scope sits on. */
 private const val STAFF_SCOPE = 1
+
+/**
+ * The Konten tab's confirmations.
+ *
+ * None of them is destructive — closing is reversible and a deactivated holder keeps their
+ * holdings withdrawable — so none carries a type-to-confirm hurdle. Every wording is the web
+ * frontend's own, so the same act reads the same on both surfaces.
+ *
+ * @param state what the tab holds.
+ * @param viewModel drives it.
+ */
+@Composable
+private fun BankLifecycleDialogs(
+    state: BankLifecycleState,
+    viewModel: BankLifecycleViewModel,
+) {
+    val prompt = state.prompt ?: return
+    val naming = prompt is BankLifecyclePrompt.Rename || prompt is BankLifecyclePrompt.Create
+    KrtModal(
+        title = stringResource(prompt.titleRes()),
+        confirmText = stringResource(prompt.confirmRes()),
+        onConfirm = viewModel::onConfirmPrompt,
+        onDismiss = viewModel::onDismissPrompt,
+        tone = if (prompt is BankLifecyclePrompt.Close) KrtModalTone.Danger else KrtModalTone.Standard,
+    ) {
+        prompt.bodyRes()?.let { body ->
+            Text(
+                text = stringResource(body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+        }
+        if (naming) {
+            KrtTextField(
+                value = prompt.name(),
+                onValueChange = viewModel::onNameChanged,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.bank_lifecycle_name),
+                isError = state.error != null,
+                errorText = state.error?.let { bankRequestErrorMessage(it) },
+            )
+        } else {
+            state.error?.let { error ->
+                Text(
+                    text = bankRequestErrorMessage(error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The heading each confirmation carries.
+ *
+ * @return the string resource.
+ */
+private fun BankLifecyclePrompt.titleRes(): Int =
+    when (this) {
+        is BankLifecyclePrompt.Close -> {
+            R.string.bank_lifecycle_close_title
+        }
+
+        is BankLifecyclePrompt.Reopen -> {
+            R.string.bank_lifecycle_reopen_title
+        }
+
+        is BankLifecyclePrompt.Rename -> {
+            R.string.bank_lifecycle_rename_title
+        }
+
+        is BankLifecyclePrompt.Create -> {
+            R.string.bank_lifecycle_create_title
+        }
+
+        is BankLifecyclePrompt.HolderActivation -> {
+            if (active) {
+                R.string.bank_lifecycle_holder_reactivate_title
+            } else {
+                R.string.bank_lifecycle_holder_deactivate_title
+            }
+        }
+    }
+
+/**
+ * What the confirming button says.
+ *
+ * @return the string resource.
+ */
+private fun BankLifecyclePrompt.confirmRes(): Int =
+    when (this) {
+        is BankLifecyclePrompt.Close -> {
+            R.string.bank_lifecycle_close
+        }
+
+        is BankLifecyclePrompt.Reopen -> {
+            R.string.bank_lifecycle_reopen
+        }
+
+        is BankLifecyclePrompt.Rename -> {
+            R.string.bank_lifecycle_rename
+        }
+
+        is BankLifecyclePrompt.Create -> {
+            R.string.bank_lifecycle_create
+        }
+
+        is BankLifecyclePrompt.HolderActivation -> {
+            if (active) {
+                R.string.bank_lifecycle_holder_reactivate
+            } else {
+                R.string.bank_lifecycle_holder_deactivate
+            }
+        }
+    }
+
+/**
+ * The consequence it states, or `null` when the field alone says enough.
+ *
+ * @return the string resource, or `null`.
+ */
+private fun BankLifecyclePrompt.bodyRes(): Int? =
+    when (this) {
+        is BankLifecyclePrompt.Close -> {
+            R.string.bank_lifecycle_close_text
+        }
+
+        is BankLifecyclePrompt.Reopen -> {
+            R.string.bank_lifecycle_reopen_text
+        }
+
+        is BankLifecyclePrompt.Rename -> {
+            null
+        }
+
+        is BankLifecyclePrompt.Create -> {
+            null
+        }
+
+        is BankLifecyclePrompt.HolderActivation -> {
+            if (active) {
+                R.string.bank_lifecycle_holder_reactivate_text
+            } else {
+                R.string.bank_lifecycle_holder_deactivate_text
+            }
+        }
+    }
+
+/**
+ * The name a naming prompt currently carries.
+ *
+ * @return the name, or empty for a prompt that names nothing.
+ */
+private fun BankLifecyclePrompt.name(): String =
+    when (this) {
+        is BankLifecyclePrompt.Rename -> name
+        is BankLifecyclePrompt.Create -> name
+        else -> ""
+    }
 
 /**
  * One account, bound to its view model.

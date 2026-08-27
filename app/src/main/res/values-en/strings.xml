@@ -534,6 +534,35 @@
     <string name="bank_staff_reject_message">No money moves. The requester is shown your reason.</string>
     <string name="bank_staff_reject_reason">Reason</string>
     <string name="bank_staff_reject_reason_placeholder">Reason for the rejection</string>
+    <!-- Bank staff: the account lifecycle (design chapter 12, artboard 6) -->
+    <string name="bank_staff_tab_lifecycle">Konten</string>
+    <string name="bank_lifecycle_empty_title">Nothing to manage</string>
+    <string name="bank_lifecycle_empty_message">Neither accounts nor Halter have been set up.</string>
+    <string name="bank_lifecycle_status_active">Active</string>
+    <string name="bank_lifecycle_status_closed">Closed</string>
+    <string name="bank_lifecycle_rename">Rename</string>
+    <string name="bank_lifecycle_close">Close</string>
+    <string name="bank_lifecycle_reopen">Reopen</string>
+    <string name="bank_lifecycle_close_blocked">Only an account with a zero balance can be closed.</string>
+    <string name="bank_lifecycle_close_title">Close the account</string>
+    <string name="bank_lifecycle_close_text">A closed account takes no further bookings. It can be reopened at any time.</string>
+    <string name="bank_lifecycle_reopen_title">Reopen the account</string>
+    <string name="bank_lifecycle_reopen_text">The account will take bookings again.</string>
+    <string name="bank_lifecycle_rename_title">Rename the account</string>
+    <string name="bank_lifecycle_create_title">Open an account</string>
+    <string name="bank_lifecycle_create">Open an account</string>
+    <string name="bank_lifecycle_name">Name</string>
+    <string name="bank_lifecycle_org_unit">Org-Einheit</string>
+    <string name="bank_lifecycle_holders">Halter — Einheit</string>
+    <string name="bank_lifecycle_holders_unbound">not tied to an account</string>
+    <string name="bank_lifecycle_holders_empty">No Halter registered yet.</string>
+    <string name="bank_lifecycle_holder_inactive">Inactive</string>
+    <string name="bank_lifecycle_holder_deactivate">Deactivate</string>
+    <string name="bank_lifecycle_holder_reactivate">Reactivate</string>
+    <string name="bank_lifecycle_holder_deactivate_title">Deactivate the Halter</string>
+    <string name="bank_lifecycle_holder_deactivate_text">An inactive Halter can have no new money assigned to them. What they already hold stays withdrawable.</string>
+    <string name="bank_lifecycle_holder_reactivate_title">Reactivate the Halter</string>
+    <string name="bank_lifecycle_holder_reactivate_text">The Halter can be assigned money again.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Open</string>

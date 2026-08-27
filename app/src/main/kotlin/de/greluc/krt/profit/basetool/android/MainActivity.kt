@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
@@ -177,6 +178,9 @@ class MainActivity : AppCompatActivity() {
         authViewModels(container)
     }
     private val bankStaffViewModel: BankStaffViewModel by viewModels { authViewModels(container) }
+    private val bankLifecycleViewModel: BankLifecycleViewModel by viewModels {
+        authViewModels(container)
+    }
 
     /** Beförderung — the member's own assessments and rank standings (#66). */
 
@@ -333,6 +337,7 @@ class MainActivity : AppCompatActivity() {
                                     bank = bankViewModel,
                                     bankRequests = bankRequestsViewModel,
                                     bankStaff = bankStaffViewModel,
+                                    bankLifecycle = bankLifecycleViewModel,
                                     bankAccount = {
                                         BankAccountViewModel(
                                             container.bank,
@@ -572,6 +577,16 @@ class MainActivity : AppCompatActivity() {
          */
         private fun InitializerViewModelFactoryBuilder.bankViewModels(container: AuthContainer) {
             initializer { BankViewModel(container.bank, container.liveSync) }
+            initializer {
+                BankLifecycleViewModel(
+                    container.bank,
+                    container.bank,
+                    // „Einheit (vorbelegt)" is the caller's pinned context. A caller who has
+                    // pinned ALL units has no single answer, and the store reports null there
+                    // rather than picking one — so the creation is refused instead of guessed.
+                    container.activeOrgUnit::current,
+                )
+            }
             initializer {
                 BankStaffViewModel(
                     container.bank,

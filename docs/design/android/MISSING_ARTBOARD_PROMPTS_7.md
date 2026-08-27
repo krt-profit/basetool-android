@@ -207,6 +207,29 @@ So the app does not carry them, and this is recorded as a **known delta to the w
 withdrawal name a counterparty, a transfer names a target account and shows the fee rate, and none
 of that has a drawn form to follow.
 
+## 2d — Artboard 6: what deactivating a holder actually does
+
+The handoff says the holder action is a „Halter-Entzug" whose danger modal reads „Entzieht diesem
+Mitarbeiter alle Buchungsrechte auf dem Konto".
+
+**That is what a grant does, not what this does.** `UpdateBankHolderRequest` carries one flag,
+`active`, and the web frontend's own modal says what flipping it means:
+
+> Ein inaktiver Halter kann kein neues Geld mehr zugebucht bekommen. Bestehende Bestände bleiben
+> abbuchbar.
+
+So it is **not** a removal, it takes away no rights on any account, and it is reversible — the web
+has a „Halter reaktivieren" modal beside it. The app uses the web's wording, and „Deaktivieren" /
+„Reaktivieren" as the labels.
+
+Two consequences for the drawing: the danger tone is too strong for a reversible flag that removes
+nothing, and the section is titled correctly already („Halter — Einheit", „nicht kontogebunden"),
+which is what makes the account-level claim in the handoff read as a slip rather than a design.
+
+**Also missing from the handoff:** closing an account is blocked by a **non-zero balance**
+(„Nur Konten mit Saldo 0 können geschlossen werden"), not only by undecided requests. The app
+states it beneath the disabled action rather than letting the button find out.
+
 ## 3 — Two smaller questions, no strong opinion
 
 **3.1 — Does the amount field group while you type?** Artboard 3 shows `120.000` in the input. We

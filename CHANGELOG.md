@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Die Bankverwaltung hat jetzt einen Tab „Konten".** Konten anlegen, umbenennen, schließen und
+  wieder öffnen, dazu das Halter-Register der Einheit mit Deaktivieren und Reaktivieren. Ohne die
+  Rolle Bank-Management siehst du die Aktionen mit einem Schloss statt gar nicht — ein Tipp sagt
+  dir, welche Rolle du brauchst. Ein Konto mit Saldo lässt sich nicht schließen; das steht an der
+  Aktion, bevor du sie drückst.
+
 - **Bankmitarbeiter haben jetzt einen Umschalter „Mitglied | Verwaltung" in der Bank.** Unter
   „Verwaltung" siehst du alle Konten der Einheit — auch geschlossene und solche, für die du keine
   eigene Sichtfreigabe hast; letztere sind gekennzeichnet. Wer keine Bank-Rolle hat, sieht den

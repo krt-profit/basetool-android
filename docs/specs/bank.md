@@ -385,3 +385,51 @@ list and absent from the staff one — the reverse of the naive assumption.
   refusal-shaped empty state, and one with a grant sees the account and still no strip.
 
 **Code:** `BankRepository` (`BankStaffDashboard.totals` is nullable), `BankStaffOverview`
+
+---
+
+### REQ-APP-BANK-011 — The account lifecycle, drawn locked rather than hidden
+
+The Verwaltung scope's **Konten** tab — design chapter 12, artboard 6: the account list with its
+lifecycle, and the unit's holder register beneath it.
+
+**Reads are the employee's, writes are Bank-Management's.** Which the caller is comes from the
+server (`BankStaffDashboard.management`), never from a role the app worked out. Without the role
+the actions are drawn **locked, not hidden** (chapter-09 pattern): a padlock that answers when
+tapped — „Dafür brauchst du die Rolle Bank-Management." A member who cannot see a control cannot
+learn that the surface exists or which role opens it.
+
+**Every write echoes the version it read.** That is why the tab has its own read
+(`GET /bank/accounts`) rather than reusing the dashboard's rows, which carry no `version`.
+
+**Closing is reversible, so nothing here asks the member to type anything.** The type-to-confirm
+hurdle is reserved for what cannot be undone. Two preconditions the server enforces are stated in
+advance rather than left for the button to discover:
+
+- **A non-zero balance blocks closing** („Nur Konten mit Saldo 0 können geschlossen werden") — the
+  row says so beneath the disabled action.
+- Undecided booking requests block it too; that one surfaces as the server's refusal.
+
+**Deactivating a holder is not a removal.** `UpdateBankHolderRequest` flips one flag, and the
+wording is the web frontend's own: an inactive holder can have no *new* money assigned to them,
+what they already hold stays withdrawable. Nothing about their rights on an account changes —
+that is what a grant does, and it lives on the Grants tab.
+
+**A creation names the caller's pinned org unit** („Einheit (vorbelegt)"). A caller who has pinned
+*all* units has no single answer, so the creation is refused rather than opened against a unit they
+never chose. The app creates `ORG_UNIT` accounts only; `AREA`, `CARTEL`, `CARTEL_BANK` and
+`SPECIAL` exist on the wire and stay the web's.
+
+**Acceptance**
+
+- [x] Closing, reopening, renaming and a holder's activation each echo the version they read
+  (`BankLifecycleViewModelTest`).
+- [x] A rename to blank is not sent (`BankLifecycleViewModelTest`).
+- [x] With all units pinned, no account is created (`BankLifecycleViewModelTest`).
+- [x] A refused write keeps the confirmation open and states why (`BankLifecycleViewModelTest`).
+- [x] A holder register that cannot be read leaves the accounts standing
+  (`BankLifecycleViewModelTest`).
+- [x] Verified on a device: without Bank-Management the row actions and the CTA are drawn with
+  padlocks and answer when tapped.
+
+**Code:** `BankRepository` (`BankLifecycleSource`), `BankLifecycleViewModel`, `BankLifecycleTab`

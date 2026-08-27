@@ -9,6 +9,8 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountLifecycleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
@@ -17,15 +19,20 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDt
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.ConfirmBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankAccountRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBalanceTargetRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountDetailDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountSettingsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.RegisterBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.RenameBankAccountRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -585,12 +592,14 @@ data class BankRequestPage(
  * @property active whether they still hold; an inactive one is kept for the ledger's sake and is
  *   not offered.
  * @property totalHeld how much they hold altogether, unformatted.
+ * @property version the optimistic-locking version an activation change echoes.
  */
 data class BankHolder(
     val id: String,
     val handle: String,
     val active: Boolean,
     val totalHeld: String?,
+    val version: Long = 0,
 )
 
 /**
@@ -614,6 +623,127 @@ data class BankConfirmation(
     val ownerApprovalConfirmed: Boolean = false,
     val staffNote: String? = null,
 )
+
+/**
+ * One account as the lifecycle tab lists it.
+ *
+ * Distinct from [BankStaffAccount], which the dashboard supplies: that one carries a balance line
+ * and no `version`, and every write here echoes one.
+ *
+ * @property id the account.
+ * @property accountNo the number.
+ * @property name its display name.
+ * @property type the account kind as the server names it.
+ * @property status active or closed.
+ * @property balance the balance, unformatted. **Closing needs it to be zero** — the server refuses
+ *   otherwise, and the row says so rather than letting the button answer for it.
+ * @property orgUnitName which unit owns it, or `null`.
+ * @property version the optimistic-locking version every lifecycle write echoes.
+ */
+data class BankManagedAccount(
+    val id: String,
+    val accountNo: String?,
+    val name: String,
+    val type: String?,
+    val status: BankAccountStatus,
+    val balance: String?,
+    val orgUnitName: String?,
+    val version: Long,
+)
+
+/**
+ * The account lifecycle and the unit's holders.
+ *
+ * Every write here is `BANK_MANAGEMENT`, not merely `BANK_EMPLOYEE` — the reads are the employee's,
+ * the changes are the leadership's. The screen offers them from what the server said rather than
+ * from a role the app worked out.
+ */
+interface BankLifecycleSource {
+    /**
+     * Reads one page of the account list.
+     *
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the accounts, or the classified failure.
+     */
+    suspend fun managedAccounts(
+        page: Int = 0,
+        pageSize: Int = ACCOUNTS_PAGE_SIZE,
+    ): ApiResult<List<BankManagedAccount>>
+
+    /**
+     * Opens a new account.
+     *
+     * @param name what to call it.
+     * @param orgUnitId which unit owns it.
+     * @return the account as the server recorded it.
+     */
+    suspend fun createAccount(
+        name: String,
+        orgUnitId: String,
+    ): ApiResult<BankManagedAccount>
+
+    /**
+     * Renames an account.
+     *
+     * @param id the account.
+     * @param name the new name.
+     * @param version the version it was read at.
+     * @return the account in its new state.
+     */
+    suspend fun renameAccount(
+        id: String,
+        name: String,
+        version: Long,
+    ): ApiResult<BankManagedAccount>
+
+    /**
+     * Closes or reopens an account.
+     *
+     * Reversible on purpose, which is why it carries no type-to-confirm: a closed account simply
+     * takes no further bookings.
+     *
+     * @param id the account.
+     * @param open whether to reopen it; `false` closes it.
+     * @param version the version it was read at.
+     * @return the account in its new state, or the classified failure — a 409 when it still holds
+     *   a balance or has undecided requests against it.
+     */
+    suspend fun setAccountOpen(
+        id: String,
+        open: Boolean,
+        version: Long,
+    ): ApiResult<BankManagedAccount>
+
+    /**
+     * Registers a member as a holder.
+     *
+     * @param userId the member; only a registered tool user may hold.
+     * @return the holder as the server recorded them.
+     */
+    suspend fun registerHolder(userId: String): ApiResult<BankHolder>
+
+    /**
+     * Activates or deactivates a holder.
+     *
+     * **Not a removal.** An inactive holder can have no *new* money assigned to them; what they
+     * already hold stays withdrawable. Nothing about their rights on an account changes — that is
+     * what a grant does, and it lives elsewhere.
+     *
+     * @param id the holder.
+     * @param active whether they may take new money.
+     * @param version the version they were read at.
+     * @return the holder in their new state.
+     */
+    suspend fun setHolderActive(
+        id: String,
+        active: Boolean,
+        version: Long,
+    ): ApiResult<BankHolder>
+}
+
+/** How many accounts one page of the lifecycle list carries. */
+const val ACCOUNTS_PAGE_SIZE: Int = 100
 
 /**
  * The bank-staff surface — design chapter 12, artboards 4 to 8.
@@ -699,7 +829,8 @@ class BankRepository(
     private val reader: ApiReader,
 ) : BankSource,
     BankRequestSource,
-    BankStaffSource {
+    BankStaffSource,
+    BankLifecycleSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -868,18 +999,7 @@ class BankRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(
-                    result.value.mapNotNull { dto ->
-                        dto.id?.let {
-                            BankHolder(
-                                id = it,
-                                handle = dto.handle.orEmpty(),
-                                active = dto.active != false,
-                                totalHeld = dto.totalHeld?.toString(),
-                            )
-                        }
-                    },
-                )
+                ApiResult.Success(result.value.mapNotNull { it.toModel() })
             }
         }
 
@@ -915,6 +1035,137 @@ class BankRepository(
                 deserializer = BankBookingRequestDto.serializer(),
             ),
         )
+
+    override suspend fun managedAccounts(
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<List<BankManagedAccount>> =
+        when (
+            val result =
+                reader.get(
+                    STAFF_ACCOUNTS_PATH,
+                    listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
+                    PageResponseBankAccountDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toModel() })
+            }
+        }
+
+    override suspend fun createAccount(
+        name: String,
+        orgUnitId: String,
+    ): ApiResult<BankManagedAccount> =
+        account(
+            reader.post(
+                path = STAFF_ACCOUNTS_PATH,
+                body =
+                    CreateBankAccountRequest(
+                        name = name,
+                        // The app opens accounts for an org unit and nothing else. AREA, CARTEL,
+                        // CARTEL_BANK and SPECIAL exist on the wire and are the web's to create.
+                        type = CreateBankAccountRequest.Type.ORG_UNIT,
+                        orgUnitId = orgUnitId,
+                    ),
+                bodySerializer = CreateBankAccountRequest.serializer(),
+                deserializer = BankAccountDto.serializer(),
+            ),
+        )
+
+    override suspend fun renameAccount(
+        id: String,
+        name: String,
+        version: Long,
+    ): ApiResult<BankManagedAccount> =
+        account(
+            reader.send(
+                path = "$STAFF_ACCOUNTS_PATH/$id",
+                method = "PATCH",
+                body = RenameBankAccountRequest(name = name, version = version),
+                bodySerializer = RenameBankAccountRequest.serializer(),
+                deserializer = BankAccountDto.serializer(),
+            ),
+        )
+
+    override suspend fun setAccountOpen(
+        id: String,
+        open: Boolean,
+        version: Long,
+    ): ApiResult<BankManagedAccount> =
+        account(
+            reader.post(
+                path = "$STAFF_ACCOUNTS_PATH/$id/" + if (open) "reopen" else "close",
+                body = BankAccountLifecycleRequest(version = version),
+                bodySerializer = BankAccountLifecycleRequest.serializer(),
+                deserializer = BankAccountDto.serializer(),
+            ),
+        )
+
+    override suspend fun registerHolder(userId: String): ApiResult<BankHolder> =
+        holder(
+            reader.post(
+                path = STAFF_HOLDERS_PATH,
+                body = RegisterBankHolderRequest(userId = userId),
+                bodySerializer = RegisterBankHolderRequest.serializer(),
+                deserializer = BankHolderDto.serializer(),
+            ),
+        )
+
+    override suspend fun setHolderActive(
+        id: String,
+        active: Boolean,
+        version: Long,
+    ): ApiResult<BankHolder> =
+        holder(
+            reader.send(
+                path = "$STAFF_HOLDERS_PATH/$id",
+                method = "PATCH",
+                body = UpdateBankHolderRequest(active = active, version = version),
+                bodySerializer = UpdateBankHolderRequest.serializer(),
+                deserializer = BankHolderDto.serializer(),
+            ),
+        )
+
+    /**
+     * Unwraps a single account answer.
+     *
+     * @param result what the call returned.
+     * @return the account, or the classified failure.
+     */
+    private fun account(result: ApiResult<BankAccountDto>): ApiResult<BankManagedAccount> =
+        when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toModel()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK))
+            }
+        }
+
+    /**
+     * Unwraps a single holder answer.
+     *
+     * @param result what the call returned.
+     * @return the holder, or the classified failure.
+     */
+    private fun holder(result: ApiResult<BankHolderDto>): ApiResult<BankHolder> =
+        when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toModel()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK))
+            }
+        }
 
     override suspend fun ownRequests(): ApiResult<List<BankBookingRequest>> =
         requestList("$REQUESTS_PATH")
@@ -1077,6 +1328,9 @@ class BankRepository(
         /** The staff request queue. */
         const val STAFF_REQUESTS_PATH = "/api/v1/bank/requests"
 
+        /** The staff account list, which carries the version every lifecycle write echoes. */
+        const val STAFF_ACCOUNTS_PATH = "/api/v1/bank/accounts"
+
         /** The unit's holders, which a confirmation has to name one of. */
         const val STAFF_HOLDERS_PATH = "/api/v1/bank/holders"
 
@@ -1202,6 +1456,51 @@ private fun BankDashboardAccountDto.toModel(): BankStaffAccount? {
         balance = balance?.toString(),
         delta30d = delta30d?.toString(),
         sparkline = sparkline.orEmpty().mapNotNull { it.toString().toDoubleOrNull() },
+    )
+}
+
+/**
+ * Maps a staff account row onto the model.
+ *
+ * @return the account, or `null` without an id or a version — one no lifecycle write could
+ *   address.
+ */
+private fun BankAccountDto.toModel(): BankManagedAccount? {
+    // An id with no version is as unusable as no id: every lifecycle write echoes one, so a row
+    // missing either could be listed and never acted on.
+    val accountId = id ?: return null
+    return version?.let { lock ->
+        BankManagedAccount(
+            id = accountId,
+            accountNo = accountNo,
+            name = name.orEmpty(),
+            type = type?.value,
+            status =
+                if (status == BankAccountDto.Status.CLOSED) {
+                    BankAccountStatus.CLOSED
+                } else {
+                    BankAccountStatus.ACTIVE
+                },
+            balance = balance?.toString(),
+            orgUnitName = orgUnit?.name,
+            version = lock,
+        )
+    }
+}
+
+/**
+ * Maps a holder onto the model.
+ *
+ * @return the holder, or `null` without an id.
+ */
+private fun BankHolderDto.toModel(): BankHolder? {
+    val holderId = id ?: return null
+    return BankHolder(
+        id = holderId,
+        handle = handle.orEmpty(),
+        active = active != false,
+        totalHeld = totalHeld?.toString(),
+        version = version ?: 0,
     )
 }
 
