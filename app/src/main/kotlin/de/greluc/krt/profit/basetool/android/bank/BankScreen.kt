@@ -31,7 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -52,6 +56,7 @@ import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
@@ -66,6 +71,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -74,11 +81,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTogg
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -607,17 +616,100 @@ private fun BankAccountFailure(
 @Composable
 fun BankAccountsRoute(
     viewModel: BankViewModel,
+    requestsViewModel: BankRequestsViewModel,
     onOpenAccount: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    BankAccountsScreen(
-        state = state,
-        onRefresh = viewModel::onRefresh,
-        onRetryNow = viewModel::onRetry,
-        onOpenAccount = onOpenAccount,
-        modifier = modifier,
-    )
+    val requests by requestsViewModel.state.collectAsStateWithLifecycle()
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(tab) {
+        if (tab == 1) {
+            requestsViewModel.loadOnce()
+        }
+    }
+    Column(modifier = modifier.fillMaxSize()) {
+        KrtPageTabs(
+            tabs =
+                listOf(
+                    KrtPageTab(label = stringResource(R.string.bank_tab_accounts)),
+                    KrtPageTab(
+                        label = stringResource(R.string.bank_tab_requests),
+                        count = requests.pendingCount.takeIf { it > 0 },
+                    ),
+                ),
+            selectedIndex = tab,
+            onSelect = { tab = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Box(modifier = Modifier.weight(1f)) {
+            if (tab == 0) {
+                BankAccountsScreen(
+                    state = state,
+                    onRefresh = viewModel::onRefresh,
+                    onRetryNow = viewModel::onRetry,
+                    onOpenAccount = onOpenAccount,
+                )
+            } else {
+                BankRequestsTab(
+                    state = requests,
+                    onRefresh = requestsViewModel::onRefresh,
+                    actions =
+                        BankRequestRowActions(
+                            onGrant = { requestsViewModel.onSetApproval(it, granted = true) },
+                            onRevoke = { requestsViewModel.onSetApproval(it, granted = false) },
+                            onEdit = requestsViewModel::onEdit,
+                            onWithdraw = requestsViewModel::onWithdraw,
+                        ),
+                )
+            }
+        }
+        KrtBottomCtaBar(
+            // Only where the rail replaces the bottom navigation: on a phone the nav bar sits
+            // below this and has already taken the inset, so taking it again would lift the CTA
+            // off its own bar.
+            modifier =
+                if (isWideWindow()) {
+                    Modifier.padding(bottom = LocalKrtBottomBarInset.current)
+                } else {
+                    Modifier
+                },
+        ) {
+            KrtCtaButton(
+                text = stringResource(R.string.bank_request_action),
+                onClick = {
+                    // Raising a request needs the accounts, and on the Konten tab they are already
+                    // here — but a member who opens the sheet without ever visiting Anträge would
+                    // otherwise get an empty picker.
+                    requestsViewModel.loadOnce()
+                    requestsViewModel.onCompose()
+                },
+                modifier = Modifier.weight(1f),
+                enabled = requests.online,
+                iconRes = DesignR.drawable.ic_krt_plus,
+            )
+        }
+    }
+    requests.draft?.let { draft ->
+        BankRequestSheet(
+            state = draft,
+            accounts = requests.accounts,
+            targets = requests.targets.map { BankTransferTargetOption(it.id, it.label) },
+            online = requests.online,
+            actions =
+                BankRequestSheetActions(
+                    onKind = { kind ->
+                        requestsViewModel.onDraftChanged { it.copy(kind = kind, targetAccountId = null) }
+                    },
+                    onAccount = { id -> requestsViewModel.onDraftChanged { it.copy(accountId = id) } },
+                    onTarget = { id -> requestsViewModel.onDraftChanged { it.copy(targetAccountId = id) } },
+                    onAmount = { value -> requestsViewModel.onDraftChanged { it.copy(amount = value) } },
+                    onNote = { value -> requestsViewModel.onDraftChanged { it.copy(note = value) } },
+                    onSubmit = requestsViewModel::onSubmit,
+                    onDismiss = requestsViewModel::onDismissSheet,
+                ),
+        )
+    }
 }
 
 /**
