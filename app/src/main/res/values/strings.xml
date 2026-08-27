@@ -723,13 +723,19 @@
     <string name="booking_out_sell">Verkaufen</string>
     <string name="booking_out_discard_note">Ausbuchen ist endgültig. Der Verlauf bleibt nachvollziehbar.</string>
     <string name="booking_transfer_note">Nutzer, Ort oder beides — was du angibst, wird geändert.</string>
-    <string name="booking_transfer_unchanged">So bleibt alles, wo es ist — wähle einen anderen Nutzer oder einen anderen Ort.</string>
+    <string name="booking_transfer_unchanged">Ziel muss Mitglied oder Ort ändern.</string>
     <string name="booking_terminals_none">Für dieses Material sind keine Terminals hinterlegt.</string>
-    <string name="booking_field_member">Nutzer</string>
-    <string name="booking_field_org_unit">Org-Einheit</string>
-    <string name="booking_org_unit_note">Der Bestand landet im Pool dieser Einheit. Voreingestellt ist die aktuelle.</string>
-    <string name="booking_merge_stock">Mit vorhandenem Bestand zusammenlegen</string>
-    <string name="booking_merge_stock_note">Sonst entsteht am Ziel ein zweiter Eintrag mit derselben Qualität.</string>
+    <string name="booking_field_member">Umbuchen zu Nutzer</string>
+    <string name="booking_field_org_unit">Ziel-Einheit</string>
+    <string name="booking_org_unit_note">Mitgliedschaften des Ziel-Nutzers über alle vier Arten. Unverändert lassen = Pool bleibt.</string>
+    <string name="booking_merge_stock">Mit gleichartigem Bestand zusammenführen</string>
+    <string name="booking_merge_stock_note">Nur SCU: gleiche Qualität, Ort, Auftrag, Einsatz — gilt nur für diese Buchung.</string>
+    <string name="booking_field_place_transfer">Umbuchen zu Ort</string>
+    <string name="booking_transfer_unchanged_detail">Server-Backstop: 400 „Transfer must change either the user or the location“.</string>
+    <string name="booking_merge_piece">Stück-Material: wird am Ziel immer zusammengeführt — keine Option (Server-Regel).</string>
+    <string name="booking_target_unchanged">%1$s — unverändert</string>
+    <string name="booking_org_unit_preset">%1$s — vorbelegt</string>
+    <string name="booking_subtitle_out">%1$s von %2$s</string>
     <string name="booking_field_sell_amount">Erlös (aUEC)</string>
     <string name="booking_save">Buchen</string>
     <string name="booking_open">Buchen</string>

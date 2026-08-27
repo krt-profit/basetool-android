@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
@@ -89,7 +91,7 @@ fun BookingSheet(
     KrtBottomSheet(
         onDismiss = callbacks.onDismiss,
         modifier = Modifier.testTag(BOOKING_SHEET_TAG),
-        title = stringResource(state.mode.titleRes()),
+        title = stringResource(state.actionRes()),
     ) {
         Column(
             modifier =
@@ -335,34 +337,79 @@ private fun OrgUnitField(
     state: BookingState,
     onOrgUnit: (OrgUnitOption) -> Unit,
 ) {
-    if (state.orgUnits.size < 2) {
+    // Hidden only for a membershipless target: that row is unpooled and there is nothing to
+    // choose. A single membership is still shown — preset and read-only in effect — because the
+    // member is entitled to see which pool their stock is about to land in.
+    if (state.orgUnits.isEmpty()) {
         return
     }
+    var open by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        KrtFieldLabel(
-            text = stringResource(R.string.booking_field_org_unit),
-            enabled = !state.saving,
-        )
-        state.orgUnits.forEach { unit ->
-            Text(
-                text = unit.shorthand?.let { "${unit.name} · $it" } ?: unit.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (state.orgUnit?.id == unit.id) {
-                        MaterialTheme.colorScheme.primary
+        KrtSelectField(
+            value =
+                state.orgUnit?.let { unit ->
+                    if (unit.id == state.entry?.owningOrgUnitId) {
+                        stringResource(R.string.booking_org_unit_preset, unit.label())
                     } else {
-                        KrtPalette.White
-                    },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !state.saving) { onOrgUnit(unit) }
-                        .padding(vertical = KrtSpacing.sm),
-            )
-        }
+                        unit.label()
+                    }
+                }.orEmpty(),
+            options = state.orgUnits.map { KrtOption(value = it.id, label = it.label()) },
+            onSelect = { option ->
+                state.orgUnits.firstOrNull { it.id == option.value }?.let(onOrgUnit)
+                open = false
+            },
+            expanded = open,
+            onExpandedChange = { open = it },
+            label = stringResource(R.string.booking_field_org_unit),
+            selectedValue = state.orgUnit?.id,
+            enabled = !state.saving,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Muted(stringResource(R.string.booking_org_unit_note))
+    }
+}
+
+/**
+ * How an org unit reads in the pool picker.
+ *
+ * @return the name with its shorthand where the server sent one.
+ */
+private fun OrgUnitOption.label(): String = shorthand?.let { "$name · $it" } ?: name
+
+/**
+ * What a target picker shows when the member has not changed it.
+ *
+ * @param current the row's own value.
+ * @return the value marked as unchanged.
+ */
+@Composable
+private fun unchanged(current: String): String =
+    stringResource(R.string.booking_target_unchanged, current)
+
+/**
+ * The refusal a transfer that moves nothing earns.
+ *
+ * Drawn as a bordered band rather than a line of red text (artboard 16): it is a data rule the
+ * member can fix in the two fields above it, and the server's own backstop is quoted underneath so
+ * the message and the 400 are recognisably the same thing.
+ */
+@Composable
+private fun TransferRefusal() {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .border(width = 1.dp, color = KrtPalette.DangerText)
+                .padding(KrtSpacing.sm),
+    ) {
+        Text(
+            text = stringResource(R.string.booking_transfer_unchanged),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.DangerText,
+        )
+        Muted(stringResource(R.string.booking_transfer_unchanged_detail))
     }
 }
 
@@ -438,21 +485,30 @@ private fun OutKindField(
                 Picker(
                     label = stringResource(R.string.booking_field_member),
                     query = state.memberQuery,
-                    chosen = state.member?.name,
+                    // Both targets show the row's own value with „— unverändert" rather than
+                    // sitting empty (artboard 15/16). Empty is what the app sent for „keep it",
+                    // but on screen it read as a field nobody had filled in.
+                    chosen = state.member?.name ?: state.entry?.holder?.let { unchanged(it) },
                     options = state.members.map { it.id to it.name },
                     enabled = !state.saving,
                     onQuery = callbacks.onMemberQuery,
                     onChosen = { id -> state.members.firstOrNull { it.id == id }?.let(callbacks.onMember) },
                 )
-                PlaceField(state = state, callbacks = callbacks)
-                // The hint and the refusal both speak about the two pickers directly above, so
-                // they stay with them. The pool and the merge option are a separate decision about
-                // where the moved row lands, and reading „Nutzer, Ort oder beides" underneath a
-                // checkbox makes it look like a rule about the checkbox.
-                if ((state.member != null || state.place != null) && !state.transferMoves) {
-                    KrtFieldError(text = stringResource(R.string.booking_transfer_unchanged))
-                } else {
-                    Muted(stringResource(R.string.booking_transfer_note))
+                Picker(
+                    label = stringResource(R.string.booking_field_place_transfer),
+                    query = state.placeQuery,
+                    chosen = state.place?.name ?: state.entry?.locationName?.let { unchanged(it) },
+                    options = state.places.map { it.id to it.name },
+                    enabled = !state.saving,
+                    onQuery = callbacks.onPlaceQuery,
+                    onChosen = { id -> state.places.firstOrNull { it.id == id }?.let(callbacks.onPlace) },
+                )
+                // The refusal speaks about the two pickers directly above, so it stays with them.
+                // The pool and the merge option are a separate decision about where the moved row
+                // lands, and a rule about the targets read underneath them looks like a rule about
+                // the checkbox.
+                if (!state.transferMoves) {
+                    TransferRefusal()
                 }
                 OrgUnitField(state = state, onOrgUnit = callbacks.onOrgUnit)
                 if (state.materialIsScu) {
@@ -460,6 +516,10 @@ private fun OutKindField(
                     // identical target stack regardless, so a toggle there would be a control that
                     // does nothing — and the member could not tell that from one that does.
                     MergeStockField(state = state, onMergeStock = callbacks.onMergeStock)
+                } else {
+                    // Not silence: an absent control reads as a missing feature, where the frame
+                    // draws a line saying the server already does it (artboard 16).
+                    Muted(stringResource(R.string.booking_merge_piece))
                 }
             }
 

@@ -244,10 +244,9 @@ class BookingSheetTest {
         )
 
         // The sheet scrolls, so the line can sit below the fold — that it is there and that the
-        // save is refused is the point.
-        compose.onNodeWithText(
-            "So bleibt alles, wo es ist — wähle einen anderen Nutzer oder einen anderen Ort.",
-        ).assertExists()
+        // save is refused is the point. The wording is the design spec's (ch. 09 artboard 16),
+        // which takes it from the web frontend's own bundle rather than inventing an app phrasing.
+        compose.onNodeWithText("Ziel muss Mitglied oder Ort ändern.").assertExists()
         compose.onNodeWithTag(BOOKING_SAVE_TAG).assertIsNotEnabled()
     }
 
