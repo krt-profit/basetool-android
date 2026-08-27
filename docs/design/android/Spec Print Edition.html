@@ -41,26 +41,28 @@
 </head>
 <body>
 <doc-page margin="0.75in">
-  <div slot="footer" style="font:400 7.5pt/1 Lato,sans-serif;color:#888;display:flex;justify-content:space-between;padding:4pt 0;border-top:.5pt solid #d8d4cc"><span>DAS KARTELL / Bereich Profit — Restricted · Internal use only</span><span>Profit Basetool // Android UI Spec v0.1</span></div>
+  <div slot="footer" style="font:400 7.5pt/1 Lato,sans-serif;color:#888;display:flex;justify-content:space-between;padding:4pt 0;border-top:.5pt solid #d8d4cc"><span>DAS KARTELL / Bereich Profit — Restricted · Internal use only</span><span>Profit Basetool // Android UI Spec v0.2</span></div>
 
   <div style="display:flex;align-items:center;gap:14pt;margin-bottom:6pt">
     <img src="assets/basetool-favicon.svg" alt="Basetool" style="width:44pt;height:44pt;object-fit:contain">
     <div>
       <div class="kicker">Das Kartell / Bereich Profit</div>
       <h1>Profit Basetool // Android</h1>
-      <div class="muted">UI design specification — Kotlin · Jetpack Compose · Material 3 · minSdk 29, target 37 · dark-only, DE-first</div>
+      <div class="muted">UI design specification — Kotlin · Jetpack Compose · Material 3 · minSdk 30, target 37 · dark-only, DE-first</div>
     </div>
   </div>
-  <p class="muted" style="font-size:9pt">Print edition v0.1 · 17.08.2026 · This document carries the tokens, rules and per-screen redlines. The interactive mockups (phone 412×915 + tablet 1280×800, all states) live in the spec chapters 00–14 of the design project; this paper never replaces them. Print rendering uses dark-on-white for legibility — the app itself is dark-only.</p>
+  <p class="muted" style="font-size:9pt">Print edition v0.2 · 27.08.2026 · This document carries the tokens, rules and per-screen redlines. The interactive mockups (phone 412×915 + tablet 1280×800, all states) live in the spec chapters 00–15 of the design project; this paper never replaces them. Print rendering uses dark-on-white for legibility — the app itself is dark-only.</p>
 
   <h2>1 · Decisions (binding)</h2>
   <div class="cols2" style="font-size:9pt">
     <div class="rulecard"><b>Navigation.</b> Phone: bottom bar with 5 destinations — Übersicht, Einsätze, Aufträge, Lager, Mehr. Tablet: rail with 7 + „Mehr", list-detail panes. Each destination keeps its own back stack; back on a root → Übersicht; predictive back everywhere.</div>
     <div class="rulecard"><b>Action hierarchy.</b> The filled orange CTA marks the ONE primary action per context. Square 56 dp FAB on list screens; bottom-anchored 48 dp CTA bar on forms/details. Ladder: CTA → filled-green success → orange outline → ghost → quiet-danger.</div>
     <div class="rulecard"><b>Density & motion.</b> Dense web-near lists (rows ~56 dp), touch targets ≥48 dp, 200 ms color transitions only, reduced motion honored. Countdowns relative („in 2 Std.").</div>
-    <div class="rulecard"><b>Copy.</b> German-first, military-terse, UPPERCASE labels, no emoji. „Einsätze" (nie „Missionen"), „Bereich Profit" as org context, „Administration" (nie „Führung"). Error states in-fiction (EN canon) + one plain German helper line.</div>
-    <div class="rulecard"><b>Auth.</b> Keycloak via Custom Tab (never WebView) + optional Discord (fail-closed guild gate) + guest browse. Approval-pending and terms screens block the app. Custom KRT lock screen behind BiometricPrompt; FLAG_SECURE app-wide.</div>
+    <div class="rulecard"><b>Copy.</b> German-first, military-terse, UPPERCASE labels, no emoji. „Einsätze" (nie „Missionen"), „Bereich Profit" as org context, „Administration" (nie „Führung"). Error states in-fiction (EN canon) + one plain German helper line. Wording 1:1 aus messages_de.properties — „Raffinerieauftrag", „Einlagern", „Halter", „Bestätigen", „Umbuchen zu Nutzer/Ort", „Herkunft der Menge"; nie App-eigene Begriffe.</div>
+    <div class="rulecard"><b>Auth.</b> Keycloak via Custom Tab (never WebView) + optional Discord (fail-closed guild gate). Genau zwei Einstiege — Keycloak + Discord; Footer ohne Nutzungsbedingungen-Link (Zustimmung beim ersten Login erzwungen + versioniert). Approval-pending and terms screens block the app. Custom KRT lock screen behind BiometricPrompt; FLAG_SECURE app-wide.</div>
     <div class="rulecard"><b>Offline.</b> Cached-data banner (timestamp) pinned under the top bar; rows get a „Cache" chip; write actions disable at 45% — no offline queueing of mutations (append-only ledgers must not fork).</div>
+    <div class="rulecard"><b>Berechtigungen.</b> /users/me liefert roles + permissions (Token: realm_access.roles) — die App wertet sie aus. Nachweislich verbotene Aktionen rendern in Disabled-Optik MIT Schloss-Glyphe, bleiben aber antippbar (nie enabled=false, nie versteckt); der Eckklammer-Toast nennt die fehlende Rolle aus ROLES_AND_PERMISSIONS.md („Dafür brauchst du die Rolle Logistiker."). Muster: Kap. 09, Artboards 11–14.</div>
+    <div class="rulecard"><b>Kein Push-Kanal (Q2).</b> Zustellung ausschließlich in-app (Poll/SSE, Kap. 07). Keine Copy verspricht je eine Benachrichtigung — die Freigabe kommt über den 60-s-Poll oder gar nicht.</div>
   </div>
 
   <h2 class="newpage">2 · Material 3 colorScheme (darkColorScheme — no light theme, no dynamic color)</h2>
@@ -132,18 +134,22 @@
     <div class="rulecard"><b>Rows & tables.</b> Dense rows min 56 dp, press #282828, selection = 3 dp orange inset + orange check (long-press). Tablet keeps tables (head #1C1C1C, 2 dp orange rule, zebra 2%); phone collapses to key-value cards — never horizontal page scroll. Numerics right + tabular.</div>
     <div class="rulecard"><b>Forms.</b> Fill #1C1C1C, hairline, radius 0, height 48 dp, focus = orange border + bloom; labels neutral #D2D2D2 bold (never orange); errors #F2564B + warning icon; orange-chevron selects, square orange checkbox (black check), circular radio; combobox type-to-filter, active option orange bg/black text.</div>
     <div class="rulecard"><b>Overlays.</b> Modal: #141414, 3 dp orange top edge, 13 dp brackets, 20 dp bloom, ONE filled CTA right + ghost cancel; danger variant red; type-to-confirm only for wipe-grade actions. Bottom sheets: shape 0, 3 dp orange edge, drag-handle pill. Toast: near-black + brackets + bloom, uppercase orange title; error red. Never native dialogs.</div>
-    <div class="rulecard"><b>Feedback.</b> Loading = orange ring spinner + UPPERCASE label. Empty = dashed border, short reason, exactly ONE action. Presence pill pulses, never blocks input; „Aktualisierung verfügbar" pill floats above the CTA bar. Pagination: „Mehr laden — X von Y" + ENDE DER LISTE marker.</div>
+    <div class="rulecard"><b>Feedback.</b> Loading = orange ring spinner + UPPERCASE label. Empty = dashed border, short reason, exactly ONE action. Presence/Live-Sync und Bereichs-Tag sind WEB-ONLY (Android konsumiert den Presence-Socket nicht; kein Bereichs-Feld im DTO — Kap. 02). Pagination: „Mehr laden — X von Y" + ENDE DER LISTE marker.</div>
     <div class="rulecard"><b>KPI.</b> Value white Bold tabular on dark chip; totals get 4 dp orange left bar; deltas in text tints; sparkline = drawn polyline, no chart library.</div>
   </div>
 
   <h3>Fan Kit compliance band (legally required — coupled unit)</h3>
-  <div class="bandfig">
+  <div class="bandfig" style="align-items:flex-start">
     <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:28pt;height:28pt;flex:none">
-    <div style="font:300 10.5pt/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+    <div style="display:flex;flex-direction:column;gap:6pt">
+      <div style="font:300 10.5pt/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div>
+      <div style="font:300 9.5pt/1.5 Lato,sans-serif;color:#D2D2D2">This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space Industries group of companies. All game content and materials are copyright Cloud Imperium Rights LLC and Cloud Imperium Rights Ltd.. Star Citizen®, Squadron 42®, Roberts Space Industries®, and Cloud Imperium® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.</div>
+    </div>
   </div>
   <ul style="font-size:9pt">
-    <li>Logo 36 dp, official white artwork UNMODIFIED (no recolor/tint/flip/effects) + notice — one component, never separated (Fan Kit Guidelines §2, 2b, 3)</li>
-    <li>Notice verbatim ENGLISH in every locale, incl. the space before the third ® — never rephrased or „improved"; ≥14 sp #D2D2D2, AA</li>
+    <li>Logo 36 dp, official white artwork UNMODIFIED (no recolor/tint/flip/effects) + §2b-Zeile + 2(g)-Absatz — EIN Komponente aus drei gekoppelten Elementen, keins rendert/bewegt/verschwindet allein (Guidelines §2, 2b, 3 + Fankit Agreement clause 2(g), kumulativ)</li>
+    <li>Beide Notices verbatim ENGLISH in jeder Locale, beide 14 sp #D2D2D2 (EINE Größe — die ~10-pt-Untergrenze ≈ 13,3 sp lässt keinen Schritt nach unten): §2b MIT Leerzeichen vor dem dritten ®, 2(g) OHNE Leerzeichen vor seinen vier ®, „Ltd.." mit zwei Punkten, Oxford-Komma — nie harmonisieren; Tests pinnen beide byte-genau inkl. Differenz-Assertion</li>
+    <li>Nie hinter einem Tap gefaltet (nicht „reasonably prominent"); Login-Seite scrollt als Ganzes (Band über dem Versions-Footer, CTA im ersten Viewport); Einstellungen zeigt den vollen Absatz (Screen scrollt bereits)</li>
     <li>Static, non-interactive, no KRT brackets/glow/orange — third-party attribution, must not compete with the screen's CTA</li>
     <li>Placements: Login (above version footer) + Einstellungen (About/Impressum). Nowhere else. Wrapping to 2–3 lines on phones is allowed; never shrink below 14 sp or truncate</li>
   </ul>
@@ -165,45 +171,56 @@
     <li>State survives navigation + process death (SavedStateHandle): scroll, filters, active tab (?tab=)</li>
   </ul>
 
-  <h2>5 · Screen handoffs (mockups: chapters 04–13)</h2>
+  <h2>5 · Screen handoffs (mockups: chapters 04–15)</h2>
   <div class="screenblock"><h3>04 Auth</h3><ul style="font-size:9pt">
-    <li>Login: mark + radial bloom (auth-only), CTA Anmelden → Custom Tab (toolbar #141414), Discord ghost, guest link, Fan Kit band, legal + server-status footer. Offline: login disabled 45% + banner</li>
-    <li>Approval pending: NO filled CTA (outline refresh + quiet logout), 60 s poll + push; Terms: sticky checkbox + CTA (disabled till checked), decline = confirm logout; Lock screen: no data hints while locked</li></ul></div>
+    <li>Login: mark + radial bloom (auth-only), CTA Anmelden → Custom Tab (toolbar #141414), Discord ghost, Fan-Kit-Band (3 Elemente: Logo + §2b + 2(g) — Seite scrollt), legal + server-status footer (ohne Nutzungsbedingungen-Link). Offline: login disabled 45% + banner</li>
+    <li>Approval pending: NO filled CTA (outline refresh + quiet logout), 60 s poll — der EINZIGE Kanal (Q2, kein Push); Terms: sticky checkbox + CTA (disabled till checked), decline = confirm logout; Lock screen: no data hints while locked</li></ul></div>
   <div class="screenblock"><h3>05 Übersicht (Dashboard)</h3><ul style="font-size:9pt">
-    <li>Order: greeting → announcement (collapsible, mark-read) → Einsätze ≤7 Tage (whole card tappable, relative countdown + TS time, „Meine Einheit" chip) → 4 Schnellaktionen (Check-In, Einbuchen, Auftrag, Angebot) → unread preview</li></ul></div>
+    <li>Order: greeting → announcement (collapsible, mark-read) → Einsätze ≤7 Tage (whole card tappable, relative countdown + TS time, „Meine Einheit" chip) → 4 Schnellaktionen (Check-In, Einbuchen, Auftrag, Angebot) → unread preview</li>
+    <li>„{n} angemeldet" auf der Einsatz-Karte stammt aus der Teilnehmerzahl des LISTEN-Endpunkts (MissionListDto erhält das Feld) — nie aus dem Detail-DTO lesen; bis zum Deploy Zeile ausblenden</li></ul></div>
   <div class="screenblock"><h3>06 Einsätze & Operationen</h3><ul style="font-size:9pt">
     <li>Liste: segment Einsätze/Operationen, chip filters (sheets), date grouping, unit badge only in „Alle" mode, FAB 56 dp (Manager)</li>
     <li>Detail: pinned head + facts bar (TS/Join/Ort/Leiter) + 7 tabs (Übersicht, Teilnehmer, Einheiten, Ablauf, Ziele, Frequenzen, Finanzen), ?tab= deeplink; ONE bottom CTA: Anmelden → green Check-In → ghost Check-Out; Einsatz-Briefing = fixed 6-field kv (Ziel, Teamspeak, Serverjoin, Treffpunkt, Dauer computed, Einsatzleiter); attendance open-ended (count + eingecheckt meter, no slots)</li>
+    <li>Funktion an Bord: Wunsch (desired) als Chips im Anmelden-Sheet; geplante Funktion (planned) als chip-select auf der Teilnehmerzeile — setzen erfordert Missions-Manager, sonst gesperrt-antippbar; Abweichung = gelbe „Wunsch:"-Zeile. Operation-Detail faltet mit Panel-Headern („Auszahlungen" startet zu)</li>
     <li>Anmelden sheet: payout radios (Auszahlung / Verzicht Org-Kasse) + optional ship; Finanz-Eintrag: sign from Typ segment, never typed; Operation: rollup + my payout status badge + manager toggles (asymmetric gate: mark instant, unmark confirms)</li></ul></div>
   <div class="screenblock"><h3>07 Benachrichtigungen</h3><ul style="font-size:9pt">
     <li>Unread = 3 dp orange bar + bold + orange type icon; swipe right gelesen / left löschen (commit ≥50%, undo toast 5 s, buttons remain for AT); newest 50 + „Mehr laden"; row tap deep-links; poll + SSE</li></ul></div>
   <div class="screenblock"><h3>08 Hangar</h3><ul style="font-size:9pt">
-    <li>Cards: Typ + „Name", chips Versicherung/Fitted, Ort; edit 44 dp; segment Meine/Org-Einheit (KPI tiles + per-type breakdown); overflow: Home-Location, Import, Hangar leeren (count-naming danger modal); Fleetview import: file/paste → result modal (Importiert/Nicht erkannt/Duplikate)</li>
+    <li>Cards: Typ + „Name", chips Versicherung/Fitted, Ort; edit 44 dp; segment Meine/Org-Einheit (KPI tiles + per-type breakdown); overflow offen gezeichnet (aktiv + leer, Einträge bleiben gedimmt stehen); Hangar leeren = Danger-Modal MIT Anzahl, OHNE Tipp-Hürde (Re-Import stellt wieder her); Home-Location = Bulk-Sheet (CTA nennt die Schiffszahl, keine Rückfrage); Fleetview import: Wurzel = JSON-ARRAY — Server-Formate: CCU Game Fleetview, HangarXPLOR Shiplist, Fleetyards JSON; result modal (Importiert/Nicht erkannt/Duplikate)</li>
     <li>Manufacturer marks: lettermark placeholders — repo white SVGs (Anvil/Drake/MISC) embed rasters; devs must re-export clean vectors</li></ul></div>
   <div class="screenblock"><h3>09 Lager & Blueprints</h3><ul style="font-size:9pt">
     <li>Tree: Material (orange rail) → Stack (gray rail) → Eintrag (dark inset); one header, quality mini-gauge 0–1000, amounts bright + dim unit; long-press bulk Umbuchen; collapse state persisted</li>
-    <li>Buchen: segment Ein-/Aus-/Umbuchen (Ausbuchen warns append-only; Umbuchen adds target); Zuordnung = Variante C/Modell G: two independent splits (Aufträge orange / Einsätze blue) with amounts, live Rest chip (0 success · frei muted · überbucht danger + save locked); personal entries carry no association</li>
+    <li>Buchen: segment Ein-/Aus-/Umbuchen (Ausbuchen warns append-only). UMBUCHEN = TRANSFER mit drei Zielen — Mitglied · Ort · Einheiten-Pool (memberships?allKinds=true, vorbelegt) — + mergeStock (nur SCU; Stück merged immer); Inline-Regel „Ziel muss Mitglied oder Ort ändern" (400). Persönlich ↔ Geteilt = UMBUCHUNGSART in Mein Lager — „Als persönlich umbuchen" / „Ins gemeinsame Lager umbuchen" (personal-rebook)</li>
+    <li>Herkunft-Planer (REQ-INV-027, Ausbuchen + Umbuchen): „Herkunft der Menge": je Dimension (Aufträge/Einsätze) Marken-Zeilen + „Vom Rest"-Zeile + Status-Chip (Gedeckt/aus Rest/Überzeichnet); Regeln: Summe ≤ Abgang (400), Abzug ≤ Zuordnung (400), Abgang − Summe ≤ freier Rest (422), leer = Rest zuerst; „Automatisch vorbefüllt: einzige Marke, kein Rest" = gesperrtes Feld; SELL zeigt „Gekoppelter Verkaufserlös" anteilig an Einsätze mit eigener Teilnahme</li>
+    <li>Auswahlmodus (Langdruck) → Bulk-Umbuchen: Ergebnis-Schritt im Sheet nennt rebooked + skipped („stand bereits am Ziel" — kein Fehler); gesperrte Aktionen = Disabled-Optik + Schloss, antippbar, Toast nennt Rolle bzw. self-or-Logistician-Regel</li>
+    <li>Zuordnung = Variante C/Modell G: two independent splits (Aufträge orange / Einsätze blue) with amounts, live Rest chip (0 success · frei muted · überbucht danger + save locked); personal entries carry no association</li>
     <li>Blueprints: craftability chip + missing-materials breakdown; batch import file → match preview → apply; tablet master-detail with per-ingredient quality slider (live ×-factor on mapped stats only)</li></ul></div>
   <div class="screenblock"><h3>10 Aufträge & Materialbörse</h3><ul style="font-size:9pt">
     <li>Queue: Prio + #ID + Art chip + status pill + Für/Durch badges + collapsible materials w/ progress; age tint &gt;30 d yellow, &gt;90 d red; drag-reorder Logistiker only (long-press, overflow fallback)</li>
     <li>Detail: facts (Für/Durch/Zuständig) + 4 tabs (Positionen, Materialbedarf — queue-gated fold, Übergaben + „Übergabe erfassen" CTA, Verlauf read-only); status change via sheet with named consequence</li>
-    <li>Börse: segment Angebote/Gesuche; „Ich kann liefern" toggle (retractable, creator sees list); Gesuch: Menge + optional Min-Qualität; handover/location stay off-tool; own entries: edit + withdraw</li></ul></div>
+    <li>Börse: segment Angebote/Gesuche; „Ich kann liefern" toggle (retractable, creator sees list); Gesuch: Menge + optional Min-Qualität; handover/location stay off-tool; own entries: edit + withdraw</li>
+    <li>Detail-Sheets: Notiz zur Zuweisung (nur die eigene; 500 Zeichen = Wire-Cap; leer speichern = löschen, kein eigener Button; 409 zeigt Server-Fassung + „Meine Fassung übernehmen") · Status wechseln (aktueller Status inert gezeigt, gesperrte Optionen mit Grund inline, terminale Ziele bestätigen im Modal — Sheets warten auf den Server)</li></ul></div>
   <div class="screenblock"><h3>11 Raffinerie</h3><ul style="font-size:9pt">
-    <li>Orders: status In Arbeit (countdown, minütlich) / Abholbereit (push) / Eingelagert; yield lines + est. value (data white/green, never orange); Extractor-JSON import (approved clients only, §4 terms)</li>
-    <li>„In Lager buchen": creates one Lager entry per material with quality + source ref, marks order eingelagert, CTA disables after</li></ul></div>
+    <li>Raffinerieaufträge (nie „Orders"): In Arbeit (countdown, minütlich; Statuswechsel via Poll — KEIN Push) / Abholbereit / Eingelagert; yield lines + est. value (data white/green, never orange). KEIN Extractor-Import auf Android (Desktop→Browser-Ingest, einmalig konsumiert; Entscheidung 27.08.2026) — Aufträge entstehen manuell</li>
+    <li>„Einlagern" (refineryorder.action.store) = FORMULAR, ein POST je Material (RefineryOrderStoreItemDto): Menge ÜBERSCHREIBT die berechnete Ausbeute (der Zweck des Screens), Qualität, Ort (Pflicht — nicht impliziert), optional Empfänger / Einheit (Pflicht bei &gt;1 Mitgliedschaft, vorbelegt mit Order-Einheit) / Auftrag / Notiz ≤1000 / Persönlich — personal × Auftrag schließen sich aus (400), persönliche Zeilen ohne Einsatz-Earmark</li>
+    <li>„Neuer Raffinerieauftrag" (Artboards 4–5): Raffinerie + Methode (3 Ratings: Kosten/Tempo/Ausbeute) + Waren-Zeilen (Karten + Zeilen-Editor), Timing mit live berechnetem „Endet", Geld-Block zugeklappt (Gewinn-Chip im Kopf), optional Einsatz/Inhaber/Status</li></ul></div>
   <div class="screenblock"><h3>12 Bank</h3><ul style="font-size:9pt">
     <li>Tabs Konten/Anträge; KPI total + account cards w/ drawn sparkline; CARTEL visible to all, others per view grant</li>
-    <li>Detail: balance hero, custody holder bars (sum = balance), transactions (+/− tints), Kontoauszug PDF; Antrag: Typ segment, approval-ladder hint under amount (≥100 k → 2 Freigaben), never self-approve; ledger append-only — no offline queueing</li></ul></div>
+    <li>Detail: balance hero, transactions (+/− tints), Kontoauszug PDF — Halter sind NICHT kontogebunden (Verwahrungs-Sektion aus dem Konto-Detail entfernt, 27.08.2026); Antrag: Typ segment, approval-ladder hint under amount (≥100 k → 2 Freigaben), nie selbst bestätigen; ledger append-only — no offline queueing</li>
+    <li>Verwaltung (BANK_EMPLOYEE) = Scope-Segment in derselben Bank-Destination (ohne Rolle: gesperrt-antippbar): Staff-Dashboard (ALLE Konten der Einheit inkl. geschlossener/ohne Grant), Buchungsanträge (gleiche Karte, Einheits-Scope, nie eigene bestätigen), Konten-Lifecycle (anlegen/schließen/wieder öffnen — reversibel, keine Tipp-Hürde), Grants-Matrix (nur Bank-Management, Sehen/Freigeben), Halter-Detail auf EINHEITS-Ebene + Halter-Umbuchung</li></ul></div>
   <div class="screenblock"><h3>13 Beförderung & Einstellungen</h3><ul style="font-size:9pt">
-    <li>Beförderung: rank hero, 5 requirement rows w/ progress, matrix Selbst/Leitung/Ziel (below-goal yellow), read-only for members</li>
-    <li>Einstellungen: Sprache DE/EN segment, App-Sperre (SQUARE toggle, BiometricPrompt on enable), Blueprint-Sharing, Auszahlungspräferenz, aktive Org-Einheit, Rechtliches + Fan Kit band, „Lokale Daten löschen" (danger modal, server data untouched), Abmelden, version/server-status footer</li></ul></div>
+    <li>Beförderung: rank hero, 5 requirement rows w/ progress, matrix Thema · Bewertung · Ziel — Eigentümer 25.08.2026: KEINE Selbst-/Leitungs-Bewertung (below-goal yellow), read-only for members</li>
+    <li>Einstellungen: Sprache DE/EN segment, App-Sperre (SQUARE toggle, BiometricPrompt on enable), Blueprint-Sharing, Auszahlungspräferenz, aktive Org-Einheit, Rechtliches (Open-Source-Lizenzen → Kap. 15) + Fan-Kit-Band (3 Elemente), „Lokale Daten löschen" (danger modal, server data untouched), Abmelden, version/server-status footer</li></ul></div>
+  <div class="screenblock"><h3>15 Open-Source-Lizenzen</h3><ul style="font-size:9pt">
+    <li>Build-generiertes Register (licensee → raw/oss_licenses.json): &gt;100 Artefakte mit exakter Version, gruppiert nach Lizenz (Dual-Lizenz doppelt gelistet), Sticky-Gruppen-Header, Rahmentext + Meta-Zeile; Lizenztext extern im Browser (external-link-Glyphe) — kein Browser erkannt → „URL kopieren" + Toast; Koordinate einzeilig, break-all; Laden-Spinner erst nach 300 ms; lokaler Fehler ohne Fiction-Canon</li></ul></div>
 
   <h2 class="newpage">6 · System states & app icon</h2>
   <ul style="font-size:9pt">
     <li><b>Offline:</b> banner (wifi-off, warning bar, „Zuletzt aktualisiert …") + Cache chips; reconnect flips green 2 s then auto-refresh</li>
     <li><b>409:</b> „Konflikt festgestellt" modal — reload CTA, inputs preserved; <b>429/503:</b> full-screen only on first load — countdown in the ring spinner, backoff 3/6/12/30 s, 429 uses Retry-After; <b>Forced update:</b> blocking screen, installed→required chips, CTA Play Store</li>
     <li><b>Errors (in-fiction canon):</b> 403 „Access Denied — Insufficient security clearance. This incident has been logged." · 404 „Signal Lost…" · 500 „System Malfunction…" · CTA „Zurück zur Basis"</li>
-    <li><b>Push:</b> small icon = alpha-only monochrome mark, accent #E77E23, ≤2 uppercase actions, channel set (Einsätze &amp; Check-In, Aufträge, Börse, Bank, System), sensitive amounts never on the lock screen</li>
+    <li><b>Kein Push (Q2):</b> es gibt keinen Push-Kanal — Zustellung in-app via Poll/SSE (Kap. 07); keine Copy verspricht Benachrichtigungen. Der frühere Push-/Channel-Absatz ist gestrichen</li>
+    <li><b>Gate nicht erreichbar</b> (nach Login, vor der App): angemeldet, aber der Freigabe-Status antwortet nicht — eigener Zustand „Verification Offline — Command did not respond. Your credentials remain valid." (Warning-Ton, KEIN Statuscode geborgt): Auto-Retry 3/6/12/30 s (Countdown-Ring), manueller Versuch setzt zurück, Abmelden ohne Rückfrage; jede echte Antwort routet sofort (Kap. 14 §3)</li>
     <li><b>Adaptive icon:</b> foreground orange mark in 66/108 safe zone · background flat #000 · monochrome layer shipped deliberately (Android 13+ themed icons). Logo ONLY in #E77E23, white or black — hard rule</li>
   </ul>
 
