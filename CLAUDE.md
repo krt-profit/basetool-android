@@ -4,7 +4,7 @@
 
 **Basetool Android** — the native Android companion app of the Profit Basetool, the
 squadron-management web app of the "DAS KARTELL" / IRIDIUM organization. Kotlin (K2) +
-Jetpack Compose (Material 3 + material3-adaptive), minSdk 30 (Android 11), targetSdk 37,
+Jetpack Compose (Material 3 + material3-adaptive), minSdk 31 (Android 12), targetSdk 37,
 phones portrait-first, tablets landscape-first. The app consumes the **existing Basetool
 backend REST API** (`/api/v1`, Bearer JWT against Keycloak) — it contains **no business logic
 of its own** and never talks to PostgreSQL, Redis, or the Keycloak Admin API. All server-side

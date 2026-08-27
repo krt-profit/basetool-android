@@ -104,7 +104,7 @@
         <!--
           Opts AppCompat's per-app language backport into persisting the choice itself
           (ADR-0007). Without this metadata `AppCompatDelegate.setApplicationLocales` applies the
-          language for the current process only on API 30-32 and the app reverts to the device
+          language for the current process only on API 31-32 and the app reverts to the device
           language on the next cold start, which reads as the setting not having been saved. On
           API 33+ the platform stores it and this declaration is inert.
         -->

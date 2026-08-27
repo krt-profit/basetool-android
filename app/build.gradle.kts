@@ -228,7 +228,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
 
-    // Only for AppCompatDelegate.setApplicationLocales: on API 30-32 there is no platform
+    // Only for AppCompatDelegate.setApplicationLocales: on API 31-32 there is no platform
     // LocaleManager, and this is the backport (see ADR-0007). It arrives transitively anyway,
     // pulled in by androidx.biometric — declaring it makes the version a decision rather than a
     // side effect of another library's dependency graph.

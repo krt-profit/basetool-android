@@ -119,10 +119,15 @@ refresh of a session fail intermittently and only in the field.
 
 ### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
 
-minSdk 30 still spans two backup worlds: `backup_rules.xml` governs API ≤ 30, `data_extraction_rules.xml`
-governs API 31+, and the latter needs the exclusion in **both** its `cloud-backup` and
-`device-transfer` sections — `allowBackup=false` alone does not reliably stop a device-to-device
-transfer.
+`data_extraction_rules.xml` governs API 31+ and needs the exclusion in **both** its
+`cloud-backup` and `device-transfer` sections — `allowBackup=false` alone does not reliably stop a
+device-to-device transfer.
+
+> [!note] `backup_rules.xml` is inert since minSdk 31, and kept anyway
+> `android:fullBackupContent` is read only by API ≤ 30, so at the floor of ADR-0015 no device reads
+> it. It stays because it costs nothing and is the belt beside the braces on the one artefact that
+> must never leave the device — deleting it would leave a future lowering of the floor silently
+> unprotected. Both rule sets must therefore still agree.
 
 The excluded path must be the file DataStore actually writes: `datastore/krt_tokens.preferences_pb`,
 not the bare store name. `AuthDataStore.RELATIVE_PATH` publishes it and `BackupExclusionTest` compares

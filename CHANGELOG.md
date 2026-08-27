@@ -37,6 +37,11 @@
 
 ### Changed
 
+- **Die App setzt jetzt Android 12 voraus** (vorher Android 11). Grund ist nicht die Reichweite,
+  sondern die Prüfbarkeit: der Emulator für Android 11 kann sich nicht anmelden, und eine unterste
+  Version, die niemand testen kann, ist ein Versprechen, das niemand geprüft hat. Direkt beim
+  ersten Anmeldetest auf Android 12 kam ein Absturz zum Vorschein, der bis dahin ausgeliefert war.
+
 - **Die Anmeldung stürzt nicht mehr ab, wenn das Gerät keine Bildschirmsperre hat** — sie sagt
   jetzt, dass eine eingerichtet werden muss. Vorher verschwand die App beim Tippen auf „Anmelden".
 - **Die Fehlermeldung behauptet nicht mehr, die Administration sei informiert worden.** Das war
