@@ -42,6 +42,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankHolderViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
@@ -105,6 +106,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param bankStaff drives the Verwaltung scope.
  * @param bankLifecycle drives its Konten tab.
  * @param bankAccount builds a view model for one account.
+ * @param bankHolder builds a view model for one holder's custody.
  * @param orders drives the Auftrag queue.
  * @param exchange drives the Materialbörse.
  * @param refinery drives the member's own Raffinerie orders.
@@ -136,6 +138,7 @@ fun BasetoolApp(
     bankStaff: BankStaffViewModel,
     bankLifecycle: BankLifecycleViewModel,
     bankAccount: (String) -> BankAccountViewModel,
+    bankHolder: (String) -> BankHolderViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     exchange: MaterialBoardViewModel,
@@ -303,6 +306,7 @@ fun BasetoolApp(
                         bankStaff = bankStaff,
                         bankLifecycle = bankLifecycle,
                         bankAccount = bankAccount,
+                        bankHolder = bankHolder,
                         orders = orders,
                         orderDetail = orderDetail,
                         exchange = exchange,

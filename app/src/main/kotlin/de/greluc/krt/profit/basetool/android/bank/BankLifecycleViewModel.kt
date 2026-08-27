@@ -115,6 +115,9 @@ sealed interface BankLifecyclePrompt {
  * @property grants the standings on that account.
  * @property grantsLoading whether the matrix is being read.
  * @property granteeDraft the „+ Grant hinzufügen" sheet, or `null` while it is closed.
+ * @property holderDraft the „+ Halter registrieren" sheet, or `null` while it is closed. Separate
+ *   from [granteeDraft] because both can be reached from the Konten tab and neither may inherit the
+ *   other's pick.
  */
 data class BankLifecycleState(
     val accounts: List<BankManagedAccount> = emptyList(),
@@ -129,6 +132,7 @@ data class BankLifecycleState(
     val grants: List<BankGrant> = emptyList(),
     val grantsLoading: Boolean = false,
     val granteeDraft: BankGranteeDraft? = null,
+    val holderDraft: BankGranteeDraft? = null,
 )
 
 /**
@@ -401,6 +405,99 @@ class BankLifecycleViewModel(
                         mutableState.value.copy(grantsLoading = false, error = result.error)
                 }
             }
+        }
+    }
+
+    /** Opens the „+ Halter registrieren" sheet and offers the first candidates unfiltered. */
+    fun onAddHolder() {
+        mutableState.value = mutableState.value.copy(holderDraft = BankGranteeDraft(), error = null)
+        searchHolderCandidates("")
+    }
+
+    /** Closes it, discarding what was typed. */
+    fun onDismissHolderDraft() {
+        mutableState.value = mutableState.value.copy(holderDraft = null)
+    }
+
+    /**
+     * Records what was typed into the holder picker and asks the server for candidates.
+     *
+     * @param query the new text.
+     */
+    fun onHolderQuery(query: String) {
+        val draft = mutableState.value.holderDraft ?: return
+        mutableState.value =
+            mutableState.value.copy(holderDraft = draft.copy(query = query, selected = null))
+        searchHolderCandidates(query)
+    }
+
+    /**
+     * Picks the member to register as a holder.
+     *
+     * @param member who.
+     */
+    fun onHolderSelected(member: BankGrantee) {
+        val draft = mutableState.value.holderDraft ?: return
+        mutableState.value =
+            mutableState.value.copy(
+                holderDraft = draft.copy(selected = member, query = member.handle),
+            )
+    }
+
+    /** Registers the picked member as a holder of the unit's custody. */
+    fun onRegisterHolder() {
+        val member = mutableState.value.holderDraft?.selected
+        if (member == null || mutableState.value.saving) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = source.registerHolder(member.id)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, holderDraft = null)
+                    reload(keepContent = true)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "holder registration refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
+    }
+
+    /**
+     * Asks the server for members who could become holders.
+     *
+     * @param query the search text.
+     */
+    private fun searchHolderCandidates(query: String) {
+        val draft = mutableState.value.holderDraft ?: return
+        mutableState.value = mutableState.value.copy(holderDraft = draft.copy(searching = true))
+        viewModelScope.launch {
+            val result = grantSource.searchGrantees(query)
+            val current = mutableState.value.holderDraft ?: return@launch
+            if (current.query != query) {
+                return@launch
+            }
+            mutableState.value =
+                when (result) {
+                    is ApiResult.Success -> {
+                        mutableState.value.copy(
+                            holderDraft = current.copy(options = result.value, searching = false),
+                        )
+                    }
+
+                    is ApiResult.Failure -> {
+                        KrtLog.w(LOG_TAG) { "holder candidate search failed: ${result.error}" }
+                        mutableState.value.copy(
+                            holderDraft = current.copy(searching = false),
+                            error = result.error,
+                        )
+                    }
+                }
         }
     }
 

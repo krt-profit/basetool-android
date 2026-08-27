@@ -17,7 +17,10 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequ
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankGrantDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderTransferRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankTransactionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.ConfirmBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankAccountRequest
@@ -30,6 +33,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBala
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankHolderBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseUserDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RegisterBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
@@ -67,7 +71,8 @@ class BankStaffRepository(
     private val reader: ApiReader,
 ) : BankStaffSource,
     BankLifecycleSource,
-    BankGrantSource {
+    BankGrantSource,
+    BankHolderSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -354,6 +359,51 @@ class BankStaffRepository(
         }
     }
 
+    override suspend fun holder(id: String): ApiResult<BankHolder> =
+        holder(reader.get("$STAFF_HOLDERS_PATH/$id", BankHolderDto.serializer()))
+
+    override suspend fun holderBookings(
+        id: String,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BankHolderBookingPage> =
+        when (
+            val result =
+                reader.get(
+                    "$STAFF_HOLDERS_PATH/$id/transactions",
+                    listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
+                    PageResponseBankHolderBookingDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
+        }
+
+    override suspend fun transferCustody(
+        sourceHolderId: String,
+        destinationHolderId: String,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit> =
+        when (
+            val result =
+                reader.post(
+                    path = "$STAFF_HOLDERS_PATH/transfer",
+                    body =
+                        BankHolderTransferRequest(
+                            sourceHolderId = sourceHolderId,
+                            destinationHolderId = destinationHolderId,
+                            amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                            note = note?.takeIf { it.isNotBlank() },
+                        ),
+                    bodySerializer = BankHolderTransferRequest.serializer(),
+                    deserializer = BankTransactionDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
+        }
+
     override suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>> =
         when (
             val result =
@@ -538,6 +588,40 @@ private fun BankHolderDto.toModel(): BankHolder? {
         version = version ?: 0,
     )
 }
+
+/**
+ * Maps a page of holder postings onto the model.
+ *
+ * @param page which page was asked for; the server does not always echo it.
+ * @return the page.
+ */
+private fun PageResponseBankHolderBookingDto.toModel(page: Int): BankHolderBookingPage =
+    BankHolderBookingPage(
+        rows = content.orEmpty().mapNotNull { it.toModel() },
+        page = this.page ?: page,
+        totalElements = totalElements ?: 0,
+        totalPages = totalPages ?: 0,
+    )
+
+/**
+ * Maps one holder posting onto the model.
+ *
+ * @return the posting, or `null` without an id — one nothing could address.
+ */
+private fun BankHolderBookingDto.toModel(): BankHolderBooking? =
+    postingId?.let {
+        BankHolderBooking(
+            id = it,
+            transactionId = transactionId,
+            type = type?.name,
+            amount = amount?.toString(),
+            note = note,
+            createdAt = createdAt,
+            counterAccount = counterAccountName ?: counterAccountNo,
+            counterHolder = counterHolderHandle,
+            reversed = reversedTransactionId != null,
+        )
+    }
 
 /**
  * Maps one search hit onto a grantee.

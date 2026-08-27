@@ -527,3 +527,59 @@ horizontally scrollable so a unit with many accounts does not lose its last one 
   the freshly created **version-0** row, and `DELETE` answers `204`.
 
 **Code:** `BankStaffRepository` (`BankGrantSource`), `BankLifecycleViewModel`, `BankGrantsTab`
+
+---
+
+### REQ-APP-BANK-013 — Custody is the unit's, and moving it costs the KRT account a fee
+
+The holder register's detail — design chapter 12, artboard 8 — plus the „+ Halter registrieren"
+action the web has on the same section and the app did not.
+
+**Custody is kept at org-unit level and is not allocated to individual accounts** (handoff
+correction of 27.08.2026). The screen states that under the total rather than leaving the reader to
+infer which account the figure belongs to, and the posting rows carry no account column: a
+holder-to-holder move touches none, and an empty column would imply the figure is account-scoped.
+
+**„Halter-Umbuchung" does touch one account, and the artboard's line does not say so.** Quoted
+verbatim from the web, it promises a move „ohne ein Konto zu berühren"; `BankLedgerService.
+bookHolderTransfer` charges a fee (`operation.transfer_fee_rate`, default 0.5 %) and books it
+against the **KRT (CARTEL)** account, which it locks, requires active and requires covered. As soon
+as the fee rounds above zero an account is very much touched — and if the KRT account is missing or
+uncovered the whole transfer is refused. The app's wording says what actually happens: no account of
+the *unit* is debited, the fee is charged to the KRT account, and the source holder may go negative.
+
+**A 409 from the bank is usually not an optimistic lock.** The shared bank wording answered every
+409 with „gleichzeitig geändert", which is right for a stale version and wrong for every
+`BankConflictException` code. A transfer refused because the fee-bearing KRT account is missing was
+reported as a concurrent edit — advice that sends the member to reload a page which will refuse
+again. `bankConflictMessage` now answers `BANK_SELF_TRANSFER`, `BANK_HOLDER_INACTIVE`,
+`BANK_HOLDER_OVERDRAFT`, `BANK_ACCOUNT_CLOSED` and `BANK_OVERDRAFT` in their own words.
+
+**Registration is the register's first action, not an afterthought.** Without a holder there is no
+custody to look at and no booking confirmation can name one. The picker is the same
+`/users/search-bank` the grants sheet uses.
+
+**Reads are the employee's, the transfer is Bank-Management's**, drawn locked rather than hidden.
+
+**Acceptance**
+
+- [x] A transfer names the shown holder as its source (`BankHolderViewModelTest`).
+- [x] A transfer without a destination, or with a blank amount, is not sent — the second would reach
+  the server as a zero-value posting (`BankHolderViewModelTest`).
+- [x] A refused transfer keeps the sheet open with what was typed (`BankHolderViewModelTest`).
+- [x] A holder register that cannot be read leaves the custody figure standing
+  (`BankHolderViewModelTest`).
+- [x] The transfer offers only *other*, *active* holders (`BankHolderViewModelTest`).
+- [x] Paging past the last page is refused rather than sent (`BankHolderViewModelTest`).
+- [x] The unit-level sentence is on the surface, and a booking kind is translated rather than
+  printed as the wire enum (`BankHolderScreenTest`).
+- [x] A single page carries no pager (`BankHolderScreenTest`).
+- [x] Without Bank-Management the transfer is drawn locked and answers when tapped
+  (`BankHolderScreenTest`).
+- [x] Verified on a device against the local test stack: registration `201`, holder and postings
+  `200`, and the transfer through all three of its answers — `BANK_ACCOUNT_CLOSED` with no KRT
+  account, `BANK_OVERDRAFT` with an empty one, and `201` once the fee was zero, after which the KPI
+  showed **−250 aUEC** and the posting appeared as „Verwahrerwechsel · vor 2 Min.".
+
+**Code:** `BankStaffRepository` (`BankHolderSource`), `BankHolderViewModel`, `BankHolderScreen`,
+`BankCustodySheet`, `BankHolderRegisterSheet`

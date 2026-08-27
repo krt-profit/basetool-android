@@ -584,8 +584,22 @@ private fun BankBooking.subline(): String {
  *   untranslated word beats an empty line.
  */
 @Composable
-private fun BankBooking.typeLabel(): String =
+private fun BankBooking.typeLabel(): String = bankTypeLabel(type)
+
+/**
+ * The translated name of a booking kind.
+ *
+ * Shared with the holder detail, which shows the same kinds against custody rather than against an
+ * account — the wording is the same fact either way.
+ *
+ * @param type the server's value.
+ * @return the wording, or the raw server value for a kind this build has never seen — an
+ *   untranslated word beats an empty line.
+ */
+@Composable
+internal fun bankTypeLabel(type: String?): String =
     when (type) {
+        null -> ""
         "DEPOSIT" -> stringResource(R.string.bank_type_deposit)
         "WITHDRAWAL" -> stringResource(R.string.bank_type_withdrawal)
         "TRANSFER" -> stringResource(R.string.bank_type_transfer)
@@ -635,6 +649,7 @@ private fun BankAccountFailure(
  *
  * @param viewModel drives the list.
  * @param onOpenAccount a card was tapped.
+ * @param onOpenHolder a holder row in the Konten tab was tapped.
  * @param modifier layout modifier.
  */
 @Composable
@@ -644,6 +659,7 @@ fun BankAccountsRoute(
     staffViewModel: BankStaffViewModel,
     lifecycleViewModel: BankLifecycleViewModel,
     onOpenAccount: (String) -> Unit,
+    onOpenHolder: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -689,6 +705,7 @@ fun BankAccountsRoute(
                 viewModel = staffViewModel,
                 lifecycleViewModel = lifecycleViewModel,
                 onOpenAccount = onOpenAccount,
+                onOpenHolder = onOpenHolder,
                 modifier = Modifier.weight(1f),
             )
             return@Column
@@ -796,6 +813,7 @@ fun BankAccountsRoute(
  *
  * @param viewModel drives the dashboard.
  * @param onOpenAccount a row was tapped.
+ * @param onOpenHolder a holder row in the Konten tab was tapped.
  * @param modifier layout modifier.
  */
 @Composable
@@ -803,6 +821,7 @@ private fun BankStaffScope(
     viewModel: BankStaffViewModel,
     lifecycleViewModel: BankLifecycleViewModel,
     onOpenAccount: (String) -> Unit,
+    onOpenHolder: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -846,6 +865,7 @@ private fun BankStaffScope(
                 lifecycleViewModel = lifecycleViewModel,
                 tab = staffTab,
                 onOpenAccount = onOpenAccount,
+                onOpenHolder = onOpenHolder,
                 onLocked = { managementToast = true },
             )
         }
@@ -913,6 +933,7 @@ private const val GRANTS_TAB = 3
  * @param lifecycleViewModel drives the Konten tab.
  * @param tab which tab is selected.
  * @param onOpenAccount a row was tapped.
+ * @param onOpenHolder a holder row in the Konten tab was tapped.
  * @param onLocked a locked lifecycle action was tapped.
  */
 @Composable
@@ -923,6 +944,7 @@ private fun StaffScopeContent(
     lifecycleViewModel: BankLifecycleViewModel,
     tab: Int,
     onOpenAccount: (String) -> Unit,
+    onOpenHolder: (String) -> Unit,
     onLocked: () -> Unit,
 ) {
     val modifier = Modifier.fillMaxSize()
@@ -987,7 +1009,8 @@ private fun StaffScopeContent(
                         BankLifecycleActions(
                             onExpand = lifecycleViewModel::onExpand,
                             onPrompt = lifecycleViewModel::onPrompt,
-                            onOpenHolder = { },
+                            onOpenHolder = { onOpenHolder(it.id) },
+                            onAddHolder = lifecycleViewModel::onAddHolder,
                             onLocked = onLocked,
                         ),
                     modifier = modifier,
@@ -1093,6 +1116,20 @@ private fun BankLifecycleDialogs(
     state: BankLifecycleState,
     viewModel: BankLifecycleViewModel,
 ) {
+    state.holderDraft?.let { draft ->
+        BankHolderRegisterSheet(
+            draft = draft,
+            saving = state.saving,
+            error = state.error,
+            actions =
+                BankHolderRegisterActions(
+                    onQuery = viewModel::onHolderQuery,
+                    onSelect = viewModel::onHolderSelected,
+                    onConfirm = viewModel::onRegisterHolder,
+                    onDismiss = viewModel::onDismissHolderDraft,
+                ),
+        )
+    }
     state.granteeDraft?.let { draft ->
         BankGrantSheet(
             draft = draft,

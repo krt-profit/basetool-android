@@ -167,8 +167,46 @@ internal fun bankGrantErrorMessage(error: ApiError): String =
     when (error.problem?.code) {
         CODE_MISSING_ROLE -> stringResource(R.string.bank_grants_add_error_role)
         CODE_DUPLICATE -> stringResource(R.string.bank_grants_add_error_duplicate)
+        else -> bankConflictMessage(error)
+    }
+
+/**
+ * What to say about a refused bank write.
+ *
+ * **A 409 from the bank is usually not an optimistic lock.** The shared wording answers every 409
+ * with „gleichzeitig geändert", which is right for a stale version and wrong for all of
+ * `BankConflictException`'s codes — a holder transfer refused because the fee-bearing KRT account is
+ * missing was reported to the user as a concurrent edit, which sends them to reload a page that will
+ * refuse again. Each code the app can provoke gets its own sentence; the rest still falls through.
+ *
+ * @param error what came back.
+ * @return the message to show.
+ */
+@Composable
+internal fun bankConflictMessage(error: ApiError): String =
+    when (error.problem?.code) {
+        CODE_SELF_TRANSFER -> stringResource(R.string.bank_conflict_self_transfer)
+        CODE_HOLDER_INACTIVE -> stringResource(R.string.bank_conflict_holder_inactive)
+        CODE_HOLDER_OVERDRAFT -> stringResource(R.string.bank_conflict_holder_overdraft)
+        CODE_ACCOUNT_CLOSED -> stringResource(R.string.bank_conflict_account_closed)
+        CODE_OVERDRAFT -> stringResource(R.string.bank_conflict_overdraft)
         else -> bankRequestErrorMessage(error)
     }
+
+/** Source and destination of an Umbuchung are the same holder. */
+private const val CODE_SELF_TRANSFER = "BANK_SELF_TRANSFER"
+
+/** The destination holder may receive nothing new. */
+private const val CODE_HOLDER_INACTIVE = "BANK_HOLDER_INACTIVE"
+
+/** More was to be debited from a holder than the rules allow. */
+private const val CODE_HOLDER_OVERDRAFT = "BANK_HOLDER_OVERDRAFT"
+
+/** The account a leg needs — for an Umbuchung, the KRT account bearing the fee — is unusable. */
+private const val CODE_ACCOUNT_CLOSED = "BANK_ACCOUNT_CLOSED"
+
+/** An account would be driven negative. */
+private const val CODE_OVERDRAFT = "BANK_OVERDRAFT"
 
 /** The grantee holds no Bank Employee role, which the server requires (REQ-BANK-008). */
 private const val CODE_MISSING_ROLE = "BANK_GRANTEE_MISSING_ROLE"

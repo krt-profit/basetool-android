@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankHolderViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
@@ -344,6 +345,13 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
+                                        )
+                                    },
+                                    bankHolder = {
+                                        BankHolderViewModel(
+                                            container.bankStaff,
+                                            container.bankStaff,
+                                            it,
                                         )
                                     },
                                     orders = ordersViewModel,

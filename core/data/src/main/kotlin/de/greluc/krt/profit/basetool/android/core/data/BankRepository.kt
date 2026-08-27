@@ -779,6 +779,96 @@ data class BankGrant(
 )
 
 /**
+ * One posting against a holder's custody.
+ *
+ * @property id the posting.
+ * @property transactionId the transaction it belongs to, which a reversal would name.
+ * @property type what kind of movement it was.
+ * @property amount the signed amount, as the server wrote it.
+ * @property note what was said about it, if anything.
+ * @property createdAt when it was booked, in UTC.
+ * @property counterAccount the account on the other side, or `null` for a holder-to-holder move —
+ *   custody is kept at org-unit level and those transfers touch no account at all.
+ * @property counterHolder the holder on the other side, or `null`.
+ * @property reversed whether this posting is a reversal of another.
+ */
+data class BankHolderBooking(
+    val id: String,
+    val transactionId: String?,
+    val type: String?,
+    val amount: String?,
+    val note: String?,
+    val createdAt: String?,
+    val counterAccount: String?,
+    val counterHolder: String?,
+    val reversed: Boolean,
+)
+
+/**
+ * One page of a holder's postings.
+ *
+ * @property rows the postings.
+ * @property page which page this is, zero-based.
+ * @property totalElements how many postings there are in total.
+ * @property totalPages how many pages that makes.
+ */
+data class BankHolderBookingPage(
+    val rows: List<BankHolderBooking>,
+    val page: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+/**
+ * The holder register's detail — `BANK_EMPLOYEE` to read, `BANK_MANAGEMENT` to move custody.
+ */
+interface BankHolderSource {
+    /**
+     * Reads one holder.
+     *
+     * @param id which holder.
+     * @return the holder, or the classified failure.
+     */
+    suspend fun holder(id: String): ApiResult<BankHolder>
+
+    /**
+     * Reads a page of one holder's postings.
+     *
+     * @param id which holder.
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the page, or the classified failure.
+     */
+    suspend fun holderBookings(
+        id: String,
+        page: Int = 0,
+        pageSize: Int = HOLDER_PAGE_SIZE,
+    ): ApiResult<BankHolderBookingPage>
+
+    /**
+     * Moves custody from one holder to another.
+     *
+     * Touches **no account**: custody is kept at org-unit level, so this only re-attributes who is
+     * holding it. The source may go negative, which is deliberate and which the screen says.
+     *
+     * @param sourceHolderId who gives.
+     * @param destinationHolderId who receives.
+     * @param amount how much, as a decimal string.
+     * @param note what to record about it, or `null`.
+     * @return nothing usable beyond success, or the classified failure.
+     */
+    suspend fun transferCustody(
+        sourceHolderId: String,
+        destinationHolderId: String,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit>
+}
+
+/** How many postings one page of the holder detail carries. */
+const val HOLDER_PAGE_SIZE: Int = 25
+
+/**
  * A member the grants matrix can be extended to.
  *
  * @property id the user.

@@ -4,6 +4,13 @@
 
 ### Added
 
+- **Die Bankverwaltung zeigt jetzt das Halter-Detail.** Tippst du im Tab „Konten" auf einen Halter,
+  siehst du, wie viel er verwahrt und welche Buchungen dahinterstehen, und kannst per
+  „Halter-Umbuchung" Verwahrung an einen anderen Halter abgeben. Neu ist auch
+  „+ Halter registrieren". Die Verwahrung wird auf Einheits-Ebene geführt, nicht je Konto — das
+  steht an der Zahl. Für eine Umbuchung fällt eine Gebühr zulasten des KRT-Kontos an; wenn dieses
+  Konto fehlt oder nicht gedeckt ist, sagt die App genau das statt „gleichzeitig geändert".
+
 - **Die Bankverwaltung hat jetzt einen Tab „Grants".** Pro Konto siehst du, wer darauf einzahlen,
   auszahlen und umbuchen darf, und kannst es ändern. Wer im Konto steht, darf es auch sehen — auch
   ohne ein einziges Häkchen; das Sehen entziehst du, indem du den Eintrag entfernst, und dafür

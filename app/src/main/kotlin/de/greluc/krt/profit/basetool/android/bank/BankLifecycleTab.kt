@@ -56,6 +56,7 @@ private const val CLOSED_ALPHA = 0.55f
  * @property onExpand a row was opened or closed.
  * @property onPrompt a lifecycle decision was reached for.
  * @property onOpenHolder a holder row was tapped.
+ * @property onAddHolder a new holder is to be registered.
  * @property onLocked a locked action was tapped by someone without Bank-Management. The control
  *   answers rather than doing nothing, because a lock that says nothing is indistinguishable from
  *   a broken button.
@@ -64,6 +65,7 @@ data class BankLifecycleActions(
     val onExpand: (String?) -> Unit,
     val onPrompt: (BankLifecyclePrompt) -> Unit,
     val onOpenHolder: (BankHolder) -> Unit,
+    val onAddHolder: () -> Unit,
     val onLocked: () -> Unit,
 )
 
@@ -118,6 +120,14 @@ fun BankLifecycleTab(
                 )
             }
             item(key = "holders-header") { HolderSectionHeader() }
+            item(key = "holders-add") {
+                KrtOutlineButton(
+                    text = stringResource(R.string.bank_lifecycle_holder_register),
+                    onClick = { if (management) actions.onAddHolder() else actions.onLocked() },
+                    modifier = Modifier.fillMaxWidth(),
+                    iconRes = if (management) null else DesignR.drawable.ic_krt_lock,
+                )
+            }
             items(state.holders, key = { "holder-${it.id}" }) { holder ->
                 HolderRow(
                     holder = holder,

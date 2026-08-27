@@ -125,6 +125,9 @@ enum class KrtDestination(
     /** One bank account with its ledger, pushed from the Konten list. */
     BankAccount("bank-account/{accountId}", R.string.bank_title, DesignR.drawable.ic_krt_bank),
 
+    /** One holder's custody, pushed from the holder register in the Konten tab. */
+    BankHolder("bank-holder/{holderId}", R.string.bank_title, DesignR.drawable.ic_krt_users),
+
     /** One job order in full, pushed from the queue. */
     OrderDetail(
         "order/{orderId}",
@@ -224,6 +227,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // behind "Mehr", and the bar has to keep saying so.
         KrtDestination.OperationDetail to KrtDestination.Operations,
         KrtDestination.BankAccount to KrtDestination.Bank,
+        KrtDestination.BankHolder to KrtDestination.Bank,
         KrtDestination.OrderDetail to KrtDestination.Orders,
         KrtDestination.RefineryOrder to KrtDestination.Refinery,
     )
@@ -260,8 +264,19 @@ const val OPERATION_ID_ARG: String = "operationId"
  */
 fun bankAccountRoute(accountId: String): String = "bank-account/" + accountId
 
+/**
+ * The route of one holder's custody detail — design chapter 12, artboard 8.
+ *
+ * @param holderId whose custody to show.
+ * @return the route.
+ */
+fun bankHolderRoute(holderId: String): String = "bank-holder/" + holderId
+
 /** The name of the id argument in [KrtDestination.BankAccount]'s route. */
 const val ACCOUNT_ID_ARG: String = "accountId"
+
+/** The name of the id argument in [KrtDestination.BankHolder]'s route. */
+const val HOLDER_ID_ARG: String = "holderId"
 
 /**
  * The route that opens one job order.
