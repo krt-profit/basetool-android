@@ -293,3 +293,53 @@ The same is true of `/api/v1/users/{id}/memberships`, which the Lager's Umbuchen
 
 **Code:** `BankRepository` (`BankRequestSource`), `BankRequestsViewModel`, `BankRequestsTab`,
 `BankRequestSheet`
+
+---
+
+### REQ-APP-BANK-009 — The staff queue, and why confirming cannot be a button
+
+The Verwaltung scope's **Anträge** tab — design chapter 12, artboard 5 — and the two decisions a
+bank employee makes on it.
+
+**The queue is the same read the Übersicht's counter is aggregated from**
+([`REQ-APP-BANK-008`](bank.md) has the member half). One scope, one state: a badge that counted a
+different read from the list it labels would be a defect waiting for a slow page.
+
+**Confirming is a sheet, not a button, and the artboard is wrong about that.** Artboard 5 draws
+`✓ BESTÄTIGEN` as a bare CTA. `ConfirmBankBookingRequest.holderId` is `@NotNull` — a booked deposit
+or withdrawal records which Verwahrer received or paid the money out (main repo REQ-BANK-040/-044)
+— and an over-limit request is additionally refused with `BANK_OWNER_APPROVAL_REQUIRED` unless the
+employee attests that the responsible holder approved (REQ-BANK-041). A bare CTA would post a body
+the server rejects, every time. The web frontend has a modal for exactly this („Antrag bestätigen …
+Erfasse den Halter, der das Geld erhalten bzw. ausgezahlt hat"), and so does the app. The gap went
+to the design side rather than being coded around.
+
+The sheet carries the holder picker, a second one for a transfer's receiving holder, the
+attestation checkbox **only** when the request is flagged, and the employee's own note
+(REQ-BANK-054). Beside the checkbox it states what the server already knows — whether the
+responsible holder has granted their approval — so the employee ticks a box they can check rather
+than one they must take on trust.
+
+**Refusing needs a reason.** `RejectBankBookingRequest.reason` is required and the requester is
+shown it, so an empty one is not sent. It is asked for in the danger modal, which names the
+consequence: no money moves.
+
+**`ABLEHNEN` and `BESTÄTIGEN` are correct here**, unlike on artboard 1. This is the surface that
+has `POST …/confirm` and `POST …/reject` behind it; the member surface has neither.
+
+**Acceptance**
+
+- [x] A confirmation without a holder is not submittable, and neither is a flagged one without the
+  attestation or a transfer without its receiving holder (`BankStaffViewModelTest`).
+- [x] The confirmation sends the holder, the note and the version it read
+  (`BankStaffViewModelTest`).
+- [x] A refusal with a blank reason is not sent at all; one with a reason sends it trimmed, with
+  the version (`BankStaffViewModelTest`).
+- [x] Only **active** holders are offered — an inactive one is kept for the ledger's sake, not for
+  a new booking (`BankStaffViewModelTest`).
+- [x] The staff queue shows both decisions and still no approval counter
+  (`BankStaffScreenTest`).
+- [x] A queue too long to walk out says so **where it ends**, rather than stopping silently
+  (`BankStaffScreenTest`, ADR-0104).
+
+**Code:** `BankRepository` (`BankStaffSource`), `BankStaffViewModel`, `BankStaffQueue`

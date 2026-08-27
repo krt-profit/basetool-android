@@ -13,6 +13,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
+import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
+import de.greluc.krt.profit.basetool.android.core.data.BankRequestStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffTotals
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -181,6 +184,77 @@ class BankStaffScreenTest {
 
         compose.onNodeWithText("+12.400", substring = true).assertIsDisplayed()
     }
+
+    @Test
+    fun `the staff queue offers both decisions, which is right HERE`() {
+        compose.setContent {
+            KrtTheme {
+                BankStaffQueue(
+                    state = BankStaffState(queue = listOf(pendingRequest()), phase = BankPhase.Ready),
+                    onRefresh = {},
+                    actions = BankStaffQueueActions(onConfirm = {}, onReject = {}),
+                )
+            }
+        }
+
+        // Unlike artboard 1's member row, this surface really does have POST .../confirm and
+        // .../reject behind it.
+        compose.onNodeWithText("Bestätigen", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Ablehnen", ignoreCase = true).assertIsDisplayed()
+        // And still no counter.
+        assertEquals(
+            0,
+            compose.onAllNodesWithText("/ 2", substring = true).fetchSemanticsNodes().size,
+        )
+    }
+
+    @Test
+    fun `a truncated queue says so instead of ending silently`() {
+        compose.setContent {
+            KrtTheme {
+                BankStaffQueue(
+                    state =
+                        BankStaffState(
+                            queue = listOf(pendingRequest()),
+                            countsPartial = true,
+                            phase = BankPhase.Ready,
+                        ),
+                    onRefresh = {},
+                    actions = BankStaffQueueActions(onConfirm = {}, onReject = {}),
+                )
+            }
+        }
+
+        compose
+            .onNodeWithText("gekürzt", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * One undecided request against an account.
+     *
+     * @return the request.
+     */
+    private fun pendingRequest() =
+        BankBookingRequest(
+            id = "r1",
+            accountId = "a1",
+            accountName = "Einsatzkasse",
+            targetAccountId = null,
+            kind = BankRequestKind.WITHDRAWAL,
+            amount = "120000.0000",
+            note = "Auszahlung Operation Rotschild",
+            status = BankRequestStatus.PENDING,
+            requester = "Rhea",
+            rejectReason = null,
+            applicableLimit = null,
+            requiresOwnerApproval = false,
+            ownerApprovalGranted = false,
+            ownerApprovalBy = null,
+            requiredApprover = null,
+            createdAt = "2026-08-01T00:00:00Z",
+            version = 1,
+        )
 
     private companion object {
         /** Four open accounts beside one closed one, so the counts line has all three parts. */

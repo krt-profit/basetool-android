@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.bank
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
+import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestPage
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestStatus
@@ -29,6 +31,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -76,6 +79,29 @@ class BankStaffViewModelTest {
         ): ApiResult<BankRequestPage> {
             queueCalls++
             return pages.getOrElse(page) { ApiResult.Success(emptyPage()) }
+        }
+
+        var holderAnswer: ApiResult<List<BankHolder>> = ApiResult.Success(emptyList())
+        val confirmations = mutableListOf<BankConfirmation>()
+        val rejections = mutableListOf<Triple<String, String, Long>>()
+        var decisionAnswer: ApiResult<BankBookingRequest>? = null
+
+        override suspend fun holders(): ApiResult<List<BankHolder>> = holderAnswer
+
+        override suspend fun confirmRequest(
+            confirmation: BankConfirmation,
+        ): ApiResult<BankBookingRequest> {
+            confirmations.add(confirmation)
+            return decisionAnswer ?: ApiResult.Success(request("a1"))
+        }
+
+        override suspend fun rejectRequest(
+            id: String,
+            reason: String,
+            version: Long,
+        ): ApiResult<BankBookingRequest> {
+            rejections.add(Triple(id, reason, version))
+            return decisionAnswer ?: ApiResult.Success(request("a1"))
         }
     }
 
@@ -247,6 +273,122 @@ class BankStaffViewModelTest {
             assertTrue(viewModel.state.value.management)
         }
 
+    @Test
+    fun `confirming needs a holder, which is why it cannot be a button`() =
+        runTest(dispatcher) {
+            val request = request("a1")
+            val state = BankConfirmState(request)
+
+            // Artboard 5 draws a bare CTA. ConfirmBankBookingRequest.holderId is @NotNull, so a
+            // bare CTA would post a body the server rejects.
+            assertFalse(state.submittable)
+            assertTrue(state.copy(holderId = "h1").submittable)
+        }
+
+    @Test
+    fun `an over-limit request additionally needs the attestation`() =
+        runTest(dispatcher) {
+            val flagged = request("a1").copy(requiresOwnerApproval = true)
+            val state = BankConfirmState(flagged, holderId = "h1")
+
+            // Without it the server answers BANK_OWNER_APPROVAL_REQUIRED (REQ-BANK-041).
+            assertFalse(state.submittable)
+            assertTrue(state.copy(approvalAttested = true).submittable)
+        }
+
+    @Test
+    fun `a transfer needs the receiving holder too`() =
+        runTest(dispatcher) {
+            val transfer = request("a1").copy(kind = BankRequestKind.TRANSFER)
+            val state = BankConfirmState(transfer, holderId = "h1")
+
+            assertFalse(state.submittable)
+            assertTrue(state.copy(destinationHolderId = "h2").submittable)
+        }
+
+    @Test
+    fun `a confirmation sends what the employee recorded, with the version it read`() =
+        runTest(dispatcher) {
+            val source =
+                RecordingStaff(
+                    dashboard = ApiResult.Success(dashboardOf(account("a1"))),
+                    pages =
+                        listOf(
+                            ApiResult.Success(
+                                BankRequestPage(
+                                    listOf(request("a1")),
+                                    page = 0,
+                                    totalPages = 1,
+                                    totalElements = 1,
+                                ),
+                            ),
+                        ),
+                )
+            source.holderAnswer = ApiResult.Success(listOf(holder("h1"), holder("h2")))
+            val viewModel = model(source)
+            viewModel.loadOnce()
+            advanceUntilIdle()
+
+            viewModel.onConfirmOpen(viewModel.state.value.queue.single())
+            viewModel.onConfirmChanged { it.copy(holderId = "h1", staffNote = "bar auf Port Olisar") }
+            viewModel.onConfirmSubmit()
+            advanceUntilIdle()
+
+            val sent = source.confirmations.single()
+            assertEquals("h1", sent.holderId)
+            assertEquals("bar auf Port Olisar", sent.staffNote)
+            assertEquals(1L, sent.version)
+            assertNull(viewModel.state.value.confirming)
+        }
+
+    @Test
+    fun `a refusal without a reason is not sent at all`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff(dashboard = ApiResult.Success(dashboardOf(account("a1"))))
+            val viewModel = model(source)
+            viewModel.loadOnce()
+            advanceUntilIdle()
+
+            viewModel.onRejectOpen(request("a1"))
+            viewModel.onRejectSubmit()
+            advanceUntilIdle()
+
+            // The server requires one and the requester is shown it; an empty reason would be a
+            // rejection nobody can act on.
+            assertTrue(source.rejections.isEmpty())
+        }
+
+    @Test
+    fun `a refusal sends its reason trimmed, with the version it read`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff(dashboard = ApiResult.Success(dashboardOf(account("a1"))))
+            val viewModel = model(source)
+            viewModel.loadOnce()
+            advanceUntilIdle()
+
+            viewModel.onRejectOpen(request("a1"))
+            viewModel.onRejectReason("  Beleg fehlt  ")
+            viewModel.onRejectSubmit()
+            advanceUntilIdle()
+
+            assertEquals(listOf(Triple("r-a1-${"a1".hashCode()}", "Beleg fehlt", 1L)), source.rejections)
+            assertNull(viewModel.state.value.rejecting)
+        }
+
+    @Test
+    fun `only active holders are offered`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff(dashboard = ApiResult.Success(dashboardOf(account("a1"))))
+            source.holderAnswer =
+                ApiResult.Success(listOf(holder("h1"), holder("h2", active = false)))
+            val viewModel = model(source)
+            viewModel.loadOnce()
+            advanceUntilIdle()
+
+            // An inactive holder is kept for the ledger's sake, not for a new booking.
+            assertEquals(listOf("h1"), viewModel.state.value.holders.map { it.id })
+        }
+
     private companion object {
         const val HTTP_ERROR = 500
         const val TWO_PAGES = 2
@@ -329,6 +471,18 @@ class BankStaffViewModelTest {
                 delta30d = null,
                 sparkline = emptyList(),
             )
+
+        /**
+         * One holder.
+         *
+         * @param id the holder.
+         * @param active whether they still hold.
+         * @return the holder.
+         */
+        fun holder(
+            id: String,
+            active: Boolean = true,
+        ) = BankHolder(id = id, handle = "Halter $id", active = active, totalHeld = "1000")
 
         /** An empty last page. */
         fun emptyPage() = BankRequestPage(emptyList(), page = 0, totalPages = 1, totalElements = 0)

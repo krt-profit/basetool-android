@@ -4,6 +4,16 @@
 
 ### Added
 
+- **Bankmitarbeiter haben jetzt einen Umschalter „Mitglied | Verwaltung" in der Bank.** Unter
+  „Verwaltung" siehst du alle Konten der Einheit — auch geschlossene und solche, für die du keine
+  eigene Sichtfreigabe hast; letztere sind gekennzeichnet. Wer keine Bank-Rolle hat, sieht den
+  Umschalter mit einem Schloss statt gar nicht.
+
+- **Anträge lassen sich in der App bestätigen und ablehnen.** Beim Bestätigen erfasst du den Halter,
+  der das Geld erhalten oder ausgezahlt hat, und bei einem freigabepflichtigen Antrag bestätigst du,
+  dass die Freigabe des Kontoverantwortlichen vorliegt — die App zeigt dir daneben, ob sie schon
+  erteilt wurde. Ablehnen verlangt einen Grund; den sieht der Antragsteller.
+
 - **Beim Ausbuchen und Umbuchen lässt sich jetzt festlegen, von welchen Auftrags- und
   Einsatz-Marken die Menge abgezogen wird.** Was du nicht zuweist, kommt vom noch nicht
   zugewiesenen Rest — wie bisher. Neu ist, dass die App eine Zuordnung, die der Server ablehnen

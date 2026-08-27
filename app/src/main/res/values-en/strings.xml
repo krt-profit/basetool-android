@@ -515,6 +515,24 @@
     <string name="bank_staff_error_forbidden_message">The bank\'s staff view is not open to you.</string>
     <string name="bank_staff_empty_title">No accounts</string>
     <string name="bank_staff_empty_message">This org unit runs no bank account.</string>
+    <!-- Bank staff: the request queue (design chapter 12, artboard 5) -->
+    <string name="bank_staff_confirm">Confirm</string>
+    <string name="bank_staff_reject">Reject</string>
+    <string name="bank_staff_queue_empty_title">No open requests</string>
+    <string name="bank_staff_queue_empty_message">Nothing is waiting on a decision.</string>
+    <string name="bank_staff_queue_partial">The list is truncated — there are more open requests than shown here.</string>
+    <string name="bank_staff_confirm_title">Confirm the request</string>
+    <string name="bank_staff_confirm_hint">Record the Halter who received or paid out the money.</string>
+    <string name="bank_staff_confirm_holder">Halter</string>
+    <string name="bank_staff_confirm_target_holder">Halter of the destination account</string>
+    <string name="bank_staff_confirm_attest">The account holder has given their approval</string>
+    <string name="bank_staff_confirm_attest_outstanding">The account holder has not approved yet.</string>
+    <string name="bank_staff_confirm_note">Bank employee note</string>
+    <string name="bank_staff_confirm_note_placeholder">Internal note on the booking (optional)</string>
+    <string name="bank_staff_reject_title">Reject the request</string>
+    <string name="bank_staff_reject_message">No money moves. The requester is shown your reason.</string>
+    <string name="bank_staff_reject_reason">Reason</string>
+    <string name="bank_staff_reject_reason_placeholder">Reason for the rejection</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Open</string>

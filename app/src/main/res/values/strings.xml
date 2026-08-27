@@ -536,6 +536,24 @@
     <string name="bank_staff_error_forbidden_message">Die Verwaltungsansicht der Bank ist für dich nicht freigegeben.</string>
     <string name="bank_staff_empty_title">Keine Konten</string>
     <string name="bank_staff_empty_message">Diese Org-Einheit führt kein Bankkonto.</string>
+    <!-- Bank-Verwaltung: Antrags-Queue (design chapter 12, artboard 5) -->
+    <string name="bank_staff_confirm">Bestätigen</string>
+    <string name="bank_staff_reject">Ablehnen</string>
+    <string name="bank_staff_queue_empty_title">Keine offenen Anträge</string>
+    <string name="bank_staff_queue_empty_message">Es wartet nichts auf eine Entscheidung.</string>
+    <string name="bank_staff_queue_partial">Die Liste ist gekürzt — es gibt mehr offene Anträge, als hier stehen.</string>
+    <string name="bank_staff_confirm_title">Antrag bestätigen</string>
+    <string name="bank_staff_confirm_hint">Erfasse den Halter, der das Geld erhalten bzw. ausgezahlt hat.</string>
+    <string name="bank_staff_confirm_holder">Halter</string>
+    <string name="bank_staff_confirm_target_holder">Halter des Zielkontos</string>
+    <string name="bank_staff_confirm_attest">Freigabe durch Kontoverantwortlichen erfolgt</string>
+    <string name="bank_staff_confirm_attest_outstanding">Die Freigabe des Kontoverantwortlichen steht noch aus.</string>
+    <string name="bank_staff_confirm_note">Notiz Bankmitarbeiter</string>
+    <string name="bank_staff_confirm_note_placeholder">Interner Vermerk zur Buchung (optional)</string>
+    <string name="bank_staff_reject_title">Antrag ablehnen</string>
+    <string name="bank_staff_reject_message">Es wird kein Geld bewegt. Der Antragsteller sieht deinen Grund.</string>
+    <string name="bank_staff_reject_reason">Grund</string>
+    <string name="bank_staff_reject_reason_placeholder">Grund der Ablehnung</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Offen</string>

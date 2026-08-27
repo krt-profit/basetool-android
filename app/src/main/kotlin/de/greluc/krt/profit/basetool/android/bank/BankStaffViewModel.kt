@@ -11,11 +11,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
+import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
+import de.greluc.krt.profit.basetool.android.core.data.BankHolder
+import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffSource
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffTotals
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,12 +46,70 @@ data class BankStaffRow(
 )
 
 /**
+ * What the confirmation sheet holds while it is open.
+ *
+ * **Confirming is a sheet, not a button.** `ConfirmBankBookingRequest.holderId` is required by the
+ * server, and an over-limit request is additionally refused without the employee's attestation
+ * that the responsible holder approved. Artboard 5 draws a bare CTA; the web frontend has a modal
+ * for exactly this, and so does the app.
+ *
+ * @property request which request is being booked.
+ * @property holderId who received or paid the money out.
+ * @property destinationHolderId the receiving holder of a transfer.
+ * @property approvalAttested the employee's attestation. Only meaningful — and only shown — when
+ *   the request carries [BankBookingRequest.requiresOwnerApproval].
+ * @property staffNote the employee's own note on the booking, or blank.
+ * @property saving whether the write is in flight.
+ * @property error what the last attempt refused with.
+ */
+data class BankConfirmState(
+    val request: BankBookingRequest,
+    val holderId: String? = null,
+    val destinationHolderId: String? = null,
+    val approvalAttested: Boolean = false,
+    val staffNote: String = "",
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+) {
+    /** Whether the server would accept what has been filled in. */
+    val submittable: Boolean
+        get() =
+            holderId != null &&
+                (request.kind != BankRequestKind.TRANSFER || destinationHolderId != null) &&
+                (!request.requiresOwnerApproval || approvalAttested)
+}
+
+/**
+ * What the refusal dialog holds.
+ *
+ * @property request which request is being refused.
+ * @property reason why; the server requires one and shows it to the requester.
+ * @property saving whether the write is in flight.
+ * @property error what the last attempt refused with.
+ */
+data class BankRejectState(
+    val request: BankBookingRequest,
+    val reason: String = "",
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+) {
+    /** Whether there is a reason to send. */
+    val submittable: Boolean get() = reason.isNotBlank()
+}
+
+/**
  * The Verwaltung scope's Übersicht tab.
  *
  * @property rows every account of the unit.
  * @property totals the KPI band.
  * @property management whether the **server** grants this caller Bank-Management.
  * @property openRequestTotal how many undecided requests the queue holds in total.
+ * @property queue the undecided requests, in the order the server returned them. The same read
+ *   the per-account counter is aggregated from, so the badge cannot disagree with the list.
+ * @property holders the unit's holders, which a confirmation has to name one of.
+ * @property confirming the open confirmation sheet, or `null`.
+ * @property rejecting the open refusal dialog, or `null`.
+ * @property busyId the request a decision is currently in flight for.
  * @property countsPartial whether the per-account counters are known to be incomplete — the queue
  *   is paged, and a queue longer than [MAX_COUNTED_PAGES] pages is not walked to the end. The
  *   number is then a floor, and the screen says so rather than showing a total that is quietly
@@ -62,6 +125,11 @@ data class BankStaffState(
     val countsPartial: Boolean = false,
     val phase: BankPhase = BankPhase.Loading,
     val refreshing: Boolean = false,
+    val queue: List<BankBookingRequest> = emptyList(),
+    val holders: List<BankHolder> = emptyList(),
+    val confirming: BankConfirmState? = null,
+    val rejecting: BankRejectState? = null,
+    val busyId: String? = null,
 )
 
 /**
@@ -154,7 +222,10 @@ class BankStaffViewModel(
                             openRequestTotal = counts.total,
                             countsPartial = counts.partial,
                             phase = BankPhase.Ready,
+                            queue = counts.rows,
+                            holders = mutableState.value.holders,
                         )
+                    readHolders()
                 }
             }
         }
@@ -166,11 +237,13 @@ class BankStaffViewModel(
      * @property perAccount how many undecided requests stand against each account.
      * @property total how many the queue holds altogether.
      * @property partial whether the walk stopped before the end of the queue.
+     * @property rows the requests themselves, which the Anträge tab lists.
      */
     private data class OpenRequestCounts(
         val perAccount: Map<String, Int>,
         val total: Int,
         val partial: Boolean,
+        val rows: List<BankBookingRequest> = emptyList(),
     )
 
     /**
@@ -185,6 +258,7 @@ class BankStaffViewModel(
      */
     private suspend fun countOpenRequests(): OpenRequestCounts {
         val perAccount = mutableMapOf<String, Int>()
+        val rows = mutableListOf<BankBookingRequest>()
         var total = 0
         var page = 0
         var complete = false
@@ -194,12 +268,13 @@ class BankStaffViewModel(
                     // The dashboard still renders. A decoration that could not be read must not
                     // take the screen down with it — but it must not pretend to be complete.
                     KrtLog.w(LOG_TAG) { "request queue unavailable: ${result.error}" }
-                    return OpenRequestCounts(perAccount, total, partial = true)
+                    return OpenRequestCounts(perAccount, total, partial = true, rows = rows)
                 }
 
                 is ApiResult.Success -> {
                     result.value.requests.forEach { request ->
                         total++
+                        rows.add(request)
                         request.accountId?.let { perAccount[it] = (perAccount[it] ?: 0) + 1 }
                     }
                     complete = !result.value.hasMore
@@ -210,7 +285,7 @@ class BankStaffViewModel(
         if (!complete) {
             KrtLog.w(LOG_TAG) { "queue walk stopped at $MAX_COUNTED_PAGES pages; counts are a floor" }
         }
-        return OpenRequestCounts(perAccount, total, partial = !complete)
+        return OpenRequestCounts(perAccount, total, partial = !complete, rows = rows)
     }
 
     /**
@@ -229,6 +304,144 @@ class BankStaffViewModel(
                 null
             }
         }
+
+    /**
+     * Reads the unit's holders, which the confirmation sheet has to offer.
+     *
+     * Its failure is not the scope's failure: the dashboard and the queue still render, and a
+     * confirmation simply cannot be submitted until the list arrives.
+     */
+    private fun readHolders() {
+        viewModelScope.launch {
+            when (val result = source.holders()) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(holders = result.value.filter { it.active })
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "holders unavailable: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    /**
+     * Opens the confirmation sheet on a request.
+     *
+     * @param request the request to book.
+     */
+    fun onConfirmOpen(request: BankBookingRequest) {
+        mutableState.value = mutableState.value.copy(confirming = BankConfirmState(request))
+    }
+
+    /** Closes the confirmation sheet, discarding what was filled in. */
+    fun onConfirmDismiss() {
+        mutableState.value = mutableState.value.copy(confirming = null)
+    }
+
+    /**
+     * Applies one edit to the open confirmation.
+     *
+     * @param change what to change about it.
+     */
+    fun onConfirmChanged(change: (BankConfirmState) -> BankConfirmState) {
+        val open = mutableState.value.confirming ?: return
+        mutableState.value = mutableState.value.copy(confirming = change(open).copy(error = null))
+    }
+
+    /** Sends the open confirmation. */
+    fun onConfirmSubmit() {
+        val open = mutableState.value.confirming ?: return
+        val holderId = open.holderId ?: return
+        mutableState.value = mutableState.value.copy(confirming = open.copy(saving = true))
+        viewModelScope.launch {
+            val result =
+                source.confirmRequest(
+                    BankConfirmation(
+                        requestId = open.request.id,
+                        version = open.request.version,
+                        holderId = holderId,
+                        destinationHolderId = open.destinationHolderId,
+                        ownerApprovalConfirmed = open.approvalAttested,
+                        staffNote = open.staffNote.takeIf { it.isNotBlank() },
+                    ),
+                )
+            when (result) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(confirming = null)
+                    reload(keepContent = true)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "confirmation refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(
+                            confirming =
+                                mutableState.value.confirming?.copy(
+                                    saving = false,
+                                    error = result.error,
+                                ),
+                        )
+                }
+            }
+        }
+    }
+
+    /**
+     * Opens the refusal dialog on a request.
+     *
+     * @param request the request to refuse.
+     */
+    fun onRejectOpen(request: BankBookingRequest) {
+        mutableState.value = mutableState.value.copy(rejecting = BankRejectState(request))
+    }
+
+    /** Closes the refusal dialog. */
+    fun onRejectDismiss() {
+        mutableState.value = mutableState.value.copy(rejecting = null)
+    }
+
+    /**
+     * Types the refusal's reason.
+     *
+     * @param reason what to say.
+     */
+    fun onRejectReason(reason: String) {
+        val open = mutableState.value.rejecting ?: return
+        mutableState.value = mutableState.value.copy(rejecting = open.copy(reason = reason, error = null))
+    }
+
+    /** Sends the refusal. */
+    fun onRejectSubmit() {
+        val open = mutableState.value.rejecting ?: return
+        if (!open.submittable) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(rejecting = open.copy(saving = true))
+        viewModelScope.launch {
+            val result =
+                source.rejectRequest(open.request.id, open.reason.trim(), open.request.version)
+            when (result) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(rejecting = null)
+                    reload(keepContent = true)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "refusal refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(
+                            rejecting =
+                                mutableState.value.rejecting?.copy(
+                                    saving = false,
+                                    error = result.error,
+                                ),
+                        )
+                }
+            }
+        }
+    }
 
     private companion object {
         /** Log subsystem. No amount, handle or note is ever logged. */

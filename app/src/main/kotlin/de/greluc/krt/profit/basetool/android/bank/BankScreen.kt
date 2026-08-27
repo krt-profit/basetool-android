@@ -74,6 +74,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -801,6 +803,49 @@ private fun BankStaffScope(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var staffTab by rememberSaveable { mutableIntStateOf(0) }
+    Column(modifier = modifier.fillMaxSize()) {
+        KrtPageTabs(
+            tabs =
+                listOf(
+                    KrtPageTab(label = stringResource(R.string.bank_staff_tab_overview)),
+                    KrtPageTab(
+                        label = stringResource(R.string.bank_staff_tab_requests),
+                        count = state.openRequestTotal.takeIf { it > 0 },
+                    ),
+                ),
+            selectedIndex = staffTab,
+            onSelect = { staffTab = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Box(modifier = Modifier.weight(1f)) {
+            StaffScopeContent(
+                state = state,
+                viewModel = viewModel,
+                tab = staffTab,
+                onOpenAccount = onOpenAccount,
+            )
+        }
+    }
+    StaffScopeDialogs(state = state, viewModel = viewModel)
+}
+
+/**
+ * What the selected staff tab shows, once the read has resolved.
+ *
+ * @param state what the scope holds.
+ * @param viewModel drives it.
+ * @param tab which tab is selected.
+ * @param onOpenAccount a row was tapped.
+ */
+@Composable
+private fun StaffScopeContent(
+    state: BankStaffState,
+    viewModel: BankStaffViewModel,
+    tab: Int,
+    onOpenAccount: (String) -> Unit,
+) {
+    val modifier = Modifier.fillMaxSize()
     when (val phase = state.phase) {
         is BankPhase.Loading -> {
             KrtLoadingIndicator(
@@ -838,11 +883,84 @@ private fun BankStaffScope(
         }
 
         is BankPhase.Ready -> {
-            BankStaffOverview(
-                state = state,
-                onRefresh = viewModel::onRefresh,
-                onOpenAccount = onOpenAccount,
-                modifier = modifier,
+            if (tab == 0) {
+                BankStaffOverview(
+                    state = state,
+                    onRefresh = viewModel::onRefresh,
+                    onOpenAccount = onOpenAccount,
+                    modifier = modifier,
+                )
+            } else {
+                BankStaffQueue(
+                    state = state,
+                    onRefresh = viewModel::onRefresh,
+                    actions =
+                        BankStaffQueueActions(
+                            onConfirm = viewModel::onConfirmOpen,
+                            onReject = viewModel::onRejectOpen,
+                        ),
+                    modifier = modifier,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The scope's two decision dialogs.
+ *
+ * Both sit outside the tab content on purpose: a decision taken from the queue must survive the
+ * list reloading underneath it.
+ *
+ * @param state what the scope holds.
+ * @param viewModel drives it.
+ */
+@Composable
+private fun StaffScopeDialogs(
+    state: BankStaffState,
+    viewModel: BankStaffViewModel,
+) {
+    state.confirming?.let { confirming ->
+        BankConfirmSheet(
+            state = confirming,
+            holders =
+                state.holders.map {
+                    BankHolderOption(id = it.id, label = it.handle.ifBlank { it.id })
+                },
+            actions =
+                BankConfirmSheetActions(
+                    onHolder = { id -> viewModel.onConfirmChanged { it.copy(holderId = id) } },
+                    onDestinationHolder = { id ->
+                        viewModel.onConfirmChanged { it.copy(destinationHolderId = id) }
+                    },
+                    onAttest = { on -> viewModel.onConfirmChanged { it.copy(approvalAttested = on) } },
+                    onStaffNote = { note -> viewModel.onConfirmChanged { it.copy(staffNote = note) } },
+                    onSubmit = viewModel::onConfirmSubmit,
+                    onDismiss = viewModel::onConfirmDismiss,
+                ),
+        )
+    }
+    state.rejecting?.let { rejecting ->
+        KrtModal(
+            title = stringResource(R.string.bank_staff_reject_title),
+            confirmText = stringResource(R.string.bank_staff_reject),
+            onConfirm = viewModel::onRejectSubmit,
+            onDismiss = viewModel::onRejectDismiss,
+            tone = KrtModalTone.Danger,
+        ) {
+            Text(
+                text = stringResource(R.string.bank_staff_reject_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+            KrtTextField(
+                value = rejecting.reason,
+                onValueChange = viewModel::onRejectReason,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.bank_staff_reject_reason),
+                placeholder = stringResource(R.string.bank_staff_reject_reason_placeholder),
+                isError = rejecting.error != null,
+                errorText = rejecting.error?.let { bankRequestErrorMessage(it) },
             )
         }
     }

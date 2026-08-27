@@ -14,7 +14,9 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.ConfirmBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBalanceTargetRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountDetailDto
@@ -22,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAcco
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -568,6 +571,48 @@ data class BankRequestPage(
 }
 
 /**
+ * One holder of the bank's money, as the confirmation picker offers them.
+ *
+ * A "Verwahrer" holds cash on the organisation's behalf; a booked deposit or withdrawal records
+ * which one received or paid it out. Verwahrung is kept at unit level and is **not** mapped to
+ * individual accounts.
+ *
+ * @property id the holder.
+ * @property handle their in-game name.
+ * @property active whether they still hold; an inactive one is kept for the ledger's sake and is
+ *   not offered.
+ * @property totalHeld how much they hold altogether, unformatted.
+ */
+data class BankHolder(
+    val id: String,
+    val handle: String,
+    val active: Boolean,
+    val totalHeld: String?,
+)
+
+/**
+ * What confirming a request records.
+ *
+ * @property requestId which request.
+ * @property version the version it was read at.
+ * @property holderId who received or paid out the money. **Required by the server**, which is why
+ *   confirming is a sheet rather than a button.
+ * @property destinationHolderId the receiving holder of a transfer; `null` for the other kinds.
+ * @property ownerApprovalConfirmed the employee's attestation that the responsible holder's
+ *   approval was obtained. An over-limit request is refused with `BANK_OWNER_APPROVAL_REQUIRED`
+ *   without it (REQ-BANK-041); for a request that needs none it carries no meaning.
+ * @property staffNote the employee's own note on the booking (REQ-BANK-054), or `null`.
+ */
+data class BankConfirmation(
+    val requestId: String,
+    val version: Long,
+    val holderId: String,
+    val destinationHolderId: String? = null,
+    val ownerApprovalConfirmed: Boolean = false,
+    val staffNote: String? = null,
+)
+
+/**
  * The bank-staff surface — design chapter 12, artboards 4 to 8.
  *
  * Everything here is `hasRole(BANK_EMPLOYEE)` or narrower, and everything here was out of the
@@ -598,6 +643,36 @@ interface BankStaffSource {
         page: Int = 0,
         pageSize: Int = QUEUE_PAGE_SIZE,
     ): ApiResult<BankRequestPage>
+
+    /**
+     * Reads the unit's holders.
+     *
+     * @return the holders, or the classified failure.
+     */
+    suspend fun holders(): ApiResult<List<BankHolder>>
+
+    /**
+     * Confirms a pending request and books it onto the ledger.
+     *
+     * @param confirmation what the employee recorded.
+     * @return the request in its booked state, or the classified failure — a 409 when somebody
+     *   decided it first, or when an over-limit request was confirmed without the attestation.
+     */
+    suspend fun confirmRequest(confirmation: BankConfirmation): ApiResult<BankBookingRequest>
+
+    /**
+     * Refuses a pending request. No money moves.
+     *
+     * @param id the request.
+     * @param reason why; the server requires one and the requester is shown it.
+     * @param version the version it was read at.
+     * @return the request in its refused state, or the classified failure.
+     */
+    suspend fun rejectRequest(
+        id: String,
+        reason: String,
+        version: Long,
+    ): ApiResult<BankBookingRequest>
 }
 
 /** How many queue rows one page carries; the counter walks whole pages of this size. */
@@ -780,6 +855,64 @@ class BankRepository(
         }
     }
 
+    override suspend fun holders(): ApiResult<List<BankHolder>> =
+        when (
+            val result =
+                reader.get(STAFF_HOLDERS_PATH, ListSerializer(BankHolderDto.serializer()))
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { dto ->
+                        dto.id?.let {
+                            BankHolder(
+                                id = it,
+                                handle = dto.handle.orEmpty(),
+                                active = dto.active != false,
+                                totalHeld = dto.totalHeld?.toString(),
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+    override suspend fun confirmRequest(
+        confirmation: BankConfirmation,
+    ): ApiResult<BankBookingRequest> =
+        single(
+            reader.post(
+                path = "$STAFF_REQUESTS_PATH/${confirmation.requestId}/confirm",
+                body =
+                    ConfirmBankBookingRequest(
+                        holderId = confirmation.holderId,
+                        version = confirmation.version,
+                        destinationHolderId = confirmation.destinationHolderId,
+                        ownerApprovalConfirmed = confirmation.ownerApprovalConfirmed,
+                        staffNote = confirmation.staffNote?.takeIf { it.isNotBlank() },
+                    ),
+                bodySerializer = ConfirmBankBookingRequest.serializer(),
+                deserializer = BankBookingRequestDto.serializer(),
+            ),
+        )
+
+    override suspend fun rejectRequest(
+        id: String,
+        reason: String,
+        version: Long,
+    ): ApiResult<BankBookingRequest> =
+        single(
+            reader.post(
+                path = "$STAFF_REQUESTS_PATH/$id/reject",
+                body = RejectBankBookingRequest(reason = reason, version = version),
+                bodySerializer = RejectBankBookingRequest.serializer(),
+                deserializer = BankBookingRequestDto.serializer(),
+            ),
+        )
+
     override suspend fun ownRequests(): ApiResult<List<BankBookingRequest>> =
         requestList("$REQUESTS_PATH")
 
@@ -940,6 +1073,9 @@ class BankRepository(
 
         /** The staff request queue. */
         const val STAFF_REQUESTS_PATH = "/api/v1/bank/requests"
+
+        /** The unit's holders, which a confirmation has to name one of. */
+        const val STAFF_HOLDERS_PATH = "/api/v1/bank/holders"
 
         /** The queue's status filter; repeated once per state. */
         const val STATUS_PARAM = "status"
