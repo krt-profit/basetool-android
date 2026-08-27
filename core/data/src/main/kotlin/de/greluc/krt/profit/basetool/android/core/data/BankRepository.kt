@@ -9,12 +9,17 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBalanceTargetRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountDetailDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountSettingsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.serialization.builtins.ListSerializer
@@ -59,6 +64,89 @@ data class BankAccountDetail(
     val balance: String?,
     val delta30d: String?,
     val bookingCount: Long,
+    val canRequest: Boolean = false,
+    val applicableLimit: String? = null,
+    val approvalExempt: Boolean = false,
+)
+
+/**
+ * What kind of money movement a request asks for.
+ *
+ * The three the member surface offers. A `TRANSFER` is the only one that names a second account.
+ */
+enum class BankRequestKind {
+    /** Money in. */
+    DEPOSIT,
+
+    /** Money out. */
+    WITHDRAWAL,
+
+    /** Money to another account. */
+    TRANSFER,
+}
+
+/**
+ * Where a transfer may send money.
+ *
+ * @property id the account.
+ * @property label how it reads in the picker.
+ */
+data class BankTransferTarget(
+    val id: String,
+    val label: String,
+)
+
+/**
+ * A booking request as the member sees it.
+ *
+ * @property id the request.
+ * @property accountName which account it moves.
+ * @property kind what it asks for.
+ * @property amount how much, unformatted and always positive.
+ * @property note what it is for, or `null`.
+ * @property status where it stands, as the server names it.
+ * @property requester who raised it, by handle.
+ * @property approvalsGiven how many approvals it already carries.
+ * @property approvalsNeeded how many it needs — the staggered ladder, decided by the server.
+ * @property ownApproverGrant whether this member may act on it at all. The approve and reject
+ *   actions appear only for a holder of an approver grant, never for every reader of the account.
+ * @property ownRequest whether this member raised it. Nobody approves their own.
+ * @property createdAt when it was raised, in UTC.
+ * @property version the optimistic-locking version. Every write against a request echoes it, so
+ *   two approvers acting on the same request at the same moment collide with a 409 instead of one
+ *   silently overwriting the other.
+ */
+data class BankBookingRequest(
+    val id: String,
+    val accountName: String?,
+    val kind: BankRequestKind?,
+    val amount: String?,
+    val note: String?,
+    val status: String?,
+    val requester: String?,
+    val approvalsGiven: Int,
+    val approvalsNeeded: Int,
+    val ownApproverGrant: Boolean,
+    val ownRequest: Boolean,
+    val createdAt: String?,
+    val version: Long,
+)
+
+/**
+ * What raising a request carries.
+ *
+ * @property accountId the account the money moves on.
+ * @property kind what is being asked for.
+ * @property amount how much, as typed.
+ * @property targetAccountId where a transfer goes; `null` for the other two.
+ * @property note the „Verwendungszweck", or `null`.
+ */
+data class BankRequestDraft(
+    val accountId: String,
+    val kind: BankRequestKind,
+    val amount: String,
+    val targetAccountId: String? = null,
+    val note: String? = null,
 )
 
 /**
@@ -232,6 +320,73 @@ interface BankSource {
 }
 
 /**
+ * The booking-request half of the member's bank.
+ *
+ * Its own seam rather than more methods on [BankSource]: reading an account and asking for money to
+ * move are different jobs with different gates, and the request calls are the only ones that echo a
+ * version. [BankRepository] serves both.
+ */
+interface BankRequestSource {
+    /**
+     * Reads the requests this member raised.
+     *
+     * @return the requests, newest first as the server orders them.
+     */
+    suspend fun ownRequests(): ApiResult<List<BankBookingRequest>>
+
+    /**
+     * Reads the requests waiting on **this** member's approval.
+     *
+     * A separate call rather than a filter on the list above: the server decides who may approve
+     * what, and a client-side filter would have to reimplement the grant rules to get it right.
+     *
+     * @return the requests awaiting this member.
+     */
+    suspend fun foreignRequests(): ApiResult<List<BankBookingRequest>>
+
+    /**
+     * Where a transfer may send money.
+     *
+     * @return the accounts the server will accept as a target.
+     */
+    suspend fun transferTargets(): ApiResult<List<BankTransferTarget>>
+
+    /**
+     * Raises a booking request.
+     *
+     * @param draft what the member filled in.
+     * @return the request as the server recorded it, or the classified failure.
+     */
+    suspend fun createRequest(draft: BankRequestDraft): ApiResult<BankBookingRequest>
+
+    /**
+     * Withdraws one's own request.
+     *
+     * @param id the request.
+     * @param version the version it was read at; echoed so a concurrent change 409s.
+     * @return the request in its new state.
+     */
+    suspend fun cancelRequest(
+        id: String,
+        version: Long,
+    ): ApiResult<BankBookingRequest>
+
+    /**
+     * Grants or revokes this member's approval on someone else's request.
+     *
+     * @param id the request.
+     * @param granted whether to grant.
+     * @param version the version it was read at; echoed so a concurrent change 409s.
+     * @return the request in its new state.
+     */
+    suspend fun setOwnerApproval(
+        id: String,
+        granted: Boolean,
+        version: Long,
+    ): ApiResult<BankBookingRequest>
+}
+
+/**
  * Reads the org bank from the backend.
  *
  * **The member-facing bank paths, never the bank-employee ones.** `/bank/accounts/…` lists every
@@ -241,9 +396,11 @@ interface BankSource {
  *
  * @property reader performs the calls and classifies their failures
  */
+
 class BankRepository(
     private val reader: ApiReader,
-) : BankSource {
+) : BankSource,
+    BankRequestSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -360,6 +517,128 @@ class BankRepository(
             is ApiResult.Success -> ApiResult.Success(result.value.toModel())
         }
 
+    override suspend fun ownRequests(): ApiResult<List<BankBookingRequest>> =
+        requestList("$REQUESTS_PATH")
+
+    override suspend fun foreignRequests(): ApiResult<List<BankBookingRequest>> =
+        requestList("$REQUESTS_PATH/foreign")
+
+    /**
+     * Reads a list of requests from one of the two endpoints that serve them.
+     *
+     * @param path which list.
+     * @return the requests, or the classified failure.
+     */
+    private suspend fun requestList(path: String): ApiResult<List<BankBookingRequest>> =
+        when (
+            val result = reader.get(path, ListSerializer(BankBookingRequestDto.serializer()))
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
+        }
+
+    override suspend fun transferTargets(): ApiResult<List<BankTransferTarget>> =
+        when (
+            val result =
+                reader.get(
+                    "$ORG_UNIT_BANK/transfer-targets",
+                    ListSerializer(BankAccountRefDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { ref ->
+                        ref.id?.let {
+                            BankTransferTarget(
+                                id = it,
+                                label = ref.name.orEmpty().ifBlank { ref.accountNo.orEmpty() },
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+    override suspend fun createRequest(draft: BankRequestDraft): ApiResult<BankBookingRequest> =
+        single(
+            reader.post(
+                path = REQUESTS_PATH,
+                body =
+                    CreateBankBookingRequest(
+                        sourceAccountId = draft.accountId,
+                        type = draft.kind.toWire(),
+                        amount = KrtDecimal(draft.amount.toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO),
+                        // Only a transfer names a second account; the server ignores it otherwise,
+                        // and sending it anyway would put a value on the wire describing nothing.
+                        targetAccountId = draft.targetAccountId.takeIf { draft.kind == BankRequestKind.TRANSFER },
+                        note = draft.note?.takeIf { it.isNotBlank() },
+                    ),
+                bodySerializer = CreateBankBookingRequest.serializer(),
+                deserializer = BankBookingRequestDto.serializer(),
+            ),
+        )
+
+    override suspend fun cancelRequest(
+        id: String,
+        version: Long,
+    ): ApiResult<BankBookingRequest> =
+        single(
+            reader.post(
+                path = "$REQUESTS_PATH/$id/cancel",
+                body = CancelBankBookingRequest(version = version),
+                bodySerializer = CancelBankBookingRequest.serializer(),
+                deserializer = BankBookingRequestDto.serializer(),
+            ),
+        )
+
+    override suspend fun setOwnerApproval(
+        id: String,
+        granted: Boolean,
+        version: Long,
+    ): ApiResult<BankBookingRequest> {
+        val path = "$REQUESTS_PATH/$id/owner-approval"
+        val result =
+            if (granted) {
+                reader.post(
+                    path = path,
+                    body = CancelBankBookingRequest(version = version),
+                    bodySerializer = CancelBankBookingRequest.serializer(),
+                    deserializer = BankBookingRequestDto.serializer(),
+                )
+            } else {
+                reader.send(
+                    path = path,
+                    method = "DELETE",
+                    body = CancelBankBookingRequest(version = version),
+                    bodySerializer = CancelBankBookingRequest.serializer(),
+                    deserializer = BankBookingRequestDto.serializer(),
+                )
+            }
+        return single(result)
+    }
+
+    /**
+     * Unwraps a single request answer.
+     *
+     * @param result what the call returned.
+     * @return the request, or the classified failure.
+     */
+    private fun single(result: ApiResult<BankBookingRequestDto>): ApiResult<BankBookingRequest> =
+        when (result) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.toModel()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK))
+            }
+        }
+
     override suspend fun bookings(
         id: String,
         page: Int,
@@ -381,6 +660,14 @@ class BankRepository(
 
         /** Log subsystem. No amount, handle or note is ever logged. */
         private const val LOG_TAG = "bank"
+
+        /** The member surface's prefix; the staff bank lives under `/api/v1/bank`. */
+        private const val ORG_UNIT_BANK = "/api/v1/org-units/bank"
+
+        private const val REQUESTS_PATH = "$ORG_UNIT_BANK/requests"
+
+        /** What a successful call that returned nothing usable is reported as. */
+        private const val HTTP_OK = 200
 
         private const val BALANCES_PATH = "/api/v1/org-units/bank/balances"
         private const val PAGE_PARAM = "page"
@@ -438,7 +725,56 @@ private fun OrgUnitBankAccountDetailDto.toModel(requestedId: String): BankAccoun
         balance = detail?.account?.balance?.toString(),
         delta30d = detail?.delta30d?.toString(),
         bookingCount = detail?.bookingCount ?: 0L,
+        canRequest = canRequest == true,
+        // The threshold the request form explains live under the amount. It is per caller and per
+        // account and comes from the server, which is why the form must not carry a constant.
+        applicableLimit = applicableLimit?.toString(),
+        approvalExempt = approvalExempt == true,
     )
+
+/**
+ * Maps a request onto the model.
+ *
+ * @return the request, or `null` without an id — one no action could address.
+ */
+private fun BankBookingRequestDto.toModel(): BankBookingRequest? {
+    val requestId = id ?: return null
+    return BankBookingRequest(
+        id = requestId,
+        accountName = accountName,
+        kind =
+            when (type) {
+                BankBookingRequestDto.Type.DEPOSIT -> BankRequestKind.DEPOSIT
+                BankBookingRequestDto.Type.WITHDRAWAL -> BankRequestKind.WITHDRAWAL
+                BankBookingRequestDto.Type.TRANSFER -> BankRequestKind.TRANSFER
+                else -> null
+            },
+        amount = amount?.toString(),
+        note = note?.takeIf { it.isNotBlank() } ?: justification?.takeIf { it.isNotBlank() },
+        status = status?.value,
+        requester = requesterHandle,
+        // The server reports the ladder per request rather than per account: the same account can
+        // demand two approvals of one amount and three of another.
+        approvalsGiven = if (ownerApprovalGranted == true) 1 else 0,
+        approvalsNeeded = if (requiresOwnerApproval == true) 1 else 0,
+        ownApproverGrant = requiredApprover != null,
+        ownRequest = false,
+        createdAt = createdAt,
+        version = version ?: 0L,
+    )
+}
+
+/**
+ * Maps the app's request kind onto the wire enum.
+ *
+ * @return the wire value.
+ */
+private fun BankRequestKind.toWire(): CreateBankBookingRequest.Type =
+    when (this) {
+        BankRequestKind.DEPOSIT -> CreateBankBookingRequest.Type.DEPOSIT
+        BankRequestKind.WITHDRAWAL -> CreateBankBookingRequest.Type.WITHDRAWAL
+        BankRequestKind.TRANSFER -> CreateBankBookingRequest.Type.TRANSFER
+    }
 
 /**
  * Maps a page of the ledger onto the model.
