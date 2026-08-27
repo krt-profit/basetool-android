@@ -574,11 +574,17 @@
     <string name="bank_grants_withdraw">Withdraw</string>
     <string name="bank_grants_transfer">Transfer</string>
     <string name="bank_grants_revoke">Remove the entry</string>
+    <string name="bank_booking_reverse">Reverse</string>
+    <string name="bank_booking_reverse_title">Reverse booking?</string>
+    <string name="bank_booking_reverse_text">Writes a negated counter-booking. The original stays in the ledger unchanged.</string>
+    <string name="bank_booking_reverse_note">Note</string>
+    <string name="bank_booking_reversed">Reversed</string>
     <string name="bank_conflict_self_transfer">Source and target holder have to differ.</string>
     <string name="bank_conflict_holder_inactive">This holder is inactive and can receive nothing new.</string>
     <string name="bank_conflict_holder_overdraft">That is more than may be debited here.</string>
     <string name="bank_conflict_account_closed">The account that bears the fee is missing or closed.</string>
     <string name="bank_conflict_overdraft">The account does not have enough cover.</string>
+    <string name="bank_conflict_already_reversed">This booking has already been reversed.</string>
     <string name="bank_lifecycle_holder_register">+ Register holder</string>
     <string name="bank_holder_register_title">Register holder</string>
     <string name="bank_holder_register_text">A holder keeps custody of the unit\'s money. Custody is kept at org-unit level, not per account.</string>

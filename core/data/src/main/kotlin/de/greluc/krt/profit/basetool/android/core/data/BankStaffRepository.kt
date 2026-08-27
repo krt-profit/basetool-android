@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountDetailDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountLifecycleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
@@ -38,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseUse
 import de.greluc.krt.profit.basetool.android.core.contract.model.RegisterBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RenameBankAccountRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.ReverseBankTransactionRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankGrantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankHolderRequest
@@ -72,7 +74,9 @@ class BankStaffRepository(
 ) : BankStaffSource,
     BankLifecycleSource,
     BankGrantSource,
-    BankHolderSource {
+    BankHolderSource,
+    BankReversalSource,
+    BankStaffAccountSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -359,6 +363,49 @@ class BankStaffRepository(
         }
     }
 
+    override suspend fun staffAccount(id: String): ApiResult<BankAccountDetail> =
+        when (
+            val result =
+                reader.get("$STAFF_ACCOUNTS_PATH/$id", BankAccountDetailDto.serializer())
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toDetail())
+        }
+
+    override suspend fun staffBookings(
+        id: String,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BankBookingPage> =
+        when (
+            val result =
+                reader.get(
+                    "$STAFF_ACCOUNTS_PATH/$id/transactions",
+                    listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString()),
+                    PageResponseBankBookingDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
+        }
+
+    override suspend fun reverse(
+        transactionId: String,
+        note: String?,
+    ): ApiResult<Unit> =
+        when (
+            val result =
+                reader.post(
+                    path = "$REVERSAL_PATH/$transactionId/reversal",
+                    body = ReverseBankTransactionRequest(note = note?.takeIf { it.isNotBlank() }),
+                    bodySerializer = ReverseBankTransactionRequest.serializer(),
+                    deserializer = BankTransactionDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
+        }
+
     override suspend fun holder(id: String): ApiResult<BankHolder> =
         holder(reader.get("$STAFF_HOLDERS_PATH/$id", BankHolderDto.serializer()))
 
@@ -472,6 +519,9 @@ class BankStaffRepository(
 
         /** How many candidates one search offers. */
         private const val GRANTEE_PAGE_SIZE = 25
+
+        /** The stem a Storno addresses; the transaction's id and `/reversal` complete it. */
+        const val REVERSAL_PATH = "/api/v1/bank/transactions"
 
         /** Which account's matrix to read. */
         const val ACCOUNT_PARAM = "accountId"
@@ -588,6 +638,24 @@ private fun BankHolderDto.toModel(): BankHolder? {
         version = version ?: 0,
     )
 }
+
+/**
+ * Maps a staff account row onto the detail the screen draws.
+ *
+ * The staff shape carries no ledger of its own — that arrives from `/transactions` — so the detail
+ * is assembled from what this row does carry.
+ *
+ * @return the detail.
+ */
+private fun BankAccountDetailDto.toDetail(): BankAccountDetail =
+    BankAccountDetail(
+        id = account?.id.orEmpty(),
+        accountNo = account?.accountNo,
+        name = account?.name.orEmpty(),
+        balance = account?.balance?.toString(),
+        delta30d = delta30d?.toString(),
+        bookingCount = bookingCount ?: 0,
+    )
 
 /**
  * Maps a page of holder postings onto the model.

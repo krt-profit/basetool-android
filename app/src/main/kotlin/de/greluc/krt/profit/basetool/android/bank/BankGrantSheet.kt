@@ -190,6 +190,7 @@ internal fun bankConflictMessage(error: ApiError): String =
         CODE_HOLDER_OVERDRAFT -> stringResource(R.string.bank_conflict_holder_overdraft)
         CODE_ACCOUNT_CLOSED -> stringResource(R.string.bank_conflict_account_closed)
         CODE_OVERDRAFT -> stringResource(R.string.bank_conflict_overdraft)
+        CODE_ALREADY_REVERSED -> stringResource(R.string.bank_conflict_already_reversed)
         else -> bankRequestErrorMessage(error)
     }
 
@@ -207,6 +208,9 @@ private const val CODE_ACCOUNT_CLOSED = "BANK_ACCOUNT_CLOSED"
 
 /** An account would be driven negative. */
 private const val CODE_OVERDRAFT = "BANK_OVERDRAFT"
+
+/** The transaction already carries a counter-booking. */
+private const val CODE_ALREADY_REVERSED = "BANK_ALREADY_REVERSED"
 
 /** The grantee holds no Bank Employee role, which the server requires (REQ-BANK-008). */
 private const val CODE_MISSING_ROLE = "BANK_GRANTEE_MISSING_ROLE"

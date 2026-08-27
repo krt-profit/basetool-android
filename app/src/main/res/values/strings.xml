@@ -595,11 +595,17 @@
     <string name="bank_grants_withdraw">Auszahlen</string>
     <string name="bank_grants_transfer">Transfer</string>
     <string name="bank_grants_revoke">Eintrag entfernen</string>
+    <string name="bank_booking_reverse">Stornieren</string>
+    <string name="bank_booking_reverse_title">Buchung stornieren?</string>
+    <string name="bank_booking_reverse_text">Erzeugt eine negierte Gegenbuchung. Die Originalbuchung bleibt unverändert im Ledger.</string>
+    <string name="bank_booking_reverse_note">Notiz</string>
+    <string name="bank_booking_reversed">Storniert</string>
     <string name="bank_conflict_self_transfer">Quell- und Ziel-Halter müssen verschieden sein.</string>
     <string name="bank_conflict_holder_inactive">Dieser Halter ist inaktiv und kann nichts Neues zugebucht bekommen.</string>
     <string name="bank_conflict_holder_overdraft">Das übersteigt, was hier abgebucht werden darf.</string>
     <string name="bank_conflict_account_closed">Das Konto, das die Gebühr trägt, fehlt oder ist geschlossen.</string>
     <string name="bank_conflict_overdraft">Das Konto hat nicht genug Deckung.</string>
+    <string name="bank_conflict_already_reversed">Diese Buchung ist bereits storniert.</string>
     <string name="bank_lifecycle_holder_register">+ Halter registrieren</string>
     <string name="bank_holder_register_title">Halter registrieren</string>
     <string name="bank_holder_register_text">Ein Halter verwahrt Geld der Einheit. Die Verwahrung wird auf Einheits-Ebene geführt, nicht je Konto.</string>

@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Bankmitarbeiter können eine Buchung stornieren.** Im Kontodetail hat jede Buchung eine
+  Storno-Aktion; sie erzeugt eine negierte Gegenbuchung, die Originalbuchung bleibt unverändert im
+  Ledger. Eine bereits stornierte Buchung ist als solche markiert und bietet die Aktion nicht mehr
+  an. Konten öffnen sich für Bankmitarbeiter jetzt über die Verwaltungssicht — vorher meldete die
+  App „Dieses Konto ist für dich nicht einsehbar", sobald man keine eigene Sichtfreigabe hatte.
+
 - **Die Bankverwaltung zeigt jetzt das Halter-Detail.** Tippst du im Tab „Konten" auf einen Halter,
   siehst du, wie viel er verwahrt und welche Buchungen dahinterstehen, und kannst per
   „Halter-Umbuchung" Verwahrung an einen anderen Halter abgeben. Neu ist auch

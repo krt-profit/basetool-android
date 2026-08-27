@@ -243,12 +243,23 @@ data class BankRequestDraft(
  */
 data class BankBooking(
     val id: String,
+    val transactionId: String?,
     val type: String,
     val amount: String?,
     val note: String?,
     val holder: String?,
     val createdAt: Instant?,
+    val reversesTransactionId: String? = null,
 ) {
+    /**
+     * Whether this row is itself a counter-booking.
+     *
+     * **Not** "has been reversed": the wire field names the transaction this one negates, so it is
+     * set on the Storno and absent on the original. Reading it the other way round labels the
+     * counter-booking as reversed and leaves the original offering an action the server refuses.
+     */
+    val isReversal: Boolean get() = reversesTransactionId != null
+
     /**
      * Whether this line adds to the account.
      *
@@ -779,6 +790,60 @@ data class BankGrant(
 )
 
 /**
+ * One account as the **office** sees it — `BANK_EMPLOYEE`.
+ *
+ * Distinct from [BankSource]'s pair of the same shape, and not interchangeable with it: the member
+ * paths answer with what this caller may see, so a bank manager holding no view grant gets 403 on
+ * an account they are nevertheless responsible for. These paths answer for every account of the
+ * organisation, including closed ones.
+ */
+interface BankStaffAccountSource {
+    /**
+     * Reads one account.
+     *
+     * @param id which account.
+     * @return the account, or the classified failure.
+     */
+    suspend fun staffAccount(id: String): ApiResult<BankAccountDetail>
+
+    /**
+     * Reads a page of one account's ledger.
+     *
+     * @param id which account.
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the page, or the classified failure.
+     */
+    suspend fun staffBookings(
+        id: String,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BankBookingPage>
+}
+
+/**
+ * Reversing a booking — `BANK_EMPLOYEE`, and the one destructive-looking act in the ledger that is
+ * not destructive at all.
+ */
+interface BankReversalSource {
+    /**
+     * Reverses one transaction.
+     *
+     * Writes a **negated counter-booking**; the original stays in the ledger unchanged. The server
+     * refuses a second one on the same transaction with `BANK_ALREADY_REVERSED`, so the screen must
+     * not offer it on a row that already carries a reversal.
+     *
+     * @param transactionId which transaction — not the posting id.
+     * @param note what to record about it, or `null`.
+     * @return nothing usable beyond success, or the classified failure.
+     */
+    suspend fun reverse(
+        transactionId: String,
+        note: String?,
+    ): ApiResult<Unit>
+}
+
+/**
  * One posting against a holder's custody.
  *
  * @property id the posting.
@@ -790,7 +855,7 @@ data class BankGrant(
  * @property counterAccount the account on the other side, or `null` for a holder-to-holder move —
  *   custody is kept at org-unit level and those transfers touch no account at all.
  * @property counterHolder the holder on the other side, or `null`.
- * @property reversed whether this posting is a reversal of another.
+ * @property reversed whether this posting is itself a counter-booking.
  */
 data class BankHolderBooking(
     val id: String,
@@ -1447,7 +1512,7 @@ private fun BankRequestKind.toWire(): CreateBankBookingRequest.Type =
  * @param page the page index that was requested.
  * @return the page, without lines the server sent without a posting id.
  */
-private fun PageResponseBankBookingDto.toModel(page: Int): BankBookingPage =
+internal fun PageResponseBankBookingDto.toModel(page: Int): BankBookingPage =
     BankBookingPage(
         bookings = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
@@ -1464,11 +1529,15 @@ private fun BankBookingDto.toModel(): BankBooking? {
     val id = postingId ?: return null
     return BankBooking(
         id = id,
+        // A Storno addresses the transaction, not the posting: one transaction can carry several
+        // postings and the reversal negates all of them together.
+        transactionId = transactionId,
         type = type?.value.orEmpty(),
         amount = amount?.toString(),
         note = note?.trim()?.takeIf { it.isNotEmpty() },
         holder = holderHandle,
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
+        reversesTransactionId = reversedTransactionId,
     )
 }
 

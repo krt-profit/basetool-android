@@ -71,6 +71,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -317,6 +318,7 @@ internal fun String?.isPositiveDelta(): Boolean {
  * @param onRefresh pull-to-refresh.
  * @param onLoadMore the "Ältere laden" control was tapped.
  * @param modifier layout modifier.
+ * @param onReverse a ledger row's Storno was asked for.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -326,7 +328,17 @@ fun BankAccountScreen(
     onLoadMore: () -> Unit,
     actions: BankSettingsActions,
     modifier: Modifier = Modifier,
+    onReverse: (BankBooking) -> Unit = {},
 ) {
+    // The Storno is a BANK_EMPLOYEE act, and the server decides that — the app only draws what
+    // `/me/capabilities` answered.
+    val staff = LocalCaller.current?.bankEmployee == true
+
+    // Which originals already carry a counter-booking. The wire says only which transaction a
+    // Storno negates, so this is read off the rows themselves — right for everything on screen, and
+    // an older page's reversal simply leaves the action offered until the server refuses it, which
+    // it then says plainly.
+    val reversedIds = state.bookings.mapNotNull { it.reversesTransactionId }.toSet()
     val account = state.account
     val phase = state.phase
     if (state.settingsOpen) {
@@ -447,7 +459,12 @@ fun BankAccountScreen(
                         }
                     } else {
                         items(state.bookings, key = { it.id }) { booking ->
-                            BookingRow(booking = booking)
+                            BookingRow(
+                                booking = booking,
+                                staff = staff,
+                                reversed = booking.transactionId in reversedIds,
+                                onReverse = onReverse,
+                            )
                         }
                         item(key = "ledger-footer") {
                             if (state.hasMore) {
@@ -499,7 +516,12 @@ fun BankAccountScreen(
  * @param booking the line.
  */
 @Composable
-private fun BookingRow(booking: BankBooking) {
+private fun BookingRow(
+    booking: BankBooking,
+    staff: Boolean = false,
+    reversed: Boolean = false,
+    onReverse: (BankBooking) -> Unit = {},
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -520,12 +542,32 @@ private fun BookingRow(booking: BankBooking) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (reversed) {
+                // Saying it on the row is what makes the missing action legible: without it, a
+                // member sees a Storno offered on one line and absent on the next for no reason.
+                Text(
+                    text = stringResource(R.string.bank_booking_reversed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
         }
         Text(
             text = booking.signedAmount(),
             style = MaterialTheme.typography.bodyMedium,
             color = booking.amountColor(),
         )
+        // A Storno is offered on an original that still stands and that the reversal can name:
+        // not on a counter-booking, not on one already reversed, and not on a row whose transaction
+        // the wire did not carry.
+        val reversible = !reversed && !booking.isReversal && booking.transactionId != null
+        if (staff && reversible) {
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_reset,
+                label = stringResource(R.string.bank_booking_reverse),
+                onClick = { onReverse(booking) },
+            )
+        }
     }
 }
 
@@ -1325,8 +1367,37 @@ fun BankAccountRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    state.reversal?.let { booking ->
+        KrtModal(
+            title = stringResource(R.string.bank_booking_reverse_title),
+            confirmText = stringResource(R.string.bank_booking_reverse),
+            onConfirm = viewModel::onConfirmReversal,
+            onDismiss = viewModel::onDismissReversal,
+            tone = KrtModalTone.Danger,
+        ) {
+            Text(
+                text = stringResource(R.string.bank_booking_reverse_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+            KrtTextField(
+                value = state.reversalNote,
+                onValueChange = viewModel::onReversalNote,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.bank_booking_reverse_note),
+            )
+            state.error?.let { error ->
+                Text(
+                    text = bankConflictMessage(error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
+        }
+    }
     BankAccountScreen(
         state = state,
+        onReverse = viewModel::onReverse,
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,
         actions =

@@ -583,3 +583,50 @@ custody to look at and no booking confirmation can name one. The picker is the s
 
 **Code:** `BankStaffRepository` (`BankHolderSource`), `BankHolderViewModel`, `BankHolderScreen`,
 `BankCustodySheet`, `BankHolderRegisterSheet`
+
+---
+
+### REQ-APP-BANK-014 — The staff account detail reads through the office, and Storno is not a delete
+
+„Staff-Konto-Detail = Artboard 2 + Storno + Berichte" (design chapter 12 handoff). The same screen
+as the member's, with two things added and one thing changed underneath it.
+
+**It reads the staff paths, not the member ones.** Found on a device: opening an account from the
+Verwaltung scope answered „Access Denied — Dieses Konto ist für dich nicht einsehbar." A bank
+manager holding no view grant cannot see the account through `/org-units/bank/accounts/{id}` — that
+path answers with what the *member* may see, which is the whole point of it — while
+`/api/v1/bank/accounts/{id}` answers for every account of the organisation, closed ones included.
+The screen picks by what `/me/capabilities` said about the caller, not by which list they arrived
+from: a bank employee always gets the office's view.
+
+**„Buchung stornieren" writes a negated counter-booking; the original stays in the ledger
+unchanged** (web wording, verbatim). It is therefore not destructive, and its confirmation says so
+rather than warning about a loss that does not happen.
+
+**`reversedTransactionId` means "this row **is** a reversal", not "this row **has been**
+reversed".** Reading it the other way round — which the app did until a device showed it — labels
+the counter-booking „Storniert" and leaves the *original* offering a Storno the server refuses with
+`BANK_ALREADY_REVERSED`. Which originals already carry a counter-booking is read off the loaded
+rows; an older page's reversal leaves the action offered until the server refuses it, and that
+refusal now has its own sentence.
+
+**Known gap: the Berichte are not implemented.** The statement (`…/accounts/{id}/statement`) and the
+three-month export (`/bank/export/three-month-report`) return binary bodies, so they need a
+download-and-share path that this app has never had — a decision about where a file lands on the
+device, which touches the privacy inventory (`ANDROID_APP_PLAN.md` §7). Not started rather than
+half-built.
+
+**Acceptance**
+
+- [x] A counter-booking is recognised as a reversal, and an ordinary booking is not
+  (`BankViewModelTest`).
+- [x] A booking written a moment ago does not render as a countdown, while a genuinely future event
+  still does (`RelativeTimeTest`).
+- [x] Verified on a device against the local test stack: the account opens through the office for a
+  caller with no view grant on it (name, balance and 30-day delta all render), `POST
+  /bank/transactions/{id}/reversal` answers **201**, the ledger then shows the counter-booking and
+  marks the **original** „Storniert", and no Storno is offered on either row afterwards.
+- [ ] Berichte (statement, three-month export) — see the known gap above.
+
+**Code:** `BankStaffRepository` (`BankStaffAccountSource`, `BankReversalSource`),
+`BankAccountViewModel`, `BankScreen`
