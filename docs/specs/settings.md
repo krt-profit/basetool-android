@@ -272,14 +272,48 @@ not a cold start, and re-locking there would demand a fingerprint for changing t
 
 ### REQ-APP-SET-007 — The Fan Kit band appears here, and here is one of exactly two places
 
-The "Made By The Community" artwork and the CIG trademark notice render as one coupled unit
-(`KrtFanKitBand`). The Fan Kit Guidelines fix the placement at the login screen and Einstellungen —
-nowhere else — and neither half of the unit may be moved or removed on its own.
+The band is one coupled unit of **three** elements, because **two CIG documents bind it and they
+apply cumulatively**:
+
+| Document | Element |
+| --- | --- |
+| Fan Kit Guidelines §2 / §2b / §3 | the unmodified "Made By The Community" artwork and the short trademark line |
+| Fankit Agreement clause 2(g) | the longer non-affiliation notice — the sentence, the copyright line, "Squadron 42®" and "All rights reserved." |
+
+`KrtFanKitBand` renders all three. **None may be moved or removed on its own**, none is a
+parameter, and the placement stays the login screen and Einstellungen — nowhere else.
+
+Both notices are prescribed legal wording: verbatim English in every locale,
+`translatable="false"`, and never typographically "corrected".
+
+> [!warning] The two notices differ in details that look like mistakes, and both are right
+> The §2b line carries a space before its **third** ®, because CIG's §2b prose writes it that way;
+> clause 2(g) carries **none** before any of its four, writes `Ltd..` with two full stops and
+> takes an Oxford comma before "and Cloud Imperium®". Harmonising them yields a tidier band that
+> satisfies neither document, so the tests assert the **difference** as well as each value.
+
+Two rules the longer paragraph forced, both design decisions of 2026-08-27:
+
+- **It is never folded behind a disclosure.** A notice behind a tap is not "reasonably prominent"
+  in the sense clause 2(g) asks for. Einstellungen scrolls already, so it simply shows the whole
+  paragraph; the login **page** scrolls (`REQ-APP-AUTH-*`, design ch. 04 artboard 1).
+- **One type size across the band**: both notices at 14 sp. The Guidelines' ~10 pt floor is
+  ≈ 13.3 sp, which leaves no honest step down.
+
+The checked kit version is recorded in
+[`core/designsystem/fankit/README.md`](../../core/designsystem/fankit/README.md), because Agreement
+clause 11 lets CIG change the documents at any time.
 
 **Acceptance**
 
-- [x] The band is rendered above sign-out on this screen.
+- [x] The band is rendered above sign-out on this screen, with all three elements.
 - [x] It is not added to any further screen by this change.
+- [x] Both notices are byte-exact in the default, `de` and `en` locales (`KrtFanKitBandTest`).
+- [x] Neither notice appears in a localized bundle (`FanKitNoticeParityTest`, verified to fail
+  when a localized override is introduced).
+- [x] The differing ® spacing and `Ltd..` are asserted, not left to review.
+- [x] Walked on a device: the band measures 698 px on both the login and this screen, is not
+  clipped, and its accessibility node reads all three elements as one.
 
 ### REQ-APP-SET-010 — Sign-out asks before it wipes
 

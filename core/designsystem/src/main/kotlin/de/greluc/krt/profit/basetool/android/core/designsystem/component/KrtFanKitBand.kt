@@ -38,17 +38,40 @@ private val LOGO_SIZE = 36.dp
 /** Gap between artwork and notice. */
 private val LOGO_GAP = 14.dp
 
+/** Gap between the two notices, from the artboard's redline. */
+private val NOTICE_GAP = 8.dp
+
+/** Line height of the section-2b line, as drawn. */
+private const val TRADEMARK_LINE_HEIGHT = 1.45f
+
+/** Line height of the clause-2(g) paragraph, which runs longer and is set looser. */
+private const val AGREEMENT_LINE_HEIGHT = 1.5f
+
 /**
- * The Star Citizen Fan Kit compliance band — a legally coupled unit.
+ * The Star Citizen Fan Kit compliance band — a legally coupled unit of **three** elements.
  *
- * The Fan Kit Guidelines (sections 2, 2b and 3) require the unmodified "Made By The Community"
- * artwork and the CIG trademark notice to appear **together**; neither element may be rendered,
- * moved or removed on its own, which is why they live in this single composable and why the notice
- * is not a parameter. Consequences that are easy to break by accident and must not be:
+ * **Two CIG documents bind this band and they apply cumulatively.** The Fan Kit Guidelines
+ * (sections 2, 2b and 3) require the unmodified "Made By The Community" artwork together with the
+ * CIG trademark line. The Fankit **Agreement**, clause 2(g), separately requires a longer notice —
+ * the non-affiliation sentence, the copyright line, "Squadron 42®" in the mark list and a closing
+ * "All rights reserved." Neither notice substitutes for the other.
  *
- * - The notice is prescribed legal wording. It stays verbatim English in every locale — never
- *   translated, rephrased or typographically "corrected" (the space before the third registered
- *   sign is part of it).
+ * None of the three may be rendered, moved or removed on its own, which is why they live in this
+ * single composable and why neither notice is a parameter. Consequences that are easy to break by
+ * accident and must not be:
+ *
+ * - Both notices are prescribed legal wording. They stay verbatim English in every locale — never
+ *   translated, rephrased or typographically "corrected".
+ * - **The two differ in details that look like mistakes, and both are right.** The §2b line carries
+ *   a space before its third ®, because CIG's §2b prose writes it that way; clause 2(g) carries
+ *   none before any of its four, writes `Ltd..` with two full stops and takes an Oxford comma
+ *   before "and Cloud Imperium®". Harmonising them yields a tidier band that satisfies neither
+ *   document, so `KrtFanKitBandTest` asserts the difference itself.
+ * - **The 2(g) paragraph is never folded behind a disclosure.** A notice behind a tap is not
+ *   "reasonably prominent" in the sense the clause asks for (design decision, 27.08.2026); the
+ *   login page scrolls instead.
+ * - **One type size across the whole band.** The Guidelines' ~10 pt floor is ≈ 13.3 sp, which
+ *   leaves no honest step down from the 14 sp the line above already uses.
  * - The artwork ships unmodified: no recolour, tint, flip, distortion, outline, shadow or effect.
  * - The band is static and non-interactive. KRT brackets, glows and orange are deliberately absent:
  *   this is third-party attribution and must not read as a button or as a KRT badge, nor compete
@@ -63,13 +86,16 @@ private val LOGO_GAP = 14.dp
 @Composable
 fun KrtFanKitBand(modifier: Modifier = Modifier) {
     val notice = stringResource(R.string.krt_fankit_trademark_notice)
+    val agreementNotice = stringResource(R.string.krt_fankit_agreement_notice)
     val logoDescription = stringResource(R.string.krt_fankit_logo_description)
 
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clearAndSetSemantics { contentDescription = "$logoDescription. $notice" },
+                .clearAndSetSemantics {
+                    contentDescription = "$logoDescription. $notice $agreementNotice"
+                },
     ) {
         Box(
             modifier =
@@ -81,18 +107,37 @@ fun KrtFanKitBand(modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(LOGO_GAP),
-            verticalAlignment = Alignment.CenterVertically,
+            // Top-aligned, not centred: with the 2(g) paragraph the text column runs several
+            // lines, and a vertically centred logo would float in the middle of it.
+            verticalAlignment = Alignment.Top,
         ) {
             Image(
                 painter = painterResource(R.drawable.krt_made_by_the_community),
                 contentDescription = null,
                 modifier = Modifier.size(LOGO_SIZE),
             )
-            Text(
-                text = notice,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.Gray1,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(NOTICE_GAP)) {
+                Text(
+                    text = notice,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            lineHeight =
+                                MaterialTheme.typography.bodyMedium.fontSize *
+                                    TRADEMARK_LINE_HEIGHT,
+                        ),
+                    color = KrtPalette.Gray1,
+                )
+                Text(
+                    text = agreementNotice,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            lineHeight =
+                                MaterialTheme.typography.bodyMedium.fontSize *
+                                    AGREEMENT_LINE_HEIGHT,
+                        ),
+                    color = KrtPalette.Gray1,
+                )
+            }
         }
     }
 }

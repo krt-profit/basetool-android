@@ -101,16 +101,28 @@ Permissions stay minimal: `INTERNET`, `USE_BIOMETRIC` (optional app-lock),
 
 ## Star Citizen Fan Kit compliance (binding)
 
-The app is a Star Citizen fan project and uses Fan Kit assets, so the Fan Kit Guidelines
-(sections 2, 2b, 3) bind it exactly as they bind the web app (REQ-UI-018 there). Asset and
-detailed rules: [`core/designsystem/fankit/`](core/designsystem/fankit/README.md).
+The app is a Star Citizen fan project and uses Fan Kit assets, so **two CIG documents bind it
+and they apply cumulatively** — the Fan Kit **Guidelines** (sections 2, 2b, 3) and the Fankit
+**Agreement** (clause 2 g) — exactly as they bind the web app (REQ-UI-018 there). Asset and
+detailed rules, plus the checked kit version: [`core/designsystem/fankit/`](core/designsystem/fankit/README.md).
 
-- The **"Made By The Community" logo and the CIG trademark notice are ONE coupled unit** —
-  a single composable; neither may render, move, or be removed alone.
-- The notice is **prescribed legal wording, byte-exact, verbatim English in every locale**
-  (`translatable="false"`): `Star Citizen®, Roberts Space Industries® and Cloud Imperium ®
-  are registered trademarks of Cloud Imperium Rights LLC` — including the space before the
-  third ®. Never tidy it up, never translate it — a "fixed" string breaks compliance while
+- The **logo and BOTH notices are ONE coupled unit** — a single composable
+  (`KrtFanKitBand`); none of the three may render, move, or be removed alone. The Guidelines'
+  §2b trademark line and the Agreement's clause-2(g) notice are separate requirements and
+  neither substitutes for the other.
+- **Never harmonise the two notices.** The §2b line has a space before its third ®; clause 2(g)
+  has none before any of its four, writes `Ltd..` with two full stops and takes an Oxford comma
+  before "and Cloud Imperium®". Both are quoted, not written, and the tests pin the difference.
+- The 2(g) paragraph is **never folded behind a disclosure**, and the band keeps **one type
+  size** throughout (14 sp).
+- Both notices are **prescribed legal wording, byte-exact, verbatim English in every locale**
+  (`translatable="false"`). §2b: `Star Citizen®, Roberts Space Industries® and Cloud Imperium ®
+  are registered trademarks of Cloud Imperium Rights LLC`. Clause 2(g): `This site is not
+  endorsed by or affiliated with the Cloud Imperium or Roberts Space Industries group of
+  companies. All game content and materials are copyright Cloud Imperium Rights LLC and Cloud
+  Imperium Rights Ltd.. Star Citizen®, Squadron 42®, Roberts Space Industries®, and Cloud
+  Imperium® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.`
+  Never tidy either up, never translate them — a "fixed" string breaks compliance while
   passing every key-parity check.
 - **Placement (fixed by the design spec, ch. 02 §9): Login (above the version footer) and
   Einstellungen — nowhere else.** The login screen is the mandatory home-page-analog
@@ -119,9 +131,9 @@ detailed rules: [`core/designsystem/fankit/`](core/designsystem/fankit/README.md
   sanctioned surface.
 - **Artwork unmodified** (section 3): white variant, no recolor/tint/flip/distortion/
   outline/shadow/effect; notice ≥ 14 sp in `#D2D2D2`-grade contrast.
-- A UI test pins logo + notice + the byte-exact string per locale (mirror of the web app's
-  `FanKitComplianceMvcTest`); it ships together with the Phase-1 login screen and may never
-  be split into independently disableable halves.
+- UI tests pin logo + both notices + the byte-exact strings per locale and the spacing
+  difference (`KrtFanKitBandTest`, `FanKitNoticeParityTest` — mirrors of the web app's
+  `FanKitComplianceMvcTest`); they may never be split into independently disableable halves.
 
 ## Build, run, test
 

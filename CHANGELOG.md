@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Der vom Fankit-Agreement geforderte Hinweis steht jetzt in der App** — der Satz zur
+  Nicht-Verbundenheit mit Cloud Imperium, der Copyright-Hinweis und „All rights reserved". Er
+  ergänzt die bisherige kurze Markenzeile, ersetzt sie nicht, und steht mit ihr und dem Logo an
+  denselben zwei Stellen: Anmeldung und Einstellungen.
+
 - **Benachrichtigungen lassen sich jetzt einzeln stummschalten:** fünf Kategorien in den
   Systemeinstellungen — Einsätze & Check-In, Aufträge & Zuweisungen, Materialbörse,
   Bank & Auszahlungen, System & Ankündigungen.

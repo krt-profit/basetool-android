@@ -10,6 +10,19 @@
       instead of silently shipping a compliance defect.
     -->
     <string name="krt_fankit_trademark_notice" translatable="false">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</string>
+    <!--
+      Fankit Agreement clause 2(g). A SECOND notice, required by a different CIG document
+      than the trademark line above — the Guidelines and the Agreement bind this project
+      cumulatively, so neither substitutes for the other.
+
+      Three details read as typing mistakes and are none of them: "Ltd.." has two full
+      stops, there is NO space before any of its four registered signs (the line above has
+      one before its third, because CIG's section 2b prose writes it that way), and there
+      is an Oxford comma before "and Cloud Imperium". Quoted from
+      06_Fankit_Agreement_2025_11_19.pdf and byte-identical across the 2024-04-25,
+      2025-06-03 and 2025-11-19 kits. Never translated, never tidied.
+    -->
+    <string name="krt_fankit_agreement_notice" translatable="false">This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space Industries group of companies. All game content and materials are copyright Cloud Imperium Rights LLC and Cloud Imperium Rights Ltd.. Star Citizen®, Squadron 42®, Roberts Space Industries®, and Cloud Imperium® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.</string>
 
     <!-- Spoken description of the artwork; this one IS localizable. -->
     <string name="krt_fankit_logo_description">Star Citizen — Made by the Community</string>
