@@ -169,6 +169,14 @@ fun BookingSheet(
 
             if (state.mode == BookingMode.OUT) {
                 OutKindField(state = state, callbacks = callbacks)
+                // Below the out-kind, because a sale's proceeds split depends on the mission
+                // shares and a transfer carries the reduced tags with it — the plan is about the
+                // amount, so it follows everything that decides what happens to the amount.
+                HerkunftSection(
+                    state = state,
+                    onJobOrderShare = callbacks.onJobOrderShare,
+                    onMissionShare = callbacks.onMissionShare,
+                )
             }
 
             state.error?.let { error ->
@@ -226,6 +234,8 @@ fun BookingSheet(
  * @property onMemberQuery the member search changed.
  * @property onMember a recipient was picked.
  * @property onTerminal a terminal was picked.
+ * @property onJobOrderShare how much of the deduction comes from an Auftrag earmark.
+ * @property onMissionShare how much comes from an Einsatz earmark.
  * @property onOrgUnit an org-unit pool was picked for a transfer.
  * @property onMergeStock the stock-merge opt-in changed.
  * @property onSellAmount what the sale fetched changed.
@@ -245,6 +255,8 @@ data class BookingCallbacks(
     val onMemberQuery: (String) -> Unit,
     val onMember: (MemberOption) -> Unit,
     val onTerminal: (TerminalOption) -> Unit,
+    val onJobOrderShare: (String, String) -> Unit,
+    val onMissionShare: (String, String) -> Unit,
     val onOrgUnit: (OrgUnitOption) -> Unit,
     val onMergeStock: (Boolean) -> Unit,
     val onSellAmount: (String) -> Unit,
@@ -612,7 +624,7 @@ private fun Picker(
  * @param text what it says.
  */
 @Composable
-private fun Muted(text: String) {
+internal fun Muted(text: String) {
     Text(text = text, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
 }
 
@@ -680,7 +692,7 @@ private fun InventoryEntry.modes(): List<BookingMode> = listOf(BookingMode.OUT, 
  *
  * @return the entry's unit when booking out, the picked material's when booking in, or `null`.
  */
-private fun BookingState.unit(): String? = entry?.unit ?: material?.unit
+internal fun BookingState.unit(): String? = entry?.unit ?: material?.unit
 
 /**
  * How an entry reads at the top of the sheet.

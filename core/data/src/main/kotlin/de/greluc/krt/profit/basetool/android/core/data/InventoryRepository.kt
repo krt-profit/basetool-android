@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AggregatedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.AllocationReductionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
@@ -236,6 +237,11 @@ data class BookInDraft(
  * @property targetLocationId where it goes, for a transfer
  * @property terminal the terminal it is sold at, for a sale
  * @property sellAmount what it fetched, for a sale
+ * @property jobOrderReductions how much of the deducted amount comes from each Auftrag earmark.
+ *   Empty means the server's default, "take it from the not-yet-assigned rest first"
+ * @property missionReductions the same for the Einsatz earmarks. A **separate** list, because the
+ *   two taggings are independent: the same unit can be promised to an Auftrag and to an Einsatz, so
+ *   the deducted amount is sourced once per dimension rather than once in total
  * @property targetOwningOrgUnitId which org-unit pool the moved row lands in, for a transfer.
  *   `null` lets the server resolve it, which it can only do unambiguously when the receiving
  *   member belongs to exactly one unit
@@ -252,6 +258,22 @@ data class BookOutDraft(
     val sellAmount: String? = null,
     val targetOwningOrgUnitId: String? = null,
     val mergeStock: Boolean = false,
+    val jobOrderReductions: List<AllocationReduction> = emptyList(),
+    val missionReductions: List<AllocationReduction> = emptyList(),
+)
+
+/**
+ * How much of a book-out comes out of one earmark.
+ *
+ * On a `TRANSFER` the reduced tags travel with the stock onto the new row; on a `SELL` the mission
+ * reductions additionally decide who is credited what, so this is not a display detail.
+ *
+ * @property targetId the Auftrag or Einsatz the amount is taken from.
+ * @property amount how much comes from it.
+ */
+data class AllocationReduction(
+    val targetId: String,
+    val amount: Double,
 )
 
 /**
@@ -802,6 +824,11 @@ class InventoryRepository(
                 sellAmount = draft.sellAmount?.toBigDecimalOrNull()?.let(::KrtDecimal),
                 targetOwningOrgUnitId = draft.targetOwningOrgUnitId,
                 mergeStock = draft.mergeStock,
+                // Null rather than an empty list: the server reads an absent plan as "take it from
+                // the rest first", and an empty array says the same thing in a shape a reader has
+                // to interpret.
+                jobOrderReductions = draft.jobOrderReductions.toWire(),
+                missionReductions = draft.missionReductions.toWire(),
             ),
             InventoryItemBookOutDto.serializer(),
         )
@@ -1109,6 +1136,14 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
         missionRest = missionRest?.toPlainString(),
     )
 }
+
+/**
+ * Maps a deduct-from plan onto the wire, or onto nothing.
+ *
+ * @return the reductions, or `null` when there is no plan — which is the server's default.
+ */
+private fun List<AllocationReduction>.toWire(): List<AllocationReductionDto>? =
+    takeIf { it.isNotEmpty() }?.map { AllocationReductionDto(targetId = it.targetId, amount = it.amount) }
 
 /**
  * Maps the app's allocation kind onto the wire enum.

@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Beim Ausbuchen und Umbuchen lässt sich jetzt festlegen, von welchen Auftrags- und
+  Einsatz-Marken die Menge abgezogen wird.** Was du nicht zuweist, kommt vom noch nicht
+  zugewiesenen Rest — wie bisher. Neu ist, dass die App eine Zuordnung, die der Server ablehnen
+  würde, schon vorher anzeigt und das Speichern sperrt, statt dich in einen Fehler laufen zu lassen.
+
 - **Der vom Fankit-Agreement geforderte Hinweis steht jetzt in der App** — der Satz zur
   Nicht-Verbundenheit mit Cloud Imperium, der Copyright-Hinweis und „All rights reserved". Er
   ergänzt die bisherige kurze Markenzeile, ersetzt sie nicht, und steht mit ihr und dem Logo an

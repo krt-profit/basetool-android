@@ -8,11 +8,13 @@
 package de.greluc.krt.profit.basetool.android.inventory
 
 import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationReduction
 import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
@@ -57,6 +59,9 @@ import org.robolectric.annotation.Config
 class BookingViewModelTest {
     private companion object {
         const val VERSION = 5L
+
+        /** The share assigned to the single Auftrag earmark in the plan tests. */
+        const val PLANNED_SHARE = 4.0
     }
 
     private val dispatcher = StandardTestDispatcher()
@@ -309,11 +314,94 @@ class BookingViewModelTest {
             assertNull(source.bookedOut.single().third.targetOwningOrgUnitId)
         }
 
+    /**
+     * A plan the server would refuse with 400 is refused here first.
+     *
+     * The sheet knows the rule, so a member should not have to send a booking to be told the
+     * arithmetic does not add up.
+     */
+    @Test
+    fun `an over-allocated plan blocks the save`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openForEntry(
+                entry(jobOrderAllocations = listOf(allocation("a", "200")), jobOrderRest = "100"),
+                BookingMode.OUT,
+            ) {}
+            vm.onAmountChanged("10")
+
+            assertEquals(true, vm.state.value?.submittable)
+
+            vm.onJobOrderShare("a", "20")
+
+            assertEquals(false, vm.state.value?.submittable)
+        }
+
+    /** And a plan the server would refuse with 422 — a different rule, same outcome here. */
+    @Test
+    fun `a remainder the rest cannot carry blocks the save`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openForEntry(
+                entry(jobOrderAllocations = listOf(allocation("a", "200")), jobOrderRest = "1"),
+                BookingMode.OUT,
+            ) {}
+            vm.onAmountChanged("10")
+
+            assertEquals(false, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `the plan travels with the booking`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openForEntry(
+                entry(jobOrderAllocations = listOf(allocation("a", "200")), jobOrderRest = "100"),
+                BookingMode.OUT,
+            ) {}
+            vm.onAmountChanged("10")
+            vm.onJobOrderShare("a", "4")
+            vm.onSave()
+            advanceUntilIdle()
+
+            val sent = source.bookedOut.single().third
+            assertEquals(listOf(AllocationReduction("a", PLANNED_SHARE)), sent.jobOrderReductions)
+            assertTrue(sent.missionReductions.isEmpty())
+        }
+
+    /**
+     * An untouched plan sends nothing.
+     *
+     * The server reads an absent plan as „take it from the rest first". Sending zeroes would say
+     * the same thing while making an untouched sheet look like a deliberate decision.
+     */
+    @Test
+    fun `an untouched plan sends no reductions`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openForEntry(
+                entry(jobOrderAllocations = listOf(allocation("a", "200")), jobOrderRest = "100"),
+                BookingMode.OUT,
+            ) {}
+            vm.onAmountChanged("10")
+            vm.onSave()
+            advanceUntilIdle()
+
+            assertTrue(source.bookedOut.single().third.jobOrderReductions.isEmpty())
+        }
+
+    private fun allocation(
+        id: String,
+        amount: String,
+    ) = InventoryAllocation(targetId = id, label = "#A-$id", subtitle = null, amount = amount)
+
     private fun entry(
         personal: Boolean = false,
         note: String? = null,
         unit: String = "SCU",
         owningOrgUnitId: String? = "ou2",
+        jobOrderAllocations: List<InventoryAllocation> = emptyList(),
+        jobOrderRest: String? = null,
     ) = InventoryEntry(
         id = "e1",
         materialName = "Quantainium",
@@ -329,6 +417,8 @@ class BookingViewModelTest {
         note = note,
         version = VERSION,
         owningOrgUnitId = owningOrgUnitId,
+        jobOrderAllocations = jobOrderAllocations,
+        jobOrderRest = jobOrderRest,
     )
 
     private fun model(connectivity: Connectivity = FakeConnectivity()) =
