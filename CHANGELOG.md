@@ -4,7 +4,12 @@
 
 ### Added
 
-- **Die Bank hat jetzt einen Tab „Anträge":** du kannst eine Ein-, Aus- oder Umbuchung
+- **Beim Ausbuchen und Umbuchen lässt sich jetzt festlegen, von welchen Auftrags- und
+  Einsatz-Marken die Menge abgezogen wird.** Was du nicht zuweist, kommt vom noch nicht
+  zugewiesenen Rest — wie bisher. Neu ist, dass die App eine Zuordnung, die der Server ablehnen
+  würde, schon vorher anzeigt und das Speichern sperrt, statt dich in einen Fehler laufen zu lassen.
+ 
+ - **Die Bank hat jetzt einen Tab „Anträge":** du kannst eine Ein-, Aus- oder Umbuchung
   beantragen, deinen eigenen Antrag noch korrigieren oder zurückziehen, und — auf Konten, für die
   du verantwortlich bist — die Freigabe erteilen oder wieder zurücknehmen. Der Zähler am Tab zeigt,
   wie viele Anträge noch offen sind.

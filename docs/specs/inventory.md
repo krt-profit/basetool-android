@@ -387,6 +387,62 @@ member reads before committing one.
 
 ---
 
+### REQ-APP-INV-016 — „Herkunft der Menge": a deducted amount is sourced once per dimension
+
+An entry's stock is tagged **twice and independently** — once by Auftrag, once by Einsatz — so the
+same unit can be promised to both. When a quantity leaves the entry it is therefore sourced **once
+per dimension**, not once in total. Every book-out and every transfer may carry
+`jobOrderReductions` and `missionReductions` (REQ-INV-027, „Variante C"); what the member does not
+assign comes from that dimension's not-yet-assigned rest.
+
+The server's rules, mirrored in the sheet so a violation is shown before the write:
+
+| Rule | The server answers | The sheet shows |
+| --- | --- | --- |
+| Per dimension, the assigned sum ≤ the deducted amount | 400 | „ÜBERZEICHNET +n", save refused |
+| The rest absorbs what the tags did not cover | 422 | „Rest zu klein", save refused |
+| Tags cover the whole deduction | accepted | „GEDECKT" |
+| Part comes from the rest | accepted | „n aus Rest" |
+| An omitted or all-zero plan | the default | nothing sent |
+
+**One shape has no choice in it.** Exactly one tag and no rest means every unit leaving has to come
+from that tag, so the field is filled from the amount and **locked** — typing anything else could
+only ever trip one of the two refusals. The chip reads „AUTOMATISCH".
+
+**A tag left at zero is omitted, not sent as zero.** An empty list is the server's documented
+"take it from the rest first"; a list of zeroes says the same thing in a form that has to be parsed
+to mean nothing, and it would make an untouched sheet look like a deliberate plan in the audit log.
+
+> [!warning] No earmarks is not an empty rest
+> The server sends no rest for a dimension it has no split in. Reading that absence as a rest of
+> **zero** makes every ordinary entry — most of them — fail the „the rest cannot carry it" check.
+> The existing booking tests caught this during implementation; `HerkunftPlanTest` now names it.
+
+**Rows, not a table.** The web frontend lays this out as a grid of tag against amount, which needs
+horizontal room a phone does not have. Design ch. 09 artboards 18–19 answer with a row per earmark
+and, beneath each dimension, always the „Vom Rest" line — the two numbers a member reconciles sit
+above one another rather than across a scroll. Auftrag takes the app's orange, Einsatz its info
+blue, matching the allocation sheet so the dimensions read apart without a legend.
+
+**Acceptance**
+
+- [x] All five states and their chips (`HerkunftPlanTest`, 11 cases).
+- [x] Floating-point noise does not read as an over-allocation — the plan is SCU-rounded before the
+  epsilon comparison, as the server does.
+- [x] An entry with no earmarks at all is never refused (`HerkunftPlanTest`).
+- [x] An over-allocated plan and one whose remainder exceeds the rest both block the save
+  (`BookingViewModelTest`).
+- [x] The plan travels with the booking, and an untouched one sends nothing
+  (`BookingViewModelTest`).
+- [x] Walked on a device: „10 AUS REST" with „zugeordnet 3 SCU" and „Vom Rest 10 SCU (frei: 93,25)",
+  then „ÜBERZEICHNET +10" with the server's own 400 wording once the tag claimed 20 of a 10 deduction.
+- [ ] The sale's coupled-proceeds hint (artboard 19). The mission reductions already drive the split
+  server-side; the live „Gekoppelter Verkaufserlös" line is not drawn yet.
+
+**Code:** `HerkunftPlan`, `HerkunftSection`, `BookingViewModel`, `InventoryRepository`
+
+---
+
 ## Known gaps, stated rather than omitted
 
 - **No Material and no Ort filter.** Both need pickers (design ch. 02 bottom sheets) and a catalog
@@ -397,12 +453,10 @@ member reads before committing one.
   for it, and no app code calls it today. The same slice carries the bulk bar's
   `POST /inventory/bulk-checkout` and the `PERSONALIZE` / `DEPERSONALIZE` modes of
   `POST /inventory/bulk-rebook` — the app sends only `LOCATION` today.
-- **The „Herkunft" deduct-from plan is not offered** (REQ-INV-027 in the main repo). A book-out may
-  name how much of the deducted amount comes from each job-order and each mission earmark, with the
-  remainder taken from that dimension's rest; on a sale the mission reductions additionally split
-  the proceeds. The app sends no plan, which the server reads as „take it from the rest first" — the
-  documented default, and correct as far as it goes, but it is a choice a member cannot make here.
-  A phone form for it is an open question in the design spec (round 5, part A3).
+- **The sale's coupled-proceeds hint is not drawn.** Mission reductions already decide who is
+  credited what — that is server-side and works — but artboard 19's live „Gekoppelter Verkaufserlös"
+  line under the sale amount is not there yet, so a seller cannot see the split before committing
+  to it. See `REQ-APP-INV-016`.
 - **The quality of an existing entry cannot be corrected.** The correction endpoint is not in the
   contract set, and booking in is the only place a quality is set.
 - **The quality mini-gauge is a chip, not a gauge.** The 44 dp 0–1000 gauge of the design is a
