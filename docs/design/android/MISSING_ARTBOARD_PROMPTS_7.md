@@ -153,6 +153,40 @@ state on artboard 5's own-request row is **not** a case of "you may not approve 
 request that carries no approval to give. If the row is ever redrawn, „Freigabe nicht nötig" would
 be truer than a lock.
 
+## 2b2 — Artboard 5's „BESTÄTIGEN" cannot be a button
+
+The queue's confirming CTA is drawn as a single tap. The endpoint behind it needs two things the
+drawing has no control for:
+
+| Field | Constraint | What it is |
+| --- | --- | --- |
+| `holderId` | **`@NotNull`** | which Verwahrer received or paid the money out. A booked deposit or withdrawal records it (REQ-BANK-040/-044). |
+| `ownerApprovalConfirmed` | required for a flagged request | the employee's attestation that the responsible holder approved. Without it the server answers `BANK_OWNER_APPROVAL_REQUIRED` (REQ-BANK-041). |
+
+A bare CTA therefore posts a body the server rejects, **every time**, on every over-limit request
+and on every request at all.
+
+The web frontend already has the modal this needs — „Antrag bestätigen … Erfasse den Halter, der
+das Geld erhalten bzw. ausgezahlt hat" — with the checkbox „Freigabe durch Kontoverantwortlichen
+erfolgt" beside it. The app now has a bottom sheet of the same shape:
+
+- the holder picker (required)
+- a second one for a transfer's **receiving** holder (`destinationHolderId`)
+- the attestation checkbox, shown **only** when the request is flagged, with a line beside it
+  stating whether the approval has in fact been granted and by whom — so the employee ticks
+  something they can check
+- „Notiz Bankmitarbeiter" (`staffNote`, REQ-BANK-054), optional
+- ABBRECHEN + BESTÄTIGEN
+
+### What we would like drawn
+
+Artboard 5's confirming path as a **sheet**, not a CTA. Two states are worth having: an ordinary
+request (holder + note) and a flagged one (holder + attestation + note), since the second is the
+one that fails without the extra control.
+
+The refusal path needs no change — the danger modal with a reason is exactly right, and
+`reason` is required by the server too.
+
 ## 2c — The staff bank has no direct booking form, and we think that is deliberate
 
 The owner's parity brief asks for „alle funktionen die die bank und ihre unterseiten im web
