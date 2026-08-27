@@ -97,6 +97,8 @@ class BookingSheetTest {
                             onMemberQuery = {},
                             onMember = {},
                             onTerminal = {},
+                            onJobOrderShare = { _, _ -> },
+                            onMissionShare = { _, _ -> },
                             onOrgUnit = {},
                             onMergeStock = {},
                             onSellAmount = {},
