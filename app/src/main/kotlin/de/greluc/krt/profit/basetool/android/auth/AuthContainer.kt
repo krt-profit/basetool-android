@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AccountGateRepository
 import de.greluc.krt.profit.basetool.android.core.data.AnnouncementRepository
 import de.greluc.krt.profit.basetool.android.core.data.AppVersionRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
+import de.greluc.krt.profit.basetool.android.core.data.BankStaffRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
@@ -353,11 +354,25 @@ class AuthContainer(
     /**
      * The org bank a member may see.
      *
-     * The member-facing paths only; the bank-employee surface that lists every account in the
-     * organisation is not reachable from this app.
+     * The member-facing paths only — the accounts public to everyone plus those this caller holds
+     * a view grant for. The staff surface is [bankStaff].
      */
     val bank: BankRepository by lazy {
         BankRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The bank's staff surface — the queue, the dashboard, the account lifecycle and the grants.
+     *
+     * Separate from [bank] because the paths are: these list every account in the organisation and
+     * are gated on a bank role, which the server decides and the screens draw. Whether the caller
+     * has one is answered by `/me/capabilities`, never worked out from a role name.
+     *
+     * `/api/v1/bank/admin` stays out of the app entirely — that is the admin area, which is
+     * web-only by owner decision.
+     */
+    val bankStaff: BankStaffRepository by lazy {
+        BankStaffRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

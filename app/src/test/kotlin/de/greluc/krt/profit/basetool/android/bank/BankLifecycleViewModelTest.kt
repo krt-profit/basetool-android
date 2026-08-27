@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.bank
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
+import de.greluc.krt.profit.basetool.android.core.data.BankGrant
+import de.greluc.krt.profit.basetool.android.core.data.BankGrantSource
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankLifecycleSource
 import de.greluc.krt.profit.basetool.android.core.data.BankManagedAccount
@@ -134,6 +136,28 @@ class BankLifecycleViewModelTest {
         ): ApiResult<BankBookingRequest> = ApiResult.Failure(ApiError.Forbidden())
     }
 
+    /** Answers the grants matrix and records every change. */
+    private class RecordingGrants : BankGrantSource {
+        var matrix: ApiResult<List<BankGrant>> = ApiResult.Success(emptyList())
+        val written = mutableListOf<BankGrant>()
+        val revoked = mutableListOf<Pair<String, String>>()
+
+        override suspend fun grants(accountId: String): ApiResult<List<BankGrant>> = matrix
+
+        override suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant> {
+            written.add(grant)
+            return ApiResult.Success(grant)
+        }
+
+        override suspend fun revokeGrant(
+            userId: String,
+            accountId: String,
+        ): ApiResult<Unit> {
+            revoked.add(userId to accountId)
+            return ApiResult.Success(Unit)
+        }
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
@@ -147,8 +171,14 @@ class BankLifecycleViewModelTest {
     private fun model(
         source: BankLifecycleSource,
         staff: BankStaffSource = HolderOnlyStaff(),
+        grants: BankGrantSource = RecordingGrants(),
         orgUnit: String? = ORG_UNIT,
-    ) = BankLifecycleViewModel(source = source, staff = staff, activeOrgUnitId = { orgUnit })
+    ) = BankLifecycleViewModel(
+        source = source,
+        staff = staff,
+        grantSource = grants,
+        activeOrgUnitId = { orgUnit },
+    )
 
     @Test
     fun `closing echoes the version it read`() =
@@ -305,12 +335,109 @@ class BankLifecycleViewModelTest {
             assertTrue(viewModel.state.value.holders.isEmpty())
         }
 
+    @Test
+    fun `a grant with every flag off is kept, because the row itself is the view grant`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.matrix = ApiResult.Success(listOf(grant(canDeposit = true)))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            advanceUntilIdle()
+
+            val shown = viewModel.state.value.grants.single()
+            viewModel.onSetGrant(shown.copy(canDeposit = false))
+            advanceUntilIdle()
+
+            // REQ-BANK-009: a row with all three flags false lets the member SEE the account and
+            // book nothing. Deleting it here would silently take their sight away too.
+            val sent = grants.written.single()
+            assertEquals(false, sent.canDeposit)
+            assertTrue(grants.revoked.isEmpty())
+        }
+
+    @Test
+    fun `taking sight away is a revoke, not a fourth flag`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.matrix = ApiResult.Success(listOf(grant()))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            advanceUntilIdle()
+
+            // A removal is destructive — the handoff asks for the danger modal, so nothing is sent
+            // until it is confirmed.
+            viewModel.onPrompt(
+                BankLifecyclePrompt.RevokeGrant(
+                    viewModel.state.value.grants.single(),
+                    sightSurvives = false,
+                ),
+            )
+            advanceUntilIdle()
+            assertTrue(grants.revoked.isEmpty())
+
+            viewModel.onConfirmPrompt()
+            advanceUntilIdle()
+
+            assertEquals(listOf("u1" to "a1"), grants.revoked)
+        }
+
+    @Test
+    fun `a flag change echoes the version it read`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.matrix = ApiResult.Success(listOf(grant(version = VERSION)))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            advanceUntilIdle()
+
+            viewModel.onSetGrant(viewModel.state.value.grants.single().copy(canTransfer = true))
+            advanceUntilIdle()
+
+            assertEquals(VERSION, grants.written.single().version)
+        }
+
+    @Test
+    fun `picking a different account replaces the matrix rather than appending to it`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.matrix = ApiResult.Success(listOf(grant()))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            advanceUntilIdle()
+            grants.matrix = ApiResult.Success(emptyList())
+            viewModel.onSelectGrantAccount("a2")
+            advanceUntilIdle()
+
+            assertEquals("a2", viewModel.state.value.grantAccountId)
+            assertTrue(viewModel.state.value.grants.isEmpty())
+        }
+
     private companion object {
         const val HTTP_ERROR = 500
         const val VERSION = 7L
 
         /** The pinned org unit a creation names. */
         const val ORG_UNIT = "00000000-0000-0000-0000-000000000001"
+
+        /**
+         * One grant.
+         *
+         * @param canDeposit whether they may book money in.
+         * @param version its optimistic-locking version.
+         * @return the grant.
+         */
+        fun grant(
+            canDeposit: Boolean = false,
+            version: Long = 1,
+        ) = BankGrant(
+            userId = "u1",
+            handle = "Rhea",
+            accountId = "a1",
+            canDeposit = canDeposit,
+            canWithdraw = false,
+            canTransfer = false,
+            version = version,
+        )
 
         /**
          * One managed account.

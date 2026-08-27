@@ -810,7 +810,7 @@ private fun BankStaffScope(
     var staffTab by rememberSaveable { mutableIntStateOf(0) }
     var managementToast by remember { mutableStateOf(false) }
     LaunchedEffect(staffTab) {
-        if (staffTab == LIFECYCLE_TAB) {
+        if (staffTab == LIFECYCLE_TAB || staffTab == GRANTS_TAB) {
             lifecycleViewModel.loadOnce()
         }
     }
@@ -824,9 +824,18 @@ private fun BankStaffScope(
                         count = state.openRequestTotal.takeIf { it > 0 },
                     ),
                     KrtPageTab(label = stringResource(R.string.bank_staff_tab_lifecycle)),
+                    KrtPageTab(label = stringResource(R.string.bank_staff_tab_grants)),
                 ),
             selectedIndex = staffTab,
-            onSelect = { staffTab = it },
+            onSelect = { chosen ->
+                // Artboard 4 draws GRANTS locked for an employee without Bank-Management —
+                // tappable, never hidden, answering with the role it needs.
+                if (chosen == GRANTS_TAB && !state.management) {
+                    managementToast = true
+                } else {
+                    staffTab = chosen
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
         )
         Box(modifier = Modifier.weight(1f)) {
@@ -840,7 +849,7 @@ private fun BankStaffScope(
                 onLocked = { managementToast = true },
             )
         }
-        if (staffTab == LIFECYCLE_TAB) {
+        if (staffTab == LIFECYCLE_TAB && phaseIsReady(state)) {
             KrtBottomCtaBar(
                 modifier =
                     if (isWideWindow()) {
@@ -881,8 +890,19 @@ private fun BankStaffScope(
     }
 }
 
+/**
+ * Whether the scope's read has resolved.
+ *
+ * @param state the scope.
+ * @return whether its content is on screen.
+ */
+private fun phaseIsReady(state: BankStaffState): Boolean = state.phase is BankPhase.Ready
+
 /** Which of the Verwaltung tabs the lifecycle sits on. */
 private const val LIFECYCLE_TAB = 2
+
+/** And the grants matrix. */
+private const val GRANTS_TAB = 3
 
 /**
  * What the selected staff tab shows, once the read has resolved.
@@ -943,7 +963,21 @@ private fun StaffScopeContent(
         }
 
         is BankPhase.Ready -> {
-            if (tab == LIFECYCLE_TAB) {
+            if (tab == GRANTS_TAB) {
+                BankGrantsTab(
+                    state = lifecycle,
+                    accounts = lifecycle.accounts,
+                    management = state.management,
+                    actions =
+                        BankGrantsActions(
+                            onSelectAccount = lifecycleViewModel::onSelectGrantAccount,
+                            onSetGrant = lifecycleViewModel::onSetGrant,
+                            onRevoke = lifecycleViewModel::onPrompt,
+                            onLocked = onLocked,
+                        ),
+                    modifier = modifier,
+                )
+            } else if (tab == LIFECYCLE_TAB) {
                 BankLifecycleTab(
                     state = lifecycle,
                     management = state.management,
@@ -1065,7 +1099,12 @@ private fun BankLifecycleDialogs(
         confirmText = stringResource(prompt.confirmRes()),
         onConfirm = viewModel::onConfirmPrompt,
         onDismiss = viewModel::onDismissPrompt,
-        tone = if (prompt is BankLifecyclePrompt.Close) KrtModalTone.Danger else KrtModalTone.Standard,
+        tone =
+            if (prompt is BankLifecyclePrompt.Close || prompt is BankLifecyclePrompt.RevokeGrant) {
+                KrtModalTone.Danger
+            } else {
+                KrtModalTone.Standard
+            },
     ) {
         prompt.bodyRes()?.let { body ->
             Text(
@@ -1125,6 +1164,10 @@ private fun BankLifecyclePrompt.titleRes(): Int =
                 R.string.bank_lifecycle_holder_deactivate_title
             }
         }
+
+        is BankLifecyclePrompt.RevokeGrant -> {
+            R.string.bank_grants_revoke_title
+        }
     }
 
 /**
@@ -1157,6 +1200,10 @@ private fun BankLifecyclePrompt.confirmRes(): Int =
                 R.string.bank_lifecycle_holder_deactivate
             }
         }
+
+        is BankLifecyclePrompt.RevokeGrant -> {
+            R.string.bank_grants_revoke
+        }
     }
 
 /**
@@ -1187,6 +1234,14 @@ private fun BankLifecyclePrompt.bodyRes(): Int? =
                 R.string.bank_lifecycle_holder_reactivate_text
             } else {
                 R.string.bank_lifecycle_holder_deactivate_text
+            }
+        }
+
+        is BankLifecyclePrompt.RevokeGrant -> {
+            if (sightSurvives) {
+                R.string.bank_grants_revoke_text_cartel
+            } else {
+                R.string.bank_grants_revoke_text
             }
         }
     }

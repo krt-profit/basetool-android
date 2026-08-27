@@ -579,8 +579,9 @@ class MainActivity : AppCompatActivity() {
             initializer { BankViewModel(container.bank, container.liveSync) }
             initializer {
                 BankLifecycleViewModel(
-                    container.bank,
-                    container.bank,
+                    container.bankStaff,
+                    container.bankStaff,
+                    container.bankStaff,
                     // „Einheit (vorbelegt)" is the caller's pinned context. A caller who has
                     // pinned ALL units has no single answer, and the store reports null there
                     // rather than picking one — so the creation is refused instead of guessed.
@@ -589,7 +590,7 @@ class MainActivity : AppCompatActivity() {
             }
             initializer {
                 BankStaffViewModel(
-                    container.bank,
+                    container.bankStaff,
                     // The member-visible list is what makes "ohne eigenen View-Grant"
                     // answerable: an account on the staff list but not on this one is one the
                     // caller reaches only through their office.

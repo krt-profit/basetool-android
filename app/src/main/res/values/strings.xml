@@ -584,6 +584,21 @@
     <string name="bank_lifecycle_holder_deactivate_text">Ein inaktiver Halter kann kein neues Geld mehr zugebucht bekommen. Bestehende Bestände bleiben abbuchbar.</string>
     <string name="bank_lifecycle_holder_reactivate_title">Halter reaktivieren</string>
     <string name="bank_lifecycle_holder_reactivate_text">Der Halter kann danach wieder Geld zugebucht bekommen.</string>
+    <!-- Bank-Verwaltung: Grants (design chapter 12, artboard 7) -->
+    <string name="bank_staff_tab_grants_full">Grants</string>
+    <string name="bank_grants_no_accounts_title">Keine Konten</string>
+    <string name="bank_grants_no_accounts_message">Ohne Konto gibt es nichts freizugeben.</string>
+    <string name="bank_grants_pick_account">Wähle ein Konto, um seine Freigaben zu sehen.</string>
+    <string name="bank_grants_empty">Für dieses Konto ist niemand eingetragen.</string>
+    <string name="bank_grants_view_note">Wer hier steht, darf das Konto sehen — auch ohne ein einziges Häkchen. Sehen entziehst du, indem du den Eintrag entfernst.</string>
+    <string name="bank_grants_deposit">Einzahlen</string>
+    <string name="bank_grants_withdraw">Auszahlen</string>
+    <string name="bank_grants_transfer">Transfer</string>
+    <string name="bank_grants_revoke">Eintrag entfernen</string>
+    <string name="bank_grants_revoke_title">Eintrag entfernen?</string>
+    <string name="bank_grants_revoke_text">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto — und das Sehen des Kontos gleich mit. Du kannst den Eintrag jederzeit neu anlegen.</string>
+    <string name="bank_grants_revoke_text_cartel">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto. Das KRT-Konto sieht weiterhin jedes Mitglied — dieses Sehen hing nie am Eintrag.</string>
+    <string name="bank_grants_view_note_cartel">Das KRT-Konto sieht jedes Mitglied ohnehin. Ein Eintrag hier vergibt deshalb nur Buchungsrechte, kein Sehen.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Offen</string>

@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.bank
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.BankGrant
+import de.greluc.krt.profit.basetool.android.core.data.BankGrantSource
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankLifecycleSource
 import de.greluc.krt.profit.basetool.android.core.data.BankManagedAccount
@@ -77,6 +79,23 @@ sealed interface BankLifecyclePrompt {
         val holder: BankHolder,
         val active: Boolean,
     ) : BankLifecyclePrompt
+
+    /**
+     * A member's standing on an account is about to be removed.
+     *
+     * Its own prompt because removing the entry is what takes the member's **sight** of the account
+     * away — `canSee` on the server is "a row exists" (REQ-BANK-009), which no checkbox on the card
+     * says.
+     *
+     * @property grant whose standing is going.
+     * @property sightSurvives whether they keep seeing the account regardless — true on the CARTEL
+     *   account, which every KRT member sees by rule (REQ-BANK-037) and where the entry therefore
+     *   only ever carried booking rights.
+     */
+    data class RevokeGrant(
+        val grant: BankGrant,
+        val sightSurvives: Boolean,
+    ) : BankLifecyclePrompt
 }
 
 /**
@@ -90,6 +109,10 @@ sealed interface BankLifecyclePrompt {
  * @property refreshing whether a pull-to-refresh is running.
  * @property saving whether a write is in flight.
  * @property error what the last write refused with.
+ * @property grantAccountId which account's matrix the Grants tab is showing, or `null` before one
+ *   is picked.
+ * @property grants the standings on that account.
+ * @property grantsLoading whether the matrix is being read.
  */
 data class BankLifecycleState(
     val accounts: List<BankManagedAccount> = emptyList(),
@@ -100,6 +123,9 @@ data class BankLifecycleState(
     val refreshing: Boolean = false,
     val saving: Boolean = false,
     val error: ApiError? = null,
+    val grantAccountId: String? = null,
+    val grants: List<BankGrant> = emptyList(),
+    val grantsLoading: Boolean = false,
 )
 
 /**
@@ -111,6 +137,7 @@ data class BankLifecycleState(
  *
  * @property source the lifecycle calls.
  * @property staff the holder read, which the queue's confirmation sheet already needs.
+ * @property grantSource the per-account grants matrix.
  * @property activeOrgUnitId which unit a new account is opened for — the caller's pinned context,
  *   which is what „Einheit (vorbelegt)" means. A caller who has pinned *all* units has no single
  *   answer, and the creation is then refused rather than guessed at.
@@ -118,6 +145,7 @@ data class BankLifecycleState(
 class BankLifecycleViewModel(
     private val source: BankLifecycleSource,
     private val staff: BankStaffSource,
+    private val grantSource: BankGrantSource,
     private val activeOrgUnitId: () -> String?,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BankLifecycleState())
@@ -201,6 +229,9 @@ class BankLifecycleViewModel(
                     mutableState.value =
                         mutableState.value.copy(saving = false, prompt = null, error = null)
                     reload(keepContent = true)
+                    if (prompt is BankLifecyclePrompt.RevokeGrant) {
+                        mutableState.value.grantAccountId?.let { readGrants(it) }
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -244,6 +275,10 @@ class BankLifecycleViewModel(
             is BankLifecyclePrompt.HolderActivation -> {
                 source.setHolderActive(prompt.holder.id, prompt.active, prompt.holder.version)
             }
+
+            is BankLifecyclePrompt.RevokeGrant -> {
+                grantSource.revokeGrant(prompt.grant.userId, prompt.grant.accountId)
+            }
         }
 
     /**
@@ -277,6 +312,69 @@ class BankLifecycleViewModel(
                             phase = BankPhase.Ready,
                             refreshing = false,
                         )
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows one account's grants matrix.
+     *
+     * @param accountId which account, or `null` to show none.
+     */
+    fun onSelectGrantAccount(accountId: String?) {
+        mutableState.value =
+            mutableState.value.copy(grantAccountId = accountId, grants = emptyList())
+        accountId?.let { readGrants(it) }
+    }
+
+    /**
+     * Sets one member's three capabilities on the shown account.
+     *
+     * A grant whose three flags are all false is kept rather than deleted: it is the deliberate
+     * "may see, may book nothing" case (REQ-BANK-009). Taking sight away is [onRevokeGrant].
+     *
+     * @param grant what the matrix now says.
+     */
+    fun onSetGrant(grant: BankGrant) {
+        if (mutableState.value.saving) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = grantSource.setGrant(grant)) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(saving = false)
+                    mutableState.value.grantAccountId?.let { readGrants(it) }
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "grant change refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads one account's matrix.
+     *
+     * @param accountId which account.
+     */
+    private fun readGrants(accountId: String) {
+        mutableState.value = mutableState.value.copy(grantsLoading = true)
+        viewModelScope.launch {
+            when (val result = grantSource.grants(accountId)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(grants = result.value, grantsLoading = false)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "grants matrix unavailable: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(grantsLoading = false, error = result.error)
                 }
             }
         }

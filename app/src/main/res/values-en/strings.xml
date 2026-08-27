@@ -563,6 +563,21 @@
     <string name="bank_lifecycle_holder_deactivate_text">An inactive Halter can have no new money assigned to them. What they already hold stays withdrawable.</string>
     <string name="bank_lifecycle_holder_reactivate_title">Reactivate the Halter</string>
     <string name="bank_lifecycle_holder_reactivate_text">The Halter can be assigned money again.</string>
+    <!-- Bank staff: grants (design chapter 12, artboard 7) -->
+    <string name="bank_staff_tab_grants_full">Grants</string>
+    <string name="bank_grants_no_accounts_title">No accounts</string>
+    <string name="bank_grants_no_accounts_message">With no account there is nothing to grant.</string>
+    <string name="bank_grants_pick_account">Pick an account to see who may use it.</string>
+    <string name="bank_grants_empty">Nobody is listed for this account.</string>
+    <string name="bank_grants_view_note">Anyone listed here may see the account, even with no box ticked. To take sight away, remove their entry.</string>
+    <string name="bank_grants_deposit">Deposit</string>
+    <string name="bank_grants_withdraw">Withdraw</string>
+    <string name="bank_grants_transfer">Transfer</string>
+    <string name="bank_grants_revoke">Remove the entry</string>
+    <string name="bank_grants_revoke_title">Remove entry?</string>
+    <string name="bank_grants_revoke_text">Takes every booking right on this account away from the member — and their sight of the account with it. You can add the entry again at any time.</string>
+    <string name="bank_grants_revoke_text_cartel">Takes every booking right on this account away from the member. Every member still sees the KRT account — that sight never hung on the entry.</string>
+    <string name="bank_grants_view_note_cartel">Every member sees the KRT account anyway. An entry here therefore grants booking rights only, not sight.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
     <string name="orders_status_open">Open</string>

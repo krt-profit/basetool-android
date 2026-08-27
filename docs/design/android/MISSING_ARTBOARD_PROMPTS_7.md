@@ -230,6 +230,57 @@ which is what makes the account-level claim in the handoff read as a slip rather
 („Nur Konten mit Saldo 0 können geschlossen werden"), not only by undecided requests. The app
 states it beneath the disabled action rather than letting the button find out.
 
+## 2e — Artboard 7: the matrix has three flags, and the row is what the sight is
+
+The drawing gives each member two checkboxes, „SEHEN" and „FREIGEBEN", and the handoff adds three
+notes: „Zeile existiert = mindestens ein Grant; Zeile entfernen = alle Grants … entziehen
+(Danger-Modal)", „Freigeben setzt Sehen voraus — Flag-Kopplung in der UI; falls der Server sie nicht
+erzwingt: Backend-Anforderung, notiert", and „CARTEL ist für alle sichtbar (REQ-BANK-037) — dort ist
+das Sehen-Flag inert; Freigeben bleibt vergebbar."
+
+**The server's shape is a `bank_account_grant` row per (member, account) with three flags** —
+`can_deposit`, `can_withdraw`, `can_transfer` (REQ-BANK-009) — and nothing else. So whichever of the
+two readings of „FREIGEBEN" was meant, "may book" or "may approve", neither is a column that exists:
+
+- as **"may book"** it is three flags collapsed into one, and the three are separately enforced —
+  `BankSecurityService.canDeposit` / `canWithdraw` / `canTransfer` each test their own flag;
+- as **"may approve"** it has nothing behind it at all: who may approve a booking request is decided
+  per request by `requiredApprover`, and REQ-BANK-047 escalates that by amount, so a per-member
+  approval flag would quietly contradict the ladder.
+
+The app therefore renders the three the server enforces, and no fourth.
+
+**„SEHEN" is right in substance but is not a checkbox.** `BankSecurityService.canSee` is literally
+`hasCapability(accountId, auth, g -> true)` — the row's existence *is* the view grant, and a row with
+all three flags false is the deliberate „darf sehen, darf nichts buchen" case. Two consequences:
+
+- Unticking the last box must **not** delete the row, or the member silently loses sight of the
+  account as well. The app keeps the row and says the rule in plain text on the surface: „Wer hier
+  steht, darf das Konto sehen — auch ohne ein einziges Häkchen. Sehen entziehst du, indem du den
+  Eintrag entfernst."
+- **The requested flag-coupling needs neither UI work nor a backend requirement.** „Freigeben setzt
+  Sehen voraus" holds *structurally*: every capability check runs through `hasCapability`, which
+  needs the row, and the row is the sight. There is no state in which a member may book an account
+  they cannot see, so there is nothing to couple and nothing to ask the backend for. **This closes
+  the handoff's open item.**
+
+**The CARTEL note is right, and it changes the copy.** `CARTEL` is seen by every KRT member by rule
+(REQ-BANK-037, `OrgUnitBankAccessService`), so there the entry only ever carried booking rights. The
+app swaps both the surface note and the removal modal on that account rather than promising a sight
+it cannot take away.
+
+**The Danger-Modal is implemented as asked** — the removal is the one action here that takes
+something away which no checkbox mentions.
+
+**Layout:** three capability columns plus a handle do not fit a phone's width the way two short ones
+did, so the table becomes a per-member card. The account chip row stays as drawn, made horizontally
+scrollable — a unit with many accounts would otherwise lose its last one off the edge.
+
+**One more thing the artboard cannot show:** the two grant lists in this app are not the same list.
+The staff matrix is shaped by `bank_account_grant`; the member's visible accounts are shaped by
+REQ-BANK-037 org-unit visibility. An account can appear on one and not the other, which is exactly
+what the Übersicht's „nur über das Amt" mark reports.
+
 ## 3 — Two smaller questions, no strong opinion
 
 **3.1 — Does the amount field group while you type?** Artboard 3 shows `120.000` in the input. We

@@ -433,3 +433,55 @@ never chose. The app creates `ORG_UNIT` accounts only; `AREA`, `CARTEL`, `CARTEL
   padlocks and answer when tapped.
 
 **Code:** `BankRepository` (`BankLifecycleSource`), `BankLifecycleViewModel`, `BankLifecycleTab`
+
+---
+
+### REQ-APP-BANK-012 — The grants matrix has three flags, and the row is the sight
+
+The Verwaltung scope's **Grants** tab — design chapter 12, artboard 7: who may book on which
+account. („Grants", not „Freigaben" — in this app „Freigabe" already means approving a booking
+request, and the design chapter keeps the two words apart.)
+
+**A grant is one `bank_account_grant` row per (member, account) with three independent flags** —
+`can_deposit`, `can_withdraw`, `can_transfer` (REQ-BANK-009). The app renders exactly those three
+and no fourth: the drawn „FREIGEBEN" column has no counterpart on the server under either reading
+of the word. See `MISSING_ARTBOARD_PROMPTS_7.md` § 2e.
+
+**The row's existence is the view grant.** `BankSecurityService.canSee` is
+`hasCapability(accountId, auth, g -> true)`, so a row with all three flags false is the deliberate
+„darf sehen, darf nichts buchen" case. The app therefore never deletes a row on the way to zero
+flags, and states the rule as plain text on the surface rather than behind a tooltip.
+
+**Taking sight away is a removal**, offered as „Eintrag entfernen" and confirmed by a danger modal —
+it is the one action here whose consequence no checkbox on the card mentions.
+
+**On the CARTEL account the entry never carried the sight.** Every KRT member sees that account by
+rule (REQ-BANK-037), so both the surface note and the removal modal swap to copy that promises only
+what the server delivers: booking rights go, sight does not.
+
+**The flag coupling the handoff asks for is structural, not UI.** „Freigeben setzt Sehen voraus"
+cannot be violated: every capability check runs through `hasCapability`, which requires the row, and
+the row is the sight. No UI coupling and no backend requirement follow from it.
+
+**Reads are the employee's, writes are Bank-Management's**, and as everywhere in the staff surface
+the app draws what the server answered (ADR-0016). Without the role the boxes and the removal are
+drawn **locked, not hidden** — the chapter-09 padlock that answers when tapped.
+
+A **per-member card** replaces the drawn table: three capability columns plus a handle do not fit a
+phone's width the way two short ones did. The account selector stays the drawn chip row, made
+horizontally scrollable so a unit with many accounts does not lose its last one off the edge.
+
+**Acceptance**
+
+- [x] Three capability rows render and no approval one (`BankGrantsScreenTest`).
+- [x] Unticking the last flag sends a change, not a removal (`BankLifecycleViewModelTest`).
+- [x] The removal asks first and only then sends (`BankLifecycleViewModelTest`).
+- [x] A flag change echoes the version it read (`BankLifecycleViewModelTest`).
+- [x] The view-grant note is plain text on the surface, not a tooltip (`BankGrantsScreenTest`).
+- [x] On a `CARTEL` account the copy claims no sight it cannot take away (`BankGrantsScreenTest`).
+- [x] Without Bank-Management the controls are drawn locked and answer when tapped
+  (`BankGrantsScreenTest`).
+- [x] Switching accounts replaces the matrix rather than appending to it
+  (`BankLifecycleViewModelTest`).
+
+**Code:** `BankStaffRepository` (`BankGrantSource`), `BankLifecycleViewModel`, `BankGrantsTab`
