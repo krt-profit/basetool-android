@@ -476,10 +476,21 @@ earns `409 DUPLICATE_ENTITY`. `BankGrant.exists` carries the fact instead.
 **A refused change is stated, not swallowed.** Without it the checkbox simply snaps back, which
 reads as a broken app rather than a server that said no.
 
-**Known gap: the tab cannot add an entry.** Artboard 7's „+ Grant hinzufügen" is not implemented —
-it needs a member picker restricted to holders of the Bank Employee role, which the server requires
-for a creation (REQ-BANK-008). Until it lands, the removal modal says so instead of promising a
-re-entry the app cannot perform.
+**„+ Grant hinzufügen" opens a sheet with a member picker and the three flags.** The picker is
+`GET /api/v1/users/search-bank`, **not** `/users/search`: the two run the same query over the same
+scope with the same peer-redacted projection and differ only in the role gate, which the bank twin
+widens to `BANK_EMPLOYEE` — a bank manager who holds no org role gets 403 on the ordinary one and
+would have no picker at all.
+
+**The picker offers every member, and two of its picks are refused.** The server's search is not
+restricted to bank employees, so the app does not pretend otherwise: a creation for someone without
+the Bank Employee role comes back `BANK_GRANTEE_MISSING_ROLE` and one for someone already listed
+comes back `DUPLICATE_ENTITY`. Both are 409, they need different answers, and the RFC 7807 `code`
+decides which — never the bare status. The sheet stays open on either, so the pick and the flags
+survive.
+
+A creation with no flag ticked is allowed and is the point: it is the „darf sehen, darf nichts
+buchen" entry.
 
 A **per-member card** replaces the drawn table: three capability columns plus a handle do not fit a
 phone's width the way two short ones did. The account selector stays the drawn chip row, made
@@ -505,6 +516,14 @@ horizontally scrollable so a unit with many accounts does not lose its last one 
   (`test-admin`) gets the locked-tappable tab and the role toast; Bank Management
   (`test-bank-management`) gets the KPI band, the matrix, a `PATCH` that lands (`200`, version
   bumped, both directions) and the danger modal.
-- [ ] „+ Grant hinzufügen" (artboard 7) — not implemented; see the known gap above.
+- [x] The picker uses `/users/search-bank`, and a search answer whose query has moved on is
+  dropped rather than shown (`BankLifecycleViewModelTest`).
+- [x] A creation is sent as a creation, on the account that is showing, and a creation with nobody
+  picked is not sent at all (`BankLifecycleViewModelTest`).
+- [x] A refused creation keeps the sheet open with the pick intact (`BankLifecycleViewModelTest`).
+- [x] Verified on a device against the local test stack: `GET` fills the picker, `POST` answers
+  `201` for a bank employee, `BANK_GRANTEE_MISSING_ROLE` for a member without the role and
+  `DUPLICATE_ENTITY` for one already listed — each with its own message — `PATCH` answers `200` on
+  the freshly created **version-0** row, and `DELETE` answers `204`.
 
 **Code:** `BankStaffRepository` (`BankGrantSource`), `BankLifecycleViewModel`, `BankGrantsTab`

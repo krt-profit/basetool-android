@@ -779,6 +779,18 @@ data class BankGrant(
 )
 
 /**
+ * A member the grants matrix can be extended to.
+ *
+ * @property id the user.
+ * @property handle their in-game name, which is the only field of theirs this screen shows — the
+ *   search answers with e-mail and rank too, and neither belongs on a grants picker.
+ */
+data class BankGrantee(
+    val id: String,
+    val handle: String,
+)
+
+/**
  * The grants matrix — `BANK_MANAGEMENT` throughout.
  *
  * Org-unit membership of the grantee is irrelevant in both directions (REQ-BANK-008); what the
@@ -818,6 +830,20 @@ interface BankGrantSource {
         userId: String,
         accountId: String,
     ): ApiResult<Unit>
+
+    /**
+     * Searches the members a grant can be given to.
+     *
+     * Answers over the **whole** user base rather than only over bank employees, because the server
+     * does: the same search backs the holder register and the approval limits. A member without the
+     * Bank Employee role can therefore be picked, and the creation then fails with
+     * `BANK_GRANTEE_MISSING_ROLE` — the screen says so rather than pretending the pick was
+     * impossible.
+     *
+     * @param query what was typed; blank asks for the first page unfiltered.
+     * @return the candidates, or the classified failure.
+     */
+    suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>>
 }
 
 /**

@@ -574,8 +574,17 @@
     <string name="bank_grants_withdraw">Withdraw</string>
     <string name="bank_grants_transfer">Transfer</string>
     <string name="bank_grants_revoke">Remove the entry</string>
+    <string name="bank_grants_add">+ Add grant</string>
+    <string name="bank_grants_add_title">Add grant</string>
+    <string name="bank_grants_add_account">For the account %1$s.</string>
+    <string name="bank_grants_add_member">Member</string>
+    <string name="bank_grants_add_member_placeholder">Type a name …</string>
+    <string name="bank_grants_add_flags_note">With nothing ticked the member may only see the account. What you tick is what they may book.</string>
+    <string name="bank_grants_add_confirm">Create grant</string>
+    <string name="bank_grants_add_error_role">This member does not hold the Bank Employee role — without it they cannot be given a grant. The role is assigned in the web frontend.</string>
+    <string name="bank_grants_add_error_duplicate">This member is already listed on this account.</string>
     <string name="bank_grants_revoke_title">Remove entry?</string>
-    <string name="bank_grants_revoke_text">Takes every booking right on this account away from the member — and their sight of the account with it. Adding the entry back is currently only possible in the web frontend.</string>
+    <string name="bank_grants_revoke_text">Takes every booking right on this account away from the member — and their sight of the account with it. You can add the entry again here at any time.</string>
     <string name="bank_grants_revoke_text_cartel">Takes every booking right on this account away from the member. Every member still sees the KRT account — that sight never hung on the entry.</string>
     <string name="bank_grants_view_note_cartel">Every member sees the KRT account anyway. An entry here therefore grants booking rights only, not sight.</string>
     <!-- Aufträge (design chapter 10) -->

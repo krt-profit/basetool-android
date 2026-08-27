@@ -974,6 +974,7 @@ private fun StaffScopeContent(
                             onSetGrant = lifecycleViewModel::onSetGrant,
                             onRevoke = lifecycleViewModel::onPrompt,
                             onLocked = onLocked,
+                            onAdd = lifecycleViewModel::onAddGrant,
                         ),
                     modifier = modifier,
                 )
@@ -1092,6 +1093,23 @@ private fun BankLifecycleDialogs(
     state: BankLifecycleState,
     viewModel: BankLifecycleViewModel,
 ) {
+    state.granteeDraft?.let { draft ->
+        BankGrantSheet(
+            draft = draft,
+            accountName =
+                state.accounts.firstOrNull { it.id == state.grantAccountId }?.name.orEmpty(),
+            saving = state.saving,
+            error = state.error,
+            actions =
+                BankGrantSheetActions(
+                    onQuery = viewModel::onGranteeQuery,
+                    onSelect = viewModel::onGranteeSelected,
+                    onDraftChanged = viewModel::onGrantDraftChanged,
+                    onCreate = viewModel::onCreateGrant,
+                    onDismiss = viewModel::onDismissGrantDraft,
+                ),
+        )
+    }
     val prompt = state.prompt ?: return
     val naming = prompt is BankLifecyclePrompt.Rename || prompt is BankLifecyclePrompt.Create
     KrtModal(

@@ -72,7 +72,7 @@ class BankGrantsScreenTest {
         accountId: String? = "a1",
         management: Boolean = true,
         type: String = "ORG_UNIT",
-        actions: BankGrantsActions = BankGrantsActions({}, {}, {}, {}),
+        actions: BankGrantsActions = BankGrantsActions({}, {}, {}, {}, {}),
     ) {
         compose.setContent {
             KrtTheme {
@@ -138,6 +138,7 @@ class BankGrantsScreenTest {
                     onSetGrant = { changed.add(it) },
                     onRevoke = { revoked.add(it) },
                     onLocked = { locked++ },
+                    onAdd = {},
                 ),
         )
 
@@ -177,6 +178,7 @@ class BankGrantsScreenTest {
                     onSetGrant = {},
                     onRevoke = { asked.add(it) },
                     onLocked = {},
+                    onAdd = {},
                 ),
         )
 
@@ -199,6 +201,7 @@ class BankGrantsScreenTest {
                     onSetGrant = {},
                     onRevoke = { asked.add(it) },
                     onLocked = {},
+                    onAdd = {},
                 ),
         )
 

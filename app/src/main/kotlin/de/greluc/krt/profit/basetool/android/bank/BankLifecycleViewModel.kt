@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.BankGrant
 import de.greluc.krt.profit.basetool.android.core.data.BankGrantSource
+import de.greluc.krt.profit.basetool.android.core.data.BankGrantee
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankLifecycleSource
 import de.greluc.krt.profit.basetool.android.core.data.BankManagedAccount
@@ -113,6 +114,7 @@ sealed interface BankLifecyclePrompt {
  *   is picked.
  * @property grants the standings on that account.
  * @property grantsLoading whether the matrix is being read.
+ * @property granteeDraft the „+ Grant hinzufügen" sheet, or `null` while it is closed.
  */
 data class BankLifecycleState(
     val accounts: List<BankManagedAccount> = emptyList(),
@@ -126,6 +128,28 @@ data class BankLifecycleState(
     val grantAccountId: String? = null,
     val grants: List<BankGrant> = emptyList(),
     val grantsLoading: Boolean = false,
+    val granteeDraft: BankGranteeDraft? = null,
+)
+
+/**
+ * What the „+ Grant hinzufügen" sheet holds.
+ *
+ * @property query what has been typed into the member picker.
+ * @property options the candidates the last search answered with.
+ * @property searching whether a search is in flight.
+ * @property selected the member picked, or `null` before one is.
+ * @property canDeposit whether the new grant may book money in.
+ * @property canWithdraw whether it may book money out.
+ * @property canTransfer whether it may move money to another account.
+ */
+data class BankGranteeDraft(
+    val query: String = "",
+    val options: List<BankGrantee> = emptyList(),
+    val searching: Boolean = false,
+    val selected: BankGrantee? = null,
+    val canDeposit: Boolean = false,
+    val canWithdraw: Boolean = false,
+    val canTransfer: Boolean = false,
 )
 
 /**
@@ -377,6 +401,133 @@ class BankLifecycleViewModel(
                         mutableState.value.copy(grantsLoading = false, error = result.error)
                 }
             }
+        }
+    }
+
+    /** Opens the „+ Grant hinzufügen" sheet and offers the first candidates unfiltered. */
+    fun onAddGrant() {
+        mutableState.value = mutableState.value.copy(granteeDraft = BankGranteeDraft(), error = null)
+        searchGrantees("")
+    }
+
+    /** Closes the sheet, discarding what was typed. */
+    fun onDismissGrantDraft() {
+        mutableState.value = mutableState.value.copy(granteeDraft = null)
+    }
+
+    /**
+     * Records what was typed into the member picker and asks the server for candidates.
+     *
+     * @param query the new text.
+     */
+    fun onGranteeQuery(query: String) {
+        val draft = mutableState.value.granteeDraft ?: return
+        mutableState.value =
+            mutableState.value.copy(granteeDraft = draft.copy(query = query, selected = null))
+        searchGrantees(query)
+    }
+
+    /**
+     * Picks a member out of the candidates.
+     *
+     * @param grantee who.
+     */
+    fun onGranteeSelected(grantee: BankGrantee) {
+        val draft = mutableState.value.granteeDraft ?: return
+        mutableState.value =
+            mutableState.value.copy(
+                granteeDraft = draft.copy(selected = grantee, query = grantee.handle),
+            )
+    }
+
+    /**
+     * Sets the flags the new grant will carry.
+     *
+     * All three may stay false: that is the deliberate „darf sehen, darf nichts buchen" entry.
+     *
+     * @param draft the sheet as it now stands.
+     */
+    fun onGrantDraftChanged(draft: BankGranteeDraft) {
+        mutableState.value = mutableState.value.copy(granteeDraft = draft)
+    }
+
+    /**
+     * Creates the grant the sheet describes.
+     *
+     * Refused when no member is picked or no account is showing — neither is guessable, and the
+     * server would answer 404 for the second.
+     */
+    fun onCreateGrant() {
+        val state = mutableState.value
+        val member = state.granteeDraft?.selected
+        val accountId = state.grantAccountId
+        if (member == null || accountId == null || state.saving) {
+            return
+        }
+        val draft = requireNotNull(state.granteeDraft)
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            val result =
+                grantSource.setGrant(
+                    BankGrant(
+                        userId = member.id,
+                        handle = member.handle,
+                        accountId = accountId,
+                        canDeposit = draft.canDeposit,
+                        canWithdraw = draft.canWithdraw,
+                        canTransfer = draft.canTransfer,
+                        version = 0,
+                        exists = false,
+                    ),
+                )
+            when (result) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, granteeDraft = null)
+                    readGrants(accountId)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "grant creation refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
+    }
+
+    /**
+     * Asks the server for members matching what was typed.
+     *
+     * @param query the search text.
+     */
+    private fun searchGrantees(query: String) {
+        val draft = mutableState.value.granteeDraft ?: return
+        mutableState.value = mutableState.value.copy(granteeDraft = draft.copy(searching = true))
+        viewModelScope.launch {
+            val result = grantSource.searchGrantees(query)
+            val current = mutableState.value.granteeDraft ?: return@launch
+            // A later keystroke may have replaced the query while this call was in flight; its own
+            // answer will land, and letting this one overwrite it would show stale candidates.
+            if (current.query != query) {
+                return@launch
+            }
+            mutableState.value =
+                when (result) {
+                    is ApiResult.Success -> {
+                        mutableState.value.copy(
+                            granteeDraft = current.copy(options = result.value, searching = false),
+                        )
+                    }
+
+                    is ApiResult.Failure -> {
+                        KrtLog.w(LOG_TAG) { "grantee search failed: ${result.error}" }
+                        mutableState.value.copy(
+                            granteeDraft = current.copy(searching = false),
+                            error = result.error,
+                        )
+                    }
+                }
         }
     }
 

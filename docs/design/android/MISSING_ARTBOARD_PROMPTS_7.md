@@ -270,10 +270,15 @@ app swaps both the surface note and the removal modal on that account rather tha
 it cannot take away.
 
 **The Danger-Modal is implemented as asked** — the removal is the one action here that takes
-something away which no checkbox mentions. Its copy does **not** offer to re-add the entry, because
-„+ Grant hinzufügen" is not implemented yet: the server requires the grantee to hold the Bank
-Employee role (REQ-BANK-008), so the create path needs a picker restricted to those members. That is
-the one part of this artboard still owed.
+something away which no checkbox mentions.
+
+**„+ Grant hinzufügen" is implemented, and it cannot be the restricted picker the drawing implies.**
+The server requires the grantee to hold the Bank Employee role (REQ-BANK-008), but its own member
+search is not filtered by that role — `/users/search-bank` is `/users/search` with a widened role
+gate and nothing else. So the sheet offers every member and renders the refusal, rather than
+second-guessing the server's list and hiding candidates it has no authority to judge. Two 409s are
+reachable and need different sentences — no Bank Employee role, and already listed — so the RFC 7807
+`code` decides, never the bare status.
 
 **Two defects only the device could show**, both now fixed and covered: deciding create-vs-patch on
 `version == 0` sent the first edit of every untouched grant as a creation (a new row's `@Version`

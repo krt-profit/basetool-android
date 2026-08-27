@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
 import de.greluc.krt.profit.basetool.android.core.data.BankGrant
 import de.greluc.krt.profit.basetool.android.core.data.BankGrantSource
+import de.greluc.krt.profit.basetool.android.core.data.BankGrantee
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankLifecycleSource
 import de.greluc.krt.profit.basetool.android.core.data.BankManagedAccount
@@ -140,6 +141,8 @@ class BankLifecycleViewModelTest {
     private class RecordingGrants : BankGrantSource {
         var matrix: ApiResult<List<BankGrant>> = ApiResult.Success(emptyList())
         var answer: ApiResult<BankGrant>? = null
+        val candidates = mutableMapOf<String, ApiResult<List<BankGrantee>>>()
+        val searched = mutableListOf<String>()
         val written = mutableListOf<BankGrant>()
         val revoked = mutableListOf<Pair<String, String>>()
 
@@ -156,6 +159,11 @@ class BankLifecycleViewModelTest {
         ): ApiResult<Unit> {
             revoked.add(userId to accountId)
             return ApiResult.Success(Unit)
+        }
+
+        override suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>> {
+            searched.add(query)
+            return candidates[query] ?: ApiResult.Success(emptyList())
         }
     }
 
@@ -444,6 +452,97 @@ class BankLifecycleViewModelTest {
             advanceUntilIdle()
 
             // Without this the checkbox just snaps back, which reads as a broken app.
+            assertTrue(viewModel.state.value.error is ApiError.Server)
+        }
+
+    @Test
+    fun `opening the sheet offers candidates before anything is typed`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onAddGrant()
+            advanceUntilIdle()
+
+            // An empty picker on open reads as "nobody to grant to", which is never true.
+            assertEquals(listOf(""), grants.searched)
+            assertEquals("Dorn", viewModel.state.value.granteeDraft?.options?.single()?.handle)
+        }
+
+    @Test
+    fun `a search answer that arrives after the query moved on is dropped`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            grants.candidates["rh"] = ApiResult.Success(listOf(BankGrantee("u1", "Rhea")))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onAddGrant()
+            viewModel.onGranteeQuery("rh")
+            advanceUntilIdle()
+
+            // Both calls run; only the one whose query still stands may write. Otherwise the list
+            // flickers back to the older answer and the member picks a name they did not search.
+            val draft = viewModel.state.value.granteeDraft
+            assertEquals("rh", draft?.query)
+            assertEquals("Rhea", draft?.options?.single()?.handle)
+        }
+
+    @Test
+    fun `a creation is sent as a creation, on the account that is showing`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            viewModel.onAddGrant()
+            advanceUntilIdle()
+            viewModel.onGranteeSelected(BankGrantee("u2", "Dorn"))
+            viewModel.onGrantDraftChanged(
+                requireNotNull(viewModel.state.value.granteeDraft).copy(canWithdraw = true),
+            )
+            viewModel.onCreateGrant()
+            advanceUntilIdle()
+
+            val sent = grants.written.single()
+            assertEquals("u2", sent.userId)
+            assertEquals("a1", sent.accountId)
+            assertEquals(true, sent.canWithdraw)
+            // `exists` false is what makes this a POST rather than a PATCH against a row that is
+            // not there.
+            assertTrue(!sent.exists)
+            assertNull(viewModel.state.value.granteeDraft)
+        }
+
+    @Test
+    fun `a creation with nobody picked is not sent`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            viewModel.onAddGrant()
+            advanceUntilIdle()
+            viewModel.onCreateGrant()
+            advanceUntilIdle()
+
+            assertTrue(grants.written.isEmpty())
+        }
+
+    @Test
+    fun `a refused creation keeps the sheet open and says why`() =
+        runTest(dispatcher) {
+            val grants = RecordingGrants()
+            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            grants.answer = ApiResult.Failure(ApiError.Server(status = 409))
+            val viewModel = model(RecordingLifecycle(), grants = grants)
+            viewModel.onSelectGrantAccount("a1")
+            viewModel.onAddGrant()
+            advanceUntilIdle()
+            viewModel.onGranteeSelected(BankGrantee("u2", "Dorn"))
+            viewModel.onCreateGrant()
+            advanceUntilIdle()
+
+            // Closing the sheet on a refusal would throw away the pick and the flags with it.
+            assertEquals("Dorn", viewModel.state.value.granteeDraft?.selected?.handle)
             assertTrue(viewModel.state.value.error is ApiError.Server)
         }
 

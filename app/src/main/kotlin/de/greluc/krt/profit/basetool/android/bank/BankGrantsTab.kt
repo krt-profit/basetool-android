@@ -32,6 +32,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -50,6 +51,7 @@ private const val CARTEL_TYPE = "CARTEL"
  * @property onSetGrant a member's capabilities changed.
  * @property onRevoke a member's standing is to be removed entirely — a confirmation, because it
  *   is what takes their sight of the account away.
+ * @property onAdd a new entry is to be made on the shown account.
  * @property onLocked a locked control was tapped by someone without Bank-Management.
  */
 data class BankGrantsActions(
@@ -57,6 +59,7 @@ data class BankGrantsActions(
     val onSetGrant: (BankGrant) -> Unit,
     val onRevoke: (BankLifecyclePrompt.RevokeGrant) -> Unit,
     val onLocked: () -> Unit,
+    val onAdd: () -> Unit,
 )
 
 /**
@@ -157,6 +160,14 @@ fun BankGrantsTab(
                         ),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
+                )
+            }
+            item(key = "add") {
+                KrtOutlineButton(
+                    text = stringResource(R.string.bank_grants_add),
+                    onClick = { if (management) actions.onAdd() else actions.onLocked() },
+                    modifier = Modifier.fillMaxWidth(),
+                    iconRes = if (management) null else DesignR.drawable.ic_krt_lock,
                 )
             }
             items(state.grants, key = { "${it.userId}-${it.accountId}" }) { grant ->

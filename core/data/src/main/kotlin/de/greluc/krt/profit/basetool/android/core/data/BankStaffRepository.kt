@@ -30,12 +30,14 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBala
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseUserDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RegisterBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RenameBankAccountRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankGrantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankHolderRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -352,6 +354,28 @@ class BankStaffRepository(
         }
     }
 
+    override suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>> =
+        when (
+            val result =
+                reader.get(
+                    GRANTEE_SEARCH_PATH,
+                    listOf(
+                        QUERY_PARAM to query,
+                        PAGE_PARAM to "0",
+                        SIZE_PARAM to GRANTEE_PAGE_SIZE.toString(),
+                    ),
+                    PageResponseUserDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toGrantee() })
+            }
+        }
+
     override suspend fun revokeGrant(
         userId: String,
         accountId: String,
@@ -384,6 +408,20 @@ class BankStaffRepository(
 
         /** The per-account grants matrix. */
         const val STAFF_GRANTS_PATH = "/api/v1/bank/grants"
+
+        /**
+         * The grantee picker.
+         *
+         * The bank twin of `/users/search`, not that path: the two are identical but for the role
+         * gate, and only this one admits a bank manager who holds no org role.
+         */
+        const val GRANTEE_SEARCH_PATH = "/api/v1/users/search-bank"
+
+        /** What was typed into the grantee picker. */
+        const val QUERY_PARAM = "query"
+
+        /** How many candidates one search offers. */
+        private const val GRANTEE_PAGE_SIZE = 25
 
         /** Which account's matrix to read. */
         const val ACCOUNT_PARAM = "accountId"
@@ -500,6 +538,20 @@ private fun BankHolderDto.toModel(): BankHolder? {
         version = version ?: 0,
     )
 }
+
+/**
+ * Maps one search hit onto a grantee.
+ *
+ * @return the candidate, or `null` without an id — one no grant could name.
+ */
+private fun UserDto.toGrantee(): BankGrantee? =
+    id?.let {
+        BankGrantee(
+            id = it,
+            // Never the e-mail or the rank the search also carries.
+            handle = effectiveName ?: displayName ?: username.orEmpty(),
+        )
+    }
 
 /**
  * Maps one grant onto the model.

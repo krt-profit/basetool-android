@@ -595,8 +595,17 @@
     <string name="bank_grants_withdraw">Auszahlen</string>
     <string name="bank_grants_transfer">Transfer</string>
     <string name="bank_grants_revoke">Eintrag entfernen</string>
+    <string name="bank_grants_add">+ Grant hinzufügen</string>
+    <string name="bank_grants_add_title">Grant hinzufügen</string>
+    <string name="bank_grants_add_account">Für das Konto %1$s.</string>
+    <string name="bank_grants_add_member">Mitglied</string>
+    <string name="bank_grants_add_member_placeholder">Namen tippen …</string>
+    <string name="bank_grants_add_flags_note">Ohne Häkchen darf das Mitglied das Konto nur sehen. Buchen darf es, was du hier ankreuzt.</string>
+    <string name="bank_grants_add_confirm">Grant anlegen</string>
+    <string name="bank_grants_add_error_role">Dieses Mitglied hat die Rolle Bank-Mitarbeiter nicht — ohne sie kann es keinen Grant bekommen. Die Rolle vergibst du im Web-Frontend.</string>
+    <string name="bank_grants_add_error_duplicate">Dieses Mitglied steht auf diesem Konto schon.</string>
     <string name="bank_grants_revoke_title">Eintrag entfernen?</string>
-    <string name="bank_grants_revoke_text">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto — und das Sehen des Kontos gleich mit. Neu eintragen kannst du es derzeit nur im Web-Frontend.</string>
+    <string name="bank_grants_revoke_text">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto — und das Sehen des Kontos gleich mit. Du kannst den Eintrag hier jederzeit neu anlegen.</string>
     <string name="bank_grants_revoke_text_cartel">Nimmt dem Mitglied alle Buchungsrechte auf diesem Konto. Das KRT-Konto sieht weiterhin jedes Mitglied — dieses Sehen hing nie am Eintrag.</string>
     <string name="bank_grants_view_note_cartel">Das KRT-Konto sieht jedes Mitglied ohnehin. Ein Eintrag hier vergibt deshalb nur Buchungsrechte, kein Sehen.</string>
     <!-- Aufträge (design chapter 10) -->
