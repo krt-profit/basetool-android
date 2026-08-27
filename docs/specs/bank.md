@@ -200,6 +200,13 @@ The create, the edit and the withdrawal echo the request's `version`; **the two 
 not, because the server takes no body on either**. The grant is idempotent and the state it sets
 does not depend on what the client last read, so there is nothing to collide over.
 
+**A responsible holder's own request is never flagged.** `isApprovalExempt` is
+`isResponsibleHolder` (main repo ADR-0123): for a holder, `requiresOwnerApproval` is `false`,
+`applicableLimit` is `null` and `requiredApprover` is `null` — for any amount, bypassing the KRT
+ladder. That, and not any self-check, is why nobody approves their own request; there is no
+self-check anywhere in the server's approval path. The app's own rule — a request on both reads is
+the caller's own and carries no approval action — is belt-and-braces on top of it.
+
 **Own and foreign are two reads, one list.** `GET …/requests` returns what the caller raised;
 `GET …/requests/foreign` returns what sits on accounts they are responsible for. The **server**
 decides the second set, so membership of it — not any rule the app applies — is what puts the

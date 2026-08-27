@@ -128,15 +128,30 @@ what the artboard's own note meant by „Leiter aus Server-Konfig". It is never 
 
 ---
 
-## 2b — One question artboard 5 raises and we cannot answer from the API
+## 2b — Artboard 5's open backend question, answered from the code
 
 Artboard 5's handoff says: „Ablehnen bleibt aktiv gezeichnet — ob der Server Self-Reject zulässt,
 ist als Backend-Klärung notiert; bis dahin entscheidet der Server (403-Muster)."
 
-That clarification is still open, and it is a backend question rather than a drawing one. We will
-answer it from `BankBookingRequestService` when the staff queue is built and report back; the
-drawn behaviour (draw it active, let the server decide) is the right stance until then and needs
-no change.
+**Answered: the server does permit it, and the drawing is right.** `BankBookingRequestService.reject`
+gates on three things — the request is still `PENDING`, the version matches, and the caller can see
+the account (`canSee`). It never compares the caller against `requestedBy`. A bank employee may
+reject their own request, so `ABLEHNEN` stays drawn active, and no change is needed.
+
+**And the neighbouring claim turns out to be true for a different reason than the drawing implies.**
+„Eigene Anträge gibst du nie selbst frei" is correct, but there is no self-check anywhere in the
+approval path either — `canApprove` asks only *who you are* (responsible holder / Bankleitung / OL /
+admin), never who raised it. The reason a holder cannot approve their own request is that **their
+own request never needs an approval at all**: `isApprovalExempt(account) == isResponsibleHolder(account)`
+(ADR-0123), so for a holder `requiresOwnerApproval` is `false`, `applicableLimit` is `null` and
+`requiredApprover` is `null`, for any amount and bypassing the KRT ladder. The spec puts the
+rationale plainly: making them counter-sign their own request „was a no-op click that only produced
+noise".
+
+The practical consequence for the drawing is small but worth having: the locked-`Genehmigen`
+state on artboard 5's own-request row is **not** a case of "you may not approve this". It is a
+request that carries no approval to give. If the row is ever redrawn, „Freigabe nicht nötig" would
+be truer than a lock.
 
 ## 3 — Two smaller questions, no strong opinion
 
