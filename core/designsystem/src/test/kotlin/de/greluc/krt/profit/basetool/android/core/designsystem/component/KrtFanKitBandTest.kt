@@ -17,12 +17,14 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Pins the Star Citizen Fan Kit compliance wording (Fan Kit Guidelines section 2b).
+ * Pins the Star Citizen Fan Kit compliance wording.
  *
- * The trademark notice is prescribed legal wording, not UI copy. A well-meaning German translation,
- * a "corrected" spacing before the third registered sign or a typographic clean-up would each break
- * compliance while passing every other check in the build — this test is the tripwire that turns
- * such an edit into a red build.
+ * **Two CIG documents bind the band and they apply cumulatively**: the Fan Kit Guidelines
+ * (section 2b) prescribe the short trademark line, and the Fankit Agreement (clause 2(g))
+ * prescribes a second, longer notice. Both are legal wording, not UI copy. A well-meaning German
+ * translation, a "corrected" spacing before a registered sign or a typographic clean-up would each
+ * break compliance while passing every other check in the build — this test is the tripwire that
+ * turns such an edit into a red build.
  *
  * The mirror of this test in the web app is `FanKitComplianceMvcTest`; both must stay in sync.
  */
@@ -36,6 +38,22 @@ class KrtFanKitBandTest {
     private val requiredNotice =
         "Star Citizen®, Roberts Space Industries® and Cloud Imperium ® " +
             "are registered trademarks of Cloud Imperium Rights LLC"
+
+    /**
+     * The Fankit Agreement clause 2(g) notice, verbatim from
+     * `06_Fankit_Agreement_2025_11_19.pdf` and byte-identical across the three archived kit
+     * versions (2024-04-25, 2025-06-03, 2025-11-19).
+     *
+     * Three details read as typing mistakes and are none of them: `Ltd..` has two full stops, there
+     * is **no** space before any of its four registered signs, and there is an Oxford comma before
+     * "and Cloud Imperium®".
+     */
+    private val requiredAgreementNotice =
+        "This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space " +
+            "Industries group of companies. All game content and materials are copyright Cloud " +
+            "Imperium Rights LLC and Cloud Imperium Rights Ltd.. Star Citizen®, Squadron 42®, " +
+            "Roberts Space Industries®, and Cloud Imperium® are registered trademarks of Cloud " +
+            "Imperium Rights LLC. All rights reserved."
 
     private val application: Application get() = RuntimeEnvironment.getApplication()
 
@@ -78,7 +96,69 @@ class KrtFanKitBandTest {
         )
     }
 
-    /** The artwork the notice is coupled to must exist; a missing drawable would split the unit. */
+    /** The default (German-first) bundle must carry the clause 2(g) notice byte for byte. */
+    @Test
+    fun agreementNotice_isVerbatim_inDefaultLocale() {
+        assertEquals(
+            "the Fankit Agreement clause 2(g) notice must not be edited",
+            requiredAgreementNotice,
+            application.getString(R.string.krt_fankit_agreement_notice),
+        )
+    }
+
+    /**
+     * The clause 2(g) notice must stay English on a German device.
+     *
+     * It is the longer of the two and reads like prose, which makes it the likelier of the pair to
+     * be "helpfully" translated.
+     */
+    @Test
+    @Config(qualifiers = "de", sdk = [ROBOLECTRIC_SDK])
+    fun agreementNotice_staysEnglish_inGermanLocale() {
+        assertEquals(
+            "the Fankit Agreement clause 2(g) notice must never be translated",
+            requiredAgreementNotice,
+            application.getString(R.string.krt_fankit_agreement_notice),
+        )
+    }
+
+    /** And in the English locale, guarding an "improvement" made while adding an English bundle. */
+    @Test
+    @Config(qualifiers = "en", sdk = [ROBOLECTRIC_SDK])
+    fun agreementNotice_staysEnglish_inEnglishLocale() {
+        assertEquals(
+            requiredAgreementNotice,
+            application.getString(R.string.krt_fankit_agreement_notice),
+        )
+    }
+
+    /**
+     * The two notices are not interchangeable and must not drift into each other.
+     *
+     * The tempting clean-up is to give both the same spacing before ®, or to fold one into the
+     * other. Either leaves a plausible-looking band that satisfies neither document, so the
+     * difference itself is asserted rather than left to a reviewer's eye.
+     */
+    @Test
+    fun theTwoNotices_keepTheirDifferingRegisteredSignSpacing() {
+        assertEquals(
+            "section 2b prose carries a space before its third registered sign",
+            true,
+            requiredNotice.contains("Cloud Imperium ®"),
+        )
+        assertEquals(
+            "clause 2(g) carries no space before any registered sign",
+            false,
+            requiredAgreementNotice.contains(" ®"),
+        )
+        assertEquals(
+            "clause 2(g) writes Ltd with two full stops",
+            true,
+            requiredAgreementNotice.contains("Cloud Imperium Rights Ltd.. Star Citizen"),
+        )
+    }
+
+    /** The artwork the notices are coupled to must exist; a missing drawable would split the unit. */
     @Test
     fun madeByTheCommunityArtwork_isBundled() {
         val drawable = application.resources.getDrawable(R.drawable.krt_made_by_the_community, null)

@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Der vom Fankit-Agreement geforderte Hinweis steht jetzt in der App** — der Satz zur
+  Nicht-Verbundenheit mit Cloud Imperium, der Copyright-Hinweis und „All rights reserved". Er
+  ergänzt die bisherige kurze Markenzeile, ersetzt sie nicht, und steht mit ihr und dem Logo an
+  denselben zwei Stellen: Anmeldung und Einstellungen.
+
 - **Benachrichtigungen lassen sich jetzt einzeln stummschalten:** fünf Kategorien in den
   Systemeinstellungen — Einsätze & Check-In, Aufträge & Zuweisungen, Materialbörse,
   Bank & Auszahlungen, System & Ankündigungen.
@@ -25,7 +30,25 @@
   Funktion an Bord, die du dir wünschst. Der Wunsch ist keine Zusage — die geplante Funktion setzt
   weiterhin die Einsatzleitung.
 
+- **Umbuchen im Lager kann jetzt alles, was das Webtool kann:** neben Nutzer und Ort lässt sich
+  auch die **Org-Einheit** wählen, in deren Bestand der Eintrag wandert — voreingestellt ist die
+  aktuelle, damit ein reiner Ortswechsel den Bestand nicht unbemerkt in eine andere Einheit schiebt.
+  Bei SCU-Material kommt die Option „Mit vorhandenem Bestand zusammenlegen" dazu.
+
 ### Changed
+
+- **Die App setzt jetzt Android 12 voraus** (vorher Android 11). Grund ist nicht die Reichweite,
+  sondern die Prüfbarkeit: der Emulator für Android 11 kann sich nicht anmelden, und eine unterste
+  Version, die niemand testen kann, ist ein Versprechen, das niemand geprüft hat. Direkt beim
+  ersten Anmeldetest auf Android 12 kam ein Absturz zum Vorschein, der bis dahin ausgeliefert war.
+
+- **Die Anmeldung stürzt nicht mehr ab, wenn das Gerät keine Bildschirmsperre hat** — sie sagt
+  jetzt, dass eine eingerichtet werden muss. Vorher verschwand die App beim Tippen auf „Anmelden".
+- **Die Fehlermeldung behauptet nicht mehr, die Administration sei informiert worden.** Das war
+  nicht der Fall: die App meldet nichts nach außen. Sie nennt jetzt, was zu tun ist.
+
+- **„Übergeben" heißt jetzt „Umbuchen"** — so wie im Webtool und im Designbild. Der Knopf unten
+  nennt außerdem die Buchung, die er auslöst, statt immer „Ausbuchen".
 
 - **Das Datum auf der Übersicht nennt jetzt beide Jahre:** „Mittwoch, 26.08.2026 (2956)" — das
   echte und das Star-Citizen-Jahr.

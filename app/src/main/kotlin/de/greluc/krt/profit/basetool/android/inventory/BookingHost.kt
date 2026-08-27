@@ -39,6 +39,8 @@ fun BookingHost(viewModel: BookingViewModel) {
                     onMemberQuery = viewModel::onMemberQueryChanged,
                     onMember = viewModel::onMemberChosen,
                     onTerminal = viewModel::onTerminalChosen,
+                    onOrgUnit = viewModel::onOrgUnitChosen,
+                    onMergeStock = viewModel::onMergeStockChanged,
                     onSellAmount = viewModel::onSellAmountChanged,
                     onNote = viewModel::onNoteChanged,
                     onSave = viewModel::onSave,

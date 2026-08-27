@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.inventory
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
@@ -47,6 +49,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
@@ -63,6 +66,9 @@ const val BOOKING_SHEET_TAG: String = "booking-sheet"
 
 /** Test handle for the booking's save action. */
 const val BOOKING_SAVE_TAG: String = "booking-save"
+
+/** Test handle for the transfer's stock-merge opt-in. */
+const val BOOKING_MERGE_TAG: String = "booking-merge"
 
 /**
  * The Lager's booking form: Ein, Aus, Notiz (design ch. 09, Frame 2).
@@ -85,7 +91,7 @@ fun BookingSheet(
     KrtBottomSheet(
         onDismiss = callbacks.onDismiss,
         modifier = Modifier.testTag(BOOKING_SHEET_TAG),
-        title = stringResource(state.mode.titleRes()),
+        title = stringResource(state.actionRes()),
     ) {
         Column(
             modifier =
@@ -189,9 +195,9 @@ fun BookingSheet(
                     // generic "Buchen" (artboard 09.2). On a form with three modes, a button that
                     // reads the same in all three is the one control that does not say which one
                     // is armed.
-                    text = stringResource(state.mode.titleRes()),
+                    text = stringResource(state.actionRes()),
                     onClick = callbacks.onSave,
-                    iconRes = state.mode.iconRes(),
+                    iconRes = state.actionIconRes(),
                     modifier =
                         Modifier
                             .testTag(BOOKING_SAVE_TAG)
@@ -220,6 +226,8 @@ fun BookingSheet(
  * @property onMemberQuery the member search changed.
  * @property onMember a recipient was picked.
  * @property onTerminal a terminal was picked.
+ * @property onOrgUnit an org-unit pool was picked for a transfer.
+ * @property onMergeStock the stock-merge opt-in changed.
  * @property onSellAmount what the sale fetched changed.
  * @property onNote the entry's note changed.
  * @property onSave the save action was taken.
@@ -237,6 +245,8 @@ data class BookingCallbacks(
     val onMemberQuery: (String) -> Unit,
     val onMember: (MemberOption) -> Unit,
     val onTerminal: (TerminalOption) -> Unit,
+    val onOrgUnit: (OrgUnitOption) -> Unit,
+    val onMergeStock: (Boolean) -> Unit,
     val onSellAmount: (String) -> Unit,
     val onNote: (String) -> Unit,
     val onSave: () -> Unit,
@@ -310,6 +320,137 @@ private fun PlaceField(
 }
 
 /**
+ * Which org-unit pool a transfer's moved row lands in.
+ *
+ * A plain list rather than a search field: the options are one member's memberships, which is a
+ * handful, and a search box over four rows asks the member to type what they can already see.
+ *
+ * It is **not** shown when there is nothing to choose. A receiving member with no membership at
+ * all leaves the row unpooled, which is the server's own outcome and not a field the form can fix;
+ * a member with exactly one has no decision to make and the server resolves it.
+ *
+ * @param state the form.
+ * @param onOrgUnit a pool was picked.
+ */
+@Composable
+private fun OrgUnitField(
+    state: BookingState,
+    onOrgUnit: (OrgUnitOption) -> Unit,
+) {
+    // Hidden only for a membershipless target: that row is unpooled and there is nothing to
+    // choose. A single membership is still shown — preset and read-only in effect — because the
+    // member is entitled to see which pool their stock is about to land in.
+    if (state.orgUnits.isEmpty()) {
+        return
+    }
+    var open by rememberSaveable { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        KrtSelectField(
+            value =
+                state.orgUnit?.let { unit ->
+                    if (unit.id == state.entry?.owningOrgUnitId) {
+                        stringResource(R.string.booking_org_unit_preset, unit.label())
+                    } else {
+                        unit.label()
+                    }
+                }.orEmpty(),
+            options = state.orgUnits.map { KrtOption(value = it.id, label = it.label()) },
+            onSelect = { option ->
+                state.orgUnits.firstOrNull { it.id == option.value }?.let(onOrgUnit)
+                open = false
+            },
+            expanded = open,
+            onExpandedChange = { open = it },
+            label = stringResource(R.string.booking_field_org_unit),
+            selectedValue = state.orgUnit?.id,
+            enabled = !state.saving,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Muted(stringResource(R.string.booking_org_unit_note))
+    }
+}
+
+/**
+ * How an org unit reads in the pool picker.
+ *
+ * @return the name with its shorthand where the server sent one.
+ */
+private fun OrgUnitOption.label(): String = shorthand?.let { "$name · $it" } ?: name
+
+/**
+ * What a target picker shows when the member has not changed it.
+ *
+ * @param current the row's own value.
+ * @return the value marked as unchanged.
+ */
+@Composable
+private fun unchanged(current: String): String =
+    stringResource(R.string.booking_target_unchanged, current)
+
+/**
+ * The refusal a transfer that moves nothing earns.
+ *
+ * Drawn as a bordered band rather than a line of red text (artboard 16): it is a data rule the
+ * member can fix in the two fields above it, and the server's own backstop is quoted underneath so
+ * the message and the 400 are recognisably the same thing.
+ */
+@Composable
+private fun TransferRefusal() {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .border(width = 1.dp, color = KrtPalette.DangerText)
+                .padding(KrtSpacing.sm),
+    ) {
+        Text(
+            text = stringResource(R.string.booking_transfer_unchanged),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.DangerText,
+        )
+        Muted(stringResource(R.string.booking_transfer_unchanged_detail))
+    }
+}
+
+/**
+ * Whether the server may fold the moved amount into an identical entry at the target.
+ *
+ * The whole row is the target, not the 24 dp control: `KrtToggle` deliberately carries no label
+ * and no gesture of its own, because a bare toggle cannot reach the 48 dp minimum without being
+ * inflated out of its drawn size.
+ *
+ * @param state the form.
+ * @param onMergeStock the opt-in changed.
+ */
+@Composable
+private fun MergeStockField(
+    state: BookingState,
+    onMergeStock: (Boolean) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag(BOOKING_MERGE_TAG)
+                    .clickable(enabled = !state.saving) { onMergeStock(!state.mergeStock) }
+                    .padding(vertical = KrtSpacing.xs),
+        ) {
+            KrtToggle(checked = state.mergeStock, enabled = !state.saving)
+            Text(
+                text = stringResource(R.string.booking_merge_stock),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+        }
+        Muted(stringResource(R.string.booking_merge_stock_note))
+    }
+}
+
+/**
  * What happens to the material on the way out, and the field the choice requires.
  *
  * @param state the form.
@@ -344,17 +485,41 @@ private fun OutKindField(
                 Picker(
                     label = stringResource(R.string.booking_field_member),
                     query = state.memberQuery,
-                    chosen = state.member?.name,
+                    // Both targets show the row's own value with „— unverändert" rather than
+                    // sitting empty (artboard 15/16). Empty is what the app sent for „keep it",
+                    // but on screen it read as a field nobody had filled in.
+                    chosen = state.member?.name ?: state.entry?.holder?.let { unchanged(it) },
                     options = state.members.map { it.id to it.name },
                     enabled = !state.saving,
                     onQuery = callbacks.onMemberQuery,
                     onChosen = { id -> state.members.firstOrNull { it.id == id }?.let(callbacks.onMember) },
                 )
-                PlaceField(state = state, callbacks = callbacks)
-                if ((state.member != null || state.place != null) && !state.transferMoves) {
-                    KrtFieldError(text = stringResource(R.string.booking_transfer_unchanged))
+                Picker(
+                    label = stringResource(R.string.booking_field_place_transfer),
+                    query = state.placeQuery,
+                    chosen = state.place?.name ?: state.entry?.locationName?.let { unchanged(it) },
+                    options = state.places.map { it.id to it.name },
+                    enabled = !state.saving,
+                    onQuery = callbacks.onPlaceQuery,
+                    onChosen = { id -> state.places.firstOrNull { it.id == id }?.let(callbacks.onPlace) },
+                )
+                // The refusal speaks about the two pickers directly above, so it stays with them.
+                // The pool and the merge option are a separate decision about where the moved row
+                // lands, and a rule about the targets read underneath them looks like a rule about
+                // the checkbox.
+                if (!state.transferMoves) {
+                    TransferRefusal()
+                }
+                OrgUnitField(state = state, onOrgUnit = callbacks.onOrgUnit)
+                if (state.materialIsScu) {
+                    // Offered only for an SCU material: the server merges a PIECE transfer into an
+                    // identical target stack regardless, so a toggle there would be a control that
+                    // does nothing — and the member could not tell that from one that does.
+                    MergeStockField(state = state, onMergeStock = callbacks.onMergeStock)
                 } else {
-                    Muted(stringResource(R.string.booking_transfer_note))
+                    // Not silence: an absent control reads as a missing feature, where the frame
+                    // draws a line saying the server already does it (artboard 16).
+                    Muted(stringResource(R.string.booking_merge_piece))
                 }
             }
 
@@ -461,6 +626,42 @@ private fun BookingMode.titleRes(): Int =
         BookingMode.IN -> R.string.booking_mode_in
         BookingMode.OUT -> R.string.booking_mode_out
         BookingMode.NOTE -> R.string.booking_mode_note
+    }
+
+/**
+ * What the save action is called, which is not always what the mode is called.
+ *
+ * A transfer is „Umbuchen" and a sale is „Verkaufen" — both reached through the Ausbuchen mode,
+ * both different events in the ledger from a discard. The button is the last thing a member reads
+ * before committing one, so it names the move the form will actually make rather than the segment
+ * they used to get here.
+ *
+ * @return the string resource for the call to action.
+ */
+private fun BookingState.actionRes(): Int =
+    if (mode == BookingMode.OUT) {
+        when (outKind) {
+            BookOutKind.DISCARD -> R.string.booking_mode_out
+            BookOutKind.TRANSFER -> R.string.booking_out_transfer
+            BookOutKind.SELL -> R.string.booking_out_sell
+        }
+    } else {
+        mode.titleRes()
+    }
+
+/**
+ * The icon beside the call to action.
+ *
+ * A transfer moves stock sideways rather than out, so it takes the exchange glyph the design system
+ * uses wherever something changes hands.
+ *
+ * @return the drawable resource.
+ */
+private fun BookingState.actionIconRes(): Int =
+    if (mode == BookingMode.OUT && outKind == BookOutKind.TRANSFER) {
+        DesignR.drawable.ic_krt_swap
+    } else {
+        mode.iconRes()
     }
 
 /**

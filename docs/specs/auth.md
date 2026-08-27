@@ -45,15 +45,34 @@ enrolment, a locked device, a blob restored from elsewhere — all three mean "n
 `RefreshTokenStore.read()` answers `null` and clears the unusable blob rather than throwing, because
 the alternative is a crash loop on start-up where a login prompt belongs.
 
+> [!warning] `ProviderException` is not a `GeneralSecurityException`
+> A provider that cannot **produce** the key at all throws `java.security.ProviderException`, which
+> extends **RuntimeException**. Catching only `GeneralSecurityException` therefore lets it past
+> every handler — it killed the process on the sign-in button until 2026-08-27.
+>
+> The reproducer is ordinary: **a device with no secure lock screen**. Android 12's keystore2
+> cannot create the `setUnlockedDeviceRequired` key without the per-user super-encryption key that
+> a lock brings, answers `User ECDH key missing`, and `KeyGenerator.generateKey` throws. Both
+> `encrypt` and `decrypt` now wrap it into `SecretCipherException`, which the login already knew
+> how to handle.
+
+**A device that cannot make the key is told what to do about it.** That state has its own message
+(`login_error_device_key`, „Dieses Gerät kann die Anmeldung nicht sicher speichern. Richte eine
+Bildschirmsperre ein und versuche es erneut."), separate from the refused-token-exchange state that
+the member cannot act on. Neither claims anyone was notified — see
+[[#REQ-APP-AUTH-008|the copy rule]] below.
+
 **Acceptance**
 
 - [x] Round-trip, overwrite and clear behave as specified (`RefreshTokenStoreTest`).
 - [x] An undecryptable token reads as `null` **and** is cleared, so the failure is paid once.
-- [ ] The Keystore implementation itself is exercised on a device. **Open, and no longer blocked** —
-  `KeystoreSecretCipher` cannot run on a JVM; the seam is at `SecretCipher`, so everything above it
-  is tested. The reason this stayed open was the missing instrumented suite, and that reason is
-  gone: `app/src/androidTest` exists and runs (`AppLockKeystoreContractTest` covers the *lock* key
-  the same way). What is left is to give the token cipher its own case there.
+- [x] The Keystore implementation itself is exercised on a device
+  (`AppLockKeystoreContractTest.theRefreshTokenCipherNeverEscapesAsARuntimeException`). It asserts
+  the thing that actually broke: not "the value round-trips" but "nothing escapes as a
+  RuntimeException". A device that can make the key takes the happy path; one that cannot must
+  arrive at `SecretCipherException`.
+- [x] Walked on an API-31 emulator with no screen lock: the crash is gone and the member is told to
+  set one.
 
 ### REQ-APP-AUTH-003 — DPoP proofs are sent on token requests only, and timed by server clock
 
@@ -100,10 +119,15 @@ refresh of a session fail intermittently and only in the field.
 
 ### REQ-APP-AUTH-004 — The token file is excluded from backup in both rule sets
 
-minSdk 30 still spans two backup worlds: `backup_rules.xml` governs API ≤ 30, `data_extraction_rules.xml`
-governs API 31+, and the latter needs the exclusion in **both** its `cloud-backup` and
-`device-transfer` sections — `allowBackup=false` alone does not reliably stop a device-to-device
-transfer.
+`data_extraction_rules.xml` governs API 31+ and needs the exclusion in **both** its
+`cloud-backup` and `device-transfer` sections — `allowBackup=false` alone does not reliably stop a
+device-to-device transfer.
+
+> [!note] `backup_rules.xml` is inert since minSdk 31, and kept anyway
+> `android:fullBackupContent` is read only by API ≤ 30, so at the floor of ADR-0015 no device reads
+> it. It stays because it costs nothing and is the belt beside the braces on the one artefact that
+> must never leave the device — deleting it would leave a future lowering of the floor silently
+> unprotected. Both rule sets must therefore still agree.
 
 The excluded path must be the file DataStore actually writes: `datastore/krt_tokens.preferences_pb`,
 not the bare store name. `AuthDataStore.RELATIVE_PATH` publishes it and `BackupExclusionTest` compares

@@ -9,6 +9,8 @@ package de.greluc.krt.profit.basetool.android
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
+import de.greluc.krt.profit.basetool.android.core.auth.KeystoreSecretCipher
+import de.greluc.krt.profit.basetool.android.core.auth.SecretCipherException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -32,6 +34,13 @@ import org.junit.runner.RunWith
  *    authentication existed, and a broad catch turned that into the value already meaning "this
  *    lock can never be opened again". Dropping the platform (ADR-0006) removed the path; these
  *    tests are what would catch its return.
+ * 3. `KeystoreSecretCipher` — the refresh-token cipher, not the lock — wrapped only
+ *    `GeneralSecurityException`. On an API-31 device with **no screen lock**, keystore2 cannot
+ *    create the `setUnlockedDeviceRequired` key ("User ECDH key missing") and throws
+ *    `java.security.ProviderException`, which extends **RuntimeException**. It walked past the
+ *    wrapper and past `LoginViewModel`'s handler and took the process down on the sign-in button —
+ *    while the code that should have caught it was already written, with a comment explaining why
+ *    it mattered.
  *
  * They deliberately stop short of the prompt: a `BiometricPrompt` needs an activity and a human.
  * What they pin is everything either side of it — that the key can be created on this device, and
@@ -107,6 +116,34 @@ class AppLockKeystoreContractTest {
         key.disarm()
 
         assertTrue("a disarmed lock must leave no key behind", !key.exists())
+    }
+
+    /**
+     * The refresh-token cipher round-trips on this device.
+     *
+     * Defect 3 above made this throw `ProviderException` rather than fail cryptographically, so the
+     * assertion that matters is not "the value comes back" but "nothing escapes as a
+     * RuntimeException". A device with a screen lock takes the happy path; one without takes the
+     * path that used to crash, and must arrive at [SecretCipherException] instead.
+     */
+    @Test
+    fun theRefreshTokenCipherNeverEscapesAsARuntimeException() {
+        val cipher = KeystoreSecretCipher(alias = "krt.test.secret.contract")
+        val plaintext = "refresh-token-stand-in".toByteArray()
+        try {
+            val restored = cipher.decrypt(cipher.encrypt(plaintext))
+            assertTrue(
+                "a device that can make the key must round-trip the value",
+                plaintext.contentEquals(restored),
+            )
+        } catch (expected: SecretCipherException) {
+            // The device cannot provide the key — no screen lock, no secure element, a wiped
+            // Keystore. That is a legitimate outcome and the one the login handles. What must never
+            // happen is any other throwable reaching this point.
+            assertNotNull("the cause is kept for the log", expected.cause)
+        } finally {
+            cipher.deleteKey()
+        }
     }
 
     private companion object {

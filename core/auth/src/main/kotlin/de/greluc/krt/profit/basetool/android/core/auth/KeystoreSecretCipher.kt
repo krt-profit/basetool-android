@@ -13,6 +13,7 @@ import android.security.keystore.StrongBoxUnavailableException
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import java.security.GeneralSecurityException
 import java.security.KeyStore
+import java.security.ProviderException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -53,6 +54,17 @@ class KeystoreSecretCipher(
             iv + cipher.doFinal(plaintext)
         } catch (failure: GeneralSecurityException) {
             throw SecretCipherException("encryption failed", failure)
+        } catch (unavailable: ProviderException) {
+            // The provider could not produce the key at all — distinct from a cryptographic
+            // failure, and NOT a GeneralSecurityException: `ProviderException` extends
+            // RuntimeException, so without this branch it walks past every caller's handler and
+            // takes the process down.
+            //
+            // The case that produced it: `setUnlockedDeviceRequired(true)` on a device with no
+            // secure lock screen. Android 12's keystore2 answers "User ECDH key missing" because
+            // the per-user super-encryption key only exists once a lock is set. A member who has
+            // never set one would have lost the app on the sign-in button.
+            throw SecretCipherException("the Keystore could not provide a key", unavailable)
         }
 
     override fun decrypt(ciphertext: ByteArray): ByteArray =
@@ -69,6 +81,10 @@ class KeystoreSecretCipher(
             throw SecretCipherException("decryption failed", failure)
         } catch (malformed: IllegalArgumentException) {
             throw SecretCipherException("stored blob is malformed", malformed)
+        } catch (unavailable: ProviderException) {
+            // Same reasoning as in `encrypt`: a provider that cannot hand over the key is a
+            // "log in again" state, not a crash.
+            throw SecretCipherException("the Keystore could not provide a key", unavailable)
         }
 
     /**

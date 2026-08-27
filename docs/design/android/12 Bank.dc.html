@@ -16,13 +16,13 @@
   <style>body{background:#000}</style>
 </helmet>
 <div style="min-height:100vh;background:#000;padding:40px 24px 80px">
-<div style="max-width:2400px;margin:0 auto">
+<div style="max-width:3600px;margin:0 auto">
   <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
   <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">12</div>
     <div style="flex:1">
-      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Bank — Mitglieder-Oberfläche</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Org-Einheits-Bank auf dem Append-only-Ledger: Konten, Detail mit gezeichneter Bilanzlinie (kein Chart-Framework), Buchungsantrag, Freigaben. Live: Tab Konten/Anträge, Antrags-Typ, Genehmigen.</div>
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Bank — Mitglieder & Verwaltung</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Org-Einheits-Bank auf dem Append-only-Ledger: Konten, Detail mit gezeichneter Bilanzlinie (kein Chart-Framework), Buchungsantrag, Freigaben. Live: Tab Konten/Anträge, Antrags-Typ, Genehmigen. Runde 5: Verwaltungs-Scope (BANK_EMPLOYEE) — Staff-Dashboard, Antrags-Queue, Konten-Lifecycle, Grants, Verwahrer-Detail (Artboards 4–8).</div>
     </div>
   </header>
 
@@ -36,6 +36,12 @@
             <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
             <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Bank</div>
             <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000">Mitglied</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A;border-left:1px solid #282828" aria-label="Verwaltung — gesperrt, Rolle Bank-Mitarbeiter fehlt"><span style="opacity:.45">Verwaltung</span><svg class="krt-icon" style="width:12px;height:12px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></button>
+            </div>
           </div>
           <div class="tab-nav" style="padding:0 8px;flex:none">
             <button class="tab {{ tabAcctCls }}" style="font-size:11.5px;min-height:48px" onClick="{{ tabAcct }}">Konten</button>
@@ -72,7 +78,7 @@
                     <sc-if value="{{ r.canApprove }}" hint-placeholder-val="{{ false }}">
                       <div style="display:flex;gap:8px;border-top:1px solid #1C1C1C;padding-top:10px">
                         <button class="btn-quiet-danger btn" style="background:transparent;min-height:44px;flex:1;font-size:11px">Ablehnen</button>
-                        <button class="btn-success btn" style="min-height:44px;flex:1.3;font-size:11px" onClick="{{ r.onApprove }}"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-check"></use></svg>Genehmigen ({{ r.approvals }})</button>
+                        <button class="btn-success btn" style="min-height:44px;flex:1.3;font-size:11px" onClick="{{ r.onApprove }}"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-check"></use></svg>Bestätigen ({{ r.approvals }})</button>
                       </div>
                     </sc-if>
                   </div>
@@ -92,9 +98,10 @@
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — BankScreen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>Sparkline = gezeichnete Polyline (Server liefert Punkte) — kein Chart-Framework (REQ-BANK-016)</li>
-          <li>Anträge-Tab zeigt Freigabe-Aktionen nur mit Approver-Grant; Genehmigen zählt die Leiter hoch (1/2 → 2/2)</li>
+          <li>Anträge-Tab zeigt Freigabe-Aktionen nur mit Approver-Grant; Bestätigen (Web-Wording, bank.notification „bestätigt") zählt die Leiter hoch (1/2 → 2/2)</li>
           <li>Beträge immer tabular, Einzahlung grün +, Auszahlung rot − (Text-Tints)</li>
-          <li><b style="color:#FFD23F">Backend offen:</b> „{n} Verwahrer"-Chip auf der Kontokarte (ebenso „3 Verwahrer" im Detail-Kopf): BankAccountDto führt keine Verwahrer-Zahl. Eigentümer-Entscheidung 25.08.2026: das Feld kommt NICHT — Chip und Kopf-Zeilen endgültig entfernt; die Karte = Name, Kontostand, 30-Tage-Delta, Sparkline. Die Verwahrungs-Aufteilung im Detail bleibt (Detail-Endpunkt liefert sie)</li>
+          <li><b style="color:#FFD23F">Backend offen:</b> „{n} Verwahrer"-Chip auf der Kontokarte (ebenso „3 Verwahrer" im Detail-Kopf): BankAccountDto führt keine Verwahrer-Zahl. Eigentümer-Entscheidung 25.08.2026: das Feld kommt NICHT — Chip und Kopf-Zeilen endgültig entfernt; die Karte = Name, Kontostand, 30-Tage-Delta, Sparkline. Verwahrer sind im Basetool NICHT auf einzelne Konten gemappt — die frühere „Verwahrung"-Sektion im Konto-Detail wurde entfernt (27.08.2026)</li>
+          <li>Runde 5: „Verwaltung" ist ein Scope-Segment im Kopf (Artboards 4–8) — Persona hier: einfaches Mitglied, Segment gesperrt-antippbar (Kap.-09-Muster), nie versteckt</li>
         </ul>
       </div>
     </div>
@@ -122,20 +129,7 @@
               </svg>
             </div>
             <div>
-              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Verwahrung — summiert auf den Kontostand</div>
-              <div class="card" style="padding:10px 14px">
-                <sc-for list="{{ holders }}" as="h" hint-placeholder-count="3">
-                  <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed #1C1C1C;font-variant-numeric:tabular-nums">
-                    <span style="min-width:64px;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ h.name }}</span>
-                    <span style="flex:1;height:9px;background:#1C1C1C;position:relative"><span style="position:absolute;inset:0 auto 0 0;width:{{ h.pct }};background:#E77E23"></span></span>
-                    <span style="min-width:92px;text-align:right;font:300 12px/1 Lato,sans-serif;color:#D2D2D2">{{ h.amt }}</span>
-                  </div>
-                </sc-for>
-                <div style="display:flex;justify-content:space-between;padding-top:8px;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Summe</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">84.200 aUEC</span></div>
-              </div>
-            </div>
-            <div>
-              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Transaktionen</div>
+              <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #282828;padding-bottom:8px;margin-bottom:8px">Buchungen</div>
               <div class="card card--flush" style="padding:0">
                 <sc-for list="{{ txns }}" as="t" hint-placeholder-count="4">
                   <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border-bottom:1px solid #1C1C1C">
@@ -200,7 +194,7 @@
     </div>
 
     <div style="flex:none;display:flex;flex-direction:column;gap:12px">
-      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — Konten + Detail</div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — Mitglied: Segment + Tabs · Konten + Detail</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
         <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
           <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
@@ -212,6 +206,21 @@
               </div>
             </sc-for>
           </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px;height:64px;padding:0 20px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <h2 style="margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Bank</h2>
+              <div style="display:flex;border:1px solid #282828;height:38px;width:280px">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;background:#E77E23;color:#000">Mitglied</button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#8A8A8A;border-left:1px solid #282828" aria-label="Verwaltung — gesperrt, Rolle Bank-Mitarbeiter fehlt"><span style="opacity:.45">Verwaltung</span><svg class="krt-icon" style="width:11px;height:11px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></button>
+              </div>
+              <span style="flex:1"></span>
+              <span class="squadron-badge" style="font-size:12px">Bereich Profit</span>
+            </div>
+            <div class="tab-nav" style="padding:0 12px;flex:none">
+              <button class="tab active" style="font-size:11.5px;min-height:48px">Konten</button>
+              <button class="tab" style="font-size:11.5px;min-height:48px">Anträge<span class="tab-count">2</span></button>
+            </div>
+            <div style="flex:1;display:flex;min-width:0;min-height:0">
           <div style="width:380px;flex:none;border-right:1px solid #282828;background:#0A0A0A;display:flex;flex-direction:column;padding:16px;gap:10px">
             <div class="kpi-total" style="padding:10px 14px"><div class="kpi-label" style="font-size:9px">Gesamt Bereich Profit</div><div class="kpi-value" style="font-size:19px">1.245.300</div></div>
             <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="3">
@@ -228,7 +237,7 @@
               <div style="flex:1"><div style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">Bereich Profit · View-Grant: Mitglied</div></div>
               <button class="btn-ghost btn" style="background:transparent;min-height:44px;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-pdf"></use></svg>Kontoauszug (PDF)</button>
             </div>
-            <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;max-width:980px">
+            <div style="max-width:640px">
               <div class="hud-box" style="padding:16px">
                 <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.5px;text-transform:uppercase">Kontostand</div>
                 <div style="font:900 34px/1.1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;margin-top:6px">84.200 <span style="font:300 14px/1 Lato,sans-serif;color:#646464">aUEC</span></div>
@@ -236,16 +245,6 @@
                   <polyline points="0,52 40,48 80,50 120,34 160,38 200,26 240,30 280,16 320,22 360,12 400,16" fill="none" stroke="#E77E23" stroke-width="1.5"></polyline>
                   <line x1="0" y1="63" x2="400" y2="63" stroke="#282828" stroke-width="1"></line>
                 </svg>
-              </div>
-              <div class="card" style="padding:12px 16px">
-                <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Verwahrung</div>
-                <sc-for list="{{ holders }}" as="h" hint-placeholder-count="3">
-                  <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-variant-numeric:tabular-nums">
-                    <span style="min-width:56px;font:700 12px/1 Lato,sans-serif;color:#FFFFFF">{{ h.name }}</span>
-                    <span style="flex:1;height:8px;background:#1C1C1C;position:relative"><span style="position:absolute;inset:0 auto 0 0;width:{{ h.pct }};background:#E77E23"></span></span>
-                    <span style="min-width:84px;text-align:right;font:300 11.5px/1 Lato,sans-serif;color:#D2D2D2">{{ h.amt }}</span>
-                  </div>
-                </sc-for>
               </div>
             </div>
             <div class="card card--flush" style="padding:0;max-width:980px">
@@ -263,8 +262,418 @@
               </sc-for>
             </div>
           </div>
+            </div>
+          </div>
         </div>
       </x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Bank Verwaltung frames" style="margin-bottom:32px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:32px 0 6px;max-width:1200px">Verwaltung — /bank (BANK_EMPLOYEE)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 12px;max-width:110ch">Die Staff-Bank des Webs (Dashboard · Antrags-Queue · Konten-Lifecycle · Grants · Verwahrer), als Scope in der einen Bank-Destination. Persona Artboards 4–5: Bank-Mitarbeiter OHNE Bank-Management (Grants-Tab gesperrt-antippbar) · Artboards 6–8: mit Bank-Management.</p>
+    <div class="card" style="padding:12px 16px;max-width:1200px;margin-bottom:16px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Zwei Entscheidungen (27.08.2026)</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+        <li>1 · EIN Bank-Eintrag in der Navigation. Die Verwaltung ist ein SCOPE-Segment im Bank-Kopf (Präzedenz: Hangar „Meine Schiffe / Org-Einheit"), kein zweites Nav-Ziel — ein Mitglied mit Bank-Rolle trägt nicht zwei Bank-Einträge. Ohne BANK_EMPLOYEE bleibt das Segment sichtbar und gesperrt-antippbar (Kap.-09-Muster; Toast: „Dafür brauchst du die Rolle Bank-Mitarbeiter.") — deutsche Anzeigenamen beider Bank-Rollen aus ROLES_AND_PERMISSIONS.md übernehmen</li>
+        <li>2 · Was Staff mehr sieht, steht je Artboard in der Notiz: Übersicht = ALLE Konten der Einheit (auch geschlossene, auch ohne eigenen View-Grant) + Antrags-Zähler; Queue = alle Anträge statt nur genehmigbarer, mit Antragsteller + Leiter-Fortschritt; Konten = Lifecycle; Grants = Rechte-Matrix; Halter = Verwahrung auf Einheits-Ebene (nicht kontogebunden). Die Mitglieder-Artboards 1–3 bleiben unverändert gültig</li>
+      </ul>
+    </div>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Verwaltung — Übersicht (Staff-Dashboard)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Bank</div>
+            <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Mitglied</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
+            </div>
+          </div>
+          <div class="tab-nav" style="padding:0 8px;flex:none;margin-top:4px">
+            <button class="tab active" style="font-size:11px;min-height:48px">Übersicht</button>
+            <button class="tab" style="font-size:11px;min-height:48px">Anträge<span class="tab-count">3</span></button>
+            <button class="tab" style="font-size:11px;min-height:48px">Konten</button>
+            <button class="tab" style="font-size:11px;min-height:48px;display:inline-flex;align-items:center;gap:6px" aria-label="Grants — gesperrt, Rolle Bank-Management fehlt"><span style="opacity:.45">Grants</span><svg class="krt-icon" style="width:11px;height:11px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+            <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt Bereich Profit · offene Konten</div><div class="kpi-value" style="font-size:24px">1.257.400 <span style="font-size:12px;color:#646464;font-weight:300">aUEC</span></div></div>
+            <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;font-variant-numeric:tabular-nums">5 Konten · 1 geschlossen · 3 offene Anträge</div>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">CARTEL</div>
+                  <div style="margin-top:4px"><span class="chip chip--muted" style="font-size:8.5px">Für alle sichtbar</span></div>
+                </div>
+                <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
+                  <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">961.400</div>
+                  <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#2EBC3D">+38.200 · 30 T.</div>
+                </div>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</div>
+                  <div style="margin-top:4px"><span class="chip chip--warning" style="font-size:8.5px">2 offene Anträge</span></div>
+                </div>
+                <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
+                  <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">84.200</div>
+                  <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#2EBC3D">+12.400 · 30 T.</div>
+                </div>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Rücklage</div>
+                  
+                </div>
+                <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
+                  <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">199.700</div>
+                  <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#F2564B">−4.100 · 30 T.</div>
+                </div>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Staffelkasse S3</div>
+                  <div style="margin-top:4px"><span class="chip chip--data" style="font-size:8.5px">ohne eigenen View-Grant</span></div>
+                </div>
+                <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
+                  <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">12.100</div>
+                  <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#8A8A8A">±0 · 30 T.</div>
+                </div>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+              </button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828;opacity:.55" style-hover="border-color:#E77E23">
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Alt-Konto Vega</div>
+                  <div style="margin-top:4px"><span class="chip chip--muted" style="font-size:8.5px">Geschlossen</span></div>
+                </div>
+                <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
+                  <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">0</div>
+                  <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#8A8A8A">geschlossen 02/26</div>
+                </div>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+              </button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Staff-Dashboard (/bank)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Staff-Delta zur Mitglieder-Sicht: ALLE Konten der Einheit — auch ohne eigenen View-Grant, auch geschlossene (gedimmt, ohne Schloss: Daten-, keine Rechte-Sperre); KPI zählt nur offene Konten</li>
+          <li>Antrags-Zähler je Konto client-seitig aus der Queue aggregiert — kein neues DTO-Feld nötig</li>
+          <li>Berichte je Konto (Kontoauszug-PDF, 3-Monats-Export) im Zeilen-Overflow des Staff-Konto-Details — beide liefert der BankProxy; das Staff-Konto-Detail selbst = Mitglieder-Detail (Artboard 2) + Storno + Berichte</li>
+          <li>Tabs deeplinkbar (?tab=…); Grants-Tab hier gesperrt-antippbar — Toast: „Dafür brauchst du die Rolle Bank-Management."</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Verwaltung — Buchungsanträge (eigener Antrag gesperrt)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Bank</div>
+            <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Mitglied</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
+            </div>
+          </div>
+          <div class="tab-nav" style="padding:0 8px;flex:none;margin-top:4px">
+            <button class="tab" style="font-size:11px;min-height:48px">Übersicht</button>
+            <button class="tab active" style="font-size:11px;min-height:48px">Anträge<span class="tab-count">3</span></button>
+            <button class="tab" style="font-size:11px;min-height:48px">Konten</button>
+            <button class="tab" style="font-size:11px;min-height:48px;display:inline-flex;align-items:center;gap:6px" aria-label="Grants — gesperrt, Rolle Bank-Management fehlt"><span style="opacity:.45">Grants</span><svg class="krt-icon" style="width:11px;height:11px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:flex-start;gap:10px">
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−120.000</span><span class="chip chip--muted" style="font-size:8.5px">Auszahlung</span></div>
+                    <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Auszahlung Operation Rotschild (18 Anteile)</div>
+                    <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Rhea · Konto Einsatzkasse</div>
+                  </div>
+                  <span class="chip chip--warning" style="font-size:9px;flex:none">1 / 2 Freigaben</span>
+                </div>
+                <div style="display:flex;gap:8px;border-top:1px solid #1C1C1C;padding-top:10px">
+                  <button class="btn-quiet-danger btn" style="background:transparent;min-height:44px;flex:1;font-size:11px">Ablehnen</button>
+                  <button class="btn-success btn" style="min-height:44px;flex:1.3;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-check"></use></svg>Bestätigen (2/2)</button>
+                </div>
+              </div>
+              <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:flex-start;gap:10px">
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">+86.400</span><span class="chip chip--muted" style="font-size:8.5px">Einzahlung</span></div>
+                    <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Raffinerie-Ertrag Order #7841</div>
+                    <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">GrafRotz (du) · Konto Einsatzkasse</div>
+                  </div>
+                  <span class="chip chip--warning" style="font-size:9px;flex:none">0 / 1 Freigaben</span>
+                </div>
+                <div style="display:flex;gap:8px;border-top:1px solid #1C1C1C;padding-top:10px;align-items:center">
+                  <button class="btn-quiet-danger btn" style="background:transparent;min-height:44px;flex:1;font-size:11px">Ablehnen</button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.3;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;background:#282828;border:1px solid #282828;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#646464" aria-label="Bestätigen — gesperrt: eigener Antrag"><svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg>Bestätigen</button>
+                </div>
+                <div style="font:300 10.5px/1.4 Lato,sans-serif;color:#646464;margin-top:-2px">Eigener Antrag — Freigabe gesperrt.</div>
+              </div>
+              <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:flex-start;gap:10px">
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−1.450.000</span><span class="chip chip--muted" style="font-size:8.5px">Auszahlung</span></div>
+                    <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Flottenkauf — Polaris-Anzahlung</div>
+                    <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Dorn · Konto CARTEL</div>
+                  </div>
+                  <span class="chip chip--warning" style="font-size:9px;flex:none">1 / 3 Freigaben</span>
+                </div>
+
+              </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Leiter: ab 100.000 aUEC zwei, ab 1.000.000 drei Freigaben — nie den eigenen Antrag.</div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Buchungsanträge (/bank/requests)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>DIESELBE Antrags-Karte wie im Mitglieder-Tab (Artboard 1), anderer Scope: Staff sieht ALLE Anträge der Einheit, nicht nur genehmigbare — plus Antragsteller und Leiter-Fortschritt auf jeder Karte</li>
+          <li>Eigener Antrag: Genehmigen im Gesperrt-Stil (antippbar, Toast: „Eigene Anträge gibst du nie selbst frei."); Ablehnen bleibt aktiv gezeichnet — ob der Server Self-Reject zulässt, ist als Backend-Klärung notiert; bis dahin entscheidet der Server (403-Muster)</li>
+          <li>Bestätigen/Ablehnen warten auf den Server (CTA-Spinner); Ablehnen verlangt einen Grund im Danger-Modal (nennt Konsequenz)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Verwaltung — Konten-Lifecycle (Rolle: Bank-Management)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Bank</div>
+            <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Mitglied</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
+            </div>
+          </div>
+          <div class="tab-nav" style="padding:0 8px;flex:none;margin-top:4px">
+            <button class="tab" style="font-size:11px;min-height:48px">Übersicht</button>
+            <button class="tab" style="font-size:11px;min-height:48px">Anträge<span class="tab-count">3</span></button>
+            <button class="tab active" style="font-size:11px;min-height:48px">Konten</button>
+            <button class="tab" style="font-size:11px;min-height:48px;display:inline-flex;align-items:center;gap:6px">Grants</button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                <span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</span>
+                <span class="chip chip--success" style="font-size:8.5px">Aktiv</span>
+                <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">84.200</span>
+              </div>
+              <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">
+                <button class="btn-quiet-danger btn" style="background:transparent;min-height:44px;font-size:11px;align-self:flex-start">Konto schließen</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;background:#141414;border:1px solid #282828">
+              <span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Rücklage</span>
+              <span class="chip chip--success" style="font-size:8.5px">Aktiv</span>
+              <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">199.700</span>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;background:#141414;border:1px solid #282828;">
+              <span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#8A8A8A">Alt-Konto Vega</span>
+              <span class="chip chip--muted" style="font-size:8.5px">Geschlossen</span>
+              <button class="btn-outline btn" style="background:transparent;min-height:40px;font-size:10.5px">Wieder öffnen</button>
+            </div>
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                <span style="flex:1;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Halter — Einheit</span>
+                <span class="chip chip--muted" style="font-size:8.5px">nicht kontogebunden</span>
+              </div>
+              <div style="padding:6px 14px 10px;display:flex;flex-direction:column;gap:4px">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Rhea</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">118.600 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Dorn</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">96.200 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Vex</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">41.300 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg></button>
+                <button class="assoc-add" style="min-height:44px;justify-content:center;font-size:11px">+ Halter</button>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+            <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Konto anlegen</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Lifecycle (/bank/manage)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Anlegen / Schließen / Wieder öffnen + Halter anlegen laufen über den BankProxy; Seite gated BANK_EMPLOYEE, die Lifecycle-Aktionen prüfen BANK_MANAGEMENT — ohne die Rolle tragen CTA und Zeilen-Aktionen das Gesperrt-Muster (Kap. 09)</li>
+          <li>Schließen: Modal-Text verbatim aus dem Web — „Ein geschlossenes Konto nimmt keine Buchungen mehr an. Es kann jederzeit wieder geöffnet werden." KEINE Tipp-Hürde (reversibel; 02 §7 bleibt Wipe-Grade vorbehalten)</li>
+          <li>Durch Web-Fehlertexte geklärt: offene Buchungsanträge blockieren das Schließen („Bitte entscheide diese zuerst …"); Halter-Entzug = Danger-Modal „Entzieht diesem Mitarbeiter alle Buchungsrechte auf dem Konto"</li>
+          <li>„Konto anlegen" öffnet ein Sheet: Name + Einheit (vorbelegt) — Felder final gegen openapi.json prüfen</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">7 · Verwaltung — Grants (nur Bank-Management)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Bank</div>
+            <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Mitglied</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
+            </div>
+          </div>
+          <div class="tab-nav" style="padding:0 8px;flex:none;margin-top:4px">
+            <button class="tab" style="font-size:11px;min-height:48px">Übersicht</button>
+            <button class="tab" style="font-size:11px;min-height:48px">Anträge<span class="tab-count">3</span></button>
+            <button class="tab" style="font-size:11px;min-height:48px">Konten</button>
+            <button class="tab active" style="font-size:11px;min-height:48px;display:inline-flex;align-items:center;gap:6px">Grants</button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:6px;overflow-x:auto">
+              <span class="chip chip--primary" style="font-size:10px;flex:none">Einsatzkasse</span>
+              <span class="chip" style="font-size:10px;flex:none">CARTEL</span>
+              <span class="chip" style="font-size:10px;flex:none">Rücklage</span>
+            </div>
+            <div style="border:1px solid #282828;background:#141414">
+              <div style="display:grid;grid-template-columns:1fr 84px 96px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                <div style="padding:9px 14px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Mitglied</div>
+                <div style="padding:9px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:center">Sehen</div>
+                <div style="padding:9px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:center">Freigeben</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 84px 96px;border-bottom:1px solid #1C1C1C;min-height:52px;align-items:center">
+                <div style="padding:6px 14px;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Rhea</div>
+                <div style="text-align:center"><span style="width:26px;height:26px;border:1px solid #E77E23;background:#E77E23;display:inline-flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:15px;height:15px;color:#000"><use href="#krt-icon-check"></use></svg></span></div>
+                <div style="text-align:center"><span style="width:26px;height:26px;border:1px solid #E77E23;background:#E77E23;display:inline-flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:15px;height:15px;color:#000"><use href="#krt-icon-check"></use></svg></span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 84px 96px;border-bottom:1px solid #1C1C1C;min-height:52px;align-items:center">
+                <div style="padding:6px 14px;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Dorn</div>
+                <div style="text-align:center"><span style="width:26px;height:26px;border:1px solid #E77E23;background:#E77E23;display:inline-flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:15px;height:15px;color:#000"><use href="#krt-icon-check"></use></svg></span></div>
+                <div style="text-align:center"><span style="width:26px;height:26px;border:1px solid #646464;background:transparent;display:inline-flex;align-items:center;justify-content:center"></span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 84px 96px;min-height:52px;align-items:center">
+                <div style="padding:6px 14px;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Vex</div>
+                <div style="text-align:center"><span style="width:26px;height:26px;border:1px solid #E77E23;background:#E77E23;display:inline-flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:15px;height:15px;color:#000"><use href="#krt-icon-check"></use></svg></span></div>
+                <div style="text-align:center"><span style="width:26px;height:26px;border:1px solid #646464;background:transparent;display:inline-flex;align-items:center;justify-content:center"></span></div>
+              </div>
+            </div>
+            <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Grant hinzufügen</button>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">CARTEL ist für alle sichtbar (REQ-BANK-037) — dort ist das Sehen-Flag inert; Freigeben bleibt vergebbar.</div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Grants (/bank/grants, BANK_MANAGEMENT)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Zeile existiert = mindestens ein Grant; Zeile entfernen = alle Grants des Mitglieds auf dem Konto entziehen (Danger-Modal)</li>
+          <li>Freigeben setzt Sehen voraus — Flag-Kopplung in der UI; falls der Server sie nicht erzwingt: Backend-Anforderung, notiert</li>
+          <li>Employee ohne Bank-Management: Tab gesperrt-antippbar (Artboard 4) — nie versteckt; Toast nennt die Rolle</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">8 · Verwaltung — Halter-Detail</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Verwahrung — Rhea</div>
+            <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt verwahrt · Einheits-Ebene</div><div class="kpi-value" style="font-size:24px">118.600 <span style="font-size:12px;color:#646464;font-weight:300">aUEC</span></div></div>
+            <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Verwahrung wird auf Einheits-Ebene geführt — es gibt keine Zuordnung zu einzelnen Konten.</div>
+            </div>
+            <button class="btn-outline btn" style="background:transparent;min-height:50px;width:100%"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-swap"></use></svg>Halter-Umbuchung</button>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464">Halter-Umbuchung verbatim aus dem Web: „Verschiebt Verwahrung zwischen Haltern, ohne ein Konto zu berühren. Der Quell-Halter darf dabei ins Minus gehen."</div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Halter (/bank/holders/{id})</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Einstieg: Karte „Halter — Einheit" im Tab Konten (Artboard 6); zeigt die Verwahrung EINES Mitglieds — auf Einheits-Ebene, ohne Konto-Zuordnung (Korrektur 27.08.2026)</li>
+          <li>Halter-Umbuchung (bank.modal.holderTransfer, Submit „Umbuchen") = Staff-Schreibaktion via BankProxy; wartet auf den Server, Erfolg aktualisiert beide Halter</li>
+          <li>„Buchung stornieren" (verbatim: „Erzeugt eine negierte Gegenbuchung. Die Originalbuchung bleibt unverändert im Ledger.") lebt im Staff-Konto-Detail als Zeilen-Overflow — Staff-Konto-Detail = Artboard 2 + Storno + Berichte, eigenes Artboard nur bei Bedarf (Runde 6)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">Tablet 1280×800 — Verwaltung als Tabelle (Regel 02 §5)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+        <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+          <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+            <img src="assets/basetool-favicon.svg" alt="Basetool" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+            <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="8">
+              <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:{{ n.indBg }}"><svg class="krt-icon" style="width:20px;height:20px;color:{{ n.iconColor }}"><use href="{{ n.icon }}"></use></svg></span>
+                <span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:{{ n.labelColor }}">{{ n.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px;height:64px;padding:0 20px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <h2 style="margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Bank</h2>
+              <div style="display:flex;border:1px solid #282828;height:38px;width:280px">
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#8A8A8A">Mitglied</button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
+              </div>
+              <span style="flex:1"></span>
+              <span class="squadron-badge" style="font-size:12px">Bereich Profit</span>
+            </div>
+            <div class="tab-nav" style="padding:0 12px;flex:none">
+              <button class="tab active" style="font-size:11.5px;min-height:48px">Übersicht</button>
+              <button class="tab" style="font-size:11.5px;min-height:48px">Anträge<span class="tab-count">3</span></button>
+              <button class="tab" style="font-size:11.5px;min-height:48px">Konten</button>
+              <button class="tab" style="font-size:11.5px;min-height:48px">Grants</button>
+            </div>
+            <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:980px">
+                <div class="kpi-total" style="padding:10px 14px"><div class="kpi-label" style="font-size:9px">Gesamt · offene Konten</div><div class="kpi-value" style="font-size:20px">1.257.400</div></div>
+                <div class="kpi-total" style="padding:10px 14px;border-left-color:#FFD23F"><div class="kpi-label" style="font-size:9px">Offene Anträge</div><div class="kpi-value" style="font-size:20px">3</div></div>
+                <div class="kpi-total" style="padding:10px 14px;border-left-color:#646464"><div class="kpi-label" style="font-size:9px">Konten</div><div class="kpi-value" style="font-size:20px">5 <span style="font-size:11px;color:#646464;font-weight:300">· 1 geschlossen</span></div></div>
+              </div>
+              <div class="card card--flush" style="padding:0;max-width:980px">
+                <div style="display:grid;grid-template-columns:1fr 150px 130px 150px 120px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Konto</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Stand</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Δ 30 T.</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Offene Anträge</div>
+                  <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase">Status</div>
+                </div>
+                <sc-for list="{{ staffAccounts }}" as="s" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:1fr 150px 130px 150px 120px;border-bottom:1px solid #1C1C1C;min-height:48px;align-items:center;font-variant-numeric:tabular-nums;opacity:{{ s.op }}">
+                    <div style="padding:6px 14px"><span style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">{{ s.name }}</span><sc-if value="{{ s.tag }}" hint-placeholder-val="{{ false }}"><span class="chip chip--data" style="font-size:8px;margin-left:8px">{{ s.tag }}</span></sc-if></div>
+                    <div style="padding:6px 14px;text-align:right;font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ s.bal }}</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12px/1 Lato,sans-serif;color:{{ s.deltaColor }}">{{ s.delta }}</div>
+                    <div style="padding:6px 14px;text-align:right;font:300 12.5px/1 Lato,sans-serif;color:#D2D2D2">{{ s.reqs }}</div>
+                    <div style="padding:6px 14px"><span class="chip {{ s.stCls }}" style="font-size:8.5px">{{ s.st }}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;max-width:980px">Tablet behält die Tabelle, das Telefon fällt zu den Karten aus Artboard 4 zusammen (Regel 02 §5). Zeile antippen → Staff-Konto-Detail; Overflow je Zeile: Kontoauszug (PDF) · 3-Monats-Export.</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+    </div>
     </div>
   </section>
 
@@ -286,14 +695,9 @@ class Component extends DCLogic {
     ];
     const a1 = this.state.approved1;
     const requests = [
-      { amt: '−120.000', amtColor: '#F2564B', kind: 'Auszahlung', what: 'Auszahlung Operation Rotschild (18 Anteile)', who: 'Rhea', acct: 'Einsatzkasse', chip: a1 ? 'Genehmigt' : '1 / 2 Freigaben', chipCls: a1 ? 'chip--success' : 'chip--warning', canApprove: !a1, approvals: '2 / 2', onApprove: () => this.setState({ approved1: true }) },
+      { amt: '−120.000', amtColor: '#F2564B', kind: 'Auszahlung', what: 'Auszahlung Operation Rotschild (18 Anteile)', who: 'Rhea', acct: 'Einsatzkasse', chip: a1 ? 'Bestätigt' : '1 / 2 Freigaben', chipCls: a1 ? 'chip--success' : 'chip--warning', canApprove: !a1, approvals: '2 / 2', onApprove: () => this.setState({ approved1: true }) },
       { amt: '+86.400', amtColor: '#2EBC3D', kind: 'Einzahlung', what: 'Raffinerie-Ertrag Order #7841', who: 'GrafRotz', acct: 'Einsatzkasse', chip: 'Eingereicht', chipCls: 'chip--info', canApprove: false, approvals: '', onApprove: null },
       { amt: '−9.800', amtColor: '#F2564B', kind: 'Auszahlung', what: 'Treibstoff-Erstattung Konvoi-Eskorte', who: 'Vex', acct: 'CARTEL', chip: 'Abgelehnt', chipCls: 'chip--danger', canApprove: false, approvals: '', onApprove: null },
-    ];
-    const holders = [
-      { name: 'Rhea', pct: '52%', amt: '43.800 aUEC' },
-      { name: 'Dorn', pct: '31%', amt: '26.100 aUEC' },
-      { name: 'Vex', pct: '17%', amt: '14.300 aUEC' },
     ];
     const txns = [
       { what: 'Auszahlung Op. Eisvogel', who: 'Rhea → 12 Mitglieder', when: '15.08. 21:40', amt: '−49.800', amtColor: '#F2564B', icon: '#krt-icon-bank-out', iconColor: '#F2564B' },
@@ -312,10 +716,17 @@ class Component extends DCLogic {
       { label: 'Aufträge', icon: '#krt-icon-clipboard-list' }, { label: 'Lager', icon: '#krt-icon-crate' },
     ];
     const railDefs = navDefs.concat([{ label: 'Hangar', icon: '#krt-icon-ship' }, { label: 'Raffinerie', icon: '#krt-icon-refinery' }, { label: 'Börse', icon: '#krt-icon-swap' }, { label: 'Mehr', icon: '#krt-icon-more-h' }]);
+    const staffAccounts = [
+      { name: 'CARTEL', tag: false, bal: '961.400', delta: '+38.200', deltaColor: '#2EBC3D', reqs: '1', st: 'Aktiv', stCls: 'chip--success', op: '1' },
+      { name: 'Einsatzkasse', tag: false, bal: '84.200', delta: '+12.400', deltaColor: '#2EBC3D', reqs: '2', st: 'Aktiv', stCls: 'chip--success', op: '1' },
+      { name: 'Rücklage', tag: false, bal: '199.700', delta: '−4.100', deltaColor: '#F2564B', reqs: '—', st: 'Aktiv', stCls: 'chip--success', op: '1' },
+      { name: 'Staffelkasse S3', tag: 'ohne View-Grant', bal: '12.100', delta: '±0', deltaColor: '#8A8A8A', reqs: '—', st: 'Aktiv', stCls: 'chip--success', op: '1' },
+      { name: 'Alt-Konto Vega', tag: false, bal: '0', delta: '—', deltaColor: '#8A8A8A', reqs: '—', st: 'Geschlossen', stCls: 'chip--muted', op: '.55' },
+    ];
     const railNav = railDefs.map((d, i) => ({ ...d, indBg: i === 7 ? '#E77E23' : 'transparent', iconColor: i === 7 ? '#000' : '#8A8A8A', labelColor: i === 7 ? '#FFFFFF' : '#8A8A8A' }));
     const t = this.state.tab, rs = this.state.reqSeg;
     return {
-      accounts, requests, holders, txns, reqSegs, railNav,
+      accounts, requests, txns, reqSegs, railNav, staffAccounts,
       showAcct: t === 0, showReq: t === 1,
       tabAcct: () => this.setState({ tab: 0 }), tabReq: () => this.setState({ tab: 1 }),
       tabAcctCls: t === 0 ? 'active' : '', tabReqCls: t === 1 ? 'active' : '',

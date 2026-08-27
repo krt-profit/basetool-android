@@ -32,10 +32,10 @@ corrections, not preferences — preserve them verbatim in every re-export.
    `--color-gray-2`): #646464 fails WCAG AA as small text on black (~3.5:1). Android mirrors
    the token as `KrtPalette.TextMuted` — without it the mirror has no source, and the next
    "reconciliation" moves the app back to a colour below the contrast floor.
-3. **Ch. 04 carries the guest-mode cancellation note** (owner decision 18.08.2026; binding:
-   Q8 in ANDROID_APP_PLAN.md, REQ-APP-AUTH-007/008): „Als Gast fortfahren" and the
-   „Nutzungsbedingungen" footer link are cancelled and were removed from the frames
-   (25.08.2026); the annotation in ch. 04 records the decision and its date.
+3. **Ch. 04 login offers exactly two entries** — Keycloak (Custom Tab) and Discord (binding:
+   Q8 in ANDROID_APP_PLAN.md, REQ-APP-AUTH-007/008); the footer carries Datenschutz + Impressum
+   only (consent is forced and versioned at first login). Do not add further entry points or
+   footer links when regenerating.
 4. **`assets/basetool-logo.svg` ships in the bundle**: `ic_launcher_foreground.xml` and
    `krt_basetool_logo.xml` name it in their header comments as the artwork they were traced
    from — the raster and favicon variants do not replace the source geometry.
@@ -49,6 +49,32 @@ corrections, not preferences — preserve them verbatim in every re-export.
    realm_access.roles — the app must consume them, not discard them.
 7. **No push promises anywhere** (decision Q2: the app has no push channel): the approval
    screen polls every 60 s — a promised notification that cannot arrive is copy that lies (ch. 04.3).
+8. **Ch. 09 „Umbuchen" is the TRANSFER contract** (InventoryItemBookOutDto): three target
+   fields — member, place, org-unit pool (/users/{id}/memberships?allKinds=true, preset to the
+   row's current unit) — plus mergeStock (SCU only; PIECE always merges), guarded inline by
+   "must change user or location". Personal ↔ shared is a SEPARATE endpoint
+   (POST /inventory/{id}/personal-rebook, only in Mein Lager; UI wording = Umbuchungsart „Als persönlich umbuchen" / „Ins gemeinsame Lager umbuchen"). Never redraw them as one field.
+9. **Ch. 11 „In Lager buchen" is a per-material FORM** (RefineryOrderStoreItemDto): amount
+   overrides the calculated yield (the point of the screen), allocation happens AT store time,
+   personal × jobOrderId are mutually exclusive (400), personal rows get no mission earmark.
+10. **No extractor-import affordance on Android** (ch. 11, decision 27.08.2026): the extractor
+   handoff is a desktop→browser ingest consumed once — the phone create form is manual.
+11. **Wording follows the web frontend verbatim** (frontend messages_de.properties): „Raffinerieauftrag"
+   (never „Order"), „Einlagern" (store), „Halter" + „Verwahrung" (bank), „Bestätigen" (request
+   approval), „Umbuchen zu Nutzer/Ort" (transfer targets), Umbuchungsart „Als persönlich umbuchen" /
+   „Ins gemeinsame Lager umbuchen", „Herkunft der Menge" with „Marken" and „Vom Rest", „Buchungen",
+   „Massenumbuchung". Never invent app-only terms; no guest mode exists anywhere.
+12. **The Fan Kit band carries THREE coupled elements** (Fankit Agreement clause 2(g), cumulative
+   with Guidelines §2b): logo + §2b line + the 370-char 2(g) notice, byte-exact:
+   "This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space
+   Industries group of companies. All game content and materials are copyright Cloud Imperium
+   Rights LLC and Cloud Imperium Rights Ltd.. Star Citizen®, Squadron 42®, Roberts Space
+   Industries®, and Cloud Imperium® are registered trademarks of Cloud Imperium Rights LLC.
+   All rights reserved."
+   „Ltd.." keeps its two stops; 2(g) has NO space before its four ® while §2b keeps one before
+   its third ® — never harmonise (tests pin both byte-exact plus the spacing-difference
+   assertion). Never folded behind a tap; both notices 14 sp; the login PAGE scrolls,
+   Einstellungen shows the full paragraph.
 
 ## Binding sources & precedence
 1. **DAS KARTELL design system** (`krt-profit/design-system`, mirrored in `_ds/…` here) —
@@ -127,7 +153,8 @@ where they exist.
 **Fan Kit compliance band** (ch. 02 §9): unmodified white „Made By The Community" artwork
 (36 dp, `assets/made-by-the-community.png`) + byte-exact notice
 `Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC`
-— one inseparable component, verbatim ENGLISH in every locale, ≥14 sp #D2D2D2, static,
+PLUS the byte-exact Fankit-Agreement clause-2(g) notice (correction 12 below)
+— one inseparable component of THREE elements, verbatim ENGLISH in every locale, both 14 sp #D2D2D2, static,
 no KRT styling. Placements: Login (above version footer) + Einstellungen. Nowhere else.
 **Logo rule:** the KRT mark renders ONLY in #E77E23, white or black.
 

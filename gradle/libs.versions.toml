@@ -10,7 +10,7 @@ ksp = "2.3.11"
 
 # SDK levels — owner decisions, see docs/ANDROID_APP_PLAN.md
 compileSdk = "37"
-minSdk = "30"
+minSdk = "31"
 targetSdk = "37"
 
 androidxCore = "1.19.0"

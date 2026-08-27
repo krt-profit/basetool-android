@@ -500,7 +500,7 @@ but unreachable, and three gaps it could not see at all only show up on screen.
 | :-- | :-- | :-- | :-- |
 | Pixel_10a | 37 | 411 × 923 | the chapters' phone reference (412 × 915) |
 | KrtTablet | 37 | 1280 × 800 | the chapters' tablet reference |
-| Pixel_5 | 30 | 393 × 851 | **minSdk** — the floor the app promises to run on |
+| Pixel_5_minSdk | 31 | 393 × 851 | **minSdk** — the floor the app promises to run on, and since ADR-0015 one that can complete a sign-in |
 
 **Method.** The isolated test stack (`.env.test`, throwaway realm) with the Android compose override,
 `adb reverse` for the three ports, the mobile Keycloak client provisioned, and enough seeded content

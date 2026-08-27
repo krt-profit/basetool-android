@@ -62,7 +62,11 @@ class LoginViewModel(
             mutableState.value =
                 when {
                     !saved -> {
-                        LoginUiState.Failed(R.string.login_error_config)
+                        // Not the same failure as a refused token exchange: this one the member can
+                        // usually fix, because the commonest cause is a device with no screen lock,
+                        // which leaves Keystore unable to create the key the refresh token is
+                        // sealed with.
+                        LoginUiState.Failed(R.string.login_error_device_key)
                     }
 
                     !CustomTabLauncher.launch(context, request.url) -> {

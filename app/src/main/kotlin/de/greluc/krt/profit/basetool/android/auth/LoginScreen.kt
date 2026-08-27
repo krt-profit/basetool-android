@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -18,13 +19,20 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -32,6 +40,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -103,61 +113,97 @@ fun LoginScreen(
                 .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter,
     ) {
-        Box(
+        BoxWithConstraints(
             modifier =
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
                     .padding(horizontal = KrtSpacing.xl),
         ) {
-            // Brand at the top, the call to action at exactly half the screen height, the legal
-            // block at the bottom edge. Three aligned children rather than one column with
-            // spacers: a spacer's share depends on what is above it, and the button's position is
-            // meant to be a fixed fraction of the screen rather than a consequence of the brand's
-            // line count.
-            Column(
-                modifier = Modifier.align(Alignment.TopCenter),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(Modifier.height(KrtSpacing.xxl))
-                Brand()
-            }
+            // The PAGE scrolls as a whole — not the band, and the notice is never folded behind a
+            // disclosure (design ch. 04 artboard 1). At the drawn 412×812 dp nothing scrolls: the
+            // artboard's content measures exactly one viewport and the band sits above the fold.
+            // The scroll exists for what the drawing cannot show — font scale 1.3, a shorter
+            // display, a taller status bar.
+            val viewport = maxHeight
+            // What the legal block actually needs, measured rather than guessed: it is two
+            // prescribed notices whose height depends on the font scale, the locale's line
+            // breaking and the display width. The space above it is whatever is left of the
+            // viewport, so the call to action reads as centred at the drawn size and moves up as
+            // the band grows instead of being covered by it.
+            var legalHeightPx by remember { mutableIntStateOf(0) }
+            val legalHeight = with(LocalDensity.current) { legalHeightPx.toDp() }
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                // One viewport's worth, holding the brand at the top and the call to action at
+                // exactly half the height. Aligned children rather than spacers: a spacer's share
+                // depends on what is above it, and the button's position is meant to be a fixed
+                // fraction of the screen rather than a consequence of the brand's line count.
+                //
+                // `heightIn(min = ...)` and not `height(...)`: when the first section itself
+                // outgrows the viewport — a long refusal message at font scale 1.3 — it has to be
+                // allowed to grow rather than clip its own content.
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = (viewport - legalHeight).coerceAtLeast(0.dp)),
+                ) {
+                    Column(
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Spacer(Modifier.height(KrtSpacing.xxl))
+                        Brand()
+                    }
 
-            Column(
-                modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                KrtCtaButton(
-                    text = stringResource(R.string.login_sign_in),
-                    onClick = onSignIn,
-                    enabled = state !is LoginUiState.Working,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                    Column(
+                        modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        KrtCtaButton(
+                            text = stringResource(R.string.login_sign_in),
+                            onClick = onSignIn,
+                            enabled = state !is LoginUiState.Working,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
 
-                // The message occupies its own slot rather than replacing the button: a member
-                // whose login was refused still needs the button to try again.
-                state.messageRes?.let { message ->
-                    Spacer(Modifier.height(KrtSpacing.md))
-                    Text(
-                        text = stringResource(message),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (state is LoginUiState.Failed) KrtPalette.DangerText else KrtPalette.TextMuted,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                        // The message occupies its own slot rather than replacing the button: a
+                        // member whose login was refused still needs the button to try again.
+                        state.messageRes?.let { message ->
+                            Spacer(Modifier.height(KrtSpacing.md))
+                            Text(
+                                text = stringResource(message),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color =
+                                    if (state is LoginUiState.Failed) {
+                                        KrtPalette.DangerText
+                                    } else {
+                                        KrtPalette.TextMuted
+                                    },
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                 }
-            }
 
-            Column(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                KrtFanKitBand()
-                Spacer(Modifier.height(KrtSpacing.lg))
-                Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint)
-                Spacer(Modifier.height(KrtSpacing.sm))
-                Version(versionName = versionName, versionCode = versionCode)
-                Spacer(Modifier.height(KrtSpacing.lg))
+                // In the flow, after the call to action — never over it. The Fan Kit band is a
+                // legally coupled unit of three elements and is never folded behind a disclosure,
+                // so when it does not fit the PAGE scrolls (design ch. 04 artboard 1).
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .onSizeChanged { legalHeightPx = it.height },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    KrtFanKitBand()
+                    Spacer(Modifier.height(KrtSpacing.lg))
+                    Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint)
+                    Spacer(Modifier.height(KrtSpacing.sm))
+                    Version(versionName = versionName, versionCode = versionCode)
+                    Spacer(Modifier.height(KrtSpacing.lg))
+                }
             }
         }
     }

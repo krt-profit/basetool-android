@@ -22,7 +22,8 @@
     <string name="login_error_denied">Sign-in was refused.</string>
     <string name="login_error_expired">The sign-in expired. Please try again.</string>
     <string name="login_error_unreachable">Server unreachable.</string>
-    <string name="login_error_config">Sign-in is not possible right now. The administration has been notified.</string>
+    <string name="login_error_config">Sign-in is not possible right now. Trying again will not help — please contact the administration.</string>
+    <string name="login_error_device_key">This device cannot store the sign-in securely. Set a screen lock and try again.</string>
 
     <string name="more_section_secondary">Secondary targets</string>
     <string name="logout">Sign out</string>
@@ -698,13 +699,23 @@
     <string name="booking_field_place">Location</string>
     <string name="booking_field_out_kind">What happens to it?</string>
     <string name="booking_out_discard">Discard</string>
-    <string name="booking_out_transfer">Hand over</string>
+    <string name="booking_out_transfer">Rebook</string>
     <string name="booking_out_sell">Sell</string>
     <string name="booking_out_discard_note">Booking out is final. The history stays traceable.</string>
     <string name="booking_transfer_note">Member, location or both — whatever you give is changed.</string>
-    <string name="booking_transfer_unchanged">That leaves everything where it is — pick a different member or a different location.</string>
+    <string name="booking_transfer_unchanged">The target must change the member or the place.</string>
     <string name="booking_terminals_none">No terminals are recorded for this material.</string>
-    <string name="booking_field_member">Member</string>
+    <string name="booking_field_member">Rebook to member</string>
+    <string name="booking_field_org_unit">Target unit</string>
+    <string name="booking_org_unit_note">Memberships of the target member across all four kinds. Leave it and the pool stays.</string>
+    <string name="booking_merge_stock">Merge into matching stock</string>
+    <string name="booking_merge_stock_note">SCU only: same quality, place, order and mission — for this booking only.</string>
+    <string name="booking_field_place_transfer">Rebook to place</string>
+    <string name="booking_transfer_unchanged_detail">Server backstop: 400 “Transfer must change either the user or the location”.</string>
+    <string name="booking_merge_piece">A piece material always merges at the target — no option (server rule).</string>
+    <string name="booking_target_unchanged">%1$s — unchanged</string>
+    <string name="booking_org_unit_preset">%1$s — preset</string>
+    <string name="booking_subtitle_out">%1$s of %2$s</string>
     <string name="booking_field_sell_amount">Proceeds (aUEC)</string>
     <string name="booking_save">Book</string>
     <string name="booking_open">Book</string>
