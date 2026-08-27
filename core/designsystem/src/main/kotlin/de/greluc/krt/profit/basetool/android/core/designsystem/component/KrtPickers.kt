@@ -739,6 +739,9 @@ fun KrtToggle(
  * @param activeContentColor label colour on that fill.
  * @param icons an optional leading icon per option, positionally matched to [options]. A short
  *   list or a null entry simply leaves that segment iconless, so a caller may mark only some.
+ * @param lockedIndices options the caller may not have, drawn with a trailing padlock and still
+ *   **tappable**: `onSelect` fires so the screen can say what the lock means. Hiding the option
+ *   instead would leave a member unable to discover that the surface exists at all.
  */
 @Composable
 fun KrtSegmentedControl(
@@ -751,6 +754,7 @@ fun KrtSegmentedControl(
     activeColor: Color = MaterialTheme.colorScheme.primary,
     activeContentColor: Color = MaterialTheme.colorScheme.onPrimary,
     @DrawableRes icons: List<Int>? = null,
+    lockedIndices: Set<Int> = emptySet(),
 ) {
     Row(
         modifier =
@@ -809,6 +813,9 @@ fun KrtSegmentedControl(
                         color = tint,
                         textAlign = TextAlign.Center,
                     )
+                    if (index in lockedIndices) {
+                        KrtInlineLock()
+                    }
                 }
             }
         }

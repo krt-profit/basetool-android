@@ -34,6 +34,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
@@ -71,12 +74,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -86,6 +93,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -211,7 +219,7 @@ fun BankAccountsScreen(
  * @param delta the change as the server sent it.
  * @return the tint for that reading.
  */
-private fun deltaTone(delta: String): androidx.compose.ui.graphics.Color {
+internal fun deltaTone(delta: String): androidx.compose.ui.graphics.Color {
     val value = delta.trim().toBigDecimalOrNull() ?: return KrtPalette.TextMuted
     return when {
         value.signum() > 0 -> KrtPalette.SuccessText
@@ -271,13 +279,22 @@ private fun AccountCard(
         title = account.name,
         value = formatAmount(account.balance.orEmpty()),
         modifier = Modifier.fillMaxWidth(),
-        delta = account.delta30d?.let { stringResource(R.string.bank_delta_30d, formatAmount(it)) },
+        delta =
+            account.delta30d?.let {
+                stringResource(
+                    R.string.bank_delta_30d,
+                    formatSignedAmount(it.trimStart('+', '-', MINUS_CHAR), it.isPositiveDelta()),
+                )
+            },
         deltaPositive = account.delta30d.isPositiveDelta(),
         sparkline = account.sparkline.takeIf { it.isNotEmpty() }?.map(Double::toFloat),
         sparklineDescription = stringResource(R.string.bank_sparkline_description),
         onClick = onClick,
     )
 }
+
+/** The typographic minus the shared formatter emits, which a raw server value may carry. */
+private const val MINUS_CHAR = '\u2212'
 
 /**
  * Whether a formatted delta reads as an increase.
@@ -288,7 +305,7 @@ private fun AccountCard(
  * @return `false` only for an explicitly negative figure; an absent or unsigned one is not drawn as
  *   a loss.
  */
-private fun String?.isPositiveDelta(): Boolean {
+internal fun String?.isPositiveDelta(): Boolean {
     val first = this?.trimStart()?.firstOrNull() ?: return true
     return first !in MINUS_SIGNS
 }
@@ -377,7 +394,14 @@ fun BankAccountScreen(
                                 }
                                 account.delta30d?.let { delta ->
                                     Text(
-                                        text = stringResource(R.string.bank_delta_30d, formatAmount(delta)),
+                                        text =
+                                            stringResource(
+                                                R.string.bank_delta_30d,
+                                                formatSignedAmount(
+                                                    delta.trimStart('+', '-', MINUS_CHAR),
+                                                    delta.isPositiveDelta(),
+                                                ),
+                                            ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = deltaTone(delta),
                                     )
@@ -617,6 +641,7 @@ private fun BankAccountFailure(
 fun BankAccountsRoute(
     viewModel: BankViewModel,
     requestsViewModel: BankRequestsViewModel,
+    staffViewModel: BankStaffViewModel,
     onOpenAccount: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -628,7 +653,44 @@ fun BankAccountsRoute(
             requestsViewModel.loadOnce()
         }
     }
+    val caller = LocalCaller.current
+    val staffAllowed = caller?.bankEmployee == true
+    var scope by rememberSaveable { mutableIntStateOf(0) }
+    var lockToast by remember { mutableStateOf(false) }
+    LaunchedEffect(scope) {
+        if (scope == STAFF_SCOPE) {
+            staffViewModel.loadOnce()
+        }
+    }
     Column(modifier = modifier.fillMaxSize()) {
+        KrtSegmentedControl(
+            options =
+                listOf(
+                    stringResource(R.string.bank_scope_member),
+                    stringResource(R.string.bank_scope_staff),
+                ),
+            selectedIndex = scope,
+            onSelect = { chosen ->
+                // A locked segment still reports the tap; that is what lets the screen say why it
+                // is locked instead of silently doing nothing.
+                if (chosen == STAFF_SCOPE && !staffAllowed) {
+                    lockToast = true
+                } else {
+                    scope = chosen
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+            stretch = true,
+            lockedIndices = if (staffAllowed) emptySet() else setOf(STAFF_SCOPE),
+        )
+        if (scope == STAFF_SCOPE) {
+            BankStaffScope(
+                viewModel = staffViewModel,
+                onOpenAccount = onOpenAccount,
+                modifier = Modifier.weight(1f),
+            )
+            return@Column
+        }
         KrtPageTabs(
             tabs =
                 listOf(
@@ -690,6 +752,16 @@ fun BankAccountsRoute(
             )
         }
     }
+    if (lockToast) {
+        // The lock has to explain itself, or it is just a control that does nothing. Dismisses on
+        // its own action, because there is nothing to do about it but read it.
+        KrtToast(
+            title = stringResource(R.string.bank_scope_staff),
+            message = stringResource(R.string.bank_scope_locked),
+            actionLabel = stringResource(R.string.action_ok),
+            onAction = { lockToast = false },
+        )
+    }
     requests.draft?.let { draft ->
         BankRequestSheet(
             state = draft,
@@ -711,6 +783,191 @@ fun BankAccountsRoute(
         )
     }
 }
+
+/**
+ * The Verwaltung scope's content.
+ *
+ * **Only the Übersicht for now.** Artboard 4 draws four tabs — ÜBERSICHT · ANTRÄGE · KONTEN ·
+ * GRANTS — and the other three arrive with the screens behind them. A tab bar whose tabs lead
+ * nowhere would be worse than no tab bar, so it appears with the second tab rather than ahead of
+ * it.
+ *
+ * @param viewModel drives the dashboard.
+ * @param onOpenAccount a row was tapped.
+ * @param modifier layout modifier.
+ */
+@Composable
+private fun BankStaffScope(
+    viewModel: BankStaffViewModel,
+    onOpenAccount: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var staffTab by rememberSaveable { mutableIntStateOf(0) }
+    Column(modifier = modifier.fillMaxSize()) {
+        KrtPageTabs(
+            tabs =
+                listOf(
+                    KrtPageTab(label = stringResource(R.string.bank_staff_tab_overview)),
+                    KrtPageTab(
+                        label = stringResource(R.string.bank_staff_tab_requests),
+                        count = state.openRequestTotal.takeIf { it > 0 },
+                    ),
+                ),
+            selectedIndex = staffTab,
+            onSelect = { staffTab = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Box(modifier = Modifier.weight(1f)) {
+            StaffScopeContent(
+                state = state,
+                viewModel = viewModel,
+                tab = staffTab,
+                onOpenAccount = onOpenAccount,
+            )
+        }
+    }
+    StaffScopeDialogs(state = state, viewModel = viewModel)
+}
+
+/**
+ * What the selected staff tab shows, once the read has resolved.
+ *
+ * @param state what the scope holds.
+ * @param viewModel drives it.
+ * @param tab which tab is selected.
+ * @param onOpenAccount a row was tapped.
+ */
+@Composable
+private fun StaffScopeContent(
+    state: BankStaffState,
+    viewModel: BankStaffViewModel,
+    tab: Int,
+    onOpenAccount: (String) -> Unit,
+) {
+    val modifier = Modifier.fillMaxSize()
+    when (val phase = state.phase) {
+        is BankPhase.Loading -> {
+            KrtLoadingIndicator(
+                text = stringResource(R.string.bank_title),
+                modifier = modifier.fillMaxSize(),
+            )
+        }
+
+        is BankPhase.Failed -> {
+            // A caller without the role is the ordinary answer here, not a fault: the segment is
+            // offered to everyone by design, so the refusal has to read as an explanation.
+            val forbidden = phase.error is ApiError.Forbidden
+            KrtEmptyState(
+                iconRes = DesignR.drawable.ic_krt_lock,
+                title =
+                    stringResource(
+                        if (forbidden) {
+                            R.string.bank_staff_error_forbidden_title
+                        } else {
+                            R.string.bank_error_title
+                        },
+                    ),
+                message =
+                    stringResource(
+                        if (forbidden) {
+                            R.string.bank_staff_error_forbidden_message
+                        } else {
+                            R.string.bank_error_message
+                        },
+                    ),
+                actionText = stringResource(R.string.missions_retry).takeIf { !forbidden },
+                onAction = viewModel::onRefresh,
+                modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+            )
+        }
+
+        is BankPhase.Ready -> {
+            if (tab == 0) {
+                BankStaffOverview(
+                    state = state,
+                    onRefresh = viewModel::onRefresh,
+                    onOpenAccount = onOpenAccount,
+                    modifier = modifier,
+                )
+            } else {
+                BankStaffQueue(
+                    state = state,
+                    onRefresh = viewModel::onRefresh,
+                    actions =
+                        BankStaffQueueActions(
+                            onConfirm = viewModel::onConfirmOpen,
+                            onReject = viewModel::onRejectOpen,
+                        ),
+                    modifier = modifier,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The scope's two decision dialogs.
+ *
+ * Both sit outside the tab content on purpose: a decision taken from the queue must survive the
+ * list reloading underneath it.
+ *
+ * @param state what the scope holds.
+ * @param viewModel drives it.
+ */
+@Composable
+private fun StaffScopeDialogs(
+    state: BankStaffState,
+    viewModel: BankStaffViewModel,
+) {
+    state.confirming?.let { confirming ->
+        BankConfirmSheet(
+            state = confirming,
+            holders =
+                state.holders.map {
+                    BankHolderOption(id = it.id, label = it.handle.ifBlank { it.id })
+                },
+            actions =
+                BankConfirmSheetActions(
+                    onHolder = { id -> viewModel.onConfirmChanged { it.copy(holderId = id) } },
+                    onDestinationHolder = { id ->
+                        viewModel.onConfirmChanged { it.copy(destinationHolderId = id) }
+                    },
+                    onAttest = { on -> viewModel.onConfirmChanged { it.copy(approvalAttested = on) } },
+                    onStaffNote = { note -> viewModel.onConfirmChanged { it.copy(staffNote = note) } },
+                    onSubmit = viewModel::onConfirmSubmit,
+                    onDismiss = viewModel::onConfirmDismiss,
+                ),
+        )
+    }
+    state.rejecting?.let { rejecting ->
+        KrtModal(
+            title = stringResource(R.string.bank_staff_reject_title),
+            confirmText = stringResource(R.string.bank_staff_reject),
+            onConfirm = viewModel::onRejectSubmit,
+            onDismiss = viewModel::onRejectDismiss,
+            tone = KrtModalTone.Danger,
+        ) {
+            Text(
+                text = stringResource(R.string.bank_staff_reject_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+            KrtTextField(
+                value = rejecting.reason,
+                onValueChange = viewModel::onRejectReason,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.bank_staff_reject_reason),
+                placeholder = stringResource(R.string.bank_staff_reject_reason_placeholder),
+                isError = rejecting.error != null,
+                errorText = rejecting.error?.let { bankRequestErrorMessage(it) },
+            )
+        }
+    }
+}
+
+/** Which segment the staff scope sits on. */
+private const val STAFF_SCOPE = 1
 
 /**
  * One account, bound to its view model.

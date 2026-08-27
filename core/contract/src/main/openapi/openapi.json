@@ -44785,7 +44785,7 @@
     "/api/v1/me/capabilities" : {
       "get" : {
         "tags" : [ "me-controller" ],
-        "summary" : "Per-principal UI capability flags (blueprint-overview + job-order access).",
+        "summary" : "Per-principal UI capability flags (blueprint overview, job orders, bank staff).",
         "operationId" : "getCapabilities",
         "responses" : {
           "200" : {
@@ -63701,6 +63701,10 @@
           "meetingPoint" : {
             "type" : "string"
           },
+          "registeredCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "version" : {
             "type" : "integer",
             "format" : "int64"
@@ -63805,6 +63809,12 @@
             "type" : "boolean"
           },
           "canViewOwnJobOrders" : {
+            "type" : "boolean"
+          },
+          "canViewBankStaff" : {
+            "type" : "boolean"
+          },
+          "canManageBank" : {
             "type" : "boolean"
           }
         }

@@ -7,7 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.core.data
 
+import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.CapabilitiesResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -72,6 +74,10 @@ interface IdentitySource {
  *   whether a screen offers a Logistician-only control at all
  * @property missionManager whether they hold the mission-manager grant, which decides the same
  *   for the Operation's payout confirmation
+ * @property bankEmployee whether the caller may see the bank's staff surface at all — the scope
+ *   segment's gate (`REQ-APP-BANK-007`). A **hint, never a gate**, like everything else here.
+ * @property bankManagement whether they additionally hold Bank-Management, which decides the
+ *   account lifecycle and the grants tab.
  * @property permissions the backend's own capability vocabulary for this caller — `HANGAR_WRITE`,
  *   `MISSION_READ` and the rest. A **hint, never a gate**: the server stays the authority, and a
  *   screen that skips a check because this set said so is a defect rather than an optimisation
@@ -80,6 +86,8 @@ data class Identity(
     val userId: String,
     val logistician: Boolean,
     val missionManager: Boolean = false,
+    val bankEmployee: Boolean = false,
+    val bankManagement: Boolean = false,
     val permissions: Set<String> = emptySet(),
 )
 
@@ -91,9 +99,16 @@ data class Identity(
  * whole object graph down. Re-reading it on every screen would spend a round trip to learn
  * something already known.
  *
- * Only the id and the two grants are kept. The response also carries the member's email,
+ * Only the id and the capability flags are kept. The response also carries the member's email,
  * roles and rank; holding those would put personal data in memory for the lifetime of the process
- * to answer questions that need an opaque key and one boolean.
+ * to answer questions that need an opaque key and a handful of booleans.
+ *
+ * **Two reads, one identity.** The bank flags come from `GET /api/v1/me/capabilities` rather than
+ * from anything on the member record. Deriving them client-side was tried and cannot work: the
+ * me-response reports role **display names** (`"Bank Employee"`), not the codes the gates use; the
+ * bank roles carry no permissions at all; and the hierarchy
+ * `ADMIN > BANK_MANAGEMENT > BANK_EMPLOYEE` lives in the server's `SecurityConfig`. Asking the
+ * server keeps the rule in the one place that owns it — and keeps role names off the wire.
  *
  * @property reader performs the call and classifies its failure
  */
@@ -146,17 +161,43 @@ class IdentityRepository(
                         // `isLogistician` absent is read as "not one". The grant decides whether a
                         // control is offered, and the narrower reading is the one that cannot
                         // offer an action the server refuses.
+                        // A capabilities read that fails leaves both flags false, which locks
+                        // the staff scope rather than opening it. The narrower reading is the one
+                        // that cannot offer an action the server refuses.
+                        val capabilities = readCapabilities()
                         val identity =
                             Identity(
                                 userId = id,
                                 logistician = result.value.isLogistician == true,
                                 missionManager = result.value.isMissionManager == true,
+                                bankEmployee = capabilities?.canViewBankStaff == true,
+                                bankManagement = capabilities?.canManageBank == true,
                                 permissions = result.value.permissions.orEmpty().toSet(),
                             )
                         cached = identity
                         ApiResult.Success(identity)
                     }
                 }
+            }
+        }
+
+    /**
+     * Reads the caller's capability flags.
+     *
+     * Its failure is not the identity's failure: the member record loaded, and a screen that could
+     * not learn whether it may offer the bank's staff scope simply does not offer it.
+     *
+     * @return the flags, or `null` when they could not be read.
+     */
+    private suspend fun readCapabilities(): CapabilitiesResponse? =
+        when (val result = reader.get(CAPABILITIES_PATH, CapabilitiesResponse.serializer())) {
+            is ApiResult.Success -> {
+                result.value
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "capabilities could not be read: ${result.error}" }
+                null
             }
         }
 
@@ -175,5 +216,8 @@ class IdentityRepository(
          * API vhost is a default-deny allow-list precisely so such a path never has to be on it.
          */
         const val ME_PATH = "/api/v1/users/me"
+
+        /** The caller's UI capability flags, including the two the bank's scope segment reads. */
+        const val CAPABILITIES_PATH = "/api/v1/me/capabilities"
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -100,56 +101,63 @@ fun BankRequestsTab(
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
             items(state.rows, key = { it.request.id }) { row ->
-                BankRequestCard(
-                    row = row,
-                    busy = state.busyId == row.request.id,
-                    online = state.online,
-                    actions = actions,
-                )
+                BankRequestCard(request = row.request) {
+                    MemberRequestActions(
+                        row = row,
+                        busy = state.busyId == row.request.id,
+                        online = state.online,
+                        actions = actions,
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * One request.
+ * One request, on either surface.
  *
- * @param row the request plus who the caller is to it.
- * @param busy whether a write against this very request is in flight.
- * @param online whether any write may be sent.
- * @param actions what the row reports back.
+ * The facts are the same wherever a request is shown — the signed amount, the movement, the chip,
+ * the purpose, who raised it against which account, and a refusal's reason. Only what may be
+ * *done* about it differs, so that is the slot: a member grants or withdraws, a bank employee
+ * books or refuses.
+ *
+ * @param request the request.
+ * @param actions what this surface offers on it; empty for a decided one.
  */
 @Composable
-private fun BankRequestCard(
-    row: BankRequestRow,
-    busy: Boolean,
-    online: Boolean,
-    actions: BankRequestRowActions,
+internal fun BankRequestCard(
+    request: BankBookingRequest,
+    actions: @Composable RowScope.() -> Unit,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            RequestHeader(request = row.request)
-            row.request.note?.let { note ->
+            RequestHeader(request = request)
+            request.note?.let { note ->
                 Text(text = note, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.Gray1)
             }
             Text(
                 text =
                     stringResource(
                         R.string.bank_request_meta,
-                        row.request.requester.orEmpty(),
-                        row.request.accountName.orEmpty(),
+                        request.requester.orEmpty(),
+                        request.accountName.orEmpty(),
                     ),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
-            row.request.rejectReason?.let { reason ->
+            request.rejectReason?.let { reason ->
                 Text(
                     text = reason,
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.DangerText,
                 )
             }
-            RequestActions(row = row, busy = busy, online = online, actions = actions)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                content = actions,
+            )
         }
     }
 }
@@ -198,7 +206,7 @@ private fun RequestHeader(request: BankBookingRequest) {
  * @param actions what the row reports back.
  */
 @Composable
-private fun RequestActions(
+private fun RowScope.MemberRequestActions(
     row: BankRequestRow,
     busy: Boolean,
     online: Boolean,
@@ -209,10 +217,7 @@ private fun RequestActions(
         return
     }
     val enabled = online && !busy
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-    ) {
+    run {
         when {
             row.actionable && request.requiresOwnerApproval && !request.ownerApprovalGranted -> {
                 KrtSuccessButton(
@@ -264,7 +269,7 @@ private fun RequestActions(
  * @return the grouped, signed amount.
  */
 @Composable
-private fun BankBookingRequest.signedAmount(): String {
+internal fun BankBookingRequest.signedAmount(): String {
     val shown = formatAmount(amount.orEmpty())
     return when (kind) {
         BankRequestKind.DEPOSIT -> "+$shown"
@@ -278,7 +283,7 @@ private fun BankBookingRequest.signedAmount(): String {
  *
  * @return green in, red out, neutral for a transfer between two org-unit accounts.
  */
-private fun BankBookingRequest.amountTone(): Color =
+internal fun BankBookingRequest.amountTone(): Color =
     when (kind) {
         BankRequestKind.DEPOSIT -> KrtPalette.SuccessText
         BankRequestKind.WITHDRAWAL -> KrtPalette.DangerText
@@ -290,7 +295,7 @@ private fun BankBookingRequest.amountTone(): Color =
  *
  * @return the string resource.
  */
-private fun BankBookingRequest.statusLabelRes(): Int =
+internal fun BankBookingRequest.statusLabelRes(): Int =
     when (status) {
         BankRequestStatus.CONFIRMED -> R.string.bank_request_status_confirmed
         BankRequestStatus.REJECTED -> R.string.bank_request_status_rejected
@@ -303,7 +308,7 @@ private fun BankBookingRequest.statusLabelRes(): Int =
  *
  * @return the chip tone.
  */
-private fun BankBookingRequest.statusTone(): KrtChipTone =
+internal fun BankBookingRequest.statusTone(): KrtChipTone =
     when (status) {
         BankRequestStatus.CONFIRMED -> KrtChipTone.Success
         BankRequestStatus.REJECTED -> KrtChipTone.Danger
