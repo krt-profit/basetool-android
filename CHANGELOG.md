@@ -4,6 +4,15 @@
 
 ### Added
 
+- **Die Bank hat jetzt einen Tab „Anträge":** du kannst eine Ein-, Aus- oder Umbuchung
+  beantragen, deinen eigenen Antrag noch korrigieren oder zurückziehen, und — auf Konten, für die
+  du verantwortlich bist — die Freigabe erteilen oder wieder zurücknehmen. Der Zähler am Tab zeigt,
+  wie viele Anträge noch offen sind.
+
+- **Der Antrag sagt vorher, ob er eine Freigabe braucht.** Unter dem Betrag steht das Limit deines
+  Kontos, und sobald du darüber liegst, dass der Kontoverantwortliche zuerst freigeben muss. Bei
+  einer Einzahlung steht dort nichts — die braucht nie eine Freigabe.
+
 - **Der vom Fankit-Agreement geforderte Hinweis steht jetzt in der App** — der Satz zur
   Nicht-Verbundenheit mit Cloud Imperium, der Copyright-Hinweis und „All rights reserved". Er
   ergänzt die bisherige kurze Markenzeile, ersetzt sie nicht, und steht mit ihr und dem Logo an

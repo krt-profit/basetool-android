@@ -1,0 +1,140 @@
+# Round 7 — chapter 12 draws an approval mechanism the API does not have
+
+> Written 2026-08-27. Two corrections to chapter 12, both already built the corrected way in the
+> app and both approved by the product owner on 2026-08-27.
+> Round 6: [`MISSING_ARTBOARD_PROMPTS_6.md`](MISSING_ARTBOARD_PROMPTS_6.md).
+> Earlier rounds: [`_1`](MISSING_ARTBOARD_PROMPTS.md), [`_2`](MISSING_ARTBOARD_PROMPTS_2.md),
+> [`_3`](MISSING_ARTBOARD_PROMPTS_3.md), [`_4`](MISSING_ARTBOARD_PROMPTS_4.md),
+> [`_5`](MISSING_ARTBOARD_PROMPTS_5.md).
+
+---
+
+Chapter 12's member half — artboards 1 and 3 — has been built. Almost all of it went in unchanged:
+the two tabs with their count, the total band, the account cards, the full-width
+„+ BUCHUNG BEANTRAGEN" bar, the sheet's three icon segments, the label that turns from „Zielkonto"
+into „Konto" with the movement, the green / red / neutral amount, the placeholder, and the
+ABBRECHEN + ANTRAG EINREICHEN footer at its 154 : 200 split. All measured off the artboards and
+verified on three device classes.
+
+**Two things in it describe a mechanism the backend does not implement.** The app builds the real
+one and diverges from the drawing until the drawing is corrected; the divergence is recorded as
+[ADR-0016](../../adr/0016-the-app-renders-the-approval-the-api-has.md) and pinned by tests. This
+round asks for the artboards to follow.
+
+---
+
+## 1 — There is no approval counter. There never was.
+
+**What the artboards show**
+
+| Where | What it says |
+| --- | --- |
+| Artboard 1, row 1 chip | `1 / 2 FREIGABEN` |
+| Artboard 1, row 1 button | `✓ BESTÄTIGEN ( 2/2 )` |
+| Artboard 1, footnote | „Gestaffelte Freigabe-Leiter: ab 100.000 aUEC zwei Freigaben, ab 1.000.000 drei. Eigene Anträge kann man nie selbst freigeben." |
+| Artboard 1, handoff | „Bestätigen … zählt die Leiter hoch (1/2 → 2/2)" |
+| Artboard 3, under the amount | „Ab 100.000 aUEC sind 2 Freigaben nötig — der Antrag erscheint im Tab „Anträge"." |
+
+**What the API has.** `BankBookingRequestDto` carries no count of any kind. Its approval fields
+are `requiresOwnerApproval`, `requiredApprover`, `ownerApprovalGranted` and
+`ownerApprovalGrantedByHandle`. That is **one** approval — outstanding or given. A bank employee's
+confirmation follows it, and that happens on the staff surface (artboards 4–8), not here.
+
+**The ladder is real, but it escalates the wrong axis.** For the KRT account only, `REQ-BANK-047`
+moves the *class* of approver up with the amount:
+
+| Band | Who must approve |
+| --- | --- |
+| at or below the bank-employee ceiling `T1` | the bank employee may self-approve |
+| above `T1`, at or below the area-lead ceiling `T2` | **Bankleitung** |
+| above `T2` | **Organisationsleitung** |
+
+Every other request-capable account has one band and one approver: the account's responsible
+holder. `requiredApprover` is the server's answer to *who*, and it never answers *how many*.
+
+**What the app builds instead.** One trailing chip per row — not two; the artboard's own rows show
+one, and rendering the approval chip beside a status chip overflowed on a 393 dp phone.
+
+| Request state | Chip | Tone |
+| --- | --- | --- |
+| pending, flagged, not yet granted | `WARTET AUF KONTOVERANTWORTLICHEN` / `WARTET AUF BANKLEITUNG` / `WARTET AUF ORGANISATIONSLEITUNG` | warning |
+| pending, granted | `FREIGEGEBEN VON <Handle>` | success |
+| pending, no approval needed | `EINGEREICHT` | data |
+| confirmed / rejected / withdrawn | `BESTÄTIGT` / `ABGELEHNT` / `ZURÜCKGEZOGEN` | success / danger / muted |
+
+**And the member surface has no reject.** `POST …/requests/{id}/reject` is
+`hasRole(BANK_EMPLOYEE)`. What a responsible holder can do is grant the approval and take it back
+— `POST` and `DELETE` on `…/requests/{id}/owner-approval`. So artboard 1's `ABLEHNEN` +
+`BESTÄTIGEN` pair is wrong twice over: „Bestätigen" is the employee's word for the employee's act,
+and „Ablehnen" is an endpoint the member does not have. The app draws `FREIGABE ERTEILEN`
+(success) and, once granted, `FREIGABE ZURÜCKNEHMEN` (ghost).
+
+### What we would like drawn
+
+- Artboard 1's flagged row: **one** trailing chip naming the class being waited on, and a single
+  `FREIGABE ERTEILEN` button in its place. A variant showing the granted state with
+  `FREIGABE ZURÜCKNEHMEN`.
+- The footnote rewritten to describe the escalation of approver class, and to keep its true second
+  half („Eigene Anträge kann man nie selbst freigeben" — that part is correct and is implemented).
+- The handoff note's „zählt die Leiter hoch (1/2 → 2/2)" removed.
+
+**One thing we could not keep.** „WARTET AUF KONTOVERANTWORTLICHEN" wraps to two lines inside its
+chip at 393 dp, where „1 / 2 FREIGABEN" fitted one. We took the wrap: the class is what tells a
+requester who to nudge, which is what the web frontend's own copy does. **If you would rather have
+one line, we need a shorter German wording for each of the three classes** — that is a copy
+decision and it is yours.
+
+---
+
+## 2 — A deposit is never approval-limited, so artboard 3 should not say it is
+
+Artboard 3 shows the threshold line with **EINZAHLUNG** selected. `REQ-BANK-042` makes a deposit
+possible against every active account **without an approval limit**, and the web frontend says so
+in its own words: „Einzahlungen sind für jedes aktive Konto möglich – ohne Freigabe-Limit."
+
+The app therefore shows the line only for AUSZAHLUNG and TRANSFER, and only when the server gives
+it something true to say:
+
+| Condition | Line |
+| --- | --- |
+| kind is EINZAHLUNG | none |
+| the caller is `approvalExempt` on that account | none |
+| the account sets no `approvalLimit` | none |
+| amount at or below the limit | „Ab {limit} aUEC ist die Freigabe des Kontoverantwortlichen nötig." |
+| amount above it | „Über dem Freigabe-Limit von {limit} aUEC — der Antrag muss zuerst vom Kontoverantwortlichen freigegeben werden." |
+
+The limit is **per caller and per account** (`approvalLimit` on the balances response), which is
+what the artboard's own note meant by „Leiter aus Server-Konfig". It is never a constant, so
+`100.000` in the drawing should read as a placeholder.
+
+### What we would like drawn
+
+- Artboard 3's EINZAHLUNG state **without** the info line.
+- The AUSZAHLUNG and TRANSFER states with it, and the wording changed from a count to the
+  single-approval sentence above.
+- Optionally a fourth state: over the limit, in warning rather than info tone.
+
+---
+
+## 3 — Two smaller questions, no strong opinion
+
+**3.1 — Does the amount field group while you type?** Artboard 3 shows `120.000` in the input. We
+kept the input ungrouped (`120000`) because separators fight the caret, and grouped everything that
+is *displayed* — the row reads `−90.000`. Grouping on blur would satisfy both. Worth a rule in the
+README if you have a preference.
+
+**3.2 — Artboard 1's scope segment.** „Verwaltung" is drawn as a locked-but-tappable segment beside
+„Mitglied". It is not built yet, deliberately: the surface it leads to (artboards 4–8) is the next
+slice, and a lock pointing at nothing is worse than no lock. It lands with that slice, per the
+Kap-09 pattern the note names. No change requested — this is a status note so the omission is not
+read as a miss.
+
+---
+
+## What is already correct and needs nothing
+
+Recorded so the next round does not re-litigate it: the two-tab structure with the count badge, the
+badge counting only undecided requests, the merged own + foreign list, the meta line
+„<Handle> · Konto <Name>", the requester's own actions (BEARBEITEN, ZURÜCKZIEHEN — both real
+endpoints, `PUT` and `POST …/cancel`), the sign and tint rules, the segment icons, and the whole
+footer geometry. All of it went in unchanged.

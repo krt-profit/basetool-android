@@ -208,6 +208,15 @@ object LiveSyncSections {
     /** A Raffinerie-Order's Einlagern dialog — the section a booking announces. */
     const val REFINERY_STORE: String = "store"
 
+    /**
+     * The org-unit bank overview — the balances and the booking requests raised against them.
+     *
+     * The one section the server accepts on this room besides the settings one. Nothing on the
+     * server publishes into this room at all, so a peer only ever hears about a request because
+     * the client that raised it announced it.
+     */
+    const val ORGUNIT_BANK_OVERVIEW: String = "orgUnitBank"
+
     /** A bank account's settings region. */
     const val ORGUNIT_BANK_SETTINGS: String = "orgUnitBankSettings"
 

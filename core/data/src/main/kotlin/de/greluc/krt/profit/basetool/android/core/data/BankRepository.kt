@@ -19,11 +19,13 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAcco
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountSettingsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -36,6 +38,12 @@ import java.time.Instant
  * @property balance the current balance as the server rendered it, unformatted
  * @property delta30d how it moved over thirty days, or `null` when the server sent none
  * @property sparkline the balance points the design draws as a polyline; empty when none came
+ * @property canRequest whether this caller may raise a withdrawal or transfer against it. A
+ *   deposit is not gated by it (REQ-BANK-042): every active account accepts one.
+ * @property approvalLimit the amount this caller may move on it without the responsible holder's
+ *   approval, unformatted, or `null` when the account sets none
+ * @property approvalExempt whether this caller is exempt from that threshold, which is why the
+ *   request sheet must not state a limit it has read but that will never bind
  */
 data class BankAccountSummary(
     val id: String,
@@ -45,6 +53,9 @@ data class BankAccountSummary(
     val balance: String?,
     val delta30d: String?,
     val sparkline: List<Double>,
+    val canRequest: Boolean = false,
+    val approvalLimit: String? = null,
+    val approvalExempt: Boolean = false,
 )
 
 /**
@@ -97,20 +108,71 @@ data class BankTransferTarget(
 )
 
 /**
+ * Where a request stands.
+ *
+ * Terminal in three of the four cases: only [PENDING] still moves.
+ */
+enum class BankRequestStatus {
+    /** Raised and undecided. */
+    PENDING,
+
+    /** A bank employee booked it; the money has moved. */
+    CONFIRMED,
+
+    /** A bank employee refused it. */
+    REJECTED,
+
+    /** The requester withdrew it before any decision; no ledger effect. */
+    CANCELLED,
+}
+
+/**
+ * Which class of approver a flagged request waits on.
+ *
+ * Decided by the server when the request is raised and immutable afterwards. For every
+ * request-capable account except the KRT one it is [RESPONSIBLE_HOLDER]; only the KRT account
+ * escalates by amount (REQ-BANK-047), and that ladder escalates **who** must approve, never how
+ * many must. There is no approval count anywhere in this flow.
+ */
+enum class BankRequestApprover {
+    /** The account's responsible holder — Staffelleiter / SK-Lead, or Bereichsleiter. */
+    RESPONSIBLE_HOLDER,
+
+    /** The Bankleitung, for the middle band of the KRT account's amount ladder. */
+    BANK_MANAGEMENT,
+
+    /** The Organisationsleitung, for the top band. */
+    ORGANISATIONSLEITUNG,
+}
+
+/**
  * A booking request as the member sees it.
  *
+ * The approval model is **two-step and single-vote** (REQ-BANK-041): a request above the caller's
+ * limit is flagged, one holder of [requiredApprover] grants the owner approval, and only then may
+ * a bank employee confirm it. [ownerApprovalGranted] is therefore a gate that has or has not been
+ * passed — not a tally.
+ *
  * @property id the request.
- * @property accountName which account it moves.
+ * @property accountId which account it moves, needed to reopen the sheet on it.
+ * @property accountName that account by name.
+ * @property targetAccountId where a transfer goes; `null` for the other two kinds.
  * @property kind what it asks for.
  * @property amount how much, unformatted and always positive.
  * @property note what it is for, or `null`.
- * @property status where it stands, as the server names it.
+ * @property status where it stands, or `null` if the server sent a value this build predates.
  * @property requester who raised it, by handle.
- * @property approvalsGiven how many approvals it already carries.
- * @property approvalsNeeded how many it needs — the staggered ladder, decided by the server.
- * @property ownApproverGrant whether this member may act on it at all. The approve and reject
- *   actions appear only for a holder of an approver grant, never for every reader of the account.
- * @property ownRequest whether this member raised it. Nobody approves their own.
+ * @property rejectReason why a bank employee refused it, or `null`. Shown on the row, because a
+ *   rejection without its reason leaves the requester nothing to correct.
+ * @property applicableLimit the threshold that flagged it, as the server snapshotted it at
+ *   creation. Kept for display: it is what makes the approval line state a number rather than a
+ *   vague warning.
+ * @property requiresOwnerApproval whether it was flagged as needing an owner approval before a
+ *   bank employee may act. `false` means a bank employee can confirm it straight away.
+ * @property ownerApprovalGranted whether that approval has been given. Meaningless while
+ *   [requiresOwnerApproval] is `false`.
+ * @property ownerApprovalBy who granted it, by handle, or `null` while it is outstanding.
+ * @property requiredApprover which class must grant it; `null` when none is needed.
  * @property createdAt when it was raised, in UTC.
  * @property version the optimistic-locking version. Every write against a request echoes it, so
  *   two approvers acting on the same request at the same moment collide with a 409 instead of one
@@ -118,16 +180,20 @@ data class BankTransferTarget(
  */
 data class BankBookingRequest(
     val id: String,
+    val accountId: String?,
     val accountName: String?,
+    val targetAccountId: String?,
     val kind: BankRequestKind?,
     val amount: String?,
     val note: String?,
-    val status: String?,
+    val status: BankRequestStatus?,
     val requester: String?,
-    val approvalsGiven: Int,
-    val approvalsNeeded: Int,
-    val ownApproverGrant: Boolean,
-    val ownRequest: Boolean,
+    val rejectReason: String?,
+    val applicableLimit: String?,
+    val requiresOwnerApproval: Boolean,
+    val ownerApprovalGranted: Boolean,
+    val ownerApprovalBy: String?,
+    val requiredApprover: BankRequestApprover?,
     val createdAt: String?,
     val version: Long,
 )
@@ -372,6 +438,29 @@ interface BankRequestSource {
     ): ApiResult<BankBookingRequest>
 
     /**
+     * Corrects one of the caller's own pending, unapproved requests.
+     *
+     * The account and the kind are deliberately absent: the server refuses a change to either, so
+     * a signature that accepted them would promise something the API does not do. Correcting those
+     * means withdrawing the request and raising a new one.
+     *
+     * @param id the request.
+     * @param version the optimistic-locking version to echo.
+     * @param amount the corrected amount, as typed.
+     * @param note the corrected purpose, or `null` to clear it.
+     * @param targetAccountId where a transfer goes, unchanged for the other two kinds.
+     * @return the request as the server recorded it, or the classified failure — a 409 when
+     *   somebody approved or booked it while the sheet was open.
+     */
+    suspend fun updateRequest(
+        id: String,
+        version: Long,
+        amount: String,
+        note: String?,
+        targetAccountId: String? = null,
+    ): ApiResult<BankBookingRequest>
+
+    /**
      * Grants or revokes this member's approval on someone else's request.
      *
      * @param id the request.
@@ -571,13 +660,36 @@ class BankRepository(
                     CreateBankBookingRequest(
                         sourceAccountId = draft.accountId,
                         type = draft.kind.toWire(),
-                        amount = KrtDecimal(draft.amount.toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO),
+                        amount = KrtDecimal(draft.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
                         // Only a transfer names a second account; the server ignores it otherwise,
                         // and sending it anyway would put a value on the wire describing nothing.
                         targetAccountId = draft.targetAccountId.takeIf { draft.kind == BankRequestKind.TRANSFER },
                         note = draft.note?.takeIf { it.isNotBlank() },
                     ),
                 bodySerializer = CreateBankBookingRequest.serializer(),
+                deserializer = BankBookingRequestDto.serializer(),
+            ),
+        )
+
+    override suspend fun updateRequest(
+        id: String,
+        version: Long,
+        amount: String,
+        note: String?,
+        targetAccountId: String?,
+    ): ApiResult<BankBookingRequest> =
+        single(
+            reader.send(
+                path = "$REQUESTS_PATH/$id",
+                method = "PUT",
+                body =
+                    UpdateBankBookingRequest(
+                        amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                        note = note?.takeIf { it.isNotBlank() },
+                        targetAccountId = targetAccountId,
+                        version = version,
+                    ),
+                bodySerializer = UpdateBankBookingRequest.serializer(),
                 deserializer = BankBookingRequestDto.serializer(),
             ),
         )
@@ -699,6 +811,9 @@ class BankRepository(
 private fun OrgUnitBankBalanceDto.toModel(): BankAccountSummary? {
     val id = accountId ?: return null
     return BankAccountSummary(
+        canRequest = canRequest == true,
+        approvalLimit = approvalLimit?.toString(),
+        approvalExempt = approvalExempt == true,
         id = id,
         accountNo = accountNo,
         name = accountName.orEmpty(),
@@ -741,7 +856,9 @@ private fun BankBookingRequestDto.toModel(): BankBookingRequest? {
     val requestId = id ?: return null
     return BankBookingRequest(
         id = requestId,
+        accountId = accountId,
         accountName = accountName,
+        targetAccountId = targetAccountId,
         kind =
             when (type) {
                 BankBookingRequestDto.Type.DEPOSIT -> BankRequestKind.DEPOSIT
@@ -751,18 +868,49 @@ private fun BankBookingRequestDto.toModel(): BankBookingRequest? {
             },
         amount = amount?.toString(),
         note = note?.takeIf { it.isNotBlank() } ?: justification?.takeIf { it.isNotBlank() },
-        status = status?.value,
+        status = status.toModel(),
         requester = requesterHandle,
-        // The server reports the ladder per request rather than per account: the same account can
-        // demand two approvals of one amount and three of another.
-        approvalsGiven = if (ownerApprovalGranted == true) 1 else 0,
-        approvalsNeeded = if (requiresOwnerApproval == true) 1 else 0,
-        ownApproverGrant = requiredApprover != null,
-        ownRequest = false,
+        rejectReason = rejectReason?.takeIf { it.isNotBlank() },
+        applicableLimit = applicableLimit?.toString(),
+        requiresOwnerApproval = requiresOwnerApproval == true,
+        ownerApprovalGranted = ownerApprovalGranted == true,
+        ownerApprovalBy = ownerApprovalGrantedByHandle?.takeIf { it.isNotBlank() },
+        requiredApprover = requiredApprover.toApprover(),
         createdAt = createdAt,
         version = version ?: 0L,
     )
 }
+
+/**
+ * Maps where a request stands onto the model.
+ *
+ * @return the status, or `null` when the server sent one this build does not know.
+ */
+private fun BankBookingRequestDto.Status?.toModel(): BankRequestStatus? =
+    when (this) {
+        BankBookingRequestDto.Status.PENDING -> BankRequestStatus.PENDING
+        BankBookingRequestDto.Status.CONFIRMED -> BankRequestStatus.CONFIRMED
+        BankBookingRequestDto.Status.REJECTED -> BankRequestStatus.REJECTED
+        BankBookingRequestDto.Status.CANCELLED -> BankRequestStatus.CANCELLED
+        null -> null
+    }
+
+/**
+ * Maps the approver class onto the model.
+ *
+ * The contract types this one as a bare string rather than an enum, so an unknown value has to
+ * stay possible: it maps to `null`, which reads as "no approver named" and hides the chip rather
+ * than crashing on a band this build predates.
+ *
+ * @return the approver class, or `null`.
+ */
+private fun String?.toApprover(): BankRequestApprover? =
+    when (this) {
+        "RESPONSIBLE_HOLDER" -> BankRequestApprover.RESPONSIBLE_HOLDER
+        "BANK_MANAGEMENT" -> BankRequestApprover.BANK_MANAGEMENT
+        "ORGANISATIONSLEITUNG" -> BankRequestApprover.ORGANISATIONSLEITUNG
+        else -> null
+    }
 
 /**
  * Maps the app's request kind onto the wire enum.

@@ -4,8 +4,10 @@
 > **Server contract:** main repo `REQ-API-009`, `REQ-BANK-016` (the drawn balance line), `REQ-BANK-037`
 > **Related:** [`api-contract.md`](api-contract.md)
 
-The Konten list and one account with its ledger. **Read-only**: requesting a booking, approving one
-and rejecting one are mutations behind a staged approval ladder and belong to Phase 3.
+The Konten list, one account with its ledger, and the member's own booking requests — raising one,
+correcting it, withdrawing it, and granting the responsible holder's approval on somebody else's.
+**Rejecting** a request is not here and never will be: it is a bank employee's act on a surface the
+app does not carry ([`REQ-APP-BANK-007`](bank.md)).
 
 ---
 
@@ -181,3 +183,58 @@ A bank employee uses the web app. The app carries what a member has.
 
 - [x] No `/api/v1/bank/**` path is in the contract set or the vhost allow-list (main repo
   `ExternalContractTest`, `docs/API_VHOST_ROLLOUT_RUNBOOK.md`).
+
+---
+
+### REQ-APP-BANK-008 — Booking requests: one approval, by a named class, never a count
+
+The Anträge tab and the request sheet — design chapter 12, artboards 1 and 3.
+
+**What the member can do.** Raise a request (`POST /org-units/bank/requests`), correct their own
+while it is still pending and unapproved (`PUT …/{id}`), withdraw it (`POST …/{id}/cancel`), and —
+on an account they are responsible for — grant or revoke the owner approval
+(`POST` / `DELETE …/{id}/owner-approval`). That is the whole member surface, and it is the whole
+of what the web frontend offers a member. Every write echoes the request's `version`.
+
+**Own and foreign are two reads, one list.** `GET …/requests` returns what the caller raised;
+`GET …/requests/foreign` returns what sits on accounts they are responsible for. The **server**
+decides the second set, so membership of it — not any rule the app applies — is what puts the
+approval action on a row. A request on both reads counts as the caller's own: nobody approves
+their own.
+
+**The approval model is two-step and single-vote** (main repo `REQ-BANK-041`). A request over the
+caller's limit is flagged (`requiresOwnerApproval`); one holder of the class named in
+`requiredApprover` grants it (`ownerApprovalGranted`); only then may a bank employee confirm it.
+For the KRT account the amount ladder (`REQ-BANK-047`) escalates **which class** must grant —
+responsible holder → Bankleitung → Organisationsleitung — and never how many must. The row's chip
+therefore names the class it is waiting on. **There is no approval counter anywhere in this
+feature**, and the artboards' „1 / 2 FREIGABEN" is a mechanism the API does not have; see
+[ADR-0016](../adr/0016-the-app-renders-the-approval-the-api-has.md).
+
+**A deposit is never approval-limited** (main repo `REQ-BANK-042`), so the sheet's threshold line
+is absent while EINZAHLUNG is selected, absent for a caller the account exempts, and absent when
+the account sets no limit. Otherwise it states the account's own `approvalLimit` and flips from
+*what will apply* to *what now applies* as the typed amount crosses it.
+
+**Eligibility comes from the server.** A withdrawal or transfer may only name an account whose
+`canRequest` is set; a deposit may name any active one.
+
+**Acceptance**
+
+- [x] Own and foreign merge into one list, own rows are never actionable, and a request on both
+  reads stays the caller's (`BankRequestsViewModelTest`).
+- [x] The tab badge counts only `PENDING` requests, so nothing the member cannot clear leaves a
+  badge behind (`BankRequestsViewModelTest`).
+- [x] Every write echoes the version it read (`BankRequestsViewModelTest`).
+- [x] No state of the sheet or of a row states a number of approvals; the chip names the approver
+  class (`BankRequestScreenTest`).
+- [x] A deposit, an exempt caller and a limitless account each get no threshold line
+  (`BankRequestScreenTest`).
+- [x] A holder may approve and revoke but is offered no reject (`BankRequestScreenTest`).
+- [x] An approved request of one's own can no longer be edited, only withdrawn
+  (`BankRequestScreenTest`).
+- [x] The edit sheet opens on a typeable amount rather than the server's storage scale
+  (`BankRequestsViewModelTest`).
+
+**Code:** `BankRepository` (`BankRequestSource`), `BankRequestsViewModel`, `BankRequestsTab`,
+`BankRequestSheet`

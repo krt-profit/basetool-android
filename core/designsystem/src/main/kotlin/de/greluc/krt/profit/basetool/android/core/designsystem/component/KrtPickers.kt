@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.core.designsystem.component
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -736,6 +737,8 @@ fun KrtToggle(
  * @param activeColor fill of the chosen segment. Orange by default; a control whose choice carries
  *   a meaning of its own passes that meaning's colour, the way Einnahme/Ausgabe does.
  * @param activeContentColor label colour on that fill.
+ * @param icons an optional leading icon per option, positionally matched to [options]. A short
+ *   list or a null entry simply leaves that segment iconless, so a caller may mark only some.
  */
 @Composable
 fun KrtSegmentedControl(
@@ -747,6 +750,7 @@ fun KrtSegmentedControl(
     stretch: Boolean = false,
     activeColor: Color = MaterialTheme.colorScheme.primary,
     activeContentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    @DrawableRes icons: List<Int>? = null,
 ) {
     Row(
         modifier =
@@ -779,17 +783,33 @@ fun KrtSegmentedControl(
                         ),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color =
-                        when {
-                            active -> activeContentColor
-                            enabled -> KrtPalette.TextMuted
-                            else -> KrtPalette.Gray3
-                        },
-                    textAlign = TextAlign.Center,
-                )
+                val tint =
+                    when {
+                        active -> activeContentColor
+                        enabled -> KrtPalette.TextMuted
+                        else -> KrtPalette.Gray3
+                    }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // The icon is decoration: the label beside it already says what the segment
+                    // selects, so announcing it again would make every option read twice.
+                    icons?.getOrNull(index)?.let { iconRes ->
+                        KrtIcon(
+                            id = iconRes,
+                            contentDescription = null,
+                            size = SEGMENT_ICON_SIZE,
+                            tint = tint,
+                        )
+                    }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = tint,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     }
@@ -797,6 +817,9 @@ fun KrtSegmentedControl(
 
 /** Width of one segment, from design chapter 13. */
 private val SEGMENT_WIDTH = 52.dp
+
+/** The leading icon in a segment: one step below the 20 dp row icon, so the label stays the anchor. */
+private val SEGMENT_ICON_SIZE = 16.dp
 
 @Preview(name = "Pickers", showBackground = true, backgroundColor = 0xFF000000, widthDp = 412)
 @Composable
