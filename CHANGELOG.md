@@ -16,6 +16,10 @@
 
 ### Changed
 
+- **Der Lagerbaum zeigt, wie viel ein Mitglied insgesamt hält.** Zwischen Material und Eintrag steht
+  jetzt eine Zeile pro Halter mit dessen Summe; die Zeile darunter nennt nur noch den Ort. Wer ein
+  Material an zwei Orten liegen hatte, sah bisher zwei zusammenhanglose Zeilen und keine Summe.
+
 - **Die Materialbörse zeigt auf dem Tablet zwei Kartenspalten.** Bisher stand jede Karte über die
   volle Breite, mit dem gesamten Inhalt im linken Viertel.
 

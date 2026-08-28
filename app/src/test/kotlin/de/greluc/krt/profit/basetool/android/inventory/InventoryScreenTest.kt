@@ -90,15 +90,19 @@ class InventoryScreenTest {
     /** A member with no grants at all — the caller every gated control is drawn for. */
     private fun plainMember() = Identity(userId = "someone-else", logistician = false)
 
-    private fun stack() =
-        InventoryStack(
-            holder = "Rhea",
-            location = "ARC-L1",
-            personal = false,
-            amount = "1000",
-            quality = "880",
-            entryCount = 1,
-        )
+    private fun stack(
+        location: String = "ARC-L1",
+        amount: String = "1000",
+        quality: String = "880",
+    ) = InventoryStack(
+        holder = "Rhea",
+        holderId = "u-rhea",
+        location = location,
+        personal = false,
+        amount = amount,
+        quality = quality,
+        entryCount = 1,
+    )
 
     /**
      * Renders the tree.
@@ -214,8 +218,66 @@ class InventoryScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Rhea · ARC-L1").assertIsDisplayed()
+        // Two levels now, not one: the holder heads their own stacks and a stack names its place.
+        // Merged into "Rhea · ARC-L1" they read as one thing, and a member holding one material at
+        // two places got two unrelated rows with no total (REQ-APP-INV-017, artboard 1).
+        compose.onNodeWithText("Rhea").assertIsDisplayed()
+        compose.onNodeWithText("ARC-L1").assertIsDisplayed()
         compose.onNodeWithText("1 Eintrag").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a holder's stacks are headed by their total`() {
+        show(
+            InventoryState(
+                groups = listOf(group()),
+                total = 1,
+                phase = InventoryPhase.Ready,
+                opened =
+                    mapOf(
+                        "m1" to
+                            StackPhase.Ready(
+                                listOf(
+                                    stack(location = "ARC-L1", amount = "442", quality = "874"),
+                                    stack(location = "Lorville", amount = "200", quality = "901"),
+                                ),
+                            ),
+                    ),
+            ),
+        )
+
+        // One heading for the two places, carrying what they add up to. The two stacks keep their
+        // own figures beneath it.
+        compose.onNodeWithText("Rhea").assertIsDisplayed()
+        compose.onNodeWithText("642").assertIsDisplayed()
+        compose.onNodeWithText("442").assertIsDisplayed()
+        compose.onNodeWithText("200").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a total that cannot be added is not shown at all`() {
+        show(
+            InventoryState(
+                groups = listOf(group()),
+                total = 1,
+                phase = InventoryPhase.Ready,
+                opened =
+                    mapOf(
+                        "m1" to
+                            StackPhase.Ready(
+                                listOf(
+                                    stack(location = "ARC-L1", amount = "442"),
+                                    stack(location = "Lorville", amount = "viele"),
+                                ),
+                            ),
+                    ),
+            ),
+        )
+
+        // A subtotal quietly missing one of its parts is worse than no subtotal: it would read as
+        // 442 and be wrong by however much "viele" is.
+        compose.onNodeWithText("Rhea").assertIsDisplayed()
+        compose.onAllNodesWithText("442").assertCountEquals(1)
     }
 
     @Test
@@ -265,7 +327,7 @@ class InventoryScreenTest {
         val tapped = mutableListOf<InventoryStack>()
         show(readyWithStack(), stacksToggled = tapped)
 
-        compose.onNodeWithText("Rhea · ARC-L1").performClick()
+        compose.onNodeWithText("ARC-L1").performClick()
 
         assertEquals(listOf(stack()), tapped)
     }

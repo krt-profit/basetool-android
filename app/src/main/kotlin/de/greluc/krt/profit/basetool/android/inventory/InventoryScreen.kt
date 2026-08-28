@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -93,6 +94,7 @@ import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
+import java.math.BigDecimal
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the tree. */
@@ -104,7 +106,10 @@ private val GROUP_RAIL = 4.dp
 /** Width of the grey rail that marks a stack beneath it. */
 private val STACK_RAIL = 2.dp
 
-/** How far a stack is inset from its group. */
+/** How far a holder's heading is inset from its material. */
+private val HOLDER_INSET = 8.dp
+
+/** How far a stack is inset from its holder. */
 private val STACK_INSET = 16.dp
 
 /** How far an entry row is inset, one level deeper than a stack. */
@@ -320,45 +325,20 @@ private fun InventoryTree(
             }
             // A group nobody opened contributes nothing, which is the point of loading one only
             // when it is asked for — so the whole block is skipped rather than branching on null.
-            val opened = materialId?.let { state.opened[it] }
-            if (opened != null) {
-                when (opened) {
-                    is StackPhase.Loading -> {
-                        item(key = "stacks-loading-$materialId") {
-                            StackNote(text = stringResource(R.string.inventory_title))
-                        }
-                    }
-
-                    is StackPhase.Failed -> {
-                        item(key = "stacks-failed-$materialId") {
-                            StackNote(text = stringResource(R.string.inventory_stacks_failed))
-                        }
-                    }
-
-                    is StackPhase.Ready -> {
-                        if (opened.stacks.isEmpty()) {
-                            item(key = "stacks-empty-$materialId") {
-                                StackNote(text = stringResource(R.string.inventory_stacks_empty))
-                            }
-                        } else {
-                            opened.stacks.forEachIndexed { index, stack ->
-                                item(key = "stack-$materialId-$index") {
-                                    StackRow(
-                                        stack = stack,
-                                        unit = group.unit,
-                                        onClick = { onToggleStack(materialId, stack) },
-                                        onLongClick = { onToggleBranch(materialId, stack) },
-                                    )
-                                }
-                                entryRows(
-                                    phase = state.openedStacks[stackKey(materialId, stack)],
-                                    keyPrefix = "$materialId-$index",
-                                    rows = entryRowContext,
-                                )
-                            }
-                        }
-                    }
-                }
+            val openedId = materialId?.takeIf { state.opened.containsKey(it) }
+            if (openedId != null) {
+                openedGroup(
+                    materialId = openedId,
+                    phase = state.opened.getValue(openedId),
+                    context =
+                        OpenedGroupContext(
+                            unit = group.unit,
+                            openedStacks = state.openedStacks,
+                            rows = entryRowContext,
+                            onToggleStack = onToggleStack,
+                            onToggleBranch = onToggleBranch,
+                        ),
+                )
             }
         }
         item(key = "footer") {
@@ -380,6 +360,90 @@ private fun InventoryTree(
                     text = stringResource(R.string.inventory_end_of_list),
                     modifier = Modifier.padding(KrtSpacing.md),
                 )
+            }
+        }
+    }
+}
+
+/**
+ * What the levels beneath an opened material need.
+ *
+ * A holder rather than seven parameters: the tree passes the same five values down two levels, and
+ * threading them individually is how one of them ends up out of step with the others.
+ *
+ * @property unit the material's unit, which every figure beneath it is in.
+ * @property openedStacks which stacks have their entries showing.
+ * @property rows what an entry row needs.
+ * @property onToggleStack a stack was tapped.
+ * @property onToggleBranch a stack was long-pressed.
+ */
+private data class OpenedGroupContext(
+    val unit: String?,
+    val openedStacks: Map<String, EntriesPhase>,
+    val rows: EntryRowContext,
+    val onToggleStack: (String, InventoryStack) -> Unit,
+    val onToggleBranch: (String, InventoryStack?) -> Unit,
+)
+
+/**
+ * Everything under an opened material: the holder headings, their stacks, and any opened entries.
+ *
+ * Extracted from the tree's own loop, which had grown past what one function may branch on. The
+ * split is where the tree's shape changes — above it a flat list of materials, below it three
+ * nested levels — and not at an arbitrary line count.
+ *
+ * @param materialId which material was opened; its stacks are keyed by it.
+ * @param phase where the stack read stands.
+ * @param context everything the levels beneath the material need.
+ */
+private fun LazyListScope.openedGroup(
+    materialId: String,
+    phase: StackPhase,
+    context: OpenedGroupContext,
+) {
+    when (phase) {
+        is StackPhase.Loading -> {
+            item(key = "stacks-loading-$materialId") {
+                StackNote(text = stringResource(R.string.inventory_title))
+            }
+        }
+
+        is StackPhase.Failed -> {
+            item(key = "stacks-failed-$materialId") {
+                StackNote(text = stringResource(R.string.inventory_stacks_failed))
+            }
+        }
+
+        is StackPhase.Ready -> {
+            if (phase.stacks.isEmpty()) {
+                item(key = "stacks-empty-$materialId") {
+                    StackNote(text = stringResource(R.string.inventory_stacks_empty))
+                }
+            } else {
+                var index = 0
+                byHolder(phase.stacks).forEach { holder ->
+                    item(key = "holder-$materialId-${holder.key}") {
+                        HolderRow(holder = holder, unit = context.unit)
+                    }
+                    holder.stacks.forEach { stack ->
+                        // Counted across holders, not within one: the key has to stay stable when
+                        // a stack moves between holders, which a per-holder index would not.
+                        val at = index++
+                        item(key = "stack-$materialId-$at") {
+                            StackRow(
+                                stack = stack,
+                                unit = context.unit,
+                                onClick = { context.onToggleStack(materialId, stack) },
+                                onLongClick = { context.onToggleBranch(materialId, stack) },
+                            )
+                        }
+                        entryRows(
+                            phase = context.openedStacks[stackKey(materialId, stack)],
+                            keyPrefix = "$materialId-$at",
+                            rows = context.rows,
+                        )
+                    }
+                }
             }
         }
     }
@@ -808,13 +872,105 @@ private fun StackRow(
 }
 
 /**
+ * One holder's stacks inside a material, and what they add up to.
+ *
+ * @property key stable across recompositions; the holder's id where the server sent one, and their
+ *   name otherwise, because a tree keyed on a list position re-animates every row when one opens.
+ * @property name whose stock it is, or `null` for stock the server did not attribute.
+ * @property stacks their stacks, in the order the server sent them.
+ * @property subtotal what those stacks add up to, or `null` when they cannot be added.
+ */
+private data class HolderStacks(
+    val key: String,
+    val name: String?,
+    val stacks: List<InventoryStack>,
+    val subtotal: String?,
+)
+
+/**
+ * Splits a material's stacks by whose they are, which is the level artboard 1 draws.
+ *
+ * The wire has no holder level — `/inventory/all/grouped` answers stacks keyed by
+ * (holder, place, quality) — so the app builds it. A member holding one material at two places was
+ * two unrelated rows, and nothing on the screen said how much they held in total.
+ *
+ * **The subtotal is the sum of the rows directly beneath it, and nothing more.** That is what a
+ * subtotal is, and it is not the invented arithmetic this app refuses elsewhere: no figure here is
+ * derived from anything the member cannot also see. It is summed as `BigDecimal`, from the strings
+ * the server sent, so a quarter-SCU does not drift; and if **any** of the stacks carries an amount
+ * this build cannot parse, the whole subtotal is dropped rather than shown short. A total that is
+ * quietly missing one of its parts is worse than no total.
+ *
+ * Order is the server's, first-seen: re-sorting would move rows a member had just looked at.
+ *
+ * @param stacks the material's stacks, as the server sent them.
+ * @return one entry per holder.
+ */
+private fun byHolder(stacks: List<InventoryStack>): List<HolderStacks> =
+    stacks
+        .groupBy { it.holderId ?: it.holder.orEmpty() }
+        .map { (key, held) ->
+            val amounts = held.map { it.amount?.trim()?.takeIf { a -> a.isNotEmpty() }?.toBigDecimalOrNull() }
+            HolderStacks(
+                key = key.ifEmpty { "unattributed" },
+                name = held.firstNotNullOfOrNull { it.holder?.takeIf { n -> n.isNotBlank() } },
+                stacks = held,
+                subtotal =
+                    if (amounts.any { it == null }) {
+                        null
+                    } else {
+                        amounts.filterNotNull().fold(BigDecimal.ZERO, BigDecimal::add).toPlainString()
+                    },
+            )
+        }
+
+/**
+ * The holder level of the tree: whose stock, and how much of it in total.
+ *
+ * It does not open or close. The stacks beneath it are already visible — it is a heading with a
+ * figure, and a chevron on it would promise a fourth thing to unfold that does not exist.
+ *
+ * @param holder whose stacks these are.
+ * @param unit the material's unit.
+ */
+@Composable
+private fun HolderRow(
+    holder: HolderStacks,
+    unit: String?,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = HOLDER_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Rail(width = STACK_RAIL, color = KrtPalette.Gray2)
+        Text(
+            text = holder.name ?: stringResource(R.string.inventory_holder_unattributed),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = KrtPalette.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        // No subtotal rather than a wrong one: see byHolder.
+        holder.subtotal?.let { Amount(value = it, unit = unit) }
+    }
+}
+
+/**
  * The stack's headline.
  *
- * @return the holder and the place, whichever of them the server attributed.
+ * The holder moved up to [HolderRow], so this names the place alone. Repeating the holder on every
+ * stack under their own name was the earlier form and it made two stacks of one member read as two
+ * members.
+ *
+ * @return the place, or the holder when the server attributed no place — a row has to say something.
  */
 private fun InventoryStack.title(): String =
-    listOfNotNull(holder?.takeIf { it.isNotBlank() }, location?.takeIf { it.isNotBlank() })
-        .joinToString(" · ")
+    (location?.takeIf { it.isNotBlank() } ?: holder?.takeIf { it.isNotBlank() }).orEmpty()
 
 /**
  * A quantity with its unit dimmed behind it, as the design has it.

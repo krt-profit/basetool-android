@@ -730,6 +730,7 @@
     <string name="inventory_title">Lager</string>
     <string name="inventory_with_stock_only">In stock only</string>
     <string name="inventory_quality">Q %1$s</string>
+    <string name="inventory_holder_unattributed">Unattributed</string>
     <string name="inventory_personal">Personal</string>
     <plurals name="inventory_entry_count">
         <item quantity="one">%1$d entry</item>

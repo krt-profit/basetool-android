@@ -472,3 +472,49 @@ allow-list. So are the writes — `POST /inventory`, `POST /inventory/{id}/book-
 `POST /inventory/{id}/personal-rebook` and `PUT /inventory/{id}/note` — as named exceptions to the
 vhost's read-only guard on the family; every other verb on it still answers `405`. Three of the four
 are sent by this screen; `personal-rebook` waits for the `my-inventory` slice (see the gaps above).
+
+### REQ-APP-INV-017 — The tree has a holder level, and it carries their total
+
+Artboard 1 draws the Lager as **material → holder → entry**. The app drew **material → stack →
+entry**, where a stack merged the holder and the place into one row: „Rhea · ARC-L1". A member
+holding one material at two places therefore got two unrelated rows, and nothing on the screen said
+how much they held in total.
+
+The tree now heads each holder's stacks with their name and their **subtotal**, and a stack names
+its place alone. The app keeps its fourth level — the entries inside a stack — which the artboard
+does not draw only because every stack in its fixture holds one entry.
+
+**The wire has no holder level.** `/inventory/all/grouped` answers stacks keyed by
+(holder, place, quality), so the app groups them. This is the one place the app adds a figure of its
+own, and it is defensible for a reason that does not generalise: **a subtotal is the sum of the rows
+directly beneath it**, every one of which the member can see. Nothing is derived from data that is
+off screen, which is what separates it from the „Zugesagt" total this app refuses to compute
+(`REQ-APP-ORDERS-004`).
+
+Two rules keep it honest:
+
+- **Summed as `BigDecimal`, from the strings the server sent.** A quarter-SCU does not drift, and no
+  locale parses into the arithmetic.
+- **If any one stack's amount cannot be parsed, the whole subtotal is dropped.** A total quietly
+  missing one of its parts reads as authoritative and is wrong; no total reads as no total.
+
+**The holder row does not open or close.** Its stacks are already visible — it is a heading with a
+figure, and a chevron would promise a fourth thing to unfold that does not exist. The artboard draws
+it without one.
+
+**Order is the server's, first-seen.** Re-sorting by name or by amount would move rows a member had
+just looked at.
+
+The stack keys, the selection and the booking sheet are untouched: `stackKey` is still
+(material, holder, place, quality), and the holder level is presentational.
+
+**Acceptance**
+
+- [x] A holder's two places are headed by one row carrying their sum, with both places' own figures
+      beneath it (`InventoryScreenTest`).
+- [x] An unparseable amount anywhere in a holder's stacks removes the subtotal rather than
+      shortening it (`InventoryScreenTest`).
+- [x] A stack names its place; the holder is no longer repeated on it (`InventoryScreenTest`).
+
+**Code:** `inventory/InventoryScreen.kt` (`byHolder`, `HolderStacks`, `HolderRow`, `openedGroup`)
+
