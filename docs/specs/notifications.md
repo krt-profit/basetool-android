@@ -420,3 +420,22 @@ A brace that encloses no valid name is a literal and is copied through, so wordi
 - [x] Two adjacent placeholders are both filled (`NotificationTextTest`).
 - [x] **Observed on a device (2026-08-22):** the inbox rendered where it previously crashed the app
   at launch.
+
+### REQ-APP-NOTIF-015 — The inbox's two header actions carry their glyphs, in equal halves
+
+Artboard 1 draws „✓ ALLE ALS GELESEN MARKIEREN" and „🗑 GELESENE LÖSCHEN" with a leading glyph each
+— and they are the same two glyphs every row carries, so the bulk action and the per-row action
+read as one verb rather than as two unrelated controls. The app had the labels alone.
+
+**Both take an even half of the row.** Sized to content the pair is lopsided: the longer label takes
+what it needs and leaves the shorter one so little that adding the glyphs broke „GELESENE LÖSCHEN"
+mid-word across four lines. Two lines is right and is what the artboard draws for the first one; a
+hyphenless mid-word break is not.
+
+**Acceptance**
+
+- [x] Verified on the phone class against the rendered artboard: both glyphs present, both buttons
+      equal width, each label wrapping at a word boundary.
+
+**Code:** `notifications/NotificationsScreen.kt`
+

@@ -175,6 +175,10 @@
 
 ### Fixed
 
+- **Die beiden Knöpfe über dem Posteingang tragen ihre Symbole** — Haken und Papierkorb, dieselben
+  wie an jeder Zeile — und teilen sich die Breite gleichmäßig, statt dass der kürzere Text mitten im
+  Wort umbricht.
+
 - **Die Übersicht trifft ihr Artboard.** Die Begrüßung steht jetzt in einem Block mit orangem
   Rand statt als loser Text, und die vier Schnellaktionen tragen die Glyphe ihrer Aktion statt die
   ihres Ziels. Der Lager-Knopf „Einbuchen" bekommt dieselbe Pfeil-Glyphe zurück.
