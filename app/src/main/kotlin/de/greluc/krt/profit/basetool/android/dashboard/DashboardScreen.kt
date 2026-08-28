@@ -764,29 +764,6 @@ private fun SectionAction(
 }
 
 /**
- * A tappable line that leads to the full screen behind a band.
- *
- * @param text the label.
- * @param onClick opens the screen.
- */
-@Composable
-private fun LinkLine(
-    text: String,
-    onClick: () -> Unit,
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-    )
-}
-
-/**
  * The one-line wording of a notification in the preview.
  *
  * @return the same sentence the inbox shows, so the two cannot describe one notification

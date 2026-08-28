@@ -615,11 +615,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }
                 initializer {
-                    NotificationsViewModel(
-                        container.notifications,
-                        container.systemNotifications,
-                        container.shadeTitle,
-                    )
+                    NotificationsViewModel(container.notifications, container.systemNotifications)
                 }
                 initializer { CallerViewModel(container.identity) }
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
