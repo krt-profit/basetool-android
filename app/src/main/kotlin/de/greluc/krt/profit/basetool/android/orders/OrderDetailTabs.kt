@@ -47,9 +47,19 @@ internal fun LazyListScope.positionsTab(order: JobOrder) {
     order.comment?.let { comment ->
         item(key = "comment") { CommentCard(comment = comment) }
     }
+    items(order.items, key = { "item-" + (it.id ?: it.name.orEmpty()) }) { line ->
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+            ItemLine(item = line)
+        }
+    }
     if (order.materials.isEmpty()) {
-        item(key = "materials-empty") {
-            Body(text = stringResource(R.string.order_detail_materials_empty))
+        // Only when the order carries nothing at all. An item order has no materials of its own —
+        // the server derives them from the blueprint — so saying "no materials" under its items
+        // would read as a defect.
+        if (order.items.isEmpty()) {
+            item(key = "materials-empty") {
+                Body(text = stringResource(R.string.order_detail_materials_empty))
+            }
         }
     } else {
         items(order.materials, key = { it.name }) { material ->

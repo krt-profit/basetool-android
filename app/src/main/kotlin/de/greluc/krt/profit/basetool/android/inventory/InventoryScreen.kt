@@ -14,7 +14,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +41,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -49,6 +54,7 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
@@ -62,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
@@ -84,13 +91,17 @@ import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isLogistician
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
+import java.math.BigDecimal
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the tree. */
@@ -102,7 +113,25 @@ private val GROUP_RAIL = 4.dp
 /** Width of the grey rail that marks a stack beneath it. */
 private val STACK_RAIL = 2.dp
 
-/** How far a stack is inset from its group. */
+/** Test handle for the tablet pane's table. */
+const val INVENTORY_PANE_TAG: String = "inventory-pane"
+
+/** The pane table's column shares, left to right. */
+private const val MATERIAL_COL_HOLDER = 1.4f
+
+/** The place column's share. */
+private const val MATERIAL_COL_LOCATION = 1.6f
+
+/** The quality column's share. */
+private const val MATERIAL_COL_QUALITY = 0.6f
+
+/** The amount column's share. */
+private const val MATERIAL_COL_AMOUNT = 1f
+
+/** How far a holder's heading is inset from its material. */
+private val HOLDER_INSET = 8.dp
+
+/** How far a stack is inset from its holder. */
 private val STACK_INSET = 16.dp
 
 /** How far an entry row is inset, one level deeper than a stack. */
@@ -135,6 +164,9 @@ private val RAIL_HEIGHT = 44.dp
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param modifier layout modifier.
+ * @param onSelectMaterial a material was tapped and the tablet pane is to show it.
+ * @param pane what the tablet pane is showing, or `null` while nothing is selected.
+ * @param paneActions what the tablet pane reports back.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,6 +186,12 @@ fun InventoryScreen(
     onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
+    // Defaulted, and after the modifier because Android Lint requires that one to come first among
+    // the optional parameters. The pane exists only on a tablet, and a test that draws the tree is
+    // not asking about it; the route always passes all three.
+    onSelectMaterial: (InventoryGroup) -> Unit = {},
+    pane: MaterialPane? = null,
+    paneActions: MaterialPaneActions = MaterialPaneActions(onPage = {}, onRetry = {}),
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -215,19 +253,28 @@ fun InventoryScreen(
                                 )
                             }
                         } else {
-                            InventoryTree(
-                                state = state,
-                                onToggleGroup = onToggleGroup,
-                                onToggleStack = onToggleStack,
-                                onToggleBranch = onToggleBranch,
-                                onBookOut = onBookOut,
-                                onAllocate = onAllocate,
-                                selection = selection,
-                                onToggleSelected = onToggleSelected,
-                                denials = denials,
-                                online = state.online,
-                                onLoadMore = onLoadMore,
-                            )
+                            KrtListDetail(
+                                detail =
+                                    pane?.let { shown ->
+                                        { MaterialPaneBody(pane = shown, actions = paneActions) }
+                                    },
+                                emptyDetailMessage = stringResource(R.string.inventory_pane_none),
+                            ) {
+                                InventoryTree(
+                                    state = state,
+                                    onToggleGroup = onToggleGroup,
+                                    onToggleStack = onToggleStack,
+                                    onToggleBranch = onToggleBranch,
+                                    onBookOut = onBookOut,
+                                    onAllocate = onAllocate,
+                                    selection = selection,
+                                    onToggleSelected = onToggleSelected,
+                                    denials = denials,
+                                    online = state.online,
+                                    onLoadMore = onLoadMore,
+                                    onSelectMaterial = onSelectMaterial,
+                                )
+                            }
                         }
                     }
                 }
@@ -283,10 +330,14 @@ private fun InventoryTree(
     denials: DenialState,
     online: Boolean,
     onLoadMore: () -> Unit,
+    onSelectMaterial: (InventoryGroup) -> Unit,
 ) {
+    // Only where there is a pane to fill. On a phone this would read a page nothing draws.
+    val selects = isWideWindow()
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId
@@ -307,7 +358,19 @@ private fun InventoryTree(
                     group = group,
                     // A group the server sent without a material id cannot be asked for, so it does
                     // not offer a tap that would do nothing.
-                    onClick = materialId?.let { { onToggleGroup(it) } },
+                    //
+                    // One gesture does both on a tablet: opening a material and reading its full
+                    // table beside the tree are the same intent, and a second affordance on the row
+                    // would be a control whose only job is to say "and also over there".
+                    onClick =
+                        materialId?.let {
+                            {
+                                onToggleGroup(it)
+                                if (selects) {
+                                    onSelectMaterial(group)
+                                }
+                            }
+                        },
                     onLongClick = materialId?.let { { onToggleBranch(it, null) } },
                     selected = picked,
                     // Only while the group is open does „n/m" mean anything: a collapsed group's
@@ -317,45 +380,20 @@ private fun InventoryTree(
             }
             // A group nobody opened contributes nothing, which is the point of loading one only
             // when it is asked for — so the whole block is skipped rather than branching on null.
-            val opened = materialId?.let { state.opened[it] }
-            if (opened != null) {
-                when (opened) {
-                    is StackPhase.Loading -> {
-                        item(key = "stacks-loading-$materialId") {
-                            StackNote(text = stringResource(R.string.inventory_title))
-                        }
-                    }
-
-                    is StackPhase.Failed -> {
-                        item(key = "stacks-failed-$materialId") {
-                            StackNote(text = stringResource(R.string.inventory_stacks_failed))
-                        }
-                    }
-
-                    is StackPhase.Ready -> {
-                        if (opened.stacks.isEmpty()) {
-                            item(key = "stacks-empty-$materialId") {
-                                StackNote(text = stringResource(R.string.inventory_stacks_empty))
-                            }
-                        } else {
-                            opened.stacks.forEachIndexed { index, stack ->
-                                item(key = "stack-$materialId-$index") {
-                                    StackRow(
-                                        stack = stack,
-                                        unit = group.unit,
-                                        onClick = { onToggleStack(materialId, stack) },
-                                        onLongClick = { onToggleBranch(materialId, stack) },
-                                    )
-                                }
-                                entryRows(
-                                    phase = state.openedStacks[stackKey(materialId, stack)],
-                                    keyPrefix = "$materialId-$index",
-                                    rows = entryRowContext,
-                                )
-                            }
-                        }
-                    }
-                }
+            val openedId = materialId?.takeIf { state.opened.containsKey(it) }
+            if (openedId != null) {
+                openedGroup(
+                    materialId = openedId,
+                    phase = state.opened.getValue(openedId),
+                    context =
+                        OpenedGroupContext(
+                            unit = group.unit,
+                            openedStacks = state.openedStacks,
+                            rows = entryRowContext,
+                            onToggleStack = onToggleStack,
+                            onToggleBranch = onToggleBranch,
+                        ),
+                )
             }
         }
         item(key = "footer") {
@@ -379,6 +417,315 @@ private fun InventoryTree(
                 )
             }
         }
+    }
+}
+
+/**
+ * What the levels beneath an opened material need.
+ *
+ * A holder rather than seven parameters: the tree passes the same five values down two levels, and
+ * threading them individually is how one of them ends up out of step with the others.
+ *
+ * @property unit the material's unit, which every figure beneath it is in.
+ * @property openedStacks which stacks have their entries showing.
+ * @property rows what an entry row needs.
+ * @property onToggleStack a stack was tapped.
+ * @property onToggleBranch a stack was long-pressed.
+ */
+private data class OpenedGroupContext(
+    val unit: String?,
+    val openedStacks: Map<String, EntriesPhase>,
+    val rows: EntryRowContext,
+    val onToggleStack: (String, InventoryStack) -> Unit,
+    val onToggleBranch: (String, InventoryStack?) -> Unit,
+)
+
+/**
+ * Everything under an opened material: the holder headings, their stacks, and any opened entries.
+ *
+ * Extracted from the tree's own loop, which had grown past what one function may branch on. The
+ * split is where the tree's shape changes — above it a flat list of materials, below it three
+ * nested levels — and not at an arbitrary line count.
+ *
+ * @param materialId which material was opened; its stacks are keyed by it.
+ * @param phase where the stack read stands.
+ * @param context everything the levels beneath the material need.
+ */
+private fun LazyListScope.openedGroup(
+    materialId: String,
+    phase: StackPhase,
+    context: OpenedGroupContext,
+) {
+    when (phase) {
+        is StackPhase.Loading -> {
+            item(key = "stacks-loading-$materialId") {
+                StackNote(text = stringResource(R.string.inventory_title))
+            }
+        }
+
+        is StackPhase.Failed -> {
+            item(key = "stacks-failed-$materialId") {
+                StackNote(text = stringResource(R.string.inventory_stacks_failed))
+            }
+        }
+
+        is StackPhase.Ready -> {
+            if (phase.stacks.isEmpty()) {
+                item(key = "stacks-empty-$materialId") {
+                    StackNote(text = stringResource(R.string.inventory_stacks_empty))
+                }
+            } else {
+                var index = 0
+                byHolder(phase.stacks).forEach { holder ->
+                    item(key = "holder-$materialId-${holder.key}") {
+                        HolderRow(holder = holder, unit = context.unit)
+                    }
+                    holder.stacks.forEach { stack ->
+                        // Counted across holders, not within one: the key has to stay stable when
+                        // a stack moves between holders, which a per-holder index would not.
+                        val at = index++
+                        item(key = "stack-$materialId-$at") {
+                            StackRow(
+                                stack = stack,
+                                unit = context.unit,
+                                onClick = { context.onToggleStack(materialId, stack) },
+                                onLongClick = { context.onToggleBranch(materialId, stack) },
+                            )
+                        }
+                        entryRows(
+                            phase = context.openedStacks[stackKey(materialId, stack)],
+                            keyPrefix = "$materialId-$at",
+                            rows = context.rows,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * What the tablet pane reports back.
+ *
+ * @property onPage another page of the material's entries was asked for.
+ * @property onRetry the failed read is to be tried again.
+ */
+data class MaterialPaneActions(
+    val onPage: (Int) -> Unit,
+    val onRetry: () -> Unit,
+)
+
+/**
+ * The Lager's detail pane: every entry of one material, flat.
+ *
+ * The tree and the table answer different questions and that is why the pane earns its place beside
+ * the tree rather than repeating it. The tree groups by holder and shows only what is opened; the
+ * table shows **every** entry of one material at once, across all holders and places, which is what
+ * a thousand dp of width is for. It is the web's `/inventory/material/{id}` page, columns and all
+ * (design round 9 §4).
+ *
+ * Read-only. A booking is still made from the tree, where the row's own actions live.
+ *
+ * @param pane which material, and where its read stands.
+ * @param actions what the pane reports back.
+ */
+@Composable
+private fun MaterialPaneBody(
+    pane: MaterialPane,
+    actions: MaterialPaneActions,
+) {
+    ProvideScreenTopBar(title = pane.name)
+    when (val phase = pane.phase) {
+        is MaterialPanePhase.Loading -> {
+            KrtLoadingIndicator(
+                text = pane.name,
+                modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            )
+        }
+
+        is MaterialPanePhase.Failed -> {
+            KrtEmptyState(
+                iconRes = DesignR.drawable.ic_krt_crate,
+                title = stringResource(R.string.inventory_pane_failed_title),
+                message = stringResource(R.string.inventory_pane_failed_message),
+                actionText = stringResource(R.string.missions_retry),
+                onAction = actions.onRetry,
+                modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            )
+        }
+
+        is MaterialPanePhase.Ready -> {
+            MaterialTable(pane = pane, page = phase.page, actions = actions)
+        }
+    }
+}
+
+/**
+ * The pane's table, and the pager under it.
+ *
+ * @param pane which material.
+ * @param page the entries and where they sit in the whole.
+ * @param actions what the pane reports back.
+ */
+@Composable
+private fun MaterialTable(
+    pane: MaterialPane,
+    page: MaterialEntryPage,
+    actions: MaterialPaneActions,
+) {
+    if (page.entries.isEmpty()) {
+        KrtEmptyState(
+            iconRes = DesignR.drawable.ic_krt_crate,
+            title = stringResource(R.string.inventory_pane_empty_title),
+            message = stringResource(R.string.inventory_pane_empty_message),
+            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        )
+        return
+    }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(INVENTORY_PANE_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+    ) {
+        item(key = "head") { MaterialTableHead() }
+        items(page.entries, key = { it.id }) { entry ->
+            MaterialTableRow(entry = entry, unit = pane.unit)
+            KrtHairlineRule()
+        }
+        item(key = "pager") {
+            // ADR-0104: a pane that shows one page of many says how many, rather than letting the
+            // member read the last row as the last entry.
+            MaterialPager(page = page, onPage = actions.onPage)
+        }
+    }
+}
+
+/**
+ * The table's column headings.
+ */
+@Composable
+private fun MaterialTableHead() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        listOf(
+            R.string.inventory_pane_col_holder to MATERIAL_COL_HOLDER,
+            R.string.inventory_pane_col_location to MATERIAL_COL_LOCATION,
+            R.string.inventory_pane_col_quality to MATERIAL_COL_QUALITY,
+            R.string.inventory_pane_col_amount to MATERIAL_COL_AMOUNT,
+        ).forEach { (res, weight) ->
+            Text(
+                text = stringResource(res).krtUppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = KrtPalette.Gray2,
+                modifier = Modifier.weight(weight),
+            )
+        }
+    }
+    KrtHairlineRule()
+}
+
+/**
+ * One entry of the material, as a table row.
+ *
+ * @param entry the row.
+ * @param unit the material's unit.
+ */
+@Composable
+private fun MaterialTableRow(
+    entry: InventoryEntry,
+    unit: String?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MaterialCell(text = entry.holder, weight = MATERIAL_COL_HOLDER, bright = true)
+        MaterialCell(text = entry.locationName, weight = MATERIAL_COL_LOCATION)
+        MaterialCell(text = entry.quality, weight = MATERIAL_COL_QUALITY)
+        Row(modifier = Modifier.weight(MATERIAL_COL_AMOUNT)) {
+            Amount(value = entry.amount, unit = unit)
+        }
+    }
+}
+
+/**
+ * One cell, with the dash a missing value gets.
+ *
+ * @param text what it says, or `null`.
+ * @param weight its share of the row.
+ * @param bright whether it carries the row's weight.
+ */
+@Composable
+private fun RowScope.MaterialCell(
+    text: String?,
+    weight: Float,
+    bright: Boolean = false,
+) {
+    Text(
+        // A dash, not an empty cell: an empty cell in a table reads as a rendering fault rather
+        // than as a value the server did not state.
+        text = text?.takeIf { it.isNotBlank() } ?: "—",
+        style = MaterialTheme.typography.bodySmall,
+        color = if (bright) KrtPalette.White else KrtPalette.TextMuted,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.weight(weight),
+    )
+}
+
+/**
+ * How far through the material's entries the pane is, and the way on.
+ *
+ * @param page where this page sits in the whole.
+ * @param onPage another page was asked for.
+ */
+@Composable
+private fun MaterialPager(
+    page: MaterialEntryPage,
+    onPage: (Int) -> Unit,
+) {
+    if (page.totalPages <= 1) {
+        KrtEndOfList(
+            text =
+                pluralStringResource(
+                    R.plurals.inventory_pane_all,
+                    page.totalElements.toInt(),
+                    page.totalElements,
+                ),
+        )
+        return
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtGhostButton(
+            text = stringResource(R.string.inventory_pane_previous),
+            onClick = { onPage(page.page - 1) },
+            enabled = page.page > 0,
+        )
+        Text(
+            text =
+                pluralStringResource(
+                    R.plurals.inventory_pane_page,
+                    page.totalElements.toInt(),
+                    page.page + 1,
+                    page.totalPages,
+                    page.totalElements,
+                ),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center,
+        )
+        KrtGhostButton(
+            text = stringResource(R.string.inventory_pane_next),
+            onClick = { onPage(page.page + 1) },
+            enabled = page.page + 1 < page.totalPages,
+        )
     }
 }
 
@@ -805,13 +1152,105 @@ private fun StackRow(
 }
 
 /**
+ * One holder's stacks inside a material, and what they add up to.
+ *
+ * @property key stable across recompositions; the holder's id where the server sent one, and their
+ *   name otherwise, because a tree keyed on a list position re-animates every row when one opens.
+ * @property name whose stock it is, or `null` for stock the server did not attribute.
+ * @property stacks their stacks, in the order the server sent them.
+ * @property subtotal what those stacks add up to, or `null` when they cannot be added.
+ */
+private data class HolderStacks(
+    val key: String,
+    val name: String?,
+    val stacks: List<InventoryStack>,
+    val subtotal: String?,
+)
+
+/**
+ * Splits a material's stacks by whose they are, which is the level artboard 1 draws.
+ *
+ * The wire has no holder level — `/inventory/all/grouped` answers stacks keyed by
+ * (holder, place, quality) — so the app builds it. A member holding one material at two places was
+ * two unrelated rows, and nothing on the screen said how much they held in total.
+ *
+ * **The subtotal is the sum of the rows directly beneath it, and nothing more.** That is what a
+ * subtotal is, and it is not the invented arithmetic this app refuses elsewhere: no figure here is
+ * derived from anything the member cannot also see. It is summed as `BigDecimal`, from the strings
+ * the server sent, so a quarter-SCU does not drift; and if **any** of the stacks carries an amount
+ * this build cannot parse, the whole subtotal is dropped rather than shown short. A total that is
+ * quietly missing one of its parts is worse than no total.
+ *
+ * Order is the server's, first-seen: re-sorting would move rows a member had just looked at.
+ *
+ * @param stacks the material's stacks, as the server sent them.
+ * @return one entry per holder.
+ */
+private fun byHolder(stacks: List<InventoryStack>): List<HolderStacks> =
+    stacks
+        .groupBy { it.holderId ?: it.holder.orEmpty() }
+        .map { (key, held) ->
+            val amounts = held.map { it.amount?.trim()?.takeIf { a -> a.isNotEmpty() }?.toBigDecimalOrNull() }
+            HolderStacks(
+                key = key.ifEmpty { "unattributed" },
+                name = held.firstNotNullOfOrNull { it.holder?.takeIf { n -> n.isNotBlank() } },
+                stacks = held,
+                subtotal =
+                    if (amounts.any { it == null }) {
+                        null
+                    } else {
+                        amounts.filterNotNull().fold(BigDecimal.ZERO, BigDecimal::add).toPlainString()
+                    },
+            )
+        }
+
+/**
+ * The holder level of the tree: whose stock, and how much of it in total.
+ *
+ * It does not open or close. The stacks beneath it are already visible — it is a heading with a
+ * figure, and a chevron on it would promise a fourth thing to unfold that does not exist.
+ *
+ * @param holder whose stacks these are.
+ * @param unit the material's unit.
+ */
+@Composable
+private fun HolderRow(
+    holder: HolderStacks,
+    unit: String?,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = HOLDER_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Rail(width = STACK_RAIL, color = KrtPalette.Gray2)
+        Text(
+            text = holder.name ?: stringResource(R.string.inventory_holder_unattributed),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = KrtPalette.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        // No subtotal rather than a wrong one: see byHolder.
+        holder.subtotal?.let { Amount(value = it, unit = unit) }
+    }
+}
+
+/**
  * The stack's headline.
  *
- * @return the holder and the place, whichever of them the server attributed.
+ * The holder moved up to [HolderRow], so this names the place alone. Repeating the holder on every
+ * stack under their own name was the earlier form and it made two stacks of one member read as two
+ * members.
+ *
+ * @return the place, or the holder when the server attributed no place — a row has to say something.
  */
 private fun InventoryStack.title(): String =
-    listOfNotNull(holder?.takeIf { it.isNotBlank() }, location?.takeIf { it.isNotBlank() })
-        .joinToString(" · ")
+    (location?.takeIf { it.isNotBlank() } ?: holder?.takeIf { it.isNotBlank() }).orEmpty()
 
 /**
  * A quantity with its unit dimmed behind it, as the design has it.
@@ -914,6 +1353,7 @@ fun InventoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val pane by viewModel.pane.state.collectAsStateWithLifecycle()
     // One refusal at a time, at the foot of the screen — the design settled the open question of
     // round 3 on the bracket toast in the warning tint (design ch. 09, artboards 12 and 14).
     val denials = rememberDenialState()
@@ -944,6 +1384,15 @@ fun InventoryRoute(
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
+        onSelectMaterial = { group ->
+            group.materialId?.let { viewModel.pane.select(it, group.name, group.unit) }
+        },
+        pane = pane,
+        paneActions =
+            MaterialPaneActions(
+                onPage = viewModel.pane::page,
+                onRetry = viewModel.pane::retry,
+            ),
         modifier = modifier,
     )
 

@@ -68,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.carriesClock
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeTo
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -141,7 +142,12 @@ fun DashboardScreen(
             // Two independent LazyColumns rather than one grid: the sections are different
             // lengths and scroll at their own pace, and a grid would tie the last Einsatz to
             // whatever notification happens to sit beside it.
-            Column(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
+            Column(
+                // The gutter sits on the column rather than on the two lists, so the greeting and
+                // the announcement line up with the cards under them instead of running out to the
+                // rail on one side and the screen edge on the other.
+                modifier = Modifier.fillMaxSize().padding(horizontal = KrtSpacing.md).testTag(DASHBOARD_TAG),
+            ) {
                 Greeting(memberName = memberName, orgUnitName = orgUnitName)
                 state.announcement?.let {
                     AnnouncementBand(
@@ -157,6 +163,7 @@ fun DashboardScreen(
                     LazyColumn(
                         state = rememberRootListState(),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentPadding = PaddingValues(vertical = KrtSpacing.md),
                     ) {
                         missionsSection(
                             state = state,
@@ -167,6 +174,7 @@ fun DashboardScreen(
                     LazyColumn(
                         state = rememberRootListState(),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentPadding = PaddingValues(vertical = KrtSpacing.md),
                     ) {
                         quickActionsSection(onQuickAction = onQuickAction)
                         notificationsSection(
@@ -181,6 +189,10 @@ fun DashboardScreen(
             LazyColumn(
                 state = rememberRootListState(),
                 modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG),
+                // Zero on a phone, where chapter 05 draws the band full-bleed with its padding
+                // inside the card. A medium window reaches this branch too - it has no room for
+                // two columns but plenty to spare sideways - and there the gutter does apply.
+                contentPadding = PaddingValues(horizontal = contentGutter()),
             ) {
                 item(key = "greeting") {
                     Greeting(memberName = memberName, orgUnitName = orgUnitName)

@@ -86,6 +86,25 @@ data class InventoryStack(
 )
 
 /**
+ * One page of a material's entries, flat across every holder and place.
+ *
+ * The tree's own reads answer a *branch* — one material's stacks, one stack's entries. This answers
+ * the whole material at once, which is what the tablet's detail pane shows and what the web's
+ * `/inventory/material/{id}` page is.
+ *
+ * @property entries the rows on this page.
+ * @property page the zero-based page index.
+ * @property totalPages how many pages exist.
+ * @property totalElements how many entries the material has in total.
+ */
+data class MaterialEntryPage(
+    val entries: List<InventoryEntry>,
+    val page: Int,
+    val totalPages: Int,
+    val totalElements: Long,
+)
+
+/**
  * One entry inside a stack — the thing a booking actually moves.
  *
  * @property id the entry's id
@@ -409,6 +428,33 @@ interface InventoryAllocationSource {
 }
 
 /**
+ * Reading a material whole, which is what the Lager's tablet pane shows.
+ *
+ * A seam of its own rather than one more method on [InventorySource]. The tree's reads answer a
+ * *branch* — a page of materials, one material's stacks, one stack's entries — and every one of
+ * them is keyed by where in the tree the member is. This answers a material flat, across every
+ * holder and place, and it is the only read the pane makes.
+ */
+interface MaterialDetailSource {
+    /**
+     * Reads one page of a material's entries, across every holder and place.
+     *
+     * Paged rather than whole: a material the organisation holds a lot of has more entries than a
+     * pane can draw, and reading them all to show twenty is how a drilldown becomes the slowest
+     * screen in the app. ADR-0104's no-silent-caps rule then applies to what the pane *says* about
+     * the rest, which is why the page carries its totals.
+     *
+     * @param materialId which material.
+     * @param page the zero-based page index.
+     * @return the page, or the classified failure.
+     */
+    suspend fun materialEntries(
+        materialId: String,
+        page: Int = 0,
+    ): ApiResult<MaterialEntryPage>
+}
+
+/**
  * The Lager reads, as a seam.
  */
 interface InventorySource :
@@ -556,7 +602,8 @@ interface InventorySource :
  */
 class InventoryRepository(
     private val reader: ApiReader,
-) : InventorySource {
+) : InventorySource,
+    MaterialDetailSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -645,6 +692,37 @@ class InventoryRepository(
             }
         }
     }
+
+    override suspend fun materialEntries(
+        materialId: String,
+        page: Int,
+    ): ApiResult<MaterialEntryPage> =
+        when (
+            val result =
+                reader.get(
+                    "$MATERIAL_PATH/$materialId",
+                    listOf(
+                        PAGE_PARAM to page.toString(),
+                        SIZE_PARAM to MATERIAL_PAGE_SIZE.toString(),
+                    ),
+                    PageResponseInventoryItemDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    MaterialEntryPage(
+                        entries = result.value.content.orEmpty().mapNotNull { it.toEntry() },
+                        page = result.value.page ?: page,
+                        totalPages = result.value.totalPages ?: 1,
+                        totalElements = result.value.totalElements ?: 0L,
+                    ),
+                )
+            }
+        }
 
     override suspend fun bookIn(draft: BookInDraft): ApiResult<Unit> =
         sendUnit(
@@ -975,6 +1053,17 @@ class InventoryRepository(
         private const val AGGREGATED_PATH = "/api/v1/inventory/aggregated"
         private const val GROUPED_PATH = "/api/v1/inventory/all/grouped"
         private const val ENTRIES_PATH = "/api/v1/inventory/all/stack/entries"
+
+        /** One material's entries, flat and paged — the tablet pane's read. */
+        private const val MATERIAL_PATH = "/api/v1/inventory/material"
+
+        /**
+         * How many entries the pane asks for at once.
+         *
+         * Larger than the tree's page because the pane is a table on a wide screen and a short page
+         * would make the pager the thing a member interacts with most.
+         */
+        private const val MATERIAL_PAGE_SIZE = 50
         private const val BOOK_IN_PATH = "/api/v1/inventory"
         private const val ALLOCATION_PATH_PREFIX = "/api/v1/inventory"
         private const val BULK_REBOOK_PATH = "/api/v1/inventory/bulk-rebook"

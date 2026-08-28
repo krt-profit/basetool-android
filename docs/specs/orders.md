@@ -282,9 +282,8 @@ profit-eligible subset, because a Bereich can never work an order. Both come fro
 `/api/v1/org-units/active-all-kinds`, with the second derived from the first, exactly as the web
 derives it: two reads could disagree.
 
-**Item orders are out of scope for this requirement.** They need a game-item picker, a blueprint
-picker per item and the derivation tree the web renders as nested lines; that is a screen of its
-own and is asked for in design round 8 §1.3.
+**Item orders are the same form under a switch** — see `REQ-APP-ORDERS-016`. What stays out of
+scope is the sub-assembly tree the web renders as nested lines, which design round 8 §1.3 carries.
 
 **The material picker is `search` with `jobOrderOnly`, not the unbounded job-order list.** The
 bounded page keeps the payload small and reuses a path already on the API vhost's allow-list; when
@@ -367,3 +366,82 @@ Design round 8 §4 asks for the drawing, and asks whether the control belongs on
 
 **Code:** `orders/OrdersScreen.kt` (`PriorityControls`), `orders/OrdersViewModel.kt`,
 `core/data/JobOrderRepository.kt` (`setPriority`)
+
+### REQ-APP-ORDERS-016 — An item order is the same form under a switch
+
+The web's `/orders/create` raises two kinds of order behind one radio pair, and the app carries both
+behind the segmented control. The head is shared — the two units, the contact handle, the comment —
+and only the lines differ: a material line is *Material · Menge · Min. Qualität*, an item line is
+*Item · Blueprint · Anzahl*. `POST /api/v1/orders/items`, with the pickers on
+`GET /api/v1/orders/item-catalog` and `…/{gameItemId}/blueprints`.
+
+**Both line sets survive the switch.** A member who typed three materials, looked at the item form
+and came back finds their three materials still there; only `kind` decides what is submitted. The
+alternative — clearing on switch — throws away typed work to save a field in the state.
+
+**The blueprint picker stays shut until an item is picked**, because the blueprints are read *for*
+that item; an empty dropdown first reads as a broken control. A **single** blueprint is picked
+outright: the member has no choice to make, and one more tap on a one-entry dropdown is only a way
+to leave the line unfinished. An item the catalogue holds but has **no** blueprint for says so — the
+server would refuse the line, and a dropdown that opens on nothing does not explain why.
+
+**Typing past a pick clears the item *and* its blueprint.** A blueprint belongs to one item, so
+leaving it behind would submit a pairing the member never made. The same rule as the material
+picker's, one level deeper.
+
+**A blueprint the server named with neither an output name nor a wiki key is still pickable**, under
+its id. Its id is what the wire wants, and hiding it would make its item unorderable.
+
+**A half-filled item line blocks the submit**, for the same reason a material one does.
+
+**Out of scope:** the sub-assembly tree — adopting a blueprint's own components as further lines,
+the web's `clientLineId` / `parentClientLineId` machinery. The order is raised with the items named
+and the server derives their materials. Design round 8 §1.3 carries it.
+
+**Acceptance**
+
+- [x] A complete item form may be sent; a line without a blueprint, without a count, or with only a
+      typed name blocks the submit (`OrderCreateTest`).
+- [x] The kind decides which line set is judged — a finished material line does not make an
+      unfinished item form sendable, nor the other way round (`OrderCreateTest`).
+- [x] The picker reads the catalogue and drops rows without an id; a nameless blueprint falls back
+      to its wiki key and then to its id (`JobOrderRepositoryTest`).
+- [x] The create posts `gameItemId`, `blueprintId` and `amount` (`JobOrderRepositoryTest`).
+- [x] Verified on a device end to end: order #11, „11-Series Broadsword Cannon" ×2, both units
+      IRIDIUM — written as `job_order.type = ITEM` with one `job_order_item` row, and shown back in
+      the queue and the detail.
+
+**Code:** `orders/OrderCreateScreen.kt` (`KindSwitch`, `ItemLineCard`),
+`orders/OrderCreateViewModel.kt` (`OrderKind`, `OrderItemLineDraft`),
+`core/data/JobOrderRepository.kt` (`searchItems`, `blueprintsFor`, `createItems`)
+
+### REQ-APP-ORDERS-017 — An item order shows its own positions
+
+An order carries one kind of line or the other, and the app reads both. `JobOrderDto.items` was
+unread, so an item order showed **Positionen 0** and an empty tab while its items sat on the wire —
+a gap that predates the app's own item form, because item orders raised on the web already reached
+the queue.
+
+An item position renders as *name · built / asked-for* with the bar under it, the same shape a
+material position has, plus the handed-over count when any have moved. The **„Rezept veraltet"**
+chip carries the web's `blueprintStale` warning: the blueprint has changed since the order was
+raised, so what will be built may no longer be what was costed.
+
+**The counts default to zero, not to absent.** The server omits them at zero, and a screen that had
+to tell „none built" from „not stated" would be drawing a distinction the wire does not make.
+
+**„Keine Materialien" is only said when the order carries nothing at all.** An item order has no
+materials of its own — the server derives them from the blueprint — so the line under its items
+would read as a defect.
+
+The queue card's disclosure names whichever lines the order has: **Materialien (n)** or
+**Items (n)**. An item order used to show no disclosure at all, so its positions were reachable only
+by opening the order.
+
+**Acceptance**
+
+- [x] Verified on a device: order #11 shows the `ITEM` chip, „Items (1)" on the card, and
+      „Positionen 1" with „11-Series Broadsword Cannon 0 / 2" in the detail.
+
+**Code:** `core/data/JobOrderRepository.kt` (`JobOrderItem`), `orders/OrdersScreen.kt` (`ItemLine`),
+`orders/OrderDetailTabs.kt`, `orders/OrderTab.kt`

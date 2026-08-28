@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Operationen list. */
@@ -295,7 +297,10 @@ private fun OperationsList(
 ) {
     val running = state.operations.filter { it.isRunning }
     val finished = state.operations.filterNot { it.isRunning }
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(OPERATIONS_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(OPERATIONS_LIST_TAG),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
+    ) {
         if (running.isNotEmpty()) {
             item(key = "group-running") {
                 KrtSectionTitle(

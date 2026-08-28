@@ -100,6 +100,7 @@ import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -369,7 +370,10 @@ fun BankAccountScreen(
                 onRefresh = onRefresh,
                 modifier = modifier.fillMaxSize(),
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNT_TAG)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNT_TAG),
+                    contentPadding = PaddingValues(horizontal = contentGutter()),
+                ) {
                     if (!state.online) {
                         item(key = "offline") { OfflineBand() }
                     }

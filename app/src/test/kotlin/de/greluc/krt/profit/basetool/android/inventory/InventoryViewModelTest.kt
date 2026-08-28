@@ -18,6 +18,8 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MaterialDetailSource
+import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
@@ -73,7 +75,8 @@ class InventoryViewModelTest {
     private class RecordingSource(
         private val groupAnswers: MutableList<ApiResult<InventoryPage>> = mutableListOf(),
         private val stackAnswers: MutableList<ApiResult<List<InventoryStack>>> = mutableListOf(),
-    ) : InventorySource {
+    ) : InventorySource,
+        MaterialDetailSource {
         val stackRequests = mutableListOf<String>()
         var groupCalls = 0
 
@@ -92,6 +95,11 @@ class InventoryViewModelTest {
 
         val entryAnswers = mutableListOf<ApiResult<List<InventoryEntry>>>()
         val entryQueries = mutableListOf<Pair<String, InventoryStack>>()
+
+        override suspend fun materialEntries(
+            materialId: String,
+            page: Int,
+        ): ApiResult<MaterialEntryPage> = ApiResult.Success(MaterialEntryPage(emptyList(), 0, 1, 0))
 
         override suspend fun entries(
             materialId: String,
@@ -243,7 +251,7 @@ class InventoryViewModelTest {
         runTest(dispatcher) {
             // Collapsing the tree after every booking would make the member re-open the group and
             // the stack to see what their own booking just did (found on a device, 2026-08-23).
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
             model.onToggleGroup("m1")
@@ -262,7 +270,7 @@ class InventoryViewModelTest {
     @Test
     fun `the tree loads its first level only`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
 
             model.loadOnce()
             advanceUntilIdle()
@@ -274,7 +282,7 @@ class InventoryViewModelTest {
     @Test
     fun `opening a group fetches exactly that group`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -290,7 +298,7 @@ class InventoryViewModelTest {
         runTest(dispatcher) {
             // The Lager changes slowly enough that a member re-opening a group within one visit
             // expects what they just saw; pull-to-refresh is how they ask for more.
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
             model.onToggleGroup("m1")
@@ -306,7 +314,7 @@ class InventoryViewModelTest {
     @Test
     fun `a group closed while its read is in flight does not spring open`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -326,7 +334,7 @@ class InventoryViewModelTest {
                     mutableListOf(ApiResult.Success(page(group("m1")))),
                     mutableListOf(ApiResult.Failure(ApiError.Network(IOException("x")))),
                 )
-            val model = InventoryViewModel(failing, AlwaysOnline)
+            val model = InventoryViewModel(failing, AlwaysOnline, failing)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -339,7 +347,7 @@ class InventoryViewModelTest {
     @Test
     fun `a refresh drops what was loaded, because the holdings may have moved`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
             model.onToggleGroup("m1")
@@ -361,7 +369,7 @@ class InventoryViewModelTest {
                     mutableListOf(ApiResult.Success(page(group("m1"), group("m2", amount = "0")))),
                     mutableListOf(ApiResult.Success(emptyList())),
                 )
-            val model = InventoryViewModel(mixed, AlwaysOnline)
+            val model = InventoryViewModel(mixed, AlwaysOnline, mixed)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -379,7 +387,7 @@ class InventoryViewModelTest {
                     mutableListOf(ApiResult.Failure(ApiError.Network(IOException("x")))),
                     mutableListOf(ApiResult.Success(emptyList())),
                 )
-            val model = InventoryViewModel(failing, AlwaysOnline)
+            val model = InventoryViewModel(failing, AlwaysOnline, failing)
 
             model.loadOnce()
             advanceUntilIdle()
@@ -426,7 +434,7 @@ class InventoryViewModelTest {
     @Test
     fun `long-pressing an unopened group selects nothing`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -459,7 +467,7 @@ class InventoryViewModelTest {
     @Test
     fun `a group whose entries were never read reports no total`() =
         runTest(dispatcher) {
-            val model = InventoryViewModel(source, AlwaysOnline)
+            val model = InventoryViewModel(source, AlwaysOnline, source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -468,7 +476,7 @@ class InventoryViewModelTest {
 
     /** Opens the one group and its one stack, so the tree holds entries to select. */
     private suspend fun TestScope.openedStackModel(): InventoryViewModel {
-        val model = InventoryViewModel(source, AlwaysOnline)
+        val model = InventoryViewModel(source, AlwaysOnline, source)
         model.loadOnce()
         advanceUntilIdle()
         model.onToggleGroup("m1")

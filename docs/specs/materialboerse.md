@@ -215,3 +215,45 @@ muted style beneath the owner, and renders nothing at all when neither applies.
 
 **Code:** `exchange/MaterialBoardScreen.kt` (`BoardAmount`, `detailLine`)
 
+### REQ-APP-MARKET-011 — On a tablet the board is two columns of cards
+
+From the **expanded** breakpoint the board lays its cards out in a two-column grid; below it, one
+column with the hairline between the rows.
+
+A board card is self-contained — the material, the member, the figures, the org chip and the action
+— so two fit side by side. Stretched to a tablet's full width a single column packed all of that
+into the left quarter and pinned one chip at the right edge, leaving roughly three quarters of every
+card empty (design round 8 §5, ruled by the owner 2026-08-28 from the three options that round
+offered).
+
+**Two columns, not a width-driven count.** Three at 1280 dp would put a card below the width its own
+header row of name, figure and chips needs, and no drawing settles a wider count yet (round 9 §5).
+
+**The breakpoint is expanded, not `contentGutter`'s medium.** Two columns need real width: at 700 dp
+each card would be about 340 dp, narrower than the phone's own card. This is a different question
+from the gutter's and gets a different answer — `isWideWindow()`.
+
+**No hairline between the cards in the grid.** A rule under one card of a pair reads as a divider
+across the row it is not in; the card border is the separation a grid needs. The single column keeps
+its hairline, which is what chapter 10 draws.
+
+**The footer spans both columns**, because „mehr laden" and „Ende der Liste" are statements about the
+whole board rather than about one column of it. A grid that lost the span would strand the load-more
+action in the left column, and the board would stop at page one with nothing saying so.
+
+`rememberRootGridState()` is a second helper beside `rememberRootListState()` because `LazyGridState`
+and `LazyListState` share no supertype carrying `animateScrollToItem`. Swapping the state with the
+layout also drops the scroll position, which is right: item 40 of a one-column list is not item 40
+of a two-column grid.
+
+**Acceptance**
+
+- [x] Every card survives the grid, including the half-empty last row of an odd count
+      (`MaterialBoardWideTest`).
+- [x] „Ende der Liste" and the load-more action are drawn under both columns
+      (`MaterialBoardWideTest`).
+- [x] Verified on the tablet: five offers as 2 + 2 + 1, the footer spanning underneath.
+
+**Code:** `exchange/MaterialBoardScreen.kt` (`BoardGrid`, `BoardColumn`, `BoardFooter`),
+`ui/RootScrollSignals.kt` (`rememberRootGridState`)
+

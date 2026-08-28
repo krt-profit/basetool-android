@@ -664,6 +664,25 @@
     <string name="order_create_remove_material">Material entfernen</string>
     <string name="order_create_comment">Kommentar</string>
     <string name="order_create_submit">Auftrag anlegen</string>
+    <string name="orders_item_progress">%1$d / %2$d</string>
+    <plurals name="orders_item_delivered">
+        <item quantity="one">%1$d Stück übergeben</item>
+        <item quantity="other">%1$d Stück übergeben</item>
+    </plurals>
+    <string name="order_detail_item_unnamed">Unbenanntes Item</string>
+    <string name="order_detail_item_blueprint_stale">Rezept veraltet</string>
+    <string name="order_create_kind">Auftragsart</string>
+    <string name="order_create_kind_material">Material</string>
+    <string name="order_create_kind_item">Items</string>
+    <string name="order_create_items">Items</string>
+    <string name="order_create_item">Item</string>
+    <string name="order_create_item_blueprint">Blueprint</string>
+    <string name="order_create_item_blueprint_hint">Erst ein Item wählen.</string>
+    <string name="order_create_item_blueprint_none">Für dieses Item ist kein Blueprint hinterlegt.</string>
+    <string name="order_create_item_amount">Anzahl</string>
+    <string name="order_create_item_no_matches">Kein bestellbares Item gefunden.</string>
+    <string name="order_create_add_item">Item hinzufügen</string>
+    <string name="order_create_remove_item">Item entfernen</string>
     <string name="order_create_failed">Der Auftrag konnte nicht angelegt werden.</string>
     <string name="orders_age_today">heute</string>
     <string name="orders_age_yesterday">gestern</string>
@@ -678,6 +697,7 @@
     <string name="orders_priority_label">Prio</string>
     <string name="orders_for_label">Für</string>
     <string name="orders_by_label">Durch</string>
+    <string name="orders_items_label">Items</string>
     <string name="orders_materials_label">Materialien</string>
     <string name="orders_materials_count">(%1$d)</string>
     <string name="orders_kind_material">Material</string>
@@ -731,6 +751,26 @@
     <string name="inventory_title">Lager</string>
     <string name="inventory_with_stock_only">Nur mit Bestand</string>
     <string name="inventory_quality">Q %1$s</string>
+    <string name="inventory_pane_none">Wähle links ein Material, um alle Einträge zu sehen.</string>
+    <string name="inventory_pane_failed_title">Signal Lost — Material</string>
+    <string name="inventory_pane_failed_message">Die Einträge konnten nicht geladen werden.</string>
+    <string name="inventory_pane_empty_title">Keine Einträge</string>
+    <string name="inventory_pane_empty_message">Für dieses Material ist nichts eingebucht.</string>
+    <string name="inventory_pane_col_holder">Nutzer</string>
+    <string name="inventory_pane_col_location">Ort</string>
+    <string name="inventory_pane_col_quality">Qualität</string>
+    <string name="inventory_pane_col_amount">Menge</string>
+    <plurals name="inventory_pane_all">
+        <item quantity="one">Alle %1$d Einträge</item>
+        <item quantity="other">Alle %1$d Einträge</item>
+    </plurals>
+    <plurals name="inventory_pane_page">
+        <item quantity="one">Seite %1$d von %2$d · %3$d Eintrag</item>
+        <item quantity="other">Seite %1$d von %2$d · %3$d Einträge</item>
+    </plurals>
+    <string name="inventory_pane_previous">Zurück</string>
+    <string name="inventory_pane_next">Weiter</string>
+    <string name="inventory_holder_unattributed">Ohne Halter</string>
     <string name="inventory_personal">Persönlich</string>
     <plurals name="inventory_entry_count">
         <item quantity="one">%1$d Eintrag</item>

@@ -20,6 +20,8 @@ import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MaterialDetailSource
+import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
@@ -74,7 +76,9 @@ class BookingViewModelTest {
     }
 
     /** Records every booking and answers the pickers. */
-    private class FakeSource : InventorySource {
+    private class FakeSource :
+        InventorySource,
+        MaterialDetailSource {
         val bookedIn = mutableListOf<BookInDraft>()
         val bookedOut = mutableListOf<Triple<String, Long?, BookOutDraft>>()
         var answer: ApiResult<Unit> = ApiResult.Success(Unit)
@@ -89,6 +93,11 @@ class BookingViewModelTest {
 
         override suspend fun stacks(materialId: String): ApiResult<List<InventoryStack>> =
             ApiResult.Success(emptyList())
+
+        override suspend fun materialEntries(
+            materialId: String,
+            page: Int,
+        ): ApiResult<MaterialEntryPage> = ApiResult.Success(MaterialEntryPage(emptyList(), 0, 1, 0))
 
         override suspend fun entries(
             materialId: String,

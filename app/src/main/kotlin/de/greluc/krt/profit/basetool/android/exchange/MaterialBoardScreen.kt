@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,7 +71,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.ui.rememberRootGridState
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -95,6 +101,15 @@ const val BOARD_SUBMIT_TAG: String = "board-submit"
 
 /** Test handle for the privacy line chapter 10 makes part of the design. */
 const val BOARD_PRIVACY_TAG: String = "board-privacy"
+
+/**
+ * How many card columns a tablet's board shows.
+ *
+ * Two, not a width-driven count: three at 1280 dp would put a card below the width its own row of
+ * name, figures and chips needs, and the drawing that would settle a wider count does not exist yet
+ * (design round 9 §5).
+ */
+private const val BOARD_WIDE_COLUMNS = 2
 
 /** Separator between the parts of a row's second line. */
 private const val SEPARATOR = " · "
@@ -203,44 +218,20 @@ fun MaterialBoardScreen(
                                     modifier = Modifier.padding(KrtSpacing.lg),
                                 )
                             }
+                        } else if (isWideWindow()) {
+                            BoardGrid(
+                                state = state,
+                                onSignalToggled = onSignalToggled,
+                                onWithdraw = onWithdraw,
+                                onLoadMore = onLoadMore,
+                            )
                         } else {
-                            LazyColumn(
-                                state = rememberRootListState(),
-                                modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
-                                contentPadding = PaddingValues(KrtSpacing.md),
-                                verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                            ) {
-                                items(state.entries, key = { it.id }) { entry ->
-                                    BoardRow(
-                                        entry = entry,
-                                        busy = state.busyEntryId == entry.id,
-                                        writable = state.writable,
-                                        onSignalToggled = { onSignalToggled(entry) },
-                                        onWithdraw = { onWithdraw(entry) },
-                                    )
-                                    KrtHairlineRule()
-                                }
-                                item(key = "footer") {
-                                    if (state.hasMore) {
-                                        KrtLoadMore(
-                                            text =
-                                                pluralStringResource(
-                                                    R.plurals.board_load_more,
-                                                    state.entries.size,
-                                                    state.entries.size,
-                                                ),
-                                            onClick = onLoadMore,
-                                            enabled = !state.loadingMore,
-                                            modifier = Modifier.padding(KrtSpacing.md),
-                                        )
-                                    } else {
-                                        KrtEndOfList(
-                                            text = stringResource(R.string.board_end_of_list),
-                                            modifier = Modifier.padding(KrtSpacing.md),
-                                        )
-                                    }
-                                }
-                            }
+                            BoardColumn(
+                                state = state,
+                                onSignalToggled = onSignalToggled,
+                                onWithdraw = onWithdraw,
+                                onLoadMore = onLoadMore,
+                            )
                         }
                     }
                 }
@@ -268,6 +259,119 @@ fun MaterialBoardScreen(
             }
             sheet()
         }
+    }
+}
+
+/**
+ * The board as one column of cards, which is what a phone gets.
+ *
+ * @param state what the screen holds.
+ * @param onSignalToggled a row's interest was signalled or withdrawn.
+ * @param onWithdraw a row's own offer or request is to be taken down.
+ * @param onLoadMore the next page is wanted.
+ */
+@Composable
+private fun BoardColumn(
+    state: MaterialBoardState,
+    onSignalToggled: (BoardEntry) -> Unit,
+    onWithdraw: (BoardEntry) -> Unit,
+    onLoadMore: () -> Unit,
+) {
+    LazyColumn(
+        state = rememberRootListState(),
+        modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        items(state.entries, key = { it.id }) { entry ->
+            BoardRow(
+                entry = entry,
+                busy = state.busyEntryId == entry.id,
+                writable = state.writable,
+                onSignalToggled = { onSignalToggled(entry) },
+                onWithdraw = { onWithdraw(entry) },
+            )
+            KrtHairlineRule()
+        }
+        item(key = "footer") { BoardFooter(state = state, onLoadMore = onLoadMore) }
+    }
+}
+
+/**
+ * The board as two columns of cards, which is what a tablet gets.
+ *
+ * A card is self-contained — the material, the member, the figures and the action — so two fit side
+ * by side. Stretched to a tablet's full width a single column packed all of that into the left
+ * quarter and pinned one chip at the right edge, leaving about three quarters of every card empty
+ * (design round 8 §5, ruled 2026-08-28).
+ *
+ * No hairline between the cards here: a rule under one card of a pair reads as a divider across the
+ * row it is not in. The card border is the separation a grid needs.
+ *
+ * @param state what the screen holds.
+ * @param onSignalToggled a row's interest was signalled or withdrawn.
+ * @param onWithdraw a row's own offer or request is to be taken down.
+ * @param onLoadMore the next page is wanted.
+ */
+@Composable
+private fun BoardGrid(
+    state: MaterialBoardState,
+    onSignalToggled: (BoardEntry) -> Unit,
+    onWithdraw: (BoardEntry) -> Unit,
+    onLoadMore: () -> Unit,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(BOARD_WIDE_COLUMNS),
+        state = rememberRootGridState(),
+        modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        items(state.entries, key = { it.id }) { entry ->
+            BoardRow(
+                entry = entry,
+                busy = state.busyEntryId == entry.id,
+                writable = state.writable,
+                onSignalToggled = { onSignalToggled(entry) },
+                onWithdraw = { onWithdraw(entry) },
+            )
+        }
+        // The footer is one thing about the whole board, not about one column of it.
+        item(key = "footer", span = { GridItemSpan(maxLineSpan) }) {
+            BoardFooter(state = state, onLoadMore = onLoadMore)
+        }
+    }
+}
+
+/**
+ * What closes the board: the next page, or the end of it.
+ *
+ * @param state what the screen holds.
+ * @param onLoadMore the next page is wanted.
+ */
+@Composable
+private fun BoardFooter(
+    state: MaterialBoardState,
+    onLoadMore: () -> Unit,
+) {
+    if (state.hasMore) {
+        KrtLoadMore(
+            text =
+                pluralStringResource(
+                    R.plurals.board_load_more,
+                    state.entries.size,
+                    state.entries.size,
+                ),
+            onClick = onLoadMore,
+            enabled = !state.loadingMore,
+            modifier = Modifier.padding(KrtSpacing.md),
+        )
+    } else {
+        KrtEndOfList(
+            text = stringResource(R.string.board_end_of_list),
+            modifier = Modifier.padding(KrtSpacing.md),
+        )
     }
 }
 

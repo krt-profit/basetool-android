@@ -107,6 +107,7 @@ class OrdersViewModelTest {
             responsibleOrgUnit = null,
             comment = null,
             materials = emptyList(),
+            items = emptyList(),
             handovers = emptyList(),
             assignees = emptyList(),
             createdAt = null,

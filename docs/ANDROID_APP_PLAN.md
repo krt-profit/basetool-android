@@ -370,7 +370,7 @@ new session finds them without re-deriving the audit; the per-chapter detail is 
 
 | Gap | Where | Why it is not done |
 | :-- | :-- | :-- |
-| **Item orders** | Aufträge create | Needs a game-item picker, a blueprint picker *per item* and the derivation tree the web renders as nested lines (`/orders/item-catalog/{id}/blueprints`, `…/blueprints/{id}/derivation`). A screen of its own; asked for in design round 8 §1.3. |
+| **The item order's sub-assembly tree** | Aufträge create | The item order itself is **built** (`REQ-APP-ORDERS-016`, PR #105): Item · Blueprint · Anzahl behind a kind switch, and the positions read back (`REQ-APP-ORDERS-017`). What is left is adopting a blueprint's own components as further lines — the web's `clientLineId` / `parentClientLineId` machinery and `…/blueprints/{id}/derivation`. Design round 9 §2. |
 | **Lager: the holder subtotal level** | Lager | Artboard 1 is material → holder (with a subtotal) → entry; the app merges holder and location into one row, so a member holding one material in two places gets no subtotal. |
 | **Lager + Materialbörse on a tablet** | both | The only two screens with no wide-window treatment: the phone layout stretched to 1200 dp. Needs a design ruling first — round 8 §5 offers three options. |
 

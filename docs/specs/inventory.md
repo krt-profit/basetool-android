@@ -472,3 +472,96 @@ allow-list. So are the writes — `POST /inventory`, `POST /inventory/{id}/book-
 `POST /inventory/{id}/personal-rebook` and `PUT /inventory/{id}/note` — as named exceptions to the
 vhost's read-only guard on the family; every other verb on it still answers `405`. Three of the four
 are sent by this screen; `personal-rebook` waits for the `my-inventory` slice (see the gaps above).
+
+### REQ-APP-INV-017 — The tree has a holder level, and it carries their total
+
+Artboard 1 draws the Lager as **material → holder → entry**. The app drew **material → stack →
+entry**, where a stack merged the holder and the place into one row: „Rhea · ARC-L1". A member
+holding one material at two places therefore got two unrelated rows, and nothing on the screen said
+how much they held in total.
+
+The tree now heads each holder's stacks with their name and their **subtotal**, and a stack names
+its place alone. The app keeps its fourth level — the entries inside a stack — which the artboard
+does not draw only because every stack in its fixture holds one entry.
+
+**The wire has no holder level.** `/inventory/all/grouped` answers stacks keyed by
+(holder, place, quality), so the app groups them. This is the one place the app adds a figure of its
+own, and it is defensible for a reason that does not generalise: **a subtotal is the sum of the rows
+directly beneath it**, every one of which the member can see. Nothing is derived from data that is
+off screen, which is what separates it from the „Zugesagt" total this app refuses to compute
+(`REQ-APP-ORDERS-004`).
+
+Two rules keep it honest:
+
+- **Summed as `BigDecimal`, from the strings the server sent.** A quarter-SCU does not drift, and no
+  locale parses into the arithmetic.
+- **If any one stack's amount cannot be parsed, the whole subtotal is dropped.** A total quietly
+  missing one of its parts reads as authoritative and is wrong; no total reads as no total.
+
+**The holder row does not open or close.** Its stacks are already visible — it is a heading with a
+figure, and a chevron would promise a fourth thing to unfold that does not exist. The artboard draws
+it without one.
+
+**Order is the server's, first-seen.** Re-sorting by name or by amount would move rows a member had
+just looked at.
+
+The stack keys, the selection and the booking sheet are untouched: `stackKey` is still
+(material, holder, place, quality), and the holder level is presentational.
+
+**Acceptance**
+
+- [x] A holder's two places are headed by one row carrying their sum, with both places' own figures
+      beneath it (`InventoryScreenTest`).
+- [x] An unparseable amount anywhere in a holder's stacks removes the subtotal rather than
+      shortening it (`InventoryScreenTest`).
+- [x] A stack names its place; the holder is no longer repeated on it (`InventoryScreenTest`).
+
+**Code:** `inventory/InventoryScreen.kt` (`byHolder`, `HolderStacks`, `HolderRow`, `openedGroup`)
+
+### REQ-APP-INV-018 — On a tablet the Lager shows one material's entries beside the tree
+
+From the **expanded** breakpoint the Lager is a list-detail, like Einsätze, Aufträge and Raffinerie:
+the tree on the left, and on the right every entry of the selected material as a table —
+*Nutzer · Ort · Qualität · Menge*, paged. `GET /api/v1/inventory/material/{materialId}`. Below that
+width the tree keeps the whole screen and the pane does not exist, which is how the web has it too
+(its material page is a page, not a panel).
+
+**It is a different view, not a wider one.** The tree groups by holder and shows only what is
+opened; the table shows every entry of one material at once, across all holders and places. That is
+what a thousand dp of width is for, and it is why the Lager's answer to design round 8 §5 is the
+pane rather than a capped measure: there was a second view to show, and the tree was only being
+stretched (owner ruling, 2026-08-28; round 9 §4).
+
+**One tap does both.** Tapping a material row opens it in the tree *and* selects it in the pane —
+the same intent, and a second control on the row whose only job is „and also over there" would be
+one affordance too many. The call is made only when the window is wide, so a phone never reads a
+page nothing draws. **Assumption, flagged in round 9 §4:** if the two are wanted apart, the row
+needs its own affordance and this changes.
+
+**Its own seam and its own holder.** `MaterialDetailSource` carries the one read, because every
+other inventory read answers a *branch* keyed by where in the tree the member is, and this answers a
+material flat. `MaterialPaneLoader` carries the state, because `InventoryViewModel` was already at
+the size where one more responsibility stops being findable — and both limits are enforced by
+detekt rather than by taste.
+
+**A stale answer is dropped.** The pane reads one material at a time and a member moves down the
+tree faster than a page arrives; a read that lands after the selection moved on must not fill the
+pane under the new material's heading. Re-selecting the material already shown does nothing, so
+toggling a group shut and open again neither re-reads nor blanks what is being read.
+
+**Read-only.** A booking is still made from the tree, where the row's own actions are.
+
+**Acceptance**
+
+- [x] Selecting reads page 0; re-selecting the same material does not read again
+      (`MaterialPaneLoaderTest`).
+- [x] A failed read leaves the pane on its material and the retry re-reads it
+      (`MaterialPaneLoaderTest`).
+- [x] An answer for a material the pane has left is dropped (`MaterialPaneLoaderTest`).
+- [x] Verified on the tablet: Quantainium selected, the pane heads „Quantainium" and lists
+      test-admin · ARC-L1 Wide Forest Station · 880 · 408,5 SCU, closing with „ALLE 1 EINTRÄGE".
+      The app bar still says LAGER — the pane's title stays in the pane (`REQ-APP-UI-009`).
+
+**Code:** `inventory/MaterialPaneLoader.kt`, `inventory/InventoryScreen.kt` (`MaterialPaneBody`,
+`MaterialTable`), `core/data/InventoryRepository.kt` (`MaterialDetailSource`, `MaterialEntryPage`)
+
