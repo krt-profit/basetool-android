@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
@@ -148,6 +149,7 @@ data class JoinSheet(
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
  *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
+ * @property adminForm the open Verwaltung sheet, or `null` when it is closed
  */
 data class MissionDetailState(
     val missionId: String,
@@ -163,6 +165,7 @@ data class MissionDetailState(
     val entryDraft: FinanceEntryDraft? = null,
     val joinSheet: JoinSheet? = null,
     val rosterJobTypes: List<MissionJobType> = emptyList(),
+    val adminForm: MissionAdminForm? = null,
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -273,6 +276,7 @@ data class FinanceEntryDraft(
  */
 class MissionDetailViewModel(
     private val source: MissionSource,
+    private val adminSource: MissionAdminSource,
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val missionId: String,
@@ -282,6 +286,28 @@ class MissionDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<MissionDetailState> = mutableState.asStateFlow()
+
+    /**
+     * Editing the Einsatz itself — the three independently locked sections.
+     *
+     * Public like [roster], and for the same reason: the screen calls it directly rather than
+     * through wrappers that would only widen this class.
+     */
+    val admin =
+        MissionAdmin(
+            missionId = missionId,
+            source = adminSource,
+            scope = viewModelScope,
+            read = {
+                val current = mutableState.value
+                MissionAdminContext(current.adminForm, current.detail, current.canManage)
+            },
+            write = { form -> mutableState.value = mutableState.value.copy(adminForm = form) },
+            onSaved = { saved ->
+                mutableState.value = mutableState.value.copy(detail = saved)
+                announce(LiveSyncSections.MISSION_OVERVIEW)
+            },
+        )
 
     /**
      * The manager's half of the Teilnehmer tab.

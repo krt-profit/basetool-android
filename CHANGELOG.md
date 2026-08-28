@@ -9,9 +9,11 @@
   Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,
   mit einem Hinweis, welche Rolle fehlt.
 
-- **Die App kann die drei Abschnitte eines Einsatzes serverseitig ändern** (Kern, Zeitplan, Flags),
-  jeder mit seinem eigenen Sperrzähler. Noch ohne Bedienoberfläche: für die Verwaltungsfläche gibt
-  es keine Design-Vorlage, sie ist als Runde 10 angefragt.
+- **„Einsatz verwalten": Titel, Beschreibung, Treffpunkt, Zeiten und Sichtbarkeit sind jetzt in der
+  App änderbar.** Jeder Abschnitt wird einzeln gespeichert, damit eine Änderung nicht mit einer
+  gleichzeitigen Änderung an anderer Stelle kollidiert. „Einsatz läuft jetzt" setzt den
+  tatsächlichen Start — davor weist der Server jeden Check-in ab, was bislang nur im Web
+  aufhebbar war.
 
 - **Die Zeile zeigt jetzt auch den Funktionswunsch** („Wunsch: Pilot"), damit eine Zuweisung nicht
   geraten werden muss.

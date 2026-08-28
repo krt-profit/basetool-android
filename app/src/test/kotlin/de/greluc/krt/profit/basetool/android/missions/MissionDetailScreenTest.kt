@@ -146,6 +146,14 @@ class MissionDetailScreenTest {
                             onJoinDismissed = {},
                         ),
                     roster = roster,
+                    admin =
+                        MissionAdminActions(
+                            onOpen = {},
+                            onChange = {},
+                            onSave = {},
+                            onStartNow = {},
+                            onDismiss = {},
+                        ),
                     finances =
                         MissionFinanceActions(
                             onAdd = { bookings.add("add") },

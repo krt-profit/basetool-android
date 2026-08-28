@@ -1253,6 +1253,25 @@
         <item quantity="one">One entry will be moved to the chosen location.</item>
         <item quantity="other">%1$d entries will be moved to the chosen location.</item>
     </plurals>
+    <string name="mission_admin_open">Manage Einsatz</string>
+    <string name="mission_admin_title">Manage Einsatz</string>
+    <string name="mission_admin_core">Core</string>
+    <string name="mission_admin_schedule">Schedule</string>
+    <string name="mission_admin_flags">Visibility</string>
+    <string name="mission_admin_name">Title</string>
+    <string name="mission_admin_description">Description</string>
+    <string name="mission_admin_meeting_point">Meeting point</string>
+    <string name="mission_admin_meeting_time">Teamspeak (ISO 8601)</string>
+    <string name="mission_admin_planned_start">Server join (ISO 8601)</string>
+    <string name="mission_admin_planned_end">End (ISO 8601)</string>
+    <string name="mission_admin_actual_start">Actual start (ISO 8601)</string>
+    <string name="mission_admin_start_now">The Einsatz is running now</string>
+    <string name="mission_admin_internal">Visible only to the owning unit</string>
+    <string name="mission_admin_save_core">Save core</string>
+    <string name="mission_admin_save_schedule">Save schedule</string>
+    <string name="mission_admin_save_flags">Save visibility</string>
+    <string name="mission_admin_section_hint">Each section is saved on its own, so a change here cannot collide with a concurrent change elsewhere.</string>
+    <string name="mission_admin_start_hint">Before the actual start the server refuses every check-in.</string>
     <string name="gate_role_mission_manager">That needs the Missions-Manager role.</string>
     <string name="gate_role_mission_manager_detail">Granted per Staffel by the administration, or by whoever leads the Einsatz.</string>
     <string name="mission_detail_wish">Wish: %1$s</string>

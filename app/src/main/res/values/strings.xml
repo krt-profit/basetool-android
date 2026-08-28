@@ -1274,6 +1274,25 @@
         <item quantity="one">Ein Eintrag wird an den gewählten Ort verschoben.</item>
         <item quantity="other">%1$d Einträge werden an den gewählten Ort verschoben.</item>
     </plurals>
+    <string name="mission_admin_open">Einsatz verwalten</string>
+    <string name="mission_admin_title">Einsatz verwalten</string>
+    <string name="mission_admin_core">Kern</string>
+    <string name="mission_admin_schedule">Zeitplan</string>
+    <string name="mission_admin_flags">Sichtbarkeit</string>
+    <string name="mission_admin_name">Titel</string>
+    <string name="mission_admin_description">Beschreibung</string>
+    <string name="mission_admin_meeting_point">Treffpunkt</string>
+    <string name="mission_admin_meeting_time">Teamspeak (ISO 8601)</string>
+    <string name="mission_admin_planned_start">Serverjoin (ISO 8601)</string>
+    <string name="mission_admin_planned_end">Ende (ISO 8601)</string>
+    <string name="mission_admin_actual_start">Tatsächlicher Start (ISO 8601)</string>
+    <string name="mission_admin_start_now">Einsatz läuft jetzt</string>
+    <string name="mission_admin_internal">Nur für die eigene Einheit sichtbar</string>
+    <string name="mission_admin_save_core">Kern speichern</string>
+    <string name="mission_admin_save_schedule">Zeitplan speichern</string>
+    <string name="mission_admin_save_flags">Sichtbarkeit speichern</string>
+    <string name="mission_admin_section_hint">Jeder Abschnitt wird einzeln gespeichert — so kollidiert eine Änderung hier nicht mit einer gleichzeitigen Änderung woanders.</string>
+    <string name="mission_admin_start_hint">Vor dem tatsächlichen Start weist der Server jeden Check-in ab.</string>
     <string name="gate_role_mission_manager">Dafür brauchst du die Rolle Missions-Manager.</string>
     <string name="gate_role_mission_manager_detail">Vergeben je Staffel durch die Administration — oder die Leitung des Einsatzes.</string>
     <string name="mission_detail_wish">Wunsch: %1$s</string>

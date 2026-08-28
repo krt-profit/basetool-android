@@ -161,6 +161,7 @@ fun MissionDetailScreen(
     actions: MissionSignUpActions,
     finances: MissionFinanceActions,
     roster: MissionRosterActions,
+    admin: MissionAdminActions,
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
@@ -184,6 +185,21 @@ fun MissionDetailScreen(
                         OfflineBand()
                     }
                     MissionDetailHead(detail = detail)
+                    // The Verwaltung entry point. It sits under the head rather than in it because the
+                    // head is pinned, dense and already carries three chips — round 10 (10d) asks what
+                    // a locked control looks like at that density before anything moves into it.
+                    if (state.canManage) {
+                        KrtGhostButton(
+                            text = stringResource(R.string.mission_admin_open),
+                            onClick = admin.onOpen,
+                            iconRes = DesignR.drawable.ic_krt_gear,
+                            modifier =
+                                Modifier
+                                    .padding(horizontal = KrtSpacing.md)
+                                    .testTag(MISSION_ADMIN_OPEN_TAG),
+                            enabled = state.writable,
+                        )
+                    }
                     MissionTabRow(
                         selected = state.tab,
                         detail = state.detail,
@@ -211,6 +227,9 @@ fun MissionDetailScreen(
                     SignUpBar(state = state, actions = actions)
                     state.entryDraft?.let { draft ->
                         FinanceEntrySheet(draft = draft, state = state, actions = finances)
+                    }
+                    state.adminForm?.let { form ->
+                        MissionAdminSheet(form = form, actions = admin)
                     }
                     state.joinSheet?.let { sheet ->
                         MissionJoinSheet(
@@ -539,6 +558,173 @@ private fun MissionTabContent(
         }
     }
 }
+
+/** Test handle for the Verwaltung sheet. */
+const val MISSION_ADMIN_SHEET_TAG: String = "mission-admin-sheet"
+
+/** Test handle for the Verwaltung entry point in the head. */
+const val MISSION_ADMIN_OPEN_TAG: String = "mission-admin-open"
+
+/**
+ * Editing the Einsatz itself: Kern, Zeitplan, Sichtbarkeit — each saved on its own.
+ *
+ * **This surface has no artboard.** Chapter 06 draws seven reading tabs and the list's
+ * „Einsatz erstellen" FAB and nothing else of the Verwaltung half, so this is composed from the
+ * design system's own drawn parts — a `KrtBottomSheet` of `KrtTextField` rows, the same shape the
+ * booking and sign-up sheets use. Its **composition is unratified**; round 10 asks for the drawing.
+ *
+ * The three save buttons are not a layout preference. Each section carries its own version counter
+ * on the server, deliberately, so that two managers editing different sections both commit. One
+ * save for all three would throw that away.
+ *
+ * @param form what is typed.
+ * @param actions what the sheet can do.
+ */
+@Composable
+private fun MissionAdminSheet(
+    form: MissionAdminForm,
+    actions: MissionAdminActions,
+) {
+    KrtBottomSheet(
+        onDismiss = actions.onDismiss,
+        title = stringResource(R.string.mission_admin_title),
+        modifier = Modifier.testTag(MISSION_ADMIN_SHEET_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
+            Text(
+                text = stringResource(R.string.mission_admin_section_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+
+            KrtSectionTitle(text = stringResource(R.string.mission_admin_core))
+            KrtTextField(
+                value = form.name,
+                onValueChange = { v -> actions.onChange { it.copy(name = v) } },
+                label = stringResource(R.string.mission_admin_name),
+            )
+            KrtTextField(
+                value = form.description,
+                onValueChange = { v -> actions.onChange { it.copy(description = v) } },
+                label = stringResource(R.string.mission_admin_description),
+            )
+            KrtTextField(
+                value = form.meetingPoint,
+                onValueChange = { v -> actions.onChange { it.copy(meetingPoint = v) } },
+                label = stringResource(R.string.mission_admin_meeting_point),
+            )
+            SectionSave(
+                label = stringResource(R.string.mission_admin_save_core),
+                section = MissionSection.CORE,
+                form = form,
+                onSave = actions.onSave,
+            )
+
+            KrtSectionTitle(text = stringResource(R.string.mission_admin_schedule))
+            Text(
+                text = stringResource(R.string.mission_admin_start_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.Gray2,
+            )
+            KrtTextField(
+                value = form.meetingTime,
+                onValueChange = { v -> actions.onChange { it.copy(meetingTime = v) } },
+                label = stringResource(R.string.mission_admin_meeting_time),
+            )
+            KrtTextField(
+                value = form.plannedStart,
+                onValueChange = { v -> actions.onChange { it.copy(plannedStart = v) } },
+                label = stringResource(R.string.mission_admin_planned_start),
+            )
+            KrtTextField(
+                value = form.plannedEnd,
+                onValueChange = { v -> actions.onChange { it.copy(plannedEnd = v) } },
+                label = stringResource(R.string.mission_admin_planned_end),
+            )
+            KrtTextField(
+                value = form.actualStart,
+                onValueChange = { v -> actions.onChange { it.copy(actualStart = v) } },
+                label = stringResource(R.string.mission_admin_actual_start),
+            )
+            // „Der Einsatz läuft jetzt" is a verb, and typing an ISO timestamp to express it is
+            // paperwork. Offered beside the field it writes until round 10 says whether it belongs
+            // on the drawn status badge instead.
+            if (!form.started) {
+                KrtGhostButton(
+                    text = stringResource(R.string.mission_admin_start_now),
+                    onClick = actions.onStartNow,
+                    enabled = form.saving == null,
+                )
+            }
+            SectionSave(
+                label = stringResource(R.string.mission_admin_save_schedule),
+                section = MissionSection.SCHEDULE,
+                form = form,
+                onSave = actions.onSave,
+            )
+
+            KrtSectionTitle(text = stringResource(R.string.mission_admin_flags))
+            KrtRadioRow(
+                selected = form.internal,
+                onSelect = { actions.onChange { it.copy(internal = !it.internal) } },
+                label = stringResource(R.string.mission_admin_internal),
+            )
+            SectionSave(
+                label = stringResource(R.string.mission_admin_save_flags),
+                section = MissionSection.FLAGS,
+                form = form,
+                onSave = actions.onSave,
+            )
+
+            form.error?.let { SignUpError(error = it) }
+        }
+    }
+}
+
+/**
+ * One section's save.
+ *
+ * @param label what it says.
+ * @param section which section it writes.
+ * @param form the form, for the in-flight state.
+ * @param onSave raises the write.
+ */
+@Composable
+private fun SectionSave(
+    label: String,
+    section: MissionSection,
+    form: MissionAdminForm,
+    onSave: (MissionSection) -> Unit,
+) {
+    KrtGhostButton(
+        text = label,
+        onClick = { onSave(section) },
+        // Every save is disabled while ANY of them is in flight: the three share one form, and a
+        // second write launched against a counter the first is about to bump is a 409 the member
+        // caused by being quick.
+        enabled = form.saving == null,
+    )
+}
+
+/**
+ * What the Verwaltung sheet can do.
+ *
+ * @property onOpen the Verwaltung sheet is to be opened.
+ * @property onChange a field changed.
+ * @property onSave one section is to be saved.
+ * @property onStartNow stamp the Einsatz as running now.
+ * @property onDismiss close without saving.
+ */
+data class MissionAdminActions(
+    val onOpen: () -> Unit,
+    val onChange: ((MissionAdminForm) -> MissionAdminForm) -> Unit,
+    val onSave: (MissionSection) -> Unit,
+    val onStartNow: () -> Unit,
+    val onDismiss: () -> Unit,
+)
 
 /**
  * Teilnehmer: the roster with its check-in marks, and — for a manager — the per-row actions the
@@ -1303,6 +1489,14 @@ fun MissionDetailRoute(
                 onCheckIn = { viewModel.roster.checkIn(it, state.checkInPossible) },
                 onPayout = viewModel.roster::payout,
                 onFunction = viewModel.roster::assign,
+            ),
+        admin =
+            MissionAdminActions(
+                onOpen = viewModel.admin::open,
+                onChange = viewModel.admin::change,
+                onSave = viewModel.admin::save,
+                onStartNow = viewModel.admin::startNow,
+                onDismiss = viewModel.admin::dismiss,
             ),
         modifier = modifier,
     )

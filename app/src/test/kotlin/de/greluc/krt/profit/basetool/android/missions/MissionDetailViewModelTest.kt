@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.missions
 
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
@@ -306,10 +307,37 @@ class MissionDetailViewModelTest {
         override val online: Flow<Boolean> get() = state
     }
 
+    /** The Verwaltung seam; this class exercises the screen around it, not the three patches. */
+    private val admin =
+        object : MissionAdminSource {
+            override suspend fun patchCore(
+                missionId: String,
+                name: String,
+                description: String?,
+                meetingPoint: String?,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+
+            override suspend fun patchSchedule(
+                missionId: String,
+                meetingTime: String?,
+                plannedStartTime: String?,
+                plannedEndTime: String?,
+                actualStartTime: String?,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+
+            override suspend fun patchFlags(
+                missionId: String,
+                internal: Boolean,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+        }
+
     private fun viewModel(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = MissionDetailViewModel(source, FakeIdentity(identity), connectivity, "m1")
+    ) = MissionDetailViewModel(source, admin, FakeIdentity(identity), connectivity, "m1")
 
     /**
      * One participant row, the caller's own.
