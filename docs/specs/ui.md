@@ -395,3 +395,33 @@ all draw the same head).
 
 ---
 
+### REQ-APP-UI-009 — On a tablet the bar names the section and the pane names the row
+
+A pushed detail publishes a `ScreenTopBar`, and the shell draws it as the app bar's title. That is
+right on a phone, where the detail **is** the destination. In `KrtListDetail` it is a pane of a
+section the rail is still highlighting, so a selected row left the bar reading „#1 · Offen · Prio 1"
+above a rail that said AUFTRÄGE — the two disagreeing about where the member was.
+
+**The publication is redirected, not suppressed.** Suppressing it alone is worse than the bug: the
+pane then identifies nothing, and the list does not mark its selection either, so the detail belongs
+to no visible row. `KrtListDetail` gives its detail slot a `LocalScreenTopBar` of its own and draws
+what the content publishes — title, subtitle and actions — at the top of the pane, above a hairline.
+
+**Only the detail slot is redirected.** The list keeps publishing to the shell, because the Lager's
+selection bar is the list's and has to replace the whole bar (`REQ-APP-INV-*`, design ch. 09
+artboard 5).
+
+The pane head is deliberately not a `KrtTopBar`: that one applies status-bar insets and owns the org
+chip and the bell, none of which belong to a pane sitting under the real bar. It keeps the subject
+styling, so a pane head and a pushed screen's head read as the same thing.
+
+**Acceptance**
+
+- [x] The pane draws the head its content published (`ListDetailHeadTest`).
+- [x] That head does not reach the shell's slot (same).
+- [x] The list's own publication still does (same).
+- [x] Verified on the tablet class (`KrtTablet`, 1280×800 dp): the bar reads „AUFTRÄGE" with the org
+      chip and the bell while the pane head reads „#1 · Offen · Prio 1".
+
+**Code:** `ui/ListDetail.kt` (`DetailPane`, `DetailPaneHead`)
+

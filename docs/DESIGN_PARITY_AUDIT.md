@@ -152,6 +152,23 @@ code change. The holder breakdown inside the **detail** stays; the detail endpoi
 
 The request rows' `approvals` / `canApprove` are still to be checked.
 
+### 03 Navigation — the tablet frame · `ui/ListDetail.kt`, `navigation/BasetoolApp.kt` — **fixed 2026-08-28**
+
+First pass on the **tablet** class (`KrtTablet`, 2560×1600 at density 320 = the 1280×800 dp the
+artboard names). What matched straight away: the rail's seven destinations plus „Mehr", the Basetool
+mark at its head, the theme control at its foot, the list-detail split with its hairline, and the
+empty-state on the detail side that the artboard asks for in as many words („Empty selection shows
+an .empty-state").
+
+One thing did not, and it was not visible on a phone at all: **selecting a row put the row's name in
+the app bar** — „#1 · Offen · Prio 1" above a rail still highlighting AUFTRÄGE. The mechanism is
+right for a phone (a pushed detail is the destination) and wrong for a pane. Fixed by redirecting
+the publication into the pane rather than suppressing it, because suppression alone left the pane
+identifying nothing (`REQ-APP-UI-009`).
+
+Worth recording as method: the phone pass could not have found this. Everything about it is a
+consequence of two panes existing at once.
+
 ### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a

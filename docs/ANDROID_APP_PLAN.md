@@ -379,8 +379,9 @@ location filter chips** (neither the web nor `/inventory/aggregated` has them �
 **squadron filter on the Aufträge queue** (the app's equivalent is the active-org-unit pin, which
 the interceptor sends as a header on every call).
 
-**Verification coverage:** the 2026-08-28 pass ran on the **phone** class only. The tablet
-(`KrtTablet`) and `Pixel_5_minSdk` still have to see it.
+**Verification coverage:** the 2026-08-28 pass ran on the phone and, from the Navigation chapter
+on, the **tablet** class (`KrtTablet`, 1280×800 dp) — which immediately found a list-detail defect
+the phone could not show (`REQ-APP-UI-009`). `Pixel_5_minSdk` still has to see it.
 
 **The vhost paste is the one thing left, and it is the owner's** (runbook Phase J). Until it is
 applied the nightly `edge-deny-probe` reports the phase-3 and phase-4 paths as `404`, which is

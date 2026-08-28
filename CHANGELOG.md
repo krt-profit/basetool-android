@@ -175,6 +175,13 @@
 
 ### Fixed
 
+- **Auf dem Tablet nennt die Kopfzeile wieder den Bereich.** Wer einen Eintrag auswählte, bekam
+  dessen Namen in die Leiste geschrieben, während die Seitenleiste weiter den Bereich hervorhob —
+  beide sagten etwas anderes darüber, wo man ist. Der Eintrag steht jetzt über seinem eigenen
+  Detailbereich.
+
+### Fixed
+
 - **Der offene Tab ist wieder als solcher zu erkennen.** Die orange Unterstreichung unter dem
   aktiven Tab wurde in der ganzen App nicht gezeichnet. Ebenfalls überall: die Umschalter
   („Mitglied / Verwaltung", „Meine Schiffe / Org-Einheit" …) stehen jetzt wie im Design in
