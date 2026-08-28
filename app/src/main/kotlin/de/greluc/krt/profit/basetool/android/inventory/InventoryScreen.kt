@@ -287,6 +287,17 @@ private fun InventoryTree(
     ) {
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId
+            // Per group, because the unit is the group's; everything else in it is tree-wide.
+            val entryRowContext =
+                EntryRowContext(
+                    unit = group.unit,
+                    online = online,
+                    selection = selection,
+                    denials = denials,
+                    onBookOut = onBookOut,
+                    onAllocate = onAllocate,
+                    onToggleSelected = onToggleSelected,
+                )
             item(key = "group-${materialId ?: group.name}") {
                 val (picked, known) = materialId?.let(state::selectionIn) ?: (0 to null)
                 GroupRow(
@@ -336,13 +347,7 @@ private fun InventoryTree(
                                 entryRows(
                                     phase = state.openedStacks[stackKey(materialId, stack)],
                                     keyPrefix = "$materialId-$index",
-                                    unit = group.unit,
-                                    online = online,
-                                    onBookOut = onBookOut,
-                                    onAllocate = onAllocate,
-                                    selection = selection,
-                                    onToggleSelected = onToggleSelected,
-                                    denials = denials,
+                                    rows = entryRowContext,
                                 )
                             }
                         }
@@ -449,6 +454,32 @@ private fun GroupRow(
 }
 
 /**
+ * Everything an entry row needs that the tree decides rather than the row.
+ *
+ * These seven travelled as seven forwarded parameters through [entryRows], which does nothing with
+ * them but hand them on. Naming the bundle says the true thing about them: they are one decision
+ * the tree makes per group, identical for every entry under it, and adding an eighth is a change to
+ * that decision rather than to the plumbing between two functions.
+ *
+ * @property unit the group's quantity unit.
+ * @property online whether a booking can be sent at all.
+ * @property selection which entry ids are currently selected.
+ * @property denials where a tapped lock raises its refusal.
+ * @property onBookOut an entry's booking action was taken.
+ * @property onAllocate an entry's Zuordnung was opened.
+ * @property onToggleSelected a row was long-pressed, or tapped while selecting.
+ */
+private data class EntryRowContext(
+    val unit: String?,
+    val online: Boolean,
+    val selection: Set<String>,
+    val denials: DenialState,
+    val onBookOut: (InventoryEntry) -> Unit,
+    val onAllocate: (InventoryEntry) -> Unit,
+    val onToggleSelected: (String) -> Unit,
+)
+
+/**
  * The entries of one open stack.
  *
  * A `LazyListScope` extension rather than a composable, so the rows stay siblings of the stack they
@@ -456,20 +487,12 @@ private fun GroupRow(
  *
  * @param phase how far the read has got, or `null` when the stack is closed.
  * @param keyPrefix what makes the item keys unique within the tree.
- * @param unit the group's quantity unit.
- * @param online whether a booking can be sent at all.
- * @param onBookOut an entry's booking action was taken.
+ * @param rows what every entry under this stack is drawn with.
  */
 private fun LazyListScope.entryRows(
     phase: EntriesPhase?,
     keyPrefix: String,
-    unit: String?,
-    online: Boolean,
-    onBookOut: (InventoryEntry) -> Unit,
-    onAllocate: (InventoryEntry) -> Unit,
-    selection: Set<String>,
-    onToggleSelected: (String) -> Unit,
-    denials: DenialState,
+    rows: EntryRowContext,
 ) {
     when (phase) {
         // A closed stack contributes no rows at all.
@@ -499,14 +522,14 @@ private fun LazyListScope.entryRows(
                     item(key = "entry-$keyPrefix-$index") {
                         EntryRow(
                             entry = entry,
-                            unit = unit,
-                            online = online,
-                            onBookOut = { onBookOut(entry) },
-                            onAllocate = { onAllocate(entry) },
-                            selected = entry.id in selection,
-                            selecting = selection.isNotEmpty(),
-                            onToggleSelected = { onToggleSelected(entry.id) },
-                            denials = denials,
+                            unit = rows.unit,
+                            online = rows.online,
+                            onBookOut = { rows.onBookOut(entry) },
+                            onAllocate = { rows.onAllocate(entry) },
+                            selected = entry.id in rows.selection,
+                            selecting = rows.selection.isNotEmpty(),
+                            onToggleSelected = { rows.onToggleSelected(entry.id) },
+                            denials = rows.denials,
                         )
                     }
                 }

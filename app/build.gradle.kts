@@ -314,6 +314,28 @@ abstract class OssLicensesResource : DefaultTask() {
     }
 }
 
+/*
+ * The type-resolved detekt run is part of `check`, and therefore of CI's `./gradlew build`.
+ *
+ * Without this only the plain `detekt` task was gated, and that one analyses without type
+ * resolution — so the whole family of rules that needs it never ran anywhere except when somebody
+ * remembered to type `detektDevDebug` by hand. Nobody did, and five unused private declarations
+ * accumulated across the dashboard, the navigation, the notifications and the orders screen before
+ * anyone looked.
+ *
+ * `detektMain` rather than a single variant: it fans out over all four production variants, which
+ * is what covers the `src/dev` and `src/prod` flavour source sets as well as `src/main`.
+ *
+ * Scoped to this module on purpose. `:core:auth` and `:core:network` cannot be gated on a
+ * type-resolved run yet: they are kotlinx.serialization code, detekt does not load Kotlin compiler
+ * plugins (its `pluginClasspath` is for detekt's own rule sets), and every `.serializer()` and
+ * every property of an `@Serializable` class therefore fails to resolve. The findings that fall
+ * out are partly false — `TokenClient`'s two UnreachableCode reports are an expression whose type
+ * could not be inferred, not dead code. This module has no `@Serializable` of its own, resolves
+ * cleanly, and is where the accumulated findings actually were.
+ */
+tasks.named("check") { dependsOn("detektMain") }
+
 androidComponents {
     onVariants { variant: Variant ->
         val name = variant.name.replaceFirstChar(Char::uppercase)

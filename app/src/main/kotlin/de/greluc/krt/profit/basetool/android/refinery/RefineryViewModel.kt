@@ -425,9 +425,9 @@ class RefineryDetailViewModel(
         viewModelScope.launch {
             clock.collect { now -> mutableState.value = mutableState.value.copy(now = now) }
         }
-        connectivity?.let { source ->
+        connectivity?.let { link ->
             viewModelScope.launch {
-                source.online.collect { online ->
+                link.online.collect { online ->
                     mutableState.value = mutableState.value.copy(online = online)
                 }
             }
