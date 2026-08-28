@@ -25,6 +25,12 @@ import java.time.Instant
  * @property comment their free-text note; **absent for an outsider read** (ADR-0034 strips it)
  * @property donating whether their share is donated rather than paid out, or `null` when the
  *   server stated no preference
+ * @property desiredJobTypeId the job they asked for, which the design draws as „Wunsch: …" beside
+ *   the assigned one. Kept as an **id** rather than only a name because a manager's write has to
+ *   echo it back — see [MissionSource.setPlannedFunction]
+ * @property desiredJobName the same job's display name, or `null`
+ * @property plannedJobTypeId the job actually assigned, or `null` while nobody has assigned one
+ * @property version the row's optimistic-lock version, required by every write against it
  */
 data class MissionParticipant(
     val id: String,
@@ -34,6 +40,10 @@ data class MissionParticipant(
     val checkedIn: Boolean,
     val comment: String?,
     val donating: Boolean?,
+    val desiredJobTypeId: String? = null,
+    val desiredJobName: String? = null,
+    val plannedJobTypeId: String? = null,
+    val version: Long = 0L,
 )
 
 /**
@@ -140,6 +150,12 @@ data class MissionFrequency(
  * @property steps the Ablauf, in server order
  * @property objectives the Ziele, in server order
  * @property frequencies the radio plan, in server order
+ * @property canManage whether the caller may act on **other** members' rows — the server's own
+ *   `canEdit`, carried through rather than re-derived from a role string. Deriving it here would
+ *   reproduce the role hierarchy in the client and get it wrong for exactly the people most
+ *   entitled to act (ADR-0011: the app knows its permissions and refuses in place). Defaults to
+ *   `false`, so an older server that omits the field leaves the manager actions locked rather than
+ *   offering writes that would be refused.
  */
 data class MissionDetail(
     val id: String,
@@ -164,6 +180,7 @@ data class MissionDetail(
     val steps: List<MissionStep>,
     val objectives: List<MissionObjective>,
     val frequencies: List<MissionFrequency>,
+    val canManage: Boolean = false,
 )
 
 /**
