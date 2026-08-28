@@ -25,6 +25,11 @@ import java.time.ZoneId
  * that names an index rather than a field. Checking it here keeps the refusal where the field is.
  */
 class RefineryCreateTest {
+    private companion object {
+        /** The wall clock „27.08.2026" + „21:00" stands for, wherever the device is. */
+        val TYPED_START: LocalDateTime = LocalDateTime.parse("2026-08-27T21:00")
+    }
+
     private fun good(
         material: String? = "m1",
         input: String = "620",
@@ -86,7 +91,7 @@ class RefineryCreateTest {
         // here passes in Berlin and fails on a CI runner set to UTC, which is a test about the
         // runner rather than about the parse.
         val local = requireNotNull(at).atZone(ZoneId.systemDefault()).toLocalDateTime()
-        assertEquals(LocalDateTime.of(2026, 8, 27, 21, 0), local)
+        assertEquals(TYPED_START, local)
     }
 
     @Test
