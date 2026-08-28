@@ -12,7 +12,9 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.LocationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseRefineryOrderListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseRefiningMethodDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryGoodDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderListDto
@@ -369,7 +371,19 @@ data class RefineryGoodDraft(
     val outputQuantity: String = "",
     val quality: String = "",
     val yieldBonusPercent: String = "",
-)
+) {
+    /**
+     * Whether the server would accept this line.
+     *
+     * Input material and both quantities at 1 or more — the wire's own `@NotNull @Min(1)`. The
+     * output material is genuinely optional; a run that yielded nothing nameable still consumed ore.
+     */
+    val complete: Boolean
+        get() =
+            inputMaterialId != null &&
+                (inputQuantity.trim().toIntOrNull() ?: 0) >= 1 &&
+                (outputQuantity.trim().toIntOrNull() ?: 0) >= 1
+}
 
 /**
  * A new refinery order as the form holds it.
@@ -423,14 +437,18 @@ data class RefineryOrderDraft(
     /**
      * Whether the form may be sent.
      *
-     * The server requires a location and at least one good; a method is required by the design,
-     * which is stricter and stays that way — an order without one cannot be read afterwards.
+     * A location and a method, and **every** goods line complete. The server requires an input
+     * material and both quantities at 1 or more on each line (`@NotNull @Min(1)`), so a half-filled
+     * line is not an omission it tolerates — it refuses the whole order with a `goods[0]`-shaped
+     * message nobody can act on. Requiring all of them keeps the refusal here, where the field is,
+     * rather than there, where the field name is an index.
      */
     val sendable: Boolean
         get() =
             locationId != null &&
                 methodId != null &&
-                goods.any { it.inputMaterialId != null && it.inputQuantity.isNotBlank() }
+                goods.isNotEmpty() &&
+                goods.all { it.complete }
 }
 
 /**
@@ -450,6 +468,17 @@ interface RefineryCreateSource {
      * @return the methods, or the classified failure.
      */
     suspend fun methods(): ApiResult<List<RefiningMethod>>
+
+    /**
+     * Searches the materials a goods line can name.
+     *
+     * The same search the Lager's booking form uses — a run's ore is an ordinary material, and a
+     * second list would be a second answer to the same question.
+     *
+     * @param query what was typed; blank asks for the first page unfiltered.
+     * @return the candidates, or the classified failure.
+     */
+    suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>>
 
     /**
      * Creates the order the form describes.
@@ -572,7 +601,10 @@ class RefineryRepository(
     override suspend fun methods(): ApiResult<List<RefiningMethod>> =
         when (
             val result =
-                reader.get(METHODS_PATH, ListSerializer(RefiningMethodDto.serializer()))
+                // A page, not a list — `/locations/refineries` beside it answers with a bare
+                // array and the two are easy to assume alike. Parsed as a list this yields nothing,
+                // the picker renders empty, and the form is silently unsendable.
+                reader.get(METHODS_PATH, PageResponseRefiningMethodDto.serializer())
         ) {
             is ApiResult.Failure -> {
                 result
@@ -580,7 +612,7 @@ class RefineryRepository(
 
             is ApiResult.Success -> {
                 ApiResult.Success(
-                    result.value.mapNotNull { row ->
+                    result.value.content.orEmpty().mapNotNull { row ->
                         row.id?.let {
                             RefiningMethod(
                                 id = it,
@@ -590,6 +622,32 @@ class RefineryRepository(
                                 ratingSpeed = row.ratingSpeed ?: 0,
                             )
                         }
+                    },
+                )
+            }
+        }
+
+    override suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>> =
+        when (
+            val result =
+                reader.get(
+                    MATERIALS_PATH,
+                    listOf(
+                        SEARCH_PARAM to query.trim(),
+                        PAGE_PARAM to "0",
+                        SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+                    ),
+                    PageResponseMaterialDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.content.orEmpty().mapNotNull { row ->
+                        row.id?.let { it to row.name.orEmpty() }
                     },
                 )
             }
@@ -709,6 +767,15 @@ class RefineryRepository(
 
         /** The refining methods, with the ratings the picker draws as bars. */
         const val METHODS_PATH = "/api/v1/refining-methods"
+
+        /** The material search behind a goods line. */
+        const val MATERIALS_PATH = "/api/v1/materials/search"
+
+        /** What was typed into a material picker. */
+        const val SEARCH_PARAM = "search"
+
+        /** How many candidates one search offers. */
+        private const val PICKER_PAGE_SIZE = 25
 
         /** What a new run's status is; the other two describe what happened to it later. */
         private const val STATUS_IN_PROGRESS = "IN_PROGRESS"

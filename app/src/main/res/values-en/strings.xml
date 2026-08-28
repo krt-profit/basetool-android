@@ -1035,10 +1035,10 @@
     <string name="refinery_create_method">Method (required)</string>
     <string name="refinery_create_ratings">Cost %1$d · Speed %2$d · Yield %3$d</string>
     <string name="refinery_create_goods">Goods (at least 1)</string>
-    <string name="refinery_create_input_material">Input material</string>
-    <string name="refinery_create_input_quantity">Input (SCU)</string>
+    <string name="refinery_create_input_material">Input material (required)</string>
+    <string name="refinery_create_input_quantity">Input (SCU, required)</string>
     <string name="refinery_create_output_material">Output material</string>
-    <string name="refinery_create_output_quantity">Output (SCU)</string>
+    <string name="refinery_create_output_quantity">Output (SCU, required)</string>
     <string name="refinery_create_quality">Quality (0–1000)</string>
     <string name="refinery_create_bonus">Yield bonus (%)</string>
     <string name="refinery_create_add_good">+ Good</string>

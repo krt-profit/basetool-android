@@ -551,6 +551,9 @@ private fun listDetailDestination(
                     onOpenOrder = {
                         if (wide) selected = it else navController.navigate(refineryOrderRoute(it))
                     },
+                    onCreate = {
+                        navController.navigate(KrtDestination.RefineryCreate.route)
+                    },
                 )
             }
         }

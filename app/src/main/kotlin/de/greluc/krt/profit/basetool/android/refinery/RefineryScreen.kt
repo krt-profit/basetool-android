@@ -52,6 +52,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyV
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -79,6 +80,9 @@ const val REFINERY_ROW_TAG: String = "refinery-row"
 
 /** Test handle for the filter chip row. */
 const val REFINERY_FILTERS_TAG: String = "refinery-filters"
+
+/** The „Neuer Raffinerieauftrag" action on the list, for the tests that press it. */
+const val REFINERY_CREATE_CTA_TAG: String = "refinery-create-cta"
 
 /** Test handle for one row's status pill. */
 const val REFINERY_PHASE_TAG: String = "refinery-phase"
@@ -109,6 +113,7 @@ private const val MINUTES_PER_HOUR = 60L
  * @param onLoadMore the next page was asked for.
  * @param onOpenOrder a row was tapped.
  * @param modifier layout modifier.
+ * @param onCreate the „Neuer Raffinerieauftrag" action, or `null` where the screen cannot navigate.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +125,7 @@ fun RefineryOrdersScreen(
     onLoadMore: () -> Unit,
     onOpenOrder: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (() -> Unit)? = null,
 ) {
     when (state.phase) {
         is RefineryPhaseState.Loading -> {
@@ -160,6 +166,21 @@ fun RefineryOrdersScreen(
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
+                    // Above the list rather than floating over it: a run is recorded after the
+                    // fact, so the action belongs where the member already is — not hovering over
+                    // the row they came to read.
+                    onCreate?.let {
+                        KrtOutlineButton(
+                            text = stringResource(R.string.refinery_create_title),
+                            onClick = it,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = KrtSpacing.md)
+                                    .testTag(REFINERY_CREATE_CTA_TAG),
+                            iconRes = DesignR.drawable.ic_krt_plus,
+                        )
+                    }
                     if (state.orders.isEmpty()) {
                         KrtRefreshableFill {
                             KrtEmptyState(
@@ -840,12 +861,14 @@ private fun RefineryPhase.tone(): KrtStatusTone =
  * @param viewModel drives the screen.
  * @param onOpenOrder a row was tapped.
  * @param modifier layout modifier.
+ * @param onCreate the „Neuer Raffinerieauftrag" action, or `null` where the host cannot navigate.
  */
 @Composable
 fun RefineryOrdersRoute(
     viewModel: RefineryViewModel,
     onOpenOrder: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     RefineryOrdersScreen(
@@ -855,6 +878,7 @@ fun RefineryOrdersRoute(
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpenOrder = onOpenOrder,
+        onCreate = onCreate,
         modifier = modifier,
     )
 }

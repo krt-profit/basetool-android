@@ -1056,10 +1056,10 @@
     <string name="refinery_create_method">Methode (Pflicht)</string>
     <string name="refinery_create_ratings">Kosten %1$d · Tempo %2$d · Ausbeute %3$d</string>
     <string name="refinery_create_goods">Waren (min. 1)</string>
-    <string name="refinery_create_input_material">Eingangsmaterial</string>
-    <string name="refinery_create_input_quantity">Eingang (SCU)</string>
+    <string name="refinery_create_input_material">Eingangsmaterial (Pflicht)</string>
+    <string name="refinery_create_input_quantity">Eingang (SCU, Pflicht)</string>
     <string name="refinery_create_output_material">Ausgangsmaterial</string>
-    <string name="refinery_create_output_quantity">Ausgang (SCU)</string>
+    <string name="refinery_create_output_quantity">Ausgang (SCU, Pflicht)</string>
     <string name="refinery_create_quality">Qualität (0–1000)</string>
     <string name="refinery_create_bonus">Ertragsbonus (%)</string>
     <string name="refinery_create_add_good">+ Ware</string>

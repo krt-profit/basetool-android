@@ -34,6 +34,7 @@ import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.RefineryGoodDraft
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDraft
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
@@ -55,6 +56,7 @@ const val REFINERY_CREATE_TAG: String = "refinery-create"
  * @property onGoodChanged one goods line was edited.
  * @property onAddGood a line is to be added.
  * @property onRemoveGood a line is to be removed.
+ * @property onMaterialQuery a material picker was typed into.
  * @property onCreate the order is to be created.
  */
 data class RefineryCreateActions(
@@ -62,6 +64,7 @@ data class RefineryCreateActions(
     val onGoodChanged: (Int, RefineryGoodDraft) -> Unit,
     val onAddGood: () -> Unit,
     val onRemoveGood: (Int) -> Unit,
+    val onMaterialQuery: (String) -> Unit,
     val onCreate: () -> Unit,
 )
 
@@ -145,6 +148,8 @@ fun RefineryCreateScreen(
             GoodCard(
                 good = good,
                 removable = state.draft.goods.size > 1,
+                materials = state.materials,
+                onQuery = actions.onMaterialQuery,
                 onChanged = { actions.onGoodChanged(index, it) },
                 onRemove = { actions.onRemoveGood(index) },
             )
@@ -189,6 +194,8 @@ fun RefineryCreateScreen(
  *
  * @param good what to draw.
  * @param removable whether it may be taken away — the last line stays.
+ * @param materials the candidates the two pickers show.
+ * @param onQuery a picker was typed into.
  * @param onChanged the line was edited.
  * @param onRemove the line is to go.
  */
@@ -196,27 +203,41 @@ fun RefineryCreateScreen(
 private fun GoodCard(
     good: RefineryGoodDraft,
     removable: Boolean,
+    materials: List<Pair<String, String>>,
+    onQuery: (String) -> Unit,
     onChanged: (RefineryGoodDraft) -> Unit,
     onRemove: () -> Unit,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            KrtTextField(
-                value = good.inputMaterialName,
-                onValueChange = { onChanged(good.copy(inputMaterialName = it)) },
-                modifier = Modifier.fillMaxWidth(),
+            // A picker, not free text: the wire wants a material id, and a typed name carries
+            // none — every line would be dropped and the form could never be sent.
+            MaterialField(
                 label = stringResource(R.string.refinery_create_input_material),
+                shown = good.inputMaterialName,
+                selectedValue = good.inputMaterialId,
+                materials = materials,
+                onQuery = onQuery,
+                onSelect = {
+                    onChanged(good.copy(inputMaterialId = it.first, inputMaterialName = it.second))
+                },
+                onType = { onChanged(good.copy(inputMaterialName = it, inputMaterialId = null)) },
             )
             NumberField(
                 label = stringResource(R.string.refinery_create_input_quantity),
                 value = good.inputQuantity,
                 onValue = { onChanged(good.copy(inputQuantity = it)) },
             )
-            KrtTextField(
-                value = good.outputMaterialName,
-                onValueChange = { onChanged(good.copy(outputMaterialName = it)) },
-                modifier = Modifier.fillMaxWidth(),
+            MaterialField(
                 label = stringResource(R.string.refinery_create_output_material),
+                shown = good.outputMaterialName,
+                selectedValue = good.outputMaterialId,
+                materials = materials,
+                onQuery = onQuery,
+                onSelect = {
+                    onChanged(good.copy(outputMaterialId = it.first, outputMaterialName = it.second))
+                },
+                onType = { onChanged(good.copy(outputMaterialName = it, outputMaterialId = null)) },
             )
             NumberField(
                 label = stringResource(R.string.refinery_create_output_quantity),
@@ -369,6 +390,51 @@ private fun MoneyBlock(
 }
 
 /**
+ * A material picker.
+ *
+ * Typing clears the pick: a name that no longer matches what was chosen would otherwise send the
+ * old id under a new label.
+ *
+ * @param label what it is.
+ * @param shown what to display.
+ * @param selectedValue which material is picked.
+ * @param materials the candidates.
+ * @param onQuery a search was typed.
+ * @param onSelect a material was picked.
+ * @param onType the text changed without a pick.
+ */
+@Composable
+private fun MaterialField(
+    label: String,
+    shown: String,
+    selectedValue: String?,
+    materials: List<Pair<String, String>>,
+    onQuery: (String) -> Unit,
+    onSelect: (Pair<String, String>) -> Unit,
+    onType: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    KrtCombobox(
+        query = shown,
+        onQueryChange = {
+            expanded = true
+            onType(it)
+            onQuery(it)
+        },
+        options = materials.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = { option ->
+            expanded = false
+            onSelect(option.value to option.label)
+        },
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = label,
+        selectedValue = selectedValue,
+    )
+}
+
+/**
  * A field that takes a figure.
  *
  * @param label what it is.
@@ -445,6 +511,7 @@ fun RefineryCreateRoute(
                 onGoodChanged = viewModel::onGoodChanged,
                 onAddGood = viewModel::onAddGood,
                 onRemoveGood = viewModel::onRemoveGood,
+                onMaterialQuery = viewModel::onMaterialQuery,
                 onCreate = viewModel::onCreate,
             ),
         modifier = modifier,

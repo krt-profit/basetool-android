@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Raffinerieaufträge lassen sich jetzt in der App anlegen.** Raffinerie und Methode mit ihren drei
+  Bewertungen, Waren mit Ein- und Ausgang, Timing mit berechnetem Ende und ein Geld-Block mit
+  Gewinn-Vorschau. Einen Extractor-Import gibt es bewusst nicht — dessen Übergabe wird einmalig im
+  Browser eingelöst und kann ein Telefon nicht erreichen.
+
 - **Raffinerieaufträge lassen sich jetzt mit allen Angaben einlagern.** Pro Material kannst du die
   Menge korrigieren — die berechnete steht daneben —, eine Notiz setzen und die Position als
   persönlichen Eintrag buchen. Gebucht wird der ganze Auftrag in einem Zug.

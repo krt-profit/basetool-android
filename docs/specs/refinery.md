@@ -257,3 +257,61 @@ acceptable. Every member-typed figure goes through them.
 
 **Code:** `core/data/Amounts.kt`, `RefineryRepository`, `InventoryRepository`, `BankRepository`,
 `BankStaffRepository`
+
+---
+
+### REQ-APP-REF-009 — Recording a run, without an importer the phone cannot have
+
+„Neuer Raffinerieauftrag" — design chapter 11, artboards 4 and 5. The app could read a run and book
+its yield but not record one.
+
+**One scrolling form, not two screens.** The artboards split it because a 412 dp frame cannot show
+both halves at once, not because it is two steps. Nothing here is a wizard, and a member who only
+wants to record what a run cost should not have to walk through goods to reach the money.
+
+**No extractor import, permanently.** The Extractor is a Windows desktop app whose handoff runs
+through the ingest gateway and is consumed once in a browser; a phone cannot receive it. The scan
+icon and the import box of artboard 1 are deliberately absent.
+
+**Required is what the server requires, checked where the fields are.** A location, a method, and
+**every** goods line complete: an input material and both quantities at 1 or more (`@NotNull
+@Min(1)` on `RefineryGoodDto`). A half-filled line is not an omission the server tolerates — it
+refuses the whole order with a `goods[0]`-shaped message that names an index rather than a field.
+The CTA is validation-dimmed until the form is whole, without a padlock: nothing here is forbidden,
+it is unfinished, and the design distinguishes the two.
+
+**The material fields are pickers, not free text.** The wire wants a material id; a typed name
+carries none, so every line would be dropped and the form could never be sent — with the CTA
+correctly dimmed and no way to un-dim it. Typing again clears the pick, so a stale id is never sent
+under a new label. The search is the one the Lager's booking form uses: a run's ore is an ordinary
+material and a second list would be a second answer to the same question.
+
+**„Gestartet" is a date and a time in the member's own format**, assembled into the instant the wire
+wants. An unreadable pair is `null` rather than a guess. **„Endet" is computed** from start plus
+duration and shown as text — a second editable time would be a place for the two to disagree. So is
+the **profit preview**, which is the web's own definition: ore sales less costs and other costs.
+
+**The money block starts closed.** All three of its fields are usually zero, and a block that is
+usually empty should not stand between a member and the CTA.
+
+**`/refining-methods` answers a page, not a list.** `/locations/refineries` beside it answers a bare
+array, and the two are easy to assume alike — parsed as a list the picker renders empty and the form
+is silently unsendable, which is exactly how it presented on a device.
+
+**Acceptance**
+
+- [x] A complete form may be sent; a typed material name without a pick may not
+  (`RefineryCreateTest`).
+- [x] A line without an output quantity, or with zero, is not sendable, and one incomplete line
+  blocks the whole order (`RefineryCreateTest`).
+- [x] Without a refinery or a method nothing is sent (`RefineryCreateTest`).
+- [x] The start is read from the two fields, and a half-typed date is no date (`RefineryCreateTest`).
+- [x] Verified on a device against the local test stack: both pickers load (`200`/`200`), the goods
+  material picker searches, and `POST /api/v1/refinery-orders` answers **200** — the order lands as
+  `IN_PROGRESS` at Levski · Cormack with 620 → 442 SCU at quality 874, and the app opens it.
+
+**Vhost:** `/api/v1/refinery-orders` (POST), `/api/v1/locations/refineries`,
+`/api/v1/refining-methods` — runbook Phase M.
+
+**Code:** `RefineryRepository` (`RefineryCreateSource`), `RefineryCreateViewModel`,
+`RefineryCreateScreen`

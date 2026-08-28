@@ -33,6 +33,7 @@ import java.time.Instant
  * @property loading whether the pickers are still arriving.
  * @property saving whether the creation is in flight.
  * @property created the new order's id once it exists, which is what the screen navigates to.
+ * @property materials the candidates the goods lines' material pickers show.
  * @property error what the last read or write was refused with.
  */
 data class RefineryCreateState(
@@ -42,6 +43,7 @@ data class RefineryCreateState(
     val loading: Boolean = true,
     val saving: Boolean = false,
     val created: String? = null,
+    val materials: List<Pair<String, String>> = emptyList(),
     val error: ApiError? = null,
 ) {
     /**
@@ -102,6 +104,7 @@ class RefineryCreateViewModel(
             return
         }
         loaded = true
+        onMaterialQuery("")
         viewModelScope.launch {
             val refineries = source.refineries()
             val methods = source.methods()
@@ -116,6 +119,28 @@ class RefineryCreateViewModel(
                         (refineries as? ApiResult.Failure)?.error
                             ?: (methods as? ApiResult.Failure)?.error,
                 )
+        }
+    }
+
+    /**
+     * Searches the materials a goods line can name.
+     *
+     * One shared list rather than one per line: every line asks the same question of the same
+     * catalogue, and a per-line list would answer it several times over.
+     *
+     * @param query what was typed.
+     */
+    fun onMaterialQuery(query: String) {
+        viewModelScope.launch {
+            when (val result = source.searchMaterials(query)) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(materials = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "material search failed: ${result.error}" }
+                }
+            }
         }
     }
 
