@@ -643,7 +643,9 @@ class MissionRepositoryTest {
             structure.addCrew("m1", unitId = "u1", participantId = "p2", jobTypeIds = emptySet())
 
             val request = server.takeRequest()
-            assertTrue(request.target.contains("/units/u1/crew/slim"))
+            // The PLAIN endpoint, not /slim: the slim one answers with the narrow object and the
+            // plain one with the whole Einsatz, which is what the screen swaps.
+            assertTrue(request.target.endsWith("/units/u1/crew"))
             assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
         }
 
@@ -670,7 +672,7 @@ class MissionRepositoryTest {
 
             val request = server.takeRequest()
             assertEquals("POST", request.method)
-            assertTrue(request.target.contains("/managers/u9/slim"))
+            assertTrue(request.target.endsWith("/managers/u9"))
         }
 
     /**
