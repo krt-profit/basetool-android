@@ -100,7 +100,12 @@ class MaterialBoardScreenTest {
     fun `an item row counts pieces, never SCU`() {
         board(listOf(entry(piece = true)))
 
-        compose.onNodeWithText("6 Stück · 2 Zusagen").assertIsDisplayed()
+        // The figure and its unit are two nodes since the amount moved into the header
+        // (REQ-APP-MARKET-010): the quantity is what the board is scanned for, so it carries the
+        // weight and the unit stays quiet beside it.
+        compose.onNodeWithText("6").assertIsDisplayed()
+        compose.onNodeWithText("Stück").assertIsDisplayed()
+        compose.onNodeWithText("2 Zusagen").assertIsDisplayed()
     }
 
     @Test
@@ -109,7 +114,9 @@ class MaterialBoardScreenTest {
 
         // "240", not "240.0": the wire carries the trailing zero and a member does not read it.
         // Found on a device.
-        compose.onNodeWithText("240 SCU · Q 3 · 2 Zusagen").assertIsDisplayed()
+        compose.onNodeWithText("240").assertIsDisplayed()
+        compose.onNodeWithText("SCU").assertIsDisplayed()
+        compose.onNodeWithText("Q 3 · 2 Zusagen").assertIsDisplayed()
     }
 
     @Test
@@ -118,7 +125,8 @@ class MaterialBoardScreenTest {
 
         // „Q 3" on a request would read as an offered grade. It is the floor the requester will
         // accept, and the two are opposite claims.
-        compose.onNodeWithText("240 SCU · Min. Q 3 · 2 Zusagen").assertIsDisplayed()
+        compose.onNodeWithText("240").assertIsDisplayed()
+        compose.onNodeWithText("Min. Q 3 · 2 Zusagen").assertIsDisplayed()
         // The timestamp is rendered as a relative span in the member's zone, never as the wire's
         // ISO string — which is what the row printed until a device walk showed it.
         compose.onNodeWithText("Gesucht von Vex", substring = true).assertIsDisplayed()

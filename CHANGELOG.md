@@ -175,6 +175,10 @@
 
 ### Fixed
 
+- **Die Menge steht auf der Börsenkarte jetzt vorn.** Rechts neben dem Material, die Zahl betont,
+  die Einheit leise — statt als erstes Drittel einer grauen Zeile, in der Menge, Qualität und
+  Zusagen gleich aussahen.
+
 - **Das Herstellerkürzel im Hangar stimmt wieder.** Es kommt jetzt aus dem Katalog (DRAK, MISC,
   RSI) statt aus den Anfangsbuchstaben des Firmennamens — MISC stand dort als „MIA". Außerdem steht
   die Versicherung vor dem Ausbau-Zustand und trägt einen neutralen Ton; nur eine benannte Police

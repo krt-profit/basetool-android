@@ -306,6 +306,10 @@ private fun BoardRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            // The amount belongs beside the name, right-aligned and loud, because it is what a
+            // board is scanned for. It used to sit inside a grey run of three facts where the
+            // quantity, the quality and the pledge count all read the same weight (artboard 3).
+            BoardAmount(entry)
             entry.ownerOrgUnits.take(MAX_BADGES).forEach { badge ->
                 KrtChip(text = badge, tone = KrtChipTone.Muted)
             }
@@ -315,11 +319,13 @@ private fun BoardRow(
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
         )
-        Text(
-            text = amountLine(entry),
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.White,
-        )
+        detailLine(entry)?.let { line ->
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
         entry.remark?.let {
             Text(
                 text = it,
@@ -447,7 +453,39 @@ private fun String.relativeToNow(): String {
 }
 
 /**
- * The row's amount line, in the material's own unit.
+ * The row's quantity, as the header's right-hand figure.
+ *
+ * The figure carries the weight and the unit stays quiet beside it: „240" is the thing being
+ * compared across rows, „SCU" only says what kind of 240 it is.
+ *
+ * @param entry the row.
+ */
+@Composable
+private fun BoardAmount(entry: BoardEntry) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Text(
+            text = formatAmount(entry.amount),
+            style = MaterialTheme.typography.titleMedium,
+            color = KrtPalette.White,
+            maxLines = 1,
+        )
+        Text(
+            text =
+                stringResource(
+                    if (entry.unitIsPiece) R.string.board_unit_piece else R.string.board_unit_scu,
+                ),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * What is left of the row's facts once the quantity has moved into the header.
  *
  * **Never a hardcoded SCU.** An item counted in pieces and labelled „SCU" is a quantity a member
  * would act on — the one thing on this screen that could cause a wrong handover off-tool.
@@ -456,12 +494,7 @@ private fun String.relativeToNow(): String {
  * @return the line.
  */
 @Composable
-private fun amountLine(entry: BoardEntry): String {
-    val unit =
-        stringResource(if (entry.unitIsPiece) R.string.board_unit_piece else R.string.board_unit_scu)
-    // formatAmount, not the raw string: the wire carries `120.0` and a member reads „120". The
-    // same helper the Bank and the Einsatz Finanzen use, so one figure reads the same everywhere.
-    val amount = "${formatAmount(entry.amount)} $unit"
+private fun detailLine(entry: BoardEntry): String? {
     val quality =
         entry.quality?.let {
             if (entry.side == BoardSide.REQUESTS) {
@@ -472,7 +505,7 @@ private fun amountLine(entry: BoardEntry): String {
         }
     val supporters =
         pluralStringResource(R.plurals.board_interest_count, entry.interestCount, entry.interestCount)
-    return listOfNotNull(amount, quality, supporters).joinToString(SEPARATOR)
+    return listOfNotNull(quality, supporters).joinToString(SEPARATOR).takeIf { it.isNotEmpty() }
 }
 
 /**
