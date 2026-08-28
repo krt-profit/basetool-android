@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankHolderViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankStaffSeams
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
 import de.greluc.krt.profit.basetool.android.core.auth.SessionState
@@ -346,11 +347,15 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
-                                            // Only bank staff may reverse, and the server says
-                                            // whether this caller is; the screen just draws it.
-                                            reversalSource = container.bankStaff,
-                                            staffSource = container.bankStaff,
-                                            reports = container.bankStaff,
+                                            // Only bank staff may reverse, read through the
+                                            // office or pull a report, and the server says whether
+                                            // this caller is; the screen just draws it.
+                                            staff =
+                                                BankStaffSeams(
+                                                    reversals = container.bankStaff,
+                                                    account = container.bankStaff,
+                                                    reports = container.bankStaff,
+                                                ),
                                             // A bank employee reads the account through the office:
                                             // the member path answers 403 for an account they hold
                                             // no view grant on but are responsible for.

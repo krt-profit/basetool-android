@@ -220,6 +220,27 @@ class BankViewModel(
 }
 
 /**
+ * The Verwaltung-side seams of one account.
+ *
+ * One holder rather than three constructor parameters, because they are one fact: the object graph
+ * supplies all three from the same `bankStaff` repository, and a caller who has one has all of
+ * them. Splitting them let the account view model grow to eight parameters, which is where detekt's
+ * `LongParameterList` stopped it — correctly, since the third one was added without anybody asking
+ * whether the first two were still separate concerns.
+ *
+ * `null` in place of the holder is what a member gets: no reversal, no office read, no report.
+ *
+ * @property reversals reverses a booking; bank staff only.
+ * @property account reads the account and its ledger through the office rather than as a member.
+ * @property reports fetches the account statement and the three-month report.
+ */
+data class BankStaffSeams(
+    val reversals: BankReversalSource,
+    val account: BankStaffAccountSource,
+    val reports: BankReportSource,
+)
+
+/**
  * Drives one account and its ledger.
  *
  * **The account and its first ledger page are read together and fail together.** Both carry the
@@ -235,9 +256,7 @@ class BankAccountViewModel(
     connectivity: Connectivity,
     private val accountId: String,
     private val liveSync: LiveSyncSource? = null,
-    private val reversalSource: BankReversalSource? = null,
-    private val staffSource: BankStaffAccountSource? = null,
-    private val reports: BankReportSource? = null,
+    private val staff: BankStaffSeams? = null,
     private val throughTheOffice: () -> Boolean = { false },
 ) : ViewModel() {
     /**
@@ -249,7 +268,7 @@ class BankAccountViewModel(
      * for every account of the organisation, closed ones included.
      */
     private val viaOffice: Boolean
-        get() = staffSource != null && throughTheOffice()
+        get() = staff != null && throughTheOffice()
     private val mutableState = MutableStateFlow(BankAccountState(accountId = accountId))
 
     init {
@@ -540,7 +559,7 @@ class BankAccountViewModel(
     fun onConfirmReversal() {
         val current = mutableState.value
         val transactionId = current.reversal?.transactionId
-        val writer = reversalSource
+        val writer = staff?.reversals
         if (transactionId == null || writer == null || current.saving) {
             return
         }
@@ -569,7 +588,7 @@ class BankAccountViewModel(
      */
     private suspend fun readAccount(): ApiResult<BankAccountDetail> =
         if (viaOffice) {
-            requireNotNull(staffSource).staffAccount(accountId)
+            requireNotNull(staff).account.staffAccount(accountId)
         } else {
             source.account(accountId)
         }
@@ -582,7 +601,7 @@ class BankAccountViewModel(
      */
     private suspend fun readLedger(page: Int): ApiResult<BankBookingPage> =
         if (viaOffice) {
-            requireNotNull(staffSource).staffBookings(accountId, page, BankRepository.DEFAULT_PAGE_SIZE)
+            requireNotNull(staff).account.staffBookings(accountId, page, BankRepository.DEFAULT_PAGE_SIZE)
         } else {
             source.bookings(accountId, page = page)
         }
@@ -595,14 +614,14 @@ class BankAccountViewModel(
      * who needs another period has the web.
      */
     fun onStatement() {
-        val writer = reports ?: return
+        val writer = staff?.reports ?: return
         val now = Instant.now()
         fetch { writer.statement(accountId, now.minus(STATEMENT_DAYS, ChronoUnit.DAYS).toString(), now.toString()) }
     }
 
     /** Fetches the three-month report. */
     fun onThreeMonthReport() {
-        val writer = reports ?: return
+        val writer = staff?.reports ?: return
         fetch { writer.threeMonthReport(ZoneId.systemDefault().id) }
     }
 
