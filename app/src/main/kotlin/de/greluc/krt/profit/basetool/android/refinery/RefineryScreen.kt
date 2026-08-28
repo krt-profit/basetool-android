@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
@@ -45,11 +46,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmpt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -58,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.math.BigDecimal
 import java.time.Duration
@@ -76,6 +80,9 @@ const val REFINERY_ROW_TAG: String = "refinery-row"
 
 /** Test handle for the filter chip row. */
 const val REFINERY_FILTERS_TAG: String = "refinery-filters"
+
+/** The „Neuer Raffinerieauftrag" action on the list, for the tests that press it. */
+const val REFINERY_CREATE_CTA_TAG: String = "refinery-create-cta"
 
 /** Test handle for one row's status pill. */
 const val REFINERY_PHASE_TAG: String = "refinery-phase"
@@ -106,6 +113,7 @@ private const val MINUTES_PER_HOUR = 60L
  * @param onLoadMore the next page was asked for.
  * @param onOpenOrder a row was tapped.
  * @param modifier layout modifier.
+ * @param onCreate the „Neuer Raffinerieauftrag" action, or `null` where the screen cannot navigate.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,6 +125,7 @@ fun RefineryOrdersScreen(
     onLoadMore: () -> Unit,
     onOpenOrder: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (() -> Unit)? = null,
 ) {
     when (state.phase) {
         is RefineryPhaseState.Loading -> {
@@ -157,6 +166,21 @@ fun RefineryOrdersScreen(
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
+                    // Above the list rather than floating over it: a run is recorded after the
+                    // fact, so the action belongs where the member already is — not hovering over
+                    // the row they came to read.
+                    onCreate?.let {
+                        KrtOutlineButton(
+                            text = stringResource(R.string.refinery_create_title),
+                            onClick = it,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = KrtSpacing.md)
+                                    .testTag(REFINERY_CREATE_CTA_TAG),
+                            iconRes = DesignR.drawable.ic_krt_plus,
+                        )
+                    }
                     if (state.orders.isEmpty()) {
                         KrtRefreshableFill {
                             KrtEmptyState(
@@ -572,45 +596,74 @@ private fun OrderDetailBody(
         if (!state.online) {
             OfflineBand()
         }
+        // Artboard 2 carries the run's identity beside the status: which refinery, which method.
+        // Its „#7841" is mock — no order number exists on the wire, and the web's own title is
+        // „Raffinerieauftrag Details" — so the app names what it actually has.
+        Text(
+            text =
+                listOf(order.locationName, order.methodName)
+                    .filter { it.isNotBlank() }
+                    .joinToString(SEPARATOR),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
         KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
-        KrtKeyValueRow(
-            label = stringResource(R.string.refinery_station),
-            value = order.locationName.ifBlank { stringResource(R.string.refinery_station_unknown) },
-        )
-        KrtKeyValueRow(
-            label = stringResource(R.string.refinery_method),
-            value = order.methodName.ifBlank { stringResource(R.string.refinery_method_unknown) },
-        )
-        KrtKeyValueRow(
-            label = stringResource(R.string.refinery_started),
-            value = order.startedAt.asLocalTimestamp(),
-        )
-        KrtKeyValueRow(
-            label = stringResource(R.string.refinery_ready),
-            value =
-                if (phase == RefineryPhase.RUNNING) {
-                    remainingText(order.endsAt, state.now)
-                } else {
-                    order.endsAt.asLocalTimestamp()
-                },
-        )
+        // Artboard 2 puts the four facts in the HUD box, brackets and all — the same container the
+        // rest of the app uses for a block of facts that belong together.
+        KrtHudBox(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+                KrtKeyValueRow(
+                    label = stringResource(R.string.refinery_station),
+                    value =
+                        order.locationName.ifBlank {
+                            stringResource(R.string.refinery_station_unknown)
+                        },
+                )
+                KrtKeyValueRow(
+                    label = stringResource(R.string.refinery_method),
+                    value =
+                        order.methodName.ifBlank {
+                            stringResource(R.string.refinery_method_unknown)
+                        },
+                )
+                KrtKeyValueRow(
+                    label = stringResource(R.string.refinery_started),
+                    value = order.startedAt.asLocalTimestamp(),
+                )
+                KrtKeyValueRow(
+                    label = stringResource(R.string.refinery_ready),
+                    value =
+                        if (phase == RefineryPhase.RUNNING) {
+                            remainingText(order.endsAt, state.now)
+                        } else {
+                            // „heute 06:41" rather than a full stamp: a finished run's end is read
+                            // as "how long ago", which is what the artboard shows.
+                            order.endsAt
+                                ?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                                ?.relativeToNow()
+                                ?: order.endsAt.asLocalTimestamp()
+                        },
+                )
+            }
+        }
         KrtSectionTitle(text = stringResource(R.string.refinery_yield))
         order.yields.forEach { YieldRow(it) }
-        // Ore Sales and Gewinn/Verlust as DATA -- white, never orange. Chapter 11 asks for a UEX
-        // estimate here; no endpoint provides one, and computing one on the device would print a
-        // figure the web app never shows. The recorded figures are shown instead, labelled as what
-        // they are. Deviation recorded in docs/specs/refinery.md.
-        order.oreSales?.let {
-            KrtKeyValueRow(label = stringResource(R.string.refinery_ore_sales), value = formatAmount(it))
-        }
+        // One row, not two. The artboard closes the yield block with „Geschätzter Wert" in the
+        // success green; chapter 11 wants a UEX estimate behind it, no endpoint offers one, and the
+        // recorded profit is the figure the web itself shows. Printing Ore Sales beside it repeated
+        // an input as if it were a result. Deviation recorded in docs/specs/refinery.md.
         order.profit?.let {
-            KrtKeyValueRow(label = stringResource(R.string.refinery_profit), value = formatAmount(it))
+            KrtKeyValueRow(
+                label = stringResource(R.string.refinery_value),
+                value = formatAmount(it),
+                valueColor = KrtPalette.SuccessText,
+            )
         }
         if (state.stored) {
             Text(
                 text = stringResource(R.string.refinery_stored_notice),
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
+                color = KrtPalette.SuccessText,
                 modifier = Modifier.testTag(REFINERY_STORED_NOTICE_TAG),
             )
         }
@@ -619,26 +672,50 @@ private fun OrderDetailBody(
                 text = stringResource(R.string.refinery_store),
                 onClick = onStoreRequested,
                 modifier = Modifier.fillMaxWidth().testTag(REFINERY_STORE_TAG),
+                iconRes = DesignR.drawable.ic_krt_download,
             )
         }
     }
 }
 
 /**
- * One yield row: material, quality, amount.
+ * One yield: the material, its grade beneath it, and the amount.
+ *
+ * A card rather than a label-value row. Artboard 2 sets the material bold with „Qualität 874"
+ * under it and the amount right-aligned; run together on one line the two read as a single long
+ * label and the figure stops being scannable.
  *
  * @param good the yield.
  */
 @Composable
 private fun YieldRow(good: RefineryYield) {
-    KrtKeyValueRow(
-        label =
-            listOfNotNull(
-                good.materialName.takeIf { it.isNotBlank() },
-                good.quality?.let { stringResource(R.string.refinery_quality, it) },
-            ).joinToString(SEPARATOR),
-        value = amountText(good.amount, good.unitIsPiece),
-    )
+    KrtCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = good.materialName,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = KrtPalette.White,
+                )
+                good.quality?.let {
+                    Text(
+                        text = stringResource(R.string.refinery_quality, it),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                    )
+                }
+            }
+            Text(
+                text = amountText(good.amount, good.unitIsPiece),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = KrtPalette.White,
+            )
+        }
+    }
 }
 
 /**
@@ -784,12 +861,14 @@ private fun RefineryPhase.tone(): KrtStatusTone =
  * @param viewModel drives the screen.
  * @param onOpenOrder a row was tapped.
  * @param modifier layout modifier.
+ * @param onCreate the „Neuer Raffinerieauftrag" action, or `null` where the host cannot navigate.
  */
 @Composable
 fun RefineryOrdersRoute(
     viewModel: RefineryViewModel,
     onOpenOrder: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     RefineryOrdersScreen(
@@ -799,6 +878,7 @@ fun RefineryOrdersRoute(
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpenOrder = onOpenOrder,
+        onCreate = onCreate,
         modifier = modifier,
     )
 }
@@ -819,9 +899,22 @@ fun RefineryOrderDetailRoute(
         state = state,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
-        onStoreRequested = viewModel::onStoreRequested,
+        onStoreRequested = viewModel::onStoreFormRequested,
         onStoreConfirmed = viewModel::onStoreConfirmed,
         onStoreDismissed = viewModel::onStoreDismissed,
         modifier = modifier,
     )
+    if (state.lines.isNotEmpty()) {
+        RefineryStoreSheet(
+            lines = state.lines,
+            busy = state.busy != null,
+            error = state.error,
+            actions =
+                RefineryStoreActions(
+                    onLineChanged = viewModel::onLineChanged,
+                    onStoreAll = viewModel::onStoreAll,
+                    onDismiss = viewModel::onStoreFormDismissed,
+                ),
+        )
+    }
 }

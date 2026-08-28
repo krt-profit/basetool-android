@@ -343,3 +343,303 @@ has `POST …/confirm` and `POST …/reject` behind it; the member surface has n
   (`BankStaffScreenTest`, ADR-0104).
 
 **Code:** `BankRepository` (`BankStaffSource`), `BankStaffViewModel`, `BankStaffQueue`
+
+---
+
+### REQ-APP-BANK-010 — The staff dashboard is two screens, and the second one has no totals
+
+`GET /api/v1/bank/dashboard` answers differently by role (main repo REQ-BANK-010), and the app has
+to render both shapes rather than one:
+
+| Caller | Accounts | `totals` |
+| --- | --- | --- |
+| **Bank-Management** (or admin) | **every** account in the organisation | the aggregate strip |
+| a plain **bank employee** | exactly the accounts they hold a bank grant for | **`null`** |
+
+**An absent strip is not a strip of zeroes.** Folding `null` into `BankStaffTotals(null, 0, 0)` had
+the screen tell an employee „GESAMT 0 aUEC · 0 Konten" — a claim that the organisation's bank is
+empty, made to the person least able to check it. Found by running it: the member tab showed an
+account while the staff tab showed none and asserted zero underneath.
+
+Three consequences the screen honours:
+
+1. The KPI band renders **only** when the server sent one.
+2. The empty state distinguishes the two emptinesses. For management, no accounts means the
+   organisation runs none. For an employee it almost always means **they hold no grant**, and
+   saying "this org unit runs no bank account" would be false.
+3. **„ohne eigenen View-Grant" is management-only.** An employee's list is already grant-shaped, so
+   every row would carry the mark and it would say nothing. Only a caller who sees beyond their own
+   grants can have a row they reach purely through their office.
+
+Note the two grant systems are **different**: the staff list is shaped by `bank_account_grant`, the
+member list by the org-unit visibility of `REQ-BANK-037`. An account can therefore be on the member
+list and absent from the staff one — the reverse of the naive assumption.
+
+**Acceptance**
+
+- [x] An employee gets no aggregate strip, and no zeroes standing in for one
+  (`BankStaffScreenTest`).
+- [x] An employee's rows carry no view-grant mark; management's do (`BankStaffScreenTest`).
+- [x] The empty state names the right emptiness for each (`BankStaffOverview`).
+- [x] Verified on a device against a locally built backend: a bank employee with no grant sees the
+  refusal-shaped empty state, and one with a grant sees the account and still no strip.
+
+**Code:** `BankRepository` (`BankStaffDashboard.totals` is nullable), `BankStaffOverview`
+
+---
+
+### REQ-APP-BANK-011 — The account lifecycle, drawn locked rather than hidden
+
+The Verwaltung scope's **Konten** tab — design chapter 12, artboard 6: the account list with its
+lifecycle, and the unit's holder register beneath it.
+
+**Reads are the employee's, writes are Bank-Management's.** Which the caller is comes from the
+server (`BankStaffDashboard.management`), never from a role the app worked out. Without the role
+the actions are drawn **locked, not hidden** (chapter-09 pattern): a padlock that answers when
+tapped — „Dafür brauchst du die Rolle Bank-Management." A member who cannot see a control cannot
+learn that the surface exists or which role opens it.
+
+**Every write echoes the version it read.** That is why the tab has its own read
+(`GET /bank/accounts`) rather than reusing the dashboard's rows, which carry no `version`.
+
+**Closing is reversible, so nothing here asks the member to type anything.** The type-to-confirm
+hurdle is reserved for what cannot be undone. Two preconditions the server enforces are stated in
+advance rather than left for the button to discover:
+
+- **A non-zero balance blocks closing** („Nur Konten mit Saldo 0 können geschlossen werden") — the
+  row says so beneath the disabled action.
+- Undecided booking requests block it too; that one surfaces as the server's refusal.
+
+**Deactivating a holder is not a removal.** `UpdateBankHolderRequest` flips one flag, and the
+wording is the web frontend's own: an inactive holder can have no *new* money assigned to them,
+what they already hold stays withdrawable. Nothing about their rights on an account changes —
+that is what a grant does, and it lives on the Grants tab.
+
+**A creation names the caller's pinned org unit** („Einheit (vorbelegt)"). A caller who has pinned
+*all* units has no single answer, so the creation is refused rather than opened against a unit they
+never chose. The app creates `ORG_UNIT` accounts only; `AREA`, `CARTEL`, `CARTEL_BANK` and
+`SPECIAL` exist on the wire and stay the web's.
+
+**Acceptance**
+
+- [x] Closing, reopening, renaming and a holder's activation each echo the version they read
+  (`BankLifecycleViewModelTest`).
+- [x] A rename to blank is not sent (`BankLifecycleViewModelTest`).
+- [x] With all units pinned, no account is created (`BankLifecycleViewModelTest`).
+- [x] A refused write keeps the confirmation open and states why (`BankLifecycleViewModelTest`).
+- [x] A holder register that cannot be read leaves the accounts standing
+  (`BankLifecycleViewModelTest`).
+- [x] Verified on a device: without Bank-Management the row actions and the CTA are drawn with
+  padlocks and answer when tapped.
+
+**Code:** `BankRepository` (`BankLifecycleSource`), `BankLifecycleViewModel`, `BankLifecycleTab`
+
+---
+
+### REQ-APP-BANK-012 — The grants matrix has three flags, and the row is the sight
+
+The Verwaltung scope's **Grants** tab — design chapter 12, artboard 7: who may book on which
+account. („Grants", not „Freigaben" — in this app „Freigabe" already means approving a booking
+request, and the design chapter keeps the two words apart.)
+
+**A grant is one `bank_account_grant` row per (member, account) with three independent flags** —
+`can_deposit`, `can_withdraw`, `can_transfer` (REQ-BANK-009). The app renders exactly those three
+and no fourth: the drawn „FREIGEBEN" column has no counterpart on the server under either reading
+of the word. See `MISSING_ARTBOARD_PROMPTS_7.md` § 2e.
+
+**The row's existence is the view grant.** `BankSecurityService.canSee` is
+`hasCapability(accountId, auth, g -> true)`, so a row with all three flags false is the deliberate
+„darf sehen, darf nichts buchen" case. The app therefore never deletes a row on the way to zero
+flags, and states the rule as plain text on the surface rather than behind a tooltip.
+
+**Taking sight away is a removal**, offered as „Eintrag entfernen" and confirmed by a danger modal —
+it is the one action here whose consequence no checkbox on the card mentions.
+
+**On the CARTEL account the entry never carried the sight.** Every KRT member sees that account by
+rule (REQ-BANK-037), so both the surface note and the removal modal swap to copy that promises only
+what the server delivers: booking rights go, sight does not.
+
+**The flag coupling the handoff asks for is structural, not UI.** „Freigeben setzt Sehen voraus"
+cannot be violated: every capability check runs through `hasCapability`, which requires the row, and
+the row is the sight. No UI coupling and no backend requirement follow from it.
+
+**Reads are the employee's, writes are Bank-Management's**, and as everywhere in the staff surface
+the app draws what the server answered (ADR-0016). Without the role the **tab** is locked-tappable
+and answers with a toast naming the role (artboards 4 and 7); the padlocked controls inside it are
+the fallback for the case where the role is lost while the tab is already open.
+
+**Whether a change is a creation or a patch comes from the matrix read, never from the version.** A
+freshly inserted `bank_account_grant` carries `@Version` zero, so `version == 0` does not mean "not
+on the server yet" — deciding on it sends the first edit of every untouched grant as a creation and
+earns `409 DUPLICATE_ENTITY`. `BankGrant.exists` carries the fact instead.
+
+**A refused change is stated, not swallowed.** Without it the checkbox simply snaps back, which
+reads as a broken app rather than a server that said no.
+
+**„+ Grant hinzufügen" opens a sheet with a member picker and the three flags.** The picker is
+`GET /api/v1/users/search-bank`, **not** `/users/search`: the two run the same query over the same
+scope with the same peer-redacted projection and differ only in the role gate, which the bank twin
+widens to `BANK_EMPLOYEE` — a bank manager who holds no org role gets 403 on the ordinary one and
+would have no picker at all.
+
+**The picker offers every member, and two of its picks are refused.** The server's search is not
+restricted to bank employees, so the app does not pretend otherwise: a creation for someone without
+the Bank Employee role comes back `BANK_GRANTEE_MISSING_ROLE` and one for someone already listed
+comes back `DUPLICATE_ENTITY`. Both are 409, they need different answers, and the RFC 7807 `code`
+decides which — never the bare status. The sheet stays open on either, so the pick and the flags
+survive.
+
+A creation with no flag ticked is allowed and is the point: it is the „darf sehen, darf nichts
+buchen" entry.
+
+A **per-member card** replaces the drawn table: three capability columns plus a handle do not fit a
+phone's width the way two short ones did. The account selector stays the drawn chip row, made
+horizontally scrollable so a unit with many accounts does not lose its last one off the edge.
+
+**Acceptance**
+
+- [x] Three capability rows render and no approval one (`BankGrantsScreenTest`).
+- [x] Unticking the last flag sends a change, not a removal (`BankLifecycleViewModelTest`).
+- [x] The removal asks first and only then sends (`BankLifecycleViewModelTest`).
+- [x] A flag change echoes the version it read (`BankLifecycleViewModelTest`).
+- [x] The view-grant note is plain text on the surface, not a tooltip (`BankGrantsScreenTest`).
+- [x] On a `CARTEL` account the copy claims no sight it cannot take away (`BankGrantsScreenTest`).
+- [x] Without Bank-Management the controls are drawn locked and answer when tapped
+  (`BankGrantsScreenTest`).
+- [x] Switching accounts replaces the matrix rather than appending to it
+  (`BankLifecycleViewModelTest`).
+- [x] A row the server already holds is patched even when its version is zero
+  (`BankLifecycleViewModelTest`).
+- [x] A refused flag change reaches the state rather than being swallowed
+  (`BankLifecycleViewModelTest`).
+- [x] Verified on a device against the local test stack: a Bank Employee **without** Bank Management
+  (`test-admin`) gets the locked-tappable tab and the role toast; Bank Management
+  (`test-bank-management`) gets the KPI band, the matrix, a `PATCH` that lands (`200`, version
+  bumped, both directions) and the danger modal.
+- [x] The picker uses `/users/search-bank`, and a search answer whose query has moved on is
+  dropped rather than shown (`BankLifecycleViewModelTest`).
+- [x] A creation is sent as a creation, on the account that is showing, and a creation with nobody
+  picked is not sent at all (`BankLifecycleViewModelTest`).
+- [x] A refused creation keeps the sheet open with the pick intact (`BankLifecycleViewModelTest`).
+- [x] Verified on a device against the local test stack: `GET` fills the picker, `POST` answers
+  `201` for a bank employee, `BANK_GRANTEE_MISSING_ROLE` for a member without the role and
+  `DUPLICATE_ENTITY` for one already listed — each with its own message — `PATCH` answers `200` on
+  the freshly created **version-0** row, and `DELETE` answers `204`.
+
+**Code:** `BankStaffRepository` (`BankGrantSource`), `BankLifecycleViewModel`, `BankGrantsTab`
+
+---
+
+### REQ-APP-BANK-013 — Custody is the unit's, and moving it costs the KRT account a fee
+
+The holder register's detail — design chapter 12, artboard 8 — plus the „+ Halter registrieren"
+action the web has on the same section and the app did not.
+
+**Custody is kept at org-unit level and is not allocated to individual accounts** (handoff
+correction of 27.08.2026). The screen states that under the total rather than leaving the reader to
+infer which account the figure belongs to, and the posting rows carry no account column: a
+holder-to-holder move touches none, and an empty column would imply the figure is account-scoped.
+
+**„Halter-Umbuchung" does touch one account, and the artboard's line does not say so.** Quoted
+verbatim from the web, it promises a move „ohne ein Konto zu berühren"; `BankLedgerService.
+bookHolderTransfer` charges a fee (`operation.transfer_fee_rate`, default 0.5 %) and books it
+against the **KRT (CARTEL)** account, which it locks, requires active and requires covered. As soon
+as the fee rounds above zero an account is very much touched — and if the KRT account is missing or
+uncovered the whole transfer is refused. The app's wording says what actually happens: no account of
+the *unit* is debited, the fee is charged to the KRT account, and the source holder may go negative.
+
+**A 409 from the bank is usually not an optimistic lock.** The shared bank wording answered every
+409 with „gleichzeitig geändert", which is right for a stale version and wrong for every
+`BankConflictException` code. A transfer refused because the fee-bearing KRT account is missing was
+reported as a concurrent edit — advice that sends the member to reload a page which will refuse
+again. `bankConflictMessage` now answers `BANK_SELF_TRANSFER`, `BANK_HOLDER_INACTIVE`,
+`BANK_HOLDER_OVERDRAFT`, `BANK_ACCOUNT_CLOSED` and `BANK_OVERDRAFT` in their own words.
+
+**Registration is the register's first action, not an afterthought.** Without a holder there is no
+custody to look at and no booking confirmation can name one. The picker is the same
+`/users/search-bank` the grants sheet uses.
+
+**Reads are the employee's, the transfer is Bank-Management's**, drawn locked rather than hidden.
+
+**Acceptance**
+
+- [x] A transfer names the shown holder as its source (`BankHolderViewModelTest`).
+- [x] A transfer without a destination, or with a blank amount, is not sent — the second would reach
+  the server as a zero-value posting (`BankHolderViewModelTest`).
+- [x] A refused transfer keeps the sheet open with what was typed (`BankHolderViewModelTest`).
+- [x] A holder register that cannot be read leaves the custody figure standing
+  (`BankHolderViewModelTest`).
+- [x] The transfer offers only *other*, *active* holders (`BankHolderViewModelTest`).
+- [x] Paging past the last page is refused rather than sent (`BankHolderViewModelTest`).
+- [x] The unit-level sentence is on the surface, and a booking kind is translated rather than
+  printed as the wire enum (`BankHolderScreenTest`).
+- [x] A single page carries no pager (`BankHolderScreenTest`).
+- [x] Without Bank-Management the transfer is drawn locked and answers when tapped
+  (`BankHolderScreenTest`).
+- [x] Verified on a device against the local test stack: registration `201`, holder and postings
+  `200`, and the transfer through all three of its answers — `BANK_ACCOUNT_CLOSED` with no KRT
+  account, `BANK_OVERDRAFT` with an empty one, and `201` once the fee was zero, after which the KPI
+  showed **−250 aUEC** and the posting appeared as „Verwahrerwechsel · vor 2 Min.".
+
+**Code:** `BankStaffRepository` (`BankHolderSource`), `BankHolderViewModel`, `BankHolderScreen`,
+`BankCustodySheet`, `BankHolderRegisterSheet`
+
+---
+
+### REQ-APP-BANK-014 — The staff account detail reads through the office, and Storno is not a delete
+
+„Staff-Konto-Detail = Artboard 2 + Storno + Berichte" (design chapter 12 handoff). The same screen
+as the member's, with two things added and one thing changed underneath it.
+
+**It reads the staff paths, not the member ones.** Found on a device: opening an account from the
+Verwaltung scope answered „Access Denied — Dieses Konto ist für dich nicht einsehbar." A bank
+manager holding no view grant cannot see the account through `/org-units/bank/accounts/{id}` — that
+path answers with what the *member* may see, which is the whole point of it — while
+`/api/v1/bank/accounts/{id}` answers for every account of the organisation, closed ones included.
+The screen picks by what `/me/capabilities` said about the caller, not by which list they arrived
+from: a bank employee always gets the office's view.
+
+**„Buchung stornieren" writes a negated counter-booking; the original stays in the ledger
+unchanged** (web wording, verbatim). It is therefore not destructive, and its confirmation says so
+rather than warning about a loss that does not happen.
+
+**`reversedTransactionId` means "this row **is** a reversal", not "this row **has been**
+reversed".** Reading it the other way round — which the app did until a device showed it — labels
+the counter-booking „Storniert" and leaves the *original* offering a Storno the server refuses with
+`BANK_ALREADY_REVERSED`. Which originals already carry a counter-booking is read off the loaded
+rows; an older page's reversal leaves the action offered until the server refuses it, and that
+refusal now has its own sentence.
+
+**The Berichte are downloads, and the app had no way to receive one.** The statement
+(`…/accounts/{id}/statement`) and the three-month export (`/bank/export/three-month-report`) answer
+binary bodies with a `Content-Disposition` naming the file, so `ApiReader.getBytes` fetches them
+with the same token, headers and failure classification as everything else and decodes nothing.
+
+**The file goes to app-private cache and then to a share sheet.** `cacheDir/reports/`, mode `0600`,
+handed on through a `FileProvider` that is `exported="false"`, serves only that sub-path, and grants
+read for the one intent. No storage permission is requested and nothing else on the device can read
+it. The cache rather than `filesDir` because the member already has the file and a copy kept for
+ever is a copy that can leak later. The server's own file name is used, stripped of any path
+separators — a `Content-Disposition` is a header, and a header is input. Re-analysed under § 25
+TDDDG in `ANDROID_APP_PRIVACY_GDPR.md`; the assessment is unchanged.
+
+**The statement's period is the screen's, not the member's.** The web offers a date picker; on a
+phone that is three taps before anything happens, and the common ask is the recent one. The app
+sends the last 90 days, and a member who needs another period has the web.
+
+**Acceptance**
+
+- [x] A counter-booking is recognised as a reversal, and an ordinary booking is not
+  (`BankViewModelTest`).
+- [x] A booking written a moment ago does not render as a countdown, while a genuinely future event
+  still does (`RelativeTimeTest`).
+- [x] Verified on a device against the local test stack: the account opens through the office for a
+  caller with no view grant on it (name, balance and 30-day delta all render), `POST
+  /bank/transactions/{id}/reversal` answers **201**, the ledger then shows the counter-booking and
+  marks the **original** „Storniert", and no Storno is offered on either row afterwards.
+- [x] Verified on a device: `GET …/statement` and `GET /bank/export/three-month-report` both answer
+  `200`, the file lands in `cacheDir/reports/` as `-rw-------` under the server's own name, and the
+  share sheet opens — no storage permission is requested.
+
+**Code:** `BankStaffRepository` (`BankStaffAccountSource`, `BankReversalSource`),
+`BankAccountViewModel`, `BankScreen`

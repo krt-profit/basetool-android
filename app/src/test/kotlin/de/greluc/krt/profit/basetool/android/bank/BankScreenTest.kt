@@ -63,6 +63,7 @@ class BankScreenTest {
     ) = BankBooking(
         id = id,
         type = type,
+        transactionId = "t1",
         amount = amount,
         note = note,
         holder = "Rhea",

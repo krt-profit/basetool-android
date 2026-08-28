@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.common.FileHandoff
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
@@ -71,11 +73,13 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -317,6 +321,10 @@ internal fun String?.isPositiveDelta(): Boolean {
  * @param onRefresh pull-to-refresh.
  * @param onLoadMore the "Ältere laden" control was tapped.
  * @param modifier layout modifier.
+ * @param onReverse a ledger row's Storno was asked for.
+ * @param onStatement the account statement was asked for.
+ * @param onThreeMonthReport the quarter report was asked for.
+ * @param onReportHandled a fetched report has been handed on.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -326,23 +334,33 @@ fun BankAccountScreen(
     onLoadMore: () -> Unit,
     actions: BankSettingsActions,
     modifier: Modifier = Modifier,
+    onReverse: (BankBooking) -> Unit = {},
+    onStatement: () -> Unit = {},
+    onThreeMonthReport: () -> Unit = {},
+    onReportHandled: () -> Unit = {},
 ) {
-    val account = state.account
-    val phase = state.phase
-    if (state.settingsOpen) {
-        state.settings?.let { settings ->
-            // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and
-            // makes the account re-read rather than re-sending a value against a newer version.
-            ConflictOn(
-                error = state.error,
-                onReload = {
-                    actions.onDismiss()
-                    onRefresh()
-                },
-            )
-            BankSettingsSheet(settings = settings, state = state, actions = actions)
+    // The Storno is a BANK_EMPLOYEE act, and the server decides that — the app only draws what
+    // `/me/capabilities` answered.
+    val staff = LocalCaller.current?.bankEmployee == true
+
+    // Which originals already carry a counter-booking. The wire says only which transaction a
+    // Storno negates, so this is read off the rows themselves — right for everything on screen, and
+    // an older page's reversal simply leaves the action offered until the server refuses it, which
+    // it then says plainly.
+    val reversedIds = state.bookings.mapNotNull { it.reversesTransactionId }.toSet()
+
+    // The file is handed on the moment it arrives, then cleared: a report kept in state is a report
+    // re-offered on the next recomposition.
+    val context = LocalContext.current
+    LaunchedEffect(state.report) {
+        state.report?.let { file ->
+            FileHandoff.shareIntent(context, file)?.let { context.startActivity(it) }
+            onReportHandled()
         }
     }
+    val account = state.account
+    val phase = state.phase
+    AccountSettingsOverlay(state = state, actions = actions, onRefresh = onRefresh)
     when {
         account != null -> {
             PullToRefreshBox(
@@ -428,6 +446,15 @@ fun BankAccountScreen(
                                 }
                         }
                     }
+                    if (staff) {
+                        item(key = "reports") {
+                            ReportActions(
+                                busy = state.downloading,
+                                onStatement = onStatement,
+                                onThreeMonthReport = onThreeMonthReport,
+                            )
+                        }
+                    }
                     item(key = "ledger-title") {
                         KrtSectionTitle(
                             text = stringResource(R.string.bank_transactions),
@@ -447,7 +474,12 @@ fun BankAccountScreen(
                         }
                     } else {
                         items(state.bookings, key = { it.id }) { booking ->
-                            BookingRow(booking = booking)
+                            BookingRow(
+                                booking = booking,
+                                staff = staff,
+                                reversed = booking.transactionId in reversedIds,
+                                onReverse = onReverse,
+                            )
                         }
                         item(key = "ledger-footer") {
                             if (state.hasMore) {
@@ -499,7 +531,12 @@ fun BankAccountScreen(
  * @param booking the line.
  */
 @Composable
-private fun BookingRow(booking: BankBooking) {
+private fun BookingRow(
+    booking: BankBooking,
+    staff: Boolean = false,
+    reversed: Boolean = false,
+    onReverse: (BankBooking) -> Unit = {},
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -520,12 +557,32 @@ private fun BookingRow(booking: BankBooking) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (reversed) {
+                // Saying it on the row is what makes the missing action legible: without it, a
+                // member sees a Storno offered on one line and absent on the next for no reason.
+                Text(
+                    text = stringResource(R.string.bank_booking_reversed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
         }
         Text(
             text = booking.signedAmount(),
             style = MaterialTheme.typography.bodyMedium,
             color = booking.amountColor(),
         )
+        // A Storno is offered on an original that still stands and that the reversal can name:
+        // not on a counter-booking, not on one already reversed, and not on a row whose transaction
+        // the wire did not carry.
+        val reversible = !reversed && !booking.isReversal && booking.transactionId != null
+        if (staff && reversible) {
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_reset,
+                label = stringResource(R.string.bank_booking_reverse),
+                onClick = { onReverse(booking) },
+            )
+        }
     }
 }
 
@@ -584,8 +641,22 @@ private fun BankBooking.subline(): String {
  *   untranslated word beats an empty line.
  */
 @Composable
-private fun BankBooking.typeLabel(): String =
+private fun BankBooking.typeLabel(): String = bankTypeLabel(type)
+
+/**
+ * The translated name of a booking kind.
+ *
+ * Shared with the holder detail, which shows the same kinds against custody rather than against an
+ * account — the wording is the same fact either way.
+ *
+ * @param type the server's value.
+ * @return the wording, or the raw server value for a kind this build has never seen — an
+ *   untranslated word beats an empty line.
+ */
+@Composable
+internal fun bankTypeLabel(type: String?): String =
     when (type) {
+        null -> ""
         "DEPOSIT" -> stringResource(R.string.bank_type_deposit)
         "WITHDRAWAL" -> stringResource(R.string.bank_type_withdrawal)
         "TRANSFER" -> stringResource(R.string.bank_type_transfer)
@@ -635,6 +706,7 @@ private fun BankAccountFailure(
  *
  * @param viewModel drives the list.
  * @param onOpenAccount a card was tapped.
+ * @param onOpenHolder a holder row in the Konten tab was tapped.
  * @param modifier layout modifier.
  */
 @Composable
@@ -642,7 +714,9 @@ fun BankAccountsRoute(
     viewModel: BankViewModel,
     requestsViewModel: BankRequestsViewModel,
     staffViewModel: BankStaffViewModel,
+    lifecycleViewModel: BankLifecycleViewModel,
     onOpenAccount: (String) -> Unit,
+    onOpenHolder: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -686,7 +760,9 @@ fun BankAccountsRoute(
         if (scope == STAFF_SCOPE) {
             BankStaffScope(
                 viewModel = staffViewModel,
+                lifecycleViewModel = lifecycleViewModel,
                 onOpenAccount = onOpenAccount,
+                onOpenHolder = onOpenHolder,
                 modifier = Modifier.weight(1f),
             )
             return@Column
@@ -794,16 +870,26 @@ fun BankAccountsRoute(
  *
  * @param viewModel drives the dashboard.
  * @param onOpenAccount a row was tapped.
+ * @param onOpenHolder a holder row in the Konten tab was tapped.
  * @param modifier layout modifier.
  */
 @Composable
 private fun BankStaffScope(
     viewModel: BankStaffViewModel,
+    lifecycleViewModel: BankLifecycleViewModel,
     onOpenAccount: (String) -> Unit,
+    onOpenHolder: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val lifecycle by lifecycleViewModel.state.collectAsStateWithLifecycle()
     var staffTab by rememberSaveable { mutableIntStateOf(0) }
+    var managementToast by remember { mutableStateOf(false) }
+    LaunchedEffect(staffTab) {
+        if (staffTab == LIFECYCLE_TAB || staffTab == GRANTS_TAB) {
+            lifecycleViewModel.loadOnce()
+        }
+    }
     Column(modifier = modifier.fillMaxSize()) {
         KrtPageTabs(
             tabs =
@@ -813,37 +899,110 @@ private fun BankStaffScope(
                         label = stringResource(R.string.bank_staff_tab_requests),
                         count = state.openRequestTotal.takeIf { it > 0 },
                     ),
+                    KrtPageTab(label = stringResource(R.string.bank_staff_tab_lifecycle)),
+                    KrtPageTab(label = stringResource(R.string.bank_staff_tab_grants)),
                 ),
             selectedIndex = staffTab,
-            onSelect = { staffTab = it },
+            onSelect = { chosen ->
+                // Artboard 4 draws GRANTS locked for an employee without Bank-Management —
+                // tappable, never hidden, answering with the role it needs.
+                if (chosen == GRANTS_TAB && !state.management) {
+                    managementToast = true
+                } else {
+                    staffTab = chosen
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
         )
         Box(modifier = Modifier.weight(1f)) {
             StaffScopeContent(
                 state = state,
+                lifecycle = lifecycle,
                 viewModel = viewModel,
+                lifecycleViewModel = lifecycleViewModel,
                 tab = staffTab,
                 onOpenAccount = onOpenAccount,
+                onOpenHolder = onOpenHolder,
+                onLocked = { managementToast = true },
             )
+        }
+        if (staffTab == LIFECYCLE_TAB && phaseIsReady(state)) {
+            KrtBottomCtaBar(
+                modifier =
+                    if (isWideWindow()) {
+                        Modifier.padding(bottom = LocalKrtBottomBarInset.current)
+                    } else {
+                        Modifier
+                    },
+            ) {
+                KrtCtaButton(
+                    text = stringResource(R.string.bank_lifecycle_create),
+                    onClick = {
+                        if (state.management) {
+                            lifecycleViewModel.onPrompt(BankLifecyclePrompt.Create(""))
+                        } else {
+                            managementToast = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    iconRes =
+                        if (state.management) {
+                            DesignR.drawable.ic_krt_plus
+                        } else {
+                            DesignR.drawable.ic_krt_lock
+                        },
+                )
+            }
         }
     }
     StaffScopeDialogs(state = state, viewModel = viewModel)
+    BankLifecycleDialogs(state = lifecycle, viewModel = lifecycleViewModel)
+    if (managementToast) {
+        KrtToast(
+            title = stringResource(R.string.bank_staff_tab_lifecycle),
+            message = stringResource(R.string.bank_staff_grants_locked),
+            actionLabel = stringResource(R.string.action_ok),
+            onAction = { managementToast = false },
+        )
+    }
 }
+
+/**
+ * Whether the scope's read has resolved.
+ *
+ * @param state the scope.
+ * @return whether its content is on screen.
+ */
+private fun phaseIsReady(state: BankStaffState): Boolean = state.phase is BankPhase.Ready
+
+/** Which of the Verwaltung tabs the lifecycle sits on. */
+private const val LIFECYCLE_TAB = 2
+
+/** And the grants matrix. */
+private const val GRANTS_TAB = 3
 
 /**
  * What the selected staff tab shows, once the read has resolved.
  *
  * @param state what the scope holds.
- * @param viewModel drives it.
+ * @param lifecycle what the Konten tab holds.
+ * @param viewModel drives the dashboard and the queue.
+ * @param lifecycleViewModel drives the Konten tab.
  * @param tab which tab is selected.
  * @param onOpenAccount a row was tapped.
+ * @param onOpenHolder a holder row in the Konten tab was tapped.
+ * @param onLocked a locked lifecycle action was tapped.
  */
 @Composable
 private fun StaffScopeContent(
     state: BankStaffState,
+    lifecycle: BankLifecycleState,
     viewModel: BankStaffViewModel,
+    lifecycleViewModel: BankLifecycleViewModel,
     tab: Int,
     onOpenAccount: (String) -> Unit,
+    onOpenHolder: (String) -> Unit,
+    onLocked: () -> Unit,
 ) {
     val modifier = Modifier.fillMaxSize()
     when (val phase = state.phase) {
@@ -883,7 +1042,37 @@ private fun StaffScopeContent(
         }
 
         is BankPhase.Ready -> {
-            if (tab == 0) {
+            if (tab == GRANTS_TAB) {
+                BankGrantsTab(
+                    state = lifecycle,
+                    accounts = lifecycle.accounts,
+                    management = state.management,
+                    actions =
+                        BankGrantsActions(
+                            onSelectAccount = lifecycleViewModel::onSelectGrantAccount,
+                            onSetGrant = lifecycleViewModel::onSetGrant,
+                            onRevoke = lifecycleViewModel::onPrompt,
+                            onLocked = onLocked,
+                            onAdd = lifecycleViewModel::onAddGrant,
+                        ),
+                    modifier = modifier,
+                )
+            } else if (tab == LIFECYCLE_TAB) {
+                BankLifecycleTab(
+                    state = lifecycle,
+                    management = state.management,
+                    onRefresh = lifecycleViewModel::onRefresh,
+                    actions =
+                        BankLifecycleActions(
+                            onExpand = lifecycleViewModel::onExpand,
+                            onPrompt = lifecycleViewModel::onPrompt,
+                            onOpenHolder = { onOpenHolder(it.id) },
+                            onAddHolder = lifecycleViewModel::onAddHolder,
+                            onLocked = onLocked,
+                        ),
+                    modifier = modifier,
+                )
+            } else if (tab == 0) {
                 BankStaffOverview(
                     state = state,
                     onRefresh = viewModel::onRefresh,
@@ -970,6 +1159,218 @@ private fun StaffScopeDialogs(
 private const val STAFF_SCOPE = 1
 
 /**
+ * The Konten tab's confirmations.
+ *
+ * None of them is destructive — closing is reversible and a deactivated holder keeps their
+ * holdings withdrawable — so none carries a type-to-confirm hurdle. Every wording is the web
+ * frontend's own, so the same act reads the same on both surfaces.
+ *
+ * @param state what the tab holds.
+ * @param viewModel drives it.
+ */
+@Composable
+private fun BankLifecycleDialogs(
+    state: BankLifecycleState,
+    viewModel: BankLifecycleViewModel,
+) {
+    state.holderDraft?.let { draft ->
+        BankHolderRegisterSheet(
+            draft = draft,
+            saving = state.saving,
+            error = state.error,
+            actions =
+                BankHolderRegisterActions(
+                    onQuery = viewModel::onHolderQuery,
+                    onSelect = viewModel::onHolderSelected,
+                    onConfirm = viewModel::onRegisterHolder,
+                    onDismiss = viewModel::onDismissHolderDraft,
+                ),
+        )
+    }
+    state.granteeDraft?.let { draft ->
+        BankGrantSheet(
+            draft = draft,
+            accountName =
+                state.accounts.firstOrNull { it.id == state.grantAccountId }?.name.orEmpty(),
+            saving = state.saving,
+            error = state.error,
+            actions =
+                BankGrantSheetActions(
+                    onQuery = viewModel::onGranteeQuery,
+                    onSelect = viewModel::onGranteeSelected,
+                    onDraftChanged = viewModel::onGrantDraftChanged,
+                    onCreate = viewModel::onCreateGrant,
+                    onDismiss = viewModel::onDismissGrantDraft,
+                ),
+        )
+    }
+    val prompt = state.prompt ?: return
+    val naming = prompt is BankLifecyclePrompt.Rename || prompt is BankLifecyclePrompt.Create
+    KrtModal(
+        title = stringResource(prompt.titleRes()),
+        confirmText = stringResource(prompt.confirmRes()),
+        onConfirm = viewModel::onConfirmPrompt,
+        onDismiss = viewModel::onDismissPrompt,
+        tone =
+            if (prompt is BankLifecyclePrompt.Close || prompt is BankLifecyclePrompt.RevokeGrant) {
+                KrtModalTone.Danger
+            } else {
+                KrtModalTone.Standard
+            },
+    ) {
+        prompt.bodyRes()?.let { body ->
+            Text(
+                text = stringResource(body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+        }
+        if (naming) {
+            KrtTextField(
+                value = prompt.name(),
+                onValueChange = viewModel::onNameChanged,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.bank_lifecycle_name),
+                isError = state.error != null,
+                errorText = state.error?.let { bankRequestErrorMessage(it) },
+            )
+        } else {
+            state.error?.let { error ->
+                Text(
+                    text = bankRequestErrorMessage(error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The heading each confirmation carries.
+ *
+ * @return the string resource.
+ */
+private fun BankLifecyclePrompt.titleRes(): Int =
+    when (this) {
+        is BankLifecyclePrompt.Close -> {
+            R.string.bank_lifecycle_close_title
+        }
+
+        is BankLifecyclePrompt.Reopen -> {
+            R.string.bank_lifecycle_reopen_title
+        }
+
+        is BankLifecyclePrompt.Rename -> {
+            R.string.bank_lifecycle_rename_title
+        }
+
+        is BankLifecyclePrompt.Create -> {
+            R.string.bank_lifecycle_create_title
+        }
+
+        is BankLifecyclePrompt.HolderActivation -> {
+            if (active) {
+                R.string.bank_lifecycle_holder_reactivate_title
+            } else {
+                R.string.bank_lifecycle_holder_deactivate_title
+            }
+        }
+
+        is BankLifecyclePrompt.RevokeGrant -> {
+            R.string.bank_grants_revoke_title
+        }
+    }
+
+/**
+ * What the confirming button says.
+ *
+ * @return the string resource.
+ */
+private fun BankLifecyclePrompt.confirmRes(): Int =
+    when (this) {
+        is BankLifecyclePrompt.Close -> {
+            R.string.bank_lifecycle_close
+        }
+
+        is BankLifecyclePrompt.Reopen -> {
+            R.string.bank_lifecycle_reopen
+        }
+
+        is BankLifecyclePrompt.Rename -> {
+            R.string.bank_lifecycle_rename
+        }
+
+        is BankLifecyclePrompt.Create -> {
+            R.string.bank_lifecycle_create
+        }
+
+        is BankLifecyclePrompt.HolderActivation -> {
+            if (active) {
+                R.string.bank_lifecycle_holder_reactivate
+            } else {
+                R.string.bank_lifecycle_holder_deactivate
+            }
+        }
+
+        is BankLifecyclePrompt.RevokeGrant -> {
+            R.string.bank_grants_revoke
+        }
+    }
+
+/**
+ * The consequence it states, or `null` when the field alone says enough.
+ *
+ * @return the string resource, or `null`.
+ */
+private fun BankLifecyclePrompt.bodyRes(): Int? =
+    when (this) {
+        is BankLifecyclePrompt.Close -> {
+            R.string.bank_lifecycle_close_text
+        }
+
+        is BankLifecyclePrompt.Reopen -> {
+            R.string.bank_lifecycle_reopen_text
+        }
+
+        is BankLifecyclePrompt.Rename -> {
+            null
+        }
+
+        is BankLifecyclePrompt.Create -> {
+            null
+        }
+
+        is BankLifecyclePrompt.HolderActivation -> {
+            if (active) {
+                R.string.bank_lifecycle_holder_reactivate_text
+            } else {
+                R.string.bank_lifecycle_holder_deactivate_text
+            }
+        }
+
+        is BankLifecyclePrompt.RevokeGrant -> {
+            if (sightSurvives) {
+                R.string.bank_grants_revoke_text_cartel
+            } else {
+                R.string.bank_grants_revoke_text
+            }
+        }
+    }
+
+/**
+ * The name a naming prompt currently carries.
+ *
+ * @return the name, or empty for a prompt that names nothing.
+ */
+private fun BankLifecyclePrompt.name(): String =
+    when (this) {
+        is BankLifecyclePrompt.Rename -> name
+        is BankLifecyclePrompt.Create -> name
+        else -> ""
+    }
+
+/**
  * One account, bound to its view model.
  *
  * @param viewModel drives the screen.
@@ -981,8 +1382,40 @@ fun BankAccountRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    state.reversal?.let { booking ->
+        KrtModal(
+            title = stringResource(R.string.bank_booking_reverse_title),
+            confirmText = stringResource(R.string.bank_booking_reverse),
+            onConfirm = viewModel::onConfirmReversal,
+            onDismiss = viewModel::onDismissReversal,
+            tone = KrtModalTone.Danger,
+        ) {
+            Text(
+                text = stringResource(R.string.bank_booking_reverse_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+            )
+            KrtTextField(
+                value = state.reversalNote,
+                onValueChange = viewModel::onReversalNote,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.bank_booking_reverse_note),
+            )
+            state.error?.let { error ->
+                Text(
+                    text = bankConflictMessage(error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
+        }
+    }
     BankAccountScreen(
         state = state,
+        onReverse = viewModel::onReverse,
+        onStatement = viewModel::onStatement,
+        onThreeMonthReport = viewModel::onThreeMonthReport,
+        onReportHandled = viewModel::onReportHandled,
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,
         actions =
@@ -1143,3 +1576,76 @@ private fun BankVisibilitySection(
 
 /** Signs the server may put in front of a negative delta: hyphen-minus and U+2212. */
 private const val MINUS_SIGNS = "-−"
+
+/**
+ * „Kontoauszug" and „3-Monats-Bericht", the staff account detail's two reports.
+ *
+ * Its own composable so the screen stays under detekt's complexity limit, and because the pair is
+ * one idea: both fetch a file and hand it to a share sheet, and neither is offered to a member.
+ *
+ * @param busy whether a report is already being fetched.
+ * @param onStatement the statement was asked for.
+ * @param onThreeMonthReport the quarter report was asked for.
+ */
+@Composable
+private fun ReportActions(
+    busy: Boolean,
+    onStatement: () -> Unit,
+    onThreeMonthReport: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        KrtOutlineButton(
+            text = stringResource(R.string.bank_report_statement),
+            onClick = onStatement,
+            modifier = Modifier.weight(1f),
+            enabled = !busy,
+            iconRes = DesignR.drawable.ic_krt_pdf,
+        )
+        KrtOutlineButton(
+            text = stringResource(R.string.bank_report_quarter),
+            onClick = onThreeMonthReport,
+            modifier = Modifier.weight(1f),
+            enabled = !busy,
+            iconRes = DesignR.drawable.ic_krt_download,
+        )
+    }
+}
+
+/**
+ * The settings sheet and the conflict dialog that shares its screen.
+ *
+ * Extracted so the account screen stays under detekt's complexity limit; the two belong together
+ * anyway, since the dialog exists to resolve a refusal the sheet caused.
+ *
+ * @param state what the screen holds.
+ * @param actions what the sheet reports back.
+ * @param onRefresh re-reads the account after a conflict.
+ */
+@Composable
+private fun AccountSettingsOverlay(
+    state: BankAccountState,
+    actions: BankSettingsActions,
+    onRefresh: () -> Unit,
+) {
+    if (!state.settingsOpen) {
+        return
+    }
+    state.settings?.let { settings ->
+        // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and makes the
+        // account re-read rather than re-sending a value against a newer version.
+        ConflictOn(
+            error = state.error,
+            onReload = {
+                actions.onDismiss()
+                onRefresh()
+            },
+        )
+        BankSettingsSheet(settings = settings, state = state, actions = actions)
+    }
+}

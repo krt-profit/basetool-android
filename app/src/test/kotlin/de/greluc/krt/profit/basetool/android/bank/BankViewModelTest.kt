@@ -131,7 +131,18 @@ class BankViewModelTest {
 
     private fun detail() = BankAccountDetail("a1", "K-001", "Einsatzkasse", "84200.0000", null, TWO)
 
-    private fun booking(id: String) = BankBooking(id, "DEPOSIT", "1.0", null, null, null)
+    private fun booking(id: String) =
+        BankBooking(id, "t-$id", "DEPOSIT", "1.0", null, null, null)
+
+    @Test
+    fun `a counter-booking is a reversal, not a reversed row`() {
+        // The wire field names the transaction a row NEGATES. Read the other way round it labels
+        // the Storno as reversed and leaves the original offering an action the server refuses.
+        val storno = BankBooking("p2", "t2", "REVERSAL", "-1.0", null, null, null, "t-p1")
+        assertTrue(storno.isReversal)
+        assertEquals("t-p1", storno.reversesTransactionId)
+        assertTrue(!booking("p1").isReversal)
+    }
 
     private fun ledger(
         vararg rows: BankBooking,

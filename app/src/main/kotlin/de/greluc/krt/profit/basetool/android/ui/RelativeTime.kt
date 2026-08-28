@@ -68,7 +68,12 @@ fun Instant.relativeTo(
     context: Context,
     zone: ZoneId,
 ): String {
-    val millis = toEpochMilli()
+    // A row written a moment ago can carry a timestamp a hair ahead of this device's clock, and
+    // `getRelativeTimeSpanString` says „in 0 Min." for anything even a millisecond in the future.
+    // Only that sliver is clamped: this function also renders genuinely future events — a mission
+    // „in 5 Std." — and flattening those would be a worse lie than the one it fixes.
+    val ahead = toEpochMilli() - now.toEpochMilli()
+    val millis = if (ahead in 1..CLOCK_SKEW_MILLIS) now.toEpochMilli() else toEpochMilli()
     // Formatted in the zone this function was GIVEN, not in the device's.
     //
     // `DateUtils.formatDateTime` ignores any zone and uses the system default, so the function took
@@ -150,3 +155,11 @@ private fun String.decapitalised(context: Context): String = replaceFirstChar { 
  * @return that locale, or the JVM default when the configuration carries none.
  */
 private fun locale(context: Context): Locale = context.resources.configuration.locales[0] ?: Locale.getDefault()
+
+/**
+ * How far ahead of this device a server timestamp may be and still count as "just now".
+ *
+ * One minute: below the resolution `getRelativeTimeSpanString` reports in anyway, so nothing that
+ * would have rendered a real countdown is affected.
+ */
+private const val CLOCK_SKEW_MILLIS: Long = 60_000

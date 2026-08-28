@@ -42,6 +42,8 @@ import de.greluc.krt.profit.basetool.android.auth.CustomTabLauncher
 import de.greluc.krt.profit.basetool.android.auth.LoginScreen
 import de.greluc.krt.profit.basetool.android.auth.LoginViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankHolderViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
@@ -76,6 +78,7 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
@@ -177,6 +180,9 @@ class MainActivity : AppCompatActivity() {
         authViewModels(container)
     }
     private val bankStaffViewModel: BankStaffViewModel by viewModels { authViewModels(container) }
+    private val bankLifecycleViewModel: BankLifecycleViewModel by viewModels {
+        authViewModels(container)
+    }
 
     /** Beförderung — the member's own assessments and rank standings (#66). */
 
@@ -333,12 +339,31 @@ class MainActivity : AppCompatActivity() {
                                     bank = bankViewModel,
                                     bankRequests = bankRequestsViewModel,
                                     bankStaff = bankStaffViewModel,
+                                    bankLifecycle = bankLifecycleViewModel,
                                     bankAccount = {
                                         BankAccountViewModel(
                                             container.bank,
                                             container.connectivity,
                                             it,
                                             container.liveSync,
+                                            // Only bank staff may reverse, and the server says
+                                            // whether this caller is; the screen just draws it.
+                                            reversalSource = container.bankStaff,
+                                            staffSource = container.bankStaff,
+                                            reports = container.bankStaff,
+                                            // A bank employee reads the account through the office:
+                                            // the member path answers 403 for an account they hold
+                                            // no view grant on but are responsible for.
+                                            throughTheOffice = {
+                                                container.identity.known?.bankEmployee == true
+                                            },
+                                        )
+                                    },
+                                    bankHolder = {
+                                        BankHolderViewModel(
+                                            container.bankStaff,
+                                            container.bankStaff,
+                                            it,
                                         )
                                     },
                                     orders = ordersViewModel,
@@ -354,12 +379,16 @@ class MainActivity : AppCompatActivity() {
                                     inventory = inventoryViewModel,
                                     exchange = exchangeViewModel,
                                     refinery = refineryViewModel,
+                                    refineryCreate = {
+                                        RefineryCreateViewModel(container.refinery)
+                                    },
                                     refineryOrder = {
                                         RefineryDetailViewModel(
                                             container.refinery,
                                             container.connectivity,
                                             it,
                                             container.liveSync,
+                                            container.refinery,
                                         )
                                     },
                                     personalInventory = personalInventoryViewModel,
@@ -573,8 +602,19 @@ class MainActivity : AppCompatActivity() {
         private fun InitializerViewModelFactoryBuilder.bankViewModels(container: AuthContainer) {
             initializer { BankViewModel(container.bank, container.liveSync) }
             initializer {
+                BankLifecycleViewModel(
+                    container.bankStaff,
+                    container.bankStaff,
+                    container.bankStaff,
+                    // „Einheit (vorbelegt)" is the caller's pinned context. A caller who has
+                    // pinned ALL units has no single answer, and the store reports null there
+                    // rather than picking one — so the creation is refused instead of guessed.
+                    container.activeOrgUnit::current,
+                )
+            }
+            initializer {
                 BankStaffViewModel(
-                    container.bank,
+                    container.bankStaff,
                     // The member-visible list is what makes "ohne eigenen View-Grant"
                     // answerable: an account on the staff list but not on this one is one the
                     // caller reaches only through their office.

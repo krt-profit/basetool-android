@@ -32,6 +32,7 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
+import de.greluc.krt.profit.basetool.android.core.data.BankStaffTotals
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
@@ -77,10 +78,21 @@ fun BankStaffOverview(
         modifier = modifier.fillMaxSize(),
     ) {
         if (state.rows.isEmpty()) {
+            // Two different emptinesses. Management sees every account there is, so an empty list
+            // means the organisation runs none. An employee sees only what they hold a grant for,
+            // so an empty list usually means they hold none — and telling them the bank has no
+            // accounts would be false, in the one place they cannot check.
             KrtEmptyState(
                 iconRes = DesignR.drawable.ic_krt_bank,
                 title = stringResource(R.string.bank_staff_empty_title),
-                message = stringResource(R.string.bank_staff_empty_message),
+                message =
+                    stringResource(
+                        if (state.management) {
+                            R.string.bank_staff_empty_message
+                        } else {
+                            R.string.bank_staff_empty_message_no_grant
+                        },
+                    ),
                 modifier = Modifier.padding(KrtSpacing.lg),
             )
             return@PullToRefreshBox
@@ -90,9 +102,17 @@ fun BankStaffOverview(
             contentPadding = PaddingValues(KrtSpacing.md),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         ) {
-            item(key = "kpi") { StaffKpiBand(state = state) }
+            // The aggregate strip is management's alone (REQ-BANK-010); the server sends none
+            // to anyone else, and inventing zeroes for it would assert an empty bank.
+            state.totals?.let { totals ->
+                item(key = "kpi") { StaffKpiBand(state = state, totals = totals) }
+            }
             items(state.rows, key = { it.account.id }) { row ->
-                StaffAccountRow(row = row, onClick = { onOpenAccount(row.account.id) })
+                StaffAccountRow(
+                    row = row,
+                    management = state.management,
+                    onClick = { onOpenAccount(row.account.id) },
+                )
             }
         }
     }
@@ -102,21 +122,25 @@ fun BankStaffOverview(
  * The KPI band and the line that counts what it is made of.
  *
  * @param state what the tab holds.
+ * @param totals the strip's figures; the caller has already established there are some.
  */
 @Composable
-private fun StaffKpiBand(state: BankStaffState) {
+private fun StaffKpiBand(
+    state: BankStaffState,
+    totals: BankStaffTotals,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
         // The same tile the member list uses, which is the component the design intends for "this
         // figure is the sum of the screen" — orange leading bar, muted uppercase label, tabular
         // value.
         KrtTotalTile(
             label = stringResource(R.string.bank_staff_kpi_label_plain),
-            value = formatAmount(state.totals.totalBalance.orEmpty()),
+            value = formatAmount(totals.totalBalance.orEmpty()),
             unit = stringResource(R.string.bank_total_unit),
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            text = state.countsLine(),
+            text = state.countsLine(totals),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
             modifier = Modifier.padding(horizontal = KrtSpacing.xs).testTag(BANK_STAFF_COUNTS_TAG),
@@ -130,10 +154,11 @@ private fun StaffKpiBand(state: BankStaffState) {
  * When the queue was too long to walk to the end, the request count is prefixed rather than shown
  * bare — a floor stated as a floor, not a total that happens to be wrong (ADR-0104).
  *
+ * @param totals the strip's figures.
  * @return the assembled line.
  */
 @Composable
-private fun BankStaffState.countsLine(): String {
+private fun BankStaffState.countsLine(totals: BankStaffTotals): String {
     val separator = stringResource(R.string.bank_staff_counts_separator)
     val accounts = (totals.activeAccounts + totals.closedAccounts).toInt()
     val parts =
@@ -164,11 +189,14 @@ private fun BankStaffState.countsLine(): String {
  * One account of the unit.
  *
  * @param row the account plus what the dashboard could not say about it.
+ * @param management whether the caller sees beyond their own grants, which decides whether the
+ *   "reached only through the office" mark can mean anything.
  * @param onClick the row was tapped.
  */
 @Composable
 private fun StaffAccountRow(
     row: BankStaffRow,
+    management: Boolean,
     onClick: () -> Unit,
 ) {
     val closed = row.account.status == BankAccountStatus.CLOSED
@@ -188,7 +216,7 @@ private fun StaffAccountRow(
                         MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = KrtPalette.White,
                 )
-                StaffAccountChips(row = row, closed = closed)
+                StaffAccountChips(row = row, closed = closed, management = management)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -229,11 +257,13 @@ private fun StaffAccountRow(
  *
  * @param row the account plus its annotations.
  * @param closed whether it is closed, which is stated instead of the rest.
+ * @param management whether the caller sees beyond their own grants.
  */
 @Composable
 private fun StaffAccountChips(
     row: BankStaffRow,
     closed: Boolean,
+    management: Boolean,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
         if (closed) {
@@ -254,7 +284,10 @@ private fun StaffAccountChips(
                 tone = KrtChipTone.Warning,
             )
         }
-        if (!row.viewable) {
+        // Only management sees accounts beyond their own grants, so only there can a row be
+        // one the caller reaches purely through their office. An employee's list is already
+        // grant-shaped, and marking every row would say nothing.
+        if (management && !row.viewable) {
             KrtChip(
                 text = stringResource(R.string.bank_staff_chip_no_grant),
                 tone = KrtChipTone.Data,

@@ -17,6 +17,8 @@ import de.greluc.krt.profit.basetool.android.core.data.RefineryOrder
 import de.greluc.krt.profit.basetool.android.core.data.RefineryPhase
 import de.greluc.krt.profit.basetool.android.core.data.RefineryServerStatus
 import de.greluc.krt.profit.basetool.android.core.data.RefinerySource
+import de.greluc.krt.profit.basetool.android.core.data.RefineryStoreLine
+import de.greluc.krt.profit.basetool.android.core.data.RefineryStoreSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -356,6 +358,8 @@ sealed interface RefineryDetailPhase {
  * @property confirming whether the „In Lager buchen" confirmation is showing
  * @property storing whether the booking is in flight
  * @property stored whether this screen booked it, which is what the confirmation line reports
+ * @property lines the Einlagern form, one per material of the run, or empty while it is closed
+ * @property busy set while the run is being booked, or `null`
  * @property online whether a write can be sent at all
  * @property error what the last write returned, or `null`
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
@@ -373,6 +377,8 @@ data class RefineryDetailState(
     val error: ApiError? = null,
     val retryIn: Int? = null,
     val now: OffsetDateTime = OffsetDateTime.now(),
+    val lines: List<RefineryStoreLine> = emptyList(),
+    val busy: String? = null,
 ) {
     /** Whether the booking may be offered at all. */
     val storable: Boolean
@@ -382,20 +388,23 @@ data class RefineryDetailState(
 /**
  * Drives one Raffinerie order and its booking (REQ-APP-REF-005…006).
  *
- * **The booking derives its whole payload from the order.** Each good becomes one Lager entry at
- * the order's own location, with the good's quality and output amount — which is what design
- * chapter 11 describes and what keeps the app off a picker the design does not have.
+ * **The booking starts from the order and is meant to be corrected.** Each material begins at the
+ * run's computed figure and the order's own refinery; every one of those is editable, because what
+ * a run calculated and what came out of it are not always the same number — design chapter 11,
+ * artboard 3, which calls that override the reason the form exists.
  *
  * @property source where the order comes from
  * @property connectivity whether the device has a network
  * @property orderId which order to load
  * @property liveSync the shared change stream, or `null` when it is not wired
+ * @property storeSource books one material at a time, or `null` when the booking is not wired
  */
 class RefineryDetailViewModel(
     private val source: RefinerySource,
     connectivity: Connectivity?,
     orderId: String,
     private val liveSync: LiveSyncSource? = null,
+    private val storeSource: RefineryStoreSource? = null,
     clock: Flow<OffsetDateTime> = minuteTicker(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(RefineryDetailState(orderId = orderId))
@@ -540,7 +549,88 @@ class RefineryDetailViewModel(
         }
     }
 
+    /**
+     * Opens the Einlagern form, one line per material of the run.
+     *
+     * Each line starts at the computed figure and at the order's own refinery, which is what makes
+     * the common case a single tap — and every one of them is meant to be overridable, because what
+     * the run calculated and what came out of it are not always the same number.
+     */
+    fun onStoreFormRequested() {
+        val order = mutableState.value.order ?: return
+        mutableState.value =
+            mutableState.value.copy(
+                lines =
+                    order.yields.mapNotNull { good ->
+                        good.materialId?.let {
+                            RefineryStoreLine(
+                                materialId = it,
+                                materialName = good.materialName,
+                                computed = good.amount,
+                                amount = good.amount.toString(),
+                                quality = good.quality ?: 0,
+                                locationId = order.locationId,
+                            )
+                        }
+                    },
+                error = null,
+            )
+    }
+
+    /** Closes the form, discarding what was typed on lines that were not booked. */
+    fun onStoreFormDismissed() {
+        mutableState.value = mutableState.value.copy(lines = emptyList(), busy = null)
+    }
+
+    /**
+     * Records a change to one line.
+     *
+     * @param line the line as it now stands.
+     */
+    fun onLineChanged(line: RefineryStoreLine) {
+        mutableState.value =
+            mutableState.value.copy(
+                lines =
+                    mutableState.value.lines.map { if (it.key == line.key) line else it },
+            )
+    }
+
+    /**
+     * Books every line of the form in one call.
+     *
+     * One call, because the server closes the order on it: booking card by card loses every
+     * material after the first, which a device demonstrated before this was a single submit.
+     */
+    fun onStoreAll() {
+        val current = mutableState.value
+        val orderId = current.order?.id
+        val writer = storeSource
+        val sendable = orderId != null && writer != null && current.lines.isNotEmpty()
+        if (!sendable || current.busy != null) {
+            return
+        }
+        mutableState.value = current.copy(busy = ALL_LINES, error = null)
+        viewModelScope.launch {
+            val answer = requireNotNull(writer).storeLines(requireNotNull(orderId), current.lines)
+            when (answer) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(busy = null, stored = true, lines = emptyList())
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "storing the run was refused: ${answer.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(busy = null, error = answer.error)
+                }
+            }
+        }
+    }
+
     private companion object {
+        /** What `busy` holds while the whole run is in flight; the call is not per line. */
+        const val ALL_LINES = "all"
+
         /** Log subsystem. */
         const val LOG_TAG = "refinery"
     }

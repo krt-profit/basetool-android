@@ -55,9 +55,10 @@ class BankStaffScreenTest {
 
     private fun render(
         row: BankStaffRow,
-        totals: BankStaffTotals = BankStaffTotals("84200.0000", 1, 0),
+        totals: BankStaffTotals? = BankStaffTotals("84200.0000", 1, 0),
         openTotal: Int = 0,
         partial: Boolean = false,
+        management: Boolean = true,
     ) {
         compose.setContent {
             KrtTheme {
@@ -68,6 +69,7 @@ class BankStaffScreenTest {
                             totals = totals,
                             openRequestTotal = openTotal,
                             countsPartial = partial,
+                            management = management,
                             phase = BankPhase.Ready,
                         ),
                     onRefresh = {},
@@ -118,10 +120,52 @@ class BankStaffScreenTest {
     }
 
     @Test
-    fun `an account reached only through the office is marked`() {
-        render(BankStaffRow(account(), openRequests = 0, viewable = false))
+    fun `an account reached only through the office is marked, for management`() {
+        render(BankStaffRow(account(), openRequests = 0, viewable = false), management = true)
 
         compose.onNodeWithText("ohne eigenen View-Grant", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `an employee's list is already grant-shaped, so nothing is marked`() {
+        render(
+            row = BankStaffRow(account(), openRequests = 0, viewable = false),
+            totals = null,
+            management = false,
+        )
+
+        // Only management sees beyond their own grants. Marking every row for an employee would
+        // say nothing at all.
+        assertEquals(
+            0,
+            compose.onAllNodesWithText("View-Grant", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .size,
+        )
+    }
+
+    @Test
+    fun `an employee gets no aggregate strip, and no zeroes standing in for one`() {
+        render(
+            row = BankStaffRow(account(), openRequests = 0, viewable = true),
+            totals = null,
+            management = false,
+        )
+
+        // The server withholds the strip from anyone who is not Bank-Management (REQ-BANK-010).
+        // Rendering zeroes would tell an employee the bank is empty.
+        assertEquals(
+            0,
+            compose.onAllNodesWithText("Gesamt", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .size,
+        )
+        assertEquals(
+            0,
+            compose.onAllNodesWithText("offene Anträge", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .size,
+        )
     }
 
     @Test

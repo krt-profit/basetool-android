@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The one directory reports are written to. Naming the sub-path rather than the whole cache keeps
+    the grant to what it is for: a provider that can serve every cached file is a provider that can
+    serve one nobody meant to share.
+-->
+<paths>
+    <cache-path
+        name="reports"
+        path="reports/" />
+</paths>

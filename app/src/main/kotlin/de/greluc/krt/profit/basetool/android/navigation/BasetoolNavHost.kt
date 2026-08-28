@@ -30,6 +30,9 @@ import androidx.navigation.navDeepLink
 import de.greluc.krt.profit.basetool.android.bank.BankAccountRoute
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankAccountsRoute
+import de.greluc.krt.profit.basetool.android.bank.BankHolderRoute
+import de.greluc.krt.profit.basetool.android.bank.BankHolderViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
@@ -68,6 +71,8 @@ import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateRoute
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryOrderDetailRoute
 import de.greluc.krt.profit.basetool.android.refinery.RefineryOrdersRoute
@@ -105,7 +110,9 @@ import de.greluc.krt.profit.basetool.android.ui.isWideWindow
  * @param bank drives the Konten list.
  * @param bankRequests drives the Anträge tab and the request sheet.
  * @param bankStaff drives the Verwaltung scope.
+ * @param bankLifecycle drives its Konten tab.
  * @param bankAccount builds a view model for one account.
+ * @param bankHolder builds a view model for one holder's custody.
  * @param orders drives the Auftrag queue.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
@@ -134,13 +141,16 @@ fun BasetoolNavHost(
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
     bankStaff: BankStaffViewModel,
+    bankLifecycle: BankLifecycleViewModel,
     bankAccount: (String) -> BankAccountViewModel,
+    bankHolder: (String) -> BankHolderViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     inventory: InventoryViewModel,
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    refineryCreate: () -> RefineryCreateViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -190,6 +200,7 @@ fun BasetoolNavHost(
                             bank = bank,
                             bankRequests = bankRequests,
                             bankStaff = bankStaff,
+                            bankLifecycle = bankLifecycle,
                             bankAccount = bankAccount,
                             orders = orders,
                             orderDetail = orderDetail,
@@ -211,8 +222,11 @@ fun BasetoolNavHost(
                             missionDetail = missionDetail,
                             operationDetail = operationDetail,
                             bankAccount = bankAccount,
+                            bankHolder = bankHolder,
+                            bankStaff = bankStaff,
                             orderDetail = orderDetail,
                             refineryOrder = refineryOrder,
+                            refineryCreate = refineryCreate,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -243,6 +257,7 @@ fun BasetoolNavHost(
  * @param bank drives the Konten list.
  * @param bankRequests drives the Anträge tab and the request sheet.
  * @param bankStaff drives the Verwaltung scope.
+ * @param bankLifecycle drives its Konten tab.
  * @param orders drives the Auftrag queue.
  * @param inventory drives the Lager tree.
  * @param memberName the member's name, for the greeting.
@@ -266,6 +281,7 @@ private fun listDestination(
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
     bankStaff: BankStaffViewModel,
+    bankLifecycle: BankLifecycleViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
@@ -288,6 +304,7 @@ private fun listDestination(
             bank = bank,
             bankRequests = bankRequests,
             bankStaff = bankStaff,
+            bankLifecycle = bankLifecycle,
             bankAccount = bankAccount,
             orders = orders,
             orderDetail = orderDetail,
@@ -421,6 +438,7 @@ private fun listDetailDestination(
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
     bankStaff: BankStaffViewModel,
+    bankLifecycle: BankLifecycleViewModel,
     bankAccount: (String) -> BankAccountViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
@@ -477,9 +495,14 @@ private fun listDetailDestination(
                     viewModel = bank,
                     requestsViewModel = bankRequests,
                     staffViewModel = bankStaff,
+                    lifecycleViewModel = bankLifecycle,
                     onOpenAccount = {
                         if (wide) selected = it else navController.navigate(bankAccountRoute(it))
                     },
+                    // A full screen rather than the detail pane: the holder register is a section
+                    // of the Konten tab, not a list of its own, so there is nothing to keep beside
+                    // it.
+                    onOpenHolder = { navController.navigate(bankHolderRoute(it)) },
                 )
             }
         }
@@ -528,6 +551,9 @@ private fun listDetailDestination(
                     onOpenOrder = {
                         if (wide) selected = it else navController.navigate(refineryOrderRoute(it))
                     },
+                    onCreate = {
+                        navController.navigate(KrtDestination.RefineryCreate.route)
+                    },
                 )
             }
         }
@@ -552,6 +578,9 @@ private fun listDetailDestination(
  * @param missionDetail builds a view model for one Einsatz.
  * @param operationDetail builds a view model for one Operation.
  * @param bankAccount builds a view model for one account.
+ * @param bankHolder builds a view model for one holder's custody.
+ * @param bankHolder builds a view model for one holder's custody.
+ * @param bankStaff answers whether the caller may move custody.
  * @param orderDetail builds a view model for one order.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
@@ -567,8 +596,11 @@ private fun PushedDestination(
     missionDetail: (String) -> MissionDetailViewModel,
     operationDetail: (String) -> OperationDetailViewModel,
     bankAccount: (String) -> BankAccountViewModel,
+    bankHolder: (String) -> BankHolderViewModel,
+    bankStaff: BankStaffViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    refineryCreate: () -> RefineryCreateViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -592,11 +624,18 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.BankAccount -> {
-            val accountId = backStackEntry.arguments?.getString(ACCOUNT_ID_ARG).orEmpty()
-            val viewModel = remember(accountId) { bankAccount(accountId) }
-            LaunchedEffect(accountId) { viewModel.load() }
-            BankAccountRoute(viewModel = viewModel)
+        KrtDestination.BankAccount, KrtDestination.BankHolder -> {
+            BankPushedDestination(
+                destination = destination,
+                backStackEntry = backStackEntry,
+                bankAccount = bankAccount,
+                bankHolder = bankHolder,
+                bankStaff = bankStaff,
+            )
+        }
+
+        KrtDestination.RefineryCreate -> {
+            RefineryCreateDestination(navController = navController, build = refineryCreate)
         }
 
         KrtDestination.OrderDetail -> {
@@ -730,3 +769,70 @@ data class SettingsBindings(
     val onPayout: (PayoutPreference) -> Unit,
     val onSharing: (Boolean) -> Unit,
 )
+
+/**
+ * The „Neuer Raffinerieauftrag" form as a pushed destination.
+ *
+ * Its own composable so the host's `when` stays under detekt's complexity limit, and because the
+ * navigation on success is a rule of its own: the form's job ends when the order exists, and the
+ * member wants to look at the order, not at an emptied form.
+ *
+ * @param navController where to go afterwards.
+ * @param build builds the view model.
+ */
+@Composable
+private fun RefineryCreateDestination(
+    navController: NavHostController,
+    build: () -> RefineryCreateViewModel,
+) {
+    val viewModel = remember { build() }
+    LaunchedEffect(Unit) { viewModel.loadOnce() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.created) {
+        state.created?.let {
+            navController.popBackStack()
+            navController.navigate(refineryOrderRoute(it))
+        }
+    }
+    RefineryCreateRoute(viewModel = viewModel)
+}
+
+/**
+ * The two bank records that are pushed rather than paned.
+ *
+ * Split out of the host's `when` so it stays under detekt's complexity limit; the two belong
+ * together anyway, since both read through the office when the caller has one.
+ *
+ * @param destination which of the two.
+ * @param backStackEntry carries the record's id.
+ * @param bankAccount builds the account detail's view model.
+ * @param bankHolder builds the holder detail's view model.
+ * @param bankStaff answers whether the caller may move custody.
+ */
+@Composable
+private fun BankPushedDestination(
+    destination: KrtDestination,
+    backStackEntry: NavBackStackEntry,
+    bankAccount: (String) -> BankAccountViewModel,
+    bankHolder: (String) -> BankHolderViewModel,
+    bankStaff: BankStaffViewModel,
+) {
+    when (destination) {
+        KrtDestination.BankHolder -> {
+            val holderId = backStackEntry.arguments?.getString(HOLDER_ID_ARG).orEmpty()
+            val viewModel = remember(holderId) { bankHolder(holderId) }
+            LaunchedEffect(holderId) { viewModel.loadOnce() }
+            // Whether custody may be moved is the staff dashboard's answer, not a role this screen
+            // works out — the same source the rest of the Verwaltung scope draws from.
+            val staff by bankStaff.state.collectAsStateWithLifecycle()
+            BankHolderRoute(viewModel = viewModel, management = staff.management)
+        }
+
+        else -> {
+            val accountId = backStackEntry.arguments?.getString(ACCOUNT_ID_ARG).orEmpty()
+            val viewModel = remember(accountId) { bankAccount(accountId) }
+            LaunchedEffect(accountId) { viewModel.load() }
+            BankAccountRoute(viewModel = viewModel)
+        }
+    }
+}
