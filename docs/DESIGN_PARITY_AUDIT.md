@@ -81,7 +81,7 @@ Every row has now been read. Three of the probe's leads turned out to be false �
 `station`/`method`, the Materialbörse's `supplyCount` and the Bank's sparkline were all being drawn
 under different names — which is why the leads were marked as leads.
 
-### 10 Aufträge — artboard 1 (Queue) · `orders/OrdersScreen.kt` — **done**
+### 10 Aufträge — artboard 1 (Queue) · `orders/OrdersScreen.kt` — **two open items (2026-08-28)**
 
 The example the owner named. Verified against the chapter's `orders[]` model and its markup:
 
@@ -100,6 +100,33 @@ The age colours are **not** constants: `job_order.age_yellow_days` / `job_order.
 operator settings in the web admin area (defaults 30 / 90, which is exactly what the mockup's sample
 data shows). `JobOrderAgeThresholds` reads them and falls back to the seeded defaults, so a failed
 read looks like a fresh server rather than an error.
+
+**Re-audited 2026-08-28 by putting the rendered artboard beside a device screenshot.** The 25.08.
+pass above checked that the drawn *elements* existed; this one compared the two pictures. Most of it
+held — the card, the priority block, the kind chip, the status pill, the Für/Durch pair with the
+„—" for an unassigned processing unit, the chevron, the material expander. Three things did not:
+
+| # | artboard 1 | app | outcome |
+| :-- | :-- | :-- | :-- |
+| 1 | an orange „+" FAB | **absent** | **fixed** — the FAB now opens the create form (REQ-APP-ORDERS-013) |
+| 2 | the age as „vor 94 Tagen", colour-coded | „15.08., 18:17" in the right colour | **fixed** — counted in days (REQ-APP-ORDERS-014) |
+| 3 | „#A-1042" | „#1" | design-vs-system: `displayId` is a plain integer and the web renders „#1" too (round 8 §2.1) |
+
+Two things I first read as gaps and then checked, and they were not:
+
+- **The status chips are already multi-select.** The screenshot showed none selected, which is the
+  „alle" state, not an exclusive control. Tapping two selects two, and the set goes to the server.
+- **A missing squadron filter.** The web has one (`REQ-ORDERS-027`); the app's equivalent is the
+  active-org-unit pin in the app bar, which the interceptor sends as a header on every call.
+
+**Priority reorder is now built** — three ghost buttons on the detail (An den Anfang · Höher ·
+Niedriger) rather than a drag, because a phone has neither the queue on screen nor a pointer that
+can hold a row. Verified on a device: #1 moved to 2 and #2 took 1 in the database, and „An den
+Anfang" put it back. Round 8 §4 asks for the drawing and asks whether the control belongs on the
+queue instead.
+
+Still open and app-side: **item orders**, which need a blueprint picker per item and a derivation
+tree — a screen of its own, asked for in round 8 §1.3.
 
 ### 10 Aufträge — artboards 2–4 · `orders/OrderDetailScreen`, `exchange/MaterialBoardScreen` — **done**
 
@@ -125,6 +152,61 @@ code change. The holder breakdown inside the **detail** stays; the detail endpoi
 
 The request rows' `approvals` / `canApprove` are still to be checked.
 
+### 03 Navigation — the tablet frame · `ui/ListDetail.kt`, `navigation/BasetoolApp.kt` — **fixed 2026-08-28**
+
+First pass on the **tablet** class (`KrtTablet`, 2560×1600 at density 320 = the 1280×800 dp the
+artboard names). What matched straight away: the rail's seven destinations plus „Mehr", the Basetool
+mark at its head, the theme control at its foot, the list-detail split with its hairline, and the
+empty-state on the detail side that the artboard asks for in as many words („Empty selection shows
+an .empty-state").
+
+One thing did not, and it was not visible on a phone at all: **selecting a row put the row's name in
+the app bar** — „#1 · Offen · Prio 1" above a rail still highlighting AUFTRÄGE. The mechanism is
+right for a phone (a pushed detail is the destination) and wrong for a pane. Fixed by redirecting
+the publication into the pane rather than suppressing it, because suppression alone left the pane
+identifying nothing (`REQ-APP-UI-009`).
+
+Worth recording as method: the phone pass could not have found this. Everything about it is a
+consequence of two panes existing at once.
+
+**The rest of the tablet sweep**, and it splits three ways. Einsätze, Aufträge and Raffinerie use
+list-detail as drawn. The Hangar becomes a real table (TYP · NAME · VERSICHERUNG · ORT · AUSGEBAUT ·
+AKTIONEN) and uses the width well. **Lager and Materialbörse are the phone layouts stretched to
+1200 dp** — a Lager row puts its name and its figure ~2200 device pixels apart, and a Materialbörse
+card is three-quarters empty. `KrtSpacing.contentMax` is 1200 dp and never engages, because a tablet
+has almost exactly that much after the rail. What a screen *without* a detail pane does with the
+width is not drawn anywhere; asked as round 8 §5 rather than guessed at.
+
+### 13 Einstellungen — artboard 2 · `settings/SettingsScreen.kt` — **nothing to do (2026-08-28)**
+
+Compared render against device. Four things the artboard has and the app does not, and **all four
+are already recorded in [`settings.md`](specs/settings.md) as deliberately open, with reasons that
+hold**: the rank („Specialist"), the payout dropdown's value, „Lokale Daten löschen" (there is no
+offline cache, so the button would delete nothing while its modal promised otherwise), and the
+version footer's server-status dot. One more was found and added to that list: the terms version in
+„Nutzungsbedingungen (v2.1)".
+
+Everything else matches, including the part that is easiest to get wrong — the Fan Kit band with
+both notices byte-exact and unfolded, in the placement chapter 02 §9 fixes.
+
+Recorded so a later pass does not re-open a chapter whose omissions were argued rather than
+overlooked.
+
+### 08 Hangar · 10 Materialbörse · 12 Bank — **compared 2026-08-28**
+
+Three chapters put beside their renders in one pass. What each cost:
+
+- **Hangar** — the lettermark took initials of the legal name and called MISC „MIA"; the catalogue's
+  own `abbreviation` was never mapped. Insurance sat behind the fitted chip and wore Info blue, a
+  colour on no chip in this chapter (`REQ-APP-HANGAR-014`).
+- **Materialbörse** — the amount was the first third of a grey run where quantity, quality and
+  pledges read alike; the artboard makes it the row's figure (`REQ-APP-MARKET-010`). Its three
+  screen tests passed throughout, because they checked that the text existed rather than where it
+  sat.
+- **Bank** — no direction glyph on a ledger row, and the section called „Transaktionen" rather than
+  the chapter's „Buchungen" (`REQ-APP-BANK-015`). The sparkline is **not** a gap: it is built and
+  specified, and draws nothing below two points, which is what the seeded account has.
+
 ### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a
@@ -142,7 +224,7 @@ things do not:
 | :-- | :-- | :-- | :-- |
 | 1 | three filter chips — „MATERIAL: ALLE", „NUR MIT BESTAND", „ORT: ALLE" | one, „NUR MIT BESTAND" | **the artboard is ahead of the system** — see below |
 | 2 | a filter icon in the app bar | a bell | follows from 1: there is nothing for it to open |
-| 3 | the FAB is a download glyph (⤓) | „+", labelled „Einbuchen" | open — the glyph reads as Ausbuchen, the action is Einbuchen |
+| 3 | the FAB is a download glyph (⤓) | „+", labelled „Einbuchen" | **fixed** — ⤓ *is* Einbuchen; chapter 05's „EINBUCHEN (LAGER)" tile draws the identical arrow, so the earlier reading of it as Ausbuchen was mine, not the design's |
 | 4 | material → **holder** (with a subtotal) → entry | material → holder·location merged into one row | open — a member holding one material in two places gets no subtotal |
 
 **Items 1 and 2 are not app gaps.** Checked rather than assumed:
@@ -161,7 +243,7 @@ the list keeps stating the server's total.
 Recorded as a design-vs-system difference in `MISSING_ARTBOARD_PROMPTS_7.md`, the same way the
 refinery's „#7841" order number was.
 
-Items 3 and 4 stay open and are app-side.
+Item 4 stays open and is app-side.
 
 > [!note] Why this row said „done"
 > Same reason as the Raffinerie row below: the 25.08. pass checked that the drawn *elements* existed

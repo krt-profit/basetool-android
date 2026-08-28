@@ -10,9 +10,12 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AssigneeNoteRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.SystemSettingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateJobOrderStatusDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -182,6 +185,69 @@ data class JobOrderPage(
 }
 
 /**
+ * One material line on an order being raised.
+ *
+ * @property materialId which material.
+ * @property materialName what to show for it, so a filled line survives the picker being reset.
+ * @property amount how much, in the material's own unit.
+ * @property minQuality the minimum quality, or `null` for „keine".
+ */
+data class JobOrderDraftLine(
+    val materialId: String,
+    val materialName: String,
+    val amount: Double,
+    val minQuality: Int? = null,
+)
+
+/**
+ * An order about to be raised.
+ *
+ * @property responsibleOrgUnitId who processes it; must be profit-eligible.
+ * @property requestingOrgUnitId who it is for; any active unit.
+ * @property handle the contact handle in the game.
+ * @property comment free text, or `null`.
+ * @property lines the materials wanted; never empty.
+ */
+data class JobOrderDraft(
+    val responsibleOrgUnitId: String,
+    val requestingOrgUnitId: String,
+    val handle: String,
+    val comment: String?,
+    val lines: List<JobOrderDraftLine>,
+)
+
+/**
+ * What one material search turned up.
+ *
+ * @property rows id-to-name pairs, in the server's order.
+ * @property more whether the server holds further matches this page does not carry. The picker
+ *   says so rather than pretending the list is the whole answer (ADR-0104).
+ */
+data class MaterialMatches(
+    val rows: List<Pair<String, String>>,
+    val more: Boolean,
+)
+
+/** Raising a new material order, and the picker behind its lines. */
+interface JobOrderCreateSource {
+    /**
+     * Searches the materials that may be ordered.
+     *
+     * @param query what the member typed.
+     * @return the matches, or the classified failure.
+     */
+    suspend fun searchMaterials(query: String): ApiResult<MaterialMatches>
+
+    /**
+     * Raises the order.
+     *
+     * @param draft what to raise.
+     * @return the new order's id, or the classified failure.
+     */
+    suspend fun create(draft: JobOrderDraft): ApiResult<String>
+}
+
+/**
  * The job-order reads, as a seam.
  */
 interface JobOrderSource {
@@ -253,6 +319,23 @@ interface JobOrderSource {
     ): ApiResult<JobOrder>
 
     /**
+     * Moves the order to another place in the queue.
+     *
+     * The server shifts every other order to keep the sequence contiguous, so the answer is the
+     * whole order rather than a confirmation — and every other row's priority has changed too,
+     * which is why the caller reloads the queue rather than patching one row.
+     *
+     * @param id which order.
+     * @param priority the position it should take; 1 is the front.
+     * @return the reordered order, or the classified failure — `Forbidden` when the caller is not
+     *   a Logistician for it.
+     */
+    suspend fun setPriority(
+        id: String,
+        priority: Int,
+    ): ApiResult<JobOrder>
+
+    /**
      * Moves the order to another status.
      *
      * @param id the order.
@@ -276,7 +359,8 @@ interface JobOrderSource {
  */
 class JobOrderRepository(
     private val reader: ApiReader,
-) : JobOrderSource {
+) : JobOrderSource,
+    JobOrderCreateSource {
     /**
      * The operator's age thresholds once they have been read, so the queue asks for them once.
      *
@@ -340,6 +424,73 @@ class JobOrderRepository(
      *
      * @return the thresholds.
      */
+    override suspend fun searchMaterials(query: String): ApiResult<MaterialMatches> =
+        when (
+            val result =
+                reader.get(
+                    MATERIALS_PATH,
+                    listOf(
+                        SEARCH_PARAM to query.trim(),
+                        JOB_ORDER_ONLY_PARAM to "true",
+                        PAGE_PARAM to "0",
+                        SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+                    ),
+                    PageResponseMaterialDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                val rows = result.value.content.orEmpty().mapNotNull { row -> row.id?.let { it to row.name.orEmpty() } }
+                ApiResult.Success(
+                    MaterialMatches(
+                        rows = rows,
+                        // `totalElements`, not `rows.size == PICKER_PAGE_SIZE`: a page that happens
+                        // to be exactly full is not evidence of more, and a row dropped for having
+                        // no id would make the size comparison lie in the other direction.
+                        more = (result.value.totalElements ?: 0L) > rows.size.toLong(),
+                    ),
+                )
+            }
+        }
+
+    override suspend fun create(draft: JobOrderDraft): ApiResult<String> {
+        val dto =
+            CreateJobOrderDto(
+                responsibleOrgUnitId = draft.responsibleOrgUnitId,
+                requestingOrgUnitId = draft.requestingOrgUnitId,
+                handle = draft.handle,
+                comment = draft.comment?.takeIf { it.isNotBlank() },
+                materials =
+                    draft.lines.map {
+                        CreateJobOrderMaterialDto(
+                            materialId = it.materialId,
+                            amount = it.amount,
+                            minQuality = it.minQuality,
+                        )
+                    },
+            )
+        return when (
+            val result =
+                reader.post(QUEUE_PATH, dto, CreateJobOrderDto.serializer(), JobOrderDto.serializer())
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.id?.let { ApiResult.Success(it) }
+                    // A 201 that names no order leaves the caller with nothing to navigate to.
+                    // That is a server contract break, not an empty result, so it fails rather
+                    // than reporting a success the screen cannot act on. The status is the one
+                    // that actually arrived — the order may well have been raised.
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_CREATED))
+            }
+        }
+    }
+
     override suspend fun ageThresholds(): JobOrderAgeThresholds {
         cachedThresholds?.let { return it }
         val resolved =
@@ -437,6 +588,21 @@ class JobOrderRepository(
         )
     }
 
+    override suspend fun setPriority(
+        id: String,
+        priority: Int,
+    ): ApiResult<JobOrder> =
+        refreshed(
+            reader.put(
+                // A query parameter, not a body — that is what the endpoint takes. And no
+                // `version`: the service reorders the whole queue under a pessimistic write lock,
+                // so the optimistic version this app echoes everywhere else has nothing to guard
+                // here. Sending one would suggest a conflict check that does not happen.
+                orderPath(id) + "/priority?priority=" + priority,
+                JobOrderDto.serializer(),
+            ),
+        )
+
     override suspend fun setStatus(
         id: String,
         status: JobOrderStatus,
@@ -484,6 +650,23 @@ class JobOrderRepository(
         private const val LOG_TAG = "orders"
 
         private const val QUEUE_PATH = "/api/v1/orders"
+
+        /**
+         * The picker behind a draft line.
+         *
+         * `search` with `jobOrderOnly` rather than `/materials/job-order`: the latter answers the
+         * whole orderable catalogue in one unbounded list, which is a page the phone does not need
+         * and a path the API vhost would have to be opened for. This one is already reachable.
+         */
+        private const val MATERIALS_PATH = "/api/v1/materials/search"
+        private const val SEARCH_PARAM = "search"
+        private const val JOB_ORDER_ONLY_PARAM = "jobOrderOnly"
+
+        /** How many matches one search offers before it says there are more. */
+        private const val PICKER_PAGE_SIZE = 25
+
+        /** What a successful create answers with; reported when its body names no order. */
+        private const val HTTP_CREATED = 201
         private const val STATUS_PARAM = "status"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"

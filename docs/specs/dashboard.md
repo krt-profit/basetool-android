@@ -270,3 +270,33 @@ as the request takes, and on a device that is long enough to read.
 - [x] `unreadKnown = false` renders neither the line nor the link (`DashboardScreenTest`).
 - [x] `unreadKnown = true` with no unread renders the line (`DashboardScreenTest`).
 - [x] **Observed on a device (2026-08-22).**
+
+### REQ-APP-DASH-012 — The greeting is a block, and the quick actions name the action
+
+Two things artboard 1 draws that the first build read past, found by putting the render beside a
+device screenshot rather than checking that the elements existed.
+
+**The greeting sits in a filled block with the accent rail down its left edge**, not as text on the
+bare background. It is the chapter's first element and the only one that addresses the member by
+name; rendered plain it read as a caption above the announcement. The rail treatment is the same one
+an order's note carries, so it is now one component (`KrtRailCard`) rather than the two hand-built
+copies it had become.
+
+**The quick-action glyphs are the action, not the destination.** The artboard draws an enter arrow,
+a download arrow, a plus and a swap — what the member is about to *do*. The app drew a target, a
+crate and a clipboard, which name the section each tile leads to: a second navigation bar under the
+first one, with the same crate on the tile and on the Lager's rail entry.
+
+That settles an open question one chapter over: **⤓ means Einbuchen.** Artboard 09.1 puts it on the
+Lager's FAB and it had been read here as Ausbuchen, with „+" put in its place; chapter 05's
+„EINBUCHEN (LAGER)" tile draws the identical arrow. The FAB carries it again.
+
+**Acceptance**
+
+- [x] Verified on the phone class against the rendered artboard: the greeting block with its rail,
+      and all four glyphs.
+
+**Code:** `dashboard/DashboardScreen.kt` (`Greeting`), `dashboard/QuickAction.kt`,
+`inventory/InventoryScreen.kt` (the FAB), `core/designsystem/component/KrtContainers.kt`
+(`KrtRailCard`)
+

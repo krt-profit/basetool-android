@@ -206,8 +206,12 @@ startup with a friendly "server too old/new" screen).
 | Profil/Einstellungen | language, active org unit, payout pref, blueprint sharing, app-lock, Impressum/Datenschutz/licenses, logout | `/users/me/**`, `/me/**`, `/terms/*` |
 | Onboarding states | login (Custom Tab), `PENDING_APPROVAL` screen, terms-acceptance screen (in-app via `/api/v1/terms/*`), guest mode (optional) | — |
 
-Anonymous/guest surface (browse redacted missions, guest signup, anonymous order create, master
-data) exists server-side and is proposed as a **post-MVP** app mode (open decision Q6).
+Anonymous/guest surface (browse redacted missions, guest signup, master data) exists server-side
+and was proposed as a **post-MVP** app mode; Q8 dropped it. The anonymous *order create* is on its way out of that surface
+entirely: the main repo is removing it (ADR-0149, owner decision 2026-08-28) because the app's own
+create needed the verb through the API vhost, which would otherwise have meant admitting an
+anonymous write there. Once it lands, the backend agrees with the stance Q8 already took for the
+app.
 
 ## 6. Phased roadmap
 
@@ -359,6 +363,34 @@ followed it, three are done and one is deliberately withheld:
   no chapter in the design handoff and a derived layout is not a followed one (owner decision,
   2026-08-23, reaffirmed 2026-08-24). Everything behind it stays wired: the repository, the tests,
   the contract freeze and the allow-list lines. The issue stays open until a chapter exists.
+
+**Web-parity gaps still open (audited 2026-08-28, artboard beside screenshot).** Recorded here so a
+new session finds them without re-deriving the audit; the per-chapter detail is in
+[`DESIGN_PARITY_AUDIT.md`](DESIGN_PARITY_AUDIT.md).
+
+| Gap | Where | Why it is not done |
+| :-- | :-- | :-- |
+| **Item orders** | Aufträge create | Needs a game-item picker, a blueprint picker *per item* and the derivation tree the web renders as nested lines (`/orders/item-catalog/{id}/blueprints`, `…/blueprints/{id}/derivation`). A screen of its own; asked for in design round 8 §1.3. |
+| **Lager: the holder subtotal level** | Lager | Artboard 1 is material → holder (with a subtotal) → entry; the app merges holder and location into one row, so a member holding one material in two places gets no subtotal. |
+| **Lager + Materialbörse on a tablet** | both | The only two screens with no wide-window treatment: the phone layout stretched to 1200 dp. Needs a design ruling first — round 8 §5 offers three options. |
+
+Two things that look like gaps and are not, so they are not re-opened: the Lager's **material and
+location filter chips** (neither the web nor `/inventory/aggregated` has them — round 7 §2g), and a
+**squadron filter on the Aufträge queue** (the app's equivalent is the active-org-unit pin, which
+the interceptor sends as a header on every call).
+
+**Verification coverage:** the 2026-08-28 pass ran on **all three** classes — phone
+(`Pixel_10a`, 393×851 dp), tablet (`KrtTablet`, 1280×800 dp) and `Pixel_5_minSdk` (API 31,
+393×851 dp). The tablet immediately found a list-detail defect the phone could not show
+(`REQ-APP-UI-009`); API 31 showed no rendering difference from the phone, with the filter chips
+wrapping to two rows as the `FlowRow` intends.
+
+Getting onto `Pixel_5_minSdk` cost three things worth writing down, all in
+`~/.claude/.../emulator-black-screenshot-is-usually-the-lock.md`: its screen lock (PIN `1234`,
+re-set after a wipe — the device *cannot* log in without one, because the token key is built with
+`setUnlockedDeviceRequired(true)`), Chrome's first-run screen swallowing the Custom Tab (skipped
+with `--disable-fre` rather than accepting Google's terms), and API 31 having no per-app locale
+service, so German is set with `persist.sys.locale`.
 
 **The vhost paste is the one thing left, and it is the owner's** (runbook Phase J). Until it is
 applied the nightly `edge-deny-probe` reports the phase-3 and phase-4 paths as `404`, which is

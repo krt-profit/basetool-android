@@ -341,6 +341,16 @@ data class OrderDetailState(
     /** Whether the status control belongs on this screen. */
     val statusChangeable: Boolean
         get() = me?.logistician == true
+
+    /**
+     * Whether the priority control belongs on this screen.
+     *
+     * The same grant as the status control, plus a queue position to move: an order the server
+     * gave no priority is not in the queue, and „move it up" would be an instruction to put it
+     * back there.
+     */
+    val priorityChangeable: Boolean
+        get() = me?.logistician == true && order?.priority != null
 }
 
 /**
@@ -471,6 +481,45 @@ class OrderDetailViewModel(
         write {
             source.setAssigneeNote(orderId, me.userId, note, current.myAssignment?.version)
         }
+    }
+
+    /**
+     * Moves the order one place towards the front of the queue, or to the front outright.
+     *
+     * **Not a drag.** The web reorders by dragging a row, which needs a list on screen and a
+     * pointer that can hold a row while the rest of it scrolls; the design has drawn no phone
+     * equivalent (design round 8 §4 asks for one). What a Logistician actually wants is „this one
+     * sooner", so that is what the control offers, expressed in the absolute position the endpoint
+     * takes.
+     *
+     * A no-op when the order has no priority — a completed or rejected order is out of the queue,
+     * and giving it a position would put it back in.
+     *
+     * @param toFront `true` for position 1, `false` for one place up.
+     */
+    fun onRaisePriority(toFront: Boolean) {
+        val current = mutableState.value
+        val priority = current.order?.priority ?: return
+        if (!current.priorityChangeable || !current.writable || priority <= FIRST_PRIORITY) {
+            return
+        }
+        val target = if (toFront) FIRST_PRIORITY else priority - 1
+        write { source.setPriority(orderId, target) }
+    }
+
+    /**
+     * Moves the order one place towards the back of the queue.
+     *
+     * There is no „to the back": the queue's length is a page count away, and a control that
+     * guessed at it would put the order somewhere nobody asked for.
+     */
+    fun onLowerPriority() {
+        val current = mutableState.value
+        val priority = current.order?.priority ?: return
+        if (!current.priorityChangeable || !current.writable) {
+            return
+        }
+        write { source.setPriority(orderId, priority + 1) }
     }
 
     /** Shows the status picker. */
@@ -709,6 +758,9 @@ class OrderDetailViewModel(
          */
         val WATCHED_SECTIONS =
             setOf(LiveSyncSections.ORDER_ASSIGNEES, LiveSyncSections.ORDER_HEADER)
+
+        /** The front of the queue. The server counts from 1, not from 0. */
+        const val FIRST_PRIORITY = 1
 
         /** What the server's note column takes. */
         const val NOTE_LENGTH = 500

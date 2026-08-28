@@ -268,3 +268,102 @@ save are disabled and faded under a line saying why.
 - [x] The band renders and the CTA is disabled (`OrdersScreenTest`).
 
 **Code:** `ui/OfflineWrites.kt`, `OrderDetailViewModel`
+
+### REQ-APP-ORDERS-013 — A member raises a material order from the queue
+
+The Aufträge queue carries the „+" its artboard draws, and it opens the form the web has at
+`/orders/create`. The form is the web's, field for field: the processing unit, the customer, the
+contact handle, one or more material lines of *Material · Menge · Min. Qualität*, and an optional
+comment. `POST /api/v1/orders`.
+
+**The two unit pickers are not the same list.** The customer is any active org unit — a member may
+raise an order *for* a Bereich or the Organisationsleitung — while the processing unit is only the
+profit-eligible subset, because a Bereich can never work an order. Both come from a single read of
+`/api/v1/org-units/active-all-kinds`, with the second derived from the first, exactly as the web
+derives it: two reads could disagree.
+
+**Item orders are out of scope for this requirement.** They need a game-item picker, a blueprint
+picker per item and the derivation tree the web renders as nested lines; that is a screen of its
+own and is asked for in design round 8 §1.3.
+
+**The material picker is `search` with `jobOrderOnly`, not the unbounded job-order list.** The
+bounded page keeps the payload small and reuses a path already on the API vhost's allow-list; when
+the server holds more matches than the page carries, the picker says so rather than letting the
+member conclude their material does not exist (ADR-0104). When a query of two or more characters
+matches nothing, it says that too — an empty dropdown reads as a broken picker.
+
+**A half-filled line blocks the submit.** `POST /orders` takes whatever lines it is handed, so
+dropping a line the member had typed a material into would raise an order missing that material
+and say nothing. A wholly empty trailing line is not half-filled — it is the one the form keeps.
+
+**„No processing unit is enabled" is a statement about the organisation** and may only be made once
+the server has answered. A failed read says the units could not be loaded instead: telling a member
+their org has no eligible unit when the phone could not ask sends them to an administrator over a
+dropped connection.
+
+**Acceptance**
+
+- [x] Both units, a handle and one complete line are required; a half-filled line blocks the submit
+      (`OrderCreateTest`).
+- [x] A decimal comma is an amount (`OrderCreateTest`).
+- [x] A typed material name without a pick is not a material (`OrderCreateTest`).
+- [x] A blank comment is sent as absent, not as an empty string (`OrderCreateTest`).
+- [x] Verified on a device end to end: order #10, „Quantainium (Raw)" 12,5, customer „Bereich
+      Profit", processing unit „IRIDIUM".
+
+**Code:** `orders/OrderCreateScreen.kt`, `orders/OrderCreateViewModel.kt`,
+`core/data/JobOrderRepository.kt` (`JobOrderCreateSource`), `core/data/OrgUnitRepository.kt`
+(`activeAllKinds`)
+
+### REQ-APP-ORDERS-014 — The queue counts an order's age in days
+
+An order's age is the queue's signal, and the two thresholds are the operator's
+(`job_order.age_yellow_days` = 30, `job_order.age_red_days` = 90). The row renders it as a day
+count — „vor 94 Tagen" — rather than through the app's shared relative-time helper, which switches
+to „26.05., 11:19" from two days out and makes the reader do the arithmetic the colour beside it
+has already done. Today and yesterday keep their words.
+
+Design chapter 10 artboard 1 draws exactly this.
+
+**Acceptance**
+
+- [x] Verified on a device: „vor 12 Tagen", „vor 2 Tagen", „gestern", all grey below the yellow
+      threshold.
+
+**Code:** `orders/OrdersScreen.kt` (`ageText`), `core/data/JobOrderRepository.kt`
+(`JobOrderAgeThresholds`)
+
+### REQ-APP-ORDERS-015 — A Logistician moves an order in the queue, without a drag
+
+The web reorders by dragging a row; a phone has neither the whole queue on screen nor a pointer that
+can hold one row while the rest scrolls. The order detail carries three ghost buttons instead —
+**An den Anfang · Höher · Niedriger** — beside „Status ändern", which is where the app already gates
+a Logistician's write. `PUT /api/v1/orders/{id}/priority?priority=N`.
+
+**No version is echoed, and that is deliberate.** The service reorders the whole queue under a
+pessimistic write lock, so the optimistic version this app echoes on every other write has nothing
+to guard here; sending one would suggest a conflict check that does not happen.
+
+**There is no „ans Ende".** The back of the queue is a page count away, and a control that guessed at
+its length would drop the order somewhere nobody asked for.
+
+**An order with no priority gets no control.** A completed or rejected order has left the queue, and
+„move it up" would be an instruction to put it back into one.
+
+**An order already at the front does not offer Höher or An den Anfang.** Both would send position 1
+again, which the server accepts and reorders the whole queue for — a write that changes nothing is
+still a write.
+
+Design round 8 §4 asks for the drawing, and asks whether the control belongs on the queue instead.
+
+**Acceptance**
+
+- [x] The control belongs to a Logistician alone; a member without the grant sends nothing
+      (`OrderDetailViewModelTest`).
+- [x] „Niedriger" sends the next position; an order at the front sends nothing (same).
+- [x] An order out of the queue offers no control (same).
+- [x] Verified on a device: order #1 moved to 2 and #2 took 1 in the database, the header redrew as
+      „Prio 2", and „An den Anfang" put it back.
+
+**Code:** `orders/OrdersScreen.kt` (`PriorityControls`), `orders/OrdersViewModel.kt`,
+`core/data/JobOrderRepository.kt` (`setPriority`)

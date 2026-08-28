@@ -68,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
@@ -147,6 +148,7 @@ fun BasetoolApp(
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
+    orderCreate: () -> OrderCreateViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -316,6 +318,7 @@ fun BasetoolApp(
                         refinery = refinery,
                         refineryOrder = refineryOrder,
                         refineryCreate = refineryCreate,
+                        orderCreate = orderCreate,
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
@@ -455,6 +458,11 @@ private fun AppTopBar(
     }
     // A published TITLE always names a thing; a destination title always names a section. A screen
     // that publishes only actions — the Hangar's overflow — keeps its section bar, badge and bell.
+    //
+    // A tablet's list-detail pane does not reach this: `KrtListDetail` gives its detail slot its own
+    // publication target and draws the head inside the pane, because there the detail is a pane of
+    // the section rather than a destination — a selected row used to put „#1 · Offen · Prio 1" in a
+    // bar whose rail still highlighted AUFTRÄGE.
     val subject = detail?.title
     KrtTopBar(
         title = subject ?: stringResource(destination.titleRes),

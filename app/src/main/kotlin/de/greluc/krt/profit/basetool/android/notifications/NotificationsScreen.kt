@@ -125,15 +125,25 @@ fun NotificationsScreen(
                             .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                 ) {
+                    // Both carry their glyph, as artboard 1 draws them — and they are the same two
+                    // the rows carry, so the header action and the per-row action read as the same
+                    // verb rather than as two unrelated controls.
+                    // Even halves. Sized to content the two are lopsided — the longer label takes
+                    // what it needs and leaves the shorter one so little that „GELESENE LÖSCHEN"
+                    // broke mid-word across four lines once the glyphs joined them.
                     KrtGhostButton(
                         text = stringResource(R.string.notifications_mark_all_read),
                         onClick = onMarkAllRead,
+                        modifier = Modifier.weight(1f),
                         enabled = state.unread > 0,
+                        iconRes = DesignR.drawable.ic_krt_check,
                     )
                     KrtGhostButton(
                         text = stringResource(R.string.notifications_delete_read),
                         onClick = onDeleteRead,
+                        modifier = Modifier.weight(1f),
                         enabled = state.notifications.any { it.read },
+                        iconRes = DesignR.drawable.ic_krt_trash,
                     )
                 }
             }

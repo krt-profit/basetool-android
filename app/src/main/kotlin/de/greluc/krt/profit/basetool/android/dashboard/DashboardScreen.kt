@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -56,6 +57,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHeading
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRailCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
@@ -432,9 +434,12 @@ private fun Greeting(
             date.year + SC_YEAR_OFFSET,
         )
 
-    Column(
+    // The artboard puts the greeting in a filled block with the accent rail down its left edge,
+    // not on the bare background — it is the chapter's first element and the only one that
+    // addresses the member. Rendered as plain text it read as a caption above the announcement.
+    KrtRailCard(
         modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        contentPadding = PaddingValues(KrtSpacing.md),
     ) {
         // Uppercase and orange, which is what artboard 1 draws and what the token artifact's
         // headline entries are annotated with. `headlineSmall` rather than a one-off style: the

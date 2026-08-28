@@ -114,6 +114,7 @@ class OrdersScreenTest {
                     onRetryNow = {},
                     onLoadMore = {},
                     onOpenOrder = { opened.add(it) },
+                    onCreate = {},
                 )
             }
         }
@@ -150,6 +151,8 @@ class OrdersScreenTest {
                             onStatusSelected = { statuses.add(it) },
                             onApplyStatus = {},
                             onDismissStatusConfirm = {},
+                            onRaisePriority = {},
+                            onLowerPriority = {},
                             onTabSelected = {},
                         ),
                 )

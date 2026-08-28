@@ -64,6 +64,8 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsPhase
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
+import de.greluc.krt.profit.basetool.android.orders.OrderCreateRoute
+import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
@@ -151,6 +153,7 @@ fun BasetoolNavHost(
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
+    orderCreate: () -> OrderCreateViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -227,6 +230,7 @@ fun BasetoolNavHost(
                             orderDetail = orderDetail,
                             refineryOrder = refineryOrder,
                             refineryCreate = refineryCreate,
+                            orderCreate = orderCreate,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -527,6 +531,7 @@ private fun listDetailDestination(
                     onOpenOrder = {
                         if (wide) selected = it else navController.navigate(orderDetailRoute(it))
                     },
+                    onCreate = { navController.navigate(KrtDestination.OrderCreate.route) },
                 )
             }
         }
@@ -601,6 +606,7 @@ private fun PushedDestination(
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
+    orderCreate: () -> OrderCreateViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -634,8 +640,13 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.RefineryCreate -> {
-            RefineryCreateDestination(navController = navController, build = refineryCreate)
+        KrtDestination.RefineryCreate, KrtDestination.OrderCreate -> {
+            CreateFormDestination(
+                destination = destination,
+                navController = navController,
+                refineryCreate = refineryCreate,
+                orderCreate = orderCreate,
+            )
         }
 
         KrtDestination.OrderDetail -> {
@@ -769,6 +780,57 @@ data class SettingsBindings(
     val onPayout: (PayoutPreference) -> Unit,
     val onSharing: (Boolean) -> Unit,
 )
+
+/**
+ * The two create forms, behind one branch.
+ *
+ * Grouped the way the two bank details are: each form is its own composable below, and the host's
+ * `when` stays under detekt's complexity limit without any branch being suppressed away.
+ *
+ * @param destination which of the two forms.
+ * @param navController where to go afterwards.
+ * @param refineryCreate builds the Raffinerie form's view model.
+ * @param orderCreate builds the Auftrag form's view model.
+ */
+@Composable
+private fun CreateFormDestination(
+    destination: KrtDestination,
+    navController: NavHostController,
+    refineryCreate: () -> RefineryCreateViewModel,
+    orderCreate: () -> OrderCreateViewModel,
+) {
+    if (destination == KrtDestination.OrderCreate) {
+        OrderCreateDestination(navController = navController, build = orderCreate)
+    } else {
+        RefineryCreateDestination(navController = navController, build = refineryCreate)
+    }
+}
+
+/**
+ * The „Neuer Auftrag" form as a pushed destination.
+ *
+ * Same shape as [RefineryCreateDestination] and for the same reason: the form's job ends when the
+ * order exists, and the member wants to look at the order rather than at an emptied form. The
+ * created form is popped first so „back" from the detail returns to the queue.
+ *
+ * @param navController where to go afterwards.
+ * @param build builds the view model.
+ */
+@Composable
+private fun OrderCreateDestination(
+    navController: NavHostController,
+    build: () -> OrderCreateViewModel,
+) {
+    val viewModel = remember { build() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.created) {
+        state.created?.let {
+            navController.popBackStack()
+            navController.navigate(orderDetailRoute(it))
+        }
+    }
+    OrderCreateRoute(viewModel = viewModel)
+}
 
 /**
  * The „Neuer Raffinerieauftrag" form as a pushed destination.

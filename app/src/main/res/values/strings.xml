@@ -437,7 +437,7 @@
     <string name="bank_error_message">Die Bank konnte nicht geladen werden.</string>
     <string name="bank_delta_30d">%1$s · 30 T.</string>
     <string name="bank_balance">Kontostand</string>
-    <string name="bank_transactions">Transaktionen</string>
+    <string name="bank_transactions">Buchungen</string>
     <string name="bank_report_statement">Kontoauszug</string>
     <string name="bank_report_quarter">3-Monats-Bericht</string>
     <string name="bank_transactions_empty">Noch keine Buchungen.</string>
@@ -646,6 +646,31 @@
     <string name="bank_grants_view_note_cartel">Das KRT-Konto sieht jedes Mitglied ohnehin. Ein Eintrag hier vergibt deshalb nur Buchungsrechte, kein Sehen.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
+    <string name="orders_create">Auftrag anlegen</string>
+    <string name="order_create_title">Neuer Auftrag</string>
+    <string name="order_create_responsible">Bearbeitende Einheit</string>
+    <string name="order_create_responsible_none">Keine bearbeitende Einheit freigeschaltet.</string>
+    <string name="order_create_units_unavailable">Die Einheiten konnten nicht geladen werden.</string>
+    <string name="order_create_requesting">Auftraggeber</string>
+    <string name="order_create_handle">Handle des Ansprechpartners</string>
+    <string name="order_create_materials">Materialien</string>
+    <string name="order_create_material">Material</string>
+    <string name="order_create_amount">Menge</string>
+    <string name="order_create_min_quality">Min. Qualität</string>
+    <string name="order_create_min_quality_none">Keine</string>
+    <string name="order_create_more_matches">Weitere Treffer vorhanden — Suche verfeinern.</string>
+    <string name="order_create_no_matches">Kein bestellbares Material gefunden.</string>
+    <string name="order_create_add_material">Material hinzufügen</string>
+    <string name="order_create_remove_material">Material entfernen</string>
+    <string name="order_create_comment">Kommentar</string>
+    <string name="order_create_submit">Auftrag anlegen</string>
+    <string name="order_create_failed">Der Auftrag konnte nicht angelegt werden.</string>
+    <string name="orders_age_today">heute</string>
+    <string name="orders_age_yesterday">gestern</string>
+    <plurals name="orders_age_days">
+        <item quantity="one">vor %1$d Tag</item>
+        <item quantity="other">vor %1$d Tagen</item>
+    </plurals>
     <string name="orders_status_open">Offen</string>
     <string name="orders_status_in_progress">In Bearbeitung</string>
     <string name="orders_status_rejected">Abgelehnt</string>
@@ -957,6 +982,9 @@
     <string name="order_detail_status_confirm_title">Auftrag abschließen?</string>
     <string name="order_detail_status_confirm_body">Der Auftrag wechselt auf „%1$s“. Das lässt sich in der App nicht zurücknehmen.</string>
     <string name="order_detail_change_status">Status ändern</string>
+    <string name="order_detail_priority_front">An den Anfang</string>
+    <string name="order_detail_priority_up">Höher</string>
+    <string name="order_detail_priority_down">Niedriger</string>
     <string name="order_detail_note">Notiz</string>
     <string name="order_detail_note_scope">#%1$s · Nur deine eigene Zuweisung</string>
     <string name="order_detail_note_counter">%1$d / %2$d</string>

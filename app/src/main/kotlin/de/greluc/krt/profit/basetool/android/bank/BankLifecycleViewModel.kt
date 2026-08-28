@@ -336,7 +336,7 @@ class BankLifecycleViewModel(
                     mutableState.value =
                         mutableState.value.copy(
                             accounts = accounts.value,
-                            holders = (holders as? ApiResult.Success)?.value ?: emptyList(),
+                            holders = (holders as? ApiResult.Success)?.value.orEmpty(),
                             phase = BankPhase.Ready,
                             refreshing = false,
                         )

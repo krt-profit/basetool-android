@@ -73,6 +73,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKpiCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
@@ -521,6 +522,35 @@ fun BankAccountScreen(
 }
 
 /**
+ * The row's direction, as the artboard's arrow.
+ *
+ * Exactly the classification `REQ-APP-BANK-003` already uses for the sign, so the glyph and the
+ * figure can never disagree: money in points down and reads success, money out points up and reads
+ * danger, and every other kind — a transfer, a reversal, one this build has never seen — gets the
+ * neutral swap rather than a direction nobody checked.
+ *
+ * @param incoming `true` for a deposit, `false` for a withdrawal, `null` for anything else.
+ */
+@Composable
+private fun BookingDirection(incoming: Boolean?) {
+    KrtIcon(
+        id =
+            when (incoming) {
+                true -> DesignR.drawable.ic_krt_bank_in
+                false -> DesignR.drawable.ic_krt_bank_out
+                null -> DesignR.drawable.ic_krt_swap
+            },
+        contentDescription = null,
+        tint =
+            when (incoming) {
+                true -> KrtPalette.SuccessText
+                false -> KrtPalette.DangerText
+                null -> KrtPalette.TextMuted
+            },
+    )
+}
+
+/**
  * One ledger line.
  *
  * The amount takes its sign from the booking **kind**, never from the digits: the ledger stores
@@ -542,6 +572,10 @@ private fun BookingRow(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The direction as a glyph, which artboard 2 draws on every row. The sign and the tint
+        // already say it, but both live at the far right; the ledger is read down the left edge,
+        // and „was this money in or out" should not need a saccade to the amount column.
+        BookingDirection(booking.incoming)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = booking.note ?: booking.typeLabel(),

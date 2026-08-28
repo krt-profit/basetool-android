@@ -4,6 +4,15 @@
 
 ### Added
 
+- **Logistiker können die Reihenfolge der Warteschlange in der App ändern.** Im Auftragsdetail:
+  „An den Anfang", „Höher", „Niedriger". Ein Auftrag, der die Warteschlange verlassen hat, bekommt
+  die Regler nicht — und einer, der schon vorn steht, lässt „Höher" gar nicht erst zu.
+
+- **Aufträge lassen sich jetzt in der App anlegen.** Das „+" in der Auftragsliste öffnet das
+  Formular: bearbeitende Einheit, Auftraggeber, Handle, beliebig viele Materialzeilen mit Menge und
+  Mindestqualität sowie ein Kommentar. Auftraggeber kann jede aktive Einheit sein, bearbeiten darf
+  nur eine profit-fähige — dieselbe Unterscheidung wie im Web. Item-Aufträge kommen später.
+
 - **Kontoauszug und 3-Monats-Bericht lassen sich aus der App heraus abrufen.** Beide landen im
   app-eigenen Speicher und gehen von dort an die App deiner Wahl weiter — es wird keine
   Speicherberechtigung verlangt und keine andere App kann die Datei lesen.
@@ -105,6 +114,9 @@
 
 ### Changed
 
+- **Die Auftragsliste zeigt das Alter jetzt als Tageszahl.** „vor 94 Tagen" statt eines Datums —
+  neben der Farbe, die schon sagt, ob ein Auftrag zu lange liegt.
+
 - **Die App setzt jetzt Android 12 voraus** (vorher Android 11). Grund ist nicht die Reichweite,
   sondern die Prüfbarkeit: der Emulator für Android 11 kann sich nicht anmelden, und eine unterste
   Version, die niemand testen kann, ist ein Versprechen, das niemand geprüft hat. Direkt beim
@@ -160,6 +172,34 @@
 - **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
   gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
   Er kommt zurück, wenn die Ansicht wirklich fertig ist.
+
+### Fixed
+
+- **Jede Buchungszeile zeigt ihre Richtung als Pfeil.** Eingang zeigt nach unten und ist grün,
+  Ausgang nach oben und rot, alles andere bekommt den neutralen Tausch-Pfeil. Der Abschnitt heißt
+  wieder „Buchungen" statt „Transaktionen".
+
+- **Die Menge steht auf der Börsenkarte jetzt vorn.** Rechts neben dem Material, die Zahl betont,
+  die Einheit leise — statt als erstes Drittel einer grauen Zeile, in der Menge, Qualität und
+  Zusagen gleich aussahen.
+
+- **Das Herstellerkürzel im Hangar stimmt wieder.** Es kommt jetzt aus dem Katalog (DRAK, MISC,
+  RSI) statt aus den Anfangsbuchstaben des Firmennamens — MISC stand dort als „MIA". Außerdem steht
+  die Versicherung vor dem Ausbau-Zustand und trägt einen neutralen Ton; nur eine benannte Police
+  wie „LTI" wird hervorgehoben.
+
+- **Die beiden Knöpfe über dem Posteingang tragen ihre Symbole** — Haken und Papierkorb, dieselben
+  wie an jeder Zeile — und teilen sich die Breite gleichmäßig, statt dass der kürzere Text mitten im
+  Wort umbricht.
+
+- **Die Übersicht trifft ihr Artboard.** Die Begrüßung steht jetzt in einem Block mit orangem
+  Rand statt als loser Text, und die vier Schnellaktionen tragen die Glyphe ihrer Aktion statt die
+  ihres Ziels. Der Lager-Knopf „Einbuchen" bekommt dieselbe Pfeil-Glyphe zurück.
+
+- **Auf dem Tablet nennt die Kopfzeile wieder den Bereich.** Wer einen Eintrag auswählte, bekam
+  dessen Namen in die Leiste geschrieben, während die Seitenleiste weiter den Bereich hervorhob —
+  beide sagten etwas anderes darüber, wo man ist. Der Eintrag steht jetzt über seinem eigenen
+  Detailbereich.
 
 ### Fixed
 

@@ -33,6 +33,7 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRailCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -202,32 +203,18 @@ internal fun RedactionNotice(order: JobOrder) {
  */
 @Composable
 private fun CommentCard(comment: String) {
-    KrtCard(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        variant = KrtCardVariant.Flush,
-    ) {
-        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            Box(
-                modifier =
-                    Modifier
-                        .width(KrtSpacing.xs)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary),
-            )
-            Column(modifier = Modifier.padding(KrtSpacing.lg)) {
-                Text(
-                    text = stringResource(R.string.order_detail_comment).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = KrtPalette.TextMuted,
-                )
-                Text(
-                    text = comment,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = KrtPalette.Gray1,
-                    modifier = Modifier.padding(top = KrtSpacing.xs),
-                )
-            }
-        }
+    KrtRailCard(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md)) {
+        Text(
+            text = stringResource(R.string.order_detail_comment).uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.TextMuted,
+        )
+        Text(
+            text = comment,
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.Gray1,
+            modifier = Modifier.padding(top = KrtSpacing.xs),
+        )
     }
 }
 

@@ -278,3 +278,35 @@ missing today. It needs a field on the aggregate in the main repo before it can 
 vhost allow-list, as **exact** paths. The row's nested `shipType.name` and `location.name` are
 frozen too — the contract guard walks two levels for that reason. `owner` is deliberately not
 frozen: it is a full user record, always the caller's own here, and the app does not read it.
+
+### REQ-APP-HANGAR-014 — The mark is the catalogue's abbreviation, and the chips carry the artboard's order and tone
+
+Three things artboard 1 draws that a field-presence check passes and a picture comparison does not.
+
+**The lettermark is the manufacturer's own short form**, not initials derived from the legal name.
+`ManufacturerDto.abbreviation` carries it — „Drake", „MISC", „RSI" — and the mark takes the first
+four characters, uppercased, so the square reads DRAK / MISC / RSI as the artboard draws it. The
+initials rule that preceded it counted every word of a legal name and turned „Musashi Industrial
+and Starflight Concern" into **„MIA"**, which is not what anyone calls MISC. Initials remain the
+fallback for a maker the catalogue gives no short form.
+
+Capped at four rather than shown whole because the catalogue's short forms are short *names* rather
+than codes („Crusader" → „CRUS"): a visible truncation of the maker's own word beats an
+abbreviation the app invented.
+
+**Insurance comes before fitted.** The artboard's order, and the useful one — the policy is the fact
+that expires.
+
+**The insurance chip is neutral unless the policy is named.** A month count is a plain term and
+takes the muted tone; anything else the catalogue passes through — „LTI" above all — is a standing
+policy and takes the accent, which is what the artboard's orange marks. `Info` blue appears on no
+chip in this chapter and was on every insurance chip.
+
+**Acceptance**
+
+- [x] Verified on the phone class against the rendered artboard: DRAK / DRAK / DRAK / MISC, the
+      insurance chip first and grey, FITTED green, NICHT FITTED grey.
+
+**Code:** `hangar/HangarScreen.kt` (`ManufacturerMark`, `markOrNull`, `ShipCardBody`,
+`insuranceIsTerm`), `core/data/HangarRepository.kt` (`manufacturerAbbreviation`)
+

@@ -237,7 +237,10 @@ fun InventoryScreen(
         // affordances at the same corner is one too many, and the one that belongs to a mode wins.
         if (selection.isEmpty()) {
             KrtFab(
-                iconRes = DesignR.drawable.ic_krt_plus,
+                // The download glyph, not „+". Chapter 05's „EINBUCHEN (LAGER)" tile draws exactly
+                // this arrow, which settles what artboard 09.1 meant by it: ⤓ is Einbuchen. It was
+                // read here as Ausbuchen once, and „+" put in its place.
+                iconRes = DesignR.drawable.ic_krt_download,
                 label = stringResource(R.string.booking_mode_in),
                 onClick = onBookIn,
                 enabled = state.online,

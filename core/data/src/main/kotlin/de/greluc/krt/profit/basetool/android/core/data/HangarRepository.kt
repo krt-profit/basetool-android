@@ -34,6 +34,9 @@ import okhttp3.OkHttpClient
  * @property name the member's own name for it, or `null` when they gave none
  * @property typeName the ship type, e.g. "Carrack"
  * @property manufacturerName the maker, e.g. "Anvil Aerospace", or `null` when the type carries none
+ * @property manufacturerAbbreviation the maker's own short form, e.g. "MISC" — what the card's
+ *   lettermark is built from, because initials of the legal name turn "Musashi Industrial and
+ *   Starflight Concern" into "MIA"
  * @property insurance the insurance as the server words it, e.g. "LTI", or `null`
  * @property locationName where it is parked, or `null`
  * @property fitted whether it is equipped and ready for an Einsatz
@@ -46,6 +49,7 @@ data class Ship(
     val name: String?,
     val typeName: String,
     val manufacturerName: String?,
+    val manufacturerAbbreviation: String? = null,
     val insurance: String?,
     val locationName: String?,
     val fitted: Boolean,
@@ -106,6 +110,7 @@ data class ShipDraft(
 data class ShipTypeSummary(
     val typeName: String,
     val manufacturerName: String?,
+    val manufacturerAbbreviation: String? = null,
     val count: Long,
     val fittedCount: Long,
 )
@@ -505,6 +510,7 @@ private fun ShipDto.toModel(): Ship? {
         name = name?.trim()?.takeIf { it.isNotEmpty() },
         typeName = shipType?.name.orEmpty(),
         manufacturerName = shipType?.manufacturer?.name,
+        manufacturerAbbreviation = shipType?.manufacturer?.abbreviation,
         insurance = insurance?.trim()?.takeIf { it.isNotEmpty() },
         locationName = location?.name,
         fitted = fitted == true,

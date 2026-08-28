@@ -195,3 +195,23 @@ recorded here rather than left as a silent gap in the chapter.
 - [x] No Bearbeiten control is rendered, so nothing offers what is not built.
 
 **Code:** `MaterialBoardRepository`, `MaterialBoardScreen`
+
+### REQ-APP-MARKET-010 — The quantity is the row's figure, not a third of a grey run
+
+Artboard 3 puts the amount beside the material name, right-aligned, with the figure carrying the
+weight and the unit small and muted: „**240** SCU". The app joined amount, quality and pledge count
+into one line at one weight — so the quantity, which is what a board is scanned for, read exactly
+like the two facts beside it.
+
+The figure and the unit are two nodes now: „240" is what is compared across rows, „SCU" only says
+what kind of 240 it is. What is left of the old line — quality and the pledge count — drops to the
+muted style beneath the owner, and renders nothing at all when neither applies.
+
+**Acceptance**
+
+- [x] The figure, the unit and the remaining facts are separate nodes (`MaterialBoardScreenTest`).
+- [x] An item row still counts pieces, never SCU (same, `REQ-APP-MARKET-003`).
+- [x] Verified on the phone class against the rendered artboard.
+
+**Code:** `exchange/MaterialBoardScreen.kt` (`BoardAmount`, `detailLine`)
+
