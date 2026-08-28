@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingPage
+import de.greluc.krt.profit.basetool.android.core.data.BankReportSource
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankReversalSource
 import de.greluc.krt.profit.basetool.android.core.data.BankSource
@@ -25,6 +26,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
 import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
@@ -32,6 +34,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 /** How far a bank read has got. */
 sealed interface BankPhase {
@@ -86,6 +91,8 @@ data class BankAccountsState(
  * @property hasMore whether the ledger has another page
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running
+ * @property report a file the server has sent and the screen has not handed on yet, or `null`
+ * @property downloading whether a report is being fetched
  * @property reversal the booking whose Storno is being confirmed, or `null`
  * @property reversalNote what to record about it
  */
@@ -105,6 +112,8 @@ data class BankAccountState(
     val saving: Boolean = false,
     val online: Boolean = true,
     val error: ApiError? = null,
+    val report: DownloadedFile? = null,
+    val downloading: Boolean = false,
     val reversal: BankBooking? = null,
     val reversalNote: String = "",
 ) {
@@ -228,6 +237,7 @@ class BankAccountViewModel(
     private val liveSync: LiveSyncSource? = null,
     private val reversalSource: BankReversalSource? = null,
     private val staffSource: BankStaffAccountSource? = null,
+    private val reports: BankReportSource? = null,
     private val throughTheOffice: () -> Boolean = { false },
 ) : ViewModel() {
     /**
@@ -577,7 +587,60 @@ class BankAccountViewModel(
             source.bookings(accountId, page = page)
         }
 
+    /**
+     * Fetches this account's statement for the last three months.
+     *
+     * The period is the screen's, not the member's: the web offers a picker, and a date range on a
+     * phone is three taps before anything happens. The common ask is „the recent one", and a member
+     * who needs another period has the web.
+     */
+    fun onStatement() {
+        val writer = reports ?: return
+        val now = Instant.now()
+        fetch { writer.statement(accountId, now.minus(STATEMENT_DAYS, ChronoUnit.DAYS).toString(), now.toString()) }
+    }
+
+    /** Fetches the three-month report. */
+    fun onThreeMonthReport() {
+        val writer = reports ?: return
+        fetch { writer.threeMonthReport(ZoneId.systemDefault().id) }
+    }
+
+    /** Clears the fetched file once the screen has handed it on. */
+    fun onReportHandled() {
+        mutableState.value = mutableState.value.copy(report = null)
+    }
+
+    /**
+     * Runs one report fetch.
+     *
+     * @param call what to fetch.
+     */
+    private fun fetch(call: suspend () -> ApiResult<DownloadedFile>) {
+        if (mutableState.value.downloading) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(downloading = true, error = null)
+        viewModelScope.launch {
+            when (val result = call()) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(downloading = false, report = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "a report could not be fetched: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(downloading = false, error = result.error)
+                }
+            }
+        }
+    }
+
     private companion object {
+        /** How far back the statement action reaches; the web's picker is richer. */
+        const val STATEMENT_DAYS = 90L
+
         /** Log subsystem. No amount, handle or note is ever logged. */
         const val LOG_TAG = "bank"
     }

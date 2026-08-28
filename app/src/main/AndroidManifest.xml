@@ -123,6 +123,21 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!--
+            Reports are handed to the member through a share sheet, never written to shared
+            storage: no storage permission, nothing world-readable, and the grant lasts for the one
+            intent. `exported="false"` with `grantUriPermissions` is what makes that true.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

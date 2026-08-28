@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.common.FileHandoff
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
@@ -77,6 +79,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -319,6 +322,9 @@ internal fun String?.isPositiveDelta(): Boolean {
  * @param onLoadMore the "Ältere laden" control was tapped.
  * @param modifier layout modifier.
  * @param onReverse a ledger row's Storno was asked for.
+ * @param onStatement the account statement was asked for.
+ * @param onThreeMonthReport the quarter report was asked for.
+ * @param onReportHandled a fetched report has been handed on.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -329,6 +335,9 @@ fun BankAccountScreen(
     actions: BankSettingsActions,
     modifier: Modifier = Modifier,
     onReverse: (BankBooking) -> Unit = {},
+    onStatement: () -> Unit = {},
+    onThreeMonthReport: () -> Unit = {},
+    onReportHandled: () -> Unit = {},
 ) {
     // The Storno is a BANK_EMPLOYEE act, and the server decides that — the app only draws what
     // `/me/capabilities` answered.
@@ -339,22 +348,19 @@ fun BankAccountScreen(
     // an older page's reversal simply leaves the action offered until the server refuses it, which
     // it then says plainly.
     val reversedIds = state.bookings.mapNotNull { it.reversesTransactionId }.toSet()
-    val account = state.account
-    val phase = state.phase
-    if (state.settingsOpen) {
-        state.settings?.let { settings ->
-            // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and
-            // makes the account re-read rather than re-sending a value against a newer version.
-            ConflictOn(
-                error = state.error,
-                onReload = {
-                    actions.onDismiss()
-                    onRefresh()
-                },
-            )
-            BankSettingsSheet(settings = settings, state = state, actions = actions)
+
+    // The file is handed on the moment it arrives, then cleared: a report kept in state is a report
+    // re-offered on the next recomposition.
+    val context = LocalContext.current
+    LaunchedEffect(state.report) {
+        state.report?.let { file ->
+            FileHandoff.shareIntent(context, file)?.let { context.startActivity(it) }
+            onReportHandled()
         }
     }
+    val account = state.account
+    val phase = state.phase
+    AccountSettingsOverlay(state = state, actions = actions, onRefresh = onRefresh)
     when {
         account != null -> {
             PullToRefreshBox(
@@ -438,6 +444,15 @@ fun BankAccountScreen(
                                         enabled = state.writable,
                                     )
                                 }
+                        }
+                    }
+                    if (staff) {
+                        item(key = "reports") {
+                            ReportActions(
+                                busy = state.downloading,
+                                onStatement = onStatement,
+                                onThreeMonthReport = onThreeMonthReport,
+                            )
                         }
                     }
                     item(key = "ledger-title") {
@@ -1398,6 +1413,9 @@ fun BankAccountRoute(
     BankAccountScreen(
         state = state,
         onReverse = viewModel::onReverse,
+        onStatement = viewModel::onStatement,
+        onThreeMonthReport = viewModel::onThreeMonthReport,
+        onReportHandled = viewModel::onReportHandled,
         onRefresh = viewModel::onRefresh,
         onLoadMore = viewModel::onLoadMore,
         actions =
@@ -1558,3 +1576,76 @@ private fun BankVisibilitySection(
 
 /** Signs the server may put in front of a negative delta: hyphen-minus and U+2212. */
 private const val MINUS_SIGNS = "-−"
+
+/**
+ * „Kontoauszug" and „3-Monats-Bericht", the staff account detail's two reports.
+ *
+ * Its own composable so the screen stays under detekt's complexity limit, and because the pair is
+ * one idea: both fetch a file and hand it to a share sheet, and neither is offered to a member.
+ *
+ * @param busy whether a report is already being fetched.
+ * @param onStatement the statement was asked for.
+ * @param onThreeMonthReport the quarter report was asked for.
+ */
+@Composable
+private fun ReportActions(
+    busy: Boolean,
+    onStatement: () -> Unit,
+    onThreeMonthReport: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        KrtOutlineButton(
+            text = stringResource(R.string.bank_report_statement),
+            onClick = onStatement,
+            modifier = Modifier.weight(1f),
+            enabled = !busy,
+            iconRes = DesignR.drawable.ic_krt_pdf,
+        )
+        KrtOutlineButton(
+            text = stringResource(R.string.bank_report_quarter),
+            onClick = onThreeMonthReport,
+            modifier = Modifier.weight(1f),
+            enabled = !busy,
+            iconRes = DesignR.drawable.ic_krt_download,
+        )
+    }
+}
+
+/**
+ * The settings sheet and the conflict dialog that shares its screen.
+ *
+ * Extracted so the account screen stays under detekt's complexity limit; the two belong together
+ * anyway, since the dialog exists to resolve a refusal the sheet caused.
+ *
+ * @param state what the screen holds.
+ * @param actions what the sheet reports back.
+ * @param onRefresh re-reads the account after a conflict.
+ */
+@Composable
+private fun AccountSettingsOverlay(
+    state: BankAccountState,
+    actions: BankSettingsActions,
+    onRefresh: () -> Unit,
+) {
+    if (!state.settingsOpen) {
+        return
+    }
+    state.settings?.let { settings ->
+        // Design ch. 14's conflict dialog, at the host: „Neu laden" closes the sheet and makes the
+        // account re-read rather than re-sending a value against a newer version.
+        ConflictOn(
+            error = state.error,
+            onReload = {
+                actions.onDismiss()
+                onRefresh()
+            },
+        )
+        BankSettingsSheet(settings = settings, state = state, actions = actions)
+    }
+}

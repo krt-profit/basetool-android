@@ -438,6 +438,8 @@
     <string name="bank_delta_30d">%1$s · 30 T.</string>
     <string name="bank_balance">Kontostand</string>
     <string name="bank_transactions">Transaktionen</string>
+    <string name="bank_report_statement">Kontoauszug</string>
+    <string name="bank_report_quarter">3-Monats-Bericht</string>
     <string name="bank_transactions_empty">Noch keine Buchungen.</string>
     <plurals name="bank_transactions_count">
         <item quantity="one">%1$d von %2$d Buchung</item>

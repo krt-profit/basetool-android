@@ -47,6 +47,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UserDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -76,7 +77,8 @@ class BankStaffRepository(
     BankGrantSource,
     BankHolderSource,
     BankReversalSource,
-    BankStaffAccountSource {
+    BankStaffAccountSource,
+    BankReportSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -389,6 +391,25 @@ class BankStaffRepository(
             is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
         }
 
+    override suspend fun statement(
+        accountId: String,
+        from: String,
+        to: String,
+    ): ApiResult<DownloadedFile> =
+        reader.getBytes(
+            "$STAFF_ACCOUNTS_PATH/$accountId/statement",
+            listOf(FROM_PARAM to from, TO_PARAM to to),
+        )
+
+    override suspend fun threeMonthReport(zoneId: String): ApiResult<DownloadedFile> =
+        reader.getBytes(
+            THREE_MONTH_PATH,
+            // The endpoint declares the header, so it is sent here as well as by the client's own
+            // interceptor: a report whose month boundaries fall in the wrong zone is wrong by a day
+            // at each end and looks like a data problem.
+            headers = listOf(USER_ZONE_HEADER to zoneId),
+        )
+
     override suspend fun reverse(
         transactionId: String,
         note: String?,
@@ -522,6 +543,18 @@ class BankStaffRepository(
 
         /** The stem a Storno addresses; the transaction's id and `/reversal` complete it. */
         const val REVERSAL_PATH = "/api/v1/bank/transactions"
+
+        /** The quarter report every bank employee may pull. */
+        const val THREE_MONTH_PATH = "/api/v1/bank/export/three-month-report"
+
+        /** The start of a statement's period. */
+        const val FROM_PARAM = "from"
+
+        /** Its end. */
+        const val TO_PARAM = "to"
+
+        /** The zone the report's month boundaries are drawn in. */
+        const val USER_ZONE_HEADER = "X-User-Time-Zone"
 
         /** Which account's matrix to read. */
         const val ACCOUNT_PARAM = "accountId"

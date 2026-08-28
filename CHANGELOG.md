@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Kontoauszug und 3-Monats-Bericht lassen sich aus der App heraus abrufen.** Beide landen im
+  app-eigenen Speicher und gehen von dort an die App deiner Wahl weiter — es wird keine
+  Speicherberechtigung verlangt und keine andere App kann die Datei lesen.
+
 - **Raffinerieaufträge lassen sich jetzt in der App anlegen.** Raffinerie und Methode mit ihren drei
   Bewertungen, Waren mit Ein- und Ausgang, Timing mit berechnetem Ende und ein Geld-Block mit
   Gewinn-Vorschau. Einen Extractor-Import gibt es bewusst nicht — dessen Übergabe wird einmalig im

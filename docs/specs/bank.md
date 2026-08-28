@@ -610,11 +610,22 @@ the counter-booking „Storniert" and leaves the *original* offering a Storno th
 rows; an older page's reversal leaves the action offered until the server refuses it, and that
 refusal now has its own sentence.
 
-**Known gap: the Berichte are not implemented.** The statement (`…/accounts/{id}/statement`) and the
-three-month export (`/bank/export/three-month-report`) return binary bodies, so they need a
-download-and-share path that this app has never had — a decision about where a file lands on the
-device, which touches the privacy inventory (`ANDROID_APP_PLAN.md` §7). Not started rather than
-half-built.
+**The Berichte are downloads, and the app had no way to receive one.** The statement
+(`…/accounts/{id}/statement`) and the three-month export (`/bank/export/three-month-report`) answer
+binary bodies with a `Content-Disposition` naming the file, so `ApiReader.getBytes` fetches them
+with the same token, headers and failure classification as everything else and decodes nothing.
+
+**The file goes to app-private cache and then to a share sheet.** `cacheDir/reports/`, mode `0600`,
+handed on through a `FileProvider` that is `exported="false"`, serves only that sub-path, and grants
+read for the one intent. No storage permission is requested and nothing else on the device can read
+it. The cache rather than `filesDir` because the member already has the file and a copy kept for
+ever is a copy that can leak later. The server's own file name is used, stripped of any path
+separators — a `Content-Disposition` is a header, and a header is input. Re-analysed under § 25
+TDDDG in `ANDROID_APP_PRIVACY_GDPR.md`; the assessment is unchanged.
+
+**The statement's period is the screen's, not the member's.** The web offers a date picker; on a
+phone that is three taps before anything happens, and the common ask is the recent one. The app
+sends the last 90 days, and a member who needs another period has the web.
 
 **Acceptance**
 
@@ -626,7 +637,9 @@ half-built.
   caller with no view grant on it (name, balance and 30-day delta all render), `POST
   /bank/transactions/{id}/reversal` answers **201**, the ledger then shows the counter-booking and
   marks the **original** „Storniert", and no Storno is offered on either row afterwards.
-- [ ] Berichte (statement, three-month export) — see the known gap above.
+- [x] Verified on a device: `GET …/statement` and `GET /bank/export/three-month-report` both answer
+  `200`, the file lands in `cacheDir/reports/` as `-rw-------` under the server's own name, and the
+  share sheet opens — no storage permission is requested.
 
 **Code:** `BankStaffRepository` (`BankStaffAccountSource`, `BankReversalSource`),
 `BankAccountViewModel`, `BankScreen`

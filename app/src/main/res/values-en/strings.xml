@@ -417,6 +417,8 @@
     <string name="bank_delta_30d">%1$s · 30 d</string>
     <string name="bank_balance">Balance</string>
     <string name="bank_transactions">Transactions</string>
+    <string name="bank_report_statement">Statement</string>
+    <string name="bank_report_quarter">Three-month report</string>
     <string name="bank_transactions_empty">No bookings yet.</string>
     <plurals name="bank_transactions_count">
         <item quantity="one">%1$d of %2$d booking</item>

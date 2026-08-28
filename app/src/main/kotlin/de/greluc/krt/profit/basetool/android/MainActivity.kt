@@ -348,12 +348,15 @@ class MainActivity : AppCompatActivity() {
                                             container.liveSync,
                                             // Only bank staff may reverse, and the server says
                                             // whether this caller is; the screen just draws it.
-                                            container.bankStaff,
-                                            container.bankStaff,
+                                            reversalSource = container.bankStaff,
+                                            staffSource = container.bankStaff,
+                                            reports = container.bankStaff,
                                             // A bank employee reads the account through the office:
                                             // the member path answers 403 for an account they hold
                                             // no view grant on but are responsible for.
-                                            { container.identity.known?.bankEmployee == true },
+                                            throughTheOffice = {
+                                                container.identity.known?.bankEmployee == true
+                                            },
                                         )
                                     },
                                     bankHolder = {

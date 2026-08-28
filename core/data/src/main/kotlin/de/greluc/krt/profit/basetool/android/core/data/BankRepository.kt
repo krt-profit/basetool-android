@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankHolde
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -819,6 +820,37 @@ interface BankStaffAccountSource {
         page: Int,
         pageSize: Int,
     ): ApiResult<BankBookingPage>
+}
+
+/**
+ * The bank's two reports.
+ *
+ * Both answer a **binary** body — a PDF and a spreadsheet — with the server's own file name in
+ * `Content-Disposition`. Nothing here decodes a schema, and nothing here invents a name: two
+ * systems calling the same download different things is a support conversation waiting to happen.
+ */
+interface BankReportSource {
+    /**
+     * Fetches one account's statement for a period.
+     *
+     * @param accountId which account.
+     * @param from the start of the period, ISO-8601 in UTC.
+     * @param to its end.
+     * @return the PDF, or the classified failure.
+     */
+    suspend fun statement(
+        accountId: String,
+        from: String,
+        to: String,
+    ): ApiResult<DownloadedFile>
+
+    /**
+     * Fetches the three-month report.
+     *
+     * @param zoneId the reader's zone, which decides where the report's month boundaries fall.
+     * @return the file, or the classified failure.
+     */
+    suspend fun threeMonthReport(zoneId: String): ApiResult<DownloadedFile>
 }
 
 /**
