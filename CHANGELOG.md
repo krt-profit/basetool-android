@@ -175,6 +175,11 @@
 
 ### Fixed
 
+- **Das Herstellerkürzel im Hangar stimmt wieder.** Es kommt jetzt aus dem Katalog (DRAK, MISC,
+  RSI) statt aus den Anfangsbuchstaben des Firmennamens — MISC stand dort als „MIA". Außerdem steht
+  die Versicherung vor dem Ausbau-Zustand und trägt einen neutralen Ton; nur eine benannte Police
+  wie „LTI" wird hervorgehoben.
+
 - **Die beiden Knöpfe über dem Posteingang tragen ihre Symbole** — Haken und Papierkorb, dieselben
   wie an jeder Zeile — und teilen sich die Breite gleichmäßig, statt dass der kürzere Text mitten im
   Wort umbricht.

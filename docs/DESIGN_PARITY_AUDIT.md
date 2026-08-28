@@ -177,6 +177,21 @@ card is three-quarters empty. `KrtSpacing.contentMax` is 1200 dp and never engag
 has almost exactly that much after the rail. What a screen *without* a detail pane does with the
 width is not drawn anywhere; asked as round 8 §5 rather than guessed at.
 
+### 13 Einstellungen — artboard 2 · `settings/SettingsScreen.kt` — **nothing to do (2026-08-28)**
+
+Compared render against device. Four things the artboard has and the app does not, and **all four
+are already recorded in [`settings.md`](specs/settings.md) as deliberately open, with reasons that
+hold**: the rank („Specialist"), the payout dropdown's value, „Lokale Daten löschen" (there is no
+offline cache, so the button would delete nothing while its modal promised otherwise), and the
+version footer's server-status dot. One more was found and added to that list: the terms version in
+„Nutzungsbedingungen (v2.1)".
+
+Everything else matches, including the part that is easiest to get wrong — the Fan Kit band with
+both notices byte-exact and unfolded, in the placement chapter 02 §9 fixes.
+
+Recorded so a later pass does not re-open a chapter whose omissions were argued rather than
+overlooked.
+
 ### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a

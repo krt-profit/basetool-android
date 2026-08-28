@@ -477,7 +477,7 @@ private fun ShipCard(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
             verticalAlignment = Alignment.Top,
         ) {
-            ManufacturerMark(ship.manufacturerName)
+            ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
             Column(modifier = Modifier.weight(1f)) {
                 ShipCardBody(ship = ship)
             }
@@ -497,10 +497,16 @@ private fun ShipCard(
  * Clean manufacturer vectors do not exist yet (the upstream SVGs embed rasters), so the handoff's
  * lettermark placeholder **is** the design here, not a stand-in for it.
  *
- * @param maker the manufacturer's name, `null` when the catalogue has none.
+ * @param abbreviation the maker's own short form, preferred over anything derived from the legal
+ *   name: initials of "Musashi Industrial and Starflight Concern" counted the "and" and produced
+ *   „MIA", which is not what anyone calls MISC.
+ * @param maker the manufacturer's name, the fallback when the catalogue carries no short form.
  */
 @Composable
-private fun ManufacturerMark(maker: String?) {
+private fun ManufacturerMark(
+    abbreviation: String?,
+    maker: String?,
+) {
     val spoken = maker?.takeIf { it.isNotBlank() }
     Box(
         modifier =
@@ -511,12 +517,24 @@ private fun ManufacturerMark(maker: String?) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = spoken.lettermark(),
+            text = abbreviation.markOrNull() ?: spoken.lettermark(),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
         )
     }
 }
+
+/**
+ * The catalogue's own short form as a mark, or `null` when it carries none.
+ *
+ * Capped at four characters because the square is drawn for four and the catalogue's short forms
+ * are short *names* rather than codes — „Crusader" becomes „CRUS". A visible truncation of the
+ * maker's own word beats a correct-looking abbreviation the app invented.
+ *
+ * @return the mark, or `null` to fall back to [lettermark].
+ */
+private fun String?.markOrNull(): String? =
+    this?.trim()?.takeIf { it.isNotEmpty() }?.take(MARK_MAX_ABBREVIATION)?.uppercase()
 
 /**
  * The initials a manufacturer is abbreviated to.
@@ -556,6 +574,16 @@ private fun ShipCardBody(ship: Ship) {
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Insurance first, then fitted — the artboard's order, and the useful one: the policy
+            // is the fact that expires.
+            val insurance = ship.insuranceLabel()
+            KrtChip(
+                text = insurance,
+                // A month count is neutral; a named policy („LTI") is the one worth seeing from
+                // across the card, which is what the artboard's orange is for. Info blue appears on
+                // no chip in this chapter.
+                tone = if (ship.insuranceIsTerm()) KrtChipTone.Muted else KrtChipTone.Primary,
+            )
             KrtChip(
                 text =
                     stringResource(
@@ -563,7 +591,6 @@ private fun ShipCardBody(ship: Ship) {
                     ),
                 tone = if (ship.fitted) KrtChipTone.Success else KrtChipTone.Muted,
             )
-            KrtChip(text = ship.insuranceLabel(), tone = KrtChipTone.Info)
             ship.locationName?.takeIf { it.isNotBlank() }?.let { place ->
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
@@ -667,7 +694,7 @@ private fun ShipTypeTable(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ManufacturerMark(type.manufacturerName)
+                    ManufacturerMark(type.manufacturerAbbreviation, type.manufacturerName)
                     KrtTableCell(text = type.typeName, column = columns[0], emphasis = true)
                 }
             }
@@ -1024,6 +1051,22 @@ private val MARK_SIZE = 44.dp
 
 /** Most initials a multi-word manufacturer is abbreviated to. */
 private const val MARK_MAX_LETTERS = 3
+
+/** How much of the catalogue's own short form the mark square holds. */
+private const val MARK_MAX_ABBREVIATION = 4
+
+/**
+ * Whether the policy is a plain term rather than a named one.
+ *
+ * A month count and „keine" are both neutral facts; anything else the catalogue passes through —
+ * „LTI" above all — is a standing policy and carries the accent.
+ *
+ * @return `true` for a term or an absent policy.
+ */
+private fun Ship.insuranceIsTerm(): Boolean {
+    val raw = insurance?.trim().orEmpty()
+    return raw.isBlank() || raw.toIntOrNull() != null
+}
 
 /**
  * The insurance chip's text.

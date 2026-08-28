@@ -41,6 +41,12 @@ here" is worth answering.
   turns one into „Specialist" is `/promotion/*`, which is not in this app (owner decision,
   2026-08-25). The KONTO row therefore names the member and nothing else.
 - [ ] "Lokale Daten löschen". **Open, and deliberately so** — it needs something to delete first.
+- [ ] The **terms version** beside „Nutzungsbedingungen". Artboard 2 draws „Nutzungsbedingungen
+  (v2.1)", and the fact exists — `/api/v1/terms/status` answers `currentVersion` and
+  `TermsRepository` already reads it. **Open** because nothing on this screen holds it: the gate's
+  view model fetches the status only when acceptance is due, and `MemberPreferencesViewModel` is
+  about preferences. Wiring a second read into the settings screen for a parenthesis is more
+  plumbing than the label earns; it lands free the day either view model keeps its status.
 - [ ] The version footer's **server-status dot and API version**. **Open** — both describe the link
   to the backend, and the app has no health signal to read them from. An always-green dot would be
   decoration that reads as a diagnosis.

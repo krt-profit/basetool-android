@@ -122,7 +122,15 @@ class HangarScreenTest {
         show(
             HangarState(
                 segment = HangarSegment.ORG,
-                types = listOf(ShipTypeSummary("Carrack", "Anvil Aerospace", COUNT, FITTED)),
+                types =
+                    listOf(
+                        ShipTypeSummary(
+                            typeName = "Carrack",
+                            manufacturerName = "Anvil Aerospace",
+                            count = COUNT,
+                            fittedCount = FITTED,
+                        ),
+                    ),
                 typesTotal = 1,
                 phase = HangarPhase.Ready,
             ),
