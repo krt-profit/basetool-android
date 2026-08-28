@@ -379,9 +379,18 @@ location filter chips** (neither the web nor `/inventory/aggregated` has them �
 **squadron filter on the Aufträge queue** (the app's equivalent is the active-org-unit pin, which
 the interceptor sends as a header on every call).
 
-**Verification coverage:** the 2026-08-28 pass ran on the phone and, from the Navigation chapter
-on, the **tablet** class (`KrtTablet`, 1280×800 dp) — which immediately found a list-detail defect
-the phone could not show (`REQ-APP-UI-009`). `Pixel_5_minSdk` still has to see it.
+**Verification coverage:** the 2026-08-28 pass ran on **all three** classes — phone
+(`Pixel_10a`, 393×851 dp), tablet (`KrtTablet`, 1280×800 dp) and `Pixel_5_minSdk` (API 31,
+393×851 dp). The tablet immediately found a list-detail defect the phone could not show
+(`REQ-APP-UI-009`); API 31 showed no rendering difference from the phone, with the filter chips
+wrapping to two rows as the `FlowRow` intends.
+
+Getting onto `Pixel_5_minSdk` cost three things worth writing down, all in
+`~/.claude/.../emulator-black-screenshot-is-usually-the-lock.md`: its screen lock (PIN `1234`,
+re-set after a wipe — the device *cannot* log in without one, because the token key is built with
+`setUnlockedDeviceRequired(true)`), Chrome's first-run screen swallowing the Custom Tab (skipped
+with `--disable-fre` rather than accepting Google's terms), and API 31 having no per-app locale
+service, so German is set with `persist.sys.locale`.
 
 **The vhost paste is the one thing left, and it is the owner's** (runbook Phase J). Until it is
 applied the nightly `edge-deny-probe` reports the phase-3 and phase-4 paths as `404`, which is
