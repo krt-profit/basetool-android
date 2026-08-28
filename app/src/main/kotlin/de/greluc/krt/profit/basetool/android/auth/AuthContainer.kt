@@ -9,7 +9,6 @@ package de.greluc.krt.profit.basetool.android.auth
 
 import android.content.Context
 import de.greluc.krt.profit.basetool.android.BuildConfig
-import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.auth.AppLock
 import de.greluc.krt.profit.basetool.android.core.auth.AppLockKey
@@ -288,15 +287,6 @@ class AuthContainer(
      * used — an Activity context here would keep the Activity alive behind a PendingIntent.
      */
     val systemNotifications: SystemNotifications by lazy { SystemNotifier(appContext) }
-
-    /**
-     * The shade headline.
-     *
-     * Resolved here so the notification carries no free text from anywhere else: chapter 14's rule
-     * is that the shade says something fixed, and a title threaded in from a caller is a title a
-     * caller can make say anything.
-     */
-    val shadeTitle: String by lazy { appContext.getString(R.string.notification_shade_title) }
 
     /**
      * The member's own standing choices — payout preference and blueprint sharing.
