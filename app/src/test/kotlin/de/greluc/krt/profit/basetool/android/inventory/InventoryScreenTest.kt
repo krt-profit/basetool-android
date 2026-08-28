@@ -222,6 +222,40 @@ class InventoryScreenTest {
     }
 
     @Test
+    fun `a stack of one entry is one row, not two`() {
+        // Every artboard of chapter 09 draws this case as a single row — place, pool, quality,
+        // amount — because its fixture gives every stack one entry. The app used to draw a header
+        // that looked like that row and a bare amount beneath it.
+        show(readyWithStack(entries = EntriesPhase.Ready(listOf(entry()))))
+
+        compose.onAllNodesWithText("ARC-L1 · geteilt").assertCountEquals(1)
+        compose.onAllNodesWithText("Q 880").assertCountEquals(1)
+        // The row is the entry: its amount, and its two writes.
+        compose.onAllNodesWithText("12,5").assertCountEquals(1)
+        compose.onNodeWithContentDescription("Buchen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a stack of several entries keeps them as rows of their own`() {
+        show(
+            readyWithStack(
+                entries =
+                    EntriesPhase.Ready(
+                        listOf(entry().copy(id = "e1"), entry().copy(id = "e2", amount = "7")),
+                    ),
+            ),
+        )
+
+        // Two entries, so the header stays a header and the entries are rows beneath it — each
+        // saying which of the two it is, since nothing else about them differs.
+        compose.onAllNodesWithText("ARC-L1 · geteilt").assertCountEquals(1)
+        compose.onAllNodesWithText("12,5").assertCountEquals(1)
+        compose.onAllNodesWithText("7").assertCountEquals(1)
+        compose.onNodeWithText("Buchung 1/2").assertIsDisplayed()
+        compose.onNodeWithText("Buchung 2/2").assertIsDisplayed()
+    }
+
+    @Test
     fun `an entry says what of it is already promised`() {
         // Artboard 1 puts the splits on the row: „#A-1042 · 200" for an Auftrag, the Einsatz beside
         // it. The model has carried both since the Zuordnung sheet was built and the tree drew

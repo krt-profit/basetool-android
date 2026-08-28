@@ -485,29 +485,58 @@ private fun LazyListScope.openedGroup(
                     item(key = "holder-$materialId-${holder.key}") {
                         HolderRow(holder = holder, unit = context.unit)
                     }
-                    holder.stacks.forEach { stack ->
-                        // Counted across holders, not within one: the key has to stay stable when
-                        // a stack moves between holders, which a per-holder index would not.
-                        val at = index++
-                        item(key = "stack-$materialId-$at") {
-                            StackRow(
-                                stack = stack,
-                                unit = context.unit,
-                                expanded = context.openedStacks[stackKey(materialId, stack)] != null,
-                                onClick = { context.onToggleStack(materialId, stack) },
-                                onLongClick = { context.onToggleBranch(materialId, stack) },
-                            )
-                        }
-                        entryRows(
-                            phase = context.openedStacks[stackKey(materialId, stack)],
-                            keyPrefix = "$materialId-$at",
-                            rows = context.rows,
-                        )
-                    }
+                    // Counted across holders, not within one: a stack's key has to stay stable when
+                    // it moves between holders, which a per-holder index would not.
+                    index = stackRows(materialId, holder, index, context)
                 }
             }
         }
     }
+}
+
+/**
+ * One holder's stacks, and the entries of whichever of them are open.
+ *
+ * @param materialId which material these belong to.
+ * @param holder whose stacks to draw.
+ * @param from the running row index across all holders of this material.
+ * @param context everything the levels beneath the material need.
+ * @return the index the next holder should carry on from.
+ */
+private fun LazyListScope.stackRows(
+    materialId: String,
+    holder: HolderStacks,
+    from: Int,
+    context: OpenedGroupContext,
+): Int {
+    var index = from
+    holder.stacks.forEach { stack ->
+        val at = index++
+        val entries = context.openedStacks[stackKey(materialId, stack)]
+        // A stack of exactly one entry IS that entry, which is the only case every artboard of
+        // chapter 09 draws: place, pool, quality, amount, one row. The app split it in two — a
+        // header that looked like the drawn row, and a bare amount beneath it — so the case the
+        // design actually draws was the one the app never matched.
+        //
+        // The merge waits for the read, because the row's two writes need the entry's id.
+        // Collapsed, the row is the stack; opened, it becomes the entry, in place.
+        val lone = (entries as? EntriesPhase.Ready)?.entries?.singleOrNull()
+        item(key = "stack-$materialId-$at") {
+            StackRow(
+                stack = stack,
+                unit = context.unit,
+                expanded = entries != null,
+                lone = lone,
+                rows = context.rows,
+                onClick = { context.onToggleStack(materialId, stack) },
+                onLongClick = { context.onToggleBranch(materialId, stack) },
+            )
+        }
+        if (lone == null) {
+            entryRows(phase = entries, keyPrefix = "$materialId-$at", rows = context.rows)
+        }
+    }
+    return index
 }
 
 /**
@@ -635,6 +664,8 @@ private fun MaterialTableHead() {
  * One entry of the material, as a table row.
  *
  * @param entry the row.
+ * @param position which of its stack's entries this is, from one.
+ * @param outOf how many the stack holds.
  * @param unit the material's unit.
  */
 @Composable
@@ -878,6 +909,8 @@ private fun LazyListScope.entryRows(
                     item(key = "entry-$keyPrefix-$index") {
                         EntryRow(
                             entry = entry,
+                            position = index + 1,
+                            outOf = phase.entries.size,
                             unit = rows.unit,
                             online = rows.online,
                             onBookOut = { rows.onBookOut(entry) },
@@ -909,6 +942,8 @@ private fun LazyListScope.entryRows(
 @Composable
 private fun EntryRow(
     entry: InventoryEntry,
+    position: Int,
+    outOf: Int,
     unit: String?,
     online: Boolean,
     selected: Boolean,
@@ -954,6 +989,16 @@ private fun EntryRow(
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // „Buchung 2/4" — the row's identity. Four bookings of the same material, place,
+                // quality and holder are indistinguishable to look at and yet separately bookable
+                // and separately allocatable, so without this the member is choosing between four
+                // rows that say nothing about which is which. Owner ruling, 2026-08-28; the design
+                // has no drawing for it because its fixture never has more than one.
+                Text(
+                    text = stringResource(R.string.inventory_entry_position, position, outOf),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = KrtPalette.Gray2,
+                )
                 Amount(value = entry.amount, unit = entry.unit ?: unit)
                 entry.note?.let { note ->
                     Text(
@@ -1148,6 +1193,10 @@ private fun QualityMark(quality: String) {
  * @param stack the stack.
  * @param unit the group's quantity unit, since a stack carries none of its own.
  * @param expanded whether its entries are showing; the chevron says which way a tap goes.
+ * @param lone the single entry this stack turned out to hold, once read — the row then *is* that
+ *   entry and carries its splits and its two writes, rather than heading a second row that repeats
+ *   everything the first one said.
+ * @param rows what an entry row needs, for the merged case.
  * @param onClick opens its entries.
  * @param onLongClick selects every entry in it — a stack row carries no selection of its own
  *   (design ch. 09, artboard 5).
@@ -1157,6 +1206,8 @@ private fun StackRow(
     stack: InventoryStack,
     unit: String?,
     expanded: Boolean,
+    lone: InventoryEntry?,
+    rows: EntryRowContext,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -1184,17 +1235,24 @@ private fun StackRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Amount(value = stack.amount, unit = unit)
-                KrtIcon(
-                    id =
-                        if (expanded) {
-                            DesignR.drawable.ic_krt_chevron_down
-                        } else {
-                            DesignR.drawable.ic_krt_chevron_right
-                        },
-                    contentDescription = null,
-                    tint = KrtPalette.Gray2,
-                )
+                // The merged row is the entry, so it states the entry's figure. The two agree in
+                // practice — a stack of one is that one — and where they ever disagree the entry is
+                // the row a booking would move.
+                Amount(value = lone?.amount ?: stack.amount, unit = lone?.unit ?: unit)
+                // No chevron on a merged row: there is nothing left to unfold, and one that turned
+                // on a row that never opens is a promise the row cannot keep.
+                if (lone == null) {
+                    KrtIcon(
+                        id =
+                            if (expanded) {
+                                DesignR.drawable.ic_krt_chevron_down
+                            } else {
+                                DesignR.drawable.ic_krt_chevron_right
+                            },
+                        contentDescription = null,
+                        tint = KrtPalette.Gray2,
+                    )
+                }
             }
             // The second line is the quality and its gauge, at the left under the place — artboard
             // 1 puts them there. They used to float on the right against the amount, where the
@@ -1206,7 +1264,18 @@ private fun StackRow(
                 stack.quality?.let { QualityMark(quality = it) }
                 // The count is the app's own addition: the artboard's fixture gives every stack one
                 // entry, so it never had to say. Said only where it tells the member something.
-                if (stack.entryCount > 1) {
+                // The merged row carries the entry's note, which is the entry's alone and would
+                // otherwise vanish with the row it used to have.
+                lone?.note?.let { note ->
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (lone == null && stack.entryCount > 1) {
                     Text(
                         text =
                             pluralStringResource(
@@ -1218,6 +1287,20 @@ private fun StackRow(
                         color = KrtPalette.TextMuted,
                     )
                 }
+            }
+            lone?.let { AllocationChips(entry = it) }
+        }
+        lone?.let { entry ->
+            if (rows.selection.isNotEmpty()) {
+                KrtSelectionCheckbox(checked = entry.id in rows.selection)
+            } else {
+                EntryActions(
+                    entry = entry,
+                    online = rows.online,
+                    onBookOut = { rows.onBookOut(entry) },
+                    onAllocate = { rows.onAllocate(entry) },
+                    denials = rows.denials,
+                )
             }
         }
     }

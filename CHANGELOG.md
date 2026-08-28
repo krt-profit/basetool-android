@@ -16,6 +16,11 @@
 
 ### Changed
 
+- **Ein Bestand an einem Ort ist jetzt eine Zeile, nicht zwei.** Der Lagerbaum hatte eine Ebene zu
+  viel: über jedem Eintrag stand noch eine Sammelzeile, die dasselbe sagte. Liegt an einem Ort nur
+  eine Buchung — der Normalfall —, ist es jetzt eine Zeile. Liegen dort mehrere, heißen sie
+  „Buchung 1/4", „Buchung 2/4" und so weiter, weil sich sonst nichts an ihnen unterscheidet.
+
 - **Die Zeilen unter einem Material im Lager sehen jetzt aus wie im Entwurf.** Der Ort nennt
   dazu, ob der Bestand geteilt oder persönlich ist; Qualität und Balken stehen darunter links statt
   gequetscht neben der Menge; ein Pfeil zeigt, dass sich die Zeile öffnen lässt. Die Einträge

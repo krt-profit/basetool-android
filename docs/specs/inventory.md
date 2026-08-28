@@ -602,10 +602,31 @@ personal entry, which carries no allocation at all.
 taking nearly half the row, and the width it took came out of the place. The lock badge sits on
 either one's corner and neither is `enabled = false` — unchanged, and still `REQ-APP-INV-008`.
 
+**A stack of one entry is one row.** This is the structural half of the finding and the larger one:
+chapter 09 draws **three** levels — material, holder, entry — and the app drew **four**. Every
+artboard's fixture gives a stack exactly one entry, so the design's third level *is* the entry; the
+app put an aggregate row above it that looked like the drawn row and a bare amount beneath it, and
+so the only case the design actually draws was the one case the app never matched.
+
+The two now merge. Collapsed, the row is the stack; opened, it becomes the entry in place, carrying
+its splits, its note and its two writes, and no second row appears. **The merge waits for the read**
+because `bookOut` and `setAllocation` both take an entry id, which a stack does not have — so it
+happens on open rather than on render, and the row states the *entry's* amount once it has one.
+
+**A stack of several entries keeps them.** Four bookings of the same material, place, quality and
+holder are indistinguishable to look at and yet separately bookable and separately allocatable, so
+collapsing them would leave the member choosing blind. Each row says **„Buchung 2/4"** — its
+identity, the one thing that tells it from its siblings. The design has no drawing for this because
+its fixture never has more than one entry (owner ruling, 2026-08-28; the two rejected alternatives
+were one row that asks „which booking?" on every action, and one row that picks an entry silently).
+
 **Acceptance**
 
 - [x] A stack says „Ort · geteilt"; a personal one says „Ort · persönlich" in the same place
       (`InventoryScreenTest`).
+- [x] A stack of one entry renders as one row carrying that entry's amount and its two writes; the
+      place and the quality appear once (`InventoryScreenTest`).
+- [x] A stack of several keeps them as rows of their own, each numbered (`InventoryScreenTest`).
 - [x] „1 Eintrag" is not drawn; „4 Einträge" is (`InventoryScreenTest`).
 - [x] The place, the pool and the quality appear **once** under an opened stack, not once per entry
       (`InventoryScreenTest`).
@@ -613,5 +634,6 @@ either one's corner and neither is `enabled = false` — unchanged, and still `R
 - [x] Verified on a device: a four-entry stack reads as one header and four amounts, with nothing
       truncated.
 
-**Code:** `inventory/InventoryScreen.kt` (`StackRow`, `EntryRow`, `AllocationChips`, `placeLine`)
+**Code:** `inventory/InventoryScreen.kt` (`StackRow`, `EntryRow`, `AllocationChips`, `placeLine`,
+`stackRows`)
 
