@@ -48,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Operationen list. */
@@ -298,7 +299,7 @@ private fun OperationsList(
     val finished = state.operations.filterNot { it.isRunning }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(OPERATIONS_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         if (running.isNotEmpty()) {
             item(key = "group-running") {

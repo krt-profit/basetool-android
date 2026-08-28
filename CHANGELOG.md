@@ -16,10 +16,11 @@
 
 ### Changed
 
-- **Alle Listen haben links und rechts denselben Rand.** Lager, Posteingang, Mein Inventar,
-  Blueprints, Operationen, Auftragsdetail, Bankkonto und die Übersicht klebten bisher an der
-  Navigationsleiste und am Bildschirmrand; auf dem Tablet fiel das am stärksten auf. Das Listenende
-  in „Mein Inventar" sieht jetzt aus wie überall sonst.
+- **Auf Tablets haben alle Listen links und rechts denselben Rand.** Lager, Posteingang, Mein
+  Inventar, Blueprints, Operationen, Auftragsdetail, Bankkonto und die Übersicht klebten bisher an
+  der Navigationsleiste und am Bildschirmrand. Auf dem Telefon bleibt alles wie gehabt — dort ist
+  die Breite zu knapp, um sie zu verschenken. Das Listenende in „Mein Inventar" sieht jetzt aus wie
+  überall sonst.
 
 - **Logistiker können die Reihenfolge der Warteschlange in der App ändern.** Im Auftragsdetail:
   „An den Anfang", „Höher", „Niedriger". Ein Auftrag, der die Warteschlange verlassen hat, bekommt

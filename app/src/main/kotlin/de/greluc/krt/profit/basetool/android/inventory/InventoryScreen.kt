@@ -86,6 +86,7 @@ import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isLogistician
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
@@ -288,7 +289,7 @@ private fun InventoryTree(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         state.visibleGroups.forEach { group ->
             val materialId = group.materialId

@@ -68,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.carriesClock
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeTo
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -188,7 +189,10 @@ fun DashboardScreen(
             LazyColumn(
                 state = rememberRootListState(),
                 modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG),
-                contentPadding = PaddingValues(KrtSpacing.md),
+                // Zero on a phone, where chapter 05 draws the band full-bleed with its padding
+                // inside the card. A medium window reaches this branch too - it has no room for
+                // two columns but plenty to spare sideways - and there the gutter does apply.
+                contentPadding = PaddingValues(horizontal = contentGutter()),
             ) {
                 item(key = "greeting") {
                     Greeting(memberName = memberName, orgUnitName = orgUnitName)

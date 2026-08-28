@@ -72,6 +72,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the scrolling content of the Operation detail. */
@@ -239,7 +240,7 @@ private fun OperationDetailBody(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(OPERATION_DETAIL_CONTENT_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         if (!state.online) {
             item(key = "offline") { OfflineBand() }

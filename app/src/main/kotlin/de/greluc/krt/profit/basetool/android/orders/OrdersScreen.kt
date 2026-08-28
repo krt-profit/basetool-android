@@ -90,6 +90,7 @@ import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -339,7 +340,7 @@ private fun OrdersList(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
         items(state.orders, key = { it.id }) { order ->
@@ -936,7 +937,7 @@ private fun OrderDetailBody(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(ORDER_DETAIL_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         if (!state.online) {
             item(key = "offline") { OfflineBand() }

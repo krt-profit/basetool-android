@@ -425,41 +425,54 @@ styling, so a pane head and a pushed screen's head read as the same thing.
 
 **Code:** `ui/ListDetail.kt` (`DetailPane`, `DetailPaneHead`)
 
-### REQ-APP-UI-010 — Every screen's content sits in the same gutter
+### REQ-APP-UI-010 — The content gutter is a tablet's, and a phone keeps its full bleed
 
-A screen's scrolling content is inset by `KrtSpacing.md` on both sides. No list runs flush to the
-navigation rail on one side and the screen edge on the other.
+From a **medium** window up, a screen's scrolling content is inset by `KrtSpacing.md` on both sides.
+Below that it is not: a phone keeps whatever the artboard draws.
 
-Eleven lists had no horizontal inset at all — the Lager tree, the notification inbox, Mein Inventar
-and its Blueprints, Operationen and one operation, an order's detail pane, a bank account, and the
-tablet dashboard's two columns. On a phone that reads as a dense-table style; on a tablet, where the
-rail is on the left and the pane is over a thousand dp wide, it reads as a layout fault — and it sat
-beside the Hangar, whose cards *are* inset, so the app disagreed with itself screen to screen.
+Both readings are right for their own width, which is why one rule could not serve both. On a phone
+a dense row list is drawn full-bleed inside the frame — chapter 09's Lager tree spans `49…411` of a
+`48…412` screen, chapter 05's dashboard band `48…402` — and there is no width to give away. On a
+tablet the same list puts a row's first character against the navigation rail and its last figure
+against the screen edge, about two thousand device pixels apart, beside a Hangar whose cards *are*
+inset. Eleven lists had no inset at **any** width: the Lager tree, the notification inbox, Mein
+Inventar and its Blueprints, Operationen and one operation, an order's detail pane, a bank account,
+and the tablet dashboard's two columns.
 
-**This deviates from the drawn phone artboards for the dense row lists.** Chapter 09's Lager tree is
-drawn full-bleed inside the phone frame (the row spans 49…411 of a 48…412 screen); the Hangar's
-cards in chapter 08 are inset. The gutter is the owner's ruling, taken while looking at the tablet,
-and the artboards for those lists want redrawing — design round 9 §1 carries the ask.
+**The breakpoint is medium, not `isWideWindow`'s expanded.** This is a question about how much width
+there is to spare, not about whether a list fits beside its detail; a 700 dp window has width to
+spare long before it has room for two panes. `contentGutter()` in `ui/WindowWidth.kt` is the single
+place the number lives, next to `isWideWindow()` for the same reason that one is there.
+
+**Cards do not use it.** A card list — Hangar, Materialbörse, the Aufträge queue, Raffinerie,
+Missionen — is inset at every width, because the artboards draw it that way on the phone too.
+Passing those through `contentGutter()` would take their phone gutter away.
 
 **The gutter belongs to the scroll container, not to the rows.** `contentPadding` on the list keeps
 the scrollbar and the overscroll at the true edge and lets a row draw its own full-width background
-inside the inset; `padding` on the list would clip both.
+inside the inset; `Modifier.padding` on the list clips both. On the tablet dashboard it sits on the
+enclosing column instead, so the greeting and the announcement line up with the two columns of cards
+under them.
 
-On the tablet dashboard the gutter sits on the enclosing column instead, so the greeting and the
-announcement line up with the two columns of cards under them; the columns carry only the vertical
-padding.
+**History, because the first attempt shipped the other rule.** The gutter was applied
+unconditionally first, which put it on the phone as well and contradicted the drawn dense lists. The
+owner ruled it tablet-only on 2026-08-28 (having ruled the gutter itself into existence the same
+day, from the tablet). Chapter 01 states no gutter rule at all, which is why eleven screens each
+decided for themselves — design round 9 §1 asks for one sentence there.
 
 **Acceptance**
 
 - [x] Verified on the tablet: Lager, Aufträge (list and detail pane), Übersicht, Benachrichtigungen,
       Operationen, Mein Inventar, Börse, Bank, Raffinerie — all inset, all aligned with the filter
       chips above them.
-- [x] Verified on the phone: the Lager tree is inset and aligned with „Nur mit Bestand".
+- [x] Verified on the phone and on minSdk: the Lager tree is full-bleed again, its accent spine at
+      the frame's edge, as chapter 09 draws it.
 
-**Code:** `inventory/InventoryScreen.kt`, `notifications/NotificationsScreen.kt`,
-`personalinventory/PersonalInventoryScreen.kt`, `personalinventory/PersonalBlueprintsScreen.kt`,
-`missions/OperationsScreen.kt`, `missions/OperationDetailScreen.kt`, `orders/OrdersScreen.kt`,
-`bank/BankScreen.kt`, `dashboard/DashboardScreen.kt`
+**Code:** `ui/WindowWidth.kt` (`contentGutter`), `inventory/InventoryScreen.kt`,
+`notifications/NotificationsScreen.kt`, `personalinventory/PersonalInventoryScreen.kt`,
+`personalinventory/PersonalBlueprintsScreen.kt`, `missions/OperationsScreen.kt`,
+`missions/OperationDetailScreen.kt`, `orders/OrdersScreen.kt`, `bank/BankScreen.kt`,
+`dashboard/DashboardScreen.kt`
 
 ### REQ-APP-UI-011 — One end-of-list, drawn by the design system
 

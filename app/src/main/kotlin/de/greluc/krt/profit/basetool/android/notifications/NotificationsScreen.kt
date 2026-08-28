@@ -59,6 +59,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -247,7 +248,7 @@ private fun NotificationsList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(NOTIFICATIONS_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         items(state.notifications, key = { it.id }) { notification ->
             KrtSwipeableRow(

@@ -56,6 +56,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -245,7 +246,7 @@ private fun BlueprintList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(BLUEPRINTS_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(horizontal = contentGutter()),
     ) {
         items(state.items, key = { it.id }) { entry ->
             BlueprintRow(

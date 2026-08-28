@@ -9,34 +9,33 @@
 
 ---
 
-## 1 — The dense row lists are drawn full-bleed; the app now insets them
+## 1 — Chapter 01 states no gutter rule, so eleven screens each decided for themselves
 
-**The app has changed and the artboards have not.** The owner ruled, looking at the tablet, that
-every screen's content sits in the same gutter (`REQ-APP-UI-010`). Several chapters draw their row
-lists without one.
+**Ruled and built, 2026-08-28 — this asks for one sentence, not a redraw.**
 
-Measured on the rendered artboards, phone frame `x = 32…428`, screen area `x = 48…412`:
+The owner ruled that a screen's scrolling content is inset by `KrtSpacing.md` **from a medium window
+up, and not below it** (`REQ-APP-UI-010`). A phone keeps the full bleed the artboards draw; a tablet
+gets the gutter. Both readings measured on the rendered chapters, phone frame `x = 32…428`, screen
+area `x = 48…412`:
 
-| Chapter | Element | Drawn | Now built |
-| :-- | :-- | :-- | :-- |
-| 09 Lager | tree row (`Quantainium`) | `49…411` — full bleed | inset by `KrtSpacing.md` |
-| 09 Lager | holder row (`Rhea`) | `49…411` — full bleed | inset |
-| 08 Hangar | ship card | inset ≈ 16 px | unchanged — this is the pattern the rest now follows |
+| Chapter | Element | Drawn | Built on a phone | Built on a tablet |
+| :-- | :-- | :-- | :-- | :-- |
+| 09 Lager | tree row (`Quantainium`) | `49…411` — full bleed | unchanged | inset |
+| 09 Lager | holder row (`Rhea`) | `49…411` — full bleed | unchanged | inset |
+| 05 Dashboard | „Willkommen" band | `48…402` — full bleed | unchanged | inset |
+| 08 Hangar | ship card | inset ≈ 16 px | unchanged | unchanged |
 
-The distinction the artboards make — cards inset, dense tables full-bleed — is a real one and it
-reads well on a phone. It does **not** survive the tablet: with the rail on the left and a pane over
-a thousand dp wide, a full-bleed row list has its first character against the rail and its last
-figure against the screen edge, and it sits beside an inset Hangar, so the app disagrees with itself
-screen to screen.
+The artboards therefore need **no redraw**: what they draw is what the phone does. What is missing
+is upstream of all of them.
 
-**The ask:** redraw the dense row lists with the same gutter the cards have — chapter 09's tree
-(all levels), chapter 07's inbox rows, chapter 05's dashboard sections, and the personal-inventory
-rows. If the full-bleed treatment is wanted on the phone and the gutter only on the tablet, say so
-and the app will make it width-conditional; right now it is unconditional, because that is what was
-asked for and because two rules are harder to keep than one.
+**The ask: state the gutter in chapter 01 (Foundations).** One line — *content is full-bleed on a
+phone and inset by `md` from `sm`/medium up; cards are inset at every width* — is the difference
+between a rule and eleven independent decisions. Eleven lists had no inset at any width, which is
+not a series of mistakes so much as a foundation nobody had written down.
 
-**Also worth a line in chapter 01:** the gutter is a foundation, not a per-screen decision. One
-sentence there would have prevented eleven screens drifting apart.
+**Worth drawing eventually, though not blocking:** a tablet frame for chapter 09's tree, so the
+inset case is shown rather than inferred. Chapter 09 has phone frames only, which is the same gap
+§4 of this round records for the Lager's wide layout.
 
 ---
 
@@ -78,3 +77,44 @@ position has no equivalent for:
 
 The ask is a drawn variant of artboard 2's position row for the item case, so the two are not left
 to converge by accident.
+
+---
+
+## 4 — The Lager gets a detail pane, and it needs drawing
+
+**Ruled 2026-08-28.** Round 8 §5 asked what a screen with no detail pane does with a tablet's width
+and offered three ways out. For the **Lager** the owner chose the largest: give it a detail pane,
+like Einsätze, Aufträge and Raffinerie already have.
+
+This is a **new screen**, not a re-hang of an existing one. The app's Lager is a pure inline tree —
+every tap toggles a group or a stack and nothing opens — so there is no detail today to move into a
+pane. The web has two templates that were never mapped to the app and that this closes:
+`inventory-material.html` and `inventory-game-item.html`.
+
+**What the drawing has to settle:**
+
+1. **What a row opens.** A material row and a holder row are different things; do both open the same
+   pane, or only the material?
+2. **What the pane holds.** The web's material page carries the holders, the entries, the
+   earmarking against orders and missions, and the quality band. Which of those belong on a tablet
+   pane, and in what order?
+3. **The empty state**, before anything is selected — chapter 03's „Nichts ausgewählt" card, or
+   something the Lager-specific?
+4. **What the phone does.** The same pane pushed as a screen, which is how the other three work.
+
+Until it is drawn the Lager keeps the stretched list on a tablet, which is the state round 8 §5
+described.
+
+---
+
+## 5 — The Materialbörse goes to two card columns
+
+**Ruled 2026-08-28**, from round 8 §5's third option. The cards are self-contained — name, member,
+figures, the withdraw button — so two fit side by side and the three quarters of empty card stop
+being empty.
+
+Nothing here blocks the build: it is a grid instead of a column above the same breakpoint the rest
+of the tablet layouts use. What a drawing would still settle is **the column count above a tablet's
+width** — two everywhere, or three on something wider than 1280 dp — and whether a card's internal
+layout changes at all when it is half as wide.
+
