@@ -603,7 +603,7 @@ reach for it. It needs a server-side decision before it can exist here.
   put `DONATE` and `Pilot` on the roster.
 - [ ] „Eigenes Schiff einbringen". **Open** — no endpoint a participant may call.
 
-### REQ-APP-MIS-019 — A manager acts on the roster, and the app asks the server whether they are one
+### REQ-APP-MIS-020 — A manager acts on the roster, and the app asks the server whether they are one
 
 The Teilnehmer tab offers three per-row actions to a caller who may manage the Einsatz: check the
 member **in or out**, switch their **payout preference**, and assign their **Funktion an Bord**. The
@@ -638,7 +638,7 @@ before the Einsatz has actually started, so the app does not offer it before the
 
 **Enforced by:** `MissionRosterTest`, `MissionDetailScreenTest`, `MissionRepositoryTest`.
 
-### REQ-APP-MIS-020 — A participant write sends the row whole, because the endpoint replaces it
+### REQ-APP-MIS-021 — A participant write sends the row whole, because the endpoint replaces it
 
 `PUT /missions/{id}/participants/{participantId}` is a **replace, not a patch**. The server clears
 `desiredMissionJobType` and `comment` when the request omits them, and assigns `startTime` and
