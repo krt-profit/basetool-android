@@ -76,7 +76,6 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPage
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
@@ -568,19 +567,6 @@ internal fun MaterialLine(material: JobOrderMaterial) {
 private fun String?.orDash(): String = this?.let { formatAmount(it) }?.takeIf { it.isNotEmpty() } ?: "—"
 
 /**
- * The queue row's second line.
- *
- * @return "Für X · Durch Y", with whichever half the server sent.
- */
-@Composable
-private fun JobOrder.parties(): String =
-    listOfNotNull(
-        requestingOrgUnit?.let { stringResource(R.string.orders_for, it) },
-        responsibleOrgUnit?.let { stringResource(R.string.orders_by, it) },
-        createdAt?.relativeToNow(),
-    ).joinToString(" · ")
-
-/**
  * The order's kind, as the chip beside its number.
  *
  * @return `Material` or `Item` in the member's language, or `null` when the server named no type —
@@ -1010,26 +996,6 @@ private fun WriteError(error: ApiError) {
                 },
             ),
     )
-}
-
-/**
- * A titled block.
- *
- * @param title the heading.
- * @param content what goes under it.
- */
-@Composable
-private fun Section(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    Column {
-        KrtSectionTitle(
-            text = title,
-            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        )
-        content()
-    }
 }
 
 /**

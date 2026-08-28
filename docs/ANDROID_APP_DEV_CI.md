@@ -281,7 +281,16 @@ platform and a documented refresh flow before it can be turned on; see the open 
 ## 5. Quality gates (the app repo's `check`)
 
 `./gradlew check` = unit tests + Android Lint (`warningsAsErrors`, baseline file forbidden except
-by owner decision) + detekt + Spotless(ktlint) verify. All gates green before every push (the
+by owner decision) + detekt + Spotless(ktlint) verify.
+
+**detekt runs twice, and the difference matters.** The plain `detekt` task analyses without type
+resolution; `:app:detektMain` analyses all four production variants *with* it, and only the second
+sees the rules that need a resolved type — `UnusedPrivateFunction`, `UnusedPrivateProperty`,
+`InjectDispatcher` and their family. Until ADR-0017 only the first was gated, and five unused
+private declarations accumulated unreported. `:app:check` now depends on `detektMain`;
+`:core:auth`, `:core:network` and `detektTest` deliberately do not yet — see the ADR for the
+kotlinx.serialization limitation that blocks the core modules and the test-builder policy call that
+blocks the test sources. All gates green before every push (the
 lint-gate discipline of this repo carried over). CI runs `./gradlew build` — `assemble` + `check`
 — rather than a hand-picked task list, so the command that gates a PR is the command a
 contributor runs locally; a CI-only task list is how the two drift apart.

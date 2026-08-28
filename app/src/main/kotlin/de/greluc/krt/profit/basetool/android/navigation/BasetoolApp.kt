@@ -391,20 +391,6 @@ private fun selectedTopLevelRoute(
     }
 
 /**
- * Whether a destination is a pushed detail rather than a navigation root.
- *
- * Only pushed screens get the back arrow in the top bar — on a root the arrow would suggest a
- * hierarchy that does not exist.
- *
- * @param destination the destination to classify.
- * @return `true` when the top bar should show the back arrow.
- */
-private fun isDetailRoute(destination: KrtDestination): Boolean =
-    destination == KrtDestination.Notifications ||
-        destination == KrtDestination.Settings ||
-        destination in SUB_DESTINATIONS
-
-/**
  * Navigates to a top-level destination, preserving each destination's own back stack.
  *
  * `saveState`/`restoreState` are what make list scroll positions and open details survive a trip

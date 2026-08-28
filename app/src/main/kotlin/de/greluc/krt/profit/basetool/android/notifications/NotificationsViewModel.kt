@@ -103,7 +103,6 @@ data class PendingDelete(
 class NotificationsViewModel(
     private val source: NotificationSource,
     private val notifier: SystemNotifications? = null,
-    private val notificationTitle: String = "",
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(NotificationsState())
 
