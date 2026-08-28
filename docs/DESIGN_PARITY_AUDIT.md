@@ -125,13 +125,34 @@ code change. The holder breakdown inside the **detail** stays; the detail endpoi
 
 The request rows' `approvals` / `canApprove` are still to be checked.
 
-### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **done**
+### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a
 chevron — without one nothing said the row opens. A stack entry now leads with **where** it is,
 behind a map pin: only the amount and the note were drawn, so two entries of the same material in
 different hangars read as duplicates of each other. `total` + `unit` per group were already there as
 `amount`/`unit`. Mein Inventar and Blueprints are tiles.
+
+**Re-audited 2026-08-28 by putting the rendered artboard beside a device screenshot.** What matches:
+the orange rail and chevron, the material bold with the amount right-aligned and its unit muted, the
+org chip in the app bar, and the third level's „Halter · Ort · Q 880" with its quality bar. Four
+things do not:
+
+| # | artboard 1 | app | weight |
+| :-- | :-- | :-- | :-- |
+| 1 | three filter chips — „MATERIAL: ALLE", „NUR MIT BESTAND", „ORT: ALLE" | one, „NUR MIT BESTAND" | **functional** — no material and no location filter |
+| 2 | a filter icon in the app bar | a bell | cosmetic, but it is where the drawn filters live |
+| 3 | the FAB is the book-out glyph (⤓) | the FAB is „+" | the drawn action is Ausbuchen; „+" reads as create |
+| 4 | material → **holder** (with a subtotal) → entry | material → holder·location merged into one row | structural: a member holding one material in two places has no subtotal |
+
+Item 1 is the one that matters: with more than a screenful of materials, „nur mit Bestand" is not a
+filter, it is a switch. The other three are recorded rather than fixed here, so the list is honest
+about what a screenshot showed.
+
+> [!note] Why this row said „done"
+> Same reason as the Raffinerie row below: the 25.08. pass checked that the drawn *elements* existed
+> and never compared the two pictures. Three of the four items above are visible in the first
+> screenshot taken of this screen.
 
 ### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **done (2026-08-25, verified on screen)**
 
