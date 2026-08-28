@@ -16,6 +16,11 @@
 
 ### Changed
 
+- **Lange Ortsnamen laufen als Band durch, statt abgeschnitten zu werden.** „ARC-L1 Wide Forest
+  Station · geteilt" passt nicht in eine Telefonzeile; der Name wandert jetzt langsam nach links und
+  wieder zurück, sodass man ihn ganz lesen kann. Namen, die passen, bewegen sich nicht. Wer
+  Animationen in den Bedienungshilfen abgeschaltet hat, bekommt weiter die gekürzte Fassung.
+
 - **Ein Bestand an einem Ort ist jetzt eine Zeile, nicht zwei.** Der Lagerbaum hatte eine Ebene zu
   viel: über jedem Eintrag stand noch eine Sammelzeile, die dasselbe sagte. Liegt an einem Ort nur
   eine Buchung — der Normalfall —, ist es jetzt eine Zeile. Liegen dort mehrere, heißen sie

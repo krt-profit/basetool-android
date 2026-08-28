@@ -77,6 +77,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMarqueeText
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
@@ -1227,12 +1228,13 @@ private fun StackRow(
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
+                // A place a member has to recognise, not prose they can open to read: „ARC-L1
+                // Wide Forest Station" and „…Forest Depot" both cut to „ARC-L1 Wide Fores…", and
+                // two rows that cannot be told apart are worse than one that takes a moment.
+                KrtMarqueeText(
                     text = placeLine(stack.title(), stack.personal),
                     style = MaterialTheme.typography.bodyMedium,
                     color = KrtPalette.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 // The merged row is the entry, so it states the entry's figure. The two agree in

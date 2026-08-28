@@ -487,3 +487,45 @@ eleven ended differently from the rest for no reason anyone had decided.
 **Code:** `personalinventory/PersonalInventoryScreen.kt`,
 `personalinventory/PersonalBlueprintsScreen.kt`
 
+### REQ-APP-UI-012 — A name too long for its row travels; it is not cut off
+
+`KrtMarqueeText` draws a one-line label that slides out and back when it does not fit, and as plain
+text when it does.
+
+**Ellipsis is right for prose and wrong for a name.** A member can open a note to read it in full; a
+place is something they have to *recognise* from the row itself. „ARC-L1 Wide Forest Station" and
+„ARC-L1 Wide Forest Depot" both arrive as „ARC-L1 Wide Fores…", and two rows that cannot be told
+apart are worse than one that takes a moment to read. Reported from a device, 2026-08-28.
+
+**Out and back, not a ticker loop.** A loop wraps the end of the string around to its start, so a
+place name crosses the seam as a different, wrong name once per cycle. Travelling out and returning
+always shows the text in its own order (owner ruling, 2026-08-28: „von links nach rechts und wieder
+zurück").
+
+**Constant speed, not constant duration** — 60 px/s. A long name raced past faster than a short one
+is unreadable exactly where the reading matters most, and rows of different lengths in one list stay
+legible together. It rests 1.2 s at each end, long enough to read the end it has reached.
+
+**Only when it has to.** A label that fits animates nothing, which is what keeps a list of twenty
+rows still. The two widths are measured separately — what the text wants against what the box has —
+because folding them into one figure let whichever measurement arrived second win.
+
+**Reduced motion turns it off** and the ellipsis comes back (`KrtTheme.motionMs == 0`, the toggle
+under *Einstellungen → Bedienungshilfen → Animationen entfernen*). Unlike the loading spinner, this
+one yields: nothing is lost that the member cannot reach by opening the row.
+
+**The string is never shortened.** Only what is *shown* moves, so a screen reader — and a test —
+still reads the whole name at any width. That is the property `KrtMarqueeTextTest` pins, because it
+is what a well-meaning "just truncate it in the view model" would quietly break.
+
+**Acceptance**
+
+- [x] The whole label is in the semantics tree at a width that cannot fit it
+      (`KrtMarqueeTextTest`).
+- [x] An empty label draws nothing and does not fall over (`KrtMarqueeTextTest`).
+- [x] Verified on a device: six one-second frames of the Lager's place line show it sliding left and
+      returning, with „· geteilt" fully readable at the far end.
+
+**Code:** `core/designsystem/component/KrtText.kt` (`KrtMarqueeText`),
+`inventory/InventoryScreen.kt` (the stack row's place line)
+
