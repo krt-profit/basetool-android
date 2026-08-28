@@ -961,6 +961,9 @@
     <string name="order_detail_status_confirm_title">Close the order?</string>
     <string name="order_detail_status_confirm_body">The order moves to “%1$s”. This cannot be undone in the app.</string>
     <string name="order_detail_change_status">Change status</string>
+    <string name="order_detail_priority_front">To the front</string>
+    <string name="order_detail_priority_up">Higher</string>
+    <string name="order_detail_priority_down">Lower</string>
     <string name="order_detail_note">Note</string>
     <string name="order_detail_note_scope">#%1$s · Your own assignment only</string>
     <string name="order_detail_note_counter">%1$d / %2$d</string>

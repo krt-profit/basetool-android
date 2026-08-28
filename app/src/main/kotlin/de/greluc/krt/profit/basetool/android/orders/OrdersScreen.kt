@@ -108,6 +108,15 @@ const val ORDER_ASSIGN_TAG: String = "order-assign"
 /** Test handle for the order's status action. */
 const val ORDER_STATUS_TAG: String = "order-status"
 
+/** Test tag of „An den Anfang" on the order detail. */
+const val ORDER_PRIORITY_FRONT_TAG: String = "order-priority-front"
+
+/** Test tag of „Höher" on the order detail. */
+const val ORDER_PRIORITY_UP_TAG: String = "order-priority-up"
+
+/** Test tag of „Niedriger" on the order detail. */
+const val ORDER_PRIORITY_DOWN_TAG: String = "order-priority-down"
+
 /** Test handle for an assignee's note action. */
 const val ORDER_NOTE_TAG: String = "order-note"
 
@@ -254,6 +263,58 @@ fun OrdersScreen(
                     .padding(KrtSpacing.lg)
                     .padding(bottom = LocalKrtBottomBarInset.current)
                     .testTag(ORDERS_CREATE_TAG),
+        )
+    }
+}
+
+/**
+ * Moving the order in the queue — a Logistician's write.
+ *
+ * **Three buttons, not a drag.** The web reorders by dragging a row, which needs the whole queue on
+ * screen and a pointer that can hold one row while the rest scrolls. Neither is true on a phone,
+ * and the design has drawn no equivalent (design round 8 §4 asks for one). What a Logistician
+ * actually decides is „this one sooner" or „this one later", and the endpoint takes an absolute
+ * position, so the buttons express the intent and compute the position.
+ *
+ * „An den Anfang" has no counterpart: the back of the queue is a page count away, and a control
+ * that guessed at its length would drop the order somewhere nobody asked for.
+ *
+ * @param state what the detail holds.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun PriorityControls(
+    state: OrderDetailState,
+    actions: OrderDetailActions,
+) {
+    val atFront = (state.order?.priority ?: 1) <= 1
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        KrtGhostButton(
+            text = stringResource(R.string.order_detail_priority_front),
+            onClick = { actions.onRaisePriority(true) },
+            modifier =
+                Modifier
+                    .testTag(ORDER_PRIORITY_FRONT_TAG)
+                    .alpha(if (state.writable && !atFront) 1f else DISABLED_WRITE_ALPHA),
+            enabled = state.writable && !atFront,
+        )
+        KrtGhostButton(
+            text = stringResource(R.string.order_detail_priority_up),
+            onClick = { actions.onRaisePriority(false) },
+            modifier =
+                Modifier
+                    .testTag(ORDER_PRIORITY_UP_TAG)
+                    .alpha(if (state.writable && !atFront) 1f else DISABLED_WRITE_ALPHA),
+            enabled = state.writable && !atFront,
+        )
+        KrtGhostButton(
+            text = stringResource(R.string.order_detail_priority_down),
+            onClick = actions.onLowerPriority,
+            modifier =
+                Modifier
+                    .testTag(ORDER_PRIORITY_DOWN_TAG)
+                    .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
+            enabled = state.writable,
         )
     }
 }
@@ -746,6 +807,8 @@ fun OrderDetailScreen(
  * @property onSaveNote the note was saved.
  * @property onDismissNote the note editor was closed.
  * @property onOpenStatusPicker the status control was taken.
+ * @property onRaisePriority move towards the front; `true` for the front outright.
+ * @property onLowerPriority move one place towards the back.
  * @property onStatusChosen a status was picked.
  * @property onDismissStatusPicker the status picker was closed.
  */
@@ -758,6 +821,8 @@ data class OrderDetailActions(
     /** Puts a note the server refused in an optimistic-lock race back into the editor. */
     val onReapplyRejectedNote: () -> Unit,
     val onOpenStatusPicker: () -> Unit,
+    val onRaisePriority: (Boolean) -> Unit,
+    val onLowerPriority: () -> Unit,
     val onStatusChosen: (JobOrderStatus) -> Unit,
     val onDismissStatusPicker: () -> Unit,
     /** Marks a status as intended without moving the order (design ch. 10 artboard 8). */
@@ -845,6 +910,9 @@ private fun OrderDetailBody(
                             enabled = state.writable,
                         )
                     }
+                }
+                if (state.priorityChangeable) {
+                    PriorityControls(state = state, actions = actions)
                 }
             }
         }
@@ -1127,6 +1195,8 @@ fun OrderDetailRoute(
                 onDismissNote = viewModel::onDismissNote,
                 onReapplyRejectedNote = viewModel::onReapplyRejectedNote,
                 onOpenStatusPicker = viewModel::onOpenStatusPicker,
+                onRaisePriority = viewModel::onRaisePriority,
+                onLowerPriority = viewModel::onLowerPriority,
                 onStatusChosen = viewModel::onStatusChosen,
                 onDismissStatusPicker = viewModel::onDismissStatusPicker,
                 onStatusSelected = viewModel::onStatusSelected,

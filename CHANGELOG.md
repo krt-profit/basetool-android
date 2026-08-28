@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Logistiker können die Reihenfolge der Warteschlange in der App ändern.** Im Auftragsdetail:
+  „An den Anfang", „Höher", „Niedriger". Ein Auftrag, der die Warteschlange verlassen hat, bekommt
+  die Regler nicht — und einer, der schon vorn steht, lässt „Höher" gar nicht erst zu.
+
 - **Aufträge lassen sich jetzt in der App anlegen.** Das „+" in der Auftragsliste öffnet das
   Formular: bearbeitende Einheit, Auftraggeber, Handle, beliebig viele Materialzeilen mit Menge und
   Mindestqualität sowie ein Kommentar. Auftraggeber kann jede aktive Einheit sein, bearbeiten darf

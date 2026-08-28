@@ -319,6 +319,23 @@ interface JobOrderSource {
     ): ApiResult<JobOrder>
 
     /**
+     * Moves the order to another place in the queue.
+     *
+     * The server shifts every other order to keep the sequence contiguous, so the answer is the
+     * whole order rather than a confirmation — and every other row's priority has changed too,
+     * which is why the caller reloads the queue rather than patching one row.
+     *
+     * @param id which order.
+     * @param priority the position it should take; 1 is the front.
+     * @return the reordered order, or the classified failure — `Forbidden` when the caller is not
+     *   a Logistician for it.
+     */
+    suspend fun setPriority(
+        id: String,
+        priority: Int,
+    ): ApiResult<JobOrder>
+
+    /**
      * Moves the order to another status.
      *
      * @param id the order.
@@ -570,6 +587,21 @@ class JobOrderRepository(
             },
         )
     }
+
+    override suspend fun setPriority(
+        id: String,
+        priority: Int,
+    ): ApiResult<JobOrder> =
+        refreshed(
+            reader.put(
+                // A query parameter, not a body — that is what the endpoint takes. And no
+                // `version`: the service reorders the whole queue under a pessimistic write lock,
+                // so the optimistic version this app echoes everywhere else has nothing to guard
+                // here. Sending one would suggest a conflict check that does not happen.
+                orderPath(id) + "/priority?priority=" + priority,
+                JobOrderDto.serializer(),
+            ),
+        )
 
     override suspend fun setStatus(
         id: String,

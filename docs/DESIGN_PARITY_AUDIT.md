@@ -119,10 +119,14 @@ Two things I first read as gaps and then checked, and they were not:
 - **A missing squadron filter.** The web has one (`REQ-ORDERS-027`); the app's equivalent is the
   active-org-unit pin in the app bar, which the interceptor sends as a header on every call.
 
-Still open and app-side: **priority reorder** (`PUT /orders/{id}/priority`, a Logistician's write
-that the web does by drag and drop and the design has not drawn for a phone), and **item orders**,
-which need a blueprint picker per item and a derivation tree — a screen of its own, asked for in
-round 8 §1.3.
+**Priority reorder is now built** — three ghost buttons on the detail (An den Anfang · Höher ·
+Niedriger) rather than a drag, because a phone has neither the queue on screen nor a pointer that
+can hold a row. Verified on a device: #1 moved to 2 and #2 took 1 in the database, and „An den
+Anfang" put it back. Round 8 §4 asks for the drawing and asks whether the control belongs on the
+queue instead.
+
+Still open and app-side: **item orders**, which need a blueprint picker per item and a derivation
+tree — a screen of its own, asked for in round 8 §1.3.
 
 ### 10 Aufträge — artboards 2–4 · `orders/OrderDetailScreen`, `exchange/MaterialBoardScreen` — **done**
 

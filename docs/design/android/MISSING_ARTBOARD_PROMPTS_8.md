@@ -64,6 +64,31 @@ accent, because the status pill inside every row already carries the tone and a 
 per-status reads as a second, competing legend. Left as built; say if the per-status tint is
 deliberate.
 
+## 4 — Reordering the queue has no phone form
+
+The web reorders by dragging a row in the list. A phone has neither the list on screen nor a pointer
+that can hold one row while the rest scrolls, and chapter 10 draws no alternative — the priority
+figure is rendered, never edited.
+
+Built as three ghost buttons on the **order detail**, beside „Status ändern", because that is where
+the app already gates a Logistician's write: **AN DEN ANFANG · HÖHER · NIEDRIGER**. The endpoint
+takes an absolute position (`PUT /orders/{id}/priority?priority=N`, no version — the service
+reorders under a pessimistic lock), so the buttons express the intent and compute the position.
+
+Two things that fell out of building it, both worth a ruling:
+
+**4.1 — There is no „ans Ende".** The back of the queue is a page count away, and a control that
+guessed at the length would drop the order somewhere nobody asked for. „Niedriger" moves one place.
+
+**4.2 — Should it be on the queue instead?** The queue is where the ordering is *visible*, which
+argues for putting the control there — a long-press on a row, say. It is on the detail because the
+detail already holds the Logistician grant and the write plumbing, and because a control on the
+queue would need the identity read the queue does not currently do. If the queue is the right place,
+say so and it moves.
+
+An order with no priority (completed, rejected) gets no control at all: it has left the queue, and
+„move it up" would be an instruction to put it back.
+
 ---
 
 ## What is already correct and needs nothing

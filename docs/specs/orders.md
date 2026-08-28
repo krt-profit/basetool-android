@@ -332,3 +332,38 @@ Design chapter 10 artboard 1 draws exactly this.
 
 **Code:** `orders/OrdersScreen.kt` (`ageText`), `core/data/JobOrderRepository.kt`
 (`JobOrderAgeThresholds`)
+
+### REQ-APP-ORDERS-015 — A Logistician moves an order in the queue, without a drag
+
+The web reorders by dragging a row; a phone has neither the whole queue on screen nor a pointer that
+can hold one row while the rest scrolls. The order detail carries three ghost buttons instead —
+**An den Anfang · Höher · Niedriger** — beside „Status ändern", which is where the app already gates
+a Logistician's write. `PUT /api/v1/orders/{id}/priority?priority=N`.
+
+**No version is echoed, and that is deliberate.** The service reorders the whole queue under a
+pessimistic write lock, so the optimistic version this app echoes on every other write has nothing
+to guard here; sending one would suggest a conflict check that does not happen.
+
+**There is no „ans Ende".** The back of the queue is a page count away, and a control that guessed at
+its length would drop the order somewhere nobody asked for.
+
+**An order with no priority gets no control.** A completed or rejected order has left the queue, and
+„move it up" would be an instruction to put it back into one.
+
+**An order already at the front does not offer Höher or An den Anfang.** Both would send position 1
+again, which the server accepts and reorders the whole queue for — a write that changes nothing is
+still a write.
+
+Design round 8 §4 asks for the drawing, and asks whether the control belongs on the queue instead.
+
+**Acceptance**
+
+- [x] The control belongs to a Logistician alone; a member without the grant sends nothing
+      (`OrderDetailViewModelTest`).
+- [x] „Niedriger" sends the next position; an order at the front sends nothing (same).
+- [x] An order out of the queue offers no control (same).
+- [x] Verified on a device: order #1 moved to 2 and #2 took 1 in the database, the header redrew as
+      „Prio 2", and „An den Anfang" put it back.
+
+**Code:** `orders/OrdersScreen.kt` (`PriorityControls`), `orders/OrdersViewModel.kt`,
+`core/data/JobOrderRepository.kt` (`setPriority`)

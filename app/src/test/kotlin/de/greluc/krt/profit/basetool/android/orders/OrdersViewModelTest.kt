@@ -88,6 +88,11 @@ class OrdersViewModelTest {
             status: JobOrderStatus,
             version: Long?,
         ): ApiResult<JobOrder> = error("the queue writes nothing")
+
+        override suspend fun setPriority(
+            id: String,
+            priority: Int,
+        ): ApiResult<JobOrder> = error("the queue writes nothing")
     }
 
     private fun order(id: String) =

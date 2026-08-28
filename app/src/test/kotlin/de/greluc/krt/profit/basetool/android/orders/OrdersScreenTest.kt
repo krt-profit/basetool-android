@@ -151,6 +151,8 @@ class OrdersScreenTest {
                             onStatusSelected = { statuses.add(it) },
                             onApplyStatus = {},
                             onDismissStatusConfirm = {},
+                            onRaisePriority = {},
+                            onLowerPriority = {},
                             onTabSelected = {},
                         ),
                 )

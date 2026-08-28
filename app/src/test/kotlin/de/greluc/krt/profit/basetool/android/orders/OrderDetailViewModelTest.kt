@@ -83,11 +83,12 @@ class OrderDetailViewModelTest {
 
     /** Records every write and answers with whatever the test set up. */
     private class FakeSource(
-        private var order: JobOrder,
+        var order: JobOrder,
     ) : JobOrderSource {
         val assignments = mutableListOf<Triple<String, String, Boolean>>()
         val notes = mutableListOf<List<Any?>>()
         val statuses = mutableListOf<Pair<JobOrderStatus, Long?>>()
+        val priorities = mutableListOf<Int>()
         var answer: ApiResult<JobOrder>? = null
 
         override suspend fun queue(
@@ -126,6 +127,14 @@ class OrderDetailViewModelTest {
             version: Long?,
         ): ApiResult<JobOrder> {
             statuses.add(status to version)
+            return answer ?: ApiResult.Success(order)
+        }
+
+        override suspend fun setPriority(
+            id: String,
+            priority: Int,
+        ): ApiResult<JobOrder> {
+            priorities.add(priority)
             return answer ?: ApiResult.Success(order)
         }
     }
@@ -326,6 +335,64 @@ class OrderDetailViewModelTest {
 
             assertEquals(JobOrderStatus.COMPLETED to ORDER_VERSION, source.statuses.single())
             assertEquals(false, vm.state.value.statusPickerOpen)
+        }
+
+    @Test
+    fun `the priority control belongs to a Logistician alone`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.load()
+            advanceUntilIdle()
+
+            assertEquals(false, vm.state.value.priorityChangeable)
+
+            vm.onLowerPriority()
+            advanceUntilIdle()
+
+            assertEquals(emptyList<Int>(), source.priorities)
+        }
+
+    @Test
+    fun `moving down sends the next position`() =
+        runTest(dispatcher) {
+            val vm = model(identity = ApiResult.Success(Identity("u1", logistician = true)))
+            vm.load()
+            advanceUntilIdle()
+
+            vm.onLowerPriority()
+            advanceUntilIdle()
+
+            assertEquals(listOf(2), source.priorities)
+        }
+
+    @Test
+    fun `an order already at the front does not move up`() =
+        runTest(dispatcher) {
+            // The fixture sits at priority 1. „Höher" and „An den Anfang" would both send 1 again,
+            // which the server would happily accept and reorder the whole queue for — a write that
+            // changes nothing is still a write.
+            val vm = model(identity = ApiResult.Success(Identity("u1", logistician = true)))
+            vm.load()
+            advanceUntilIdle()
+
+            vm.onRaisePriority(true)
+            vm.onRaisePriority(false)
+            advanceUntilIdle()
+
+            assertEquals(emptyList<Int>(), source.priorities)
+        }
+
+    @Test
+    fun `an order out of the queue offers no priority control`() =
+        runTest(dispatcher) {
+            // A completed or rejected order has no position. Offering „move it up" would be an
+            // instruction to put it back into a queue it has left.
+            source.order = order().copy(priority = null)
+            val vm = model(identity = ApiResult.Success(Identity("u1", logistician = true)))
+            vm.load()
+            advanceUntilIdle()
+
+            assertEquals(false, vm.state.value.priorityChangeable)
         }
 
     @Test

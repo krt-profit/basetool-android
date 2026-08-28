@@ -364,6 +364,24 @@ followed it, three are done and one is deliberately withheld:
   2026-08-23, reaffirmed 2026-08-24). Everything behind it stays wired: the repository, the tests,
   the contract freeze and the allow-list lines. The issue stays open until a chapter exists.
 
+**Web-parity gaps still open (audited 2026-08-28, artboard beside screenshot).** Recorded here so a
+new session finds them without re-deriving the audit; the per-chapter detail is in
+[`DESIGN_PARITY_AUDIT.md`](DESIGN_PARITY_AUDIT.md).
+
+| Gap | Where | Why it is not done |
+| :-- | :-- | :-- |
+| **Item orders** | Aufträge create | Needs a game-item picker, a blueprint picker *per item* and the derivation tree the web renders as nested lines (`/orders/item-catalog/{id}/blueprints`, `…/blueprints/{id}/derivation`). A screen of its own; asked for in design round 8 §1.3. |
+| **Lager: the FAB glyph** | Lager | The artboard draws a download glyph (⤓); the app's is „+" labelled „Einbuchen". The drawn glyph reads as Ausbuchen. |
+| **Lager: the holder subtotal level** | Lager | Artboard 1 is material → holder (with a subtotal) → entry; the app merges holder and location into one row, so a member holding one material in two places gets no subtotal. |
+
+Two things that look like gaps and are not, so they are not re-opened: the Lager's **material and
+location filter chips** (neither the web nor `/inventory/aggregated` has them — round 7 §2g), and a
+**squadron filter on the Aufträge queue** (the app's equivalent is the active-org-unit pin, which
+the interceptor sends as a header on every call).
+
+**Verification coverage:** the 2026-08-28 pass ran on the **phone** class only. The tablet
+(`KrtTablet`) and `Pixel_5_minSdk` still have to see it.
+
 **The vhost paste is the one thing left, and it is the owner's** (runbook Phase J). Until it is
 applied the nightly `edge-deny-probe` reports the phase-3 and phase-4 paths as `404`, which is
 production being read correctly rather than a defect — see the runbook's note before investigating
