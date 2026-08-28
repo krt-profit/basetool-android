@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.data.OwnedBlueprint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -241,7 +243,10 @@ private fun BlueprintList(
     onSelect: (String) -> Unit,
     selectable: Boolean,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(BLUEPRINTS_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(BLUEPRINTS_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+    ) {
         items(state.items, key = { it.id }) { entry ->
             BlueprintRow(
                 entry = entry,
@@ -263,12 +268,7 @@ private fun BlueprintList(
             }
         } else {
             item(key = "end") {
-                Text(
-                    text = stringResource(R.string.blueprints_end_of_list),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = KrtPalette.TextMuted,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.md),
-                )
+                KrtEndOfList(text = stringResource(R.string.blueprints_end_of_list))
             }
         }
     }

@@ -425,3 +425,52 @@ styling, so a pane head and a pushed screen's head read as the same thing.
 
 **Code:** `ui/ListDetail.kt` (`DetailPane`, `DetailPaneHead`)
 
+### REQ-APP-UI-010 — Every screen's content sits in the same gutter
+
+A screen's scrolling content is inset by `KrtSpacing.md` on both sides. No list runs flush to the
+navigation rail on one side and the screen edge on the other.
+
+Eleven lists had no horizontal inset at all — the Lager tree, the notification inbox, Mein Inventar
+and its Blueprints, Operationen and one operation, an order's detail pane, a bank account, and the
+tablet dashboard's two columns. On a phone that reads as a dense-table style; on a tablet, where the
+rail is on the left and the pane is over a thousand dp wide, it reads as a layout fault — and it sat
+beside the Hangar, whose cards *are* inset, so the app disagreed with itself screen to screen.
+
+**This deviates from the drawn phone artboards for the dense row lists.** Chapter 09's Lager tree is
+drawn full-bleed inside the phone frame (the row spans 49…411 of a 48…412 screen); the Hangar's
+cards in chapter 08 are inset. The gutter is the owner's ruling, taken while looking at the tablet,
+and the artboards for those lists want redrawing — design round 9 §1 carries the ask.
+
+**The gutter belongs to the scroll container, not to the rows.** `contentPadding` on the list keeps
+the scrollbar and the overscroll at the true edge and lets a row draw its own full-width background
+inside the inset; `padding` on the list would clip both.
+
+On the tablet dashboard the gutter sits on the enclosing column instead, so the greeting and the
+announcement line up with the two columns of cards under them; the columns carry only the vertical
+padding.
+
+**Acceptance**
+
+- [x] Verified on the tablet: Lager, Aufträge (list and detail pane), Übersicht, Benachrichtigungen,
+      Operationen, Mein Inventar, Börse, Bank, Raffinerie — all inset, all aligned with the filter
+      chips above them.
+- [x] Verified on the phone: the Lager tree is inset and aligned with „Nur mit Bestand".
+
+**Code:** `inventory/InventoryScreen.kt`, `notifications/NotificationsScreen.kt`,
+`personalinventory/PersonalInventoryScreen.kt`, `personalinventory/PersonalBlueprintsScreen.kt`,
+`missions/OperationsScreen.kt`, `missions/OperationDetailScreen.kt`, `orders/OrdersScreen.kt`,
+`bank/BankScreen.kt`, `dashboard/DashboardScreen.kt`
+
+### REQ-APP-UI-011 — One end-of-list, drawn by the design system
+
+A finished list ends with `KrtEndOfList` — the hairline rule, the uppercase label, the rule again.
+Mein Inventar and its Blueprints tab drew a bare centred `Text` instead, so two screens out of
+eleven ended differently from the rest for no reason anyone had decided.
+
+**Acceptance**
+
+- [x] Every `*_end_of_list` string is rendered through `KrtEndOfList`; no screen builds its own.
+
+**Code:** `personalinventory/PersonalInventoryScreen.kt`,
+`personalinventory/PersonalBlueprintsScreen.kt`
+

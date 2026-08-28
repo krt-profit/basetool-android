@@ -141,7 +141,12 @@ fun DashboardScreen(
             // Two independent LazyColumns rather than one grid: the sections are different
             // lengths and scroll at their own pace, and a grid would tie the last Einsatz to
             // whatever notification happens to sit beside it.
-            Column(modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG)) {
+            Column(
+                // The gutter sits on the column rather than on the two lists, so the greeting and
+                // the announcement line up with the cards under them instead of running out to the
+                // rail on one side and the screen edge on the other.
+                modifier = Modifier.fillMaxSize().padding(horizontal = KrtSpacing.md).testTag(DASHBOARD_TAG),
+            ) {
                 Greeting(memberName = memberName, orgUnitName = orgUnitName)
                 state.announcement?.let {
                     AnnouncementBand(
@@ -157,6 +162,7 @@ fun DashboardScreen(
                     LazyColumn(
                         state = rememberRootListState(),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentPadding = PaddingValues(vertical = KrtSpacing.md),
                     ) {
                         missionsSection(
                             state = state,
@@ -167,6 +173,7 @@ fun DashboardScreen(
                     LazyColumn(
                         state = rememberRootListState(),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentPadding = PaddingValues(vertical = KrtSpacing.md),
                     ) {
                         quickActionsSection(onQuickAction = onQuickAction)
                         notificationsSection(
@@ -181,6 +188,7 @@ fun DashboardScreen(
             LazyColumn(
                 state = rememberRootListState(),
                 modifier = Modifier.fillMaxSize().testTag(DASHBOARD_TAG),
+                contentPadding = PaddingValues(KrtSpacing.md),
             ) {
                 item(key = "greeting") {
                     Greeting(memberName = memberName, orgUnitName = orgUnitName)

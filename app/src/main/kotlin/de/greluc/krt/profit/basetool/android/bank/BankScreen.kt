@@ -369,7 +369,10 @@ fun BankAccountScreen(
                 onRefresh = onRefresh,
                 modifier = modifier.fillMaxSize(),
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNT_TAG)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNT_TAG),
+                    contentPadding = PaddingValues(KrtSpacing.md),
+                ) {
                     if (!state.online) {
                         item(key = "offline") { OfflineBand() }
                     }

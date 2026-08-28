@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -244,7 +245,10 @@ private fun NotificationsList(
     onMarkRead: (String) -> Unit,
     onDelete: (String) -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(NOTIFICATIONS_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(NOTIFICATIONS_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+    ) {
         items(state.notifications, key = { it.id }) { notification ->
             KrtSwipeableRow(
                 onStartAction = if (notification.read) null else ({ onMarkRead(notification.id) }),

@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
@@ -205,7 +207,10 @@ private fun ItemList(
     onEdit: (PersonalItem) -> Unit,
     onDelete: (PersonalItem) -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(PERSONAL_INVENTORY_LIST_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(PERSONAL_INVENTORY_LIST_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+    ) {
         items(state.items, key = { it.id }) { item ->
             ItemRow(
                 item = item,
@@ -225,15 +230,7 @@ private fun ItemList(
             }
         } else {
             item(key = "end") {
-                Text(
-                    text = stringResource(R.string.personal_inventory_end_of_list),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = KrtPalette.TextMuted,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = KrtSpacing.md),
-                )
+                KrtEndOfList(text = stringResource(R.string.personal_inventory_end_of_list))
             }
         }
     }
