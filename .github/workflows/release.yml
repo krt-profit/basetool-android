@@ -86,8 +86,18 @@ jobs:
           distribution: temurin
           java-version: '25'
 
+      # `packages` defaults to `tools platform-tools`, and the deprecated
+      # `tools` meta-package drags in the ~500 MB Android Emulator that no job
+      # here uses — there is no instrumented-test job anywhere in this
+      # directory, and that download has already died mid-stream ("Premature
+      # EOF") and reddened an otherwise green run. The runner image already
+      # ships platform-tools, the android-37 platform and build-tools 37.0.0,
+      # so an empty list installs nothing while the action still accepts the
+      # SDK licences and exports ANDROID_HOME / ANDROID_SDK_ROOT.
       - name: Set up the Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        with:
+          packages: ''
 
       - name: Validate the Gradle wrapper
         uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
