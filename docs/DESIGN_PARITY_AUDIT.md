@@ -169,6 +169,14 @@ identifying nothing (`REQ-APP-UI-009`).
 Worth recording as method: the phone pass could not have found this. Everything about it is a
 consequence of two panes existing at once.
 
+**The rest of the tablet sweep**, and it splits three ways. Einsätze, Aufträge and Raffinerie use
+list-detail as drawn. The Hangar becomes a real table (TYP · NAME · VERSICHERUNG · ORT · AUSGEBAUT ·
+AKTIONEN) and uses the width well. **Lager and Materialbörse are the phone layouts stretched to
+1200 dp** — a Lager row puts its name and its figure ~2200 device pixels apart, and a Materialbörse
+card is three-quarters empty. `KrtSpacing.contentMax` is 1200 dp and never engages, because a tablet
+has almost exactly that much after the rail. What a screen *without* a detail pane does with the
+width is not drawn anywhere; asked as round 8 §5 rather than guessed at.
+
 ### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a

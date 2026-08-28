@@ -373,6 +373,7 @@ new session finds them without re-deriving the audit; the per-chapter detail is 
 | **Item orders** | Aufträge create | Needs a game-item picker, a blueprint picker *per item* and the derivation tree the web renders as nested lines (`/orders/item-catalog/{id}/blueprints`, `…/blueprints/{id}/derivation`). A screen of its own; asked for in design round 8 §1.3. |
 | **Lager: the FAB glyph** | Lager | The artboard draws a download glyph (⤓); the app's is „+" labelled „Einbuchen". The drawn glyph reads as Ausbuchen. |
 | **Lager: the holder subtotal level** | Lager | Artboard 1 is material → holder (with a subtotal) → entry; the app merges holder and location into one row, so a member holding one material in two places gets no subtotal. |
+| **Lager + Materialbörse on a tablet** | both | The only two screens with no wide-window treatment: the phone layout stretched to 1200 dp. Needs a design ruling first — round 8 §5 offers three options. |
 
 Two things that look like gaps and are not, so they are not re-opened: the Lager's **material and
 location filter chips** (neither the web nor `/inventory/aggregated` has them — round 7 §2g), and a

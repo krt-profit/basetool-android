@@ -89,6 +89,43 @@ say so and it moves.
 An order with no priority (completed, rejected) gets no control at all: it has left the queue, and
 „move it up" would be an instruction to put it back.
 
+## 5 — Two screens have no answer for a tablet's width
+
+First full pass on the tablet class (`KrtTablet`, 2560×1600 at density 320 — the 1280×800 dp
+chapter 03 names). Most of it landed well, and three different shapes are already in use:
+
+| Screen | On 1280 dp |
+| :-- | :-- |
+| Einsätze, Aufträge, Raffinerie | list-detail, as chapter 03 draws it |
+| Hangar | becomes a real table — TYP · NAME · VERSICHERUNG · ORT · AUSGEBAUT · AKTIONEN |
+| **Lager** | **the phone list, stretched to 1200 dp** |
+| **Materialbörse** | **the phone cards, stretched to 1200 dp** |
+
+The two outliers are not a matter of taste. On the Lager a material's name sits at the far left and
+its figure at the far right, about 2200 device pixels apart, so pairing the two is a full sweep of
+the eye. On the Materialbörse every card is 1200 dp wide with all of its content — name, member,
+figures, the withdraw button — packed into the left quarter and one org chip pinned at the right
+edge; roughly three quarters of each card is empty.
+
+`KrtSpacing.contentMax` is 1200 dp and is applied to the whole nav host, so it is not what is
+missing: after the rail a tablet has almost exactly 1200 dp, and the cap never engages. **The
+question is what a screen with no detail pane does with the width**, and chapter 03 only answers it
+for the screens that have one.
+
+Three ways out, and this needs a ruling rather than a guess:
+
+**5.1 — Give them a detail pane too.** Natural for the Lager (a material row opens its holders) and
+awkward for the Materialbörse, where an offer's actions are inline and there is nothing to open.
+
+**5.2 — Cap the measure.** A narrower `contentMax` for list screens — 840 dp is the usual reading
+measure — centred, with the rest left dark. Cheapest, and it makes both screens read at once.
+
+**5.3 — Two columns of cards.** Fits the Materialbörse, whose cards are self-contained; wrong for
+the Lager, whose rows are a tree and have to stay one per line.
+
+They may well want different answers, which is why they are one question: whatever is decided
+becomes the rule for every future screen that has no detail side.
+
 ---
 
 ## What is already correct and needs nothing
