@@ -19,7 +19,7 @@ import okhttp3.OkHttpClient
 /**
  * Where the member's share goes by default.
  *
- * A per-Einsatz choice overrides it (`REQ-APP-MISSION-014`); this is the standing answer the sign-up
+ * A per-Einsatz choice overrides it (`REQ-APP-MIS-019`); this is the standing answer the sign-up
  * starts from.
  */
 enum class PayoutPreference {
