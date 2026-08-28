@@ -80,30 +80,39 @@ to converge by accident.
 
 ---
 
-## 4 — The Lager gets a detail pane, and it needs drawing
+## 4 — The Lager's tablet detail pane is the web's material table
 
-**Ruled 2026-08-28.** Round 8 §5 asked what a screen with no detail pane does with a tablet's width
-and offered three ways out. For the **Lager** the owner chose the largest: give it a detail pane,
-like Einsätze, Aufträge and Raffinerie already have.
+**Ruled 2026-08-28.** Round 8 §5 asked what a screen with no detail pane does with a tablet's width.
+For the **Lager** the owner chose the detail pane, like Einsätze, Aufträge and Raffinerie have.
 
-This is a **new screen**, not a re-hang of an existing one. The app's Lager is a pure inline tree —
-every tap toggles a group or a stack and nothing opens — so there is no detail today to move into a
-pane. The web has two templates that were never mapped to the app and that this closes:
-`inventory-material.html` and `inventory-game-item.html`.
+**Corrected after reading the web.** An earlier draft of this section asked four open questions
+about what the pane should hold. Three of them are already answered — `inventory-material.html` is
+108 lines and holds one thing: a **paginated flat table of that material's entries**, columns
+*Nutzer · Ort · Qualität · Menge*, plus a picker for jumping to another material. There is no
+quality band, no earmarking view, nothing else. `GET /api/v1/inventory/material/{materialId}`,
+paged.
 
-**What the drawing has to settle:**
+That makes the pane a good fit for a tablet and a genuine addition rather than a duplicate: the
+**tree** groups by holder and hides everything until it is opened, while the **table** shows every
+entry of one material at once across all holders and places — which is what a thousand dp of width
+is good for, and the same shape the Hangar's tablet table already uses.
 
-1. **What a row opens.** A material row and a holder row are different things; do both open the same
-   pane, or only the material?
-2. **What the pane holds.** The web's material page carries the holders, the entries, the
-   earmarking against orders and missions, and the quality band. Which of those belong on a tablet
-   pane, and in what order?
-3. **The empty state**, before anything is selected — chapter 03's „Nichts ausgewählt" card, or
-   something the Lager-specific?
-4. **What the phone does.** The same pane pushed as a screen, which is how the other three work.
+| | Left pane (the tree) | Right pane (the table) |
+| :-- | :-- | :-- |
+| Groups by | holder, then place and quality | nothing; one row per entry |
+| Shows | only what is opened | every entry of the selected material |
+| Reads | `/inventory/aggregated` + `/inventory/all/grouped` | `/inventory/material/{id}` |
 
-Until it is drawn the Lager keeps the stretched list on a tablet, which is the state round 8 §5
-described.
+**What still needs a ruling, and it is one question, not four:** *what does a tap on a tree row do
+on a tablet?* Today every tap toggles. If a material row now also selects the pane, toggling and
+selecting share one gesture; if it does not, the pane needs its own affordance. The other three
+screens do not face this because their list rows only ever select.
+
+**On a phone** nothing changes: the tree keeps the whole screen and this pane is not reachable, the
+same way the web's material page is a separate page rather than a panel.
+
+Also worth drawing: a **tablet frame for chapter 09**, which has phone frames only — the inset case
+of §1 and this pane both have to be inferred from chapter 03 today.
 
 ---
 

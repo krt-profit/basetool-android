@@ -730,6 +730,25 @@
     <string name="inventory_title">Lager</string>
     <string name="inventory_with_stock_only">In stock only</string>
     <string name="inventory_quality">Q %1$s</string>
+    <string name="inventory_pane_none">Pick a material on the left to see all of its entries.</string>
+    <string name="inventory_pane_failed_title">Signal Lost — Material</string>
+    <string name="inventory_pane_failed_message">The entries could not be loaded.</string>
+    <string name="inventory_pane_empty_title">No entries</string>
+    <string name="inventory_pane_empty_message">Nothing is booked in for this material.</string>
+    <string name="inventory_pane_col_holder">User</string>
+    <string name="inventory_pane_col_location">Place</string>
+    <string name="inventory_pane_col_quality">Quality</string>
+    <string name="inventory_pane_col_amount">Amount</string>
+    <plurals name="inventory_pane_all">
+        <item quantity="one">All %1$d entries</item>
+        <item quantity="other">All %1$d entries</item>
+    </plurals>
+    <plurals name="inventory_pane_page">
+        <item quantity="one">Page %1$d of %2$d · %3$d entry</item>
+        <item quantity="other">Page %1$d of %2$d · %3$d entries</item>
+    </plurals>
+    <string name="inventory_pane_previous">Back</string>
+    <string name="inventory_pane_next">Next</string>
     <string name="inventory_holder_unattributed">Unattributed</string>
     <string name="inventory_personal">Personal</string>
     <plurals name="inventory_entry_count">

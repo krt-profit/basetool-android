@@ -681,7 +681,12 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
                 initializer {
-                    InventoryViewModel(container.inventory, container.connectivity, container.liveSync)
+                    InventoryViewModel(
+                        container.inventory,
+                        container.connectivity,
+                        container.inventory,
+                        container.liveSync,
+                    )
                 }
                 initializer { BookingViewModel(container.inventory, container.connectivity) }
                 initializer {

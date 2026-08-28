@@ -16,6 +16,10 @@
 
 ### Changed
 
+- **Auf dem Tablet steht neben dem Lagerbaum eine Materialtabelle.** Ein Material antippen öffnet es
+  im Baum und zeigt rechts alle Einträge dazu — Nutzer, Ort, Qualität, Menge, seitenweise. Auf dem
+  Telefon bleibt alles wie bisher.
+
 - **Der Lagerbaum zeigt, wie viel ein Mitglied insgesamt hält.** Zwischen Material und Eintrag steht
   jetzt eine Zeile pro Halter mit dessen Summe; die Zeile darunter nennt nur noch den Ort. Wer ein
   Material an zwei Orten liegen hatte, sah bisher zwei zusammenhanglose Zeilen und keine Summe.
