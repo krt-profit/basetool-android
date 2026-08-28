@@ -62,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
@@ -81,18 +82,22 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
-import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the queue. */
 const val ORDERS_LIST_TAG: String = "orders-list"
+
+/** Test tag of the queue's „+", which opens the create form. */
+const val ORDERS_CREATE_TAG: String = "orders-create"
 
 /** Test handle for one order's screen. */
 const val ORDER_DETAIL_TAG: String = "order-detail"
@@ -127,8 +132,9 @@ internal val STATUS_CHOICES =
 /**
  * The Auftrag queue (design spec ch. 10 §1), read-only.
  *
- * **No priority drag, no create.** Reordering is a logistician's write and creating an order is the
- * public request form; both are mutations and belong to Phase 3.
+ * **No priority drag.** Reordering is a logistician's write against `PUT /orders/{id}/priority` and
+ * needs a drag affordance the design has not drawn; it is still outstanding. Creating an order is
+ * built — the „+" the artboard draws opens [OrderCreateScreen].
  *
  * @param state what to draw.
  * @param onStatusToggled a status chip was tapped; the screen sends the resulting whole set.
@@ -138,6 +144,7 @@ internal val STATUS_CHOICES =
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onOpenOrder a row was tapped.
+ * @param onCreate the „+" was tapped; opens the create form.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -150,90 +157,104 @@ fun OrdersScreen(
     onRetryNow: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenOrder: (String) -> Unit,
+    onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
-        // breaks character by character („ABG ESC HLO SSE N").
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        ) {
-            FILTERABLE_STATUSES.forEach { status ->
-                val selected = status in state.statuses
-                KrtFilterChip(
-                    text = stringResource(status.labelRes()),
-                    selected = selected,
-                    onClick = {
-                        onStatusToggled(
-                            if (selected) state.statuses - status else state.statuses + status,
-                        )
-                    },
-                )
-            }
-        }
-
-        when (state.phase) {
-            is OrdersPhase.Loading -> {
-                KrtLoadingIndicator(
-                    text = stringResource(R.string.orders_title),
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-
-            is OrdersPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // empty state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
-                val retryIn = state.retryIn
-                if (retryIn != null) {
-                    KrtRetryCountdown(
-                        secondsLeft = retryIn,
-                        title = stringResource(R.string.retry_busy_title),
-                        message = stringResource(R.string.retry_busy_message, retryIn),
-                        retryLabel = stringResource(R.string.retry_now),
-                        onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                    )
-                } else {
-                    KrtEmptyState(
-                        iconRes = DesignR.drawable.ic_krt_clipboard_list,
-                        title = stringResource(R.string.orders_error_title),
-                        message = stringResource(R.string.orders_error_message),
-                        actionText = stringResource(R.string.missions_retry),
-                        onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
+            // breaks character by character („ABG ESC HLO SSE N").
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            ) {
+                FILTERABLE_STATUSES.forEach { status ->
+                    val selected = status in state.statuses
+                    KrtFilterChip(
+                        text = stringResource(status.labelRes()),
+                        selected = selected,
+                        onClick = {
+                            onStatusToggled(
+                                if (selected) state.statuses - status else state.statuses + status,
+                            )
+                        },
                     )
                 }
             }
 
-            is OrdersPhase.Ready -> {
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = onRefresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (state.orders.isEmpty()) {
-                        KrtRefreshableFill {
-                            KrtEmptyState(
-                                iconRes = DesignR.drawable.ic_krt_clipboard_list,
-                                title = stringResource(R.string.orders_empty_title),
-                                message = stringResource(R.string.orders_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.lg),
+            when (state.phase) {
+                is OrdersPhase.Loading -> {
+                    KrtLoadingIndicator(
+                        text = stringResource(R.string.orders_title),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                is OrdersPhase.Failed -> {
+                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                    // empty state, because a countdown in front of a 403 promises a retry that will
+                    // answer exactly the same.
+                    val retryIn = state.retryIn
+                    if (retryIn != null) {
+                        KrtRetryCountdown(
+                            secondsLeft = retryIn,
+                            title = stringResource(R.string.retry_busy_title),
+                            message = stringResource(R.string.retry_busy_message, retryIn),
+                            retryLabel = stringResource(R.string.retry_now),
+                            onRetry = onRetryNow,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    } else {
+                        KrtEmptyState(
+                            iconRes = DesignR.drawable.ic_krt_clipboard_list,
+                            title = stringResource(R.string.orders_error_title),
+                            message = stringResource(R.string.orders_error_message),
+                            actionText = stringResource(R.string.missions_retry),
+                            onAction = onRefresh,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    }
+                }
+
+                is OrdersPhase.Ready -> {
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (state.orders.isEmpty()) {
+                            KrtRefreshableFill {
+                                KrtEmptyState(
+                                    iconRes = DesignR.drawable.ic_krt_clipboard_list,
+                                    title = stringResource(R.string.orders_empty_title),
+                                    message = stringResource(R.string.orders_empty_message),
+                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                )
+                            }
+                        } else {
+                            OrdersList(
+                                state = state,
+                                onToggleMaterials = onToggleMaterials,
+                                onLoadMore = onLoadMore,
+                                onOpenOrder = onOpenOrder,
                             )
                         }
-                    } else {
-                        OrdersList(
-                            state = state,
-                            onToggleMaterials = onToggleMaterials,
-                            onLoadMore = onLoadMore,
-                            onOpenOrder = onOpenOrder,
-                        )
                     }
                 }
             }
         }
+        KrtFab(
+            iconRes = DesignR.drawable.ic_krt_plus,
+            label = stringResource(R.string.orders_create),
+            onClick = onCreate,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(KrtSpacing.lg)
+                    .padding(bottom = LocalKrtBottomBarInset.current)
+                    .testTag(ORDERS_CREATE_TAG),
+        )
     }
 }
 
@@ -339,7 +360,11 @@ private fun OrderCard(
                     KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
                     order.createdAt?.let { created ->
                         Text(
-                            text = created.relativeToNow(),
+                            // A day count, not a date. The shared `relativeToNow` switches to
+                            // „15.08., 18:17" from two days out, which makes the reader do the
+                            // arithmetic the colour beside it has already done — and the age is
+                            // the whole point of this line. Artboard 1 draws „vor 94 Tagen".
+                            text = ageText(created),
                             style = MaterialTheme.typography.bodySmall,
                             // The colour IS the information: an order nobody has picked up in
                             // three months has to look different from one raised yesterday, and
@@ -1053,12 +1078,14 @@ private fun OrderDetailFailure(
  *
  * @param viewModel drives the queue.
  * @param onOpenOrder a row was tapped.
+ * @param onCreate the „+" was tapped.
  * @param modifier layout modifier.
  */
 @Composable
 fun OrdersRoute(
     viewModel: OrdersViewModel,
     onOpenOrder: (String) -> Unit,
+    onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -1070,6 +1097,7 @@ fun OrdersRoute(
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onOpenOrder = onOpenOrder,
+        onCreate = onCreate,
         modifier = modifier,
     )
 }
@@ -1195,3 +1223,22 @@ private const val NOTE_MAX_LENGTH = 500
  * Thirty characters of warning before the wall — design ch. 10 artboard 6 puts it at 470 of 500.
  */
 private const val NOTE_WARN_LENGTH = 470
+
+/**
+ * How long ago an order was raised, as a day count.
+ *
+ * Today and yesterday keep their words — „heute" reads better than „vor 0 Tagen" — and everything
+ * older counts days, because that is what the queue is judging and what its colour already says.
+ *
+ * @param created when it was raised.
+ * @return the wording.
+ */
+@Composable
+private fun ageText(created: Instant): String {
+    val days = ChronoUnit.DAYS.between(created, Instant.now()).coerceAtLeast(0)
+    return when (days) {
+        0L -> stringResource(R.string.orders_age_today)
+        1L -> stringResource(R.string.orders_age_yesterday)
+        else -> pluralStringResource(R.plurals.orders_age_days, days.toInt(), days)
+    }
+}

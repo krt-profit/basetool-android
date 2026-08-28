@@ -72,6 +72,9 @@ class OrgUnitViewModelTest {
             if (fails) ApiResult.Failure(ApiError.Network(IOException("offline"))) else ApiResult.Success(units)
 
         override suspend fun serverDefault(): ApiResult<String?> = ApiResult.Success(default)
+
+        // The switcher never reads the all-kinds catalogue; only the order form does.
+        override suspend fun activeAllKinds(): ApiResult<List<OrgUnit>> = ApiResult.Success(units)
     }
 
     @Before

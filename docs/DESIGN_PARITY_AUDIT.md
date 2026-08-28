@@ -81,7 +81,7 @@ Every row has now been read. Three of the probe's leads turned out to be false �
 `station`/`method`, the Materialbörse's `supplyCount` and the Bank's sparkline were all being drawn
 under different names — which is why the leads were marked as leads.
 
-### 10 Aufträge — artboard 1 (Queue) · `orders/OrdersScreen.kt` — **done**
+### 10 Aufträge — artboard 1 (Queue) · `orders/OrdersScreen.kt` — **two open items (2026-08-28)**
 
 The example the owner named. Verified against the chapter's `orders[]` model and its markup:
 
@@ -100,6 +100,29 @@ The age colours are **not** constants: `job_order.age_yellow_days` / `job_order.
 operator settings in the web admin area (defaults 30 / 90, which is exactly what the mockup's sample
 data shows). `JobOrderAgeThresholds` reads them and falls back to the seeded defaults, so a failed
 read looks like a fresh server rather than an error.
+
+**Re-audited 2026-08-28 by putting the rendered artboard beside a device screenshot.** The 25.08.
+pass above checked that the drawn *elements* existed; this one compared the two pictures. Most of it
+held — the card, the priority block, the kind chip, the status pill, the Für/Durch pair with the
+„—" for an unassigned processing unit, the chevron, the material expander. Three things did not:
+
+| # | artboard 1 | app | outcome |
+| :-- | :-- | :-- | :-- |
+| 1 | an orange „+" FAB | **absent** | **fixed** — the FAB now opens the create form (REQ-APP-ORDERS-013) |
+| 2 | the age as „vor 94 Tagen", colour-coded | „15.08., 18:17" in the right colour | **fixed** — counted in days (REQ-APP-ORDERS-014) |
+| 3 | „#A-1042" | „#1" | design-vs-system: `displayId` is a plain integer and the web renders „#1" too (round 8 §2.1) |
+
+Two things I first read as gaps and then checked, and they were not:
+
+- **The status chips are already multi-select.** The screenshot showed none selected, which is the
+  „alle" state, not an exclusive control. Tapping two selects two, and the set goes to the server.
+- **A missing squadron filter.** The web has one (`REQ-ORDERS-027`); the app's equivalent is the
+  active-org-unit pin in the app bar, which the interceptor sends as a header on every call.
+
+Still open and app-side: **priority reorder** (`PUT /orders/{id}/priority`, a Logistician's write
+that the web does by drag and drop and the design has not drawn for a phone), and **item orders**,
+which need a blueprint picker per item and a derivation tree — a screen of its own, asked for in
+round 8 §1.3.
 
 ### 10 Aufträge — artboards 2–4 · `orders/OrderDetailScreen`, `exchange/MaterialBoardScreen` — **done**
 

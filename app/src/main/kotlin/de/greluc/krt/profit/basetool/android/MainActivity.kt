@@ -73,6 +73,7 @@ import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
+import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
@@ -381,6 +382,9 @@ class MainActivity : AppCompatActivity() {
                                     refinery = refineryViewModel,
                                     refineryCreate = {
                                         RefineryCreateViewModel(container.refinery)
+                                    },
+                                    orderCreate = {
+                                        OrderCreateViewModel(container.orders, container.orgUnits)
                                     },
                                     refineryOrder = {
                                         RefineryDetailViewModel(

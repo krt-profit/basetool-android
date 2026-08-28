@@ -135,6 +135,13 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_refinery,
     ),
 
+    /** The form for a new material order, pushed from the Aufträge queue. */
+    OrderCreate(
+        "order-create",
+        R.string.order_create_title,
+        DesignR.drawable.ic_krt_clipboard_list,
+    ),
+
     /** One job order in full, pushed from the queue. */
     OrderDetail(
         "order/{orderId}",
@@ -236,6 +243,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         KrtDestination.BankAccount to KrtDestination.Bank,
         KrtDestination.BankHolder to KrtDestination.Bank,
         KrtDestination.RefineryCreate to KrtDestination.Refinery,
+        KrtDestination.OrderCreate to KrtDestination.Orders,
         KrtDestination.OrderDetail to KrtDestination.Orders,
         KrtDestination.RefineryOrder to KrtDestination.Refinery,
     )

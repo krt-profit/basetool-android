@@ -36,6 +36,18 @@ interface OrgUnitSource {
      * @return the unit id, `null` when the server names none; or a failure the caller can show.
      */
     suspend fun serverDefault(): ApiResult<String?>
+
+    /**
+     * Reads every active org unit, of all four kinds.
+     *
+     * Wider than [memberships] on purpose. The order form's customer picker is the web's, and the
+     * web lets a member raise an order *for* a unit they do not belong to — a Staffel ordering
+     * through another Staffel is the ordinary case, not an edge one. Narrowing this to memberships
+     * would silently make the app's form the smaller of the two.
+     *
+     * @return the units, or the classified failure.
+     */
+    suspend fun activeAllKinds(): ApiResult<List<OrgUnit>>
 }
 
 /**
@@ -94,6 +106,36 @@ class OrgUnitRepository(
         }
 
     /**
+     * Reads every active org unit, of all four kinds.
+     *
+     * Drops id-less entries and logs the shortfall for the same reason [memberships] does: a unit
+     * with no id cannot be sent as `requestingOrgUnitId`, and a picker that has quietly gone short
+     * is worse than one that says so in the log.
+     *
+     * @return the units, in the order the server returned them.
+     */
+    override suspend fun activeAllKinds(): ApiResult<List<OrgUnit>> =
+        when (
+            val result =
+                reader.get(ACTIVE_ALL_KINDS_PATH, ListSerializer(OrgUnitMembershipOptionDto.serializer()))
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                val usable = result.value.mapNotNull { it.toModel() }
+                if (usable.size != result.value.size) {
+                    KrtLog.w(LOG_TAG) {
+                        "${result.value.size - usable.size} of ${result.value.size} org units " +
+                            "arrived without an id and cannot be offered on the order form"
+                    }
+                }
+                ApiResult.Success(usable)
+            }
+        }
+
+    /**
      * Reads the org unit the server considers active.
      *
      * Used as the starting point when the member has never chosen one on this device. A response
@@ -117,6 +159,13 @@ class OrgUnitRepository(
 
         /** The server's own idea of the caller's active unit. */
         const val ACTIVE_ORG_UNIT_PATH = "/api/v1/me/active-org-unit"
+
+        /**
+         * Every active unit, of all four kinds — the order form's two pickers.
+         *
+         * Names no member, which is why it may sit on the public API vhost's allow-list at all.
+         */
+        const val ACTIVE_ALL_KINDS_PATH = "/api/v1/org-units/active-all-kinds"
     }
 }
 
@@ -133,6 +182,7 @@ private fun OrgUnitMembershipOptionDto.toModel(): OrgUnit? {
         // row; the id is meaningless to a member but is at least something to point at.
         name = orgUnitName ?: orgUnitShorthand ?: id,
         shorthand = orgUnitShorthand.orEmpty(),
+        profitEligible = isProfitEligible == true,
         kind =
             when (kind) {
                 OrgUnitMembershipOptionDto.Kind.SQUADRON -> OrgUnitKind.SQUADRON

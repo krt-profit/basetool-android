@@ -625,6 +625,31 @@
     <string name="bank_grants_view_note_cartel">Every member sees the KRT account anyway. An entry here therefore grants booking rights only, not sight.</string>
     <!-- Aufträge (design chapter 10) -->
     <string name="orders_title">Aufträge</string>
+    <string name="orders_create">Create order</string>
+    <string name="order_create_title">New order</string>
+    <string name="order_create_responsible">Processing unit</string>
+    <string name="order_create_responsible_none">No processing unit has been enabled.</string>
+    <string name="order_create_units_unavailable">The units could not be loaded.</string>
+    <string name="order_create_requesting">Customer</string>
+    <string name="order_create_handle">Contact handle</string>
+    <string name="order_create_materials">Materials</string>
+    <string name="order_create_material">Material</string>
+    <string name="order_create_amount">Amount</string>
+    <string name="order_create_min_quality">Min. quality</string>
+    <string name="order_create_min_quality_none">None</string>
+    <string name="order_create_more_matches">More matches exist — refine the search.</string>
+    <string name="order_create_no_matches">No orderable material found.</string>
+    <string name="order_create_add_material">Add material</string>
+    <string name="order_create_remove_material">Remove material</string>
+    <string name="order_create_comment">Comment</string>
+    <string name="order_create_submit">Create order</string>
+    <string name="order_create_failed">The order could not be created.</string>
+    <string name="orders_age_today">today</string>
+    <string name="orders_age_yesterday">yesterday</string>
+    <plurals name="orders_age_days">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
     <string name="orders_status_open">Open</string>
     <string name="orders_status_in_progress">In progress</string>
     <string name="orders_status_rejected">Rejected</string>

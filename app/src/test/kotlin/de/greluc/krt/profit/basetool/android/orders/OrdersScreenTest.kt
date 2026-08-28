@@ -114,6 +114,7 @@ class OrdersScreenTest {
                     onRetryNow = {},
                     onLoadMore = {},
                     onOpenOrder = { opened.add(it) },
+                    onCreate = {},
                 )
             }
         }

@@ -45,10 +45,15 @@ enum class OrgUnitKind {
  * @property name the unit's name, as the switcher and the top-bar badge show it.
  * @property shorthand the short form, e.g. `S1`; empty when the server sends none.
  * @property kind which of the four kinds this is, or [OrgUnitKind.UNKNOWN].
+ * @property profitEligible whether the unit may *process* orders. Only the responsible picker on
+ *   the order form cares: a Bereich or the Organisationsleitung can raise an order but never work
+ *   one. `false` is the safe reading of a server that did not say, because offering an ineligible
+ *   unit turns a full form into a 400 on submit.
  */
 data class OrgUnit(
     val id: String,
     val name: String,
     val shorthand: String,
     val kind: OrgUnitKind,
+    val profitEligible: Boolean = false,
 )

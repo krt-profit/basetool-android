@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Aufträge lassen sich jetzt in der App anlegen.** Das „+" in der Auftragsliste öffnet das
+  Formular: bearbeitende Einheit, Auftraggeber, Handle, beliebig viele Materialzeilen mit Menge und
+  Mindestqualität sowie ein Kommentar. Auftraggeber kann jede aktive Einheit sein, bearbeiten darf
+  nur eine profit-fähige — dieselbe Unterscheidung wie im Web. Item-Aufträge kommen später.
+
 - **Kontoauszug und 3-Monats-Bericht lassen sich aus der App heraus abrufen.** Beide landen im
   app-eigenen Speicher und gehen von dort an die App deiner Wahl weiter — es wird keine
   Speicherberechtigung verlangt und keine andere App kann die Datei lesen.
@@ -104,6 +109,9 @@
   Bei SCU-Material kommt die Option „Mit vorhandenem Bestand zusammenlegen" dazu.
 
 ### Changed
+
+- **Die Auftragsliste zeigt das Alter jetzt als Tageszahl.** „vor 94 Tagen" statt eines Datums —
+  neben der Farbe, die schon sagt, ob ein Auftrag zu lange liegt.
 
 - **Die App setzt jetzt Android 12 voraus** (vorher Android 11). Grund ist nicht die Reichweite,
   sondern die Prüfbarkeit: der Emulator für Android 11 kann sich nicht anmelden, und eine unterste
