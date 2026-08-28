@@ -172,11 +172,38 @@ lands would be a promise the screen cannot keep.
 Artboard 5 (Operation detail + payout) exists, so **Operationen is covered** — contrary to the
 assumption that it had no template.
 
-### 11 Raffinerie — artboards 1–2 · `refinery/RefineryScreen.kt` — **done**
+### 11 Raffinerie — artboards 1–5 · `refinery/*` — **done (re-audited 2026-08-28)**
 
 Corrected from the probe: `station` and `method` **are** drawn — as `locationName` in the title and
 `methodName` in the second line, which is why a probe looking for the design's field names missed
 them. With the tile the row now matches artboard 1.
+
+> [!warning] This row said „done" and was wrong about artboard 2
+> The 25.08. pass checked that the *fields* were present. They were. What it never did was put the
+> rendered artboard beside a screenshot, and six things differed — the four facts were loose rows
+> instead of the HUD box, each yield was a label-value row instead of a card, the money was two
+> rows instead of „Geschätzter Wert" in green, the CTA read „In Lager buchen" instead of
+> „Einlagern", „Fertig" was an absolute stamp, and the header carried no identity line. The owner
+> spotted it from a screenshot before the audit did.
+>
+> **The lesson is about the method, not the screen.** A field-presence check cannot see layout, and
+> „done" earned that way is worth less than it looks. Every row above this one was checked the same
+> way and should be re-read with that in mind.
+
+Artboards **3 (Einlagern)**, **4 and 5 (Neuer Raffinerieauftrag)** had no app screen at all until
+2026-08-28; both are now built and verified on a device. Two deliberate departures, both recorded
+in `docs/specs/refinery.md`:
+
+- **One submit for the run, not one per card.** The handoff has each material card book and
+  acknowledge on its own; the server books whatever a call carries and then closes the order, so
+  built that way the second material is lost. Verified: line one booked, order closed, line two
+  `400`.
+- **The create form is one scrolling screen**, not the two drawn. The artboards split it because
+  412 dp cannot show both halves, not because it is two steps.
+
+One thing the artboard shows that the system does not have: **an order number**. „#7841" is mock —
+no number exists on the wire, and the web's own title is „Raffinerieauftrag Details". The app names
+what it has.
 
 ### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **done**
 
