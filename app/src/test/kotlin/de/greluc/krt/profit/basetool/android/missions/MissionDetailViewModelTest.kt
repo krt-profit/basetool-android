@@ -161,6 +161,12 @@ class MissionDetailViewModelTest {
             return writeAnswer ?: ApiResult.Success(row(checkedIn = checkedIn))
         }
 
+        override suspend fun setPlannedFunction(
+            missionId: String,
+            participant: MissionParticipant,
+            jobTypeId: String?,
+        ): ApiResult<MissionParticipant> = error("the manager's roster has its own test")
+
         override suspend fun setDonating(
             missionId: String,
             participantId: String,
@@ -206,6 +212,7 @@ class MissionDetailViewModelTest {
     private fun detail(
         name: String = "Vertikaler Abbau",
         started: Boolean = true,
+        canManage: Boolean = false,
         vararg roster: MissionParticipant,
     ) = MissionDetail(
         id = "m1",
@@ -230,6 +237,7 @@ class MissionDetailViewModelTest {
         steps = emptyList(),
         objectives = emptyList(),
         frequencies = emptyList(),
+        canManage = canManage,
     )
 
     private fun finances() =

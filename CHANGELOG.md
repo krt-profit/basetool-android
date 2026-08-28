@@ -4,6 +4,21 @@
 
 ### Added
 
+- **Einsatz-Leitung kann die Teilnehmerliste jetzt in der App führen.** Wer einen Einsatz verwaltet,
+  checkt Mitglieder direkt in deren Zeile ein und aus, stellt ihre Auszahlung um und weist die
+  Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,
+  mit einem Hinweis, welche Rolle fehlt.
+
+- **Die Zeile zeigt jetzt auch den Funktionswunsch** („Wunsch: Pilot"), damit eine Zuweisung nicht
+  geraten werden muss.
+
+### Fixed
+
+- **Die Unterebenen im Lager standen auf Schwarz statt auf der Tabellenfläche.** Nutzer-, Stapel-
+  und Eintragszeilen fielen auf den Seitenhintergrund durch; laut Design liegt der Baum auf einer
+  eigenen dunkelgrauen Fläche, und nur die Eintragszeile wird darüber abgedunkelt.
+
+
 - **Item-Aufträge lassen sich jetzt in der App anlegen.** Das Auftragsformular hat oben einen
   Umschalter „Material / Items"; eine Item-Zeile ist Item, Blueprint und Anzahl. Hat ein Item nur
   einen Blueprint, ist er sofort gesetzt. Was das Formular noch nicht kann, ist der

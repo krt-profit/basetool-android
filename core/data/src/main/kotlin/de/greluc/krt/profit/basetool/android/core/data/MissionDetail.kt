@@ -31,6 +31,12 @@ import java.time.Instant
  * @property desiredJobName the same job's display name, or `null`
  * @property plannedJobTypeId the job actually assigned, or `null` while nobody has assigned one
  * @property version the row's optimistic-lock version, required by every write against it
+ * @property startTime when they checked in, **verbatim as the server sent it**. This is the
+ *   check-in — there is no separate flag on the wire, and [checkedIn] is derived from it. Kept
+ *   because a manager's write must echo it back: the server assigns `startTime` unconditionally on
+ *   update, so omitting it checks the member out. Unparsed on purpose: it is only ever echoed, and
+ *   a parse-then-format round trip is a chance to change the value for no gain.
+ * @property endTime when they checked out, echoed back for the same reason
  */
 data class MissionParticipant(
     val id: String,
@@ -44,6 +50,8 @@ data class MissionParticipant(
     val desiredJobName: String? = null,
     val plannedJobTypeId: String? = null,
     val version: Long = 0L,
+    val startTime: String? = null,
+    val endTime: String? = null,
 )
 
 /**

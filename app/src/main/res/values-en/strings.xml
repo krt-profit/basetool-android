@@ -1253,6 +1253,14 @@
         <item quantity="one">One entry will be moved to the chosen location.</item>
         <item quantity="other">%1$d entries will be moved to the chosen location.</item>
     </plurals>
+    <string name="gate_role_mission_manager">That needs the Missions-Manager role.</string>
+    <string name="gate_role_mission_manager_detail">Granted per Staffel by the administration, or by whoever leads the Einsatz.</string>
+    <string name="mission_detail_wish">Wish: %1$s</string>
+    <string name="mission_detail_function_none">No function</string>
+    <string name="mission_detail_check_in_row">Check in</string>
+    <string name="mission_detail_check_out_row">Check out</string>
+    <string name="mission_detail_payout_row">Switch payout</string>
+    <string name="mission_detail_function_label">Function on board</string>
     <string name="gate_role_logistician">That needs the Logistiker role.</string>
     <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
     <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>

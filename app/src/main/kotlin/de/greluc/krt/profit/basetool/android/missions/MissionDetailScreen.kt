@@ -92,7 +92,12 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.DenialToast
+import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -155,6 +160,7 @@ fun MissionDetailScreen(
     onRetryFinances: () -> Unit,
     actions: MissionSignUpActions,
     finances: MissionFinanceActions,
+    roster: MissionRosterActions,
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
@@ -166,80 +172,118 @@ fun MissionDetailScreen(
     // a refused save under a scrolled form.
     ConflictOn(error = state.error, onReload = onRefresh)
     state.joinSheet?.let { ConflictOn(error = it.error, onReload = onRefresh) }
-    Column(modifier = modifier.fillMaxSize()) {
-        when {
-            detail != null -> {
-                if (!state.online) {
-                    OfflineBand()
-                }
-                MissionDetailHead(detail = detail)
-                MissionTabRow(
-                    selected = state.tab,
-                    detail = state.detail,
-                    onTabSelected = onTabSelected,
-                )
-                PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = onRefresh,
-                    // weight, not fillMaxSize: the tab content takes what is left after the head,
-                    // the tab row and the CTA bar, so the bar stays on screen instead of being
-                    // pushed off by a long Ablauf.
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                ) {
-                    MissionTabContent(
-                        state = state,
-                        detail = detail,
-                        onRetryFinances = onRetryFinances,
-                        finances = finances,
+    // Boxed so the refusal can overlay the content. The toast belongs to the SCREEN and not to the
+    // route above it: this is the composable that draws the locked controls, so it is the one that
+    // has to be able to explain them — and a screen test that can reach the lock can then reach the
+    // explanation too, which is the half that makes the lock worth anything.
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            when {
+                detail != null -> {
+                    if (!state.online) {
+                        OfflineBand()
+                    }
+                    MissionDetailHead(detail = detail)
+                    MissionTabRow(
+                        selected = state.tab,
+                        detail = state.detail,
+                        onTabSelected = onTabSelected,
                     )
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = onRefresh,
+                        // weight, not fillMaxSize: the tab content takes what is left after the head,
+                        // the tab row and the CTA bar, so the bar stays on screen instead of being
+                        // pushed off by a long Ablauf.
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    ) {
+                        MissionTabContent(
+                            state = state,
+                            detail = detail,
+                            onRetryFinances = onRetryFinances,
+                            finances = finances,
+                            roster = roster,
+                        )
+                    }
+                    // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
+                    // tab row, where the screen's primary action scrolled away with the briefing and
+                    // read as one more fact about the Einsatz.
+                    SignUpBar(state = state, actions = actions)
+                    state.entryDraft?.let { draft ->
+                        FinanceEntrySheet(draft = draft, state = state, actions = finances)
+                    }
+                    state.joinSheet?.let { sheet ->
+                        MissionJoinSheet(
+                            sheet = sheet,
+                            subject = detail.name,
+                            onPayout = actions.onJoinPayout,
+                            onFunction = actions.onDesiredFunction,
+                            onConfirm = actions.onJoinConfirmed,
+                            onDismiss = actions.onJoinDismissed,
+                        )
+                    }
                 }
-                // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
-                // tab row, where the screen's primary action scrolled away with the briefing and
-                // read as one more fact about the Einsatz.
-                SignUpBar(state = state, actions = actions)
-                state.entryDraft?.let { draft ->
-                    FinanceEntrySheet(draft = draft, state = state, actions = finances)
-                }
-                state.joinSheet?.let { sheet ->
-                    MissionJoinSheet(
-                        sheet = sheet,
-                        subject = detail.name,
-                        onPayout = actions.onJoinPayout,
-                        onFunction = actions.onDesiredFunction,
-                        onConfirm = actions.onJoinConfirmed,
-                        onDismiss = actions.onJoinDismissed,
-                    )
-                }
-            }
 
-            phase is MissionDetailPhase.Failed -> {
-                // A busy server gets the countdown of chapter 14; anything else gets the ordinary
-                // failure state, because a countdown in front of a 403 promises a retry that will
-                // answer exactly the same.
-                val retryIn = state.retryIn
-                if (retryIn != null) {
-                    KrtRetryCountdown(
-                        secondsLeft = retryIn,
-                        title = stringResource(R.string.retry_busy_title),
-                        message = stringResource(R.string.retry_busy_message, retryIn),
-                        retryLabel = stringResource(R.string.retry_now),
-                        onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-                    )
-                } else {
-                    MissionDetailFailure(error = phase.error)
+                phase is MissionDetailPhase.Failed -> {
+                    // A busy server gets the countdown of chapter 14; anything else gets the ordinary
+                    // failure state, because a countdown in front of a 403 promises a retry that will
+                    // answer exactly the same.
+                    val retryIn = state.retryIn
+                    if (retryIn != null) {
+                        KrtRetryCountdown(
+                            secondsLeft = retryIn,
+                            title = stringResource(R.string.retry_busy_title),
+                            message = stringResource(R.string.retry_busy_message, retryIn),
+                            retryLabel = stringResource(R.string.retry_now),
+                            onRetry = onRetryNow,
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        )
+                    } else {
+                        MissionDetailFailure(error = phase.error)
+                    }
                 }
-            }
 
-            else -> {
-                KrtLoadingIndicator(
-                    text = stringResource(R.string.mission_detail_title),
-                    modifier = Modifier.fillMaxSize(),
-                )
+                else -> {
+                    KrtLoadingIndicator(
+                        text = stringResource(R.string.mission_detail_title),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
+        DenialToast(state = roster.denials)
     }
 }
+
+/**
+ * What a manager may do to somebody else's roster row, and what to say when they may not.
+ *
+ * A single object rather than five parameters threaded through three composables — the row is deep
+ * in a `LazyListScope`, and each new manager action would otherwise widen every signature between
+ * here and it.
+ *
+ * @property canManage whether the caller may act on another member's row; the server's own verdict.
+ * @property enabled whether a write may run **right now** — online and not already saving. Separate
+ *   from [canManage] on purpose: offline is not a missing grant, and the refusal must not claim it
+ *   is.
+ * @property checkInPossible whether the Einsatz has actually started, which is what the server
+ *   requires before it accepts a check-in at all.
+ * @property jobTypes the Funktionen a manager may assign; empty for a caller who may not.
+ * @property denials where a refused tap is announced.
+ * @property onCheckIn check the named row in or out.
+ * @property onPayout switch the named row's share between paid out and donated.
+ * @property onFunction assign the named row a job, or clear it by tapping the assigned one.
+ */
+data class MissionRosterActions(
+    val canManage: Boolean,
+    val enabled: Boolean,
+    val checkInPossible: Boolean,
+    val jobTypes: List<MissionJobType>,
+    val denials: DenialState,
+    val onCheckIn: (String) -> Unit,
+    val onPayout: (String) -> Unit,
+    val onFunction: (String, MissionJobType) -> Unit,
+)
 
 /**
  * Everything the Einsatz screen reports about the caller's own sign-up.
@@ -469,6 +513,7 @@ private fun MissionTabRow(
  * @param state everything the screen knows.
  * @param detail the Einsatz, already known to be present.
  * @param onRetryFinances the Finanzen tab's retry.
+ * @param roster what a manager may do to a roster row.
  */
 @Composable
 private fun MissionTabContent(
@@ -476,6 +521,7 @@ private fun MissionTabContent(
     detail: MissionDetail,
     onRetryFinances: () -> Unit,
     finances: MissionFinanceActions,
+    roster: MissionRosterActions,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
@@ -484,7 +530,7 @@ private fun MissionTabContent(
     ) {
         when (state.tab) {
             MissionTab.OVERVIEW -> overviewTab(detail)
-            MissionTab.PARTICIPANTS -> participantsTab(detail, state.mySignUp)
+            MissionTab.PARTICIPANTS -> participantsTab(detail, state.mySignUp, roster)
             MissionTab.UNITS -> unitsTab(detail)
             MissionTab.STEPS -> stepsTab(detail)
             MissionTab.OBJECTIVES -> objectivesTab(detail)
@@ -495,53 +541,189 @@ private fun MissionTabContent(
 }
 
 /**
- * Teilnehmer: the roster with its check-in marks.
+ * Teilnehmer: the roster with its check-in marks, and — for a manager — the per-row actions the
+ * design draws ("Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen Status",
+ * chapter 06, artboard 2).
  *
  * @param detail the Einsatz.
  * @param mine the caller's own row, drawn in the brand colour so they can find themselves in a
  *   roster of thirty.
+ * @param roster what a manager may do to a row, and what to say when they may not.
  */
 private fun androidx.compose.foundation.lazy.LazyListScope.participantsTab(
     detail: MissionDetail,
     mine: MissionParticipant?,
+    roster: MissionRosterActions,
 ) {
     if (detail.participants.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_participants) }
         return
     }
     items(detail.participants, key = { it.id }) { participant ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = participant.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color =
-                        if (participant.id == mine?.id) {
-                            MaterialTheme.colorScheme.primary
+        ParticipantRow(participant = participant, isMine = participant.id == mine?.id, roster = roster)
+    }
+}
+
+/**
+ * One roster row: who, whether they are in, what they fly, and what they asked to fly.
+ *
+ * @param participant the row.
+ * @param isMine whether it is the caller's own.
+ * @param roster the manager's actions and their gate.
+ */
+@Composable
+private fun ParticipantRow(
+    participant: MissionParticipant,
+    isMine: Boolean,
+    roster: MissionRosterActions,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = participant.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (isMine) MaterialTheme.colorScheme.primary else KrtPalette.White,
+                modifier = Modifier.weight(1f),
+            )
+            KrtChip(
+                text =
+                    stringResource(
+                        if (participant.checkedIn) {
+                            R.string.mission_detail_checked_in
                         } else {
-                            KrtPalette.White
+                            R.string.mission_detail_not_checked_in
                         },
-                    modifier = Modifier.weight(1f),
-                )
-                KrtChip(
-                    text =
-                        stringResource(
-                            if (participant.checkedIn) {
-                                R.string.mission_detail_checked_in
-                            } else {
-                                R.string.mission_detail_not_checked_in
-                            },
-                        ),
-                    tone = if (participant.checkedIn) KrtChipTone.Success else KrtChipTone.Muted,
+                    ),
+                tone = if (participant.checkedIn) KrtChipTone.Success else KrtChipTone.Muted,
+            )
+        }
+        participant.role?.let {
+            Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
+        }
+        // The wish is drawn beside the assignment („Wunsch: {{ p.jobWish }}") and is the whole
+        // reason a manager can assign anything sensibly. It is shown only when it differs from what
+        // is already assigned — repeating the same word twice tells nobody anything.
+        participant.desiredJobName
+            ?.takeIf { it != participant.role }
+            ?.let {
+                Text(
+                    text = stringResource(R.string.mission_detail_wish, it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
                 )
             }
-            participant.role?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-            }
+        ParticipantManagerActions(participant, roster)
+    }
+}
+
+/**
+ * The row's manager controls: check the member in or out, switch their payout, assign their job.
+ *
+ * All three render for **everyone** and are locked for a caller who may not manage, per the design
+ * ("Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast nennt
+ * die Rolle"). Hiding them was the rejected alternative: this organisation grants roles by hand,
+ * and a control nobody can see is one nobody asks to be given.
+ *
+ * @param participant the row.
+ * @param roster the actions and the gate.
+ */
+@Composable
+private fun ParticipantManagerActions(
+    participant: MissionParticipant,
+    roster: MissionRosterActions,
+) {
+    val gate =
+        Gate(
+            allowed = roster.canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
+        )
+    val (checkInDim, checkInClick) =
+        rememberGated(gate, { roster.onCheckIn(participant.id) }, roster.denials)
+    val (payoutDim, payoutClick) =
+        rememberGated(gate, { roster.onPayout(participant.id) }, roster.denials)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtGhostButton(
+            text =
+                stringResource(
+                    if (participant.checkedIn) {
+                        R.string.mission_detail_check_out_row
+                    } else {
+                        R.string.mission_detail_check_in_row
+                    },
+                ),
+            onClick = checkInClick,
+            iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
+            modifier = checkInDim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
+            // The server refuses a check-in before the Einsatz has actually started, so the control
+            // is not offered before then — the same rule the caller's own check-in follows.
+            enabled = roster.enabled && roster.checkInPossible,
+        )
+        KrtGhostButton(
+            text = stringResource(R.string.mission_detail_payout_row),
+            onClick = payoutClick,
+            iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
+            modifier = payoutDim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
+            enabled = roster.enabled,
+        )
+    }
+    ParticipantFunctionSelect(participant, gate, roster)
+}
+
+/**
+ * „Funktion an Bord": the chips a manager assigns from.
+ *
+ * The catalogue is only read for a caller who may assign, so for everyone else this draws the
+ * assignment as a single locked chip rather than an empty row — a locked control with nothing in it
+ * would say less than the plain text above it already does.
+ *
+ * @param participant the row.
+ * @param gate whether the caller may assign, and why not.
+ * @param roster the actions and the catalogue.
+ */
+@Composable
+private fun ParticipantFunctionSelect(
+    participant: MissionParticipant,
+    gate: Gate,
+    roster: MissionRosterActions,
+) {
+    if (roster.jobTypes.isEmpty()) {
+        return
+    }
+    Text(
+        text = stringResource(R.string.mission_detail_function_label),
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.Gray2,
+    )
+    // The same control as the sign-up sheet's, for the same reason it is a FlowRow there: five
+    // Funktionen do not fit one phone line, and a horizontal scroller would hide the ones past the
+    // edge behind a gesture nothing announces.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+    ) {
+        roster.jobTypes.forEach { jobType ->
+            val (dim, click) =
+                rememberGated(gate, { roster.onFunction(participant.id, jobType) }, roster.denials)
+            KrtFilterChip(
+                text = jobType.name,
+                selected = participant.plannedJobTypeId == jobType.id,
+                onClick = click,
+                modifier = dim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
+                // Never `enabled = false`: a chip that cannot be tapped cannot say why it is dim,
+                // which is the whole point of the locked pattern (ADR-0011, artboard 14). Offline
+                // is the one case that does disable it — there the answer is the connection, not a
+                // grant, and the toast would name the wrong thing.
+                enabled = roster.enabled,
+            )
         }
     }
 }
@@ -1081,6 +1263,9 @@ fun MissionDetailRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // One refusal at a time, owned by the screen: the roster is a LazyColumn, and a toast owned by
+    // a row would vanish the moment that row scrolled out from under it.
+    val denials = rememberDenialState()
     MissionDetailScreen(
         state = state,
         onTabSelected = viewModel::onTabSelected,
@@ -1107,6 +1292,17 @@ fun MissionDetailRoute(
                 onNote = viewModel::onEntryNoteChanged,
                 onSave = viewModel::onSaveEntry,
                 onDismiss = viewModel::onDismissEntry,
+            ),
+        roster =
+            MissionRosterActions(
+                canManage = state.canManage,
+                enabled = state.writable,
+                checkInPossible = state.checkInPossible,
+                jobTypes = state.rosterJobTypes,
+                denials = denials,
+                onCheckIn = { viewModel.roster.checkIn(it, state.checkInPossible) },
+                onPayout = viewModel.roster::payout,
+                onFunction = viewModel.roster::assign,
             ),
         modifier = modifier,
     )

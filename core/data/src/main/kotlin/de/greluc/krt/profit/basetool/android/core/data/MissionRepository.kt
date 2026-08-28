@@ -21,6 +21,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -76,12 +77,67 @@ data class MissionJobType(
 )
 
 /**
+ * The Einsatz's books: the bookings a member makes against their own sign-up.
+ *
+ * Split from [MissionSource] rather than sitting inside it because the money is a **separately
+ * guarded** surface — a member may read an Einsatz and still be refused its finances
+ * (`isMemberOrAbove` + `canSeeMission`) — and because the interface had grown past what one
+ * abstraction should carry. The same implementation serves both; the split is about what a caller
+ * has to depend on, not about where the code lives.
+ */
+interface MissionFinanceSource {
+    /**
+     * Books an income or an expense against an Einsatz.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId whose booking it is — the caller's own sign-up.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude, always positive; the sign lives in [income].
+     * @param note what it was for, or `null`.
+     * @return success, or the classified failure.
+     */
+    suspend fun addFinanceEntry(
+        missionId: String,
+        participantId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit>
+
+    /**
+     * Rewrites one booking.
+     *
+     * @param entryId the entry.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude.
+     * @param note what it was for, or `null`.
+     * @param version the entry's version, echoed from the read.
+     * @return success, or the classified failure.
+     */
+    suspend fun updateFinanceEntry(
+        entryId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<Unit>
+
+    /**
+     * Removes one booking.
+     *
+     * @param entryId the entry.
+     * @return success, or the classified failure.
+     */
+    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
+}
+
+/**
  * The Einsatz list, as a seam.
  *
  * Separate from its HTTP implementation so the list screen's rules — debouncing, paging, what an
  * empty result means versus a failed one — can be exercised without a socket.
  */
-interface MissionSource {
+interface MissionSource : MissionFinanceSource {
     /**
      * Reads one page of Einsätze matching [query].
      *
@@ -189,48 +245,28 @@ interface MissionSource {
     ): ApiResult<MissionParticipant>
 
     /**
-     * Books an income or an expense against an Einsatz.
+     * Assigns the job a participant flies — the design's „Funktion an Bord" select (chapter 06,
+     * artboard 2). Mission-management only; the server refuses it for anyone else.
+     *
+     * **It sends the row whole, and it has to.** `PUT …/participants/{id}` is a replace, not a
+     * patch: the server clears `desiredMissionJobType`, `plannedMissionJobType` and `comment` when
+     * the request omits them, and only `payoutPreference` survives a null. So a call that carried
+     * nothing but the new function would silently wipe the member's own stated wish and their note
+     * — a data loss with no error and no visible cause, discoverable only by the member who typed
+     * the note. [participant] is therefore the row as last read, and everything not being changed
+     * is echoed back from it.
      *
      * @param missionId the Einsatz.
-     * @param participantId whose booking it is — the caller's own sign-up.
-     * @param income whether it is money in rather than money out.
-     * @param amount the magnitude, always positive; the sign lives in [income].
-     * @param note what it was for, or `null`.
-     * @return success, or the classified failure.
+     * @param participant the row as last read; supplies the version and the fields left alone.
+     * @param jobTypeId the job to assign, or `null` to clear the assignment.
+     * @return the row as it now stands, or the classified failure — `409` when the version is
+     *   stale, which is the case a concurrent manager edit produces.
      */
-    suspend fun addFinanceEntry(
+    suspend fun setPlannedFunction(
         missionId: String,
-        participantId: String,
-        income: Boolean,
-        amount: String,
-        note: String?,
-    ): ApiResult<Unit>
-
-    /**
-     * Rewrites one booking.
-     *
-     * @param entryId the entry.
-     * @param income whether it is money in rather than money out.
-     * @param amount the magnitude.
-     * @param note what it was for, or `null`.
-     * @param version the entry's version, echoed from the read.
-     * @return success, or the classified failure.
-     */
-    suspend fun updateFinanceEntry(
-        entryId: String,
-        income: Boolean,
-        amount: String,
-        note: String?,
-        version: Long?,
-    ): ApiResult<Unit>
-
-    /**
-     * Removes one booking.
-     *
-     * @param entryId the entry.
-     * @return success, or the classified failure.
-     */
-    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant>
 }
 
 /**
@@ -434,6 +470,38 @@ class MissionRepository(
             ),
         )
 
+    override suspend fun setPlannedFunction(
+        missionId: String,
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant> =
+        oneRow(
+            reader.put(
+                participantPath(missionId, participant.id, null),
+                UpdateParticipantRequest(
+                    version = participant.version,
+                    plannedMissionJobTypeId = jobTypeId,
+                    // Everything below is echoed, not chosen. `PUT …/participants/{id}` replaces
+                    // the row: the server clears desiredMissionJobType and comment on a null, and
+                    // assigns startTime/endTime UNCONDITIONALLY — so an omitted startTime checks
+                    // the member out. Only payoutPreference survives a null, and it is echoed too
+                    // rather than relying on that asymmetry.
+                    desiredMissionJobTypeId = participant.desiredJobTypeId,
+                    comment = participant.comment,
+                    startTime = participant.startTime,
+                    endTime = participant.endTime,
+                    payoutPreference =
+                        when (participant.donating) {
+                            true -> UpdateParticipantRequest.PayoutPreference.DONATE
+                            false -> UpdateParticipantRequest.PayoutPreference.PAYOUT
+                            null -> null
+                        },
+                ),
+                UpdateParticipantRequest.serializer(),
+                MissionParticipantDto.serializer(),
+            ),
+        )
+
     override suspend fun addFinanceEntry(
         missionId: String,
         participantId: String,
@@ -600,8 +668,21 @@ class MissionRepository(
 
         private const val SEARCH_PATH = "/api/v1/missions/search"
 
-        /** The Funktionen catalogue, read only when the sign-up sheet opens. */
-        private const val JOB_TYPES_PATH = "/api/v1/job-types?page=0&size=200"
+        /**
+         * The Funktionen a **participant** can be asked for or assigned — read when the sign-up
+         * sheet opens, and by a manager on the Teilnehmer tab.
+         *
+         * `archetype=MISSION` is load-bearing, not tidiness. The catalogue holds two kinds and the
+         * backend refuses the wrong one outright — "Planned JobType Pilot is not of archetype
+         * MISSION", a 400 found on a device. `CREW` types (Pilot, Turret, Cargo, Scan, Medic) are
+         * the roles inside an Einheit and are assigned through the unit's crew, not through the
+         * participant. The two share names, which is exactly why an unfiltered read looks right on
+         * screen and fails on write.
+         *
+         * The web asks the same way, through two separate cached catalogues (`JOB_TYPES_MISSION` /
+         * `JOB_TYPES_CREW`).
+         */
+        private const val JOB_TYPES_PATH = "/api/v1/job-types?archetype=MISSION&page=0&size=200"
 
         /**
          * Where a booking is written.
@@ -793,6 +874,10 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
                     value = frequency.name.orEmpty(),
                 )
             },
+        // The server's own verdict, not a role check repeated here. An absent field means "no",
+        // so a server that predates the flag locks the manager actions instead of offering writes
+        // it would refuse.
+        canManage = canEdit ?: false,
     )
 }
 
@@ -812,10 +897,21 @@ private fun MissionParticipantDto.toModel(): MissionParticipant? {
         role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
         // A start time is what a check-in writes; there is no separate flag on the wire.
         checkedIn = startTime != null,
+        startTime = startTime,
+        endTime = endTime,
         comment = comment?.takeIf { it.isNotBlank() },
         // Absent means the server stated no preference, which is a different thing from "pays
         // out": the screen shows nothing rather than claiming one of the two.
         donating = payoutPreference?.let { it == MissionParticipantDto.PayoutPreference.DONATE },
+        // Both job types are carried separately even though `role` collapses them for display. A
+        // manager's write has to send the row whole (see setPlannedFunction), so the one it is not
+        // changing must survive the round trip.
+        desiredJobTypeId = desiredMissionJobType?.id,
+        desiredJobName = desiredMissionJobType?.name,
+        plannedJobTypeId = plannedMissionJobType?.id,
+        // A row with no version cannot be written to. 0 is not a valid server version, so the
+        // write fails loudly with a 409 rather than silently overwriting a concurrent edit.
+        version = version ?: 0L,
     )
 }
 

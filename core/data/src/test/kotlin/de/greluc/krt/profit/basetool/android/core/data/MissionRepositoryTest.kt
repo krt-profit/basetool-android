@@ -48,6 +48,9 @@ class MissionRepositoryTest {
         /** Slack on the lower-bound assertion, so a slow test machine cannot fail it. */
         const val CLOCK_SLACK_SECONDS = 5L
 
+        /** The version the roster fixture carries, so the echo assertion is not a bare literal. */
+        const val ROSTER_ROW_VERSION = 4L
+
         /** A total large enough that one page cannot hold it. */
         const val MANY_ELEMENTS = 60L
 
@@ -345,5 +348,143 @@ class MissionRepositoryTest {
 
             assertTrue(page.hasMore)
             assertEquals(MANY_ELEMENTS, page.totalElements)
+        }
+
+    /**
+     * The whole point of `setPlannedFunction` taking the row rather than an id: `PUT
+     * …/participants/{id}` is a **replace**. The server clears `desiredMissionJobType` and
+     * `comment` when they are absent, and assigns `startTime` unconditionally — so a request that
+     * carried only the new function would wipe the member's stated wish, their note, **and check
+     * them out**. Three silent losses with no error and no visible cause.
+     */
+    @Test
+    fun `setPlannedFunction echoes the fields it is not changing`() =
+        runTest {
+            respond("""{"id":"p1","version":8}""")
+            val row =
+                MissionParticipant(
+                    id = "p1",
+                    userId = "u1",
+                    name = "Rhea",
+                    role = null,
+                    checkedIn = true,
+                    comment = "bringt Eskorte mit",
+                    donating = true,
+                    desiredJobTypeId = "wish-1",
+                    desiredJobName = "Pilot",
+                    plannedJobTypeId = null,
+                    version = 7L,
+                    startTime = "2026-08-28T19:00:00Z",
+                    endTime = null,
+                )
+
+            repository.setPlannedFunction("m1", row, jobTypeId = "job-2")
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue("the new function must be sent", body.contains(""""plannedMissionJobTypeId":"job-2""""))
+            assertTrue("the wish must survive", body.contains(""""desiredMissionJobTypeId":"wish-1""""))
+            assertTrue("the note must survive", body.contains(""""comment":"bringt Eskorte mit""""))
+            assertTrue("the check-in must survive", body.contains(""""startTime":"2026-08-28T19:00:00Z""""))
+            assertTrue("the payout must survive", body.contains(""""payoutPreference":"DONATE""""))
+            assertTrue("the version must be echoed", body.contains(""""version":7"""))
+        }
+
+    /** Tapping the assigned function clears it, which is a null the server is meant to act on. */
+    @Test
+    fun `setPlannedFunction sends a null to clear the assignment`() =
+        runTest {
+            respond("""{"id":"p1","version":9}""")
+            val row =
+                MissionParticipant(
+                    id = "p1",
+                    userId = "u1",
+                    name = "Rhea",
+                    role = "Pilot",
+                    checkedIn = false,
+                    comment = null,
+                    donating = null,
+                    plannedJobTypeId = "job-2",
+                    version = 8L,
+                )
+
+            repository.setPlannedFunction("m1", row, jobTypeId = null)
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertFalse(
+                "a cleared assignment must not send the old id back",
+                body.contains(""""plannedMissionJobTypeId":"job-2""""),
+            )
+        }
+
+    /**
+     * `canEdit` is the server's verdict on whether the caller may act on other rows, and an absent
+     * one has to read as "no" — an older server that omits the field must leave the manager actions
+     * locked rather than offer writes it would refuse.
+     */
+    @Test
+    fun `an absent canEdit leaves the roster unmanageable`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            val result = repository.detail("m1")
+
+            assertTrue(result is ApiResult.Success)
+            assertFalse((result as ApiResult.Success).value.canManage)
+        }
+
+    /** And a `true` is carried through untouched. */
+    @Test
+    fun `canEdit is carried into the detail`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria","canEdit":true}""")
+
+            val result = repository.detail("m1")
+
+            assertTrue((result as ApiResult.Success).value.canManage)
+        }
+
+    /**
+     * The domain row keeps both job types apart even though `role` collapses them for display —
+     * without that, the echo above cannot send back a wish it never kept.
+     */
+    @Test
+    fun `a participant keeps its wish, its assignment and its version apart`() =
+        runTest {
+            respond(
+                """
+                {"id":"m1","name":"Lyria","participants":[{
+                  "id":"p1","version":4,"comment":"note",
+                  "desiredMissionJobType":{"id":"j1","name":"Pilot","archetype":"MISSION"},
+                  "plannedMissionJobType":{"id":"j2","name":"Turret","archetype":"MISSION"},
+                  "startTime":"2026-08-28T19:00:00Z"
+                }]}
+                """.trimIndent(),
+            )
+
+            val row = (repository.detail("m1") as ApiResult.Success).value.participants.single()
+
+            assertEquals("j1", row.desiredJobTypeId)
+            assertEquals("Pilot", row.desiredJobName)
+            assertEquals("j2", row.plannedJobTypeId)
+            // `role` shows the assignment, falling back to the wish — the display rule, unchanged.
+            assertEquals("Turret", row.role)
+            assertEquals(ROSTER_ROW_VERSION, row.version)
+            assertTrue("a start time is what a check-in is", row.checkedIn)
+        }
+
+    /**
+     * The catalogue holds two archetypes and the backend refuses the wrong one on write — "Planned
+     * JobType Pilot is not of archetype MISSION", a 400 found on a device. CREW types are the roles
+     * inside an Einheit; they share their names with the mission ones, so an unfiltered read looks
+     * right on screen and fails only when somebody presses the chip.
+     */
+    @Test
+    fun `the Funktionen catalogue asks for the MISSION archetype`() =
+        runTest {
+            respond("""{"content":[]}""")
+
+            repository.jobTypes()
+
+            assertEquals("MISSION", requestedUrl().queryParameter("archetype"))
         }
 }

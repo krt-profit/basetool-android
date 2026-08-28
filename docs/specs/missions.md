@@ -602,3 +602,66 @@ reach for it. It needs a server-side decision before it can exist here.
 - [x] Verified on a device against the test stack: picking „Org-Kasse" and „Pilot" and confirming
   put `DONATE` and `Pilot` on the roster.
 - [ ] „Eigenes Schiff einbringen". **Open** — no endpoint a participant may call.
+
+### REQ-APP-MIS-019 — A manager acts on the roster, and the app asks the server whether they are one
+
+The Teilnehmer tab offers three per-row actions to a caller who may manage the Einsatz: check the
+member **in or out**, switch their **payout preference**, and assign their **Funktion an Bord**. The
+design draws all three — „Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen
+Status", and the chapter index lists „payout radios, manager payout toggles, Funktion an Bord" as
+live (ch. 06, artboard 2).
+
+**Whether the caller is a manager is the server's answer, never the client's.** The app carries
+`MissionDto.canEdit` through to `MissionDetail.canManage` and gates on that. It MUST NOT be derived
+from a role string: the role hierarchy means an admin satisfies a mission-management gate without
+holding that role, so a client comparing strings hides the controls from exactly the people most
+entitled to them. An **absent** `canEdit` reads as `false`, so a server that predates the field
+leaves the actions locked rather than offering writes it would refuse.
+
+**The controls render for everyone and lock for those who may not use them** (ADR-0011,
+`REQ-APP-AUTH-013`): tappable, no write, and a toast naming the missing role. `enabled = false` is
+forbidden here — a control that cannot be tapped cannot say why it is dim. Offline is the one case
+that does disable them, because there the answer is the connection and not a grant, and the refusal
+must not claim otherwise.
+
+**Checking somebody else in follows the same server rule as checking yourself in**: it is refused
+before the Einsatz has actually started, so the app does not offer it before then either.
+
+**Acceptance**
+
+- [ ] A caller with `canEdit = true` can check another member in, switch their payout and assign
+  their Funktion; each reaches the server naming that row.
+- [ ] A caller with `canEdit = false` (or absent) sees the same controls, tapping one writes
+  nothing, and the refusal names the Missions-Manager role.
+- [ ] No manager action fires against a participant id that is not in the roster the client last
+  read.
+
+**Enforced by:** `MissionRosterTest`, `MissionDetailScreenTest`, `MissionRepositoryTest`.
+
+### REQ-APP-MIS-020 — A participant write sends the row whole, because the endpoint replaces it
+
+`PUT /missions/{id}/participants/{participantId}` is a **replace, not a patch**. The server clears
+`desiredMissionJobType` and `comment` when the request omits them, and assigns `startTime` and
+`endTime` **unconditionally**. Only `payoutPreference` survives a null.
+
+A request that carried nothing but the new Funktion would therefore wipe the member's own stated
+wish **and** their note **and check them out** — three silent losses, no error, no visible cause,
+discoverable only by the member who typed the note.
+
+So `setPlannedFunction` takes the **row as last read** and echoes back everything it is not
+changing, including the version. That is why `MissionParticipant` keeps `desiredJobTypeId` and
+`plannedJobTypeId` apart even though `role` collapses them for display, and why it keeps `startTime`
+and `endTime` as the **verbatim wire strings**: they are only ever echoed, and a parse-then-format
+round trip is a chance to change a value for no gain.
+
+The row must come from what the client last read. A write against a guessed version is exactly the
+concurrent-edit collision the version exists to catch, so an unknown participant id writes nothing.
+
+**Acceptance**
+
+- [ ] Assigning a Funktion sends `plannedMissionJobTypeId` **and** echoes `desiredMissionJobTypeId`,
+  `comment`, `startTime`, `endTime`, `payoutPreference` and `version`.
+- [ ] Tapping the assigned Funktion sends a null for it, and only for it.
+- [ ] A stale version surfaces as `409`, not as a silent overwrite.
+
+**Enforced by:** `MissionRepositoryTest`, `MissionRosterTest`.

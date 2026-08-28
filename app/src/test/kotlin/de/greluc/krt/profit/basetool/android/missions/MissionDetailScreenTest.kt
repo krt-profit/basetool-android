@@ -29,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionFrequency
+import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionObjective
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
@@ -36,7 +37,9 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionStep
 import de.greluc.krt.profit.basetool.android.core.data.MissionUnit
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -109,9 +112,23 @@ class MissionDetailScreenTest {
         checkIns: MutableList<Unit> = mutableListOf(),
         payouts: MutableList<Unit> = mutableListOf(),
         bookings: MutableList<String> = mutableListOf(),
+        rosterTaps: MutableList<String> = mutableListOf(),
+        canManage: Boolean = false,
+        jobTypes: List<MissionJobType> = emptyList(),
     ) {
         compose.setContent {
             KrtTheme {
+                val roster =
+                    MissionRosterActions(
+                        canManage = canManage,
+                        enabled = true,
+                        checkInPossible = true,
+                        jobTypes = jobTypes,
+                        denials = rememberDenialState(),
+                        onCheckIn = { rosterTaps.add("check-in:$it") },
+                        onPayout = { rosterTaps.add("payout:$it") },
+                        onFunction = { id, job -> rosterTaps.add("function:$id:${job.id}") },
+                    )
                 MissionDetailScreen(
                     state = state,
                     onTabSelected = { tabs.add(it) },
@@ -128,6 +145,7 @@ class MissionDetailScreenTest {
                             onJoinConfirmed = {},
                             onJoinDismissed = {},
                         ),
+                    roster = roster,
                     finances =
                         MissionFinanceActions(
                             onAdd = { bookings.add("add") },
@@ -592,4 +610,104 @@ class MissionDetailScreenTest {
         participantId = participantId,
         version = 4L,
     )
+
+    /**
+     * The Funktions-Select renders for a manager and its chips are live.
+     *
+     * The catalogue is only loaded for someone who may assign, so an empty one is what a plain
+     * member gets — which is why this test hands one in rather than relying on the screen to ask.
+     */
+    @Test
+    fun `a manager can assign a Funktion from the roster`() {
+        val taps = mutableListOf<String>()
+        show(
+            ready(
+                detail = detail(participants = listOf(rosterRow())),
+                tab = MissionTab.PARTICIPANTS,
+            ),
+            rosterTaps = taps,
+            canManage = true,
+            jobTypes = listOf(MissionJobType("j2", "Turret")),
+        )
+
+        compose.onNodeWithText("Turret", ignoreCase = true).performClick()
+
+        assertEquals(listOf("function:p2:j2"), taps)
+    }
+
+    /** And the drawn per-row check-in reaches the manager's action, not the caller's own. */
+    @Test
+    fun `a manager checks another member in from their row`() {
+        val taps = mutableListOf<String>()
+        show(
+            ready(
+                detail = detail(participants = listOf(rosterRow())),
+                tab = MissionTab.PARTICIPANTS,
+            ),
+            rosterTaps = taps,
+            canManage = true,
+        )
+
+        compose.onNodeWithText("Einchecken", ignoreCase = true).performClick()
+
+        assertEquals(listOf("check-in:p2"), taps)
+    }
+
+    /**
+     * „Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast
+     * nennt die Rolle." So the tap must still land, and it must produce the refusal rather than a
+     * write. `enabled = false` was the rejected alternative: a control that cannot be tapped cannot
+     * say why it is dim.
+     */
+    @Test
+    fun `a member without the role is refused in place rather than shown nothing`() {
+        val taps = mutableListOf<String>()
+        show(
+            ready(
+                detail = detail(participants = listOf(rosterRow())),
+                tab = MissionTab.PARTICIPANTS,
+            ),
+            rosterTaps = taps,
+            canManage = false,
+        )
+
+        compose.onNodeWithText("Einchecken", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Einchecken", ignoreCase = true).performClick()
+
+        assertTrue("a locked control must not write", taps.isEmpty())
+        compose.onNodeWithText("Missions-Manager", substring = true).assertIsDisplayed()
+    }
+
+    /** „Wunsch: …" is drawn beside the assignment, and only when it says something new. */
+    @Test
+    fun `the roster shows what a member asked to fly`() {
+        show(
+            ready(
+                detail = detail(participants = listOf(rosterRow())),
+                tab = MissionTab.PARTICIPANTS,
+            ),
+        )
+
+        compose.onNodeWithText("Wunsch: Pilot", substring = true).assertIsDisplayed()
+    }
+
+    /**
+     * Somebody other than the caller, with a wish and no assignment.
+     *
+     * @return the row.
+     */
+    private fun rosterRow() =
+        MissionParticipant(
+            id = "p2",
+            userId = "u2",
+            name = "Dorn",
+            role = null,
+            checkedIn = false,
+            comment = null,
+            donating = null,
+            desiredJobTypeId = "j1",
+            desiredJobName = "Pilot",
+            plannedJobTypeId = null,
+            version = 3L,
+        )
 }

@@ -146,6 +146,8 @@ data class JoinSheet(
  * @property finances how far the money has got, on its own timeline
  * @property refreshing whether a pull-to-refresh is running over content already on screen
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
+ * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
+ *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
  */
 data class MissionDetailState(
     val missionId: String,
@@ -160,6 +162,7 @@ data class MissionDetailState(
     val online: Boolean = true,
     val entryDraft: FinanceEntryDraft? = null,
     val joinSheet: JoinSheet? = null,
+    val rosterJobTypes: List<MissionJobType> = emptyList(),
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -194,6 +197,40 @@ data class MissionDetailState(
      */
     val bookingPossible: Boolean
         get() = writable && mySignUp != null
+
+    /**
+     * Whether the caller may act on **another** member's row.
+     *
+     * The server's own `canEdit`, carried through untouched. It is deliberately not derived from a
+     * role string here: the role hierarchy means an admin satisfies a mission-manager gate without
+     * holding that role, and a client that compares strings hides the controls from exactly the
+     * people most entitled to them — the single most common way a client diverges from the web.
+     *
+     * Note this is *not* `writable`: manage rights and being able to write right now are different
+     * questions. A manager who is offline still holds the right; the control is disabled by
+     * [writable] and locked by neither.
+     */
+    val canManage: Boolean
+        get() = detail?.canManage == true
+
+    /**
+     * The row a manager action may address, or `null` when it may not run.
+     *
+     * One gate for all three manager actions, so none of them can be added later without it. It
+     * refuses on three counts and the third is the one worth naming: an unknown participant id.
+     * A row that is not in the roster the client last read is a row whose version the client does
+     * not have, and a write against a guessed version is exactly the concurrent-edit collision the
+     * version exists to catch.
+     *
+     * @param participantId the row the caller tapped.
+     * @return the row as last read, or `null`.
+     */
+    fun rowToManage(participantId: String): MissionParticipant? {
+        if (!writable || !canManage) {
+            return null
+        }
+        return detail?.participants?.firstOrNull { it.id == participantId }
+    }
 }
 
 /**
@@ -245,6 +282,23 @@ class MissionDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<MissionDetailState> = mutableState.asStateFlow()
+
+    /**
+     * The manager's half of the Teilnehmer tab.
+     *
+     * Public, and called by the screen directly rather than through wrappers here — the same shape
+     * as the inventory's `MaterialPaneLoader`. It reads the roster through this view model rather
+     * than holding its own copy, so a row it writes against is always the row the member is looking
+     * at, which is what makes the version it sends the right one.
+     */
+    val roster =
+        MissionRoster(
+            missionId = missionId,
+            source = source,
+            scope = viewModelScope,
+            rowToManage = { mutableState.value.rowToManage(it) },
+            write = ::writeRow,
+        )
 
     /**
      * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
@@ -692,6 +746,12 @@ class MissionDetailViewModel(
         mutableState.value = mutableState.value.copy(tab = tab)
         if (tab == MissionTab.FINANCES && mutableState.value.finances is MissionFinancesPhase.Idle) {
             loadFinances()
+        }
+        if (tab == MissionTab.PARTICIPANTS) {
+            val current = mutableState.value
+            roster.loadJobTypes(current.canManage, current.rosterJobTypes) { types ->
+                mutableState.value = mutableState.value.copy(rosterJobTypes = types)
+            }
         }
     }
 
