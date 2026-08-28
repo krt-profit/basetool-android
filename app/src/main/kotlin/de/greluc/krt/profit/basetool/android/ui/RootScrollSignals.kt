@@ -9,6 +9,8 @@ package de.greluc.krt.profit.basetool.android.ui
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -80,6 +82,23 @@ val LocalRootScrollTick = compositionLocalOf { 0 }
 @Composable
 fun rememberRootListState(): LazyListState {
     val state = rememberLazyListState()
+    ActOnReselect { state.animateScrollToItem(0) }
+    return state
+}
+
+/**
+ * The same for a root screen whose lazy list is a **grid**.
+ *
+ * A separate function because `LazyGridState` and `LazyListState` share no supertype that carries
+ * `animateScrollToItem`, so a screen that swaps a column for a grid above a breakpoint cannot reuse
+ * one state for both. It swaps the state with the layout, which also drops the scroll position -
+ * correct, because item 40 of a one-column list is not item 40 of a two-column grid.
+ *
+ * @return the state to hand to the screen's `LazyVerticalGrid`.
+ */
+@Composable
+fun rememberRootGridState(): LazyGridState {
+    val state = rememberLazyGridState()
     ActOnReselect { state.animateScrollToItem(0) }
     return state
 }

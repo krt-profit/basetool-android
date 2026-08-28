@@ -16,6 +16,9 @@
 
 ### Changed
 
+- **Die Materialbörse zeigt auf dem Tablet zwei Kartenspalten.** Bisher stand jede Karte über die
+  volle Breite, mit dem gesamten Inhalt im linken Viertel.
+
 - **Auf Tablets haben alle Listen links und rechts denselben Rand.** Lager, Posteingang, Mein
   Inventar, Blueprints, Operationen, Auftragsdetail, Bankkonto und die Übersicht klebten bisher an
   der Navigationsleiste und am Bildschirmrand. Auf dem Telefon bleibt alles wie gehabt — dort ist
