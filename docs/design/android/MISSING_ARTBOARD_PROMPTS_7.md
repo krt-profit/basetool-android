@@ -340,6 +340,28 @@ again, and be refused again, forever. The bank's conflict codes now each get the
 same section; the app did not, which made artboard 8 unreachable on a fresh unit — no holder, no
 custody, and no confirmation able to name one.
 
+## 2g — Chapter 09 artboard 1: two of the three filter chips have nothing behind them
+
+The Lager tree is drawn with three chips: „MATERIAL: ALLE" (selected), „NUR MIT BESTAND", and
+„ORT: ALLE", plus a filter icon in the app bar.
+
+**Neither the web nor the API has the first or the third.** `inventory-index.html` offers a view
+toggle (material vs items) and a squadron selector — no material filter, no location filter. And
+`/api/v1/inventory/aggregated`, which is the list the tree renders, takes only `catalog`, `page`,
+`size` and `sort`; the material filter exists one level down, on the *grouped* read, where it is a
+drill-in rather than a filter.
+
+Building them anyway would mean one of two bad things: exceeding the web, which the parity goal does
+not ask for, or filtering client-side over a paged list — telling a member their material is not
+there because it is on page three. That is the silent cap ADR-0104 exists to forbid.
+
+„Nur mit Bestand" survives because it is the honest kind of chip: it hides rows from a page the
+member already has, and the count under the list keeps stating the server's total.
+
+**If the filters are wanted, they are a backend change first** — query parameters on
+`/inventory/aggregated` — and only then an app one. Drawn as they are, they describe a system that
+does not exist yet.
+
 ## 3 — Two smaller questions, no strong opinion
 
 **3.1 — Does the amount field group while you type?** Artboard 3 shows `120.000` in the input. We

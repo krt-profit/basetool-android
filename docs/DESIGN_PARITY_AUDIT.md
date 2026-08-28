@@ -138,16 +138,30 @@ the orange rail and chevron, the material bold with the amount right-aligned and
 org chip in the app bar, and the third level's „Halter · Ort · Q 880" with its quality bar. Four
 things do not:
 
-| # | artboard 1 | app | weight |
+| # | artboard 1 | app | verdict |
 | :-- | :-- | :-- | :-- |
-| 1 | three filter chips — „MATERIAL: ALLE", „NUR MIT BESTAND", „ORT: ALLE" | one, „NUR MIT BESTAND" | **functional** — no material and no location filter |
-| 2 | a filter icon in the app bar | a bell | cosmetic, but it is where the drawn filters live |
-| 3 | the FAB is the book-out glyph (⤓) | the FAB is „+" | the drawn action is Ausbuchen; „+" reads as create |
-| 4 | material → **holder** (with a subtotal) → entry | material → holder·location merged into one row | structural: a member holding one material in two places has no subtotal |
+| 1 | three filter chips — „MATERIAL: ALLE", „NUR MIT BESTAND", „ORT: ALLE" | one, „NUR MIT BESTAND" | **the artboard is ahead of the system** — see below |
+| 2 | a filter icon in the app bar | a bell | follows from 1: there is nothing for it to open |
+| 3 | the FAB is a download glyph (⤓) | „+", labelled „Einbuchen" | open — the glyph reads as Ausbuchen, the action is Einbuchen |
+| 4 | material → **holder** (with a subtotal) → entry | material → holder·location merged into one row | open — a member holding one material in two places gets no subtotal |
 
-Item 1 is the one that matters: with more than a screenful of materials, „nur mit Bestand" is not a
-filter, it is a switch. The other three are recorded rather than fixed here, so the list is honest
-about what a screenshot showed.
+**Items 1 and 2 are not app gaps.** Checked rather than assumed:
+
+- **The web frontend has no such filters.** `inventory-index.html` offers a view toggle (material
+  vs items) and a squadron selector. Nothing filters by material or by location.
+- **The endpoint cannot back them.** `/api/v1/inventory/aggregated` takes `catalog`, `page`, `size`,
+  `sort` — no material, no location. Only the *grouped* read one level down takes `materialIds`.
+
+So building them would mean either exceeding the web (which the goal does not ask for) or filtering
+client-side over a paged list, which is the silent cap ADR-0104 forbids — a member searching for a
+material on page three would be told it is not there. The existing „Nur mit Bestand" chip is
+deliberately the honest kind: it hides rows from a page the member already has, and the count below
+the list keeps stating the server's total.
+
+Recorded as a design-vs-system difference in `MISSING_ARTBOARD_PROMPTS_7.md`, the same way the
+refinery's „#7841" order number was.
+
+Items 3 and 4 stay open and are app-side.
 
 > [!note] Why this row said „done"
 > Same reason as the Raffinerie row below: the 25.08. pass checked that the drawn *elements* existed
