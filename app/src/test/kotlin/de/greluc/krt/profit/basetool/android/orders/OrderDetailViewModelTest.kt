@@ -164,6 +164,7 @@ class OrderDetailViewModelTest {
             responsibleOrgUnit = null,
             comment = null,
             materials = emptyList(),
+            items = emptyList(),
             handovers = emptyList(),
             assignees = assignees.toList(),
             createdAt = null,

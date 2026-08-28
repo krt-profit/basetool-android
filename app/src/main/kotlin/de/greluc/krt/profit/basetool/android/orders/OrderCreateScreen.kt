@@ -37,6 +37,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -63,9 +64,13 @@ private const val COMMENT_LINES = 4
 /** How much has to be typed before „nothing matched" is a claim worth making. */
 private const val MIN_QUERY = 2
 
+/** Test tag of the kind switch. */
+const val ORDER_CREATE_KIND_TAG: String = "order-create-kind"
+
 /**
  * What the create form reports back.
  *
+ * @property onKind the order kind was switched.
  * @property onResponsible the processing unit was picked.
  * @property onRequesting the customer unit was picked.
  * @property onHandle the contact handle was edited.
@@ -76,9 +81,17 @@ private const val MIN_QUERY = 2
  * @property onMinQuality a line's minimum quality was picked.
  * @property onAddLine another line is wanted.
  * @property onRemoveLine a line is to go.
+ * @property onItemQuery an item line's picker was typed into.
+ * @property onItemPicked an item line's item was picked.
+ * @property onBlueprintPicked an item line's blueprint was picked.
+ * @property onItemAmount an item line's count was edited.
+ * @property onAddItemLine another item line is wanted.
+ * @property onRemoveItemLine an item line is to go.
  * @property onSubmit the order is to be raised.
  */
+@Suppress("LongParameterList")
 data class OrderCreateActions(
+    val onKind: (OrderKind) -> Unit,
     val onResponsible: (String) -> Unit,
     val onRequesting: (String) -> Unit,
     val onHandle: (String) -> Unit,
@@ -89,6 +102,12 @@ data class OrderCreateActions(
     val onMinQuality: (Int, Int?) -> Unit,
     val onAddLine: () -> Unit,
     val onRemoveLine: (Int) -> Unit,
+    val onItemQuery: (Int, String) -> Unit,
+    val onItemPicked: (Int, Pair<String, String>) -> Unit,
+    val onBlueprintPicked: (Int, String) -> Unit,
+    val onItemAmount: (Int, String) -> Unit,
+    val onAddItemLine: () -> Unit,
+    val onRemoveItemLine: (Int) -> Unit,
     val onSubmit: () -> Unit,
 )
 
@@ -100,8 +119,9 @@ data class OrderCreateActions(
  * card per repeating line, a ghost button to add another, and a full-width CTA at the foot. Design
  * round 8 §1 asks for the drawing.
  *
- * **Material orders only** — an item order needs a blueprint picker per item and a derivation tree,
- * which is a screen of its own (round 8 §1.3).
+ * Both order kinds live here, as they do on the web: a switch at the head and the lines under it.
+ * What the two do *not* share is the sub-assembly tree the web draws under an item line — that is
+ * still round 8 §1.3.
  *
  * @param state what the form holds.
  * @param actions what it reports back.
@@ -118,33 +138,61 @@ fun OrderCreateScreen(
         contentPadding = PaddingValues(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
     ) {
+        item(key = "kind") {
+            KindSwitch(kind = state.kind, onKind = actions.onKind)
+        }
         item(key = "who") {
             WhoBlock(state = state, actions = actions)
         }
-        item(key = "materials-header") {
-            Text(
-                text = stringResource(R.string.order_create_materials),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = KrtPalette.White,
+        item(key = "lines-header") {
+            SectionTitle(
+                text =
+                    stringResource(
+                        when (state.kind) {
+                            OrderKind.MATERIAL -> R.string.order_create_materials
+                            OrderKind.ITEM -> R.string.order_create_items
+                        },
+                    ),
             )
         }
-        itemsIndexed(state.lines) { index, line ->
-            LineCard(
-                line = line,
-                removable = state.lines.size > 1,
-                materials = state.materials,
-                truncated = state.materialsTruncated,
-                onQuery = { actions.onMaterialQuery(index, it) },
-                onPicked = { actions.onMaterialPicked(index, it) },
-                onAmount = { actions.onAmount(index, it) },
-                onMinQuality = { actions.onMinQuality(index, it) },
-                onRemove = { actions.onRemoveLine(index) },
-            )
+        if (state.kind == OrderKind.MATERIAL) {
+            itemsIndexed(state.lines, key = { index, _ -> "material-$index" }) { index, line ->
+                LineCard(
+                    line = line,
+                    removable = state.lines.size > 1,
+                    materials = state.materials,
+                    truncated = state.materialsTruncated,
+                    onQuery = { actions.onMaterialQuery(index, it) },
+                    onPicked = { actions.onMaterialPicked(index, it) },
+                    onAmount = { actions.onAmount(index, it) },
+                    onMinQuality = { actions.onMinQuality(index, it) },
+                    onRemove = { actions.onRemoveLine(index) },
+                )
+            }
+        } else {
+            itemsIndexed(state.itemLines, key = { index, _ -> "item-$index" }) { index, line ->
+                ItemLineCard(
+                    line = line,
+                    removable = state.itemLines.size > 1,
+                    items = state.items,
+                    onQuery = { actions.onItemQuery(index, it) },
+                    onPicked = { actions.onItemPicked(index, it) },
+                    onBlueprint = { actions.onBlueprintPicked(index, it) },
+                    onAmount = { actions.onItemAmount(index, it) },
+                    onRemove = { actions.onRemoveItemLine(index) },
+                )
+            }
         }
         item(key = "add-line") {
             KrtOutlineButton(
-                text = stringResource(R.string.order_create_add_material),
-                onClick = actions.onAddLine,
+                text =
+                    stringResource(
+                        when (state.kind) {
+                            OrderKind.MATERIAL -> R.string.order_create_add_material
+                            OrderKind.ITEM -> R.string.order_create_add_item
+                        },
+                    ),
+                onClick = if (state.kind == OrderKind.MATERIAL) actions.onAddLine else actions.onAddItemLine,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -163,6 +211,196 @@ fun OrderCreateScreen(
             SubmitBlock(state = state, onSubmit = actions.onSubmit)
         }
     }
+}
+
+/**
+ * Switches the form between a material and an item order.
+ *
+ * The web uses a radio pair; the segmented control is the same choice in the design's own control,
+ * and it says at a glance which of the two is active.
+ *
+ * @param kind which order is being raised.
+ * @param onKind the switch was used.
+ */
+@Composable
+private fun KindSwitch(
+    kind: OrderKind,
+    onKind: (OrderKind) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        SectionTitle(text = stringResource(R.string.order_create_kind))
+        KrtSegmentedControl(
+            options =
+                listOf(
+                    stringResource(R.string.order_create_kind_material),
+                    stringResource(R.string.order_create_kind_item),
+                ),
+            selectedIndex = if (kind == OrderKind.MATERIAL) 0 else 1,
+            onSelect = { onKind(if (it == 0) OrderKind.MATERIAL else OrderKind.ITEM) },
+            modifier = Modifier.fillMaxWidth().testTag(ORDER_CREATE_KIND_TAG),
+            stretch = true,
+        )
+    }
+}
+
+/**
+ * A heading inside the form.
+ *
+ * @param text what it says.
+ */
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+        color = KrtPalette.White,
+    )
+}
+
+/**
+ * One item line.
+ *
+ * The blueprint picker stays shut until an item is picked, because the blueprints are read *for*
+ * that item: offering an empty dropdown first would read as a broken control. An item whose single
+ * blueprint was picked for the member still shows the picker, so they can see which one it is.
+ *
+ * @param line what to draw.
+ * @param removable whether it may be taken away; the last line stays and is cleared instead.
+ * @param items the candidates the item picker shows.
+ * @param onQuery the item picker was typed into.
+ * @param onPicked an item was picked.
+ * @param onBlueprint a blueprint was picked.
+ * @param onAmount the count was edited.
+ * @param onRemove the line is to go.
+ */
+@Composable
+private fun ItemLineCard(
+    line: OrderItemLineDraft,
+    removable: Boolean,
+    items: List<Pair<String, String>>,
+    onQuery: (String) -> Unit,
+    onPicked: (Pair<String, String>) -> Unit,
+    onBlueprint: (String) -> Unit,
+    onAmount: (String) -> Unit,
+    onRemove: () -> Unit,
+) {
+    KrtCard(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            ItemField(
+                shown = line.query,
+                selectedValue = line.gameItemId,
+                items = items,
+                onQuery = onQuery,
+                onPicked = onPicked,
+            )
+            if (line.gameItemId == null && line.query.trim().length >= MIN_QUERY && items.isEmpty()) {
+                Hint(text = stringResource(R.string.order_create_item_no_matches))
+            }
+            BlueprintField(line = line, onBlueprint = onBlueprint)
+            if (line.gameItemId == null) {
+                Hint(text = stringResource(R.string.order_create_item_blueprint_hint))
+            } else if (line.blueprints.isEmpty()) {
+                // Not a picker problem: the catalogue holds the item but no blueprint for it, and
+                // the server would refuse the line. Saying so beats a dropdown that opens on
+                // nothing.
+                Hint(text = stringResource(R.string.order_create_item_blueprint_none))
+            }
+            KrtTextField(
+                value = line.amount,
+                onValueChange = onAmount,
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.order_create_item_amount),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+            if (removable) {
+                KrtQuietDangerButton(
+                    text = stringResource(R.string.order_create_remove_item),
+                    onClick = onRemove,
+                    modifier = Modifier.fillMaxWidth(),
+                    iconRes = DesignR.drawable.ic_krt_trash,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A muted note under a field.
+ *
+ * @param text what it says.
+ */
+@Composable
+private fun Hint(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.TextMuted,
+    )
+}
+
+/**
+ * The item picker behind one line.
+ *
+ * @param shown what is in the text field.
+ * @param selectedValue which item is picked, if any.
+ * @param items the candidates.
+ * @param onQuery the field was typed into.
+ * @param onPicked a candidate was chosen.
+ */
+@Composable
+private fun ItemField(
+    shown: String,
+    selectedValue: String?,
+    items: List<Pair<String, String>>,
+    onQuery: (String) -> Unit,
+    onPicked: (Pair<String, String>) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    KrtCombobox(
+        query = shown,
+        onQueryChange = {
+            expanded = true
+            onQuery(it)
+        },
+        options = items.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = { option ->
+            expanded = false
+            onPicked(option.value to option.label)
+        },
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.order_create_item),
+        selectedValue = selectedValue,
+    )
+}
+
+/**
+ * The blueprint picker behind one line.
+ *
+ * @param line the line it belongs to.
+ * @param onBlueprint a blueprint was picked.
+ */
+@Composable
+private fun BlueprintField(
+    line: OrderItemLineDraft,
+    onBlueprint: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    KrtSelectField(
+        value = line.blueprints.firstOrNull { it.first == line.blueprintId }?.second.orEmpty(),
+        options = line.blueprints.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = {
+            expanded = false
+            onBlueprint(it.value)
+        },
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.order_create_item_blueprint),
+        selectedValue = line.blueprintId,
+        enabled = line.blueprints.isNotEmpty(),
+    )
 }
 
 /**
@@ -447,6 +685,7 @@ fun OrderCreateRoute(
         state = state,
         actions =
             OrderCreateActions(
+                onKind = viewModel::onKind,
                 onResponsible = viewModel::onResponsible,
                 onRequesting = viewModel::onRequesting,
                 onHandle = viewModel::onHandle,
@@ -457,6 +696,12 @@ fun OrderCreateRoute(
                 onMinQuality = viewModel::onMinQuality,
                 onAddLine = viewModel::onAddLine,
                 onRemoveLine = viewModel::onRemoveLine,
+                onItemQuery = viewModel::onItemQuery,
+                onItemPicked = viewModel::onItemPicked,
+                onBlueprintPicked = viewModel::onBlueprintPicked,
+                onItemAmount = viewModel::onItemAmount,
+                onAddItemLine = viewModel::onAddItemLine,
+                onRemoveItemLine = viewModel::onRemoveItemLine,
                 onSubmit = viewModel::onSubmit,
             ),
         modifier = modifier,

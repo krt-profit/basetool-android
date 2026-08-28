@@ -13,6 +13,8 @@ import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderCreateSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderDraft
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderDraftLine
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemDraft
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemDraftLine
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.data.parseTypedAmount
@@ -22,6 +24,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+/**
+ * Which of the two orders is being raised.
+ *
+ * The web puts this on a radio pair at the head of the form and swaps the body under it; the app
+ * uses the segmented control, which is the same choice in the design's own control. The two bodies
+ * share the head — both units, the handle, the comment — and differ only in what is being asked
+ * for.
+ */
+enum class OrderKind {
+    /** Raw materials, by amount and minimum quality. */
+    MATERIAL,
+
+    /** Finished items, by blueprint. The server derives the materials from it. */
+    ITEM,
+}
 
 /**
  * One material line as the form holds it, before it becomes a [JobOrderDraftLine].
@@ -48,6 +66,42 @@ val OrderLineDraft.isComplete: Boolean
     get() = materialId != null && (parseTypedAmount(amount) ?: 0.0) > 0.0
 
 /**
+ * One item line as the form holds it, before it becomes a [JobOrderItemDraftLine].
+ *
+ * The picker's text is kept beside the picked id, because the two can disagree while the member is
+ * typing and the form has to show what was typed, not what was last picked. The blueprints are held
+ * per line, because two lines may name different items.
+ *
+ * @property gameItemId which item is picked, or `null`.
+ * @property itemName the picked item's name; empty while nothing is picked.
+ * @property query what is in the item picker's field.
+ * @property blueprintId which blueprint is picked, or `null`.
+ * @property blueprints the blueprints the picked item offers.
+ * @property amount how many, as typed.
+ */
+data class OrderItemLineDraft(
+    val gameItemId: String? = null,
+    val itemName: String = "",
+    val query: String = "",
+    val blueprintId: String? = null,
+    val blueprints: List<Pair<String, String>> = emptyList(),
+    val amount: String = "",
+)
+
+/** Whether the item line names an item, a blueprint and a positive count. */
+val OrderItemLineDraft.isComplete: Boolean
+    get() = gameItemId != null && blueprintId != null && (amount.trim().toIntOrNull() ?: 0) > 0
+
+/**
+ * Whether the item line is half-filled.
+ *
+ * Same rule as a material line: an item picked but not finished is a mistake, not an empty row, and
+ * dropping it silently would raise an order missing what the member asked for.
+ */
+val OrderItemLineDraft.isPartial: Boolean
+    get() = !isComplete && (gameItemId != null || amount.isNotBlank())
+
+/**
  * Whether the line is half-filled.
  *
  * A material with no amount, or an amount with no material, is a mistake rather than an empty line:
@@ -64,7 +118,10 @@ val OrderLineDraft.isPartial: Boolean
  * @property requestingId the unit the order is for.
  * @property handle the contact handle.
  * @property comment the free-text note.
+ * @property kind which of the two orders is being raised.
  * @property lines the material lines; always at least one.
+ * @property itemLines the item lines; always at least one.
+ * @property items the candidates the open item picker shows.
  * @property responsibleOptions the units that may process an order.
  * @property requestingOptions every active unit.
  * @property materials the candidates the open picker shows.
@@ -79,7 +136,10 @@ data class OrderCreateState(
     val requestingId: String? = null,
     val handle: String = "",
     val comment: String = "",
+    val kind: OrderKind = OrderKind.MATERIAL,
     val lines: List<OrderLineDraft> = listOf(OrderLineDraft()),
+    val itemLines: List<OrderItemLineDraft> = listOf(OrderItemLineDraft()),
+    val items: List<Pair<String, String>> = emptyList(),
     val responsibleOptions: List<OrgUnit> = emptyList(),
     val requestingOptions: List<OrgUnit> = emptyList(),
     val materials: List<Pair<String, String>> = emptyList(),
@@ -103,8 +163,37 @@ data class OrderCreateState(
                 responsibleId != null &&
                 requestingId != null &&
                 handle.isNotBlank() &&
-                lines.any { it.isComplete } &&
-                lines.none { it.isPartial }
+                when (kind) {
+                    OrderKind.MATERIAL -> lines.any { it.isComplete } && lines.none { it.isPartial }
+                    OrderKind.ITEM -> itemLines.any { it.isComplete } && itemLines.none { it.isPartial }
+                }
+
+    /**
+     * Turns an item form into what the API takes.
+     *
+     * @return the draft, or `null` when a required field is still missing.
+     */
+    fun toItemDraft(): JobOrderItemDraft? {
+        val responsible = responsibleId
+        val requesting = requestingId
+        if (responsible == null || requesting == null) {
+            return null
+        }
+        return JobOrderItemDraft(
+            responsibleOrgUnitId = responsible,
+            requestingOrgUnitId = requesting,
+            handle = handle.trim(),
+            comment = comment.trim().takeIf { it.isNotEmpty() },
+            lines =
+                itemLines.filter { it.isComplete }.map {
+                    JobOrderItemDraftLine(
+                        gameItemId = requireNotNull(it.gameItemId),
+                        blueprintId = requireNotNull(it.blueprintId),
+                        amount = requireNotNull(it.amount.trim().toIntOrNull()),
+                    )
+                },
+        )
+    }
 
     /**
      * Turns the form into what the API takes.
@@ -136,13 +225,17 @@ data class OrderCreateState(
 }
 
 /**
- * Drives the „Neuer Auftrag" form.
+ * Drives the „Neuer Auftrag" form, in both of its kinds.
  *
- * **Material orders only.** An item order needs a game-item picker, a blueprint picker per item and
- * the derivation tree the web renders as nested lines; that is a screen of its own and is asked for
- * in design round 8 §1.3 rather than bolted onto this one.
+ * The two share the head — the units, the handle, the comment — and hold their lines apart, so
+ * switching the kind never has to throw away what was already typed. What is submitted is decided
+ * by [OrderCreateState.kind] alone.
  *
- * @property source the creation and the material picker.
+ * The **sub-assembly tree** the web draws under an item line — adopting a blueprint's own
+ * components as further lines — is not offered here; the order is raised with the items named and
+ * the server derives their materials. Design round 8 §1.3 carries it.
+ *
+ * @property source the creation and the pickers behind both kinds.
  * @property orgUnits the two unit pickers.
  */
 class OrderCreateViewModel(
@@ -238,6 +331,176 @@ class OrderCreateViewModel(
         val lines = mutableState.value.lines
         val next = if (lines.size == 1) listOf(OrderLineDraft()) else lines.filterIndexed { i, _ -> i != index }
         mutableState.value = mutableState.value.copy(lines = next)
+    }
+
+    /**
+     * Switches between a material and an item order.
+     *
+     * Both line sets survive the switch: a member who typed three materials, looked at the item
+     * form and came back finds their three materials still there.
+     *
+     * @param kind which order to raise.
+     */
+    fun onKind(kind: OrderKind) {
+        mutableState.value = mutableState.value.copy(kind = kind)
+    }
+
+    /** Appends an empty item line. */
+    fun onAddItemLine() {
+        mutableState.value = mutableState.value.copy(itemLines = mutableState.value.itemLines + OrderItemLineDraft())
+    }
+
+    /**
+     * Removes one item line, emptying the last one rather than leaving none.
+     *
+     * @param index which line.
+     */
+    fun onRemoveItemLine(index: Int) {
+        val lines = mutableState.value.itemLines
+        val next = if (lines.size == 1) listOf(OrderItemLineDraft()) else lines.filterIndexed { i, _ -> i != index }
+        mutableState.value = mutableState.value.copy(itemLines = next)
+    }
+
+    /**
+     * Edits one item line.
+     *
+     * @param index which line.
+     * @param edit what to change about it.
+     */
+    private fun editItemLine(
+        index: Int,
+        edit: (OrderItemLineDraft) -> OrderItemLineDraft,
+    ) {
+        val lines = mutableState.value.itemLines
+        if (index !in lines.indices) {
+            return
+        }
+        mutableState.value =
+            mutableState.value.copy(itemLines = lines.mapIndexed { i, l -> if (i == index) edit(l) else l })
+    }
+
+    /**
+     * The item picker's text changed without a pick.
+     *
+     * Clears the picked item *and* its blueprint: a blueprint belongs to one item, so leaving it
+     * behind would submit a pairing the member never made.
+     *
+     * @param index which line.
+     * @param query what was typed.
+     */
+    fun onItemQuery(
+        index: Int,
+        query: String,
+    ) {
+        editItemLine(index) {
+            it.copy(query = query, gameItemId = null, itemName = "", blueprintId = null, blueprints = emptyList())
+        }
+        searchItems(query)
+    }
+
+    /**
+     * An item was picked for a line.
+     *
+     * @param index which line.
+     * @param item its id and name.
+     */
+    fun onItemPicked(
+        index: Int,
+        item: Pair<String, String>,
+    ) {
+        editItemLine(index) {
+            it.copy(
+                gameItemId = item.first,
+                itemName = item.second,
+                query = item.second,
+                blueprintId = null,
+                blueprints = emptyList(),
+            )
+        }
+        loadBlueprints(index, item.first)
+    }
+
+    /**
+     * A blueprint was picked for a line.
+     *
+     * @param index which line.
+     * @param blueprintId which blueprint.
+     */
+    fun onBlueprintPicked(
+        index: Int,
+        blueprintId: String,
+    ) {
+        editItemLine(index) { it.copy(blueprintId = blueprintId) }
+    }
+
+    /**
+     * An item line's count was edited.
+     *
+     * @param index which line.
+     * @param value what was typed.
+     */
+    fun onItemAmount(
+        index: Int,
+        value: String,
+    ) {
+        editItemLine(index) { it.copy(amount = value) }
+    }
+
+    /**
+     * Refills the item candidates.
+     *
+     * @param query what was typed.
+     */
+    private fun searchItems(query: String) {
+        if (query.trim().length < MIN_QUERY) {
+            mutableState.value = mutableState.value.copy(items = emptyList())
+            return
+        }
+        viewModelScope.launch {
+            when (val result = source.searchItems(query)) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(items = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the item picker could not be filled: ${result.error}" }
+                }
+            }
+        }
+    }
+
+    /**
+     * Fills one line's blueprint picker.
+     *
+     * A single blueprint is picked outright: the member has no choice to make, and one more tap on
+     * a one-entry dropdown is only a way to leave the line unfinished.
+     *
+     * @param index which line.
+     * @param gameItemId the item whose blueprints to read.
+     */
+    private fun loadBlueprints(
+        index: Int,
+        gameItemId: String,
+    ) {
+        viewModelScope.launch {
+            when (val result = source.blueprintsFor(gameItemId)) {
+                is ApiResult.Success -> {
+                    editItemLine(index) {
+                        // Only if the line still names the item that was asked about: a slow answer
+                        // must not fill the picker of an item the member has since typed past.
+                        if (it.gameItemId == gameItemId) {
+                            it.copy(blueprints = result.value, blueprintId = result.value.singleOrNull()?.first)
+                        } else {
+                            it
+                        }
+                    }
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the blueprints could not be read: ${result.error}" }
+                }
+            }
+        }
     }
 
     /**
@@ -343,15 +606,23 @@ class OrderCreateViewModel(
         }
     }
 
-    /** Raises the order. */
+    /** Raises the order, in whichever kind the form is holding. */
     fun onSubmit() {
-        val draft = mutableState.value.toDraft() ?: return
-        if (mutableState.value.saving) {
+        val current = mutableState.value
+        if (current.saving) {
             return
         }
-        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        val raise: (suspend () -> ApiResult<String>)? =
+            when (current.kind) {
+                OrderKind.MATERIAL -> current.toDraft()?.let { draft -> suspend { source.create(draft) } }
+                OrderKind.ITEM -> current.toItemDraft()?.let { draft -> suspend { source.createItems(draft) } }
+            }
+        if (raise == null) {
+            return
+        }
+        mutableState.value = current.copy(saving = true, error = null)
         viewModelScope.launch {
-            when (val result = source.create(draft)) {
+            when (val result = raise()) {
                 is ApiResult.Success -> {
                     mutableState.value = mutableState.value.copy(saving = false, created = result.value)
                 }

@@ -10,10 +10,15 @@ package de.greluc.krt.profit.basetool.android.core.data
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AssigneeNoteRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderItemLineDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderItemRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.SystemSettingDto
@@ -21,6 +26,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateJobOrderS
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.time.Instant
 
@@ -52,6 +58,46 @@ enum class JobOrderStatus {
         fun from(raw: String?): JobOrderStatus =
             entries.firstOrNull { it != UNKNOWN && it.name.equals(raw?.trim(), ignoreCase = true) } ?: UNKNOWN
     }
+}
+
+/**
+ * One item line of an order.
+ *
+ * An item order asks for finished items and the server derives their materials, so the figures here
+ * are counts and not quantities: how many were asked for, how many have been built, how many have
+ * been handed over.
+ *
+ * @property id the line's id
+ * @property name the item's name
+ * @property blueprintName which blueprint it is built from, or `null` when the server named none
+ * @property amount how many were asked for
+ * @property manufactured how many have been built
+ * @property delivered how many have been handed over
+ * @property blueprintStale whether the blueprint has changed since the order was raised, which the
+ *   web flags because the derived material demand may no longer match what will be built
+ */
+data class JobOrderItem(
+    val id: String?,
+    val name: String?,
+    val blueprintName: String?,
+    val amount: Int,
+    val manufactured: Int,
+    val delivered: Int,
+    val blueprintStale: Boolean,
+) {
+    /**
+     * How far along this line is, between 0 and 1, or `null` when nothing was asked for.
+     *
+     * Built over asked-for, the same shape as a material line's bar. A count of zero yields `null`
+     * rather than a full bar: nothing was asked for, so nothing can be complete.
+     */
+    val progress: Float?
+        get() {
+            if (amount <= 0) {
+                return null
+            }
+            return (manufactured.toFloat() / amount).coerceIn(0f, 1f)
+        }
 }
 
 /**
@@ -141,6 +187,7 @@ data class JobOrderAssignee(
  * @property responsibleOrgUnit who is working on it
  * @property comment the requester's note, or `null`
  * @property materials the material lines
+ * @property items the item lines, for an order of type `ITEM`
  * @property handovers what has already been handed over
  * @property assignees who is on it
  * @property createdAt when it was raised, in UTC
@@ -159,6 +206,7 @@ data class JobOrder(
     val responsibleOrgUnit: String?,
     val comment: String?,
     val materials: List<JobOrderMaterial>,
+    val items: List<JobOrderItem>,
     val handovers: List<JobOrderHandover>,
     val assignees: List<JobOrderAssignee>,
     val createdAt: Instant?,
@@ -228,6 +276,44 @@ data class MaterialMatches(
     val more: Boolean,
 )
 
+/**
+ * One line of an item order, in the shape the wire takes.
+ *
+ * An item is asked for by blueprint, not by material: the server expands the blueprint into the
+ * materials it needs. Every field is required, so a half-filled line never reaches here — the form
+ * refuses the submit instead.
+ *
+ * @property gameItemId which finished item.
+ * @property blueprintId which blueprint of it; the server derives the materials from this.
+ * @property amount how many, greater than zero.
+ */
+data class JobOrderItemDraftLine(
+    val gameItemId: String,
+    val blueprintId: String,
+    val amount: Int,
+)
+
+/**
+ * An item order about to be raised.
+ *
+ * The same head as a material order — the two units, the handle, the comment — and finished-item
+ * lines instead of raw materials. The server derives each line's materials from its blueprint, so
+ * the client sends no quantities of its own.
+ *
+ * @property responsibleOrgUnitId who processes it; must be profit-eligible.
+ * @property requestingOrgUnitId who it is for; any active unit.
+ * @property handle the contact handle in the game.
+ * @property comment free text, or `null`.
+ * @property lines the items wanted; never empty.
+ */
+data class JobOrderItemDraft(
+    val responsibleOrgUnitId: String,
+    val requestingOrgUnitId: String,
+    val handle: String,
+    val comment: String?,
+    val lines: List<JobOrderItemDraftLine>,
+)
+
 /** Raising a new material order, and the picker behind its lines. */
 interface JobOrderCreateSource {
     /**
@@ -245,6 +331,33 @@ interface JobOrderCreateSource {
      * @return the new order's id, or the classified failure.
      */
     suspend fun create(draft: JobOrderDraft): ApiResult<String>
+
+    /**
+     * Searches the finished items that may be ordered.
+     *
+     * @param query what the member typed.
+     * @return id-to-name pairs, in the server's order, or the classified failure.
+     */
+    suspend fun searchItems(query: String): ApiResult<List<Pair<String, String>>>
+
+    /**
+     * Reads the blueprints that build one item.
+     *
+     * An item with none cannot be ordered: the server derives the materials from the blueprint, so
+     * a line without one has nothing to produce.
+     *
+     * @param gameItemId which item.
+     * @return id-to-name pairs, or the classified failure.
+     */
+    suspend fun blueprintsFor(gameItemId: String): ApiResult<List<Pair<String, String>>>
+
+    /**
+     * Raises an item order.
+     *
+     * @param draft what to raise.
+     * @return the new order's id, or the classified failure.
+     */
+    suspend fun createItems(draft: JobOrderItemDraft): ApiResult<String>
 }
 
 /**
@@ -491,6 +604,92 @@ class JobOrderRepository(
         }
     }
 
+    override suspend fun searchItems(query: String): ApiResult<List<Pair<String, String>>> =
+        when (
+            val result =
+                reader.get(
+                    ITEM_CATALOG_PATH,
+                    listOf(
+                        SEARCH_PARAM to query.trim(),
+                        PAGE_PARAM to "0",
+                        SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+                    ),
+                    PageResponseGameItemReferenceDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.content.orEmpty().mapNotNull { row ->
+                        row.id?.let { it to row.name.orEmpty() }
+                    },
+                )
+            }
+        }
+
+    override suspend fun blueprintsFor(gameItemId: String): ApiResult<List<Pair<String, String>>> =
+        when (
+            val result =
+                reader.get(
+                    "$ITEM_CATALOG_PATH/$gameItemId/blueprints",
+                    ListSerializer(BlueprintReferenceDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { row ->
+                        // The name shown is the blueprint's own output name; a blueprint the server
+                        // named with neither is still pickable, because its id is what the wire
+                        // wants and hiding it would make the item unorderable.
+                        row.id?.let { it to (row.outputName ?: row.scwikiKey ?: it) }
+                    },
+                )
+            }
+        }
+
+    override suspend fun createItems(draft: JobOrderItemDraft): ApiResult<String> {
+        val dto =
+            CreateJobOrderItemRequestDto(
+                responsibleOrgUnitId = draft.responsibleOrgUnitId,
+                requestingOrgUnitId = draft.requestingOrgUnitId,
+                handle = draft.handle,
+                comment = draft.comment?.takeIf { it.isNotBlank() },
+                items =
+                    draft.lines.map {
+                        CreateJobOrderItemLineDto(
+                            gameItemId = it.gameItemId,
+                            blueprintId = it.blueprintId,
+                            amount = it.amount,
+                        )
+                    },
+            )
+        return when (
+            val result =
+                reader.post(
+                    ITEMS_PATH,
+                    dto,
+                    CreateJobOrderItemRequestDto.serializer(),
+                    JobOrderDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.id?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_CREATED))
+            }
+        }
+    }
+
     override suspend fun ageThresholds(): JobOrderAgeThresholds {
         cachedThresholds?.let { return it }
         val resolved =
@@ -667,6 +866,12 @@ class JobOrderRepository(
 
         /** What a successful create answers with; reported when its body names no order. */
         private const val HTTP_CREATED = 201
+
+        /** The finished items that may be ordered, and each one's blueprints. */
+        private const val ITEM_CATALOG_PATH = "/api/v1/orders/item-catalog"
+
+        /** Where an item order is raised. */
+        private const val ITEMS_PATH = "/api/v1/orders/items"
         private const val STATUS_PARAM = "status"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
@@ -751,6 +956,7 @@ private fun JobOrderDto.toModel(): JobOrder? {
         responsibleOrgUnit = responsibleOrgUnit?.name,
         comment = comment?.trim()?.takeIf { it.isNotEmpty() },
         materials = materials.orEmpty().map { it.toModel() },
+        items = items.orEmpty().map { it.toModel() },
         handovers =
             handovers.orEmpty().mapNotNull { handover ->
                 handover.id?.let {
@@ -782,6 +988,27 @@ private fun JobOrderDto.toModel(): JobOrder? {
         redacted = redacted == true,
     )
 }
+
+/**
+ * Maps one item line onto the model.
+ *
+ * The three counts default to zero rather than to `null`: the server omits them at zero, and a
+ * screen that had to tell "none built" from "not stated" would be drawing a distinction the wire
+ * does not make.
+ *
+ * @receiver the wire line.
+ * @return the model line.
+ */
+private fun JobOrderItemDto.toModel(): JobOrderItem =
+    JobOrderItem(
+        id = id,
+        name = gameItem?.name,
+        blueprintName = blueprint?.outputName ?: blueprint?.scwikiKey,
+        amount = amount ?: 0,
+        manufactured = manufacturedAmount ?: 0,
+        delivered = deliveredAmount ?: 0,
+        blueprintStale = blueprintStale == true,
+    )
 
 /**
  * Maps one material line onto the model.

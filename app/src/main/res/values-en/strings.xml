@@ -643,6 +643,25 @@
     <string name="order_create_remove_material">Remove material</string>
     <string name="order_create_comment">Comment</string>
     <string name="order_create_submit">Create order</string>
+    <string name="orders_item_progress">%1$d / %2$d</string>
+    <plurals name="orders_item_delivered">
+        <item quantity="one">%1$d handed over</item>
+        <item quantity="other">%1$d handed over</item>
+    </plurals>
+    <string name="order_detail_item_unnamed">Unnamed item</string>
+    <string name="order_detail_item_blueprint_stale">Recipe out of date</string>
+    <string name="order_create_kind">Order type</string>
+    <string name="order_create_kind_material">Material</string>
+    <string name="order_create_kind_item">Items</string>
+    <string name="order_create_items">Items</string>
+    <string name="order_create_item">Item</string>
+    <string name="order_create_item_blueprint">Blueprint</string>
+    <string name="order_create_item_blueprint_hint">Pick an item first.</string>
+    <string name="order_create_item_blueprint_none">No blueprint is on file for this item.</string>
+    <string name="order_create_item_amount">Count</string>
+    <string name="order_create_item_no_matches">No orderable item found.</string>
+    <string name="order_create_add_item">Add item</string>
+    <string name="order_create_remove_item">Remove item</string>
     <string name="order_create_failed">The order could not be created.</string>
     <string name="orders_age_today">today</string>
     <string name="orders_age_yesterday">yesterday</string>
@@ -657,6 +676,7 @@
     <string name="orders_priority_label">Prio</string>
     <string name="orders_for_label">For</string>
     <string name="orders_by_label">By</string>
+    <string name="orders_items_label">Items</string>
     <string name="orders_materials_label">Materialien</string>
     <string name="orders_materials_count">(%1$d)</string>
     <string name="orders_kind_material">Material</string>

@@ -30,6 +30,20 @@ class OrderCreateTest {
         /** What „12,5" has to come out as. */
         const val TWELVE_AND_A_HALF = 12.5
 
+        /** How many of the item the fixture asks for. */
+        const val THREE = 3
+
+        /** An item line the server would accept. */
+        val ITEM =
+            OrderItemLineDraft(
+                gameItemId = "gi1",
+                itemName = "Medizinische Station T2",
+                query = "Medizinische Station T2",
+                blueprintId = "bp1",
+                blueprints = listOf("bp1" to "Medizinische Station T2"),
+                amount = "3",
+            )
+
         /** A line the server would accept. */
         val FULL =
             OrderLineDraft(
@@ -46,6 +60,16 @@ class OrderCreateTest {
             requestingId = "ou-requesting",
             handle = "Sturmkind",
             lines = if (lines.isEmpty()) listOf(OrderLineDraft()) else lines.toList(),
+            loading = false,
+        )
+
+    private fun itemState(vararg lines: OrderItemLineDraft) =
+        OrderCreateState(
+            kind = OrderKind.ITEM,
+            responsibleId = "ou-responsible",
+            requestingId = "ou-requesting",
+            handle = "Sturmkind",
+            itemLines = if (lines.isEmpty()) listOf(OrderItemLineDraft()) else lines.toList(),
             loading = false,
         )
 
@@ -120,5 +144,59 @@ class OrderCreateTest {
     @Test
     fun `a form still saving may not be sent twice`() {
         assertFalse(state(FULL).copy(saving = true).submittable)
+    }
+
+    @Test
+    fun `a complete item form may be sent`() {
+        assertTrue(itemState(ITEM).submittable)
+    }
+
+    @Test
+    fun `the kind decides which lines are judged`() {
+        // The two line sets both survive a switch, so a finished material line must not make an
+        // unfinished item form look sendable — nor the other way round.
+        val mixed = itemState(OrderItemLineDraft()).copy(lines = listOf(FULL))
+        assertFalse(mixed.submittable)
+        assertTrue(mixed.copy(kind = OrderKind.MATERIAL).submittable)
+    }
+
+    @Test
+    fun `an item without a blueprint blocks the submit`() {
+        // The server derives the materials from the blueprint; a line without one is not an order,
+        // and dropping it silently would raise an order missing what the member asked for.
+        assertFalse(itemState(ITEM.copy(blueprintId = null)).submittable)
+    }
+
+    @Test
+    fun `an item without a count blocks the submit`() {
+        assertFalse(itemState(ITEM.copy(amount = "")).submittable)
+        assertFalse(itemState(ITEM.copy(amount = "0")).submittable)
+    }
+
+    @Test
+    fun `a typed item name without a pick is not an item`() {
+        assertFalse(itemState(OrderItemLineDraft(query = "Medizin")).submittable)
+    }
+
+    @Test
+    fun `a trailing empty item line does not block the submit`() {
+        assertTrue(itemState(ITEM, OrderItemLineDraft()).submittable)
+    }
+
+    @Test
+    fun `only the finished item lines reach the wire`() {
+        val draft = itemState(ITEM, OrderItemLineDraft()).toItemDraft()
+        assertEquals(1, draft?.lines?.size)
+        assertEquals(THREE, draft?.lines?.single()?.amount)
+        assertEquals("bp1", draft?.lines?.single()?.blueprintId)
+    }
+
+    @Test
+    fun `an item order carries the same head as a material order`() {
+        val draft = itemState(ITEM).copy(comment = "  ").toItemDraft()
+        assertEquals("ou-responsible", draft?.responsibleOrgUnitId)
+        assertEquals("ou-requesting", draft?.requestingOrgUnitId)
+        assertEquals("Sturmkind", draft?.handle)
+        assertNull(draft?.comment)
     }
 }

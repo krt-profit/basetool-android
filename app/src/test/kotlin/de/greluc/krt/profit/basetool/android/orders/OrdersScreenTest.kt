@@ -75,6 +75,7 @@ class OrdersScreenTest {
         responsibleOrgUnit = "SK Vanguard",
         comment = "Qualität ist zweitrangig.",
         materials = materials,
+        items = emptyList(),
         handovers = emptyList(),
         assignees = emptyList(),
         createdAt = Instant.parse("2026-08-01T10:00:00Z"),

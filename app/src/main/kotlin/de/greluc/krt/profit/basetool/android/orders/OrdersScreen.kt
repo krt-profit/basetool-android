@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.orders
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -52,6 +53,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeBand
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
@@ -337,7 +339,7 @@ private fun OrdersList(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG),
-        contentPadding = PaddingValues(horizontal = KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
         items(state.orders, key = { it.id }) { order ->
@@ -442,14 +444,28 @@ private fun OrderCard(
                 tint = KrtPalette.Gray2,
             )
         }
+        // An order carries one kind of line or the other, and the disclosure names whichever it
+        // has. An item order used to show no disclosure at all, so its positions were reachable
+        // only by opening the order.
         if (order.materials.isNotEmpty()) {
             MaterialsDisclosure(
+                labelRes = R.string.orders_materials_label,
                 count = order.materials.size,
                 expanded = expanded,
                 onToggle = onToggleMaterials,
             )
             if (expanded) {
                 order.materials.forEach { MaterialLine(material = it) }
+            }
+        } else if (order.items.isNotEmpty()) {
+            MaterialsDisclosure(
+                labelRes = R.string.orders_items_label,
+                count = order.items.size,
+                expanded = expanded,
+                onToggle = onToggleMaterials,
+            )
+            if (expanded) {
+                order.items.forEach { ItemLine(item = it) }
             }
         }
     }
@@ -525,12 +541,14 @@ private fun PartiesRow(order: JobOrder) {
  * A separate tap target from the card, so opening the list and opening the order cannot be
  * confused; the chevron turns to say which of the two a tap will do.
  *
- * @param count how many materials the order has.
+ * @param labelRes what the row is called; the two order kinds name their own lines.
+ * @param count how many lines the order has.
  * @param expanded whether the list is open.
  * @param onToggle opens or closes it.
  */
 @Composable
 private fun MaterialsDisclosure(
+    @StringRes labelRes: Int,
     count: Int,
     expanded: Boolean,
     onToggle: () -> Unit,
@@ -555,7 +573,7 @@ private fun MaterialsDisclosure(
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = stringResource(R.string.orders_materials_label),
+            text = stringResource(labelRes),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -634,6 +652,74 @@ internal fun MaterialLine(material: JobOrderMaterial) {
             )
         }
         material.progress?.let { progress ->
+            LinearProgressIndicator(
+                progress = { progress },
+                color =
+                    if (progress >= 1f) KrtPalette.SuccessText else MaterialTheme.colorScheme.primary,
+                trackColor = KrtPalette.Gray3,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * One item line of an order.
+ *
+ * The figures are counts, not quantities: built over asked-for, with the handed-over count under
+ * them when any have moved. A blueprint the server flagged as changed since the order was raised
+ * carries the web's warning chip — what will be built may no longer be what was costed.
+ *
+ * @param item the line.
+ */
+@Composable
+internal fun ItemLine(item: JobOrderItem) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
+            Text(
+                text = item.name ?: stringResource(R.string.order_detail_item_unnamed),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text =
+                    stringResource(
+                        R.string.orders_item_progress,
+                        item.manufactured,
+                        item.amount,
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
+        if (item.blueprintStale) {
+            KrtChip(
+                text = stringResource(R.string.order_detail_item_blueprint_stale),
+                tone = KrtChipTone.Warning,
+            )
+        }
+        if (item.delivered > 0) {
+            Text(
+                text =
+                    pluralStringResource(
+                        R.plurals.orders_item_delivered,
+                        item.delivered,
+                        item.delivered,
+                    ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        item.progress?.let { progress ->
             LinearProgressIndicator(
                 progress = { progress },
                 color =
@@ -848,7 +934,10 @@ private fun OrderDetailBody(
     order: JobOrder,
     actions: OrderDetailActions,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize().testTag(ORDER_DETAIL_TAG)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag(ORDER_DETAIL_TAG),
+        contentPadding = PaddingValues(KrtSpacing.md),
+    ) {
         if (!state.online) {
             item(key = "offline") { OfflineBand() }
         }

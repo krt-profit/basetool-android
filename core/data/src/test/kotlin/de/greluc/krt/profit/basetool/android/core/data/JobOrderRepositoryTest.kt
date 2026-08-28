@@ -61,6 +61,25 @@ class JobOrderRepositoryTest {
              "page": 0, "totalElements": $TOTAL, "totalPages": 1}
             """.trimIndent()
 
+        /** How many of the item the create fixture asks for. */
+        const val THREE = 3
+
+        val ITEM_CATALOG =
+            """
+            {"content": [
+               {"id": "gi1", "name": "Medizinische Station T2", "kind": "ITEM"},
+               {"name": "kein id, keine Zeile"}
+             ],
+             "page": 0, "totalElements": 2, "totalPages": 1}
+            """.trimIndent()
+
+        val BLUEPRINTS =
+            """
+            [{"id": "bp1", "outputName": "Medizinische Station T2", "scwikiKey": "med_t2"},
+             {"id": "bp2", "scwikiKey": "med_t2_alt"},
+             {"outputName": "keine id, keine Zeile"}]
+            """.trimIndent()
+
         /** The edge's own version, deliberately different from the order's. */
         const val EDGE_VERSION = 7L
 
@@ -342,5 +361,60 @@ class JobOrderRepositoryTest {
 
             assertTrue(result is ApiResult.Failure)
             assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `the item picker asks the catalogue and drops the rows without an id`() =
+        runTest {
+            respond(ITEM_CATALOG)
+
+            val rows = (repository.searchItems("Medizin") as ApiResult.Success).value
+
+            assertEquals(1, rows.size)
+            assertEquals("gi1" to "Medizinische Station T2", rows.single())
+            val url = requestedUrl()
+            assertEquals("/api/v1/orders/item-catalog", url.encodedPath)
+            assertEquals("Medizin", url.queryParameter("search"))
+        }
+
+    @Test
+    fun `a blueprint the server named with neither is still pickable`() =
+        runTest {
+            // Its id is what the wire wants. Hiding a nameless blueprint would make its item
+            // unorderable, so the row falls back to the wiki key and then to the id itself.
+            respond(BLUEPRINTS)
+
+            val rows = (repository.blueprintsFor("gi1") as ApiResult.Success).value
+
+            assertEquals(2, rows.size)
+            assertEquals("bp1" to "Medizinische Station T2", rows[0])
+            assertEquals("bp2" to "med_t2_alt", rows[1])
+            assertEquals("/api/v1/orders/item-catalog/gi1/blueprints", requestedUrl().encodedPath)
+        }
+
+    @Test
+    fun `an item order posts the blueprint and the count, not a material`() =
+        runTest {
+            respond("""{"id": "o9"}""")
+
+            val result =
+                repository.createItems(
+                    JobOrderItemDraft(
+                        responsibleOrgUnitId = "ou-r",
+                        requestingOrgUnitId = "ou-q",
+                        handle = "Sturmkind",
+                        comment = null,
+                        lines = listOf(JobOrderItemDraftLine("gi1", "bp1", THREE)),
+                    ),
+                )
+
+            assertEquals("o9", (result as ApiResult.Success).value)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v1/orders/items", request.target.substringBefore('?'))
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body, body.contains("\"gameItemId\":\"gi1\""))
+            assertTrue(body, body.contains("\"blueprintId\":\"bp1\""))
+            assertTrue(body, body.contains("\"amount\":$THREE"))
         }
 }

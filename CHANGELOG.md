@@ -4,6 +4,23 @@
 
 ### Added
 
+- **Item-Aufträge lassen sich jetzt in der App anlegen.** Das Auftragsformular hat oben einen
+  Umschalter „Material / Items"; eine Item-Zeile ist Item, Blueprint und Anzahl. Hat ein Item nur
+  einen Blueprint, ist er sofort gesetzt. Was das Formular noch nicht kann, ist der
+  Unterbaugruppen-Baum des Webs.
+
+- **Item-Aufträge zeigen ihre Positionen.** Bisher stand bei einem Item-Auftrag „Positionen 0" und
+  darunter nichts — auch bei Aufträgen, die im Web angelegt wurden. Jetzt erscheinen Item, gebaute
+  und bestellte Anzahl, der Fortschrittsbalken, die übergebene Menge und der Hinweis „Rezept
+  veraltet". Die Auftragskarte klappt sie als „Items (n)" auf.
+
+### Changed
+
+- **Alle Listen haben links und rechts denselben Rand.** Lager, Posteingang, Mein Inventar,
+  Blueprints, Operationen, Auftragsdetail, Bankkonto und die Übersicht klebten bisher an der
+  Navigationsleiste und am Bildschirmrand; auf dem Tablet fiel das am stärksten auf. Das Listenende
+  in „Mein Inventar" sieht jetzt aus wie überall sonst.
+
 - **Logistiker können die Reihenfolge der Warteschlange in der App ändern.** Im Auftragsdetail:
   „An den Anfang", „Höher", „Niedriger". Ein Auftrag, der die Warteschlange verlassen hat, bekommt
   die Regler nicht — und einer, der schon vorn steht, lässt „Höher" gar nicht erst zu.
@@ -11,7 +28,7 @@
 - **Aufträge lassen sich jetzt in der App anlegen.** Das „+" in der Auftragsliste öffnet das
   Formular: bearbeitende Einheit, Auftraggeber, Handle, beliebig viele Materialzeilen mit Menge und
   Mindestqualität sowie ein Kommentar. Auftraggeber kann jede aktive Einheit sein, bearbeiten darf
-  nur eine profit-fähige — dieselbe Unterscheidung wie im Web. Item-Aufträge kommen später.
+  nur eine profit-fähige — dieselbe Unterscheidung wie im Web.
 
 - **Kontoauszug und 3-Monats-Bericht lassen sich aus der App heraus abrufen.** Beide landen im
   app-eigenen Speicher und gehen von dort an die App deiner Wahl weiter — es wird keine

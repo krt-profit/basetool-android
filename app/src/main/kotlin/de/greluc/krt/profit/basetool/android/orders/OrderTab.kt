@@ -49,8 +49,12 @@ enum class OrderTab(
      */
     fun countIn(order: JobOrder): Int =
         when (this) {
-            POSITIONS -> order.materials.size
+            // An order is one kind or the other, so the sum is the count of whichever it
+            // carries. An item order used to read "0" here while its items sat unread.
+            POSITIONS -> order.materials.size + order.items.size
+
             ASSIGNEES -> order.assignees.size
+
             HANDOVERS -> order.handovers.size
         }
 }
