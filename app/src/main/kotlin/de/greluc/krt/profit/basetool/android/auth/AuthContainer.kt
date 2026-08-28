@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
+import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
@@ -217,6 +218,18 @@ class AuthContainer(
      */
     val missions: MissionRepository by lazy {
         MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Einsatz's structure — its Einheiten, who is aboard them, and its radio plan.
+     *
+     * A second repository rather than more methods on [missions], which had reached the point where
+     * one type carried the list, the detail, the books, the roster, the Einsatz's own record and
+     * everything it is made of. It reaches the same host through the same [apiClient]; what differs
+     * is what a caller has to depend on.
+     */
+    val missionStructure: MissionStructureRepository by lazy {
+        MissionStructureRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

@@ -236,5 +236,27 @@ class MissionAdminTest {
             calls.add(MissionSection.FLAGS to version)
             return ApiResult.Success(answer)
         }
+
+        override suspend fun setPartyLead(
+            missionId: String,
+            userId: String?,
+            guestName: String?,
+            version: Long,
+        ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+        override suspend fun addManager(
+            missionId: String,
+            userId: String,
+        ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+        override suspend fun removeManager(
+            missionId: String,
+            userId: String,
+        ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+        override suspend fun addParticipant(
+            missionId: String,
+            userId: String,
+        ): ApiResult<MissionDetail> = error("the structure has its own test")
     }
 }

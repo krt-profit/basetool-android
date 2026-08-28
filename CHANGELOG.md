@@ -9,6 +9,10 @@
   Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,
   mit einem Hinweis, welche Rolle fehlt.
 
+- **Einheiten, Crew und Frequenzen lassen sich jetzt in der App pflegen.** Eine Einheit anlegen und
+  entfernen (mit HVU-Markierung), jemanden an Bord nehmen und wieder herunter, eine Frequenz
+  hinzufügen und löschen. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt.
+
 - **„Einsatz verwalten": Titel, Beschreibung, Treffpunkt, Zeiten und Sichtbarkeit sind jetzt in der
   App änderbar.** Jeder Abschnitt wird einzeln gespeichert, damit eine Änderung nicht mit einer
   gleichzeitigen Änderung an anderer Stelle kollidiert. „Einsatz läuft jetzt" setzt den

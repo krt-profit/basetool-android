@@ -162,6 +162,7 @@ fun MissionDetailScreen(
     finances: MissionFinanceActions,
     roster: MissionRosterActions,
     admin: MissionAdminActions,
+    structure: MissionStructureActions,
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
@@ -219,6 +220,7 @@ fun MissionDetailScreen(
                             onRetryFinances = onRetryFinances,
                             finances = finances,
                             roster = roster,
+                            structure = structure,
                         )
                     }
                     // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
@@ -541,6 +543,7 @@ private fun MissionTabContent(
     onRetryFinances: () -> Unit,
     finances: MissionFinanceActions,
     roster: MissionRosterActions,
+    structure: MissionStructureActions,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
@@ -550,10 +553,10 @@ private fun MissionTabContent(
         when (state.tab) {
             MissionTab.OVERVIEW -> overviewTab(detail)
             MissionTab.PARTICIPANTS -> participantsTab(detail, state.mySignUp, roster)
-            MissionTab.UNITS -> unitsTab(detail)
+            MissionTab.UNITS -> unitsTab(detail, structure)
             MissionTab.STEPS -> stepsTab(detail)
             MissionTab.OBJECTIVES -> objectivesTab(detail)
-            MissionTab.FREQUENCIES -> frequenciesTab(detail)
+            MissionTab.FREQUENCIES -> frequenciesTab(detail, structure)
             MissionTab.FINANCES -> financesTab(state, onRetryFinances, finances)
         }
     }
@@ -919,7 +922,11 @@ private fun ParticipantFunctionSelect(
  *
  * @param detail the Einsatz.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(detail: MissionDetail) {
+private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
+    detail: MissionDetail,
+    structure: MissionStructureActions,
+) {
+    item { UnitComposer(structure) }
     if (detail.units.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_units) }
         return
@@ -962,6 +969,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(detail: Miss
                 )
             }
             KrtHairlineRule()
+            StructureRemove(
+                label = stringResource(R.string.mission_struct_remove_unit),
+                structure = structure,
+                onRemove = { structure.onRemoveUnit(unit.id) },
+            )
         }
     }
 }
@@ -1034,7 +1046,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(detail:
  *
  * @param detail the Einsatz.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(detail: MissionDetail) {
+private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
+    detail: MissionDetail,
+    structure: MissionStructureActions,
+) {
+    item { FrequencyComposer(structure) }
     if (detail.frequencies.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_frequencies) }
         return
@@ -1071,6 +1087,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(detail
             // Data tone: the value stays white, never orange — a frequency is a readout, not an
             // action (design system, chip canon).
             KrtChip(text = frequency.value, tone = KrtChipTone.Data)
+            StructureRemove(
+                label = stringResource(R.string.mission_struct_remove_freq),
+                structure = structure,
+                onRemove = { structure.onRemoveFrequency(frequency.id) },
+            )
         }
     }
 }
@@ -1489,6 +1510,19 @@ fun MissionDetailRoute(
                 onCheckIn = { viewModel.roster.checkIn(it, state.checkInPossible) },
                 onPayout = viewModel.roster::payout,
                 onFunction = viewModel.roster::assign,
+            ),
+        structure =
+            MissionStructureActions(
+                canManage = state.canManage,
+                enabled = state.writable && !state.structure.busy,
+                draft = state.structure,
+                denials = denials,
+                onChange = viewModel.structure::change,
+                onAddUnit = viewModel.structure::addUnit,
+                onRemoveUnit = viewModel.structure::removeUnit,
+                onAddFrequency = viewModel.structure::addFrequency,
+                onRemoveFrequency = viewModel.structure::removeFrequency,
+                onRemoveCrew = viewModel.structure::removeCrew,
             ),
         admin =
             MissionAdminActions(

@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -96,6 +97,33 @@ class MissionDetailScreenTest {
     )
 
     /**
+     * The structure actions, recording every tap by name.
+     *
+     * Its own function so [show] stays under the length the gate allows — eleven fields inline made
+     * the harness longer than the tests it serves.
+     *
+     * @param canManage whether the controls are unlocked.
+     * @param taps where a tap is recorded.
+     * @return the actions.
+     */
+    @Composable
+    private fun structureActions(
+        canManage: Boolean,
+        taps: MutableList<String>,
+    ) = MissionStructureActions(
+        canManage = canManage,
+        enabled = true,
+        draft = MissionStructureDraft(),
+        denials = rememberDenialState(),
+        onChange = {},
+        onAddUnit = { taps.add("add-unit") },
+        onRemoveUnit = { taps.add("remove-unit:$it") },
+        onAddFrequency = { taps.add("add-freq") },
+        onRemoveFrequency = { taps.add("remove-freq:$it") },
+        onRemoveCrew = { unit, crew -> taps.add("remove-crew:$unit:$crew") },
+    )
+
+    /**
      * Renders the screen, recording tab changes.
      *
      * @param state what to draw.
@@ -146,6 +174,7 @@ class MissionDetailScreenTest {
                             onJoinDismissed = {},
                         ),
                     roster = roster,
+                    structure = structureActions(canManage, rosterTaps),
                     admin =
                         MissionAdminActions(
                             onOpen = {},

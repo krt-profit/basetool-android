@@ -22,6 +22,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -150,6 +151,7 @@ data class JoinSheet(
  * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
  *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
  * @property adminForm the open Verwaltung sheet, or `null` when it is closed
+ * @property structure what a manager is composing on the Einheiten or Frequenzen tab
  */
 data class MissionDetailState(
     val missionId: String,
@@ -166,6 +168,7 @@ data class MissionDetailState(
     val joinSheet: JoinSheet? = null,
     val rosterJobTypes: List<MissionJobType> = emptyList(),
     val adminForm: MissionAdminForm? = null,
+    val structure: MissionStructureDraft = MissionStructureDraft(),
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -277,6 +280,7 @@ data class FinanceEntryDraft(
 class MissionDetailViewModel(
     private val source: MissionSource,
     private val adminSource: MissionAdminSource,
+    private val structureSource: MissionStructureSource,
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val missionId: String,
@@ -306,6 +310,28 @@ class MissionDetailViewModel(
             onSaved = { saved ->
                 mutableState.value = mutableState.value.copy(detail = saved)
                 announce(LiveSyncSections.MISSION_OVERVIEW)
+            },
+        )
+
+    /**
+     * The Einsatz's structure — Einheiten, crew, frequencies, leadership.
+     *
+     * Public like [admin] and [roster]; the screen calls it directly.
+     */
+    val structure =
+        MissionStructure(
+            missionId = missionId,
+            structure = structureSource,
+            admin = adminSource,
+            scope = viewModelScope,
+            read = { mutableState.value.let { it.structure to it.detail } },
+            write = { draft, saved ->
+                val current = mutableState.value
+                mutableState.value =
+                    current.copy(structure = draft, detail = saved ?: current.detail)
+                if (saved != null) {
+                    announce(LiveSyncSections.MISSION_CREW)
+                }
             },
         )
 

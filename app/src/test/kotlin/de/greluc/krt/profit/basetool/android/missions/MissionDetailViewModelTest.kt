@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -332,12 +333,86 @@ class MissionDetailViewModelTest {
                 internal: Boolean,
                 version: Long,
             ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+
+            override suspend fun setPartyLead(
+                missionId: String,
+                userId: String?,
+                guestName: String?,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addManager(
+                missionId: String,
+                userId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeManager(
+                missionId: String,
+                userId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addParticipant(
+                missionId: String,
+                userId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+        }
+
+    /** The structure seam; this class exercises the screen around it. */
+    private val structure =
+        object : MissionStructureSource {
+            override suspend fun addFrequency(
+                missionId: String,
+                frequencyTypeId: String,
+                value: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addCustomFrequency(
+                missionId: String,
+                name: String,
+                value: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeFrequency(
+                missionId: String,
+                frequencyId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addUnit(
+                missionId: String,
+                name: String,
+                highValue: Boolean,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun updateUnit(
+                missionId: String,
+                unitId: String,
+                name: String,
+                highValue: Boolean,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeUnit(
+                missionId: String,
+                unitId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addCrew(
+                missionId: String,
+                unitId: String,
+                participantId: String,
+                jobTypeIds: Set<String>,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeCrew(
+                missionId: String,
+                unitId: String,
+                crewId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
         }
 
     private fun viewModel(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = MissionDetailViewModel(source, admin, FakeIdentity(identity), connectivity, "m1")
+    ) = MissionDetailViewModel(source, admin, structure, FakeIdentity(identity), connectivity, "m1")
 
     /**
      * One participant row, the caller's own.

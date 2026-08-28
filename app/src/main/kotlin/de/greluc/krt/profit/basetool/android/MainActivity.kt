@@ -329,6 +329,7 @@ class MainActivity : AppCompatActivity() {
                                             // The same repository object; the two seams differ in
                                             // what a caller has to depend on, not in what serves it.
                                             container.missions,
+                                            container.missionStructure,
                                             container.identity,
                                             container.connectivity,
                                             it,

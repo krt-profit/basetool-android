@@ -134,6 +134,19 @@ class MissionRepositoryTest {
      */
     private fun requestedUrl(): HttpUrl = ("http://localhost" + server.takeRequest().target).toHttpUrl()
 
+    /**
+     * A reader pointed at the same MockWebServer, for the structure repository.
+     *
+     * @return the reader.
+     */
+    private fun reader() =
+        de.greluc.krt.profit.basetool.android.core.network.ApiReader(
+            httpClient = OkHttpClient(),
+            baseUrl = server.url("/").toString().removeSuffix("/"),
+            json = de.greluc.krt.profit.basetool.android.core.contract.KrtJson,
+            logTag = "MissionStructureTest",
+        )
+
     @Test
     fun `a page maps onto the model`() =
         runTest {
@@ -575,4 +588,119 @@ class MissionRepositoryTest {
             assertTrue(body.contains(""""isInternal":true"""))
             assertTrue(body.contains(""""version":1"""))
         }
+
+    /**
+     * The structure lives on its own repository, and this is what it sends.
+     *
+     * A frequency needs **both** a label and a value: the catalogue names the channel's purpose and
+     * the value is the setting on it, so the write carries the pair.
+     */
+    @Test
+    fun `a custom frequency carries its label and its value`() =
+        runTest {
+            respond("""[]""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.addCustomFrequency(
+                "m1",
+                current = mission(),
+                name = "Einsatz-1",
+                value = "121.5",
+            )
+
+            val request = server.takeRequest()
+            assertTrue("a custom frequency has only a slim endpoint", request.target.endsWith("/custom/slim"))
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""name":"Einsatz-1""""))
+            assertTrue(body.contains("121.5"))
+        }
+
+    @Test
+    fun `adding an Einheit sends its name and its HVU mark`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.addUnit("m1", name = "Einheit Alpha", highValue = true)
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""name":"Einheit Alpha""""))
+            assertTrue(body.contains(""""highValueUnit":true"""))
+        }
+
+    /**
+     * Crew is keyed by **participant**, not by user: somebody has to be on the roster before they
+     * can be put aboard an Einheit.
+     */
+    @Test
+    fun `crew is assigned by participant id`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.addCrew("m1", unitId = "u1", participantId = "p2", jobTypeIds = emptySet())
+
+            val request = server.takeRequest()
+            assertTrue(request.target.contains("/units/u1/crew/slim"))
+            assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
+        }
+
+    /** The party lead carries its own section counter, like the other three. */
+    @Test
+    fun `the party lead carries its own counter`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.setPartyLead("m1", userId = "u9", guestName = null, version = FLAGS_VERSION)
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains(""""userId":"u9""""))
+            assertTrue(body.contains(""""version":1"""))
+        }
+
+    /** Adding a manager names the member in the path and carries no body. */
+    @Test
+    fun `adding a manager names the member in the path`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.addManager("m1", userId = "u9")
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertTrue(request.target.contains("/managers/u9/slim"))
+        }
+
+    /**
+     * A bare Einsatz, for the writes that splice their answer onto one.
+     *
+     * @return the Einsatz.
+     */
+    private fun mission() =
+        MissionDetail(
+            id = "m1",
+            name = "Lyria",
+            description = null,
+            status = MissionStatus.PLANNED,
+            rawStatus = "PLANNED",
+            meetingTime = null,
+            plannedStartTime = null,
+            actualStartTime = null,
+            plannedEndTime = null,
+            isInternal = false,
+            meetingPoint = null,
+            operationName = null,
+            orgUnitName = null,
+            orgUnitShorthand = null,
+            partyLeadName = null,
+            registeredParticipants = 0,
+            checkedInParticipants = 0,
+            participants = emptyList(),
+            units = emptyList(),
+            steps = emptyList(),
+            objectives = emptyList(),
+            frequencies = emptyList(),
+        )
 }
