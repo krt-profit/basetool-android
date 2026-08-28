@@ -368,6 +368,7 @@ class MissionDetailViewModelTest {
 
             override suspend fun addCustomFrequency(
                 missionId: String,
+                current: MissionDetail,
                 name: String,
                 value: String,
             ): ApiResult<MissionDetail> = error("the structure has its own test")
@@ -412,7 +413,12 @@ class MissionDetailViewModelTest {
     private fun viewModel(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = MissionDetailViewModel(source, admin, structure, FakeIdentity(identity), connectivity, "m1")
+    ) = MissionDetailViewModel(
+        MissionSeams(read = source, admin = admin, structure = structure),
+        FakeIdentity(identity),
+        connectivity,
+        "m1",
+    )
 
     /**
      * One participant row, the caller's own.

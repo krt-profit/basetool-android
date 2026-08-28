@@ -139,6 +139,23 @@ data class JoinSheet(
 )
 
 /**
+ * The three seams the Einsatz detail depends on.
+ *
+ * One object rather than three constructor parameters, because seven parameters is past what the
+ * gate allows and because the three always travel together — the screen reads through one, edits
+ * the Einsatz through the second and edits what it is made of through the third.
+ *
+ * @property read the list, the detail, the books and the roster.
+ * @property admin the Einsatz's own record: the three sections, the party lead, the managers.
+ * @property structure what the Einsatz is made of: Einheiten, crew, frequencies.
+ */
+data class MissionSeams(
+    val read: MissionSource,
+    val admin: MissionAdminSource,
+    val structure: MissionStructureSource,
+)
+
+/**
  * Everything the detail screen draws.
  *
  * @property missionId which Einsatz this is about, known before anything has loaded
@@ -278,9 +295,7 @@ data class FinanceEntryDraft(
  *   screen listens to its own room and announces its own writes into it.
  */
 class MissionDetailViewModel(
-    private val source: MissionSource,
-    private val adminSource: MissionAdminSource,
-    private val structureSource: MissionStructureSource,
+    private val seams: MissionSeams,
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val missionId: String,
@@ -300,7 +315,7 @@ class MissionDetailViewModel(
     val admin =
         MissionAdmin(
             missionId = missionId,
-            source = adminSource,
+            source = seams.admin,
             scope = viewModelScope,
             read = {
                 val current = mutableState.value
@@ -321,8 +336,8 @@ class MissionDetailViewModel(
     val structure =
         MissionStructure(
             missionId = missionId,
-            structure = structureSource,
-            admin = adminSource,
+            structure = seams.structure,
+            admin = seams.admin,
             scope = viewModelScope,
             read = { mutableState.value.let { it.structure to it.detail } },
             write = { draft, saved ->
@@ -346,7 +361,7 @@ class MissionDetailViewModel(
     val roster =
         MissionRoster(
             missionId = missionId,
-            source = source,
+            source = seams.read,
             scope = viewModelScope,
             rowToManage = { mutableState.value.rowToManage(it) },
             write = ::writeRow,
@@ -443,9 +458,9 @@ class MissionDetailViewModel(
                     // The withdrawal answers 204, so the roster is re-read rather than patched:
                     // the counts above it move too, and inventing them here would put two numbers
                     // on screen that disagree.
-                    when (val left = source.leave(missionId, mine.id)) {
+                    when (val left = seams.read.leave(missionId, mine.id)) {
                         is ApiResult.Failure -> left
-                        is ApiResult.Success -> source.detail(missionId)
+                        is ApiResult.Success -> seams.read.detail(missionId)
                     }
                 }
             settle(result)
@@ -461,7 +476,7 @@ class MissionDetailViewModel(
     fun onJoinSheetOpened() {
         mutableState.value = mutableState.value.copy(joinSheet = JoinSheet(), error = null)
         viewModelScope.launch {
-            when (val result = source.jobTypes()) {
+            when (val result = seams.read.jobTypes()) {
                 is ApiResult.Success -> {
                     val open = mutableState.value.joinSheet ?: return@launch
                     mutableState.value =
@@ -516,7 +531,7 @@ class MissionDetailViewModel(
         viewModelScope.launch {
             when (
                 val result =
-                    source.join(
+                    seams.read.join(
                         missionId = missionId,
                         userId = userId,
                         desiredJobTypeId = open.desired?.id,
@@ -547,7 +562,7 @@ class MissionDetailViewModel(
         if (mine == null || !current.writable || !current.checkInPossible) {
             return
         }
-        writeRow { source.setCheckedIn(missionId, mine.id, checkedIn = !mine.checkedIn) }
+        writeRow { seams.read.setCheckedIn(missionId, mine.id, checkedIn = !mine.checkedIn) }
     }
 
     /** Switches the caller's own share between paid out and donated. */
@@ -557,7 +572,7 @@ class MissionDetailViewModel(
         if (mine == null || !current.writable) {
             return
         }
-        writeRow { source.setDonating(missionId, mine.id, donating = mine.donating != true) }
+        writeRow { seams.read.setDonating(missionId, mine.id, donating = mine.donating != true) }
     }
 
     /** Opens the editor on a new booking. */
@@ -650,9 +665,9 @@ class MissionDetailViewModel(
         val note = draft.note.trim().takeIf { it.isNotEmpty() }
         bookkeeping {
             if (draft.entryId == null) {
-                source.addFinanceEntry(missionId, mine.id, draft.income, draft.amount, note)
+                seams.read.addFinanceEntry(missionId, mine.id, draft.income, draft.amount, note)
             } else {
-                source.updateFinanceEntry(
+                seams.read.updateFinanceEntry(
                     draft.entryId,
                     draft.income,
                     draft.amount,
@@ -672,7 +687,7 @@ class MissionDetailViewModel(
         if (!mutableState.value.writable) {
             return
         }
-        bookkeeping { source.deleteFinanceEntry(entry.id) }
+        bookkeeping { seams.read.deleteFinanceEntry(entry.id) }
     }
 
     /**
@@ -822,7 +837,7 @@ class MissionDetailViewModel(
             mutableState.value = mutableState.value.copy(phase = MissionDetailPhase.Loading)
         }
         viewModelScope.launch {
-            when (val result = source.detail(missionId)) {
+            when (val result = seams.read.detail(missionId)) {
                 is ApiResult.Success -> {
                     mutableState.value =
                         mutableState.value.copy(
@@ -851,7 +866,7 @@ class MissionDetailViewModel(
         mutableState.value = mutableState.value.copy(finances = MissionFinancesPhase.Loading)
         viewModelScope.launch {
             mutableState.value =
-                when (val result = source.finances(missionId)) {
+                when (val result = seams.read.finances(missionId)) {
                     is ApiResult.Success -> {
                         mutableState.value.copy(finances = MissionFinancesPhase.Ready(result.value))
                     }
