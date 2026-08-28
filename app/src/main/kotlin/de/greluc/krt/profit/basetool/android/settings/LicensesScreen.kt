@@ -62,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppe
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -88,11 +89,15 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param onOpenUrl opens a licence's canonical text; returns `false` when nothing handled it, which
  *   is the late half of the browser check — the early half is the package-manager probe.
  * @param modifier layout modifier.
+ * @param parseDispatcher where the report is parsed. Injected rather than reached for so a test can
+ *   parse on its own scheduler and observe the loading state deterministically; the default is the
+ *   only value production uses.
  */
 @Composable
 fun LicensesScreen(
     onOpenUrl: (String) -> Boolean,
     modifier: Modifier = Modifier,
+    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     // LocalResources, not LocalContext.current.resources: the latter is not
     // configuration-aware, and a language change recreates this screen's configuration.
@@ -108,7 +113,7 @@ fun LicensesScreen(
     // "read and unusable".
     val report by
         produceState<OssReport?>(initialValue = null, resources, reload) {
-            value = withContext(Dispatchers.Default) { OssLicenses.read(resources) }
+            value = withContext(parseDispatcher) { OssLicenses.read(resources) }
         }
     val browser = remember(context) { hasBrowser(context) }
 
