@@ -21,6 +21,9 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionCoreRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionFlagsRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionScheduleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -129,6 +132,75 @@ interface MissionFinanceSource {
      * @return success, or the classified failure.
      */
     suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
+}
+
+/**
+ * Editing the Einsatz itself — the Verwaltung half of the detail screen.
+ *
+ * Its own seam rather than three more methods on [MissionSource]: these are the writes only a
+ * manager may make, and they are the ones that carry the **section version counters**. Keeping them
+ * together is what makes it obvious that the three sections are independent, which is the whole
+ * point of there being three counters instead of one.
+ */
+interface MissionAdminSource {
+    /**
+     * Rewrites the Kern section: title, briefing, meeting point, status.
+     *
+     * @param missionId the Einsatz.
+     * @param name the title; the server requires one.
+     * @param description the briefing, or `null` to clear it.
+     * @param meetingPoint the gathering place, or `null`.
+     * @param version the **Kern** section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
+     *   stale, which is a concurrent edit of *this* section and nothing else.
+     */
+    suspend fun patchCore(
+        missionId: String,
+        name: String,
+        description: String?,
+        meetingPoint: String?,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Rewrites the Zeitplan section.
+     *
+     * `actualStartTime` is the one that matters operationally: the server refuses every check-in
+     * until it is set, so this is what opens the Einsatz for its participants.
+     *
+     * @param missionId the Einsatz.
+     * @param meetingTime Teamspeak gathering, or `null`.
+     * @param plannedStartTime the scheduled server join, or `null`.
+     * @param plannedEndTime the scheduled end, or `null`.
+     * @param actualStartTime when it actually began, or `null`.
+     * @param version the **Zeitplan** section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun patchSchedule(
+        missionId: String,
+        meetingTime: String?,
+        plannedStartTime: String?,
+        plannedEndTime: String?,
+        actualStartTime: String?,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Switches the Einsatz between internal and open.
+     *
+     * Not cosmetic: an internal Einsatz is invisible to guests and to anonymous visitors, so this
+     * is the control that decides who can find it at all.
+     *
+     * @param missionId the Einsatz.
+     * @param internal whether it is squadron-internal.
+     * @param version the **flags** section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun patchFlags(
+        missionId: String,
+        internal: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail>
 }
 
 /**
@@ -290,7 +362,8 @@ interface MissionSource : MissionFinanceSource {
  */
 class MissionRepository(
     private val reader: ApiReader,
-) : MissionSource {
+) : MissionSource,
+    MissionAdminSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -467,6 +540,90 @@ class MissionRepository(
                 ),
                 UpdatePayoutPreferenceRequest.serializer(),
                 MissionParticipantDto.serializer(),
+            ),
+        )
+
+    /**
+     * Folds a section patch's answer back into the model.
+     *
+     * The three patches answer with the whole Einsatz, so the screen swaps one object rather than
+     * re-reading — which also means the **other** sections' counters arrive fresh, and a manager can
+     * make two edits in a row without a 409 from a version they never saw.
+     *
+     * @param missionId the Einsatz, for the id fallback.
+     * @param result what the write answered.
+     * @return the Einsatz, or the failure unchanged.
+     */
+    private fun oneMission(
+        missionId: String,
+        result: ApiResult<MissionDto>,
+    ): ApiResult<MissionDetail> =
+        when (result) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
+        }
+
+    override suspend fun patchCore(
+        missionId: String,
+        name: String,
+        description: String?,
+        meetingPoint: String?,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.send(
+                "${missionPath(missionId)}/core",
+                PATCH,
+                PatchMissionCoreRequest(
+                    name = name,
+                    version = version,
+                    description = description,
+                    meetingPoint = meetingPoint,
+                ),
+                PatchMissionCoreRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun patchSchedule(
+        missionId: String,
+        meetingTime: String?,
+        plannedStartTime: String?,
+        plannedEndTime: String?,
+        actualStartTime: String?,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.send(
+                "${missionPath(missionId)}/schedule",
+                PATCH,
+                PatchMissionScheduleRequest(
+                    version = version,
+                    meetingTime = meetingTime,
+                    plannedStartTime = plannedStartTime,
+                    plannedEndTime = plannedEndTime,
+                    actualStartTime = actualStartTime,
+                ),
+                PatchMissionScheduleRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun patchFlags(
+        missionId: String,
+        internal: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.send(
+                "${missionPath(missionId)}/flags",
+                PATCH,
+                PatchMissionFlagsRequest(isInternal = internal, version = version),
+                PatchMissionFlagsRequest.serializer(),
+                MissionDto.serializer(),
             ),
         )
 
@@ -665,6 +822,9 @@ class MissionRepository(
          * is showing rather than pretending to be all of them.
          */
         const val FINANCE_PAGE_SIZE: Int = 50
+
+        /** The verb the three section edits use; [ApiReader] has no dedicated `patch`. */
+        private const val PATCH = "PATCH"
 
         private const val SEARCH_PATH = "/api/v1/missions/search"
 
@@ -878,8 +1038,24 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         // so a server that predates the flag locks the manager actions instead of offering writes
         // it would refuse.
         canManage = canEdit ?: false,
+        coreVersion = sectionVersion(coreVersion),
+        scheduleVersion = sectionVersion(scheduleVersion),
+        flagsVersion = sectionVersion(flagsVersion),
     )
 }
+
+/**
+ * A section's optimistic-lock counter as the client should hold it.
+ *
+ * An absent counter becomes `0`, which is deliberately **not** a value the server ever issues: a
+ * write carrying it is refused with a `409` rather than silently overwriting whatever is there. The
+ * three sections each have their own, so a stale one only ever collides with an edit of that same
+ * section.
+ *
+ * @param raw what the wire carried, or `null`.
+ * @return the counter to echo on the next write against that section.
+ */
+private fun sectionVersion(raw: Long?): Long = raw ?: 0L
 
 /**
  * Maps one participant row.

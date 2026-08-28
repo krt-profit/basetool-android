@@ -51,6 +51,15 @@ class MissionRepositoryTest {
         /** The version the roster fixture carries, so the echo assertion is not a bare literal. */
         const val ROSTER_ROW_VERSION = 4L
 
+        /** The Kern section's counter in the fixtures; distinct from the other two on purpose. */
+        const val CORE_VERSION = 3L
+
+        /** The Zeitplan section's counter. */
+        const val SCHEDULE_VERSION = 7L
+
+        /** The flags section's counter. */
+        const val FLAGS_VERSION = 1L
+
         /** A total large enough that one page cannot hold it. */
         const val MANY_ELEMENTS = 60L
 
@@ -486,5 +495,84 @@ class MissionRepositoryTest {
             repository.jobTypes()
 
             assertEquals("MISSION", requestedUrl().queryParameter("archetype"))
+        }
+
+    /**
+     * The three section counters are separate on purpose: a manager fixing the briefing must not
+     * collide with a colleague moving the start time. A client that echoed one counter for all
+     * three would reintroduce exactly the screen-wide lock the server went to the trouble of
+     * splitting.
+     */
+    @Test
+    fun `the three section counters are carried apart`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria","coreVersion":3,"scheduleVersion":7,"flagsVersion":1}""")
+
+            val detail = (repository.detail("m1") as ApiResult.Success).value
+
+            assertEquals(CORE_VERSION, detail.coreVersion)
+            assertEquals(SCHEDULE_VERSION, detail.scheduleVersion)
+            assertEquals(FLAGS_VERSION, detail.flagsVersion)
+        }
+
+    /** An absent counter becomes 0, which the server never issues — so a write with it is refused. */
+    @Test
+    fun `an absent section counter reads as zero`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            val detail = (repository.detail("m1") as ApiResult.Success).value
+
+            assertEquals(0L, detail.coreVersion)
+        }
+
+    @Test
+    fun `patching the Kern section sends its own counter`() =
+        runTest {
+            respond("""{"id":"m1","name":"Neu"}""")
+
+            repository.patchCore("m1", name = "Neu", description = "d", meetingPoint = "ARC-L1", version = CORE_VERSION)
+
+            val request = server.takeRequest()
+            assertEquals("PATCH", request.method)
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""version":3"""))
+            assertTrue(body.contains(""""name":"Neu""""))
+            assertTrue(body.contains(""""meetingPoint":"ARC-L1""""))
+        }
+
+    /**
+     * Setting the actual start time is what opens an Einsatz for check-in: the server refuses every
+     * check-in until it is set, so this write is the one that unblocks the roster.
+     */
+    @Test
+    fun `patching the Zeitplan carries the actual start time`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.patchSchedule(
+                "m1",
+                meetingTime = null,
+                plannedStartTime = null,
+                plannedEndTime = null,
+                actualStartTime = "2026-08-28T19:00:00Z",
+                version = SCHEDULE_VERSION,
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains(""""actualStartTime":"2026-08-28T19:00:00Z""""))
+            assertTrue(body.contains(""""version":7"""))
+        }
+
+    @Test
+    fun `patching the flags sends the internal switch and its counter`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.patchFlags("m1", internal = true, version = FLAGS_VERSION)
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains(""""isInternal":true"""))
+            assertTrue(body.contains(""""version":1"""))
         }
 }

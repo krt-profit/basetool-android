@@ -158,6 +158,9 @@ data class MissionFrequency(
  * @property steps the Ablauf, in server order
  * @property objectives the Ziele, in server order
  * @property frequencies the radio plan, in server order
+ * @property coreVersion the Kern section's own optimistic-lock counter
+ * @property scheduleVersion the Zeitplan section's counter
+ * @property flagsVersion the flags section's counter
  * @property canManage whether the caller may act on **other** members' rows — the server's own
  *   `canEdit`, carried through rather than re-derived from a role string. Deriving it here would
  *   reproduce the role hierarchy in the client and get it wrong for exactly the people most
@@ -189,6 +192,13 @@ data class MissionDetail(
     val objectives: List<MissionObjective>,
     val frequencies: List<MissionFrequency>,
     val canManage: Boolean = false,
+    // Three counters, not one. The Einsatz is edited in independent sections and each carries its
+    // own, so a manager fixing the briefing does not 409 a colleague moving the start time. They
+    // are plain business Longs on the server, bumped by a DB-enforced atomic conditional UPDATE —
+    // NOT the row's JPA @Version — which is what makes two concurrent section edits both commit.
+    val coreVersion: Long = 0L,
+    val scheduleVersion: Long = 0L,
+    val flagsVersion: Long = 0L,
 )
 
 /**

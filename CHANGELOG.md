@@ -9,6 +9,10 @@
   Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,
   mit einem Hinweis, welche Rolle fehlt.
 
+- **Die App kann die drei Abschnitte eines Einsatzes serverseitig ändern** (Kern, Zeitplan, Flags),
+  jeder mit seinem eigenen Sperrzähler. Noch ohne Bedienoberfläche: für die Verwaltungsfläche gibt
+  es keine Design-Vorlage, sie ist als Runde 10 angefragt.
+
 - **Die Zeile zeigt jetzt auch den Funktionswunsch** („Wunsch: Pilot"), damit eine Zuweisung nicht
   geraten werden muss.
 
