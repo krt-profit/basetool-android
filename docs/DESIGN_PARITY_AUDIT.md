@@ -192,6 +192,21 @@ both notices byte-exact and unfolded, in the placement chapter 02 §9 fixes.
 Recorded so a later pass does not re-open a chapter whose omissions were argued rather than
 overlooked.
 
+### 08 Hangar · 10 Materialbörse · 12 Bank — **compared 2026-08-28**
+
+Three chapters put beside their renders in one pass. What each cost:
+
+- **Hangar** — the lettermark took initials of the legal name and called MISC „MIA"; the catalogue's
+  own `abbreviation` was never mapped. Insurance sat behind the fitted chip and wore Info blue, a
+  colour on no chip in this chapter (`REQ-APP-HANGAR-014`).
+- **Materialbörse** — the amount was the first third of a grey run where quantity, quality and
+  pledges read alike; the artboard makes it the row's figure (`REQ-APP-MARKET-010`). Its three
+  screen tests passed throughout, because they checked that the text existed rather than where it
+  sat.
+- **Bank** — no direction glyph on a ledger row, and the section called „Transaktionen" rather than
+  the chapter's „Buchungen" (`REQ-APP-BANK-015`). The sparkline is **not** a gap: it is built and
+  specified, and draws nothing below two points, which is what the seeded account has.
+
 ### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a

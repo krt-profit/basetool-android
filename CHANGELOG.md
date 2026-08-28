@@ -175,6 +175,10 @@
 
 ### Fixed
 
+- **Jede Buchungszeile zeigt ihre Richtung als Pfeil.** Eingang zeigt nach unten und ist grün,
+  Ausgang nach oben und rot, alles andere bekommt den neutralen Tausch-Pfeil. Der Abschnitt heißt
+  wieder „Buchungen" statt „Transaktionen".
+
 - **Die Menge steht auf der Börsenkarte jetzt vorn.** Rechts neben dem Material, die Zahl betont,
   die Einheit leise — statt als erstes Drittel einer grauen Zeile, in der Menge, Qualität und
   Zusagen gleich aussahen.

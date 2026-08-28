@@ -643,3 +643,27 @@ sends the last 90 days, and a member who needs another period has the web.
 
 **Code:** `BankStaffRepository` (`BankStaffAccountSource`, `BankReversalSource`),
 `BankAccountViewModel`, `BankScreen`
+
+### REQ-APP-BANK-015 — Every ledger row carries its direction as a glyph, and the section is „Buchungen"
+
+Artboard 2 draws an arrow at the head of each ledger row: money in points down and reads success,
+money out points up and reads danger, and everything else — a transfer, a reversal, a kind this
+build has never seen — takes the neutral swap. The app had the sign and the tint only, and both live
+at the far right: a ledger is read down its left edge, and „was this in or out" should not need a
+saccade to the amount column.
+
+The glyph uses **exactly** the classification `REQ-APP-BANK-003` already applies to the sign
+(`BankBooking.incoming`), so the arrow and the figure can never disagree. A kind nobody classified
+gets the neutral glyph for the same reason it gets no sign: stating a direction nobody checked is
+worse than stating none.
+
+The section is **„Buchungen"**, which is the chapter's word and the organisation's; the app called
+it „Transaktionen".
+
+**Acceptance**
+
+- [x] Verified on the phone class against the rendered artboard: a reversal takes the grey swap, a
+      deposit the green down arrow, and the heading reads BUCHUNGEN.
+
+**Code:** `bank/BankScreen.kt` (`BookingDirection`, `BookingRow`)
+
