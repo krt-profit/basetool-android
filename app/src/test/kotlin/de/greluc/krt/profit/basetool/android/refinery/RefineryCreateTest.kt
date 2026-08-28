@@ -14,6 +14,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * What „Neuer Raffinerieauftrag" may and may not send.
@@ -78,7 +80,13 @@ class RefineryCreateTest {
     @Test
     fun `the start is read from the two fields the member fills`() {
         val at = draft(good()).copy(startedDate = "27.08.2026", startedTime = "21:00").startedAt
-        assertEquals("2026-08-27T19:00:00Z", at.toString())
+
+        // Read back in the device's own zone, not asserted as a UTC literal: the member typed a
+        // wall clock, and what the instant looks like in UTC depends on where they are. A literal
+        // here passes in Berlin and fails on a CI runner set to UTC, which is a test about the
+        // runner rather than about the parse.
+        val local = requireNotNull(at).atZone(ZoneId.systemDefault()).toLocalDateTime()
+        assertEquals(LocalDateTime.of(2026, 8, 27, 21, 0), local)
     }
 
     @Test
