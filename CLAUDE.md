@@ -24,6 +24,63 @@ The **binding UI specification is the delivered design handoff at
 see the UI section below). [`docs/ANDROID_APP_DESIGN_PROMPT.md`](docs/ANDROID_APP_DESIGN_PROMPT.md)
 is the historical brief that produced it — do not design against the prompt anymore.
 
+## The knowledge base (HARD RULE — read before every task)
+
+The **Basetool Knowledge Base** is the single source of truth about the Profit Basetool as a whole:
+an Obsidian vault and git repository (`basetool-knowledge`), sitting beside this repository in the
+workspace. It covers every part of the system — backend, frontend, ingest, keycloak-spi, this app,
+the SC extractor, the P4K reader — plus the roles, permissions, scoping, decisions, incidents and
+runbooks around them.
+
+**This rule is binding on every AI agent working on the Basetool or any of its parts and
+repositories, without exception.**
+
+> **If you cannot find it, ask — at the start of the session.** The vault's location is
+> workspace-specific and it is **not** a submodule of any repository, so a fresh machine, a git
+> worktree, a CI runner or a differently-laid-out checkout may simply not have it beside this repo.
+> In that case: **do not guess a path, do not proceed as if the rule did not apply, and do not
+> silently skip it. Ask the user where the knowledge base is, at the start of the session, before
+> starting the work.** A missing vault is a question to ask, never a rule to drop.
+
+### Consult it before you work
+
+- **Read the knowledge base before starting any task**, not after. Enter through its root map
+  (`00 Maps/Basetool.md`) and follow the links. Its own `CLAUDE.md` explains how it is written.
+- This app contains **no business logic of its own**, which makes the knowledge base especially
+  load-bearing here: what a screen must show, who may see it, and which rows they see are facts
+  about the *server*, and the vault is where they are written down. Start with `Android App`,
+  `App Security`, `Permissions`, `Scoping`, `Request Authorization` and the domain note.
+- When the knowledge base and the code disagree, **the code is right** — and the note is then wrong
+  and gets fixed in the same session. Never leave a known contradiction standing.
+
+### Update it with every change
+
+- **Every change to this app updates the knowledge base in the same unit of work**: a new screen, a
+  changed permission gate, a new API the app consumes, an ADR, a device-verification finding, a
+  parity gap closed or discovered. It is not written afterwards and never "caught up later".
+- The vault is a **separate git repository**, so no CI here can gate it. That is exactly why it is a
+  hard rule: nothing will fail your build if you skip it, and skipping it is still an incomplete
+  change.
+- Move `updated:` on every note you re-checked, and run `python "90 Meta/vaultcheck.py"` from the
+  vault root before committing.
+
+### It must never drift from reality
+
+**The knowledge base represents the truth about this project, and every part of the system orients
+by it.** A vault that has drifted is worse than no vault, because each stale note still reads as
+authoritative.
+
+- **If you notice it is out of date, incomplete, or does not cover something — update or extend it.
+  Immediately, as part of the work in hand**, even when the gap lies outside the task you were
+  given.
+- Do not silently work around a stale note, and do not defend a thin one. Fix it.
+- When a fact turns out to have been wrong, **correct it and say so in the note**, dated.
+
+> **Never a secret and never personal data in the vault.** Same standard as this repo's own
+> world-readable rule below: no tokens, client secrets, keys or `.env` contents, and no member
+> names, e-mail addresses, Discord handles or production Keycloak subject ids. If a fact cannot be
+> written without a credential, write the *shape* of it and point at where the value lives.
+
 ## Resolved project decisions (owner-approved 2026-08-17 — do not silently reopen)
 
 - Distribution: **GitHub Releases APK (+ Obtainium)**. No Google Play, therefore no Play
