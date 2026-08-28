@@ -189,3 +189,129 @@ data, white, never orange.
 - [x] Both figures use the shared `formatAmount`, so the app and the web read the same number.
 
 **Code:** `RefineryScreen`
+
+---
+
+### REQ-APP-REF-007 — Einlagern is a form, and it is one call
+
+„Einlagern" — design chapter 11, artboard 3. The app booked a finished run with a single
+confirmation that could only send what the run had calculated; the web has a form.
+
+**The amount is the reason the screen exists** (handoff, verbatim: „amount (Pflicht, überschreibt
+die Berechnung — der Grund, warum der Screen existiert)"). Every line opens at the computed figure
+with that figure still shown beside it, and is meant to be corrected: what a refinery calculated and
+what came out of it are not always the same number.
+
+Each line also carries what the item has always allowed and the app never sent: a personal entry, a
+job order, a note (≤ 1000), a receiving member, and the org unit to book into. **`personal` and
+`jobOrderId` exclude each other** — the server answers 400 — so ticking personal clears the order
+rather than letting the pair be assembled, and a personal line never inherits the order's mission
+earmark.
+
+**One call for the run, not one per card.** The handoff has each card book and acknowledge on its
+own. `RefineryOrderService.storeOrder` books whatever the call carries and then sets the order
+`COMPLETED`, refusing every later call with „Refinery order is already completed and stored." Built
+per card, the second material is lost — which is what happened on a device: line one booked, order
+closed, line two refused with 400. The editing stays per line; only the submit is shared, and a line
+the app cannot read stops the whole submit rather than quietly leaving one material behind.
+
+**A line is identified by material *and* grade.** A run yields the same material at several
+qualities — Agricium at 733 and at 874 — and keying on the material alone is a duplicate list key,
+which Compose treats as fatal. It crashed the app the first time a real order was opened.
+
+**Acceptance**
+
+- [x] The same material at two grades is two lines, and a line's identity survives an edit
+  (`RefineryStoreTest`).
+- [x] A personal line carries no job order (`RefineryStoreTest`).
+- [x] A German decimal is read as one (`AmountsTest`).
+- [x] Verified on a device against the local test stack: a corrected amount of „1,9" against a
+  computed 1,8 books **1.9** into the Lager, and a run with two Agricium lines books both in a
+  single `POST …/store -> 200`.
+
+**Code:** `RefineryRepository` (`RefineryStoreSource`), `RefineryDetailViewModel`,
+`RefineryStoreSheet`
+
+---
+
+### REQ-APP-REF-008 — What a member typed is not what `toDoubleOrNull` expects
+
+The app is German-first. On a German locale the decimal key of the keyboard is a comma, and every
+numeric field in this app parsed with `toDoubleOrNull()` / `toBigDecimalOrNull()`, which reject it.
+
+Two shapes of harm, both found on a device:
+
+- the refinery's Einlagern sent **no request at all** — the parse failed and the write was refused
+  before it left, with a generic message;
+- the Lager's booking draft and every bank amount fall through to `0.0` / `BigDecimal.ZERO`, which
+  does not refuse anything: it books zero and reports success.
+
+`parseTypedAmount` / `parseTypedDecimal` accept both separators and treat blank as `null` rather
+than zero — "nothing typed" and "zero" are different answers and only the caller knows which is
+acceptable. Every member-typed figure goes through them.
+
+**Acceptance**
+
+- [x] „1,9" and „1.9" both read as 1.9, blank reads as `null`, and text that is not a figure stays
+  refused (`AmountsTest`).
+
+**Code:** `core/data/Amounts.kt`, `RefineryRepository`, `InventoryRepository`, `BankRepository`,
+`BankStaffRepository`
+
+---
+
+### REQ-APP-REF-009 — Recording a run, without an importer the phone cannot have
+
+„Neuer Raffinerieauftrag" — design chapter 11, artboards 4 and 5. The app could read a run and book
+its yield but not record one.
+
+**One scrolling form, not two screens.** The artboards split it because a 412 dp frame cannot show
+both halves at once, not because it is two steps. Nothing here is a wizard, and a member who only
+wants to record what a run cost should not have to walk through goods to reach the money.
+
+**No extractor import, permanently.** The Extractor is a Windows desktop app whose handoff runs
+through the ingest gateway and is consumed once in a browser; a phone cannot receive it. The scan
+icon and the import box of artboard 1 are deliberately absent.
+
+**Required is what the server requires, checked where the fields are.** A location, a method, and
+**every** goods line complete: an input material and both quantities at 1 or more (`@NotNull
+@Min(1)` on `RefineryGoodDto`). A half-filled line is not an omission the server tolerates — it
+refuses the whole order with a `goods[0]`-shaped message that names an index rather than a field.
+The CTA is validation-dimmed until the form is whole, without a padlock: nothing here is forbidden,
+it is unfinished, and the design distinguishes the two.
+
+**The material fields are pickers, not free text.** The wire wants a material id; a typed name
+carries none, so every line would be dropped and the form could never be sent — with the CTA
+correctly dimmed and no way to un-dim it. Typing again clears the pick, so a stale id is never sent
+under a new label. The search is the one the Lager's booking form uses: a run's ore is an ordinary
+material and a second list would be a second answer to the same question.
+
+**„Gestartet" is a date and a time in the member's own format**, assembled into the instant the wire
+wants. An unreadable pair is `null` rather than a guess. **„Endet" is computed** from start plus
+duration and shown as text — a second editable time would be a place for the two to disagree. So is
+the **profit preview**, which is the web's own definition: ore sales less costs and other costs.
+
+**The money block starts closed.** All three of its fields are usually zero, and a block that is
+usually empty should not stand between a member and the CTA.
+
+**`/refining-methods` answers a page, not a list.** `/locations/refineries` beside it answers a bare
+array, and the two are easy to assume alike — parsed as a list the picker renders empty and the form
+is silently unsendable, which is exactly how it presented on a device.
+
+**Acceptance**
+
+- [x] A complete form may be sent; a typed material name without a pick may not
+  (`RefineryCreateTest`).
+- [x] A line without an output quantity, or with zero, is not sendable, and one incomplete line
+  blocks the whole order (`RefineryCreateTest`).
+- [x] Without a refinery or a method nothing is sent (`RefineryCreateTest`).
+- [x] The start is read from the two fields, and a half-typed date is no date (`RefineryCreateTest`).
+- [x] Verified on a device against the local test stack: both pickers load (`200`/`200`), the goods
+  material picker searches, and `POST /api/v1/refinery-orders` answers **200** — the order lands as
+  `IN_PROGRESS` at Levski · Cormack with 620 → 442 SCU at quality 874, and the app opens it.
+
+**Vhost:** `/api/v1/refinery-orders` (POST), `/api/v1/locations/refineries`,
+`/api/v1/refining-methods` — runbook Phase M.
+
+**Code:** `RefineryRepository` (`RefineryCreateSource`), `RefineryCreateViewModel`,
+`RefineryCreateScreen`

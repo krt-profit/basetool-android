@@ -207,6 +207,161 @@ So the app does not carry them, and this is recorded as a **known delta to the w
 withdrawal name a counterparty, a transfer names a target account and shows the fee rate, and none
 of that has a drawn form to follow.
 
+## 2d — Artboard 6: what deactivating a holder actually does
+
+The handoff says the holder action is a „Halter-Entzug" whose danger modal reads „Entzieht diesem
+Mitarbeiter alle Buchungsrechte auf dem Konto".
+
+**That is what a grant does, not what this does.** `UpdateBankHolderRequest` carries one flag,
+`active`, and the web frontend's own modal says what flipping it means:
+
+> Ein inaktiver Halter kann kein neues Geld mehr zugebucht bekommen. Bestehende Bestände bleiben
+> abbuchbar.
+
+So it is **not** a removal, it takes away no rights on any account, and it is reversible — the web
+has a „Halter reaktivieren" modal beside it. The app uses the web's wording, and „Deaktivieren" /
+„Reaktivieren" as the labels.
+
+Two consequences for the drawing: the danger tone is too strong for a reversible flag that removes
+nothing, and the section is titled correctly already („Halter — Einheit", „nicht kontogebunden"),
+which is what makes the account-level claim in the handoff read as a slip rather than a design.
+
+**Also missing from the handoff:** closing an account is blocked by a **non-zero balance**
+(„Nur Konten mit Saldo 0 können geschlossen werden"), not only by undecided requests. The app
+states it beneath the disabled action rather than letting the button find out.
+
+## 2e — Artboard 7: the matrix has three flags, and the row is what the sight is
+
+The drawing gives each member two checkboxes, „SEHEN" and „FREIGEBEN", and the handoff adds three
+notes: „Zeile existiert = mindestens ein Grant; Zeile entfernen = alle Grants … entziehen
+(Danger-Modal)", „Freigeben setzt Sehen voraus — Flag-Kopplung in der UI; falls der Server sie nicht
+erzwingt: Backend-Anforderung, notiert", and „CARTEL ist für alle sichtbar (REQ-BANK-037) — dort ist
+das Sehen-Flag inert; Freigeben bleibt vergebbar."
+
+**The server's shape is a `bank_account_grant` row per (member, account) with three flags** —
+`can_deposit`, `can_withdraw`, `can_transfer` (REQ-BANK-009) — and nothing else. So whichever of the
+two readings of „FREIGEBEN" was meant, "may book" or "may approve", neither is a column that exists:
+
+- as **"may book"** it is three flags collapsed into one, and the three are separately enforced —
+  `BankSecurityService.canDeposit` / `canWithdraw` / `canTransfer` each test their own flag;
+- as **"may approve"** it has nothing behind it at all: who may approve a booking request is decided
+  per request by `requiredApprover`, and REQ-BANK-047 escalates that by amount, so a per-member
+  approval flag would quietly contradict the ladder.
+
+The app therefore renders the three the server enforces, and no fourth.
+
+**„SEHEN" is right in substance but is not a checkbox.** `BankSecurityService.canSee` is literally
+`hasCapability(accountId, auth, g -> true)` — the row's existence *is* the view grant, and a row with
+all three flags false is the deliberate „darf sehen, darf nichts buchen" case. Two consequences:
+
+- Unticking the last box must **not** delete the row, or the member silently loses sight of the
+  account as well. The app keeps the row and says the rule in plain text on the surface: „Wer hier
+  steht, darf das Konto sehen — auch ohne ein einziges Häkchen. Sehen entziehst du, indem du den
+  Eintrag entfernst."
+- **The requested flag-coupling needs neither UI work nor a backend requirement.** „Freigeben setzt
+  Sehen voraus" holds *structurally*: every capability check runs through `hasCapability`, which
+  needs the row, and the row is the sight. There is no state in which a member may book an account
+  they cannot see, so there is nothing to couple and nothing to ask the backend for. **This closes
+  the handoff's open item.**
+
+**The CARTEL note is right, and it changes the copy.** `CARTEL` is seen by every KRT member by rule
+(REQ-BANK-037, `OrgUnitBankAccessService`), so there the entry only ever carried booking rights. The
+app swaps both the surface note and the removal modal on that account rather than promising a sight
+it cannot take away.
+
+**The Danger-Modal is implemented as asked** — the removal is the one action here that takes
+something away which no checkbox mentions.
+
+**„+ Grant hinzufügen" is implemented, and it cannot be the restricted picker the drawing implies.**
+The server requires the grantee to hold the Bank Employee role (REQ-BANK-008), but its own member
+search is not filtered by that role — `/users/search-bank` is `/users/search` with a widened role
+gate and nothing else. So the sheet offers every member and renders the refusal, rather than
+second-guessing the server's list and hiding candidates it has no authority to judge. Two 409s are
+reachable and need different sentences — no Bank Employee role, and already listed — so the RFC 7807
+`code` decides, never the bare status.
+
+**Two defects only the device could show**, both now fixed and covered: deciding create-vs-patch on
+`version == 0` sent the first edit of every untouched grant as a creation (a new row's `@Version`
+*is* zero) and came back `409 DUPLICATE_ENTITY`; and the refusal was silent, so the checkbox snapped
+back with nothing said.
+
+**And two the artboard comparison turned up, both app-wide and both in the design system rather than
+in the bank:**
+
+- **The open tab had no underline.** `KrtPageTabs` draws one — `.tab-nav .tab.active` is 3 px of
+  accent — but the tab row scrolls horizontally, so it hands its children an *unbounded* width
+  constraint, and `fillMaxWidth()` collapses to zero under an infinite maximum. The marker was in
+  the composition, answered every semantics query, and was zero pixels wide on screen. Measuring the
+  tab at `IntrinsicSize.Max` gives it something finite to fill.
+- **Segment labels were not uppercase.** Every artboard renders them through
+  `text-transform: uppercase` and the copy rules ask for uppercase labels, but the string resources
+  are sentence case and only one call site (the request sheet) uppercased them by hand — so the
+  bank's scope switch read „Mitglied / Verwaltung" beside a sheet that shouted. The transform now
+  lives in `KrtSegmentedControl`, and the hand-rolled call site is gone.
+
+Neither was visible in a semantics-based test, which is why both survived four tabs' worth of
+screen tests. The regressions are pinned by measurement instead: `KrtPageTabsUnderlineTest` asserts
+the underline is at least as wide as the tab's own padding (it measured **0.0 dp** against the old
+code), and `KrtSegmentedControlCaseTest` asserts a sentence-case label is drawn uppercase.
+
+**Layout:** three capability columns plus a handle do not fit a phone's width the way two short ones
+did, so the table becomes a per-member card. The account chip row stays as drawn, made horizontally
+scrollable — a unit with many accounts would otherwise lose its last one off the edge.
+
+**One more thing the artboard cannot show:** the two grant lists in this app are not the same list.
+The staff matrix is shaped by `bank_account_grant`; the member's visible accounts are shaped by
+REQ-BANK-037 org-unit visibility. An account can appear on one and not the other, which is exactly
+what the Übersicht's „nur über das Amt" mark reports.
+
+## 2f — Artboard 8: the Umbuchung is not free, and it does touch an account
+
+The transfer's explanatory line is the web frontend's own, verbatim: „Verschiebt Verwahrung zwischen
+Haltern, ohne ein Konto zu berühren. Der Quell-Halter darf dabei ins Minus gehen."
+
+The second sentence is exactly right. The first is not, and the difference is not cosmetic.
+`BankLedgerService.bookHolderTransfer` charges a fee — `operation.transfer_fee_rate`, seeded at
+**0.5 %** — and books it against the **KRT (CARTEL)** account, which it locks, requires active, and
+requires covered. Three consequences the drawing cannot show:
+
+- as soon as the fee rounds above zero, an account **is** touched;
+- if the KRT account is missing, the transfer is refused with `BANK_ACCOUNT_CLOSED`;
+- if it exists but has no cover for the fee, the transfer is refused with `BANK_OVERDRAFT`.
+
+All three were reached on a device in that order, simply by trying the action against a test stack
+that had no KRT account yet. The app's wording therefore says what happens: no account of the *unit*
+is debited, the fee is charged to the KRT account, and the source holder may go negative.
+
+**And the refusals need their own sentences.** The shared bank wording answered every 409 with
+„Nicht gespeichert — gleichzeitig geändert", which is the optimistic-lock sentence and was simply
+the wrong cause: a member told their transfer collided with a concurrent edit will reload and try
+again, and be refused again, forever. The bank's conflict codes now each get their own answer.
+
+**Also missing from the register (artboard 6/8):** „+ Halter registrieren". The web has it on the
+same section; the app did not, which made artboard 8 unreachable on a fresh unit — no holder, no
+custody, and no confirmation able to name one.
+
+## 2g — Chapter 09 artboard 1: two of the three filter chips have nothing behind them
+
+The Lager tree is drawn with three chips: „MATERIAL: ALLE" (selected), „NUR MIT BESTAND", and
+„ORT: ALLE", plus a filter icon in the app bar.
+
+**Neither the web nor the API has the first or the third.** `inventory-index.html` offers a view
+toggle (material vs items) and a squadron selector — no material filter, no location filter. And
+`/api/v1/inventory/aggregated`, which is the list the tree renders, takes only `catalog`, `page`,
+`size` and `sort`; the material filter exists one level down, on the *grouped* read, where it is a
+drill-in rather than a filter.
+
+Building them anyway would mean one of two bad things: exceeding the web, which the parity goal does
+not ask for, or filtering client-side over a paged list — telling a member their material is not
+there because it is on page three. That is the silent cap ADR-0104 exists to forbid.
+
+„Nur mit Bestand" survives because it is the honest kind of chip: it hides rows from a page the
+member already has, and the count under the list keeps stating the server's total.
+
+**If the filters are wanted, they are a backend change first** — query parameters on
+`/inventory/aggregated` — and only then an app one. Drawn as they are, they describe a system that
+does not exist yet.
+
 ## 3 — Two smaller questions, no strong opinion
 
 **3.1 — Does the amount field group while you type?** Artboard 3 shows `120.000` in the input. We

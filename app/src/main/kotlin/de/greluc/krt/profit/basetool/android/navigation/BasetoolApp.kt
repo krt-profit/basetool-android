@@ -42,6 +42,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.bank.BankAccountViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankHolderViewModel
+import de.greluc.krt.profit.basetool.android.bank.BankLifecycleViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankRequestsViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankStaffViewModel
 import de.greluc.krt.profit.basetool.android.bank.BankViewModel
@@ -72,6 +74,7 @@ import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitState
 import de.greluc.krt.profit.basetool.android.orgunit.switcherLabel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.ui.CallerViewModel
@@ -102,11 +105,14 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * @param bank drives the Konten list.
  * @param bankRequests drives the Anträge tab and the request sheet.
  * @param bankStaff drives the Verwaltung scope.
+ * @param bankLifecycle drives its Konten tab.
  * @param bankAccount builds a view model for one account.
+ * @param bankHolder builds a view model for one holder's custody.
  * @param orders drives the Auftrag queue.
  * @param exchange drives the Materialbörse.
  * @param refinery drives the member's own Raffinerie orders.
  * @param refineryOrder builds a view model for one Raffinerie order.
+ * @param refineryCreate builds the view model of the create form.
  * @param orderDetail builds a view model for one order.
  * @param inventory drives the Lager tree.
  * @param orgUnit the member's org units and the one currently active.
@@ -132,12 +138,15 @@ fun BasetoolApp(
     bank: BankViewModel,
     bankRequests: BankRequestsViewModel,
     bankStaff: BankStaffViewModel,
+    bankLifecycle: BankLifecycleViewModel,
     bankAccount: (String) -> BankAccountViewModel,
+    bankHolder: (String) -> BankHolderViewModel,
     orders: OrdersViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    refineryCreate: () -> RefineryCreateViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -298,12 +307,15 @@ fun BasetoolApp(
                         bank = bank,
                         bankRequests = bankRequests,
                         bankStaff = bankStaff,
+                        bankLifecycle = bankLifecycle,
                         bankAccount = bankAccount,
+                        bankHolder = bankHolder,
                         orders = orders,
                         orderDetail = orderDetail,
                         exchange = exchange,
                         refinery = refinery,
                         refineryOrder = refineryOrder,
+                        refineryCreate = refineryCreate,
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,

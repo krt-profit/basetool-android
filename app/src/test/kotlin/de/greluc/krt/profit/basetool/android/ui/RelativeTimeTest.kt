@@ -129,4 +129,16 @@ class RelativeTimeTest {
         assertEquals("in 3 Tagen", at("2026-08-23T12:00"))
         assertEquals("in 2 Std.", at("2026-08-20T14:00"))
     }
+
+    @Test
+    fun `a timestamp a hair ahead of this device reads as past, not as a countdown`() {
+        val now = Instant.parse("2026-08-27T21:00:00Z")
+        // The server's clock is not this device's. Before the clamp, a booking written a moment
+        // ago rendered „in 0 Min." — a thing that has already happened, described as pending.
+        val justWritten = now.plusMillis(400)
+
+        val text = justWritten.relativeTo(now, context, ZoneId.of("Europe/Berlin"))
+
+        assertFalse(text, text.contains("in "))
+    }
 }

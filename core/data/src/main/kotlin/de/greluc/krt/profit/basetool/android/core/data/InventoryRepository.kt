@@ -650,7 +650,7 @@ class InventoryRepository(
         sendUnit(
             BOOK_IN_PATH,
             InventoryItemCreateDto(
-                amount = draft.amount.toDoubleOrNull() ?: 0.0,
+                amount = parseTypedAmount(draft.amount) ?: 0.0,
                 locationId = draft.locationId,
                 materialId = draft.materialId,
                 quality = draft.quality,
@@ -668,7 +668,7 @@ class InventoryRepository(
         existing: Boolean,
         version: Long?,
     ): ApiResult<InventoryEntry> {
-        val quantity = amount.trim().toDoubleOrNull() ?: 0.0
+        val quantity = parseTypedAmount(amount) ?: 0.0
         val body =
             InventoryAllocationWriteDto(
                 field = kind.toWire(),
@@ -815,13 +815,13 @@ class InventoryRepository(
         sendUnit(
             "$BOOK_IN_PATH/$id/book-out",
             InventoryItemBookOutDto(
-                amount = draft.amount.toDoubleOrNull() ?: 0.0,
+                amount = parseTypedAmount(draft.amount) ?: 0.0,
                 version = version ?: 0L,
                 type = draft.kind.toWire(),
                 targetUserId = draft.targetUserId,
                 targetLocationId = draft.targetLocationId,
                 terminal = draft.terminal,
-                sellAmount = draft.sellAmount?.toBigDecimalOrNull()?.let(::KrtDecimal),
+                sellAmount = parseTypedDecimal(draft.sellAmount)?.let(::KrtDecimal),
                 targetOwningOrgUnitId = draft.targetOwningOrgUnitId,
                 mergeStock = draft.mergeStock,
                 // Null rather than an empty list: the server reads an absent plan as "take it from

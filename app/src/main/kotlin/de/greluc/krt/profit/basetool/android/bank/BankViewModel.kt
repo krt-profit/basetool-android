@@ -14,13 +14,19 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountDetail
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
+import de.greluc.krt.profit.basetool.android.core.data.BankBookingPage
+import de.greluc.krt.profit.basetool.android.core.data.BankReportSource
+import de.greluc.krt.profit.basetool.android.core.data.BankRepository
+import de.greluc.krt.profit.basetool.android.core.data.BankReversalSource
 import de.greluc.krt.profit.basetool.android.core.data.BankSource
+import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccountSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
 import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
 import de.greluc.krt.profit.basetool.android.ui.publishLiveSync
@@ -28,6 +34,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 /** How far a bank read has got. */
 sealed interface BankPhase {
@@ -82,6 +91,10 @@ data class BankAccountsState(
  * @property hasMore whether the ledger has another page
  * @property loadingMore whether that page is in flight
  * @property refreshing whether a pull-to-refresh is running
+ * @property report a file the server has sent and the screen has not handed on yet, or `null`
+ * @property downloading whether a report is being fetched
+ * @property reversal the booking whose Storno is being confirmed, or `null`
+ * @property reversalNote what to record about it
  */
 data class BankAccountState(
     val accountId: String,
@@ -99,6 +112,10 @@ data class BankAccountState(
     val saving: Boolean = false,
     val online: Boolean = true,
     val error: ApiError? = null,
+    val report: DownloadedFile? = null,
+    val downloading: Boolean = false,
+    val reversal: BankBooking? = null,
+    val reversalNote: String = "",
 ) {
     /** Whether a settings write may be sent at all. */
     val writable: Boolean
@@ -218,7 +235,21 @@ class BankAccountViewModel(
     connectivity: Connectivity,
     private val accountId: String,
     private val liveSync: LiveSyncSource? = null,
+    private val reversalSource: BankReversalSource? = null,
+    private val staffSource: BankStaffAccountSource? = null,
+    private val reports: BankReportSource? = null,
+    private val throughTheOffice: () -> Boolean = { false },
 ) : ViewModel() {
+    /**
+     * Whether to read this account through the office rather than as a member.
+     *
+     * A bank employee holding no view grant gets **403** on the member path for an account they are
+     * nevertheless responsible for — found on a device, where opening an account from the
+     * Verwaltung scope answered „Dieses Konto ist für dich nicht einsehbar." The office path answers
+     * for every account of the organisation, closed ones included.
+     */
+    private val viaOffice: Boolean
+        get() = staffSource != null && throughTheOffice()
     private val mutableState = MutableStateFlow(BankAccountState(accountId = accountId))
 
     init {
@@ -393,7 +424,7 @@ class BankAccountViewModel(
         }
         mutableState.value = current.copy(loadingMore = true)
         viewModelScope.launch {
-            when (val result = source.bookings(accountId, page = current.page + 1)) {
+            when (val result = readLedger(current.page + 1)) {
                 is ApiResult.Success -> {
                     val latest = mutableState.value
                     mutableState.value =
@@ -426,7 +457,7 @@ class BankAccountViewModel(
             mutableState.value = mutableState.value.copy(phase = BankPhase.Loading)
         }
         viewModelScope.launch {
-            when (val account = source.account(accountId)) {
+            when (val account = readAccount()) {
                 is ApiResult.Failure -> {
                     KrtLog.w(LOG_TAG) { "bank account could not be read: ${account.error}" }
                     mutableState.value =
@@ -449,7 +480,7 @@ class BankAccountViewModel(
      * @param account the account already read.
      */
     private suspend fun loadLedger(account: BankAccountDetail) {
-        when (val ledger = source.bookings(accountId, page = 0)) {
+        when (val ledger = readLedger(0)) {
             is ApiResult.Success -> {
                 mutableState.value =
                     mutableState.value.copy(
@@ -475,7 +506,141 @@ class BankAccountViewModel(
         }
     }
 
+    /**
+     * Asks to reverse one booking.
+     *
+     * Refused for a row that already carries a reversal — the server answers
+     * `BANK_ALREADY_REVERSED` and the row says so, so offering it would be a button that cannot
+     * work. Refused too without a transaction id, which is what the reversal addresses.
+     *
+     * @param booking which one.
+     */
+    fun onReverse(booking: BankBooking) {
+        if (booking.isReversal || booking.transactionId == null) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(reversal = booking, reversalNote = "", error = null)
+    }
+
+    /** Closes the Storno confirmation without sending it. */
+    fun onDismissReversal() {
+        mutableState.value = mutableState.value.copy(reversal = null)
+    }
+
+    /**
+     * Records what is to be noted on the counter-booking.
+     *
+     * @param note the text.
+     */
+    fun onReversalNote(note: String) {
+        mutableState.value = mutableState.value.copy(reversalNote = note)
+    }
+
+    /** Sends the Storno the confirmation stands for. */
+    fun onConfirmReversal() {
+        val current = mutableState.value
+        val transactionId = current.reversal?.transactionId
+        val writer = reversalSource
+        if (transactionId == null || writer == null || current.saving) {
+            return
+        }
+        mutableState.value = current.copy(saving = true, error = null)
+        viewModelScope.launch {
+            when (val result = writer.reverse(transactionId, current.reversalNote)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, reversal = null)
+                    reload(keepContent = true)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "reversal refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads the account through whichever surface applies to this caller.
+     *
+     * @return the account, or the classified failure.
+     */
+    private suspend fun readAccount(): ApiResult<BankAccountDetail> =
+        if (viaOffice) {
+            requireNotNull(staffSource).staffAccount(accountId)
+        } else {
+            source.account(accountId)
+        }
+
+    /**
+     * Reads one ledger page through whichever surface applies to this caller.
+     *
+     * @param page which page, zero-based.
+     * @return the page, or the classified failure.
+     */
+    private suspend fun readLedger(page: Int): ApiResult<BankBookingPage> =
+        if (viaOffice) {
+            requireNotNull(staffSource).staffBookings(accountId, page, BankRepository.DEFAULT_PAGE_SIZE)
+        } else {
+            source.bookings(accountId, page = page)
+        }
+
+    /**
+     * Fetches this account's statement for the last three months.
+     *
+     * The period is the screen's, not the member's: the web offers a picker, and a date range on a
+     * phone is three taps before anything happens. The common ask is „the recent one", and a member
+     * who needs another period has the web.
+     */
+    fun onStatement() {
+        val writer = reports ?: return
+        val now = Instant.now()
+        fetch { writer.statement(accountId, now.minus(STATEMENT_DAYS, ChronoUnit.DAYS).toString(), now.toString()) }
+    }
+
+    /** Fetches the three-month report. */
+    fun onThreeMonthReport() {
+        val writer = reports ?: return
+        fetch { writer.threeMonthReport(ZoneId.systemDefault().id) }
+    }
+
+    /** Clears the fetched file once the screen has handed it on. */
+    fun onReportHandled() {
+        mutableState.value = mutableState.value.copy(report = null)
+    }
+
+    /**
+     * Runs one report fetch.
+     *
+     * @param call what to fetch.
+     */
+    private fun fetch(call: suspend () -> ApiResult<DownloadedFile>) {
+        if (mutableState.value.downloading) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(downloading = true, error = null)
+        viewModelScope.launch {
+            when (val result = call()) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(downloading = false, report = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "a report could not be fetched: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(downloading = false, error = result.error)
+                }
+            }
+        }
+    }
+
     private companion object {
+        /** How far back the statement action reaches; the web's picker is richer. */
+        const val STATEMENT_DAYS = 90L
+
         /** Log subsystem. No amount, handle or note is ever logged. */
         const val LOG_TAG = "bank"
     }

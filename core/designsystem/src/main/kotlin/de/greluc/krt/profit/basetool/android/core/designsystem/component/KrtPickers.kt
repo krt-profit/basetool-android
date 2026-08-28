@@ -808,7 +808,10 @@ fun KrtSegmentedControl(
                         )
                     }
                     Text(
-                        text = label,
+                        // Every artboard renders segment labels through
+                        // `text-transform: uppercase`, and the copy rules ask for uppercase labels.
+                        // Doing it here rather than at each call site keeps the two from drifting.
+                        text = label.uppercase(),
                         style = MaterialTheme.typography.labelMedium,
                         color = tint,
                         textAlign = TextAlign.Center,

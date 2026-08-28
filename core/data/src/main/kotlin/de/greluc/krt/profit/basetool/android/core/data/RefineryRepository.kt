@@ -7,18 +7,30 @@
 
 package de.greluc.krt.profit.basetool.android.core.data
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.LocationDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseRefineryOrderListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseRefiningMethodDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryGoodDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderStoreDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.RefineryOrderStoreItemDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.RefiningMethodDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * One material coming out of a refining run.
@@ -211,6 +223,295 @@ interface RefinerySource {
     suspend fun store(order: RefineryOrder): ApiResult<Unit>
 }
 
+/** Minutes in an hour, for the duration the form takes in two fields. */
+private const val MINUTES_PER_HOUR = 60
+
+/**
+ * The duration the two fields add up to, in minutes.
+ *
+ * @return the total, or `null` when neither field carries a figure — the run then has no duration
+ *   and „Endet" cannot be computed, which is a state the form allows.
+ */
+private fun RefineryOrderDraft.totalMinutes(): Int? {
+    val hours = durationHours.trim().toIntOrNull()
+    val minutes = durationMinutes.trim().toIntOrNull()
+    return if (hours == null && minutes == null) {
+        null
+    } else {
+        (hours ?: 0) * MINUTES_PER_HOUR + (minutes ?: 0)
+    }
+}
+
+/**
+ * Maps one good of the form onto the wire.
+ *
+ * @return the good, or `null` without an input material — a line that names nothing is not a line.
+ */
+private fun RefineryGoodDraft.toDto(): RefineryGoodDto? =
+    inputMaterialId?.let { input ->
+        RefineryGoodDto(
+            inputMaterial = MaterialDto(id = input, name = inputMaterialName),
+            inputQuantity = inputQuantity.trim().toIntOrNull() ?: 0,
+            outputMaterial =
+                outputMaterialId?.let { MaterialDto(id = it, name = outputMaterialName) },
+            outputQuantity = outputQuantity.trim().toIntOrNull() ?: 0,
+            quality = quality.trim().toIntOrNull(),
+            yieldBonusPercent = yieldBonusPercent.trim().toIntOrNull(),
+        )
+    }
+
+/**
+ * Maps one line onto the item the server books.
+ *
+ * @return the item, or `null` when the line names no location or carries no readable amount.
+ */
+private fun RefineryStoreLine.toItem(): RefineryOrderStoreItemDto? {
+    val where = locationId
+    val figure = parseTypedAmount(amount)?.takeIf { it > 0 }
+    if (where == null || figure == null) {
+        return null
+    }
+    return RefineryOrderStoreItemDto(
+        materialId = materialId,
+        locationId = where,
+        quality = quality,
+        // SCU, not wire units: the endpoint reads this as the member's own figure and writes it
+        // into the Lager as-is.
+        amount = figure,
+        userId = userId,
+        // The server refuses the pair; the form must not send it either, or the 400 arrives as a
+        // mystery rather than as the rule it is.
+        jobOrderId = jobOrderId?.takeIf { !personal },
+        note = note.trim().takeIf { it.isNotEmpty() },
+        owningOrgUnitId = owningOrgUnitId,
+        personal = personal,
+    )
+}
+
+/**
+ * One material of a finished run, on its way into the Lager.
+ *
+ * @property materialId which material — fixed by the run, never chosen here.
+ * @property materialName what to show.
+ * @property computed what the run calculated, in SCU.
+ * @property amount what is actually being booked, in SCU. Pre-filled with [computed] and meant to be
+ *   overridden: that is the whole reason this form exists.
+ * @property quality the grade, 0–1000.
+ * @property locationId where it goes. Mandatory; pre-filled with the order's refinery.
+ * @property personal whether it becomes the member's own entry rather than the unit's.
+ * @property jobOrderId the Auftrag to earmark it against, or `null`. **Excludes [personal]** — the
+ *   server answers 400 for the pair, and a personal line never inherits the order's mission earmark
+ *   either.
+ * @property note free text, at most 1000 characters.
+ * @property userId who receives it, or `null` for the caller.
+ * @property owningOrgUnitId which unit to book into. The server requires it when the receiver holds
+ *   more than one membership; pre-filled with the order's unit.
+ */
+data class RefineryStoreLine(
+    val materialId: String,
+    val materialName: String,
+    val computed: Double,
+    val amount: String,
+    val quality: Int,
+    val locationId: String?,
+    val personal: Boolean = false,
+    val jobOrderId: String? = null,
+    val note: String = "",
+    val userId: String? = null,
+    val owningOrgUnitId: String? = null,
+) {
+    /**
+     * What identifies this line among the run's others.
+     *
+     * **Not the material alone.** A run can yield the same material at two grades — Agricium at 733
+     * and at 874 — and keying on the material makes them one line, which Compose rejects outright as
+     * a duplicate list key and which would otherwise edit and acknowledge both at once.
+     */
+    val key: String get() = "$materialId@$quality"
+}
+
+/** How long a store note may be, as the server counts it. */
+const val REFINERY_NOTE_LIMIT: Int = 1000
+
+/**
+ * One refining method, with the three ratings the picker shows as bars.
+ *
+ * @property id the method.
+ * @property name what to show.
+ * @property ratingYield how much it gets out, 0–3.
+ * @property ratingCost what it costs, 0–3.
+ * @property ratingSpeed how fast it is, 0–3.
+ */
+data class RefiningMethod(
+    val id: String,
+    val name: String,
+    val ratingYield: Int,
+    val ratingCost: Int,
+    val ratingSpeed: Int,
+)
+
+/**
+ * One line of a new order: what went in, what came out.
+ *
+ * @property inputMaterialId the ore.
+ * @property inputMaterialName what to show for it.
+ * @property inputQuantity how much went in, as typed.
+ * @property outputMaterialId the refined material, or `null` when the run has not named one.
+ * @property outputMaterialName what to show for it.
+ * @property outputQuantity how much came out, as typed.
+ * @property quality the grade, as typed, 0–1000.
+ * @property yieldBonusPercent the bonus, as typed.
+ */
+data class RefineryGoodDraft(
+    val inputMaterialId: String? = null,
+    val inputMaterialName: String = "",
+    val inputQuantity: String = "",
+    val outputMaterialId: String? = null,
+    val outputMaterialName: String = "",
+    val outputQuantity: String = "",
+    val quality: String = "",
+    val yieldBonusPercent: String = "",
+) {
+    /**
+     * Whether the server would accept this line.
+     *
+     * Input material and both quantities at 1 or more — the wire's own `@NotNull @Min(1)`. The
+     * output material is genuinely optional; a run that yielded nothing nameable still consumed ore.
+     */
+    val complete: Boolean
+        get() =
+            inputMaterialId != null &&
+                (inputQuantity.trim().toIntOrNull() ?: 0) >= 1 &&
+                (outputQuantity.trim().toIntOrNull() ?: 0) >= 1
+}
+
+/**
+ * A new refinery order as the form holds it.
+ *
+ * @property locationId the refinery. Mandatory.
+ * @property locationName what to show for it.
+ * @property methodId the refining method. Mandatory.
+ * @property methodName what to show for it.
+ * @property goods at least one line.
+ * @property startedDate when the run began, as `TT.MM.JJJJ`, or blank.
+ * @property startedTime the clock reading, as `SS:MM`, or blank.
+ * @property durationHours how long it runs, as typed.
+ * @property durationMinutes the remainder, as typed.
+ * @property expenses what it cost, as typed.
+ * @property otherExpenses anything else, as typed.
+ * @property oreSales what the ore sold for, as typed.
+ * @property missionId the Einsatz to link, or `null`.
+ * @property missionName what to show for it.
+ */
+data class RefineryOrderDraft(
+    val locationId: String? = null,
+    val locationName: String = "",
+    val methodId: String? = null,
+    val methodName: String = "",
+    val goods: List<RefineryGoodDraft> = emptyList(),
+    val startedDate: String = "",
+    val startedTime: String = "",
+    val durationHours: String = "",
+    val durationMinutes: String = "",
+    val expenses: String = "",
+    val otherExpenses: String = "",
+    val oreSales: String = "",
+    val missionId: String? = null,
+    val missionName: String = "",
+) {
+    /**
+     * When the run began, as the wire wants it.
+     *
+     * The two fields are the member's; the instant is the server's. An unreadable pair is `null`
+     * rather than a guess — a run whose start nobody recorded is a state the form allows.
+     */
+    val startedAt: Instant?
+        get() =
+            runCatching {
+                LocalDateTime.parse(
+                    "$startedDate $startedTime".trim(),
+                    DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"),
+                ).atZone(ZoneId.systemDefault()).toInstant()
+            }.getOrNull()
+
+    /**
+     * Whether the form may be sent.
+     *
+     * A location and a method, and **every** goods line complete. The server requires an input
+     * material and both quantities at 1 or more on each line (`@NotNull @Min(1)`), so a half-filled
+     * line is not an omission it tolerates — it refuses the whole order with a `goods[0]`-shaped
+     * message nobody can act on. Requiring all of them keeps the refusal here, where the field is,
+     * rather than there, where the field name is an index.
+     */
+    val sendable: Boolean
+        get() =
+            locationId != null &&
+                methodId != null &&
+                goods.isNotEmpty() &&
+                goods.all { it.complete }
+}
+
+/**
+ * What a new refinery order needs, beyond the order itself.
+ */
+interface RefineryCreateSource {
+    /**
+     * Reads the refineries a run can be placed at.
+     *
+     * @return the locations, or the classified failure.
+     */
+    suspend fun refineries(): ApiResult<List<Pair<String, String>>>
+
+    /**
+     * Reads the refining methods with their ratings.
+     *
+     * @return the methods, or the classified failure.
+     */
+    suspend fun methods(): ApiResult<List<RefiningMethod>>
+
+    /**
+     * Searches the materials a goods line can name.
+     *
+     * The same search the Lager's booking form uses — a run's ore is an ordinary material, and a
+     * second list would be a second answer to the same question.
+     *
+     * @param query what was typed; blank asks for the first page unfiltered.
+     * @return the candidates, or the classified failure.
+     */
+    suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>>
+
+    /**
+     * Creates the order the form describes.
+     *
+     * @param draft the form.
+     * @return the new order's id, or the classified failure.
+     */
+    suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String>
+}
+
+/**
+ * Booking a finished run's materials into the Lager.
+ *
+ * **One call for the whole run, not one per material.** The server books whatever the call carries
+ * and then marks the order completed; every later call is refused with „Refinery order is already
+ * completed and stored." A per-card submit therefore loses every material after the first — which
+ * is what a device showed before this was one call.
+ */
+interface RefineryStoreSource {
+    /**
+     * Books every material of a run.
+     *
+     * @param orderId the run.
+     * @param lines what to book. A line whose amount is not a figure is refused rather than sent,
+     *   because the call closes the order and there is no second chance at it.
+     * @return nothing usable beyond success, or the classified failure.
+     */
+    suspend fun storeLines(
+        orderId: String,
+        lines: List<RefineryStoreLine>,
+    ): ApiResult<Unit>
+}
+
 /**
  * The member's own Raffinerie orders (REQ-APP-REF-001…006).
  *
@@ -227,7 +528,9 @@ interface RefinerySource {
  */
 class RefineryRepository(
     private val reader: ApiReader,
-) : RefinerySource {
+) : RefinerySource,
+    RefineryStoreSource,
+    RefineryCreateSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -277,6 +580,140 @@ class RefineryRepository(
         }
 
     /** {@inheritDoc} */
+    override suspend fun refineries(): ApiResult<List<Pair<String, String>>> =
+        when (
+            val result =
+                reader.get(REFINERIES_PATH, ListSerializer(LocationDto.serializer()))
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { row ->
+                        row.id?.let { it to row.name.orEmpty() }
+                    },
+                )
+            }
+        }
+
+    override suspend fun methods(): ApiResult<List<RefiningMethod>> =
+        when (
+            val result =
+                // A page, not a list — `/locations/refineries` beside it answers with a bare
+                // array and the two are easy to assume alike. Parsed as a list this yields nothing,
+                // the picker renders empty, and the form is silently unsendable.
+                reader.get(METHODS_PATH, PageResponseRefiningMethodDto.serializer())
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.content.orEmpty().mapNotNull { row ->
+                        row.id?.let {
+                            RefiningMethod(
+                                id = it,
+                                name = row.name.orEmpty(),
+                                ratingYield = row.ratingYield ?: 0,
+                                ratingCost = row.ratingCost ?: 0,
+                                ratingSpeed = row.ratingSpeed ?: 0,
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+    override suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>> =
+        when (
+            val result =
+                reader.get(
+                    MATERIALS_PATH,
+                    listOf(
+                        SEARCH_PARAM to query.trim(),
+                        PAGE_PARAM to "0",
+                        SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+                    ),
+                    PageResponseMaterialDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.content.orEmpty().mapNotNull { row ->
+                        row.id?.let { it to row.name.orEmpty() }
+                    },
+                )
+            }
+        }
+
+    override suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String> {
+        val locationId = draft.locationId
+        val methodId = draft.methodId
+        if (locationId == null || methodId == null) {
+            return ApiResult.Failure(ApiError.Validation())
+        }
+        val body =
+            RefineryOrderDto(
+                location = LocationDto(id = locationId, name = draft.locationName),
+                refiningMethod = RefiningMethodDto(id = methodId, name = draft.methodName),
+                goods = draft.goods.mapNotNull { it.toDto() },
+                startedAt = draft.startedAt?.toString(),
+                durationMinutes = draft.totalMinutes()?.toLong(),
+                expenses = parseTypedAmount(draft.expenses),
+                otherExpenses = parseTypedAmount(draft.otherExpenses),
+                oreSales = parseTypedAmount(draft.oreSales),
+                mission =
+                    draft.missionId?.let {
+                        MissionReferenceDto(id = it, name = draft.missionName)
+                    },
+                // „In Arbeit" is the design's default and the only status a new run can have: the
+                // other two describe what happened to it afterwards.
+                status = STATUS_IN_PROGRESS,
+            )
+        return when (
+            val result =
+                reader.post(
+                    path = ORDERS_PATH,
+                    body = body,
+                    bodySerializer = RefineryOrderDto.serializer(),
+                    deserializer = RefineryOrderDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.id?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_OK))
+            }
+        }
+    }
+
+    override suspend fun storeLines(
+        orderId: String,
+        lines: List<RefineryStoreLine>,
+    ): ApiResult<Unit> {
+        val items = lines.mapNotNull { it.toItem() }
+        // All or nothing: the call closes the order, so a line the app could not read must stop the
+        // whole submit rather than quietly leave one material behind.
+        if (items.isEmpty() || items.size != lines.size) {
+            return ApiResult.Failure(ApiError.Validation())
+        }
+        return reader.postAccepted(
+            storePath(orderId),
+            RefineryOrderStoreDto(items = items),
+            RefineryOrderStoreDto.serializer(),
+        )
+    }
+
     override suspend fun store(order: RefineryOrder): ApiResult<Unit> {
         val locationId = order.locationId
         val items =
@@ -321,6 +758,31 @@ class RefineryRepository(
         private const val LOG_TAG = "refinery"
 
         private const val MY_ORDERS_PATH = "/api/v1/refinery-orders/my-orders"
+
+        /** Where a new order is posted. */
+        const val ORDERS_PATH = "/api/v1/refinery-orders"
+
+        /** The refineries a run can be placed at. */
+        const val REFINERIES_PATH = "/api/v1/locations/refineries"
+
+        /** The refining methods, with the ratings the picker draws as bars. */
+        const val METHODS_PATH = "/api/v1/refining-methods"
+
+        /** The material search behind a goods line. */
+        const val MATERIALS_PATH = "/api/v1/materials/search"
+
+        /** What was typed into a material picker. */
+        const val SEARCH_PARAM = "search"
+
+        /** How many candidates one search offers. */
+        private const val PICKER_PAGE_SIZE = 25
+
+        /** What a new run's status is; the other two describe what happened to it later. */
+        private const val STATUS_IN_PROGRESS = "IN_PROGRESS"
+
+        /** What a successful call that returned nothing usable is reported as. */
+        private const val HTTP_OK = 200
+
         private const val STATUS_PARAM = "status"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"

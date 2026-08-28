@@ -38,10 +38,32 @@ purely local information that **never leaves the device** is not even in scope o
 | Settings (language, theme-independent prefs) | necessary; store values, not unique IDs (OH para 81) — **no consent** |
 | Offline read cache of content the member requested | necessary for the requested service; additionally local-only until display — **no consent** |
 | App-lock keys (Keystore) | necessary for the user-requested lock feature — **no consent** |
+| A report the member asked for, cached to hand it to another app | necessary for the download the member explicitly requested — **no consent** |
 | Anything for analytics/tracking/ads | **would require consent — not planned; keep it that way** |
 
 Design consequence: **zero consent banners** as long as we add no analytics/tracking. This is a
 feature; guard it in review (any SDK addition re-triggers this analysis).
+
+**Re-run 2026-08-28 (bank reports downloadable).** The Verwaltung scope can now fetch two files —
+an account statement (PDF) and the three-month report — and both are written to the device before
+being handed on. The assessment is unchanged and the reasoning is worth stating, because a bank
+statement is the most sensitive thing this app has ever put on a disk.
+
+Where it goes: **`cacheDir/reports/`**, app-private, mode `0600` — verified on a device
+(`-rw------- u0_a229`). Not shared storage, so **no storage permission is requested** and nothing
+else on the device can read it. It is handed on through a `FileProvider` whose authority is
+`exported="false"`, serving only that one sub-path, with a read grant that lasts for the single
+share intent.
+
+Why the cache and not `filesDir`: the member has already been given the file, and a copy the app
+keeps for ever is a copy that can leak later. Android may reclaim the directory at will, which is
+the correct lifetime for something that can always be fetched again. Nothing sweeps it on logout
+today — the honest statement is that the OS owns its lifetime, and if that ever stops being enough
+the answer is an explicit wipe next to the token wipe, not a longer-lived directory.
+
+§ 25(2) Nr. 2 applies unchanged: the member pressed „Kontoauszug", and writing the answer down is
+how a phone hands a file to another app. No identifier is stored, nothing is read back by the app,
+and no new dependency was added — `FileProvider` is androidx-core, already present.
 
 **Re-run 2026-08-18 (token store implemented).** The assessment above is unchanged — what changed
 is that the first row now has a concrete subject. Stored: the **refresh token only**, AES-256-GCM

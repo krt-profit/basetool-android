@@ -4,6 +4,50 @@
 
 ### Added
 
+- **Kontoauszug und 3-Monats-Bericht lassen sich aus der App heraus abrufen.** Beide landen im
+  app-eigenen Speicher und gehen von dort an die App deiner Wahl weiter — es wird keine
+  Speicherberechtigung verlangt und keine andere App kann die Datei lesen.
+
+- **Raffinerieaufträge lassen sich jetzt in der App anlegen.** Raffinerie und Methode mit ihren drei
+  Bewertungen, Waren mit Ein- und Ausgang, Timing mit berechnetem Ende und ein Geld-Block mit
+  Gewinn-Vorschau. Einen Extractor-Import gibt es bewusst nicht — dessen Übergabe wird einmalig im
+  Browser eingelöst und kann ein Telefon nicht erreichen.
+
+- **Raffinerieaufträge lassen sich jetzt mit allen Angaben einlagern.** Pro Material kannst du die
+  Menge korrigieren — die berechnete steht daneben —, eine Notiz setzen und die Position als
+  persönlichen Eintrag buchen. Gebucht wird der ganze Auftrag in einem Zug.
+
+- **Zahlenfelder akzeptieren jetzt das Komma.** Auf einer deutschen Tastatur liefert die
+  Dezimaltaste ein Komma; die App hat das bisher nicht gelesen — im Lager und in der Bank wurde
+  daraus stillschweigend eine 0, in der Raffinerie passierte gar nichts.
+
+- **Bankmitarbeiter können eine Buchung stornieren.** Im Kontodetail hat jede Buchung eine
+  Storno-Aktion; sie erzeugt eine negierte Gegenbuchung, die Originalbuchung bleibt unverändert im
+  Ledger. Eine bereits stornierte Buchung ist als solche markiert und bietet die Aktion nicht mehr
+  an. Konten öffnen sich für Bankmitarbeiter jetzt über die Verwaltungssicht — vorher meldete die
+  App „Dieses Konto ist für dich nicht einsehbar", sobald man keine eigene Sichtfreigabe hatte.
+
+- **Die Bankverwaltung zeigt jetzt das Halter-Detail.** Tippst du im Tab „Konten" auf einen Halter,
+  siehst du, wie viel er verwahrt und welche Buchungen dahinterstehen, und kannst per
+  „Halter-Umbuchung" Verwahrung an einen anderen Halter abgeben. Neu ist auch
+  „+ Halter registrieren". Die Verwahrung wird auf Einheits-Ebene geführt, nicht je Konto — das
+  steht an der Zahl. Für eine Umbuchung fällt eine Gebühr zulasten des KRT-Kontos an; wenn dieses
+  Konto fehlt oder nicht gedeckt ist, sagt die App genau das statt „gleichzeitig geändert".
+
+- **Die Bankverwaltung hat jetzt einen Tab „Grants".** Pro Konto siehst du, wer darauf einzahlen,
+  auszahlen und umbuchen darf, und kannst es ändern. Wer im Konto steht, darf es auch sehen — auch
+  ohne ein einziges Häkchen; das Sehen entziehst du, indem du den Eintrag entfernst, und dafür
+  fragt die App vorher nach. Beim KRT-Konto entfällt das: das sieht ohnehin jedes Mitglied. Ohne
+  die Rolle Bank-Management ist der Tab gesperrt statt unsichtbar und sagt dir, welche Rolle fehlt.
+  Über „+ Grant hinzufügen" trägst du jemanden neu ein; hat das Mitglied die Rolle Bank-Mitarbeiter
+  nicht oder steht es schon auf dem Konto, sagt die App genau das.
+
+- **Die Bankverwaltung hat jetzt einen Tab „Konten".** Konten anlegen, umbenennen, schließen und
+  wieder öffnen, dazu das Halter-Register der Einheit mit Deaktivieren und Reaktivieren. Ohne die
+  Rolle Bank-Management siehst du die Aktionen mit einem Schloss statt gar nicht — ein Tipp sagt
+  dir, welche Rolle du brauchst. Ein Konto mit Saldo lässt sich nicht schließen; das steht an der
+  Aktion, bevor du sie drückst.
+
 - **Bankmitarbeiter haben jetzt einen Umschalter „Mitglied | Verwaltung" in der Bank.** Unter
   „Verwaltung" siehst du alle Konten der Einheit — auch geschlossene und solche, für die du keine
   eigene Sichtfreigabe hast; letztere sind gekennzeichnet. Wer keine Bank-Rolle hat, sieht den
@@ -118,6 +162,11 @@
   Er kommt zurück, wenn die Ansicht wirklich fertig ist.
 
 ### Fixed
+
+- **Der offene Tab ist wieder als solcher zu erkennen.** Die orange Unterstreichung unter dem
+  aktiven Tab wurde in der ganzen App nicht gezeichnet. Ebenfalls überall: die Umschalter
+  („Mitglied / Verwaltung", „Meine Schiffe / Org-Einheit" …) stehen jetzt wie im Design in
+  Großbuchstaben.
 
 - **Bei großer Schrift (1,3×) wurden Beschriftungen abgeschnitten** — „CHECK-IN NÄCHSTER EI…" — und
   Filter brachen mitten im Wort („ABGEB ROCHE N"). Beides wächst jetzt sauber um.

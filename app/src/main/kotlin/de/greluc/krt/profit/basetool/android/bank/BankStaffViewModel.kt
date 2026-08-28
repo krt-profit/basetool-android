@@ -101,7 +101,8 @@ data class BankRejectState(
  * The Verwaltung scope's Übersicht tab.
  *
  * @property rows every account of the unit.
- * @property totals the KPI band.
+ * @property totals the KPI band, or `null` when the server withheld it — which it does for
+ *   every caller who is not Bank-Management (REQ-BANK-010).
  * @property management whether the **server** grants this caller Bank-Management.
  * @property openRequestTotal how many undecided requests the queue holds in total.
  * @property queue the undecided requests, in the order the server returned them. The same read
@@ -119,7 +120,7 @@ data class BankRejectState(
  */
 data class BankStaffState(
     val rows: List<BankStaffRow> = emptyList(),
-    val totals: BankStaffTotals = BankStaffTotals(null, 0, 0),
+    val totals: BankStaffTotals? = null,
     val management: Boolean = false,
     val openRequestTotal: Int = 0,
     val countsPartial: Boolean = false,

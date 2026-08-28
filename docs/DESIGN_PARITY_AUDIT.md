@@ -125,13 +125,48 @@ code change. The holder breakdown inside the **detail** stays; the detail endpoi
 
 The request rows' `approvals` / `canApprove` are still to be checked.
 
-### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **done**
+### 09 Lager — artboards 1–4 · `inventory/`, `personalinventory/` — **four open items (2026-08-28)**
 
 The group header has the chapter's fill beside the orange rail it already had, and the toggle turns a
 chevron — without one nothing said the row opens. A stack entry now leads with **where** it is,
 behind a map pin: only the amount and the note were drawn, so two entries of the same material in
 different hangars read as duplicates of each other. `total` + `unit` per group were already there as
 `amount`/`unit`. Mein Inventar and Blueprints are tiles.
+
+**Re-audited 2026-08-28 by putting the rendered artboard beside a device screenshot.** What matches:
+the orange rail and chevron, the material bold with the amount right-aligned and its unit muted, the
+org chip in the app bar, and the third level's „Halter · Ort · Q 880" with its quality bar. Four
+things do not:
+
+| # | artboard 1 | app | verdict |
+| :-- | :-- | :-- | :-- |
+| 1 | three filter chips — „MATERIAL: ALLE", „NUR MIT BESTAND", „ORT: ALLE" | one, „NUR MIT BESTAND" | **the artboard is ahead of the system** — see below |
+| 2 | a filter icon in the app bar | a bell | follows from 1: there is nothing for it to open |
+| 3 | the FAB is a download glyph (⤓) | „+", labelled „Einbuchen" | open — the glyph reads as Ausbuchen, the action is Einbuchen |
+| 4 | material → **holder** (with a subtotal) → entry | material → holder·location merged into one row | open — a member holding one material in two places gets no subtotal |
+
+**Items 1 and 2 are not app gaps.** Checked rather than assumed:
+
+- **The web frontend has no such filters.** `inventory-index.html` offers a view toggle (material
+  vs items) and a squadron selector. Nothing filters by material or by location.
+- **The endpoint cannot back them.** `/api/v1/inventory/aggregated` takes `catalog`, `page`, `size`,
+  `sort` — no material, no location. Only the *grouped* read one level down takes `materialIds`.
+
+So building them would mean either exceeding the web (which the goal does not ask for) or filtering
+client-side over a paged list, which is the silent cap ADR-0104 forbids — a member searching for a
+material on page three would be told it is not there. The existing „Nur mit Bestand" chip is
+deliberately the honest kind: it hides rows from a page the member already has, and the count below
+the list keeps stating the server's total.
+
+Recorded as a design-vs-system difference in `MISSING_ARTBOARD_PROMPTS_7.md`, the same way the
+refinery's „#7841" order number was.
+
+Items 3 and 4 stay open and are app-side.
+
+> [!note] Why this row said „done"
+> Same reason as the Raffinerie row below: the 25.08. pass checked that the drawn *elements* existed
+> and never compared the two pictures. Three of the four items above are visible in the first
+> screenshot taken of this screen.
 
 ### 08 Hangar — artboards 1–3 · `hangar/HangarScreen.kt` — **done (2026-08-25, verified on screen)**
 
@@ -172,11 +207,38 @@ lands would be a promise the screen cannot keep.
 Artboard 5 (Operation detail + payout) exists, so **Operationen is covered** — contrary to the
 assumption that it had no template.
 
-### 11 Raffinerie — artboards 1–2 · `refinery/RefineryScreen.kt` — **done**
+### 11 Raffinerie — artboards 1–5 · `refinery/*` — **done (re-audited 2026-08-28)**
 
 Corrected from the probe: `station` and `method` **are** drawn — as `locationName` in the title and
 `methodName` in the second line, which is why a probe looking for the design's field names missed
 them. With the tile the row now matches artboard 1.
+
+> [!warning] This row said „done" and was wrong about artboard 2
+> The 25.08. pass checked that the *fields* were present. They were. What it never did was put the
+> rendered artboard beside a screenshot, and six things differed — the four facts were loose rows
+> instead of the HUD box, each yield was a label-value row instead of a card, the money was two
+> rows instead of „Geschätzter Wert" in green, the CTA read „In Lager buchen" instead of
+> „Einlagern", „Fertig" was an absolute stamp, and the header carried no identity line. The owner
+> spotted it from a screenshot before the audit did.
+>
+> **The lesson is about the method, not the screen.** A field-presence check cannot see layout, and
+> „done" earned that way is worth less than it looks. Every row above this one was checked the same
+> way and should be re-read with that in mind.
+
+Artboards **3 (Einlagern)**, **4 and 5 (Neuer Raffinerieauftrag)** had no app screen at all until
+2026-08-28; both are now built and verified on a device. Two deliberate departures, both recorded
+in `docs/specs/refinery.md`:
+
+- **One submit for the run, not one per card.** The handoff has each material card book and
+  acknowledge on its own; the server books whatever a call carries and then closes the order, so
+  built that way the second material is lost. Verified: line one booked, order closed, line two
+  `400`.
+- **The create form is one scrolling screen**, not the two drawn. The artboards split it because
+  412 dp cannot show both halves, not because it is two steps.
+
+One thing the artboard shows that the system does not have: **an order number**. „#7841" is mock —
+no number exists on the wire, and the web's own title is „Raffinerieauftrag Details". The app names
+what it has.
 
 ### 07 Benachrichtigungen · `notifications/NotificationsScreen.kt` — **done**
 

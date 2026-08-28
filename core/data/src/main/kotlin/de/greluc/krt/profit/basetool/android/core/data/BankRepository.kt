@@ -9,26 +9,37 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountLifecycleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankGrantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.ConfirmBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankAccountRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankGrantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBalanceTargetRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountDetailDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankAccountSettingsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitBankBalanceDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBankBookingRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.RegisterBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.RenameBankAccountRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankGrantRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.DownloadedFile
 import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
@@ -233,12 +244,23 @@ data class BankRequestDraft(
  */
 data class BankBooking(
     val id: String,
+    val transactionId: String?,
     val type: String,
     val amount: String?,
     val note: String?,
     val holder: String?,
     val createdAt: Instant?,
+    val reversesTransactionId: String? = null,
 ) {
+    /**
+     * Whether this row is itself a counter-booking.
+     *
+     * **Not** "has been reversed": the wire field names the transaction this one negates, so it is
+     * set on the Storno and absent on the original. Reading it the other way round labels the
+     * counter-booking as reversed and leaves the original offering an action the server refuses.
+     */
+    val isReversal: Boolean get() = reversesTransactionId != null
+
     /**
      * Whether this line adds to the account.
      *
@@ -540,16 +562,19 @@ data class BankStaffTotals(
 /**
  * The staff dashboard.
  *
- * @property management whether the **server** grants this caller Bank-Management. Preferred over
- *   anything the app derived from role names for deciding what a loaded screen offers: this is the
- *   server stating what the caller may do, and it is its answer for this very surface.
- * @property accounts every account of the unit.
- * @property totals the KPI band.
+ * @property management whether the **server** grants this caller Bank-Management. It decides what
+ *   the dashboard even contains (REQ-BANK-010): management sees every account plus the aggregate
+ *   strip, a plain bank employee sees exactly the accounts they hold a grant for and no strip at
+ *   all.
+ * @property accounts the accounts this caller may see — every one for management, the granted ones
+ *   for an employee.
+ * @property totals the KPI band, or **`null` when the caller is not management**. Absent means
+ *   "not for you", which is a different statement from zero and must not be rendered as one.
  */
 data class BankStaffDashboard(
     val management: Boolean,
     val accounts: List<BankStaffAccount>,
-    val totals: BankStaffTotals,
+    val totals: BankStaffTotals?,
 )
 
 /**
@@ -582,12 +607,14 @@ data class BankRequestPage(
  * @property active whether they still hold; an inactive one is kept for the ledger's sake and is
  *   not offered.
  * @property totalHeld how much they hold altogether, unformatted.
+ * @property version the optimistic-locking version an activation change echoes.
  */
 data class BankHolder(
     val id: String,
     val handle: String,
     val active: Boolean,
     val totalHeld: String?,
+    val version: Long = 0,
 )
 
 /**
@@ -611,6 +638,400 @@ data class BankConfirmation(
     val ownerApprovalConfirmed: Boolean = false,
     val staffNote: String? = null,
 )
+
+/**
+ * One account as the lifecycle tab lists it.
+ *
+ * Distinct from [BankStaffAccount], which the dashboard supplies: that one carries a balance line
+ * and no `version`, and every write here echoes one.
+ *
+ * @property id the account.
+ * @property accountNo the number.
+ * @property name its display name.
+ * @property type the account kind as the server names it.
+ * @property status active or closed.
+ * @property balance the balance, unformatted. **Closing needs it to be zero** — the server refuses
+ *   otherwise, and the row says so rather than letting the button answer for it.
+ * @property orgUnitName which unit owns it, or `null`.
+ * @property version the optimistic-locking version every lifecycle write echoes.
+ */
+data class BankManagedAccount(
+    val id: String,
+    val accountNo: String?,
+    val name: String,
+    val type: String?,
+    val status: BankAccountStatus,
+    val balance: String?,
+    val orgUnitName: String?,
+    val version: Long,
+)
+
+/**
+ * The account lifecycle and the unit's holders.
+ *
+ * Every write here is `BANK_MANAGEMENT`, not merely `BANK_EMPLOYEE` — the reads are the employee's,
+ * the changes are the leadership's. The screen offers them from what the server said rather than
+ * from a role the app worked out.
+ */
+interface BankLifecycleSource {
+    /**
+     * Reads one page of the account list.
+     *
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the accounts, or the classified failure.
+     */
+    suspend fun managedAccounts(
+        page: Int = 0,
+        pageSize: Int = ACCOUNTS_PAGE_SIZE,
+    ): ApiResult<List<BankManagedAccount>>
+
+    /**
+     * Opens a new account.
+     *
+     * @param name what to call it.
+     * @param orgUnitId which unit owns it.
+     * @return the account as the server recorded it.
+     */
+    suspend fun createAccount(
+        name: String,
+        orgUnitId: String,
+    ): ApiResult<BankManagedAccount>
+
+    /**
+     * Renames an account.
+     *
+     * @param id the account.
+     * @param name the new name.
+     * @param version the version it was read at.
+     * @return the account in its new state.
+     */
+    suspend fun renameAccount(
+        id: String,
+        name: String,
+        version: Long,
+    ): ApiResult<BankManagedAccount>
+
+    /**
+     * Closes or reopens an account.
+     *
+     * Reversible on purpose, which is why it carries no type-to-confirm: a closed account simply
+     * takes no further bookings.
+     *
+     * @param id the account.
+     * @param open whether to reopen it; `false` closes it.
+     * @param version the version it was read at.
+     * @return the account in its new state, or the classified failure — a 409 when it still holds
+     *   a balance or has undecided requests against it.
+     */
+    suspend fun setAccountOpen(
+        id: String,
+        open: Boolean,
+        version: Long,
+    ): ApiResult<BankManagedAccount>
+
+    /**
+     * Registers a member as a holder.
+     *
+     * @param userId the member; only a registered tool user may hold.
+     * @return the holder as the server recorded them.
+     */
+    suspend fun registerHolder(userId: String): ApiResult<BankHolder>
+
+    /**
+     * Activates or deactivates a holder.
+     *
+     * **Not a removal.** An inactive holder can have no *new* money assigned to them; what they
+     * already hold stays withdrawable. Nothing about their rights on an account changes — that is
+     * what a grant does, and it lives elsewhere.
+     *
+     * @param id the holder.
+     * @param active whether they may take new money.
+     * @param version the version they were read at.
+     * @return the holder in their new state.
+     */
+    suspend fun setHolderActive(
+        id: String,
+        active: Boolean,
+        version: Long,
+    ): ApiResult<BankHolder>
+}
+
+/** How many accounts one page of the lifecycle list carries. */
+const val ACCOUNTS_PAGE_SIZE: Int = 100
+
+/**
+ * One member's standing on one account.
+ *
+ * **The row's existence is the view grant** (REQ-BANK-009): a row with all three flags false lets
+ * the member see the account and book nothing. Revoking sight means deleting the row, not clearing
+ * a fourth flag.
+ *
+ * @property userId the member.
+ * @property handle their in-game name.
+ * @property accountId the account.
+ * @property canDeposit whether they may book money in.
+ * @property canWithdraw whether they may book money out.
+ * @property canTransfer whether they may move money to another account, judged on the **source**.
+ * @property version the optimistic-locking version a flag change echoes.
+ * @property exists whether the server already holds this row, which decides whether a change is a
+ *   creation or a patch. **Not derivable from [version]**: a freshly inserted row's `@Version` is
+ *   zero, so treating zero as "new" sends every first edit of an untouched grant as a creation and
+ *   earns a 409.
+ */
+data class BankGrant(
+    val userId: String,
+    val handle: String,
+    val accountId: String,
+    val canDeposit: Boolean,
+    val canWithdraw: Boolean,
+    val canTransfer: Boolean,
+    val version: Long,
+    val exists: Boolean = true,
+)
+
+/**
+ * One account as the **office** sees it — `BANK_EMPLOYEE`.
+ *
+ * Distinct from [BankSource]'s pair of the same shape, and not interchangeable with it: the member
+ * paths answer with what this caller may see, so a bank manager holding no view grant gets 403 on
+ * an account they are nevertheless responsible for. These paths answer for every account of the
+ * organisation, including closed ones.
+ */
+interface BankStaffAccountSource {
+    /**
+     * Reads one account.
+     *
+     * @param id which account.
+     * @return the account, or the classified failure.
+     */
+    suspend fun staffAccount(id: String): ApiResult<BankAccountDetail>
+
+    /**
+     * Reads a page of one account's ledger.
+     *
+     * @param id which account.
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the page, or the classified failure.
+     */
+    suspend fun staffBookings(
+        id: String,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BankBookingPage>
+}
+
+/**
+ * The bank's two reports.
+ *
+ * Both answer a **binary** body — a PDF and a spreadsheet — with the server's own file name in
+ * `Content-Disposition`. Nothing here decodes a schema, and nothing here invents a name: two
+ * systems calling the same download different things is a support conversation waiting to happen.
+ */
+interface BankReportSource {
+    /**
+     * Fetches one account's statement for a period.
+     *
+     * @param accountId which account.
+     * @param from the start of the period, ISO-8601 in UTC.
+     * @param to its end.
+     * @return the PDF, or the classified failure.
+     */
+    suspend fun statement(
+        accountId: String,
+        from: String,
+        to: String,
+    ): ApiResult<DownloadedFile>
+
+    /**
+     * Fetches the three-month report.
+     *
+     * @param zoneId the reader's zone, which decides where the report's month boundaries fall.
+     * @return the file, or the classified failure.
+     */
+    suspend fun threeMonthReport(zoneId: String): ApiResult<DownloadedFile>
+}
+
+/**
+ * Reversing a booking — `BANK_EMPLOYEE`, and the one destructive-looking act in the ledger that is
+ * not destructive at all.
+ */
+interface BankReversalSource {
+    /**
+     * Reverses one transaction.
+     *
+     * Writes a **negated counter-booking**; the original stays in the ledger unchanged. The server
+     * refuses a second one on the same transaction with `BANK_ALREADY_REVERSED`, so the screen must
+     * not offer it on a row that already carries a reversal.
+     *
+     * @param transactionId which transaction — not the posting id.
+     * @param note what to record about it, or `null`.
+     * @return nothing usable beyond success, or the classified failure.
+     */
+    suspend fun reverse(
+        transactionId: String,
+        note: String?,
+    ): ApiResult<Unit>
+}
+
+/**
+ * One posting against a holder's custody.
+ *
+ * @property id the posting.
+ * @property transactionId the transaction it belongs to, which a reversal would name.
+ * @property type what kind of movement it was.
+ * @property amount the signed amount, as the server wrote it.
+ * @property note what was said about it, if anything.
+ * @property createdAt when it was booked, in UTC.
+ * @property counterAccount the account on the other side, or `null` for a holder-to-holder move —
+ *   custody is kept at org-unit level and those transfers touch no account at all.
+ * @property counterHolder the holder on the other side, or `null`.
+ * @property reversed whether this posting is itself a counter-booking.
+ */
+data class BankHolderBooking(
+    val id: String,
+    val transactionId: String?,
+    val type: String?,
+    val amount: String?,
+    val note: String?,
+    val createdAt: String?,
+    val counterAccount: String?,
+    val counterHolder: String?,
+    val reversed: Boolean,
+)
+
+/**
+ * One page of a holder's postings.
+ *
+ * @property rows the postings.
+ * @property page which page this is, zero-based.
+ * @property totalElements how many postings there are in total.
+ * @property totalPages how many pages that makes.
+ */
+data class BankHolderBookingPage(
+    val rows: List<BankHolderBooking>,
+    val page: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+/**
+ * The holder register's detail — `BANK_EMPLOYEE` to read, `BANK_MANAGEMENT` to move custody.
+ */
+interface BankHolderSource {
+    /**
+     * Reads one holder.
+     *
+     * @param id which holder.
+     * @return the holder, or the classified failure.
+     */
+    suspend fun holder(id: String): ApiResult<BankHolder>
+
+    /**
+     * Reads a page of one holder's postings.
+     *
+     * @param id which holder.
+     * @param page which page, zero-based.
+     * @param pageSize how many rows.
+     * @return the page, or the classified failure.
+     */
+    suspend fun holderBookings(
+        id: String,
+        page: Int = 0,
+        pageSize: Int = HOLDER_PAGE_SIZE,
+    ): ApiResult<BankHolderBookingPage>
+
+    /**
+     * Moves custody from one holder to another.
+     *
+     * Touches **no account**: custody is kept at org-unit level, so this only re-attributes who is
+     * holding it. The source may go negative, which is deliberate and which the screen says.
+     *
+     * @param sourceHolderId who gives.
+     * @param destinationHolderId who receives.
+     * @param amount how much, as a decimal string.
+     * @param note what to record about it, or `null`.
+     * @return nothing usable beyond success, or the classified failure.
+     */
+    suspend fun transferCustody(
+        sourceHolderId: String,
+        destinationHolderId: String,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit>
+}
+
+/** How many postings one page of the holder detail carries. */
+const val HOLDER_PAGE_SIZE: Int = 25
+
+/**
+ * A member the grants matrix can be extended to.
+ *
+ * @property id the user.
+ * @property handle their in-game name, which is the only field of theirs this screen shows — the
+ *   search answers with e-mail and rank too, and neither belongs on a grants picker.
+ */
+data class BankGrantee(
+    val id: String,
+    val handle: String,
+)
+
+/**
+ * The grants matrix — `BANK_MANAGEMENT` throughout.
+ *
+ * Org-unit membership of the grantee is irrelevant in both directions (REQ-BANK-008); what the
+ * server does require is that the grantee holds the Bank Employee role, and it refuses a creation
+ * for anyone else.
+ */
+interface BankGrantSource {
+    /**
+     * Reads the grants on one account.
+     *
+     * @param accountId which account's matrix.
+     * @return the grants, or the classified failure.
+     */
+    suspend fun grants(accountId: String): ApiResult<List<BankGrant>>
+
+    /**
+     * Gives a member a standing on an account, or changes the one they have.
+     *
+     * Creating with all three flags false is the deliberate "may see, may book nothing" case.
+     *
+     * @param grant what the matrix now says. A grant whose `exists` is false is created rather
+     *   than patched — the version cannot say, because a new row's version is zero too.
+     * @return the grant as the server recorded it.
+     */
+    suspend fun setGrant(grant: BankGrant): ApiResult<BankGrant>
+
+    /**
+     * Takes a member's standing away entirely.
+     *
+     * This is what revokes **sight** — there is no view flag to clear.
+     *
+     * @param userId the member.
+     * @param accountId the account.
+     * @return nothing, or the classified failure.
+     */
+    suspend fun revokeGrant(
+        userId: String,
+        accountId: String,
+    ): ApiResult<Unit>
+
+    /**
+     * Searches the members a grant can be given to.
+     *
+     * Answers over the **whole** user base rather than only over bank employees, because the server
+     * does: the same search backs the holder register and the approval limits. A member without the
+     * Bank Employee role can therefore be picked, and the creation then fails with
+     * `BANK_GRANTEE_MISSING_ROLE` — the screen says so rather than pretending the pick was
+     * impossible.
+     *
+     * @param query what was typed; blank asks for the first page unfiltered.
+     * @return the candidates, or the classified failure.
+     */
+    suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>>
+}
 
 /**
  * The bank-staff surface — design chapter 12, artboards 4 to 8.
@@ -681,11 +1102,10 @@ const val QUEUE_PAGE_SIZE: Int = 50
 /**
  * Reads the org bank from the backend.
  *
- * **Two surfaces, and the paths are what separate them.** `/org-units/bank/…` is the member one:
- * it answers with the accounts this caller may actually see — the ones public to everyone plus
- * those they hold a view grant for. `/bank/…` is the staff one: it lists every account in the
- * organisation and is gated on a bank role. The staff half arrived with the amendment of
- * `REQ-APP-BANK-007`; before it, this class deliberately reached only the member paths.
+ * **The member surface only.** `/org-units/bank/…` answers with the accounts this caller may
+ * actually see — the ones public to everyone plus those they hold a view grant for. The staff
+ * paths under `/bank/…` list every account in the organisation behind a bank role and belong to
+ * [BankStaffRepository]; the split follows the two surfaces rather than the one file.
  *
  * Everything under `/api/v1/bank/admin` is reached by neither and never will be — that is the
  * admin area, which is web-only by owner decision.
@@ -695,8 +1115,7 @@ const val QUEUE_PAGE_SIZE: Int = 50
 class BankRepository(
     private val reader: ApiReader,
 ) : BankSource,
-    BankRequestSource,
-    BankStaffSource {
+    BankRequestSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -762,7 +1181,7 @@ class BankRepository(
                 OrgUnitBalanceTargetRequest(
                     // No target IS the clear. Sending zero would set a target of nothing, which is
                     // a different instruction and one the screen never offers.
-                    target = target?.toBigDecimalOrNull()?.let(::KrtDecimal),
+                    target = parseTypedDecimal(target)?.let(::KrtDecimal),
                     version = version ?: 0L,
                 ),
                 OrgUnitBalanceTargetRequest.serializer(),
@@ -812,106 +1231,6 @@ class BankRepository(
             is ApiResult.Failure -> result
             is ApiResult.Success -> ApiResult.Success(result.value.toModel())
         }
-
-    override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> =
-        when (val result = reader.get(STAFF_DASHBOARD_PATH, BankDashboardDto.serializer())) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
-        }
-
-    override suspend fun requestQueue(
-        statuses: Set<BankRequestStatus>,
-        page: Int,
-        pageSize: Int,
-    ): ApiResult<BankRequestPage> {
-        val query =
-            buildList {
-                statuses.forEach { add(STATUS_PARAM to it.name) }
-                add(PAGE_PARAM to page.toString())
-                add(SIZE_PARAM to pageSize.toString())
-            }
-        return when (
-            val result =
-                reader.get(
-                    STAFF_REQUESTS_PATH,
-                    query,
-                    PageResponseBankBookingRequestDto.serializer(),
-                )
-        ) {
-            is ApiResult.Failure -> {
-                result
-            }
-
-            is ApiResult.Success -> {
-                ApiResult.Success(
-                    BankRequestPage(
-                        requests = result.value.content.orEmpty().mapNotNull { it.toModel() },
-                        page = result.value.page ?: page,
-                        totalPages = result.value.totalPages ?: 0,
-                        totalElements = result.value.totalElements ?: 0,
-                    ),
-                )
-            }
-        }
-    }
-
-    override suspend fun holders(): ApiResult<List<BankHolder>> =
-        when (
-            val result =
-                reader.get(STAFF_HOLDERS_PATH, ListSerializer(BankHolderDto.serializer()))
-        ) {
-            is ApiResult.Failure -> {
-                result
-            }
-
-            is ApiResult.Success -> {
-                ApiResult.Success(
-                    result.value.mapNotNull { dto ->
-                        dto.id?.let {
-                            BankHolder(
-                                id = it,
-                                handle = dto.handle.orEmpty(),
-                                active = dto.active != false,
-                                totalHeld = dto.totalHeld?.toString(),
-                            )
-                        }
-                    },
-                )
-            }
-        }
-
-    override suspend fun confirmRequest(
-        confirmation: BankConfirmation,
-    ): ApiResult<BankBookingRequest> =
-        single(
-            reader.post(
-                path = "$STAFF_REQUESTS_PATH/${confirmation.requestId}/confirm",
-                body =
-                    ConfirmBankBookingRequest(
-                        holderId = confirmation.holderId,
-                        version = confirmation.version,
-                        destinationHolderId = confirmation.destinationHolderId,
-                        ownerApprovalConfirmed = confirmation.ownerApprovalConfirmed,
-                        staffNote = confirmation.staffNote?.takeIf { it.isNotBlank() },
-                    ),
-                bodySerializer = ConfirmBankBookingRequest.serializer(),
-                deserializer = BankBookingRequestDto.serializer(),
-            ),
-        )
-
-    override suspend fun rejectRequest(
-        id: String,
-        reason: String,
-        version: Long,
-    ): ApiResult<BankBookingRequest> =
-        single(
-            reader.post(
-                path = "$STAFF_REQUESTS_PATH/$id/reject",
-                body = RejectBankBookingRequest(reason = reason, version = version),
-                bodySerializer = RejectBankBookingRequest.serializer(),
-                deserializer = BankBookingRequestDto.serializer(),
-            ),
-        )
 
     override suspend fun ownRequests(): ApiResult<List<BankBookingRequest>> =
         requestList("$REQUESTS_PATH")
@@ -967,7 +1286,7 @@ class BankRepository(
                     CreateBankBookingRequest(
                         sourceAccountId = draft.accountId,
                         type = draft.kind.toWire(),
-                        amount = KrtDecimal(draft.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                        amount = KrtDecimal(parseTypedDecimal(draft.amount) ?: BigDecimal.ZERO),
                         // Only a transfer names a second account; the server ignores it otherwise,
                         // and sending it anyway would put a value on the wire describing nothing.
                         targetAccountId = draft.targetAccountId.takeIf { draft.kind == BankRequestKind.TRANSFER },
@@ -991,7 +1310,7 @@ class BankRepository(
                 method = "PUT",
                 body =
                     UpdateBankBookingRequest(
-                        amount = KrtDecimal(amount.toBigDecimalOrNull() ?: BigDecimal.ZERO),
+                        amount = KrtDecimal(parseTypedDecimal(amount) ?: BigDecimal.ZERO),
                         note = note?.takeIf { it.isNotBlank() },
                         targetAccountId = targetAccountId,
                         version = version,
@@ -1068,18 +1387,6 @@ class BankRepository(
         /** Log subsystem. No amount, handle or note is ever logged. */
         private const val LOG_TAG = "bank"
 
-        /** The staff dashboard: every account of the unit plus the KPI band. */
-        const val STAFF_DASHBOARD_PATH = "/api/v1/bank/dashboard"
-
-        /** The staff request queue. */
-        const val STAFF_REQUESTS_PATH = "/api/v1/bank/requests"
-
-        /** The unit's holders, which a confirmation has to name one of. */
-        const val STAFF_HOLDERS_PATH = "/api/v1/bank/holders"
-
-        /** The queue's status filter; repeated once per state. */
-        const val STATUS_PARAM = "status"
-
         /** The member surface's prefix; the staff bank lives under `/api/v1/bank`. */
         private const val ORG_UNIT_BANK = "/api/v1/org-units/bank"
 
@@ -1155,55 +1462,11 @@ private fun OrgUnitBankAccountDetailDto.toModel(requestedId: String): BankAccoun
     )
 
 /**
- * Maps the staff dashboard onto the model.
- *
- * @return the dashboard; a missing `totals` reads as a bank with nothing in it rather than a
- *   failure, because an organisation that has closed every account is a real state.
- */
-private fun BankDashboardDto.toModel(): BankStaffDashboard =
-    BankStaffDashboard(
-        management = management == true,
-        accounts = accounts.orEmpty().mapNotNull { it.toModel() },
-        totals =
-            BankStaffTotals(
-                totalBalance = totals?.totalBalance?.toString(),
-                activeAccounts = totals?.activeAccounts ?: 0,
-                closedAccounts = totals?.closedAccounts ?: 0,
-            ),
-    )
-
-/**
- * Maps one dashboard row onto the model.
- *
- * @return the account, or `null` without an id - one nothing could open.
- */
-private fun BankDashboardAccountDto.toModel(): BankStaffAccount? {
-    val accountId = id ?: return null
-    return BankStaffAccount(
-        id = accountId,
-        accountNo = accountNo,
-        name = name.orEmpty(),
-        type = type?.value,
-        // An unknown status reads as active: a row that takes bookings is the one a staff member
-        // must not be talked out of acting on by a value this build predates.
-        status =
-            if (status == BankDashboardAccountDto.Status.CLOSED) {
-                BankAccountStatus.CLOSED
-            } else {
-                BankAccountStatus.ACTIVE
-            },
-        balance = balance?.toString(),
-        delta30d = delta30d?.toString(),
-        sparkline = sparkline.orEmpty().mapNotNull { it.toString().toDoubleOrNull() },
-    )
-}
-
-/**
  * Maps a request onto the model.
  *
  * @return the request, or `null` without an id — one no action could address.
  */
-private fun BankBookingRequestDto.toModel(): BankBookingRequest? {
+internal fun BankBookingRequestDto.toModel(): BankBookingRequest? {
     val requestId = id ?: return null
     return BankBookingRequest(
         id = requestId,
@@ -1237,7 +1500,7 @@ private fun BankBookingRequestDto.toModel(): BankBookingRequest? {
  *
  * @return the status, or `null` when the server sent one this build does not know.
  */
-private fun BankBookingRequestDto.Status?.toModel(): BankRequestStatus? =
+internal fun BankBookingRequestDto.Status?.toModel(): BankRequestStatus? =
     when (this) {
         BankBookingRequestDto.Status.PENDING -> BankRequestStatus.PENDING
         BankBookingRequestDto.Status.CONFIRMED -> BankRequestStatus.CONFIRMED
@@ -1281,7 +1544,7 @@ private fun BankRequestKind.toWire(): CreateBankBookingRequest.Type =
  * @param page the page index that was requested.
  * @return the page, without lines the server sent without a posting id.
  */
-private fun PageResponseBankBookingDto.toModel(page: Int): BankBookingPage =
+internal fun PageResponseBankBookingDto.toModel(page: Int): BankBookingPage =
     BankBookingPage(
         bookings = content.orEmpty().mapNotNull { it.toModel() },
         page = this.page ?: page,
@@ -1298,11 +1561,15 @@ private fun BankBookingDto.toModel(): BankBooking? {
     val id = postingId ?: return null
     return BankBooking(
         id = id,
+        // A Storno addresses the transaction, not the posting: one transaction can carry several
+        // postings and the reversal negates all of them together.
+        transactionId = transactionId,
         type = type?.value.orEmpty(),
         amount = amount?.toString(),
         note = note?.trim()?.takeIf { it.isNotEmpty() },
         holder = holderHandle,
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
+        reversesTransactionId = reversedTransactionId,
     )
 }
 

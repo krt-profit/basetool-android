@@ -119,6 +119,19 @@ class IdentityRepository(
     private var cached: Identity? = null
 
     /**
+     * The identity already read, without asking the server.
+     *
+     * For callers that need the answer synchronously while composing — the account detail decides
+     * on it which of the two account surfaces to read, and cannot suspend to find out. `null` until
+     * the first [me] has landed, which the screens tolerate because they draw the member view then
+     * and re-read once it does.
+     *
+     * @return the cached identity, or `null`.
+     */
+    val known: Identity?
+        get() = cached
+
+    /**
      * Convenience constructor for the object graph.
      *
      * @param httpClient the API client, which supplies the bearer token and the mandatory headers

@@ -69,6 +69,54 @@ class ApiReader(
     ): ApiResult<T> = call(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).get(), deserializer)
 
     /**
+     * Fetches a body that is not JSON.
+     *
+     * Reports have no schema to decode: the server answers a PDF or a CSV with a
+     * `Content-Disposition` naming the file. Everything else the reader does — the bearer token,
+     * the mandatory headers, the failure classification — applies unchanged.
+     *
+     * The whole body is read into memory. That is right for these two reports, which are a page of
+     * bookings and a quarter of them; it would not be for something unbounded, and a streaming
+     * variant should be its own function rather than a flag on this one.
+     *
+     * @param path where to fetch from.
+     * @param params query parameters, in order.
+     * @param headers extra headers this call needs beyond the client's own.
+     * @return the bytes and the server's own filename, or the classified failure.
+     */
+    suspend fun getBytes(
+        path: String,
+        params: List<Pair<String, String>> = emptyList(),
+        headers: List<Pair<String, String>> = emptyList(),
+    ): ApiResult<DownloadedFile> =
+        try {
+            val url =
+                "$baseUrl$path".toHttpUrl().newBuilder()
+                    .apply { params.forEach { (name, value) -> addQueryParameter(name, value) } }
+                    .build()
+            val request =
+                Request.Builder().url(url).get()
+                    .apply { headers.forEach { (name, value) -> addHeader(name, value) } }
+                    .build()
+            httpClient.newCall(request).await().use { response ->
+                if (!response.isSuccessful) {
+                    ApiResult.Failure(errorMapper.map(response))
+                } else {
+                    ApiResult.Success(
+                        DownloadedFile(
+                            bytes = response.body.bytes(),
+                            fileName = response.header("Content-Disposition").fileName(),
+                            mediaType = response.body.contentType()?.toString(),
+                        ),
+                    )
+                }
+            }
+        } catch (io: IOException) {
+            KrtLog.w(logTag, io) { "download failed before a response arrived: $path" }
+            ApiResult.Failure(ApiError.Network(io))
+        }
+
+    /**
      * Performs one GET whose answer may legitimately have **no body**.
      *
      * `GET /api/v1/announcement` is the case this exists for: it answers `204 No Content` when
@@ -466,3 +514,61 @@ class ApiReader(
         val EMPTY_BODY = ByteArray(0).toRequestBody(null, 0, 0)
     }
 }
+
+/**
+ * A file the server sent.
+ *
+ * @property bytes its content.
+ * @property fileName what the server called it, or `null` when it named none.
+ * @property mediaType its content type, or `null`.
+ */
+data class DownloadedFile(
+    val bytes: ByteArray,
+    val fileName: String?,
+    val mediaType: String?,
+) {
+    /**
+     * Compares by content.
+     *
+     * `ByteArray` compares by identity, which would make two equal downloads unequal and is exactly
+     * the trap a data class hides.
+     *
+     * @param other what to compare with.
+     * @return whether the two carry the same file.
+     */
+    override fun equals(other: Any?): Boolean =
+        this === other ||
+            (
+                other is DownloadedFile &&
+                    bytes.contentEquals(other.bytes) &&
+                    fileName == other.fileName &&
+                    mediaType == other.mediaType
+            )
+
+    /**
+     * Hashes by content, to match [equals].
+     *
+     * @return the hash.
+     */
+    override fun hashCode(): Int =
+        bytes.contentHashCode() * HASH_PRIME + (fileName?.hashCode() ?: 0) * HASH_PRIME +
+            (mediaType?.hashCode() ?: 0)
+
+    private companion object {
+        /** An odd multiplier, as the platform's own data classes use. */
+        const val HASH_PRIME = 31
+    }
+}
+
+/**
+ * The file name out of a `Content-Disposition` header.
+ *
+ * The server names the file — „kontoauszug-<id>.pdf" — and inventing one on the device would make
+ * two systems disagree about what the same download is called.
+ *
+ * @return the name, or `null` when the header carries none.
+ */
+private fun String?.fileName(): String? =
+    this?.substringAfter("filename=", "")
+        ?.trim('"', ' ')
+        ?.takeIf { it.isNotEmpty() }
