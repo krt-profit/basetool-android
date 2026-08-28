@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -71,6 +73,42 @@ fun KrtHudBox(
                 .padding(contentPadding),
         content = content,
     )
+}
+
+/**
+ * A card whose left edge carries the accent rail.
+ *
+ * The design uses this for a block that speaks rather than lists — the dashboard's greeting, an
+ * order's note. It was hand-built at each call site before, which is how the same four-line `Row` +
+ * filled `Box` ended up in two files with two sets of paddings; one component keeps the rail's width
+ * and colour in one place.
+ *
+ * The rail is `IntrinsicSize.Min` tall so it matches the content rather than a guess, which is the
+ * whole reason it cannot be a border.
+ *
+ * @param modifier layout modifier.
+ * @param contentPadding padding inside the card, to the right of the rail.
+ * @param content what the block says.
+ */
+@Composable
+fun KrtRailCard(
+    modifier: Modifier = Modifier,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues =
+        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.lg),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    KrtCard(modifier = modifier, variant = KrtCardVariant.Flush) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            Box(
+                modifier =
+                    Modifier
+                        .width(KrtSpacing.xs)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.primary),
+            )
+            Column(modifier = Modifier.padding(contentPadding), content = content)
+        }
+    }
 }
 
 /**

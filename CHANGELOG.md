@@ -175,6 +175,10 @@
 
 ### Fixed
 
+- **Die Übersicht trifft ihr Artboard.** Die Begrüßung steht jetzt in einem Block mit orangem
+  Rand statt als loser Text, und die vier Schnellaktionen tragen die Glyphe ihrer Aktion statt die
+  ihres Ziels. Der Lager-Knopf „Einbuchen" bekommt dieselbe Pfeil-Glyphe zurück.
+
 - **Auf dem Tablet nennt die Kopfzeile wieder den Bereich.** Wer einen Eintrag auswählte, bekam
   dessen Namen in die Leiste geschrieben, während die Seitenleiste weiter den Bereich hervorhob —
   beide sagten etwas anderes darüber, wo man ist. Der Eintrag steht jetzt über seinem eigenen

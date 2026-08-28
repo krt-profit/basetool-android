@@ -194,7 +194,7 @@ things do not:
 | :-- | :-- | :-- | :-- |
 | 1 | three filter chips — „MATERIAL: ALLE", „NUR MIT BESTAND", „ORT: ALLE" | one, „NUR MIT BESTAND" | **the artboard is ahead of the system** — see below |
 | 2 | a filter icon in the app bar | a bell | follows from 1: there is nothing for it to open |
-| 3 | the FAB is a download glyph (⤓) | „+", labelled „Einbuchen" | open — the glyph reads as Ausbuchen, the action is Einbuchen |
+| 3 | the FAB is a download glyph (⤓) | „+", labelled „Einbuchen" | **fixed** — ⤓ *is* Einbuchen; chapter 05's „EINBUCHEN (LAGER)" tile draws the identical arrow, so the earlier reading of it as Ausbuchen was mine, not the design's |
 | 4 | material → **holder** (with a subtotal) → entry | material → holder·location merged into one row | open — a member holding one material in two places gets no subtotal |
 
 **Items 1 and 2 are not app gaps.** Checked rather than assumed:
@@ -213,7 +213,7 @@ the list keeps stating the server's total.
 Recorded as a design-vs-system difference in `MISSING_ARTBOARD_PROMPTS_7.md`, the same way the
 refinery's „#7841" order number was.
 
-Items 3 and 4 stay open and are app-side.
+Item 4 stays open and is app-side.
 
 > [!note] Why this row said „done"
 > Same reason as the Raffinerie row below: the 25.08. pass checked that the drawn *elements* existed
