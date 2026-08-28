@@ -14,6 +14,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -50,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
@@ -112,6 +114,9 @@ private val GROUP_RAIL = 4.dp
 
 /** Width of the grey rail that marks a stack beneath it. */
 private val STACK_RAIL = 2.dp
+
+/** What joins the two halves of a row's headline, as artboard 1 writes it. */
+private const val SEPARATOR = " · "
 
 /** Test handle for the tablet pane's table. */
 const val INVENTORY_PANE_TAG: String = "inventory-pane"
@@ -488,6 +493,7 @@ private fun LazyListScope.openedGroup(
                             StackRow(
                                 stack = stack,
                                 unit = context.unit,
+                                expanded = context.openedStacks[stackKey(materialId, stack)] != null,
                                 onClick = { context.onToggleStack(materialId, stack) },
                                 onLongClick = { context.onToggleBranch(materialId, stack) },
                             )
@@ -938,41 +944,29 @@ private fun EntryRow(
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            // Design ch. 09 leads a stack entry with WHERE it is, behind a map pin — the amount is
-            // the figure on the right. Only the amount and the note were drawn, so two entries of
-            // the same material in different hangars read as duplicates of each other.
-            entry.locationName?.takeIf { it.isNotBlank() }?.let { place ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    KrtIcon(
-                        id = DesignR.drawable.ic_krt_map_pin,
-                        contentDescription = null,
-                        tint = KrtPalette.TextMuted,
-                    )
+            // „nie wiederholte Header" — artboard 1's own caption, and the rule this row was
+            // breaking. A stack is keyed by (holder, place, quality), so every entry under one
+            // shares all three; printing them again gave four rows that differed only in a figure
+            // and pushed that figure off the end of the line. What is left is what actually tells
+            // one entry from another: how much, what it is promised to, and any note on it.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Amount(value = entry.amount, unit = entry.unit ?: unit)
+                entry.note?.let { note ->
                     Text(
-                        text = place,
+                        text = note,
                         style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.White,
+                        color = KrtPalette.TextMuted,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
-            Amount(value = entry.amount, unit = entry.unit ?: unit)
-            entry.note?.let { note ->
-                Text(
-                    text = note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        entry.quality?.let { quality ->
-            QualityMark(quality = quality)
+            AllocationChips(entry = entry)
         }
         // Selection mode replaces the row's own actions with its checkbox: with both on screen a
         // tap would mean two things at once (design ch. 09, artboard 5: „Buchen/Zuordnen inaktiv").
@@ -989,6 +983,47 @@ private fun EntryRow(
         }
     }
 }
+
+/**
+ * What of this entry is already promised, as artboard 1 draws it.
+ *
+ * „#A-1042 · 200" in the primary tint for an Auftrag, „Vertikaler Abbau · 200" in the info tint for
+ * an Einsatz. The two are separate splits against the same entry (the „Zuordnung" sheet of frame 3
+ * calls them Model G), so a row can carry both and the totals do not add up to one figure.
+ *
+ * This was drawn nowhere in the app. The model has carried `jobOrderAllocations` and
+ * `missionAllocations` since the allocation sheet was built, and the tree threw them away — so the
+ * one thing the artboard puts on a stock row to turn a quantity into a plan was the one thing the
+ * row did not say. A member had to open the Zuordnung of every row to find out whether any of it
+ * was spoken for.
+ *
+ * Nothing is drawn on a personal entry: it carries no allocation at all (design ch. 09 §3).
+ *
+ * @param entry the row.
+ */
+@Composable
+private fun AllocationChips(entry: InventoryEntry) {
+    val orders = entry.jobOrderAllocations
+    val missions = entry.missionAllocations
+    if (orders.isEmpty() && missions.isEmpty()) {
+        return
+    }
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        orders.forEach { KrtChip(text = it.chipText(), tone = KrtChipTone.Primary) }
+        missions.forEach { KrtChip(text = it.chipText(), tone = KrtChipTone.Info) }
+    }
+}
+
+/**
+ * „#A-1042 · 200" — what it is promised to, and how much of it.
+ *
+ * @return the chip's label.
+ */
+private fun InventoryAllocation.chipText(): String = label + SEPARATOR + formatAmount(amount)
 
 /**
  * The two writes a stock row offers, each behind the lock that actually governs it.
@@ -1048,13 +1083,22 @@ private fun EntryActions(
         }
     }
     val (bookDim, bookClick) = rememberGated(rowGate, onBookOut, denials)
-    KrtGhostButton(
-        text = stringResource(R.string.booking_open),
-        onClick = bookClick,
-        iconRes = if (rowGate.allowed) null else DesignR.drawable.ic_krt_lock,
-        modifier = bookDim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
-        enabled = online,
-    )
+    // An icon square, as artboard 11 draws it beside the Zuordnen one — not the wide „BUCHEN" text
+    // button this was. At 393 dp that button took nearly half the row, and the place it squeezed
+    // was the one thing the row leads with: „ARC-L1 Wide Forest Station · geteilt" arrived as
+    // „ARC-L1 Wide Fores…", losing the pool marker entirely. Found on a device.
+    Box {
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_download,
+            label = stringResource(R.string.booking_open),
+            onClick = bookClick,
+            modifier = bookDim.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+            enabled = online,
+        )
+        if (!rowGate.allowed) {
+            KrtLockBadge(modifier = Modifier.align(Alignment.BottomEnd))
+        }
+    }
 }
 
 /**
@@ -1103,6 +1147,7 @@ private fun QualityMark(quality: String) {
  *
  * @param stack the stack.
  * @param unit the group's quantity unit, since a stack carries none of its own.
+ * @param expanded whether its entries are showing; the chevron says which way a tap goes.
  * @param onClick opens its entries.
  * @param onLongClick selects every entry in it — a stack row carries no selection of its own
  *   (design ch. 09, artboard 5).
@@ -1111,6 +1156,7 @@ private fun QualityMark(quality: String) {
 private fun StackRow(
     stack: InventoryStack,
     unit: String?,
+    expanded: Boolean,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -1125,29 +1171,55 @@ private fun StackRow(
     ) {
         Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stack.title(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.inventory_entry_count,
-                        stack.entryCount,
-                        stack.entryCount,
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = placeLine(stack.title(), stack.personal),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtPalette.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Amount(value = stack.amount, unit = unit)
+                KrtIcon(
+                    id =
+                        if (expanded) {
+                            DesignR.drawable.ic_krt_chevron_down
+                        } else {
+                            DesignR.drawable.ic_krt_chevron_right
+                        },
+                    contentDescription = null,
+                    tint = KrtPalette.Gray2,
+                )
+            }
+            // The second line is the quality and its gauge, at the left under the place — artboard
+            // 1 puts them there. They used to float on the right against the amount, where the
+            // reading and the quantity crowded each other and neither had a column.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                stack.quality?.let { QualityMark(quality = it) }
+                // The count is the app's own addition: the artboard's fixture gives every stack one
+                // entry, so it never had to say. Said only where it tells the member something.
+                if (stack.entryCount > 1) {
+                    Text(
+                        text =
+                            pluralStringResource(
+                                R.plurals.inventory_entry_count,
+                                stack.entryCount,
+                                stack.entryCount,
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                    )
+                }
+            }
         }
-        if (stack.personal) {
-            KrtChip(text = stringResource(R.string.inventory_personal), tone = KrtChipTone.Muted)
-        }
-        stack.quality?.let { QualityMark(quality = it) }
-        Amount(value = stack.amount, unit = unit)
     }
 }
 
@@ -1251,6 +1323,31 @@ private fun HolderRow(
  */
 private fun InventoryStack.title(): String =
     (location?.takeIf { it.isNotBlank() } ?: holder?.takeIf { it.isNotBlank() }).orEmpty()
+
+/**
+ * „ Ort · geteilt" — the place and whose pool it sits in, as artboard 1 writes it.
+ *
+ * Inline, not a chip, and said on **both** kinds of row. The app showed a „Persönlich" chip on the
+ * personal case and nothing at all on the shared one, so the common case — stock in the squadron's
+ * pool, which is what the Lager mostly holds — carried no statement about itself at all. A member
+ * could not tell a shared row from one the app had simply not labelled.
+ *
+ * @param place where it is, or `null`.
+ * @param personal whether it is the holder's private stock.
+ * @return the line, or an empty string when there is no place to put it after.
+ */
+@Composable
+private fun placeLine(
+    place: String?,
+    personal: Boolean,
+): String {
+    val pool =
+        stringResource(
+            if (personal) R.string.inventory_pool_personal else R.string.inventory_pool_shared,
+        )
+    val where = place?.takeIf { it.isNotBlank() } ?: return pool
+    return "$where$SEPARATOR$pool"
+}
 
 /**
  * A quantity with its unit dimmed behind it, as the design has it.

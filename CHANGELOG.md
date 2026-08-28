@@ -16,6 +16,13 @@
 
 ### Changed
 
+- **Die Zeilen unter einem Material im Lager sehen jetzt aus wie im Entwurf.** Der Ort nennt
+  dazu, ob der Bestand geteilt oder persönlich ist; Qualität und Balken stehen darunter links statt
+  gequetscht neben der Menge; ein Pfeil zeigt, dass sich die Zeile öffnen lässt. Die Einträge
+  darunter wiederholen Ort und Qualität nicht mehr — sie nennen die Menge, eine Notiz und **neu**,
+  was davon schon einem Auftrag oder Einsatz zugesagt ist. „Buchen" ist ein Symbolknopf geworden;
+  als breite Schaltfläche hat er den Ortsnamen abgeschnitten.
+
 - **Auf dem Tablet steht neben dem Lagerbaum eine Materialtabelle.** Ein Material antippen öffnet es
   im Baum und zeigt rechts alle Einträge dazu — Nutzer, Ort, Qualität, Menge, seitenweise. Auf dem
   Telefon bleibt alles wie bisher.

@@ -565,3 +565,53 @@ toggling a group shut and open again neither re-reads nor blanks what is being r
 **Code:** `inventory/MaterialPaneLoader.kt`, `inventory/InventoryScreen.kt` (`MaterialPaneBody`,
 `MaterialTable`), `core/data/InventoryRepository.kt` (`MaterialDetailSource`, `MaterialEntryPage`)
 
+### REQ-APP-INV-019 — The tree's sub-rows are artboard 1's, and no level repeats the one above it
+
+The stack and entry rows had drifted from chapter 09 on five counts at once. Reported from a device,
+2026-08-28, and each one checked against the rendered artboard rather than against memory.
+
+**The stack row** is `Ort · geteilt` with the amount and an expand chevron on the first line, and
+`Q nnn` with its gauge at the **left** of the second:
+
+| | Was | Is, per artboard 1 |
+| --- | --- | --- |
+| Quality | floated right, crowding the amount | second line, left, under the place |
+| Pool | a „Persönlich" chip, and nothing at all when shared | `· geteilt` / `· persönlich`, inline, always |
+| Second line | „1 Eintrag" | the quality; the count only when it is **more** than one |
+| Chevron | none, though the row expands | shown, and it turns |
+
+**„Nur wo es etwas sagt."** The entry count is the app's own addition — artboard 1's fixture gives
+every stack exactly one entry, so it never had to say — and „1 Eintrag" under every row said nothing
+while occupying the line the quality belongs on.
+
+**The entry row states only what varies.** Artboard 1's caption is explicit: *„Tiefe = Einzug +
+Rails, **nie wiederholte Header**."* A stack is keyed by (holder, place, quality), so every entry
+under one shares all three; the row was printing the place, the pool and the quality again and
+giving four rows that differed only in a figure — and on a 393 dp screen it pushed that figure onto
+a line of its own. What is left is the amount, the note, and the allocations.
+
+**The allocations are on the row at last.** „#A-1042 · 200" in the primary tint for an Auftrag, the
+Einsatz beside it in the info tint — artboard 1 draws both. The model has carried
+`jobOrderAllocations` and `missionAllocations` since the Zuordnung sheet was built and the tree
+discarded them, so the one thing that turns a quantity into a plan was the one thing the row did not
+say; a member had to open the Zuordnung of every row to learn whether any of it was spoken for. Two
+independent splits, so a row can show both (frame 3 calls this Model G). Nothing is drawn on a
+personal entry, which carries no allocation at all.
+
+**Both actions are icon squares**, as artboard 11 draws them. „Buchen" was a wide text button
+taking nearly half the row, and the width it took came out of the place. The lock badge sits on
+either one's corner and neither is `enabled = false` — unchanged, and still `REQ-APP-INV-008`.
+
+**Acceptance**
+
+- [x] A stack says „Ort · geteilt"; a personal one says „Ort · persönlich" in the same place
+      (`InventoryScreenTest`).
+- [x] „1 Eintrag" is not drawn; „4 Einträge" is (`InventoryScreenTest`).
+- [x] The place, the pool and the quality appear **once** under an opened stack, not once per entry
+      (`InventoryScreenTest`).
+- [x] An entry's Auftrag and Einsatz splits are drawn as chips (`InventoryScreenTest`).
+- [x] Verified on a device: a four-entry stack reads as one header and four amounts, with nothing
+      truncated.
+
+**Code:** `inventory/InventoryScreen.kt` (`StackRow`, `EntryRow`, `AllocationChips`, `placeLine`)
+

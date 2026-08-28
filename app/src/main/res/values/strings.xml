@@ -770,6 +770,8 @@
     </plurals>
     <string name="inventory_pane_previous">Zurück</string>
     <string name="inventory_pane_next">Weiter</string>
+    <string name="inventory_pool_shared">geteilt</string>
+    <string name="inventory_pool_personal">persönlich</string>
     <string name="inventory_holder_unattributed">Ohne Halter</string>
     <string name="inventory_personal">Persönlich</string>
     <plurals name="inventory_entry_count">

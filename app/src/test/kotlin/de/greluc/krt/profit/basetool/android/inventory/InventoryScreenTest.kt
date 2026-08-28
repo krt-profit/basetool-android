@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.Identity
+import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryStack
@@ -43,17 +44,6 @@ import java.io.IOException
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "de-w411dp-h891dp-xhdpi")
 class InventoryScreenTest {
-    private companion object {
-        /**
-         * The stack and the entry — two rows, each stating the same quality.
-         *
-         * Not three: design ch. 09 artboard 1 keeps quality off the material GROUP row, because an
-         * aggregate averages stacks that may be in different systems and the reading that matters
-         * is the one on the stack being booked.
-         */
-        const val QUALITY_ROWS = 2
-    }
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -222,8 +212,69 @@ class InventoryScreenTest {
         // Merged into "Rhea · ARC-L1" they read as one thing, and a member holding one material at
         // two places got two unrelated rows with no total (REQ-APP-INV-017, artboard 1).
         compose.onNodeWithText("Rhea").assertIsDisplayed()
-        compose.onNodeWithText("ARC-L1").assertIsDisplayed()
-        compose.onNodeWithText("1 Eintrag").assertIsDisplayed()
+        // „Ort · geteilt", as artboard 1 writes it. The pool is said on every row, not only on the
+        // personal ones — a member could not otherwise tell shared stock from an unlabelled row.
+        compose.onNodeWithText("ARC-L1 · geteilt").assertIsDisplayed()
+        // The entry count is the app's own addition and is said only where it tells the member
+        // something. One entry per stack is what a stack looks like by default.
+        compose.onAllNodesWithText("1 Eintrag").assertCountEquals(0)
+        compose.onNodeWithText("Q 880").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an entry says what of it is already promised`() {
+        // Artboard 1 puts the splits on the row: „#A-1042 · 200" for an Auftrag, the Einsatz beside
+        // it. The model has carried both since the Zuordnung sheet was built and the tree drew
+        // neither, so the one thing that turns a quantity into a plan was the one thing missing.
+        show(
+            readyWithStack(
+                entries =
+                    EntriesPhase.Ready(
+                        listOf(
+                            entry().copy(
+                                jobOrderAllocations =
+                                    listOf(InventoryAllocation("a1", "#A-1042", null, "200")),
+                                missionAllocations =
+                                    listOf(InventoryAllocation("m9", "Vertikaler Abbau", null, "80")),
+                            ),
+                        ),
+                    ),
+            ),
+        )
+
+        // ignoreCase: KrtChip uppercases, as every chip in the design system does. The Auftrag
+        // chip matched either way, which is exactly how a case-sensitive assertion hides that the
+        // other one is uppercased too.
+        compose.onNodeWithText("#A-1042 · 200", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Vertikaler Abbau · 80", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a stack of several entries says how many`() {
+        show(
+            InventoryState(
+                groups = listOf(group()),
+                total = 1,
+                phase = InventoryPhase.Ready,
+                opened = mapOf("m1" to StackPhase.Ready(listOf(stack().copy(entryCount = 4)))),
+            ),
+        )
+
+        compose.onNodeWithText("4 Einträge").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a personal stack says so in the same place`() {
+        show(
+            InventoryState(
+                groups = listOf(group()),
+                total = 1,
+                phase = InventoryPhase.Ready,
+                opened = mapOf("m1" to StackPhase.Ready(listOf(stack().copy(personal = true)))),
+            ),
+        )
+
+        compose.onNodeWithText("ARC-L1 · persönlich").assertIsDisplayed()
     }
 
     @Test
@@ -327,7 +378,7 @@ class InventoryScreenTest {
         val tapped = mutableListOf<InventoryStack>()
         show(readyWithStack(), stacksToggled = tapped)
 
-        compose.onNodeWithText("ARC-L1").performClick()
+        compose.onNodeWithText("ARC-L1 · geteilt").performClick()
 
         assertEquals(listOf(stack()), tapped)
     }
@@ -338,8 +389,11 @@ class InventoryScreenTest {
 
         compose.onAllNodesWithText("12,5").assertCountEquals(1)
         compose.onNodeWithText("Reserviert").assertIsDisplayed()
-        // The stack and the entry state it; the group deliberately does not.
-        compose.onAllNodesWithText("Q 880").assertCountEquals(QUALITY_ROWS)
+        // „nie wiederholte Header" (artboard 1): the stack is keyed by (holder, place, quality), so
+        // its entries share all three and only the stack says them. The group says none of it, and
+        // the entry row carries what actually varies — its amount, its note, its allocations.
+        compose.onAllNodesWithText("Q 880").assertCountEquals(1)
+        compose.onAllNodesWithText("ARC-L1 · geteilt").assertCountEquals(1)
     }
 
     @Test
@@ -350,7 +404,9 @@ class InventoryScreenTest {
             bookedOut = booked,
         )
 
-        compose.onNodeWithText("Buchen", ignoreCase = true).performClick()
+        // By its label, not its text: the action is an icon square (artboard 11) and „Buchen" is
+        // now what a screen reader hears rather than what the row prints.
+        compose.onNodeWithContentDescription("Buchen").performClick()
 
         assertEquals(listOf(entry()), booked)
     }
@@ -389,7 +445,7 @@ class InventoryScreenTest {
         compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(INVENTORY_BOOK_TAG).assertIsNotEnabled()
-        compose.onNodeWithText("Buchen", ignoreCase = true).assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Buchen").assertIsNotEnabled()
     }
 
     @Test
