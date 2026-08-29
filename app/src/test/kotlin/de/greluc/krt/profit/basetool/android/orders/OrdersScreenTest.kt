@@ -139,6 +139,7 @@ class OrdersScreenTest {
         statuses: MutableList<JobOrderStatus> = mutableListOf(),
         notes: MutableList<String> = mutableListOf(),
         produced: MutableList<String> = mutableListOf(),
+        handedOver: MutableList<String> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -146,6 +147,13 @@ class OrdersScreenTest {
                     state = state,
                     handover =
                         OrderHandoverActions(
+                            draft = null,
+                            onChange = {},
+                            onSubmit = {},
+                            onDismiss = {},
+                        ),
+                    itemHandover =
+                        OrderItemHandoverActions(
                             draft = null,
                             onChange = {},
                             onSubmit = {},
@@ -173,26 +181,7 @@ class OrdersScreenTest {
                         ),
                     onRefresh = {},
                     onRetryNow = {},
-                    actions =
-                        OrderDetailActions(
-                            onToggleAssignment = { assigned.add(Unit) },
-                            onEditNote = { notes.add("open") },
-                            onNoteChanged = { notes.add(it) },
-                            onSaveNote = { notes.add("save") },
-                            onDismissNote = {},
-                            onReapplyRejectedNote = { notes.add("reapply") },
-                            onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
-                            onStatusChosen = { statuses.add(it) },
-                            onDismissStatusPicker = {},
-                            onStatusSelected = { statuses.add(it) },
-                            onApplyStatus = {},
-                            onDismissStatusConfirm = {},
-                            onRaisePriority = {},
-                            onLowerPriority = {},
-                            onTabSelected = {},
-                            onRecordHandover = {},
-                            onRecordProduction = { produced.add(it.id.orEmpty()) },
-                        ),
+                    actions = detailActions(assigned, statuses, notes, produced, handedOver),
                 )
             }
         }
@@ -279,6 +268,45 @@ class OrdersScreenTest {
             blueprintStale = false,
             version = ORDER_VERSION,
         )
+
+    /**
+     * Everything one order's screen reports back, wired to the lists a test reads.
+     *
+     * Its own function so [showDetail] stays inside the length the project's analysis allows.
+     *
+     * @param assigned records the assignment toggle.
+     * @param statuses records every status the screen asked for.
+     * @param notes records the note editor's own steps.
+     * @param produced records which item line was asked to record production.
+     * @param handedOver records which item line was asked to record a handover.
+     * @return the actions.
+     */
+    private fun detailActions(
+        assigned: MutableList<Unit>,
+        statuses: MutableList<JobOrderStatus>,
+        notes: MutableList<String>,
+        produced: MutableList<String>,
+        handedOver: MutableList<String>,
+    ) = OrderDetailActions(
+        onToggleAssignment = { assigned.add(Unit) },
+        onEditNote = { notes.add("open") },
+        onNoteChanged = { notes.add(it) },
+        onSaveNote = { notes.add("save") },
+        onDismissNote = {},
+        onReapplyRejectedNote = { notes.add("reapply") },
+        onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
+        onStatusChosen = { statuses.add(it) },
+        onDismissStatusPicker = {},
+        onStatusSelected = { statuses.add(it) },
+        onApplyStatus = {},
+        onDismissStatusConfirm = {},
+        onRaisePriority = {},
+        onLowerPriority = {},
+        onTabSelected = {},
+        onRecordHandover = {},
+        onRecordProduction = { produced.add(it.id.orEmpty()) },
+        onRecordItemHandover = { handedOver.add(it.id.orEmpty()) },
+    )
 
     /**
      * One member on an order.

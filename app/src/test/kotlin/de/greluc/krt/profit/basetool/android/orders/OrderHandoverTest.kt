@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
@@ -262,5 +263,13 @@ class OrderHandoverTest {
             writes.add(Triple(inventoryItemId, amount, recipientHandle))
             return writeAnswer
         }
+
+        override suspend fun recordItemHandover(
+            orderId: String,
+            itemId: String,
+            amount: Int,
+            recipientHandle: String,
+            handoverTime: String,
+        ): ApiResult<JobOrderItemHandoverDto> = error("the item handover has its own test")
     }
 }

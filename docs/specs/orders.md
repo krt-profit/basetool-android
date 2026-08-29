@@ -553,3 +553,47 @@ left to build carries no action at all — that is not a permission question.
 - [ ] A booked run closes the sheet and re-reads the Auftrag; a refusal keeps the whole plan.
 
 **Enforced by:** `OrderProductionTest`, `OrdersScreenTest`.
+
+## REQ-APP-ORDERS-020 — Die Item-Übergabe: what an item Auftrag actually delivers
+
+**Status:** implemented · **Since:** 2026-08-29
+
+The third write on this edge, and the one that closes an item Auftrag.
+`POST /api/v1/orders/{id}/item-handovers`, gated `LOGISTICIAN | OFFICER | ADMIN` plus
+`canEditJobOrder` — the same gate as the other two.
+
+It is **not** the material handover with a count. The units are pieces, there is no stock row to
+book out (the goods were built rather than fetched), the server keeps a separate log, and this write
+moves `deliveredAmount` and auto-completes the order once every line is fully delivered.
+
+> [!danger] The ceiling is `manufactured − delivered`, never `ordered − delivered`
+> A unit can only be handed over once it has been built (REQ-ORDERS-025).
+> `JobOrderItemHandoverService` refuses anything above the manufactured-but-undelivered count with a
+> **400**. The obvious subtraction would put a number on screen the server rejects for a reason the
+> member has no way to see. The stepper stops at the real ceiling and the form names it: „Hergestellt
+> und noch nicht übergeben: N".
+
+**The log was being left unread.** `JobOrderDto.itemHandovers` existed and the app mapped only
+`handovers`, so the Übergaben tab told a fully delivered item order that nothing had been handed
+over. Both logs are now read and the empty state only appears when **both** are empty.
+
+**One line per write.** The wire takes a list of entries; a form that offered several at once would
+have to reconcile several independent ceilings before it could tell the member which one it broke.
+
+Append-only, and said in the form — the same rule as the material handover. A `400` from the server
+is rendered as the ceiling having moved under the sheet (somebody handed the same units over first)
+rather than as „ungültige Eingabe", because that is what it almost always is.
+
+The action is **drawn even when refused** (ADR-0011), beside „Herstellung erfassen" on the same
+line, because both are booked against that one line. A line with nothing built and undelivered
+carries no action at all — that is a fact about the line, not a permission.
+
+**Acceptance**
+
+- [ ] The stepper's ceiling is the manufactured-but-undelivered count
+- [ ] A blank recipient is refused before the write
+- [ ] The Übergaben tab lists item handovers as well as material ones
+- [ ] A recorded handover closes the sheet and re-reads the Auftrag; a refusal keeps what was typed
+- [ ] A line with nothing deliverable offers no action, locked or otherwise
+
+**Enforced by:** `OrderItemHandoverTest`, `OrdersScreenTest`.

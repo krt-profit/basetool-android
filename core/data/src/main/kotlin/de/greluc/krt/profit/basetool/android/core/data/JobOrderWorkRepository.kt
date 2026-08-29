@@ -13,6 +13,9 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemDt
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverItemCreateDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverCreateDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverEntryCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemProductionConsumptionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemProductionCreateDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
@@ -111,6 +114,36 @@ interface JobOrderHandoverSource {
         recipientSquadron: String?,
         handoverTime: String,
     ): ApiResult<JobOrderHandoverDto>
+
+    /**
+     * Records the handover of finished **items**.
+     *
+     * A different endpoint and a different record, not the material handover with a count: an item
+     * order is counted in pieces, the server keeps the two logs apart, and this one moves the
+     * line's `deliveredAmount` and closes the order once every line is fully delivered.
+     *
+     * > **The ceiling is `manufactured − delivered`, never `amount − delivered`.** A unit can only
+     * > be handed over once it has been built (REQ-ORDERS-025); `JobOrderItemHandoverService`
+     * > refuses anything above the manufactured-but-undelivered count with a 400. Offering the
+     * > obvious subtraction would put a number on screen the server rejects for a reason the member
+     * > cannot see.
+     *
+     * Append-only, like its material sibling: nothing in this app takes a handover back.
+     *
+     * @param orderId the Auftrag.
+     * @param itemId the ordered line whose units changed hands.
+     * @param amount how many, at least one.
+     * @param recipientHandle who received them; the server requires a non-blank handle.
+     * @param handoverTime when it happened, ISO-8601, from the device's own clock.
+     * @return what the server recorded, or the classified failure.
+     */
+    suspend fun recordItemHandover(
+        orderId: String,
+        itemId: String,
+        amount: Int,
+        recipientHandle: String,
+        handoverTime: String,
+    ): ApiResult<JobOrderItemHandoverDto>
 }
 
 /**
@@ -297,6 +330,28 @@ class JobOrderWorkRepository(
             ),
             JobOrderHandoverCreateDto.serializer(),
             JobOrderHandoverDto.serializer(),
+        )
+
+    override suspend fun recordItemHandover(
+        orderId: String,
+        itemId: String,
+        amount: Int,
+        recipientHandle: String,
+        handoverTime: String,
+    ): ApiResult<JobOrderItemHandoverDto> =
+        reader.post(
+            "/api/v1/orders/$orderId/item-handovers",
+            JobOrderItemHandoverCreateDto(
+                handoverTime = handoverTime,
+                recipientHandle = recipientHandle,
+                // One line per write. The wire takes a list, and a form that offered several at
+                // once would have to reconcile several independent ceilings before it could tell
+                // the member which one it broke.
+                propertyEntries =
+                    listOf(JobOrderItemHandoverEntryCreateDto(jobOrderItemId = itemId, amount = amount)),
+            ),
+            JobOrderItemHandoverCreateDto.serializer(),
+            JobOrderItemHandoverDto.serializer(),
         )
 
     override suspend fun bookProduction(booking: ProductionBooking): ApiResult<Unit> =

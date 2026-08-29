@@ -1501,4 +1501,15 @@
     <string name="materials_profit_col_total">Max profit</string>
     <string name="materials_profit_col_margin">Margin (%)</string>
     <string name="materials_actions">More trade views</string>
+    <!-- Auftrag: handing over an item order (design ch. 10) -->
+    <string name="order_item_handover_record">Record handover</string>
+    <string name="order_item_handover_subject">%1$s · handed over %2$d / %3$d</string>
+    <string name="order_item_handover_amount">Units handed over</string>
+    <string name="order_item_handover_deliverable">Built and not yet handed over: %1$d</string>
+    <string name="order_item_handover_too_many">At most %1$d — no more has been built for this line.</string>
+    <string name="order_item_handover_rejected">The server refused the amount — somebody likely handed the same units over first. Reload the Auftrag.</string>
+    <plurals name="order_detail_item_handover_row">
+        <item quantity="one">%1$s · %2$d piece · %3$s</item>
+        <item quantity="other">%1$s · %2$d pieces · %3$s</item>
+    </plurals>
 </resources>

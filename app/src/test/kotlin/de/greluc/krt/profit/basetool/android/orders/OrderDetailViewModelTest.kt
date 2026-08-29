@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
@@ -74,6 +75,14 @@ private object NoWorkSource : JobOrderWorkSource {
         recipientSquadron: String?,
         handoverTime: String,
     ): ApiResult<JobOrderHandoverDto> = error("the handover has its own test")
+
+    override suspend fun recordItemHandover(
+        orderId: String,
+        itemId: String,
+        amount: Int,
+        recipientHandle: String,
+        handoverTime: String,
+    ): ApiResult<JobOrderItemHandoverDto> = error("the item handover has its own test")
 
     override suspend fun linkedStock(
         orderId: String,

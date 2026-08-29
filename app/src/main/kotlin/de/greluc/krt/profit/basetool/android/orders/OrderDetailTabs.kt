@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
@@ -52,12 +53,14 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  *   either way and the server stays the authority.
  * @param denials where a refused tap is announced.
  * @param onProduce open „Herstellung erfassen" for one item line.
+ * @param onHandOver open „Übergabe erfassen" for one item line.
  */
 internal fun LazyListScope.positionsTab(
     order: JobOrder,
     allowed: Boolean,
     denials: DenialState,
     onProduce: (JobOrderItem) -> Unit,
+    onHandOver: (JobOrderItem) -> Unit,
 ) {
     order.comment?.let { comment ->
         item(key = "comment") { CommentCard(comment = comment) }
@@ -75,6 +78,18 @@ internal fun LazyListScope.positionsTab(
                             allowed = allowed,
                             denials = denials,
                             onProduce = { onProduce(line) },
+                        )
+                    } else {
+                        null
+                    },
+                // A line with nothing built and undelivered has nothing to hand over, which is a
+                // fact about the line and not a permission — so no locked control either.
+                handOver =
+                    if (line.id != null && line.deliverable > 0) {
+                        ItemProduceGate(
+                            allowed = allowed,
+                            denials = denials,
+                            onProduce = { onHandOver(line) },
                         )
                     } else {
                         null
@@ -144,7 +159,7 @@ internal fun LazyListScope.handoversTab(
     order: JobOrder,
     onRecord: (JobOrderMaterial) -> Unit,
 ) {
-    if (order.handovers.isEmpty()) {
+    if (order.handovers.isEmpty() && order.itemHandovers.isEmpty()) {
         item(key = "handovers-empty") {
             Body(text = stringResource(R.string.order_detail_handovers_empty))
         }
@@ -159,6 +174,21 @@ internal fun LazyListScope.handoversTab(
                     ),
             )
         }
+    }
+    // An item order keeps its own handover log on a separate endpoint. Leaving it unread made the
+    // tab claim „nothing has been handed over" about an order that had been delivered in full.
+    items(order.itemHandovers, key = { "item-" + it.id }) { handover ->
+        val pieces = handover.lines.sumOf { line -> line.amount }
+        Body(
+            text =
+                pluralStringResource(
+                    R.plurals.order_detail_item_handover_row,
+                    pieces,
+                    handover.recipient.orEmpty(),
+                    pieces,
+                    handover.at?.relativeToNow().orEmpty(),
+                ),
+        )
     }
     // A line the server sent without a material id cannot be handed over — the write is addressed
     // by it — so it is not offered rather than offered and refused.

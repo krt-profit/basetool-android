@@ -1522,4 +1522,15 @@
     <string name="materials_profit_col_total">Max Profit</string>
     <string name="materials_profit_col_margin">Marge (%)</string>
     <string name="materials_actions">Weitere Handelsansichten</string>
+    <!-- Auftrag: Übergabe eines Item-Auftrags (design ch. 10) -->
+    <string name="order_item_handover_record">Übergabe erfassen</string>
+    <string name="order_item_handover_subject">%1$s · übergeben %2$d / %3$d</string>
+    <string name="order_item_handover_amount">Anzahl übergeben</string>
+    <string name="order_item_handover_deliverable">Hergestellt und noch nicht übergeben: %1$d</string>
+    <string name="order_item_handover_too_many">Höchstens %1$d — mehr wurde für diese Position noch nicht hergestellt.</string>
+    <string name="order_item_handover_rejected">Der Server hat die Menge abgelehnt — vermutlich hat jemand dieselben Stücke zuerst übergeben. Lädt den Auftrag neu.</string>
+    <plurals name="order_detail_item_handover_row">
+        <item quantity="one">%1$s · %2$d Stück · %3$s</item>
+        <item quantity="other">%1$s · %2$d Stück · %3$s</item>
+    </plurals>
 </resources>

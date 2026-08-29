@@ -692,9 +692,17 @@ data class ItemProduceGate(
  * ch. 09 artboard 13), and a tap that names the grant instead of writing anything.
  *
  * @param gate whether the caller may, and what to do about it.
+ * @param labelRes what the button says.
+ * @param iconRes its glyph while it is usable; a refused one always shows the lock.
+ * @param tag the test handle.
  */
 @Composable
-private fun ProduceAction(gate: ItemProduceGate) {
+private fun ProduceAction(
+    gate: ItemProduceGate,
+    @androidx.annotation.StringRes labelRes: Int = R.string.order_production_record,
+    @androidx.annotation.DrawableRes iconRes: Int = DesignR.drawable.ic_krt_clipboard_check,
+    tag: String = ORDER_PRODUCTION_OPEN_TAG,
+) {
     val role =
         Gate(
             allowed = gate.allowed,
@@ -703,15 +711,10 @@ private fun ProduceAction(gate: ItemProduceGate) {
         )
     val (dim, click) = rememberGated(role, gate.onProduce, gate.denials)
     KrtGhostButton(
-        text = stringResource(R.string.order_production_record),
+        text = stringResource(labelRes),
         onClick = click,
-        iconRes =
-            if (gate.allowed) {
-                DesignR.drawable.ic_krt_clipboard_check
-            } else {
-                DesignR.drawable.ic_krt_lock
-            },
-        modifier = Modifier.fillMaxWidth().then(dim).testTag(ORDER_PRODUCTION_OPEN_TAG),
+        iconRes = if (gate.allowed) iconRes else DesignR.drawable.ic_krt_lock,
+        modifier = Modifier.fillMaxWidth().then(dim).testTag(tag),
     )
 }
 
@@ -725,11 +728,14 @@ private fun ProduceAction(gate: ItemProduceGate) {
  * @param item the line.
  * @param produce the production action's gate and callback, or `null` on a line that cannot carry
  *   one at all — nothing left to build, or a row the server sent without an id or a version.
+ * @param handOver the item-handover action's gate and callback, or `null` on a line with nothing
+ *   built and undelivered.
  */
 @Composable
 internal fun ItemLine(
     item: JobOrderItem,
     produce: ItemProduceGate? = null,
+    handOver: ItemProduceGate? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
@@ -789,6 +795,16 @@ internal fun ItemLine(
         // of its own because a production run is booked against one line, and the count above is
         // exactly what it changes.
         produce?.let { ProduceAction(gate = it) }
+        // The other half of the same line's work: what was built, handed to somebody. Drawn beside
+        // the Herstellung because both are booked against this one line.
+        handOver?.let {
+            ProduceAction(
+                gate = it,
+                labelRes = R.string.order_item_handover_record,
+                iconRes = DesignR.drawable.ic_krt_bookout,
+                tag = ORDER_ITEM_HANDOVER_OPEN_TAG,
+            )
+        }
     }
 }
 
@@ -879,6 +895,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
  *
  * @param state what to draw.
  * @param handover the Übergabe sheet's own state and callbacks.
+ * @param itemHandover the item Übergabe sheet's own state and callbacks.
  * @param production the Herstellung sheet's own state and callbacks.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member asked for the failed first load again.
@@ -890,6 +907,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
 fun OrderDetailScreen(
     state: OrderDetailState,
     handover: OrderHandoverActions,
+    itemHandover: OrderItemHandoverActions,
     production: OrderProductionActions,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -931,6 +949,7 @@ fun OrderDetailScreen(
                 StatusSheet(current = order.status, state = state, actions = actions)
             }
             OrderHandoverSheet(actions = handover)
+            OrderItemHandoverSheet(actions = itemHandover)
             OrderProductionSheet(actions = production)
         }
 
@@ -994,6 +1013,8 @@ data class OrderDetailActions(
     val onRecordHandover: (JobOrderMaterial) -> Unit,
     /** Opens „Herstellung erfassen" for one item line (design ch. 10 artboard 15). */
     val onRecordProduction: (JobOrderItem) -> Unit,
+    /** Opens „Übergabe erfassen" for one item line — the item order's own handover. */
+    val onRecordItemHandover: (JobOrderItem) -> Unit,
     /** Applies the marked status, asking first when the target cannot be taken back. */
     val onApplyStatus: () -> Unit,
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
@@ -1107,6 +1128,7 @@ private fun OrderDetailBody(
                     allowed = state.productionAllowed,
                     denials = denials,
                     onProduce = actions.onRecordProduction,
+                    onHandOver = actions.onRecordItemHandover,
                 )
             }
 
@@ -1376,6 +1398,13 @@ fun OrderDetailRoute(
                 onSubmit = { viewModel.handover.submit(state.orderId) },
                 onDismiss = viewModel.handover::dismiss,
             ),
+        itemHandover =
+            OrderItemHandoverActions(
+                draft = state.itemHandover,
+                onChange = viewModel.itemHandover::change,
+                onSubmit = { viewModel.itemHandover.submit(state.orderId) },
+                onDismiss = viewModel.itemHandover::dismiss,
+            ),
         production =
             OrderProductionActions(
                 draft = state.production,
@@ -1425,6 +1454,7 @@ fun OrderDetailRoute(
                         alreadyDone = state.order?.krtHandedOver(material.materialId)?.toString(),
                     )
                 },
+                onRecordItemHandover = viewModel.itemHandover::open,
                 onRecordProduction = { line ->
                     viewModel.production.open(
                         orderId = state.orderId,

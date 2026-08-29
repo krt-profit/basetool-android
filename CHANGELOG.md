@@ -15,6 +15,11 @@
   „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
   Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
 
+- **Item-Aufträge lassen sich jetzt übergeben — und der Übergaben-Tab zeigt sie endlich an.** Je
+  Position wird eingetragen, wie viele Stück an wen gegangen sind; die Obergrenze ist, was
+  hergestellt und noch nicht übergeben wurde. Bisher blieb das Item-Übergabeprotokoll ungelesen, so
+  dass ein vollständig gelieferter Item-Auftrag im Tab als „noch nichts übergeben" erschien.
+
 - **Die Herstellung eines Item-Auftrags lässt sich jetzt in der App buchen.** Je Position wird
   eingetragen, wie viele Einheiten gebaut wurden, aus welchen verknüpften Lagereinträgen die
   Materialien entnommen werden und wo die fertigen Einheiten eingelagert werden. Der Bedarf muss je

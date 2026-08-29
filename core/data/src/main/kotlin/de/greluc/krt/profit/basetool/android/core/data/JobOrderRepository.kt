@@ -16,7 +16,9 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderI
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderItemRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
@@ -116,6 +118,17 @@ data class JobOrderItem(
         get() = (amount - manufactured).coerceAtLeast(0)
 
     /**
+     * How many are built and not yet handed over — the cap on one Übergabe.
+     *
+     * **Not `amount - delivered`.** A unit can only be handed over once it has been manufactured
+     * (REQ-ORDERS-025), and `JobOrderItemHandoverService` refuses anything above this with a 400.
+     * The obvious subtraction would offer a count the server rejects, and the member would have no
+     * way to see why.
+     */
+    val deliverable: Int
+        get() = (manufactured - delivered).coerceAtLeast(0)
+
+    /**
      * How far along this line is, between 0 and 1, or `null` when nothing was asked for.
      *
      * Built over asked-for, the same shape as a material line's bar. A count of zero yields `null`
@@ -190,6 +203,39 @@ data class JobOrderHandoverLine(
 )
 
 /**
+ * One line of an item handover: how many of one ordered item changed hands.
+ *
+ * @property itemId which ordered line, or `null` when the answer did not name one.
+ * @property itemName what was handed over.
+ * @property amount how many — a count, because an item order is counted in pieces.
+ */
+data class JobOrderItemHandoverLine(
+    val itemId: String?,
+    val itemName: String,
+    val amount: Int,
+)
+
+/**
+ * One item handover already recorded against an order.
+ *
+ * A **separate** record from the material handover and not a variant of it: the server keeps them
+ * on two endpoints, counts pieces rather than quantities, and moves a different figure.
+ *
+ * @property id the handover's id.
+ * @property recipient who received it, or `null`.
+ * @property executor who handed it over, or `null`.
+ * @property at when, in UTC.
+ * @property lines what it carried.
+ */
+data class JobOrderItemHandover(
+    val id: String,
+    val recipient: String?,
+    val executor: String?,
+    val at: Instant?,
+    val lines: List<JobOrderItemHandoverLine> = emptyList(),
+)
+
+/**
  * One handover already recorded against an order.
  *
  * @property id the handover's id
@@ -240,7 +286,9 @@ data class JobOrderAssignee(
  * @property comment the requester's note, or `null`
  * @property materials the material lines
  * @property items the item lines, for an order of type `ITEM`
- * @property handovers what has already been handed over
+ * @property handovers what material has already been handed over
+ * @property itemHandovers what finished items have — the item order's own log, which the app was
+ *   leaving unread until 2026-08-29
  * @property assignees who is on it
  * @property createdAt when it was raised, in UTC
  * @property version the order's optimistic lock, echoed by the status write
@@ -261,6 +309,7 @@ data class JobOrder(
     val materials: List<JobOrderMaterial>,
     val items: List<JobOrderItem>,
     val handovers: List<JobOrderHandover>,
+    val itemHandovers: List<JobOrderItemHandover> = emptyList(),
     val assignees: List<JobOrderAssignee>,
     val createdAt: Instant?,
     val version: Long?,
@@ -1029,24 +1078,8 @@ private fun JobOrderDto.toModel(): JobOrder? {
         comment = comment?.trim()?.takeIf { it.isNotEmpty() },
         materials = materials.orEmpty().map { it.toModel() },
         items = items.orEmpty().map { it.toModel() },
-        handovers =
-            handovers.orEmpty().mapNotNull { handover ->
-                handover.id?.let {
-                    JobOrderHandover(
-                        id = it,
-                        recipient = handover.recipientHandle,
-                        executor = handover.executingUser?.effectiveName,
-                        at = handover.handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
-                        lines =
-                            handover.items.orEmpty().map { line ->
-                                JobOrderHandoverLine(
-                                    materialId = line.material?.id,
-                                    amount = line.amount ?: 0.0,
-                                )
-                            },
-                    )
-                }
-            },
+        handovers = handovers.orEmpty().mapNotNull { it.krtToModel() },
+        itemHandovers = itemHandovers.orEmpty().mapNotNull { it.krtToModel() },
         assignees =
             assignees.orEmpty().mapNotNull { assignee ->
                 // No id, no row: the two writes on this edge address the member by id, and a row
@@ -1107,6 +1140,50 @@ private fun JobOrderItemDto.toModel(): JobOrderItem =
                 .map { (_, rows) -> rows.first().copy(requiredTotal = rows.sumOf { it.requiredTotal }) },
         version = version,
     )
+
+/**
+ * Maps one recorded material handover onto the model.
+ *
+ * @receiver the server's record.
+ * @return it, or `null` for a row without an id — nothing on screen can address one.
+ */
+private fun JobOrderHandoverDto.krtToModel(): JobOrderHandover? {
+    val handoverId = id ?: return null
+    return JobOrderHandover(
+        id = handoverId,
+        recipient = recipientHandle,
+        executor = executingUser?.effectiveName,
+        at = handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
+        lines =
+            items.orEmpty().map { line ->
+                JobOrderHandoverLine(materialId = line.material?.id, amount = line.amount ?: 0.0)
+            },
+    )
+}
+
+/**
+ * Maps one recorded item handover onto the model.
+ *
+ * @receiver the server's record.
+ * @return it, or `null` for a row without an id.
+ */
+private fun JobOrderItemHandoverDto.krtToModel(): JobOrderItemHandover? {
+    val handoverId = id ?: return null
+    return JobOrderItemHandover(
+        id = handoverId,
+        recipient = recipientHandle,
+        executor = executingUser?.effectiveName,
+        at = handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
+        lines =
+            propertyEntries.orEmpty().map { line ->
+                JobOrderItemHandoverLine(
+                    itemId = line.jobOrderItemId,
+                    itemName = line.gameItem?.name.orEmpty(),
+                    amount = line.amount ?: 0,
+                )
+            },
+    )
+}
 
 /**
  * Maps one material line onto the model.

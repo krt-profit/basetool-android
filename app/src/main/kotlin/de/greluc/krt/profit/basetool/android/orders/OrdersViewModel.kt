@@ -312,6 +312,13 @@ data class OrderDetailState(
     val rejectedNote: String? = null,
     val handover: OrderHandoverDraft? = null,
     /**
+     * The item handover being filled in, or `null` when the sheet is shut.
+     *
+     * Its own slot beside [handover]: the two are separate writes against separate endpoints, and
+     * one shared slot would let a material sheet be submitted as an item one.
+     */
+    val itemHandover: ItemHandoverDraft? = null,
+    /**
      * The production run being filled in, or `null` when the sheet is shut.
      *
      * A **second** write on an item Auftrag, not a variant of the handover: the Übergabe hands
@@ -437,6 +444,21 @@ class OrderDetailViewModel(
             // The Auftrag is re-read rather than patched: a handover moves the line's open amount,
             // the order's status and possibly the whole order into „completed", and none of that is
             // in the answer.
+            onRecorded = { reload(keepContent = true) },
+        )
+
+    /**
+     * Handing finished items over — the write that finishes an item Auftrag.
+     *
+     * A second holder rather than a mode on [handover]: the endpoints, the units and the ceilings
+     * differ, and folding them together would mean one form that is wrong for both.
+     */
+    val itemHandover =
+        OrderItemHandover(
+            source = sources.work,
+            scope = viewModelScope,
+            read = { mutableState.value.itemHandover },
+            write = { draft -> mutableState.value = mutableState.value.copy(itemHandover = draft) },
             onRecorded = { reload(keepContent = true) },
         )
 
