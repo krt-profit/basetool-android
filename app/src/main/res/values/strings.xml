@@ -195,13 +195,14 @@
 
     <!-- Einsatz-Detail (design spec ch. 06 §2), read-only. -->
     <string name="mission_detail_title">Einsatz</string>
-    <string name="mission_detail_tab_overview">Übersicht</string>
+    <string name="mission_detail_tab_overview">Briefing</string>
     <string name="mission_detail_tab_participants">Teilnehmer</string>
     <string name="mission_detail_tab_units">Einheiten</string>
     <string name="mission_detail_tab_steps">Ablauf</string>
     <string name="mission_detail_tab_objectives">Ziele</string>
     <string name="mission_detail_tab_frequencies">Frequenzen</string>
     <string name="mission_detail_tab_finances">Finanzen</string>
+    <string name="mission_detail_tab_admin">Verwaltung</string>
     <string name="mission_detail_fact_meeting">TS</string>
     <string name="mission_detail_fact_join">Join</string>
     <string name="mission_detail_fact_end">Ende</string>
@@ -1047,6 +1048,7 @@
     <string name="mission_detail_check_in">Einchecken</string>
     <string name="mission_detail_check_out">Auschecken</string>
     <string name="mission_detail_donate">Spenden</string>
+    <string name="mission_detail_payout_label">Anteil</string>
     <string name="mission_detail_payout_self">Auszahlung</string>
     <string name="mission_detail_payout_org">Org-Kasse</string>
     <string name="mission_detail_take_payout">Auszahlen</string>
@@ -1297,7 +1299,6 @@
     <string name="mission_struct_pick_participant">Teilnehmer wählen</string>
     <string name="mission_struct_empty_units">Noch keine Einheiten.</string>
     <string name="mission_struct_confirm_remove">Wirklich entfernen?</string>
-    <string name="mission_admin_open">Einsatz verwalten</string>
     <string name="mission_admin_title">Einsatz verwalten</string>
     <string name="mission_admin_core">Kern</string>
     <string name="mission_admin_schedule">Zeitplan</string>

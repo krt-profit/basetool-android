@@ -665,3 +665,84 @@ concurrent-edit collision the version exists to catch, so an unknown participant
 - [ ] A stale version surfaces as `409`, not as a silent overwrite.
 
 **Enforced by:** `MissionRepositoryTest`, `MissionRosterTest`.
+
+### REQ-APP-MIS-022 — The Verwaltung is the Einsatz's eighth tab, and it is absent for anyone else
+
+Editing an Einsatz — Kern, Zeitplan, Sichtbarkeit — is a **tab of the Einsatz**, drawn after
+Finanzen ([ADR-0018](../adr/0018-the-verwaltung-is-a-tab-and-briefing-is-renamed-out-of-a-collision.md)).
+It MUST NOT be a sheet opened from the head, and it MUST NOT be entered through a button wedged
+between the pinned head and the tab row.
+
+It matches the web, which names the same surface `mission.tab.admin=Verwaltung`.
+
+**The tab is absent for a caller who may not manage, not locked.** That is the one deliberate
+exception to `REQ-APP-AUTH-013`'s lock-in-place rule, and the reason is what a lock says:
+„you could, but not now". A member who does not run this Einsatz is not one grant away from
+running it, and eight tabs where seven are inert is a worse screen than seven that all work.
+Per-control locking still applies **inside** the tab for a manager who is offline or mid-write.
+
+The gate is `MissionDetail.canManage`, carried from the server's `MissionDto.canEdit` and never
+derived from a role string (see [REQ-APP-MIS-020](#req-app-mis-020--a-manager-acts-on-the-roster-and-the-app-asks-the-server-whether-they-are-one)).
+Drawing decides what is offered; the backend decides what is allowed, and refuses every write
+behind this tab regardless of what was drawn.
+
+**The tab row's indices are into the visible list, not into the enum.** A tab row built from all
+eight entries while only seven are drawn reports the wrong tab for every non-manager.
+
+**The form's lifecycle belongs to the tab.** Entering it fills the form from the Einsatz as last
+read; leaving it clears the form. This is required, not cosmetic: the form carries the three
+independent section version counters it was filled with, and a second visit that saved against a
+stale set would produce a `409` the member did nothing to cause.
+
+**Acceptance**
+
+- [ ] A caller with `canEdit = true` sees a „Verwaltung" tab; one with `canEdit = false` or absent
+  sees seven tabs and no eighth.
+- [ ] A non-manager tapping „Finanzen" reaches Finanzen — not the tab one place further along.
+- [ ] Entering the tab fills the form; leaving it and returning re-reads the section counters.
+- [ ] Each section saves on its own, with its own counter (REQ-APP-MIS-013).
+
+**Enforced by:** `MissionDetailScreenTest`, `MissionDetailViewModelTest`, `MissionAdminTest`.
+
+### REQ-APP-MIS-023 — One filled CTA, and the payout preference is not an action
+
+The Einsatz's action bar carries **actions**, and at most two: signing up or withdrawing (filled),
+and — once the Einsatz has actually started and the caller has a row — checking in or out. Both
+MUST carry a layout weight, so the row divides between them.
+
+`KrtBottomCtaBar` is an End-aligned row that distributes nothing by itself. Without weights the
+first button keeps its measured width and the second is squeezed into what is left; a third item
+squeezes it to about one character, and the label wraps to a column of single letters. That is what
+shipped, and it is what this requirement exists to prevent.
+
+**The payout preference is a standing setting, not an action, and MUST NOT sit in the action bar.**
+It is drawn directly above it, on the bar's own ground, under a label — two bare radios over a
+button bar do not say what they decide. It stays two radios rather than one toggle for the reason
+[REQ-APP-MIS-015](#req-app-mis-015--the-payout-preference-is-a-toggle-and-it-says-what-the-other-option-is)
+gives.
+
+**Acceptance**
+
+- [ ] The action bar holds at most two buttons, each weighted; no label wraps.
+- [ ] The payout preference is reachable without opening a sheet, and is not inside the action bar.
+
+**Enforced by:** `MissionDetailScreenTest`.
+
+### REQ-APP-MIS-024 — Nothing in the Einsatz repeats a navigation label
+
+The first tab is „Briefing", not „Übersicht". The shell's Home destination is „Übersicht" on every
+form factor and appears in the bottom bar roughly 200 dp below the tab row; two controls with one
+word, one screen apart, is a defect the owner hit in the field
+([ADR-0018](../adr/0018-the-verwaltung-is-a-tab-and-briefing-is-renamed-out-of-a-collision.md)).
+
+This is a deliberate deviation from design ch. 06 and from the web's `mission.tab.overview`. The
+collision exists only on a phone, where both are on screen at once.
+
+The rule generalises: **no tab, chip or in-page control may reuse the label of a navigation
+destination** („Übersicht", „Einsätze", „Aufträge", „Lager", „Mehr") for something that is not that
+destination.
+
+**Acceptance**
+
+- [ ] The Einsatz's first tab reads „Briefing" in DE and EN.
+- [ ] No page-tab label on any screen equals a bottom-bar or rail label.

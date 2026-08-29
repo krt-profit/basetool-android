@@ -71,6 +71,7 @@ class MissionDetailScreenTest {
         steps: List<MissionStep> = emptyList(),
         objectives: List<MissionObjective> = emptyList(),
         frequencies: List<MissionFrequency> = emptyList(),
+        canManage: Boolean = false,
     ) = MissionDetail(
         id = "m1",
         name = "Vertikaler Abbau",
@@ -94,6 +95,7 @@ class MissionDetailScreenTest {
         steps = steps,
         objectives = objectives,
         frequencies = frequencies,
+        canManage = canManage,
     )
 
     /**
@@ -177,11 +179,9 @@ class MissionDetailScreenTest {
                     structure = structureActions(canManage, rosterTaps),
                     admin =
                         MissionAdminActions(
-                            onOpen = {},
                             onChange = {},
                             onSave = {},
                             onStartNow = {},
-                            onDismiss = {},
                         ),
                     finances =
                         MissionFinanceActions(
@@ -203,13 +203,65 @@ class MissionDetailScreenTest {
         detail: MissionDetail = detail(),
         tab: MissionTab = MissionTab.OVERVIEW,
         finances: MissionFinancesPhase = MissionFinancesPhase.Idle,
+        adminForm: MissionAdminForm? = null,
     ) = MissionDetailState(
         missionId = "m1",
         detail = detail,
         phase = MissionDetailPhase.Ready,
         tab = tab,
         finances = finances,
+        adminForm = adminForm,
     )
+
+    /**
+     * The Verwaltung tab exists only for a caller the server says may manage this Einsatz.
+     *
+     * Absent, not locked. A lock reads as „you could, but not now"; for a member who simply does
+     * not run this Einsatz that is not true, and the seven reading tabs are the whole screen for
+     * them.
+     */
+    @Test
+    fun `the Verwaltung tab is drawn only for a manager`() {
+        show(ready(detail = detail(canManage = true)))
+
+        compose.onNodeWithText("Verwaltung", ignoreCase = true).assertExists()
+    }
+
+    @Test
+    fun `a member who may not manage never sees the Verwaltung tab`() {
+        show(ready(detail = detail(canManage = false)))
+
+        compose.onAllNodesWithText("Verwaltung", ignoreCase = true).assertCountEquals(0)
+    }
+
+    /**
+     * The tab indices are into the VISIBLE list. Handing the tab row an enum ordinal while it draws
+     * a shorter list selects the wrong tab for every non-manager — tapping „Finanzen" would report
+     * whatever sits one place further along.
+     */
+    @Test
+    fun `a non-manager's tab taps still name the tab they tapped`() {
+        val tabs = mutableListOf<MissionTab>()
+        show(ready(detail = detail(canManage = false)), tabs = tabs)
+
+        compose.onNodeWithText("Finanzen", ignoreCase = true).performClick()
+
+        assertEquals(listOf(MissionTab.FINANCES), tabs)
+    }
+
+    /** And the Verwaltung tab draws the form rather than a sheet over the screen. */
+    @Test
+    fun `the Verwaltung tab draws the three sections`() {
+        show(
+            ready(
+                detail = detail(canManage = true),
+                tab = MissionTab.ADMIN,
+                adminForm = MissionAdminForm(name = "Vertikaler Abbau"),
+            ),
+        )
+
+        compose.onNodeWithTag(MISSION_ADMIN_SHEET_TAG).assertExists()
+    }
 
     @Test
     fun `the head names the Einsatz and states its sign-ups`() {

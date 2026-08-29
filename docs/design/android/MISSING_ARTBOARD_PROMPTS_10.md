@@ -8,6 +8,12 @@ Round 9's roster work is built and shipped: the per-row check-in, the manager pa
 „Funktion an Bord" select all came from artboard 2's own handoff notes, so they needed no new
 drawing. **Everything else a manager does is undrawn**, and this is the request for it.
 
+> [!important] § 10a is answered and § 10d is retired — 2026-08-29
+> The repository owner settled the shape while this round was open: the Verwaltung is an **eighth
+> tab**, drawn only for a manager (ADR-0018). Everything in the table below is now **built** against
+> that shape and device-verified; what is still wanted is the **drawing** of that tab, not a
+> decision about where it lives. § 10f is new, and comes out of the same review.
+
 > [!important] The data layer is ready and the UI is not being invented
 > `MissionAdminSource` exists, is tested, and carries the three section edits. What is missing is a
 > drawing, not an endpoint. Following the Beförderung precedent — *a derived layout is not a
@@ -30,22 +36,29 @@ Eight surfaces, in the order they cost the organisation most:
 
 ## What we would like drawn
 
-### 10a — One Verwaltung surface, or several?
+### 10a — One Verwaltung surface, or several? — **ANSWERED, 2026-08-29**
+
+> **The repository owner decided: an eighth tab, „Verwaltung", drawn only for a manager.**
+> Recorded as ADR-0018 and `REQ-APP-MIS-022`; built and device-verified. It lands the app on the
+> web's own naming — `mission.tab.admin=Verwaltung`.
+>
+> The tab row is horizontally scrollable, so an eighth entry costs nothing; it is **absent** for a
+> caller the server says may not manage, rather than locked, so most members still see seven.
+>
+> **What we would still like drawn** is that tab: the section rhythm, the save affordances, and what
+> a section looks like mid-save. It is currently composed from drawn parts (`KrtTextField` under
+> `KrtSectionTitle`, one full-width `KrtGhostButton` per section, a filled `KrtCtaButton` for
+> „Einsatz läuft jetzt") and its composition is unratified.
+
+The question as originally asked, for the record:
 
 The web puts all of this behind a `verw` tab. Chapter 06 gives the app **seven** tabs already, and
 an eighth on a phone would push the row past what fits.
 
-Two shapes seem plausible and we would rather be told than choose:
-
 - **A sheet from the head.** The drawn head carries the title, the status badge and the fact row; a
-  pencil affordance there opens one scrolling sheet with the Kern, Zeitplan and Flags sections. It
-  keeps the tab row at seven and matches the booking sheet's shape (ch. 09, artboard 2).
+  pencil affordance there opens one scrolling sheet with the Kern, Zeitplan and Flags sections.
 - **Per-tab edit affordances.** Frequenzen gains a „+" and per-row delete, Einheiten gains a „+",
-  the head gains the party lead — each where the thing being edited already lives, and no new
-  surface at all.
-
-The second reads better to us for 4–7 and worse for 1–3, which have no tab of their own. A mixed
-answer is fine; we would like it stated.
+  the head gains the party lead — each where the thing being edited already lives.
 
 ### 10b — The three sections have three independent locks
 
@@ -66,11 +79,18 @@ Chapter 06 draws the status badge (`Geplant` / `Aktiv`) in the head. Should star
 an action **on that badge** rather than a field in a form? If so, what does it look like, and what
 happens to the badge while the write is in flight?
 
-### 10d — What a locked manager control looks like on a **head**, not a row
+### 10d — What a locked manager control looks like on a **head**, not a row — **RETIRED, 2026-08-29**
+
+> Nothing manager-owned lives in the head any more: 10a's answer puts it all in the Verwaltung tab,
+> and the tab itself is absent rather than locked for a non-manager. The question only existed
+> because a pencil might have had to sit among the head's three chips. Chapter 09's artboard 14
+> continues to cover rows and buttons, which is where the locking now happens — inside the tab, for
+> a manager who is offline or mid-write.
+
+The question as originally asked, for the record:
 
 Chapter 09's artboard 14 settles the locked-but-tappable pattern for rows and buttons. The head is
-different: it is dense, it is pinned, and it already carries three chips. If the party lead or a
-pencil lives there, we need the lock's shape at that size.
+different: it is dense, it is pinned, and it already carries three chips.
 
 ### 10e — Two open questions we cannot answer from the code
 
@@ -78,6 +98,18 @@ pencil lives there, we need the lock's shape at that size.
    with what wording? The web does not.
 2. **Adding a manager** resolves a member through the user search. Chapter 12's remote combobox is
    the obvious control — is it the right one here, or does a manager list want something else?
+
+### 10f — Nothing in a page may reuse a navigation label — **new, 2026-08-29**
+
+Not a request so much as a constraint we would like the next chapter to respect.
+
+The Einsatz's first tab was „Übersicht" (ch. 06) and the shell's Home destination is „Übersicht"
+(ch. 03). On the web those never meet — one is in a sidebar, the other inside the page. On a phone
+both are on screen at once, about 200 dp apart, and the owner tapped the tab expecting the
+dashboard. The tab is **„Briefing"** now (`REQ-APP-MIS-024`).
+
+**Please check any new page-tab, chip or filter label against the five navigation labels** —
+„Übersicht", „Einsätze", „Aufträge", „Lager", „Mehr" — before it ships in a chapter.
 
 ## What is already correct and needs nothing
 

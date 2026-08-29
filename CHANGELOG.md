@@ -13,16 +13,26 @@
   entfernen (mit HVU-Markierung), jemanden an Bord nehmen und wieder herunter, eine Frequenz
   hinzufügen und löschen. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt.
 
-- **„Einsatz verwalten": Titel, Beschreibung, Treffpunkt, Zeiten und Sichtbarkeit sind jetzt in der
-  App änderbar.** Jeder Abschnitt wird einzeln gespeichert, damit eine Änderung nicht mit einer
-  gleichzeitigen Änderung an anderer Stelle kollidiert. „Einsatz läuft jetzt" setzt den
-  tatsächlichen Start — davor weist der Server jeden Check-in ab, was bislang nur im Web
-  aufhebbar war.
+- **Neuer Tab „Verwaltung" im Einsatz:** Titel, Beschreibung, Treffpunkt, Zeiten und Sichtbarkeit
+  sind jetzt in der App änderbar. Jeder Abschnitt wird einzeln gespeichert, damit eine Änderung
+  nicht mit einer gleichzeitigen Änderung an anderer Stelle kollidiert. „Einsatz läuft jetzt" setzt
+  den tatsächlichen Start — davor weist der Server jeden Check-in ab, was bislang nur im Web
+  aufhebbar war. Der Tab erscheint nur, wenn man den Einsatz auch verwalten darf.
 
 - **Die Zeile zeigt jetzt auch den Funktionswunsch** („Wunsch: Pilot"), damit eine Zuweisung nicht
   geraten werden muss.
 
+### Changed
+
+- **Der erste Tab im Einsatz heißt jetzt „Briefing" statt „Übersicht".** Direkt darunter steht in der
+  unteren Leiste ebenfalls „Übersicht" — das Dashboard. Zwei gleich benannte Bedienelemente auf
+  einem Handy-Bildschirm; der Tab-Name passt jetzt auch besser zu seinem Inhalt.
+
 ### Fixed
+
+- **„ABMELDEN" brach in eine Spalte aus einzelnen Buchstaben um.** In der Aktionsleiste standen drei
+  Dinge nebeneinander; die Auszahlungspräferenz ist keine Aktion und steht jetzt über der Leiste,
+  beschriftet. Anmelden und Einchecken teilen sich die Leiste je zur Hälfte.
 
 - **Die Unterebenen im Lager standen auf Schwarz statt auf der Tabellenfläche.** Nutzer-, Stapel-
   und Eintragszeilen fielen auf den Seitenhintergrund durch; laut Design liegt der Baum auf einer

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -186,24 +188,10 @@ fun MissionDetailScreen(
                         OfflineBand()
                     }
                     MissionDetailHead(detail = detail)
-                    // The Verwaltung entry point. It sits under the head rather than in it because the
-                    // head is pinned, dense and already carries three chips — round 10 (10d) asks what
-                    // a locked control looks like at that density before anything moves into it.
-                    if (state.canManage) {
-                        KrtGhostButton(
-                            text = stringResource(R.string.mission_admin_open),
-                            onClick = admin.onOpen,
-                            iconRes = DesignR.drawable.ic_krt_gear,
-                            modifier =
-                                Modifier
-                                    .padding(horizontal = KrtSpacing.md)
-                                    .testTag(MISSION_ADMIN_OPEN_TAG),
-                            enabled = state.writable,
-                        )
-                    }
                     MissionTabRow(
                         selected = state.tab,
                         detail = state.detail,
+                        canManage = state.canManage,
                         onTabSelected = onTabSelected,
                     )
                     PullToRefreshBox(
@@ -221,17 +209,22 @@ fun MissionDetailScreen(
                             finances = finances,
                             roster = roster,
                             structure = structure,
+                            admin = admin,
                         )
                     }
                     // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
                     // tab row, where the screen's primary action scrolled away with the briefing and
                     // read as one more fact about the Einsatz.
-                    SignUpBar(state = state, actions = actions)
+                    //
+                    // Not on the Verwaltung tab. That tab carries its own primary action — starting
+                    // the Einsatz, and three section saves — and a filled „Anmelden" pinned over
+                    // them is a second primary about a different subject, which is the same rule
+                    // being broken from the other side. It also covered the form's last field.
+                    if (state.tab != MissionTab.ADMIN) {
+                        SignUpBar(state = state, actions = actions)
+                    }
                     state.entryDraft?.let { draft ->
                         FinanceEntrySheet(draft = draft, state = state, actions = finances)
-                    }
-                    state.adminForm?.let { form ->
-                        MissionAdminSheet(form = form, actions = admin)
                     }
                     state.joinSheet?.let { sheet ->
                         MissionJoinSheet(
@@ -386,6 +379,14 @@ private fun SignUpBar(
                 modifier = Modifier.padding(horizontal = KrtSpacing.md),
             )
         }
+        // The payout preference is a standing SETTING, not an action, and it used to sit in the
+        // action row beside two buttons. Three items in a `KrtBottomCtaBar` — which is an End-aligned
+        // row with no weights of its own — left „ABMELDEN" about one character wide, so it wrapped
+        // to a column of single letters. It is drawn above the bar now, where two German radio
+        // labels have the width they need and the bar is back to being what it is drawn as.
+        if (mine != null) {
+            PayoutPreference(mine = mine, state = state, actions = actions)
+        }
         KrtBottomCtaBar {
             KrtCtaButton(
                 text =
@@ -408,79 +409,124 @@ private fun SignUpBar(
                         .writeAlpha(state.writable),
                 enabled = state.writable,
             )
-            if (mine != null) {
-                SignUpRowActions(mine = mine, state = state, actions = actions)
+            if (mine != null && state.checkInPossible) {
+                CheckInAction(mine = mine, state = state, actions = actions)
             }
         }
     }
 }
 
 /**
- * The two actions that need a sign-up to act on.
+ * Checking in, and back out — the second action of the bar, and only once the Einsatz has started.
+ *
+ * It carries a weight so the row divides evenly between the two buttons. `KrtBottomCtaBar` is an
+ * End-aligned row and distributes nothing by itself: without weights the first button keeps its
+ * measured width and the second is squeezed into whatever is left, which is how a label ends up
+ * one letter per line.
  *
  * @param mine the caller's own row.
  * @param state the screen.
  * @param actions what it reports back.
  */
 @Composable
-private fun SignUpRowActions(
+private fun RowScope.CheckInAction(
     mine: MissionParticipant,
     state: MissionDetailState,
     actions: MissionSignUpActions,
 ) {
-    if (state.checkInPossible) {
-        // Check-In is the example the button ladder gives for the success style: green marks a
-        // transition INTO an active state, and this is the one the whole screen exists for.
-        // Checking out is the reverse and stays a ghost — green both ways would say nothing.
-        if (mine.checkedIn) {
-            KrtGhostButton(
-                text = stringResource(R.string.mission_detail_check_out),
-                onClick = actions.onToggleCheckIn,
-                iconRes = DesignR.drawable.ic_krt_logout,
-                modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
-                enabled = state.writable,
-            )
-        } else {
-            KrtSuccessButton(
-                text = stringResource(R.string.mission_detail_check_in),
-                onClick = actions.onToggleCheckIn,
-                iconRes = DesignR.drawable.ic_krt_check,
-                modifier = Modifier.testTag(MISSION_CHECK_IN_TAG).writeAlpha(state.writable),
-                enabled = state.writable,
-            )
-        }
-    }
-    // Two radios, not one toggle. The choice is between two standing states — the payout comes to
-    // you, or it goes to the org treasury — and a button labelled with the OTHER state leaves a
-    // member reading "Spenden" unsure whether that is what they have chosen or what they are being
-    // offered. The component sheet (ch. 02 §6) draws exactly this pair.
-    Row(
-        modifier = Modifier.testTag(MISSION_PAYOUT_TAG).writeAlpha(state.writable),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        KrtRadioRow(
-            selected = mine.donating != true,
-            onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
-            label = stringResource(R.string.mission_detail_payout_self),
+    val modifier =
+        Modifier
+            .testTag(MISSION_CHECK_IN_TAG)
+            .weight(1f)
+            .writeAlpha(state.writable)
+    // Check-In is the example the button ladder gives for the success style: green marks a
+    // transition INTO an active state, and this is the one the whole screen exists for.
+    // Checking out is the reverse and stays a ghost — green both ways would say nothing.
+    if (mine.checkedIn) {
+        KrtGhostButton(
+            text = stringResource(R.string.mission_detail_check_out),
+            onClick = actions.onToggleCheckIn,
+            iconRes = DesignR.drawable.ic_krt_logout,
+            modifier = modifier,
             enabled = state.writable,
         )
-        KrtRadioRow(
-            selected = mine.donating == true,
-            onSelect = { if (mine.donating != true) actions.onTogglePayoutPreference() },
-            label = stringResource(R.string.mission_detail_payout_org),
+    } else {
+        KrtSuccessButton(
+            text = stringResource(R.string.mission_detail_check_in),
+            onClick = actions.onToggleCheckIn,
+            iconRes = DesignR.drawable.ic_krt_check,
+            modifier = modifier,
             enabled = state.writable,
         )
     }
 }
 
 /**
+ * Where the caller's share of this Einsatz goes.
+ *
+ * Two radios, not one toggle. The choice is between two standing states — the payout comes to you,
+ * or it goes to the org treasury — and a button labelled with the OTHER state leaves a member
+ * reading „Spenden" unsure whether that is what they have chosen or what they are being offered.
+ * The component sheet (ch. 02 §6) draws exactly this pair.
+ *
+ * Drawn on the bar's own ground, directly above it, so the pair reads as belonging to the sign-up
+ * rather than to the tab content it sits over — and with a label, because two bare radios above a
+ * button bar do not say what they decide.
+ *
+ * @param mine the caller's own row.
+ * @param state the screen.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun PayoutPreference(
+    mine: MissionParticipant,
+    state: MissionDetailState,
+    actions: MissionSignUpActions,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(KrtPalette.Gray4)
+                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .testTag(MISSION_PAYOUT_TAG)
+                .writeAlpha(state.writable),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        Text(
+            text = stringResource(R.string.mission_detail_payout_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        // Wrapping, not a fixed row: „Auszahlung an mich" and „An die Organisation spenden" are
+        // long enough together that a narrow phone would otherwise clip the second label.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+            KrtRadioRow(
+                selected = mine.donating != true,
+                onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
+                label = stringResource(R.string.mission_detail_payout_self),
+                enabled = state.writable,
+            )
+            KrtRadioRow(
+                selected = mine.donating == true,
+                onSelect = { if (mine.donating != true) actions.onTogglePayoutPreference() },
+                label = stringResource(R.string.mission_detail_payout_org),
+                enabled = state.writable,
+            )
+        }
+    }
+}
+
+/**
  * What the last write returned, in the app's own words.
+ *
+ * Module-internal rather than private: every mutating surface of the Einsatz reports its refusals
+ * the same way, and the Verwaltung tab lives in its own file.
  *
  * @param error the refusal.
  */
 @Composable
-private fun SignUpError(error: ApiError) {
+internal fun SignUpError(error: ApiError) {
     KrtFieldError(
         text =
             stringResource(
@@ -508,22 +554,34 @@ private fun Modifier.writeAlpha(writable: Boolean): Modifier =
  * Horizontally scrollable because seven German tab labels do not fit a phone's width, and the
  * design's alternative — truncating them — would make "Teilnehmer" and "Frequenzen" indistinguishable.
  *
+ * **Verwaltung is drawn only for a caller who may manage.** The gate is the server's own
+ * `canEdit`, not a role read on the device, and the tab is absent rather than locked: a lock says
+ * "you could, but not now", and for a member who simply does not run this Einsatz that is not the
+ * truth. Every write behind it is refused by the backend regardless — this decides what is drawn,
+ * never what is allowed.
+ *
  * @param selected which tab is showing.
+ * @param detail the Einsatz, for the per-tab counts.
+ * @param canManage whether the Verwaltung tab is drawn at all.
  * @param onTabSelected a tab was picked.
  */
 @Composable
 private fun MissionTabRow(
     selected: MissionTab,
     detail: MissionDetail?,
+    canManage: Boolean,
     onTabSelected: (MissionTab) -> Unit,
 ) {
+    // Indices are into the VISIBLE list, not into the enum. Handing `KrtPageTabs` an enum ordinal
+    // while it draws a shorter list selects the wrong tab for everyone who is not a manager.
+    val tabs = MissionTab.entries.filter { canManage || it != MissionTab.ADMIN }
     KrtPageTabs(
         tabs =
-            MissionTab.entries.map { tab ->
+            tabs.map { tab ->
                 KrtPageTab(label = stringResource(tab.labelRes()), count = detail?.let(tab::countIn))
             },
-        selectedIndex = MissionTab.entries.indexOf(selected),
-        onSelect = { onTabSelected(MissionTab.entries[it]) },
+        selectedIndex = tabs.indexOf(selected).coerceAtLeast(0),
+        onSelect = { onTabSelected(tabs[it]) },
         modifier = Modifier.testTag(MISSION_DETAIL_TABS_TAG),
     )
 }
@@ -534,7 +592,10 @@ private fun MissionTabRow(
  * @param state everything the screen knows.
  * @param detail the Einsatz, already known to be present.
  * @param onRetryFinances the Finanzen tab's retry.
+ * @param finances what the caller may do to the Einsatz's money.
  * @param roster what a manager may do to a roster row.
+ * @param structure what a manager may do to its Einheiten and Frequenzen.
+ * @param admin what a manager may do to the Einsatz itself.
  */
 @Composable
 private fun MissionTabContent(
@@ -544,6 +605,7 @@ private fun MissionTabContent(
     finances: MissionFinanceActions,
     roster: MissionRosterActions,
     structure: MissionStructureActions,
+    admin: MissionAdminActions,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
@@ -552,182 +614,26 @@ private fun MissionTabContent(
     ) {
         when (state.tab) {
             MissionTab.OVERVIEW -> overviewTab(detail)
+
             MissionTab.PARTICIPANTS -> participantsTab(detail, state.mySignUp, roster)
+
             MissionTab.UNITS -> unitsTab(detail, structure)
+
             MissionTab.STEPS -> stepsTab(detail)
+
             MissionTab.OBJECTIVES -> objectivesTab(detail)
+
             MissionTab.FREQUENCIES -> frequenciesTab(detail, structure)
+
             MissionTab.FINANCES -> financesTab(state, onRetryFinances, finances)
+
+            // The form is filled by `onTabSelected` as the tab is entered, so it is present
+            // whenever this tab is. Null-safe rather than forced: a state restored with the tab
+            // already selected must draw an empty tab, never crash the screen.
+            MissionTab.ADMIN -> state.adminForm?.let { adminTab(it, state.writable, admin) }
         }
     }
 }
-
-/** Test handle for the Verwaltung sheet. */
-const val MISSION_ADMIN_SHEET_TAG: String = "mission-admin-sheet"
-
-/** Test handle for the Verwaltung entry point in the head. */
-const val MISSION_ADMIN_OPEN_TAG: String = "mission-admin-open"
-
-/**
- * Editing the Einsatz itself: Kern, Zeitplan, Sichtbarkeit — each saved on its own.
- *
- * **This surface has no artboard.** Chapter 06 draws seven reading tabs and the list's
- * „Einsatz erstellen" FAB and nothing else of the Verwaltung half, so this is composed from the
- * design system's own drawn parts — a `KrtBottomSheet` of `KrtTextField` rows, the same shape the
- * booking and sign-up sheets use. Its **composition is unratified**; round 10 asks for the drawing.
- *
- * The three save buttons are not a layout preference. Each section carries its own version counter
- * on the server, deliberately, so that two managers editing different sections both commit. One
- * save for all three would throw that away.
- *
- * @param form what is typed.
- * @param actions what the sheet can do.
- */
-@Composable
-private fun MissionAdminSheet(
-    form: MissionAdminForm,
-    actions: MissionAdminActions,
-) {
-    KrtBottomSheet(
-        onDismiss = actions.onDismiss,
-        title = stringResource(R.string.mission_admin_title),
-        modifier = Modifier.testTag(MISSION_ADMIN_SHEET_TAG),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        ) {
-            Text(
-                text = stringResource(R.string.mission_admin_section_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
-            )
-
-            KrtSectionTitle(text = stringResource(R.string.mission_admin_core))
-            KrtTextField(
-                value = form.name,
-                onValueChange = { v -> actions.onChange { it.copy(name = v) } },
-                label = stringResource(R.string.mission_admin_name),
-            )
-            KrtTextField(
-                value = form.description,
-                onValueChange = { v -> actions.onChange { it.copy(description = v) } },
-                label = stringResource(R.string.mission_admin_description),
-            )
-            KrtTextField(
-                value = form.meetingPoint,
-                onValueChange = { v -> actions.onChange { it.copy(meetingPoint = v) } },
-                label = stringResource(R.string.mission_admin_meeting_point),
-            )
-            SectionSave(
-                label = stringResource(R.string.mission_admin_save_core),
-                section = MissionSection.CORE,
-                form = form,
-                onSave = actions.onSave,
-            )
-
-            KrtSectionTitle(text = stringResource(R.string.mission_admin_schedule))
-            Text(
-                text = stringResource(R.string.mission_admin_start_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
-            )
-            KrtTextField(
-                value = form.meetingTime,
-                onValueChange = { v -> actions.onChange { it.copy(meetingTime = v) } },
-                label = stringResource(R.string.mission_admin_meeting_time),
-            )
-            KrtTextField(
-                value = form.plannedStart,
-                onValueChange = { v -> actions.onChange { it.copy(plannedStart = v) } },
-                label = stringResource(R.string.mission_admin_planned_start),
-            )
-            KrtTextField(
-                value = form.plannedEnd,
-                onValueChange = { v -> actions.onChange { it.copy(plannedEnd = v) } },
-                label = stringResource(R.string.mission_admin_planned_end),
-            )
-            KrtTextField(
-                value = form.actualStart,
-                onValueChange = { v -> actions.onChange { it.copy(actualStart = v) } },
-                label = stringResource(R.string.mission_admin_actual_start),
-            )
-            // „Der Einsatz läuft jetzt" is a verb, and typing an ISO timestamp to express it is
-            // paperwork. Offered beside the field it writes until round 10 says whether it belongs
-            // on the drawn status badge instead.
-            if (!form.started) {
-                KrtGhostButton(
-                    text = stringResource(R.string.mission_admin_start_now),
-                    onClick = actions.onStartNow,
-                    enabled = form.saving == null,
-                )
-            }
-            SectionSave(
-                label = stringResource(R.string.mission_admin_save_schedule),
-                section = MissionSection.SCHEDULE,
-                form = form,
-                onSave = actions.onSave,
-            )
-
-            KrtSectionTitle(text = stringResource(R.string.mission_admin_flags))
-            KrtRadioRow(
-                selected = form.internal,
-                onSelect = { actions.onChange { it.copy(internal = !it.internal) } },
-                label = stringResource(R.string.mission_admin_internal),
-            )
-            SectionSave(
-                label = stringResource(R.string.mission_admin_save_flags),
-                section = MissionSection.FLAGS,
-                form = form,
-                onSave = actions.onSave,
-            )
-
-            form.error?.let { SignUpError(error = it) }
-        }
-    }
-}
-
-/**
- * One section's save.
- *
- * @param label what it says.
- * @param section which section it writes.
- * @param form the form, for the in-flight state.
- * @param onSave raises the write.
- */
-@Composable
-private fun SectionSave(
-    label: String,
-    section: MissionSection,
-    form: MissionAdminForm,
-    onSave: (MissionSection) -> Unit,
-) {
-    KrtGhostButton(
-        text = label,
-        onClick = { onSave(section) },
-        // Every save is disabled while ANY of them is in flight: the three share one form, and a
-        // second write launched against a counter the first is about to bump is a 409 the member
-        // caused by being quick.
-        enabled = form.saving == null,
-    )
-}
-
-/**
- * What the Verwaltung sheet can do.
- *
- * @property onOpen the Verwaltung sheet is to be opened.
- * @property onChange a field changed.
- * @property onSave one section is to be saved.
- * @property onStartNow stamp the Einsatz as running now.
- * @property onDismiss close without saving.
- */
-data class MissionAdminActions(
-    val onOpen: () -> Unit,
-    val onChange: ((MissionAdminForm) -> MissionAdminForm) -> Unit,
-    val onSave: (MissionSection) -> Unit,
-    val onStartNow: () -> Unit,
-    val onDismiss: () -> Unit,
-)
 
 /**
  * Teilnehmer: the roster with its check-in marks, and — for a manager — the per-row actions the
@@ -1422,6 +1328,7 @@ private fun MissionTab.labelRes(): Int =
         MissionTab.OBJECTIVES -> R.string.mission_detail_tab_objectives
         MissionTab.FREQUENCIES -> R.string.mission_detail_tab_frequencies
         MissionTab.FINANCES -> R.string.mission_detail_tab_finances
+        MissionTab.ADMIN -> R.string.mission_detail_tab_admin
     }
 
 /**
@@ -1526,11 +1433,9 @@ fun MissionDetailRoute(
             ),
         admin =
             MissionAdminActions(
-                onOpen = viewModel.admin::open,
                 onChange = viewModel.admin::change,
                 onSave = viewModel.admin::save,
                 onStartNow = viewModel.admin::startNow,
-                onDismiss = viewModel.admin::dismiss,
             ),
         modifier = modifier,
     )
@@ -1553,6 +1458,7 @@ private fun MissionTab.countIn(detail: MissionDetail): Int? =
         MissionTab.OBJECTIVES -> detail.objectives.size
         MissionTab.FREQUENCIES -> detail.frequencies.size
         MissionTab.FINANCES -> null
+        MissionTab.ADMIN -> null
     }
 
 /**

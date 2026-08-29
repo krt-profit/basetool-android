@@ -61,6 +61,15 @@ enum class MissionTab {
 
     /** Income, expense and the entries behind them. */
     FINANCES,
+
+    /**
+     * Editing the Einsatz itself.
+     *
+     * The eighth tab, and the only one that is not on every caller's screen: it is drawn only for a
+     * caller the server says may manage this Einsatz. That is a decision by the repository owner on
+     * 2026-08-29, which answers round 10's question 10a — the Verwaltung is a tab, not a sheet.
+     */
+    ADMIN,
 }
 
 /** How far the Einsatz itself has got. */
@@ -807,10 +816,20 @@ class MissionDetailViewModel(
     /**
      * Switches tab, fetching the money the first time its tab is chosen.
      *
+     * The Verwaltung tab carries the form's whole lifecycle: arriving fills it from the Einsatz as
+     * last read, and leaving clears it. Clearing is not tidiness — the form holds the three section
+     * counters it was filled with, and coming back to a stale set is exactly the 409 the per-section
+     * locking exists to avoid.
+     *
      * @param tab the tab the member picked.
      */
     fun onTabSelected(tab: MissionTab) {
+        val leaving = mutableState.value.tab
         mutableState.value = mutableState.value.copy(tab = tab)
+        when {
+            tab == MissionTab.ADMIN -> admin.open()
+            leaving == MissionTab.ADMIN -> admin.dismiss()
+        }
         if (tab == MissionTab.FINANCES && mutableState.value.finances is MissionFinancesPhase.Idle) {
             loadFinances()
         }

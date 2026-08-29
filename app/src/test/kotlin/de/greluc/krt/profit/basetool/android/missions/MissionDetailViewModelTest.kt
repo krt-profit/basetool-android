@@ -489,6 +489,41 @@ class MissionDetailViewModelTest {
             assertTrue(model.state.value.finances is MissionFinancesPhase.Ready)
         }
 
+    /**
+     * The Verwaltung tab owns the form's whole life. Entering fills it from the Einsatz as last
+     * read; leaving clears it, so a second visit re-reads the three section counters rather than
+     * saving against the set it was opened with — which is the 409 the per-section locking exists
+     * to prevent.
+     */
+    @Test
+    fun `the Verwaltung tab fills the form on arrival and clears it on departure`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(canManage = true)))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onTabSelected(MissionTab.ADMIN)
+            assertEquals("Vertikaler Abbau", model.state.value.adminForm?.name)
+
+            model.onTabSelected(MissionTab.OVERVIEW)
+            assertNull(model.state.value.adminForm)
+        }
+
+    /** A caller the server does not let manage gets no form, whatever tab they land on. */
+    @Test
+    fun `the Verwaltung tab stays empty for a caller who may not manage`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(canManage = false)))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onTabSelected(MissionTab.ADMIN)
+
+            assertNull(model.state.value.adminForm)
+        }
+
     @Test
     fun `a refused Finanzen tab leaves the Einsatz intact`() =
         runTest(dispatcher) {

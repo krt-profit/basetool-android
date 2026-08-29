@@ -174,13 +174,14 @@
 
     <!-- Einsatz detail (design spec ch. 06 §2), read-only. Domain terms stay German. -->
     <string name="mission_detail_title">Einsatz</string>
-    <string name="mission_detail_tab_overview">Overview</string>
+    <string name="mission_detail_tab_overview">Briefing</string>
     <string name="mission_detail_tab_participants">Participants</string>
     <string name="mission_detail_tab_units">Einheiten</string>
     <string name="mission_detail_tab_steps">Ablauf</string>
     <string name="mission_detail_tab_objectives">Objectives</string>
     <string name="mission_detail_tab_frequencies">Frequencies</string>
     <string name="mission_detail_tab_finances">Finances</string>
+    <string name="mission_detail_tab_admin">Verwaltung</string>
     <string name="mission_detail_fact_meeting">TS</string>
     <string name="mission_detail_fact_join">Join</string>
     <string name="mission_detail_fact_end">End</string>
@@ -1026,6 +1027,7 @@
     <string name="mission_detail_check_in">Check in</string>
     <string name="mission_detail_check_out">Check out</string>
     <string name="mission_detail_donate">Donate</string>
+    <string name="mission_detail_payout_label">Share</string>
     <string name="mission_detail_payout_self">Payout</string>
     <string name="mission_detail_payout_org">Org treasury</string>
     <string name="mission_detail_take_payout">Take payout</string>
@@ -1276,7 +1278,6 @@
     <string name="mission_struct_pick_participant">Pick a participant</string>
     <string name="mission_struct_empty_units">No units yet.</string>
     <string name="mission_struct_confirm_remove">Remove for good?</string>
-    <string name="mission_admin_open">Manage Einsatz</string>
     <string name="mission_admin_title">Manage Einsatz</string>
     <string name="mission_admin_core">Core</string>
     <string name="mission_admin_schedule">Schedule</string>
