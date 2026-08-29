@@ -4,6 +4,53 @@
 
 ### Added
 
+- **Einsatz-Leitung kann die Teilnehmerliste jetzt in der App führen.** Wer einen Einsatz verwaltet,
+  checkt Mitglieder direkt in deren Zeile ein und aus, stellt ihre Auszahlung um und weist die
+  Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,
+  mit einem Hinweis, welche Rolle fehlt.
+
+- **Einheiten, Crew und Frequenzen lassen sich jetzt in der App pflegen.** Eine Einheit anlegen und
+  entfernen (mit HVU-Markierung), jemanden an Bord nehmen und wieder herunter, eine Frequenz
+  hinzufügen und löschen. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt.
+
+- **Neuer Tab „Verwaltung" im Einsatz:** Titel, Beschreibung, Treffpunkt, Zeiten und Sichtbarkeit
+  sind jetzt in der App änderbar. Jeder Abschnitt wird einzeln gespeichert, damit eine Änderung
+  nicht mit einer gleichzeitigen Änderung an anderer Stelle kollidiert. „Einsatz läuft jetzt" setzt
+  den tatsächlichen Start — davor weist der Server jeden Check-in ab, was bislang nur im Web
+  aufhebbar war. Der Tab erscheint nur, wenn man den Einsatz auch verwalten darf.
+
+- **Ablauf und Ziele lassen sich jetzt in der App pflegen.** Schritte anlegen, bearbeiten, abhaken,
+  entfernen und verschieben; Ziele ebenso, mit Primär / Sekundär / Kein Ziel.
+
+- **Einsatzleitung, Manager und zusätzliche Teilnehmer werden über eine Mitgliedersuche benannt.**
+  Tippen, die Liste grenzt ein, darunter steht wie viele Treffer angezeigt werden.
+
+- **Eine Einheit lässt sich umbenennen, jemand an Bord nehmen, und die Funktion an Bord wird pro
+  Person gesetzt.**
+
+- **Die Zeile zeigt jetzt auch den Funktionswunsch** („Wunsch: Pilot"), damit eine Zuweisung nicht
+  geraten werden muss.
+
+### Changed
+
+- **Der erste Tab im Einsatz heißt jetzt „Briefing" statt „Übersicht".** Direkt darunter steht in der
+  unteren Leiste ebenfalls „Übersicht" — das Dashboard. Zwei gleich benannte Bedienelemente auf
+  einem Handy-Bildschirm; der Tab-Name passt jetzt auch besser zu seinem Inhalt.
+
+### Fixed
+
+- **Die Zielart hieß „SECONDARY" statt „Sekundär".** Die Leseseite zeigte den Rohwert des Servers,
+  während die Auswahl daneben das deutsche Wort nannte.
+
+- **„ABMELDEN" brach in eine Spalte aus einzelnen Buchstaben um.** In der Aktionsleiste standen drei
+  Dinge nebeneinander; die Auszahlungspräferenz ist keine Aktion und steht jetzt über der Leiste,
+  beschriftet. Anmelden und Einchecken teilen sich die Leiste je zur Hälfte.
+
+- **Die Unterebenen im Lager standen auf Schwarz statt auf der Tabellenfläche.** Nutzer-, Stapel-
+  und Eintragszeilen fielen auf den Seitenhintergrund durch; laut Design liegt der Baum auf einer
+  eigenen dunkelgrauen Fläche, und nur die Eintragszeile wird darüber abgedunkelt.
+
+
 - **Item-Aufträge lassen sich jetzt in der App anlegen.** Das Auftragsformular hat oben einen
   Umschalter „Material / Items"; eine Item-Zeile ist Item, Blueprint und Anzahl. Hat ein Item nur
   einen Blueprint, ist er sofort gesetzt. Was das Formular noch nicht kann, ist der

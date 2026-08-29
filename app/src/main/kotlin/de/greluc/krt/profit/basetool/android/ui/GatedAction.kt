@@ -7,14 +7,24 @@
 
 package de.greluc.krt.profit.basetool.android.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtLocked
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import kotlinx.coroutines.delay
 
 /**
  * How long a refusal stays on screen, in milliseconds (design ch. 09, artboard 14: „4 s").
@@ -125,4 +135,45 @@ fun rememberGated(
     val dim = Modifier.krtLocked(locked = !gate.allowed, stateLabel = gate.reason)
     val click: () -> Unit = { if (gate.allowed) onAllowed() else denials.raise(gate) }
     return dim to click
+}
+
+/**
+ * The refusal itself: one at a time, at the foot of the screen, gone after four seconds.
+ *
+ * Lives here rather than at a call site because it is a **drawn** element (design ch. 09, artboards
+ * 12 and 14) and two hand-rolled copies of one artboard drift — the timer, the inset and the
+ * z-order are each easy to get subtly different, and none of the three shows up in a semantics
+ * test.
+ *
+ * Place it at the **screen**, never inside a list row: a `LazyColumn` recycles its items, so a
+ * toast owned by a row disappears the moment that row scrolls out from under it.
+ *
+ * @param state the screen's refusal slot; nothing is drawn while it is empty.
+ */
+@Composable
+fun DenialToast(state: DenialState) {
+    val denial = state.current ?: return
+    // Keyed on the tap, not on the text: a second tap of the same lock has to restart the clock
+    // rather than let the first tap's timer expire underneath it („erneuter Tipp setzt den Timer
+    // zurück").
+    LaunchedEffect(denial.serial) {
+        delay(DENIAL_TOAST_MS)
+        state.clear()
+    }
+    // Above whatever else is anchored down there: the refusal is the one thing the member has to be
+    // able to read, and for its four seconds it outranks a button they may not be allowed to press
+    // anyway. 16 dp from both edges and clear of the bottom bar, as the artboard measures it.
+    Box(
+        modifier = Modifier.fillMaxSize().zIndex(1f),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        KrtLockToast(
+            title = denial.title,
+            detail = denial.detail,
+            modifier =
+                Modifier
+                    .padding(horizontal = KrtSpacing.lg)
+                    .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+        )
+    }
 }

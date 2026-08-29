@@ -602,3 +602,240 @@ reach for it. It needs a server-side decision before it can exist here.
 - [x] Verified on a device against the test stack: picking „Org-Kasse" and „Pilot" and confirming
   put `DONATE` and `Pilot` on the roster.
 - [ ] „Eigenes Schiff einbringen". **Open** — no endpoint a participant may call.
+
+### REQ-APP-MIS-020 — A manager acts on the roster, and the app asks the server whether they are one
+
+The Teilnehmer tab offers three per-row actions to a caller who may manage the Einsatz: check the
+member **in or out**, switch their **payout preference**, and assign their **Funktion an Bord**. The
+design draws all three — „Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen
+Status", and the chapter index lists „payout radios, manager payout toggles, Funktion an Bord" as
+live (ch. 06, artboard 2).
+
+**Whether the caller is a manager is the server's answer, never the client's.** The app carries
+`MissionDto.canEdit` through to `MissionDetail.canManage` and gates on that. It MUST NOT be derived
+from a role string: the role hierarchy means an admin satisfies a mission-management gate without
+holding that role, so a client comparing strings hides the controls from exactly the people most
+entitled to them. An **absent** `canEdit` reads as `false`, so a server that predates the field
+leaves the actions locked rather than offering writes it would refuse.
+
+**The controls render for everyone and lock for those who may not use them** (ADR-0011,
+`REQ-APP-AUTH-013`): tappable, no write, and a toast naming the missing role. `enabled = false` is
+forbidden here — a control that cannot be tapped cannot say why it is dim. Offline is the one case
+that does disable them, because there the answer is the connection and not a grant, and the refusal
+must not claim otherwise.
+
+**Checking somebody else in follows the same server rule as checking yourself in**: it is refused
+before the Einsatz has actually started, so the app does not offer it before then either.
+
+**Acceptance**
+
+- [ ] A caller with `canEdit = true` can check another member in, switch their payout and assign
+  their Funktion; each reaches the server naming that row.
+- [ ] A caller with `canEdit = false` (or absent) sees the same controls, tapping one writes
+  nothing, and the refusal names the Missions-Manager role.
+- [ ] No manager action fires against a participant id that is not in the roster the client last
+  read.
+
+**Enforced by:** `MissionRosterTest`, `MissionDetailScreenTest`, `MissionRepositoryTest`.
+
+### REQ-APP-MIS-021 — A participant write sends the row whole, because the endpoint replaces it
+
+`PUT /missions/{id}/participants/{participantId}` is a **replace, not a patch**. The server clears
+`desiredMissionJobType` and `comment` when the request omits them, and assigns `startTime` and
+`endTime` **unconditionally**. Only `payoutPreference` survives a null.
+
+A request that carried nothing but the new Funktion would therefore wipe the member's own stated
+wish **and** their note **and check them out** — three silent losses, no error, no visible cause,
+discoverable only by the member who typed the note.
+
+So `setPlannedFunction` takes the **row as last read** and echoes back everything it is not
+changing, including the version. That is why `MissionParticipant` keeps `desiredJobTypeId` and
+`plannedJobTypeId` apart even though `role` collapses them for display, and why it keeps `startTime`
+and `endTime` as the **verbatim wire strings**: they are only ever echoed, and a parse-then-format
+round trip is a chance to change a value for no gain.
+
+The row must come from what the client last read. A write against a guessed version is exactly the
+concurrent-edit collision the version exists to catch, so an unknown participant id writes nothing.
+
+**Acceptance**
+
+- [ ] Assigning a Funktion sends `plannedMissionJobTypeId` **and** echoes `desiredMissionJobTypeId`,
+  `comment`, `startTime`, `endTime`, `payoutPreference` and `version`.
+- [ ] Tapping the assigned Funktion sends a null for it, and only for it.
+- [ ] A stale version surfaces as `409`, not as a silent overwrite.
+
+**Enforced by:** `MissionRepositoryTest`, `MissionRosterTest`.
+
+### REQ-APP-MIS-022 — The Verwaltung is the Einsatz's eighth tab, and it is absent for anyone else
+
+Editing an Einsatz — Kern, Zeitplan, Sichtbarkeit — is a **tab of the Einsatz**, drawn after
+Finanzen ([ADR-0018](../adr/0018-the-verwaltung-is-a-tab-and-briefing-is-renamed-out-of-a-collision.md)).
+It MUST NOT be a sheet opened from the head, and it MUST NOT be entered through a button wedged
+between the pinned head and the tab row.
+
+It matches the web, which names the same surface `mission.tab.admin=Verwaltung`.
+
+**The tab is absent for a caller who may not manage, not locked.** That is the one deliberate
+exception to `REQ-APP-AUTH-013`'s lock-in-place rule, and the reason is what a lock says:
+„you could, but not now". A member who does not run this Einsatz is not one grant away from
+running it, and eight tabs where seven are inert is a worse screen than seven that all work.
+Per-control locking still applies **inside** the tab for a manager who is offline or mid-write.
+
+The gate is `MissionDetail.canManage`, carried from the server's `MissionDto.canEdit` and never
+derived from a role string (see [REQ-APP-MIS-020](#req-app-mis-020--a-manager-acts-on-the-roster-and-the-app-asks-the-server-whether-they-are-one)).
+Drawing decides what is offered; the backend decides what is allowed, and refuses every write
+behind this tab regardless of what was drawn.
+
+**The tab row's indices are into the visible list, not into the enum.** A tab row built from all
+eight entries while only seven are drawn reports the wrong tab for every non-manager.
+
+**The form's lifecycle belongs to the tab.** Entering it fills the form from the Einsatz as last
+read; leaving it clears the form. This is required, not cosmetic: the form carries the three
+independent section version counters it was filled with, and a second visit that saved against a
+stale set would produce a `409` the member did nothing to cause.
+
+**Acceptance**
+
+- [ ] A caller with `canEdit = true` sees a „Verwaltung" tab; one with `canEdit = false` or absent
+  sees seven tabs and no eighth.
+- [ ] A non-manager tapping „Finanzen" reaches Finanzen — not the tab one place further along.
+- [ ] Entering the tab fills the form; leaving it and returning re-reads the section counters.
+- [ ] Each section saves on its own, with its own counter (REQ-APP-MIS-013).
+
+**Enforced by:** `MissionDetailScreenTest`, `MissionDetailViewModelTest`, `MissionAdminTest`.
+
+### REQ-APP-MIS-023 — One filled CTA, and the payout preference is not an action
+
+The Einsatz's action bar carries **actions**, and at most two: signing up or withdrawing (filled),
+and — once the Einsatz has actually started and the caller has a row — checking in or out. Both
+MUST carry a layout weight, so the row divides between them.
+
+`KrtBottomCtaBar` is an End-aligned row that distributes nothing by itself. Without weights the
+first button keeps its measured width and the second is squeezed into what is left; a third item
+squeezes it to about one character, and the label wraps to a column of single letters. That is what
+shipped, and it is what this requirement exists to prevent.
+
+**The payout preference is a standing setting, not an action, and MUST NOT sit in the action bar.**
+It is drawn directly above it, on the bar's own ground, under a label — two bare radios over a
+button bar do not say what they decide. It stays two radios rather than one toggle for the reason
+[REQ-APP-MIS-015](#req-app-mis-015--the-payout-preference-is-a-toggle-and-it-says-what-the-other-option-is)
+gives.
+
+**Acceptance**
+
+- [ ] The action bar holds at most two buttons, each weighted; no label wraps.
+- [ ] The payout preference is reachable without opening a sheet, and is not inside the action bar.
+
+**Enforced by:** `MissionDetailScreenTest`.
+
+### REQ-APP-MIS-024 — Nothing in the Einsatz repeats a navigation label
+
+The first tab is „Briefing", not „Übersicht". The shell's Home destination is „Übersicht" on every
+form factor and appears in the bottom bar roughly 200 dp below the tab row; two controls with one
+word, one screen apart, is a defect the owner hit in the field
+([ADR-0018](../adr/0018-the-verwaltung-is-a-tab-and-briefing-is-renamed-out-of-a-collision.md)).
+
+This is a deliberate deviation from design ch. 06 and from the web's `mission.tab.overview`. The
+collision exists only on a phone, where both are on screen at once.
+
+The rule generalises: **no tab, chip or in-page control may reuse the label of a navigation
+destination** („Übersicht", „Einsätze", „Aufträge", „Lager", „Mehr") for something that is not that
+destination.
+
+**Acceptance**
+
+- [ ] The Einsatz's first tab reads „Briefing" in DE and EN.
+- [ ] No page-tab label on any screen equals a bottom-bar or rail label.
+
+### REQ-APP-MIS-025 — The Ablauf and the Ziele own their section counters, because the answer does not
+
+`PUT/POST/PATCH/DELETE …/steps/…` and `…/objectives/…` exist **only** as `/slim` variants, and every
+one of them answers with the **list** — never with the Einsatz. Two consequences follow and the
+client must handle both.
+
+**The answer is spliced onto the Einsatz as last read.** There is no plain variant to fall back on,
+so the repository takes `current: MissionDetail`, replaces the one list, and returns the whole
+object. Callers therefore see the same contract as every structure write.
+
+**The section counter is advanced by the client.** The answer carries no new `stepsVersion` or
+`objectivesVersion`. The server bumps by exactly one per accepted write — `bumpStepsVersionIfMatches`
+runs `UPDATE … SET steps_version = steps_version + 1 WHERE steps_version = :expected` — so the splice
+sets `current + 1`. Leaving it stale is not a cosmetic defect: the **first** edit in a sitting
+succeeds and the **second** fails with a `409` the member did nothing to cause, which is the hardest
+class of bug to report.
+
+**A reorder sends every id.** The request carries the whole list in its new order, taken from the
+Einsatz as last read, so a row somebody else added is carried along rather than dropped — and if it
+arrived after that read, the counter is stale and the server refuses instead of losing it. A move at
+either end of the list writes nothing at all.
+
+**Ticking a step sends the state it is to be in**, never a flip. Two managers tapping at once then
+converge on „done" instead of cancelling each other out.
+
+**Acceptance**
+
+- [ ] Two consecutive step edits echo `n` then `n+1`.
+- [ ] A Ziel write echoes `objectivesVersion` and never `stepsVersion`.
+- [ ] A reorder sends every id of the list as last read.
+- [ ] Moving the first row up, or the last row down, writes nothing.
+- [ ] A refused write keeps the editor filled.
+
+**Enforced by:** `MissionTimelineTest`, `MissionDetailViewModelTest`.
+
+### REQ-APP-MIS-026 — One member picker, three writes, and the cap is never silent
+
+The party lead, adding a manager and adding a participant all ask one question — *which member?* —
+so they share **one** picker: chapter 12's `KrtCombobox` in a sheet whose title says which write it
+is serving (`REQ-APP-MIS-022`'s Personen section). This closes round 10's § 10e.
+
+**The lookup is debounced and single-flight.** A new keystroke cancels the request in flight, so a
+slow answer to „Ma" can never land on top of a fresh answer to „Marc". An answer that arrives after
+the picker was dismissed is **dropped**, or a closed picker snaps back open holding it.
+
+**The cap is stated** (`REQ-APP-UI-*`, the no-silent-caps rule): the server is asked for at most 25
+rows and the notice under the list says so, because a full list is a list that may be hiding
+somebody.
+
+**A refused lookup reads as „no matches", not as a banner.** The write the member is heading for
+reports its own failure; a second refusal over the sheet would say the same thing twice.
+
+**The party lead echoes `partyLeadVersion`.** It is a section-locked field like the other five, and
+the pick is a write.
+
+**Acceptance**
+
+- [ ] Four keystrokes produce one request, carrying the last text.
+- [ ] A pick closes the picker and runs the write the sheet was titled for.
+- [ ] An answer arriving after a dismiss leaves the picker closed and empty.
+- [ ] The notice states the count and the cap.
+
+**Enforced by:** `MissionMemberPickerTest`, `MissionManagerScreenTest`.
+
+### REQ-APP-MIS-027 — An Einheit rename and a crew role are both replaces, and echo their own lock
+
+`PUT …/units/{unitId}` carries the name **and** the HVU flag together, so a request that sends one
+clears the other. The app therefore always sends both, and echoes the unit's own `version`.
+
+> `UpdateUnitRequest.version` is **nullable**, and the server reads an absent one as „do not check".
+> Omitting it turns a concurrent rename into a silent overwrite rather than the `409` the counter
+> exists to raise. It MUST be sent.
+
+`PUT …/units/{unitId}/crew/{crewId}` is the same shape for the roles: the whole `jobTypeIds` set
+goes over the wire, so dropping one id revokes exactly that role, and the crew row's own `version`
+is echoed.
+
+**The roles come from the CREW catalogue, never the MISSION one.** `job_type.archetype` splits the
+two and they **share their names** — Pilot, Turret, Cargo. Reading either unfiltered offers the
+wrong list and the backend refuses with *"is not of archetype …"*, a `400` that looks right on
+screen and only appears on save. The catalogue is read once, on the Einheiten tab, and only for a
+caller who may assign. An organisation with no CREW types is an ordinary state, not a failure, and
+the tab says so in a sentence.
+
+**Acceptance**
+
+- [ ] A rename sends the name, the HVU flag and the unit's version.
+- [ ] Toggling one role sends the whole remaining set plus the crew row's version.
+- [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
+- [ ] An empty catalogue renders a sentence, not an empty row.
+
+**Enforced by:** `MissionRepositoryTest`, `MissionManagerScreenTest`.

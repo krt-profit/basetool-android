@@ -67,6 +67,7 @@ import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.MissionSeams
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
@@ -325,7 +326,16 @@ class MainActivity : AppCompatActivity() {
                                     missions = missionsViewModel,
                                     missionDetail = {
                                         MissionDetailViewModel(
-                                            container.missions,
+                                            // The read and admin seams are the same repository
+                                            // object; they differ in what a caller has to depend
+                                            // on, not in what serves them.
+                                            MissionSeams(
+                                                read = container.missions,
+                                                admin = container.missions,
+                                                structure = container.missionStructure,
+                                                timeline = container.missionTimeline,
+                                                people = container.missionTimeline,
+                                            ),
                                             container.identity,
                                             container.connectivity,
                                             it,

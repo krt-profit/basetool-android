@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -90,6 +91,7 @@ import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
@@ -127,6 +129,16 @@ private const val MATERIAL_COL_QUALITY = 0.6f
 
 /** The amount column's share. */
 private const val MATERIAL_COL_AMOUNT = 1f
+
+/**
+ * The leaf row's darkening, straight from the artboard's `.tree-row--leaf`:
+ * `background-color: rgba(0, 0, 0, 0.35)`.
+ *
+ * Laid **over** [KrtPalette.Gray4] rather than replacing it, because in the artboard the tree is a
+ * table with its own `--color-bg-dark-gray` ground and the leaf only darkens it. Composing the two
+ * the way CSS does keeps the pair honest if either token moves; a hard-coded `#0D0D0D` would not.
+ */
+private val TREE_LEAF_SHADE = Color.Black.copy(alpha = 0.35f)
 
 /** How far a holder's heading is inset from its material. */
 private val HOLDER_INSET = 8.dp
@@ -922,7 +934,9 @@ private fun EntryRow(
                 .combinedClickable(
                     onClick = { if (selecting) onToggleSelected() },
                     onLongClick = onToggleSelected,
-                ).then(if (selected) Modifier.background(KrtPalette.SurfaceInput) else Modifier)
+                ).background(KrtPalette.Gray4)
+                .background(TREE_LEAF_SHADE)
+                .then(if (selected) Modifier.background(KrtPalette.SurfaceInput) else Modifier)
                 .padding(
                     start = ENTRY_INSET,
                     end = KrtSpacing.md,
@@ -1119,6 +1133,7 @@ private fun StackRow(
             Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                .background(KrtPalette.Gray4)
                 .padding(start = STACK_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -1222,6 +1237,7 @@ private fun HolderRow(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .background(KrtPalette.Gray4)
                 .padding(start = HOLDER_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -1458,30 +1474,10 @@ fun InventoryRoute(
         }
     }
 
-    denials.current?.let { denial ->
-        // Keyed on the tap, not on the text: a second tap of the same lock has to restart the clock
-        // rather than let the first tap's timer expire underneath it (design ch. 09, artboard 14).
-        LaunchedEffect(denial.serial) {
-            delay(DENIAL_TOAST_MS)
-            denials.clear()
-        }
-        // Above the FAB, not under it: the refusal is the one thing the member has to be able to
-        // read, and for its four seconds it outranks a button they may not be allowed to press
-        // anyway. 16 dp from both edges and clear of the bottom bar, as the artboard measures it.
-        Box(
-            modifier = Modifier.fillMaxSize().zIndex(1f),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            KrtLockToast(
-                title = denial.title,
-                detail = denial.detail,
-                modifier =
-                    Modifier
-                        .padding(horizontal = KrtSpacing.lg)
-                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
-            )
-        }
-    }
+    // The drawn refusal, shared with every other screen that locks a control (design ch. 09,
+    // artboards 12 and 14). It was inlined here until the Einsatz roster needed the same thing —
+    // two copies of one artboard drift, so it moved into GatedAction beside the gate it belongs to.
+    DenialToast(state = denials)
 
     state.bulk?.let { bulk ->
         BulkMoveSheet(

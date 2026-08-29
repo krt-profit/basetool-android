@@ -15,12 +15,16 @@ import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
+import de.greluc.krt.profit.basetool.android.core.data.MissionPeopleSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -59,6 +63,15 @@ enum class MissionTab {
 
     /** Income, expense and the entries behind them. */
     FINANCES,
+
+    /**
+     * Editing the Einsatz itself.
+     *
+     * The eighth tab, and the only one that is not on every caller's screen: it is drawn only for a
+     * caller the server says may manage this Einsatz. That is a decision by the repository owner on
+     * 2026-08-29, which answers round 10's question 10a — the Verwaltung is a tab, not a sheet.
+     */
+    ADMIN,
 }
 
 /** How far the Einsatz itself has got. */
@@ -137,6 +150,25 @@ data class JoinSheet(
 )
 
 /**
+ * The three seams the Einsatz detail depends on.
+ *
+ * One object rather than three constructor parameters, because seven parameters is past what the
+ * gate allows and because the three always travel together — the screen reads through one, edits
+ * the Einsatz through the second and edits what it is made of through the third.
+ *
+ * @property read the list, the detail, the books and the roster.
+ * @property admin the Einsatz's own record: the three sections, the party lead, the managers.
+ * @property structure what the Einsatz is made of: Einheiten, crew, frequencies.
+ */
+data class MissionSeams(
+    val read: MissionSource,
+    val admin: MissionAdminSource,
+    val structure: MissionStructureSource,
+    val timeline: MissionTimelineSource,
+    val people: MissionPeopleSource,
+)
+
+/**
  * Everything the detail screen draws.
  *
  * @property missionId which Einsatz this is about, known before anything has loaded
@@ -146,6 +178,17 @@ data class JoinSheet(
  * @property finances how far the money has got, on its own timeline
  * @property refreshing whether a pull-to-refresh is running over content already on screen
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
+ * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
+ *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
+ * @property adminForm the open Verwaltung form, or `null` when the tab is not on screen
+ * @property structure what a manager is composing on the Einheiten or Frequenzen tab
+ * @property timeline what a manager is composing on the Ablauf or Ziele tab
+ * @property memberPicker the one member lookup behind the party lead, the managers and
+ *   „Teilnehmer hinzufügen"
+ * @property crewJobTypes the CREW Funktionen a crew slot can hold; empty until the Einheiten tab is
+ *   opened by someone who may assign one. A **second** catalogue from [rosterJobTypes], sharing its
+ *   names — a participant's Funktion is a MISSION type and a crew role is a CREW one, and the
+ *   backend refuses a write that confuses them.
  */
 data class MissionDetailState(
     val missionId: String,
@@ -160,6 +203,12 @@ data class MissionDetailState(
     val online: Boolean = true,
     val entryDraft: FinanceEntryDraft? = null,
     val joinSheet: JoinSheet? = null,
+    val rosterJobTypes: List<MissionJobType> = emptyList(),
+    val adminForm: MissionAdminForm? = null,
+    val structure: MissionStructureDraft = MissionStructureDraft(),
+    val timeline: MissionTimelineDraft = MissionTimelineDraft(),
+    val memberPicker: MissionMemberPickerState = MissionMemberPickerState(),
+    val crewJobTypes: List<MissionJobType> = emptyList(),
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -194,6 +243,40 @@ data class MissionDetailState(
      */
     val bookingPossible: Boolean
         get() = writable && mySignUp != null
+
+    /**
+     * Whether the caller may act on **another** member's row.
+     *
+     * The server's own `canEdit`, carried through untouched. It is deliberately not derived from a
+     * role string here: the role hierarchy means an admin satisfies a mission-manager gate without
+     * holding that role, and a client that compares strings hides the controls from exactly the
+     * people most entitled to them — the single most common way a client diverges from the web.
+     *
+     * Note this is *not* `writable`: manage rights and being able to write right now are different
+     * questions. A manager who is offline still holds the right; the control is disabled by
+     * [writable] and locked by neither.
+     */
+    val canManage: Boolean
+        get() = detail?.canManage == true
+
+    /**
+     * The row a manager action may address, or `null` when it may not run.
+     *
+     * One gate for all three manager actions, so none of them can be added later without it. It
+     * refuses on three counts and the third is the one worth naming: an unknown participant id.
+     * A row that is not in the roster the client last read is a row whose version the client does
+     * not have, and a write against a guessed version is exactly the concurrent-edit collision the
+     * version exists to catch.
+     *
+     * @param participantId the row the caller tapped.
+     * @return the row as last read, or `null`.
+     */
+    fun rowToManage(participantId: String): MissionParticipant? {
+        if (!writable || !canManage) {
+            return null
+        }
+        return detail?.participants?.firstOrNull { it.id == participantId }
+    }
 }
 
 /**
@@ -235,7 +318,7 @@ data class FinanceEntryDraft(
  *   screen listens to its own room and announces its own writes into it.
  */
 class MissionDetailViewModel(
-    private val source: MissionSource,
+    private val seams: MissionSeams,
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val missionId: String,
@@ -245,6 +328,121 @@ class MissionDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<MissionDetailState> = mutableState.asStateFlow()
+
+    /**
+     * Editing the Einsatz itself — the three independently locked sections.
+     *
+     * Public like [roster], and for the same reason: the screen calls it directly rather than
+     * through wrappers that would only widen this class.
+     */
+    val admin =
+        MissionAdmin(
+            missionId = missionId,
+            source = seams.admin,
+            scope = viewModelScope,
+            read = {
+                val current = mutableState.value
+                MissionAdminContext(current.adminForm, current.detail, current.canManage)
+            },
+            write = { form -> mutableState.value = mutableState.value.copy(adminForm = form) },
+            onSaved = { saved ->
+                mutableState.value = mutableState.value.copy(detail = saved)
+                announce(LiveSyncSections.MISSION_OVERVIEW)
+            },
+        )
+
+    /**
+     * The Einsatz's structure — Einheiten, crew, frequencies, leadership.
+     *
+     * Public like [admin] and [roster]; the screen calls it directly.
+     */
+    val structure =
+        MissionStructure(
+            missionId = missionId,
+            structure = seams.structure,
+            admin = seams.admin,
+            scope = viewModelScope,
+            read = { mutableState.value.let { it.structure to it.detail } },
+            write = { draft, saved ->
+                val current = mutableState.value
+                mutableState.value =
+                    current.copy(structure = draft, detail = saved ?: current.detail)
+                if (saved != null) {
+                    announce(LiveSyncSections.MISSION_CREW)
+                }
+            },
+        )
+
+    /**
+     * The Ablauf and the Ziele, as a manager writes them.
+     *
+     * A holder of its own rather than more methods on [structure]: these two sections carry their
+     * own version counters and their endpoints answer with a list rather than the Einsatz, so
+     * nothing about them shares a code path with the Einheiten.
+     */
+    val timeline =
+        MissionTimeline(
+            missionId = missionId,
+            source = seams.timeline,
+            scope = viewModelScope,
+            read = { mutableState.value.let { it.timeline to it.detail } },
+            write = { draft, saved ->
+                val current = mutableState.value
+                mutableState.value = current.copy(timeline = draft, detail = saved ?: current.detail)
+                if (saved != null) {
+                    announce(LiveSyncSections.MISSION_OVERVIEW)
+                }
+            },
+        )
+
+    /**
+     * The one member picker behind the three member-shaped writes.
+     *
+     * It only names somebody; the write that follows is [structure]'s, which is why the pick lands
+     * back here and is dispatched by target rather than the picker holding three callbacks.
+     */
+    val memberPicker =
+        MissionMemberPicker(
+            source = seams.people,
+            scope = viewModelScope,
+            read = { mutableState.value.memberPicker },
+            write = { picker -> mutableState.value = mutableState.value.copy(memberPicker = picker) },
+            onPicked = { target, option ->
+                when (target) {
+                    MissionMemberTarget.PARTY_LEAD -> {
+                        structure.setPartyLead(
+                            option.id,
+                            mutableState.value.detail?.partyLeadVersion ?: 0L,
+                        )
+                    }
+
+                    MissionMemberTarget.MANAGER -> {
+                        structure.addManager(option.id)
+                    }
+
+                    MissionMemberTarget.PARTICIPANT -> {
+                        structure.addParticipant(option.id)
+                    }
+                }
+            },
+        )
+
+    /**
+     * The manager's half of the Teilnehmer tab.
+     *
+     * Public, and called by the screen directly rather than through wrappers here — the same shape
+     * as the inventory's `MaterialPaneLoader`. It reads the roster through this view model rather
+     * than holding its own copy, so a row it writes against is always the row the member is looking
+     * at, which is what makes the version it sends the right one.
+     */
+    val roster =
+        MissionRoster(
+            missionId = missionId,
+            source = seams.read,
+            scope = viewModelScope,
+            rowToManage = { mutableState.value.rowToManage(it) },
+            write = ::writeRow,
+        )
 
     /**
      * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).
@@ -258,6 +456,33 @@ class MissionDetailViewModel(
             onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
             onRetry = { reload(keepContent = false) },
         )
+
+    /**
+     * Reads the CREW catalogue once, for a manager on the Einheiten tab.
+     *
+     * Guarded on both counts the roster's own loader is: a caller who may not assign gets no
+     * catalogue at all, and a catalogue already in hand is not fetched twice.
+     */
+    private fun loadCrewJobTypes() {
+        val current = mutableState.value
+        if (!current.canManage || current.crewJobTypes.isNotEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            when (val result = seams.people.crewJobTypes()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(crewJobTypes = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    // Silent: an empty catalogue renders as a picker with no options, which is the
+                    // truth for an organisation that has never defined a CREW type either. The
+                    // write the member is heading for reports its own failure.
+                    KrtLog.w(LOG_TAG) { "the CREW catalogue could not be read: ${result.error}" }
+                }
+            }
+        }
+    }
 
     /** The member asked again. Cancels the countdown and starts the ladder over. */
     fun onRetry() {
@@ -337,9 +562,9 @@ class MissionDetailViewModel(
                     // The withdrawal answers 204, so the roster is re-read rather than patched:
                     // the counts above it move too, and inventing them here would put two numbers
                     // on screen that disagree.
-                    when (val left = source.leave(missionId, mine.id)) {
+                    when (val left = seams.read.leave(missionId, mine.id)) {
                         is ApiResult.Failure -> left
-                        is ApiResult.Success -> source.detail(missionId)
+                        is ApiResult.Success -> seams.read.detail(missionId)
                     }
                 }
             settle(result)
@@ -355,7 +580,7 @@ class MissionDetailViewModel(
     fun onJoinSheetOpened() {
         mutableState.value = mutableState.value.copy(joinSheet = JoinSheet(), error = null)
         viewModelScope.launch {
-            when (val result = source.jobTypes()) {
+            when (val result = seams.read.jobTypes()) {
                 is ApiResult.Success -> {
                     val open = mutableState.value.joinSheet ?: return@launch
                     mutableState.value =
@@ -410,7 +635,7 @@ class MissionDetailViewModel(
         viewModelScope.launch {
             when (
                 val result =
-                    source.join(
+                    seams.read.join(
                         missionId = missionId,
                         userId = userId,
                         desiredJobTypeId = open.desired?.id,
@@ -441,7 +666,7 @@ class MissionDetailViewModel(
         if (mine == null || !current.writable || !current.checkInPossible) {
             return
         }
-        writeRow { source.setCheckedIn(missionId, mine.id, checkedIn = !mine.checkedIn) }
+        writeRow { seams.read.setCheckedIn(missionId, mine.id, checkedIn = !mine.checkedIn) }
     }
 
     /** Switches the caller's own share between paid out and donated. */
@@ -451,7 +676,7 @@ class MissionDetailViewModel(
         if (mine == null || !current.writable) {
             return
         }
-        writeRow { source.setDonating(missionId, mine.id, donating = mine.donating != true) }
+        writeRow { seams.read.setDonating(missionId, mine.id, donating = mine.donating != true) }
     }
 
     /** Opens the editor on a new booking. */
@@ -544,9 +769,9 @@ class MissionDetailViewModel(
         val note = draft.note.trim().takeIf { it.isNotEmpty() }
         bookkeeping {
             if (draft.entryId == null) {
-                source.addFinanceEntry(missionId, mine.id, draft.income, draft.amount, note)
+                seams.read.addFinanceEntry(missionId, mine.id, draft.income, draft.amount, note)
             } else {
-                source.updateFinanceEntry(
+                seams.read.updateFinanceEntry(
                     draft.entryId,
                     draft.income,
                     draft.amount,
@@ -566,7 +791,7 @@ class MissionDetailViewModel(
         if (!mutableState.value.writable) {
             return
         }
-        bookkeeping { source.deleteFinanceEntry(entry.id) }
+        bookkeeping { seams.read.deleteFinanceEntry(entry.id) }
     }
 
     /**
@@ -686,12 +911,34 @@ class MissionDetailViewModel(
     /**
      * Switches tab, fetching the money the first time its tab is chosen.
      *
+     * The Verwaltung tab carries the form's whole lifecycle: arriving fills it from the Einsatz as
+     * last read, and leaving clears it. Clearing is not tidiness — the form holds the three section
+     * counters it was filled with, and coming back to a stale set is exactly the 409 the per-section
+     * locking exists to avoid.
+     *
      * @param tab the tab the member picked.
      */
     fun onTabSelected(tab: MissionTab) {
+        val leaving = mutableState.value.tab
         mutableState.value = mutableState.value.copy(tab = tab)
+        when {
+            tab == MissionTab.ADMIN -> admin.open()
+            leaving == MissionTab.ADMIN -> admin.dismiss()
+        }
         if (tab == MissionTab.FINANCES && mutableState.value.finances is MissionFinancesPhase.Idle) {
             loadFinances()
+        }
+        // The CREW catalogue, once, and only for somebody who may assign a role. It is the second
+        // of two catalogues that share their names; reading it on the Teilnehmer tab instead would
+        // offer Pilot and Turret for a participant's Funktion, which the server refuses with a 400.
+        if (tab == MissionTab.UNITS) {
+            loadCrewJobTypes()
+        }
+        if (tab == MissionTab.PARTICIPANTS) {
+            val current = mutableState.value
+            roster.loadJobTypes(current.canManage, current.rosterJobTypes) { types ->
+                mutableState.value = mutableState.value.copy(rosterJobTypes = types)
+            }
         }
     }
 
@@ -710,7 +957,7 @@ class MissionDetailViewModel(
             mutableState.value = mutableState.value.copy(phase = MissionDetailPhase.Loading)
         }
         viewModelScope.launch {
-            when (val result = source.detail(missionId)) {
+            when (val result = seams.read.detail(missionId)) {
                 is ApiResult.Success -> {
                     mutableState.value =
                         mutableState.value.copy(
@@ -739,7 +986,7 @@ class MissionDetailViewModel(
         mutableState.value = mutableState.value.copy(finances = MissionFinancesPhase.Loading)
         viewModelScope.launch {
             mutableState.value =
-                when (val result = source.finances(missionId)) {
+                when (val result = seams.read.finances(missionId)) {
                     is ApiResult.Success -> {
                         mutableState.value.copy(finances = MissionFinancesPhase.Ready(result.value))
                     }

@@ -9,15 +9,21 @@ package de.greluc.krt.profit.basetool.android.missions
 
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
+import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
+import de.greluc.krt.profit.basetool.android.core.data.MissionObjectiveKind
 import de.greluc.krt.profit.basetool.android.core.data.MissionPage
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
+import de.greluc.krt.profit.basetool.android.core.data.MissionPeopleSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -161,6 +167,12 @@ class MissionDetailViewModelTest {
             return writeAnswer ?: ApiResult.Success(row(checkedIn = checkedIn))
         }
 
+        override suspend fun setPlannedFunction(
+            missionId: String,
+            participant: MissionParticipant,
+            jobTypeId: String?,
+        ): ApiResult<MissionParticipant> = error("the manager's roster has its own test")
+
         override suspend fun setDonating(
             missionId: String,
             participantId: String,
@@ -206,6 +218,7 @@ class MissionDetailViewModelTest {
     private fun detail(
         name: String = "Vertikaler Abbau",
         started: Boolean = true,
+        canManage: Boolean = false,
         vararg roster: MissionParticipant,
     ) = MissionDetail(
         id = "m1",
@@ -230,6 +243,7 @@ class MissionDetailViewModelTest {
         steps = emptyList(),
         objectives = emptyList(),
         frequencies = emptyList(),
+        canManage = canManage,
     )
 
     private fun finances() =
@@ -298,10 +312,233 @@ class MissionDetailViewModelTest {
         override val online: Flow<Boolean> get() = state
     }
 
+    /** The Verwaltung seam; this class exercises the screen around it, not the three patches. */
+    private val admin =
+        object : MissionAdminSource {
+            override suspend fun patchCore(
+                missionId: String,
+                name: String,
+                description: String?,
+                meetingPoint: String?,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+
+            override suspend fun patchSchedule(
+                missionId: String,
+                meetingTime: String?,
+                plannedStartTime: String?,
+                plannedEndTime: String?,
+                actualStartTime: String?,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+
+            override suspend fun patchFlags(
+                missionId: String,
+                internal: Boolean,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
+
+            override suspend fun setPartyLead(
+                missionId: String,
+                userId: String?,
+                guestName: String?,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addManager(
+                missionId: String,
+                userId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeManager(
+                missionId: String,
+                userId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addParticipant(
+                missionId: String,
+                userId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+        }
+
+    /** The structure seam; this class exercises the screen around it. */
+    private val structure =
+        object : MissionStructureSource {
+            override suspend fun addFrequency(
+                missionId: String,
+                frequencyTypeId: String,
+                value: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addCustomFrequency(
+                missionId: String,
+                current: MissionDetail,
+                name: String,
+                value: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeFrequency(
+                missionId: String,
+                frequencyId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addUnit(
+                missionId: String,
+                name: String,
+                highValue: Boolean,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun updateUnit(
+                missionId: String,
+                unitId: String,
+                name: String,
+                highValue: Boolean,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun setCrewRoles(
+                missionId: String,
+                unitId: String,
+                crewId: String,
+                jobTypeIds: Set<String>,
+                version: Long,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeUnit(
+                missionId: String,
+                unitId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun addCrew(
+                missionId: String,
+                unitId: String,
+                participantId: String,
+                jobTypeIds: Set<String>,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+
+            override suspend fun removeCrew(
+                missionId: String,
+                unitId: String,
+                crewId: String,
+            ): ApiResult<MissionDetail> = error("the structure has its own test")
+        }
+
+    /** Records every Ablauf and Ziele write, so the counter each one echoed can be asserted. */
+    private val timelineCalls = mutableListOf<Pair<String, Long>>()
+
+    /** The Ablauf and Ziele seam. Answers with the Einsatz it was handed, spliced as the real one is. */
+    private val timeline =
+        object : MissionTimelineSource {
+            override suspend fun addStep(
+                missionId: String,
+                current: MissionDetail,
+                title: String,
+                meta: String?,
+            ): ApiResult<MissionDetail> = step("add", current)
+
+            override suspend fun updateStep(
+                missionId: String,
+                current: MissionDetail,
+                stepId: String,
+                title: String,
+                meta: String?,
+            ): ApiResult<MissionDetail> = step("update", current)
+
+            override suspend fun toggleStep(
+                missionId: String,
+                current: MissionDetail,
+                stepId: String,
+                done: Boolean,
+            ): ApiResult<MissionDetail> = step("toggle", current)
+
+            override suspend fun removeStep(
+                missionId: String,
+                current: MissionDetail,
+                stepId: String,
+            ): ApiResult<MissionDetail> = step("remove", current)
+
+            override suspend fun reorderSteps(
+                missionId: String,
+                current: MissionDetail,
+                stepIds: List<String>,
+            ): ApiResult<MissionDetail> = step("reorder", current)
+
+            override suspend fun reorderObjectives(
+                missionId: String,
+                current: MissionDetail,
+                objectiveIds: List<String>,
+            ): ApiResult<MissionDetail> = objective("reorder", current)
+
+            override suspend fun addObjective(
+                missionId: String,
+                current: MissionDetail,
+                title: String,
+                kind: MissionObjectiveKind,
+            ): ApiResult<MissionDetail> = objective("add", current)
+
+            override suspend fun updateObjective(
+                missionId: String,
+                current: MissionDetail,
+                objectiveId: String,
+                title: String,
+                kind: MissionObjectiveKind,
+            ): ApiResult<MissionDetail> = objective("update", current)
+
+            override suspend fun removeObjective(
+                missionId: String,
+                current: MissionDetail,
+                objectiveId: String,
+            ): ApiResult<MissionDetail> = objective("remove", current)
+
+            private fun step(
+                what: String,
+                current: MissionDetail,
+            ): ApiResult<MissionDetail> {
+                timelineCalls.add(what to current.stepsVersion)
+                return ApiResult.Success(current.copy(stepsVersion = current.stepsVersion + 1))
+            }
+
+            private fun objective(
+                what: String,
+                current: MissionDetail,
+            ): ApiResult<MissionDetail> {
+                timelineCalls.add(what to current.objectivesVersion)
+                return ApiResult.Success(current.copy(objectivesVersion = current.objectivesVersion + 1))
+            }
+        }
+
+    /** What the member picker was asked for, and what it is answered with. */
+    private val memberQueries = mutableListOf<String>()
+    private var memberAnswer: ApiResult<List<MemberOption>> =
+        ApiResult.Success(listOf(MemberOption(id = "u9", name = "Rhea")))
+
+    /** The two catalogue lookups. */
+    private val people =
+        object : MissionPeopleSource {
+            override suspend fun members(query: String): ApiResult<List<MemberOption>> {
+                memberQueries.add(query)
+                return memberAnswer
+            }
+
+            override suspend fun crewJobTypes(): ApiResult<List<MissionJobType>> =
+                ApiResult.Success(listOf(MissionJobType("c1", "Turret")))
+        }
+
     private fun viewModel(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = MissionDetailViewModel(source, FakeIdentity(identity), connectivity, "m1")
+    ) = MissionDetailViewModel(
+        MissionSeams(
+            read = source,
+            admin = admin,
+            structure = structure,
+            timeline = timeline,
+            people = people,
+        ),
+        FakeIdentity(identity),
+        connectivity,
+        "m1",
+    )
 
     /**
      * One participant row, the caller's own.
@@ -370,6 +607,41 @@ class MissionDetailViewModelTest {
 
             assertEquals("switching back must not re-fetch", 1, source.financeCalls)
             assertTrue(model.state.value.finances is MissionFinancesPhase.Ready)
+        }
+
+    /**
+     * The Verwaltung tab owns the form's whole life. Entering fills it from the Einsatz as last
+     * read; leaving clears it, so a second visit re-reads the three section counters rather than
+     * saving against the set it was opened with — which is the 409 the per-section locking exists
+     * to prevent.
+     */
+    @Test
+    fun `the Verwaltung tab fills the form on arrival and clears it on departure`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(canManage = true)))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onTabSelected(MissionTab.ADMIN)
+            assertEquals("Vertikaler Abbau", model.state.value.adminForm?.name)
+
+            model.onTabSelected(MissionTab.OVERVIEW)
+            assertNull(model.state.value.adminForm)
+        }
+
+    /** A caller the server does not let manage gets no form, whatever tab they land on. */
+    @Test
+    fun `the Verwaltung tab stays empty for a caller who may not manage`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(detail(canManage = false)))
+            val model = viewModel()
+            model.load()
+            advanceUntilIdle()
+
+            model.onTabSelected(MissionTab.ADMIN)
+
+            assertNull(model.state.value.adminForm)
         }
 
     @Test

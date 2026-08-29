@@ -48,6 +48,18 @@ class MissionRepositoryTest {
         /** Slack on the lower-bound assertion, so a slow test machine cannot fail it. */
         const val CLOCK_SLACK_SECONDS = 5L
 
+        /** The version the roster fixture carries, so the echo assertion is not a bare literal. */
+        const val ROSTER_ROW_VERSION = 4L
+
+        /** The Kern section's counter in the fixtures; distinct from the other two on purpose. */
+        const val CORE_VERSION = 3L
+
+        /** The Zeitplan section's counter. */
+        const val SCHEDULE_VERSION = 7L
+
+        /** The flags section's counter. */
+        const val FLAGS_VERSION = 1L
+
         /** A total large enough that one page cannot hold it. */
         const val MANY_ELEMENTS = 60L
 
@@ -121,6 +133,19 @@ class MissionRepositoryTest {
      *   than matched as a substring — which would pass on a double-encoded value.
      */
     private fun requestedUrl(): HttpUrl = ("http://localhost" + server.takeRequest().target).toHttpUrl()
+
+    /**
+     * A reader pointed at the same MockWebServer, for the structure repository.
+     *
+     * @return the reader.
+     */
+    private fun reader() =
+        de.greluc.krt.profit.basetool.android.core.network.ApiReader(
+            httpClient = OkHttpClient(),
+            baseUrl = server.url("/").toString().removeSuffix("/"),
+            json = de.greluc.krt.profit.basetool.android.core.contract.KrtJson,
+            logTag = "MissionStructureTest",
+        )
 
     @Test
     fun `a page maps onto the model`() =
@@ -346,4 +371,338 @@ class MissionRepositoryTest {
             assertTrue(page.hasMore)
             assertEquals(MANY_ELEMENTS, page.totalElements)
         }
+
+    /**
+     * The whole point of `setPlannedFunction` taking the row rather than an id: `PUT
+     * …/participants/{id}` is a **replace**. The server clears `desiredMissionJobType` and
+     * `comment` when they are absent, and assigns `startTime` unconditionally — so a request that
+     * carried only the new function would wipe the member's stated wish, their note, **and check
+     * them out**. Three silent losses with no error and no visible cause.
+     */
+    @Test
+    fun `setPlannedFunction echoes the fields it is not changing`() =
+        runTest {
+            respond("""{"id":"p1","version":8}""")
+            val row =
+                MissionParticipant(
+                    id = "p1",
+                    userId = "u1",
+                    name = "Rhea",
+                    role = null,
+                    checkedIn = true,
+                    comment = "bringt Eskorte mit",
+                    donating = true,
+                    desiredJobTypeId = "wish-1",
+                    desiredJobName = "Pilot",
+                    plannedJobTypeId = null,
+                    version = 7L,
+                    startTime = "2026-08-28T19:00:00Z",
+                    endTime = null,
+                )
+
+            repository.setPlannedFunction("m1", row, jobTypeId = "job-2")
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue("the new function must be sent", body.contains(""""plannedMissionJobTypeId":"job-2""""))
+            assertTrue("the wish must survive", body.contains(""""desiredMissionJobTypeId":"wish-1""""))
+            assertTrue("the note must survive", body.contains(""""comment":"bringt Eskorte mit""""))
+            assertTrue("the check-in must survive", body.contains(""""startTime":"2026-08-28T19:00:00Z""""))
+            assertTrue("the payout must survive", body.contains(""""payoutPreference":"DONATE""""))
+            assertTrue("the version must be echoed", body.contains(""""version":7"""))
+        }
+
+    /** Tapping the assigned function clears it, which is a null the server is meant to act on. */
+    @Test
+    fun `setPlannedFunction sends a null to clear the assignment`() =
+        runTest {
+            respond("""{"id":"p1","version":9}""")
+            val row =
+                MissionParticipant(
+                    id = "p1",
+                    userId = "u1",
+                    name = "Rhea",
+                    role = "Pilot",
+                    checkedIn = false,
+                    comment = null,
+                    donating = null,
+                    plannedJobTypeId = "job-2",
+                    version = 8L,
+                )
+
+            repository.setPlannedFunction("m1", row, jobTypeId = null)
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertFalse(
+                "a cleared assignment must not send the old id back",
+                body.contains(""""plannedMissionJobTypeId":"job-2""""),
+            )
+        }
+
+    /**
+     * `canEdit` is the server's verdict on whether the caller may act on other rows, and an absent
+     * one has to read as "no" — an older server that omits the field must leave the manager actions
+     * locked rather than offer writes it would refuse.
+     */
+    @Test
+    fun `an absent canEdit leaves the roster unmanageable`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            val result = repository.detail("m1")
+
+            assertTrue(result is ApiResult.Success)
+            assertFalse((result as ApiResult.Success).value.canManage)
+        }
+
+    /** And a `true` is carried through untouched. */
+    @Test
+    fun `canEdit is carried into the detail`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria","canEdit":true}""")
+
+            val result = repository.detail("m1")
+
+            assertTrue((result as ApiResult.Success).value.canManage)
+        }
+
+    /**
+     * The domain row keeps both job types apart even though `role` collapses them for display —
+     * without that, the echo above cannot send back a wish it never kept.
+     */
+    @Test
+    fun `a participant keeps its wish, its assignment and its version apart`() =
+        runTest {
+            respond(
+                """
+                {"id":"m1","name":"Lyria","participants":[{
+                  "id":"p1","version":4,"comment":"note",
+                  "desiredMissionJobType":{"id":"j1","name":"Pilot","archetype":"MISSION"},
+                  "plannedMissionJobType":{"id":"j2","name":"Turret","archetype":"MISSION"},
+                  "startTime":"2026-08-28T19:00:00Z"
+                }]}
+                """.trimIndent(),
+            )
+
+            val row = (repository.detail("m1") as ApiResult.Success).value.participants.single()
+
+            assertEquals("j1", row.desiredJobTypeId)
+            assertEquals("Pilot", row.desiredJobName)
+            assertEquals("j2", row.plannedJobTypeId)
+            // `role` shows the assignment, falling back to the wish — the display rule, unchanged.
+            assertEquals("Turret", row.role)
+            assertEquals(ROSTER_ROW_VERSION, row.version)
+            assertTrue("a start time is what a check-in is", row.checkedIn)
+        }
+
+    /**
+     * The catalogue holds two archetypes and the backend refuses the wrong one on write — "Planned
+     * JobType Pilot is not of archetype MISSION", a 400 found on a device. CREW types are the roles
+     * inside an Einheit; they share their names with the mission ones, so an unfiltered read looks
+     * right on screen and fails only when somebody presses the chip.
+     */
+    @Test
+    fun `the Funktionen catalogue asks for the MISSION archetype`() =
+        runTest {
+            respond("""{"content":[]}""")
+
+            repository.jobTypes()
+
+            assertEquals("MISSION", requestedUrl().queryParameter("archetype"))
+        }
+
+    /**
+     * The three section counters are separate on purpose: a manager fixing the briefing must not
+     * collide with a colleague moving the start time. A client that echoed one counter for all
+     * three would reintroduce exactly the screen-wide lock the server went to the trouble of
+     * splitting.
+     */
+    @Test
+    fun `the three section counters are carried apart`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria","coreVersion":3,"scheduleVersion":7,"flagsVersion":1}""")
+
+            val detail = (repository.detail("m1") as ApiResult.Success).value
+
+            assertEquals(CORE_VERSION, detail.coreVersion)
+            assertEquals(SCHEDULE_VERSION, detail.scheduleVersion)
+            assertEquals(FLAGS_VERSION, detail.flagsVersion)
+        }
+
+    /** An absent counter becomes 0, which the server never issues — so a write with it is refused. */
+    @Test
+    fun `an absent section counter reads as zero`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            val detail = (repository.detail("m1") as ApiResult.Success).value
+
+            assertEquals(0L, detail.coreVersion)
+        }
+
+    @Test
+    fun `patching the Kern section sends its own counter`() =
+        runTest {
+            respond("""{"id":"m1","name":"Neu"}""")
+
+            repository.patchCore("m1", name = "Neu", description = "d", meetingPoint = "ARC-L1", version = CORE_VERSION)
+
+            val request = server.takeRequest()
+            assertEquals("PATCH", request.method)
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""version":3"""))
+            assertTrue(body.contains(""""name":"Neu""""))
+            assertTrue(body.contains(""""meetingPoint":"ARC-L1""""))
+        }
+
+    /**
+     * Setting the actual start time is what opens an Einsatz for check-in: the server refuses every
+     * check-in until it is set, so this write is the one that unblocks the roster.
+     */
+    @Test
+    fun `patching the Zeitplan carries the actual start time`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.patchSchedule(
+                "m1",
+                meetingTime = null,
+                plannedStartTime = null,
+                plannedEndTime = null,
+                actualStartTime = "2026-08-28T19:00:00Z",
+                version = SCHEDULE_VERSION,
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains(""""actualStartTime":"2026-08-28T19:00:00Z""""))
+            assertTrue(body.contains(""""version":7"""))
+        }
+
+    @Test
+    fun `patching the flags sends the internal switch and its counter`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.patchFlags("m1", internal = true, version = FLAGS_VERSION)
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains(""""isInternal":true"""))
+            assertTrue(body.contains(""""version":1"""))
+        }
+
+    /**
+     * The structure lives on its own repository, and this is what it sends.
+     *
+     * A frequency needs **both** a label and a value: the catalogue names the channel's purpose and
+     * the value is the setting on it, so the write carries the pair.
+     */
+    @Test
+    fun `a custom frequency carries its label and its value`() =
+        runTest {
+            respond("""[]""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.addCustomFrequency(
+                "m1",
+                current = mission(),
+                name = "Einsatz-1",
+                value = "121.5",
+            )
+
+            val request = server.takeRequest()
+            assertTrue("a custom frequency has only a slim endpoint", request.target.endsWith("/custom/slim"))
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""name":"Einsatz-1""""))
+            assertTrue(body.contains("121.5"))
+        }
+
+    @Test
+    fun `adding an Einheit sends its name and its HVU mark`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.addUnit("m1", name = "Einheit Alpha", highValue = true)
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            val body = request.body?.utf8().orEmpty()
+            assertTrue(body.contains(""""name":"Einheit Alpha""""))
+            assertTrue(body.contains(""""highValueUnit":true"""))
+        }
+
+    /**
+     * Crew is keyed by **participant**, not by user: somebody has to be on the roster before they
+     * can be put aboard an Einheit.
+     */
+    @Test
+    fun `crew is assigned by participant id`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            structure.addCrew("m1", unitId = "u1", participantId = "p2", jobTypeIds = emptySet())
+
+            val request = server.takeRequest()
+            // The PLAIN endpoint, not /slim: the slim one answers with the narrow object and the
+            // plain one with the whole Einsatz, which is what the screen swaps.
+            assertTrue(request.target.endsWith("/units/u1/crew"))
+            assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
+        }
+
+    /** The party lead carries its own section counter, like the other three. */
+    @Test
+    fun `the party lead carries its own counter`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.setPartyLead("m1", userId = "u9", guestName = null, version = FLAGS_VERSION)
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains(""""userId":"u9""""))
+            assertTrue(body.contains(""""version":1"""))
+        }
+
+    /** Adding a manager names the member in the path and carries no body. */
+    @Test
+    fun `adding a manager names the member in the path`() =
+        runTest {
+            respond("""{"id":"m1","name":"Lyria"}""")
+
+            repository.addManager("m1", userId = "u9")
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertTrue(request.target.endsWith("/managers/u9"))
+        }
+
+    /**
+     * A bare Einsatz, for the writes that splice their answer onto one.
+     *
+     * @return the Einsatz.
+     */
+    private fun mission() =
+        MissionDetail(
+            id = "m1",
+            name = "Lyria",
+            description = null,
+            status = MissionStatus.PLANNED,
+            rawStatus = "PLANNED",
+            meetingTime = null,
+            plannedStartTime = null,
+            actualStartTime = null,
+            plannedEndTime = null,
+            isInternal = false,
+            meetingPoint = null,
+            operationName = null,
+            orgUnitName = null,
+            orgUnitShorthand = null,
+            partyLeadName = null,
+            registeredParticipants = 0,
+            checkedInParticipants = 0,
+            participants = emptyList(),
+            units = emptyList(),
+            steps = emptyList(),
+            objectives = emptyList(),
+            frequencies = emptyList(),
+        )
 }

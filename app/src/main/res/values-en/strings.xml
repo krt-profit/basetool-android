@@ -174,13 +174,14 @@
 
     <!-- Einsatz detail (design spec ch. 06 §2), read-only. Domain terms stay German. -->
     <string name="mission_detail_title">Einsatz</string>
-    <string name="mission_detail_tab_overview">Overview</string>
+    <string name="mission_detail_tab_overview">Briefing</string>
     <string name="mission_detail_tab_participants">Participants</string>
     <string name="mission_detail_tab_units">Einheiten</string>
     <string name="mission_detail_tab_steps">Ablauf</string>
     <string name="mission_detail_tab_objectives">Objectives</string>
     <string name="mission_detail_tab_frequencies">Frequencies</string>
     <string name="mission_detail_tab_finances">Finances</string>
+    <string name="mission_detail_tab_admin">Verwaltung</string>
     <string name="mission_detail_fact_meeting">TS</string>
     <string name="mission_detail_fact_join">Join</string>
     <string name="mission_detail_fact_end">End</string>
@@ -1026,6 +1027,7 @@
     <string name="mission_detail_check_in">Check in</string>
     <string name="mission_detail_check_out">Check out</string>
     <string name="mission_detail_donate">Donate</string>
+    <string name="mission_detail_payout_label">Share</string>
     <string name="mission_detail_payout_self">Payout</string>
     <string name="mission_detail_payout_org">Org treasury</string>
     <string name="mission_detail_take_payout">Take payout</string>
@@ -1253,6 +1255,55 @@
         <item quantity="one">One entry will be moved to the chosen location.</item>
         <item quantity="other">%1$d entries will be moved to the chosen location.</item>
     </plurals>
+    <string name="mission_struct_units">Units</string>
+    <string name="mission_struct_add_unit">Add unit</string>
+    <string name="mission_struct_unit_name">Unit name</string>
+    <string name="mission_struct_hvu">High-value unit (HVU)</string>
+    <string name="mission_struct_remove_unit">Remove unit</string>
+    <string name="mission_struct_add_crew">Assign somebody</string>
+    <string name="mission_struct_remove_crew">Take off board</string>
+    <string name="mission_struct_freqs">Frequencies</string>
+    <string name="mission_struct_add_freq">Add frequency</string>
+    <string name="mission_struct_freq_name">Label</string>
+    <string name="mission_struct_freq_value">Frequency</string>
+    <string name="mission_struct_remove_freq">Remove frequency</string>
+    <string name="mission_struct_party_lead">Party lead</string>
+    <string name="mission_struct_set_lead">Set as lead</string>
+    <string name="mission_struct_managers">Managers</string>
+    <string name="mission_struct_add_manager">Add manager</string>
+    <string name="mission_struct_remove_manager">Remove manager</string>
+    <string name="mission_struct_add_participant">Add participant</string>
+    <string name="mission_struct_remove_participant">Remove participant</string>
+    <string name="mission_struct_pick_member">Search for a member</string>
+    <string name="mission_struct_pick_participant">Pick a participant</string>
+    <string name="mission_struct_empty_units">No units yet.</string>
+    <string name="mission_struct_confirm_remove">Remove for good?</string>
+    <string name="mission_admin_title">Manage Einsatz</string>
+    <string name="mission_admin_core">Core</string>
+    <string name="mission_admin_schedule">Schedule</string>
+    <string name="mission_admin_flags">Visibility</string>
+    <string name="mission_admin_name">Title</string>
+    <string name="mission_admin_description">Description</string>
+    <string name="mission_admin_meeting_point">Meeting point</string>
+    <string name="mission_admin_meeting_time">Teamspeak (ISO 8601)</string>
+    <string name="mission_admin_planned_start">Server join (ISO 8601)</string>
+    <string name="mission_admin_planned_end">End (ISO 8601)</string>
+    <string name="mission_admin_actual_start">Actual start (ISO 8601)</string>
+    <string name="mission_admin_start_now">The Einsatz is running now</string>
+    <string name="mission_admin_internal">Visible only to the owning unit</string>
+    <string name="mission_admin_save_core">Save core</string>
+    <string name="mission_admin_save_schedule">Save schedule</string>
+    <string name="mission_admin_save_flags">Save visibility</string>
+    <string name="mission_admin_section_hint">Each section is saved on its own, so a change here cannot collide with a concurrent change elsewhere.</string>
+    <string name="mission_admin_start_hint">Before the actual start the server refuses every check-in.</string>
+    <string name="gate_role_mission_manager">That needs the Missions-Manager role.</string>
+    <string name="gate_role_mission_manager_detail">Granted per Staffel by the administration, or by whoever leads the Einsatz.</string>
+    <string name="mission_detail_wish">Wish: %1$s</string>
+    <string name="mission_detail_function_none">No function</string>
+    <string name="mission_detail_check_in_row">Check in</string>
+    <string name="mission_detail_check_out_row">Check out</string>
+    <string name="mission_detail_payout_row">Switch payout</string>
+    <string name="mission_detail_function_label">Function on board</string>
     <string name="gate_role_logistician">That needs the Logistiker role.</string>
     <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
     <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>
@@ -1265,4 +1316,45 @@
     <string name="route_not_found_title">Signal Lost</string>
     <string name="route_not_found_message">This address does not exist in this app.</string>
     <string name="route_not_found_action">Back to base</string>
+    <!-- Einsatz: the Ablauf and Ziele editors (round 11 asks for their drawing) -->
+    <string name="mission_step_new">New step</string>
+    <string name="mission_step_editing">Edit step</string>
+    <string name="mission_step_title">What happens</string>
+    <string name="mission_step_meta">Time / place</string>
+    <string name="mission_step_add">Add step</string>
+    <string name="mission_step_save_edit">Save step</string>
+    <string name="mission_step_tick">Tick off</string>
+    <string name="mission_step_untick">Undo</string>
+    <string name="mission_objective_new">New objective</string>
+    <string name="mission_objective_editing">Edit objective</string>
+    <string name="mission_objective_title">Objective</string>
+    <string name="mission_objective_add">Add objective</string>
+    <string name="mission_objective_save_edit">Save objective</string>
+    <string name="mission_objective_kind_primary">Primary</string>
+    <string name="mission_objective_kind_secondary">Secondary</string>
+    <string name="mission_objective_kind_non_goal">Non-goal</string>
+    <string name="mission_timeline_edit">Edit</string>
+    <string name="mission_timeline_remove">Remove</string>
+    <string name="mission_timeline_cancel">Cancel</string>
+    <!-- Einsatz: the member picker behind the three member-shaped writes -->
+    <string name="mission_member_party_lead">Set party lead</string>
+    <string name="mission_member_manager">Add manager</string>
+    <string name="mission_member_participant">Add participant</string>
+    <string name="mission_member_search">Member</string>
+    <string name="mission_member_search_hint">Type a name</string>
+    <string name="mission_member_searching">Searching …</string>
+    <string name="mission_member_hint">Party lead, managers and extra participants are named through the member search.</string>
+    <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
+    <string name="mission_unit_rename">Rename</string>
+    <string name="mission_unit_rename_save">Save Einheit</string>
+    <string name="mission_crew_roles">Function aboard</string>
+    <string name="mission_crew_roles_empty">No CREW functions defined.</string>
+    <string name="mission_admin_people">People</string>
+    <string name="mission_timeline_up">Up</string>
+    <string name="mission_timeline_down">Down</string>
+    <plurals name="mission_member_notice">
+        <item quantity="one">%1$d of at most %2$d matches — keep typing to narrow it</item>
+        <item quantity="other">%1$d of at most %2$d matches — keep typing to narrow it</item>
+    </plurals>
+    <string name="mission_crew_assign">Assign someone</string>
 </resources>

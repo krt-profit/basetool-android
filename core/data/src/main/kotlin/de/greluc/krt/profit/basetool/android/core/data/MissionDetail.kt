@@ -25,6 +25,18 @@ import java.time.Instant
  * @property comment their free-text note; **absent for an outsider read** (ADR-0034 strips it)
  * @property donating whether their share is donated rather than paid out, or `null` when the
  *   server stated no preference
+ * @property desiredJobTypeId the job they asked for, which the design draws as „Wunsch: …" beside
+ *   the assigned one. Kept as an **id** rather than only a name because a manager's write has to
+ *   echo it back — see [MissionSource.setPlannedFunction]
+ * @property desiredJobName the same job's display name, or `null`
+ * @property plannedJobTypeId the job actually assigned, or `null` while nobody has assigned one
+ * @property version the row's optimistic-lock version, required by every write against it
+ * @property startTime when they checked in, **verbatim as the server sent it**. This is the
+ *   check-in — there is no separate flag on the wire, and [checkedIn] is derived from it. Kept
+ *   because a manager's write must echo it back: the server assigns `startTime` unconditionally on
+ *   update, so omitting it checks the member out. Unparsed on purpose: it is only ever echoed, and
+ *   a parse-then-format round trip is a chance to change the value for no gain.
+ * @property endTime when they checked out, echoed back for the same reason
  */
 data class MissionParticipant(
     val id: String,
@@ -34,6 +46,12 @@ data class MissionParticipant(
     val checkedIn: Boolean,
     val comment: String?,
     val donating: Boolean?,
+    val desiredJobTypeId: String? = null,
+    val desiredJobName: String? = null,
+    val plannedJobTypeId: String? = null,
+    val version: Long = 0L,
+    val startTime: String? = null,
+    val endTime: String? = null,
 )
 
 /**
@@ -42,11 +60,16 @@ data class MissionParticipant(
  * @property id the crew row's id
  * @property name the assigned participant's name
  * @property roles the jobs they hold in this unit, in server order
+ * @property roleIds the same jobs as ids, because a role write sends the whole set and a name is
+ *   not an id — the CREW catalogue shares its names with the MISSION one
+ * @property version the row's own optimistic lock, echoed by a role write
  */
 data class MissionCrewMember(
     val id: String,
     val name: String,
     val roles: List<String>,
+    val roleIds: List<String> = emptyList(),
+    val version: Long = 0L,
 )
 
 /**
@@ -58,6 +81,7 @@ data class MissionCrewMember(
  * @property highValue whether it is flagged HVU, which the design marks with its own chip
  * @property responsibleName who leads it, or `null`
  * @property crew who is aboard, in server order
+ * @property version the unit's own optimistic lock, echoed by a rename or an HVU toggle
  */
 data class MissionUnit(
     val id: String,
@@ -66,6 +90,7 @@ data class MissionUnit(
     val highValue: Boolean,
     val responsibleName: String?,
     val crew: List<MissionCrewMember>,
+    val version: Long = 0L,
 )
 
 /**
@@ -140,6 +165,15 @@ data class MissionFrequency(
  * @property steps the Ablauf, in server order
  * @property objectives the Ziele, in server order
  * @property frequencies the radio plan, in server order
+ * @property coreVersion the Kern section's own optimistic-lock counter
+ * @property scheduleVersion the Zeitplan section's counter
+ * @property flagsVersion the flags section's counter
+ * @property canManage whether the caller may act on **other** members' rows — the server's own
+ *   `canEdit`, carried through rather than re-derived from a role string. Deriving it here would
+ *   reproduce the role hierarchy in the client and get it wrong for exactly the people most
+ *   entitled to act (ADR-0011: the app knows its permissions and refuses in place). Defaults to
+ *   `false`, so an older server that omits the field leaves the manager actions locked rather than
+ *   offering writes that would be refused.
  */
 data class MissionDetail(
     val id: String,
@@ -164,6 +198,21 @@ data class MissionDetail(
     val steps: List<MissionStep>,
     val objectives: List<MissionObjective>,
     val frequencies: List<MissionFrequency>,
+    val canManage: Boolean = false,
+    // Three counters, not one. The Einsatz is edited in independent sections and each carries its
+    // own, so a manager fixing the briefing does not 409 a colleague moving the start time. They
+    // are plain business Longs on the server, bumped by a DB-enforced atomic conditional UPDATE —
+    // NOT the row's JPA @Version — which is what makes two concurrent section edits both commit.
+    val coreVersion: Long = 0L,
+    val scheduleVersion: Long = 0L,
+    val flagsVersion: Long = 0L,
+    val partyLeadVersion: Long = 0L,
+    // The Ablauf and the Ziele are two more of the same, and they carry a trap the other five do
+    // not: their endpoints answer with the LIST, never with the Einsatz, so the answer cannot
+    // supply the next counter. The server bumps by exactly one per accepted write
+    // (`bumpStepsVersionIfMatches`), so the client advances its own by one and splices the list.
+    val stepsVersion: Long = 0L,
+    val objectivesVersion: Long = 0L,
 )
 
 /**

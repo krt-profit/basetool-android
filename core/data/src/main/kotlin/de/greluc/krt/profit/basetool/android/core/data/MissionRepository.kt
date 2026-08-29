@@ -9,22 +9,36 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddCrewRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddCustomFrequencyRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddFrequencyRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantPublicRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.AddUnitRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryUpdateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceTotalsDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFrequencyDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionCoreRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionFlagsRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionScheduleRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.SetPartyLeadRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateCrewRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateUnitRequest
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 import java.math.BigDecimal
 import java.time.Instant
@@ -76,12 +90,345 @@ data class MissionJobType(
 )
 
 /**
+ * The Einsatz's books: the bookings a member makes against their own sign-up.
+ *
+ * Split from [MissionSource] rather than sitting inside it because the money is a **separately
+ * guarded** surface — a member may read an Einsatz and still be refused its finances
+ * (`isMemberOrAbove` + `canSeeMission`) — and because the interface had grown past what one
+ * abstraction should carry. The same implementation serves both; the split is about what a caller
+ * has to depend on, not about where the code lives.
+ */
+interface MissionFinanceSource {
+    /**
+     * Books an income or an expense against an Einsatz.
+     *
+     * @param missionId the Einsatz.
+     * @param participantId whose booking it is — the caller's own sign-up.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude, always positive; the sign lives in [income].
+     * @param note what it was for, or `null`.
+     * @return success, or the classified failure.
+     */
+    suspend fun addFinanceEntry(
+        missionId: String,
+        participantId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+    ): ApiResult<Unit>
+
+    /**
+     * Rewrites one booking.
+     *
+     * @param entryId the entry.
+     * @param income whether it is money in rather than money out.
+     * @param amount the magnitude.
+     * @param note what it was for, or `null`.
+     * @param version the entry's version, echoed from the read.
+     * @return success, or the classified failure.
+     */
+    suspend fun updateFinanceEntry(
+        entryId: String,
+        income: Boolean,
+        amount: String,
+        note: String?,
+        version: Long?,
+    ): ApiResult<Unit>
+
+    /**
+     * Removes one booking.
+     *
+     * @param entryId the entry.
+     * @return success, or the classified failure.
+     */
+    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
+}
+
+/**
+ * Editing the Einsatz itself — the Verwaltung half of the detail screen.
+ *
+ * Its own seam rather than three more methods on [MissionSource]: these are the writes only a
+ * manager may make, and they are the ones that carry the **section version counters**. Keeping them
+ * together is what makes it obvious that the three sections are independent, which is the whole
+ * point of there being three counters instead of one.
+ */
+interface MissionAdminSource {
+    /**
+     * Rewrites the Kern section: title, briefing, meeting point, status.
+     *
+     * @param missionId the Einsatz.
+     * @param name the title; the server requires one.
+     * @param description the briefing, or `null` to clear it.
+     * @param meetingPoint the gathering place, or `null`.
+     * @param version the **Kern** section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
+     *   stale, which is a concurrent edit of *this* section and nothing else.
+     */
+    suspend fun patchCore(
+        missionId: String,
+        name: String,
+        description: String?,
+        meetingPoint: String?,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Rewrites the Zeitplan section.
+     *
+     * `actualStartTime` is the one that matters operationally: the server refuses every check-in
+     * until it is set, so this is what opens the Einsatz for its participants.
+     *
+     * @param missionId the Einsatz.
+     * @param meetingTime Teamspeak gathering, or `null`.
+     * @param plannedStartTime the scheduled server join, or `null`.
+     * @param plannedEndTime the scheduled end, or `null`.
+     * @param actualStartTime when it actually began, or `null`.
+     * @param version the **Zeitplan** section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun patchSchedule(
+        missionId: String,
+        meetingTime: String?,
+        plannedStartTime: String?,
+        plannedEndTime: String?,
+        actualStartTime: String?,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Switches the Einsatz between internal and open.
+     *
+     * Not cosmetic: an internal Einsatz is invisible to guests and to anonymous visitors, so this
+     * is the control that decides who can find it at all.
+     *
+     * @param missionId the Einsatz.
+     * @param internal whether it is squadron-internal.
+     * @param version the **flags** section's counter as last read.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun patchFlags(
+        missionId: String,
+        internal: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Sets who leads the Einsatz.
+     *
+     * @param missionId the Einsatz.
+     * @param userId the member, or `null` together with a [guestName].
+     * @param guestName a guest's name when no member leads.
+     * @param version the **party-lead** section's counter, which is its own again.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun setPartyLead(
+        missionId: String,
+        userId: String?,
+        guestName: String?,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Grants somebody the right to manage this Einsatz.
+     *
+     * Gated on `canManageManagers`, which is a **narrower** right than managing the Einsatz — being
+     * able to run it does not imply being able to hand that out.
+     *
+     * @param missionId the Einsatz.
+     * @param userId who.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun addManager(
+        missionId: String,
+        userId: String,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Takes that right away again.
+     *
+     * @param missionId the Einsatz.
+     * @param userId who.
+     * @return success, or the classified failure.
+     */
+    suspend fun removeManager(
+        missionId: String,
+        userId: String,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Puts a member on the roster who has not signed themselves up.
+     *
+     * @param missionId the Einsatz.
+     * @param userId who.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun addParticipant(
+        missionId: String,
+        userId: String,
+    ): ApiResult<MissionDetail>
+}
+
+/**
+ * The Einsatz's **structure**: its Einheiten, who is aboard them, and its radio plan.
+ *
+ * Split from [MissionAdminSource] because the two answer different questions — that one edits the
+ * Einsatz's own record, this one edits what it is made of — and because one seam carrying both had
+ * grown past what a single abstraction should ask a caller to depend on.
+ */
+interface MissionStructureSource {
+    /**
+     * Adds a frequency from the catalogue.
+     *
+     * @param missionId the Einsatz.
+     * @param frequencyTypeId which frequency.
+     * @param value the frequency itself. The type names the channel and this is the number on it —
+     *   both are required, because the catalogue holds the purpose and not the setting.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun addFrequency(
+        missionId: String,
+        frequencyTypeId: String,
+        value: String,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Adds a frequency the catalogue does not hold — a channel invented for this Einsatz.
+     *
+     * A custom frequency exists **only** as a `/slim` endpoint, which answers with the new frequency
+     * list rather than the whole Einsatz — `POST …/frequencies/custom` is a `405` whose
+     * `supportedMethods` is `[DELETE]`, found on a device. So this takes the Einsatz as last read
+     * and splices the answer onto it, which keeps the caller's contract the same as every other
+     * structure write.
+     *
+     * @param missionId the Einsatz.
+     * @param current the Einsatz as last read, for everything the slim answer does not carry.
+     * @param name what to call it.
+     * @param value the frequency itself.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun addCustomFrequency(
+        missionId: String,
+        current: MissionDetail,
+        name: String,
+        value: String,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Removes one frequency.
+     *
+     * @param missionId the Einsatz.
+     * @param frequencyId which one.
+     * @return success, or the classified failure.
+     */
+    suspend fun removeFrequency(
+        missionId: String,
+        frequencyId: String,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Adds an Einheit.
+     *
+     * @param missionId the Einsatz.
+     * @param name what to call it.
+     * @param highValue whether it is flagged HVU.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun addUnit(
+        missionId: String,
+        name: String,
+        highValue: Boolean,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Renames an Einheit or changes its HVU mark.
+     *
+     * @param missionId the Einsatz.
+     * @param unitId which unit.
+     * @param name its name.
+     * @param highValue whether it is flagged HVU.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun updateUnit(
+        missionId: String,
+        unitId: String,
+        name: String,
+        highValue: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Sets which Funktionen somebody holds aboard an Einheit.
+     *
+     * A **replace**: the request carries the whole set, so a caller that sends one id has assigned
+     * exactly that one and revoked the rest. Roles come from the **CREW** catalogue, which shares
+     * its names with the MISSION one — see [MissionPeopleSource.crewJobTypes].
+     *
+     * @param missionId the Einsatz.
+     * @param unitId which Einheit.
+     * @param crewId which slot aboard it.
+     * @param jobTypeIds the roles they are to hold, whole.
+     * @param version the crew row's own optimistic lock, as last read.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun setCrewRoles(
+        missionId: String,
+        unitId: String,
+        crewId: String,
+        jobTypeIds: Set<String>,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Removes an Einheit, and with it every crew slot on board.
+     *
+     * @param missionId the Einsatz.
+     * @param unitId which unit.
+     * @return success, or the classified failure.
+     */
+    suspend fun removeUnit(
+        missionId: String,
+        unitId: String,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Puts a participant aboard an Einheit — the artboard's „+ Person zuweisen".
+     *
+     * @param missionId the Einsatz.
+     * @param unitId which unit.
+     * @param participantId who goes aboard; a roster row, not a user.
+     * @param jobTypeIds the roles they hold there. These are **CREW** job types, not the MISSION
+     *   ones a participant's own Funktion uses — the two catalogues share their names.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun addCrew(
+        missionId: String,
+        unitId: String,
+        participantId: String,
+        jobTypeIds: Set<String>,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Takes somebody off an Einheit.
+     *
+     * @param missionId the Einsatz.
+     * @param unitId which unit.
+     * @param crewId which slot.
+     * @return success, or the classified failure.
+     */
+    suspend fun removeCrew(
+        missionId: String,
+        unitId: String,
+        crewId: String,
+    ): ApiResult<MissionDetail>
+}
+
+/**
  * The Einsatz list, as a seam.
  *
  * Separate from its HTTP implementation so the list screen's rules — debouncing, paging, what an
  * empty result means versus a failed one — can be exercised without a socket.
  */
-interface MissionSource {
+interface MissionSource : MissionFinanceSource {
     /**
      * Reads one page of Einsätze matching [query].
      *
@@ -189,48 +536,28 @@ interface MissionSource {
     ): ApiResult<MissionParticipant>
 
     /**
-     * Books an income or an expense against an Einsatz.
+     * Assigns the job a participant flies — the design's „Funktion an Bord" select (chapter 06,
+     * artboard 2). Mission-management only; the server refuses it for anyone else.
+     *
+     * **It sends the row whole, and it has to.** `PUT …/participants/{id}` is a replace, not a
+     * patch: the server clears `desiredMissionJobType`, `plannedMissionJobType` and `comment` when
+     * the request omits them, and only `payoutPreference` survives a null. So a call that carried
+     * nothing but the new function would silently wipe the member's own stated wish and their note
+     * — a data loss with no error and no visible cause, discoverable only by the member who typed
+     * the note. [participant] is therefore the row as last read, and everything not being changed
+     * is echoed back from it.
      *
      * @param missionId the Einsatz.
-     * @param participantId whose booking it is — the caller's own sign-up.
-     * @param income whether it is money in rather than money out.
-     * @param amount the magnitude, always positive; the sign lives in [income].
-     * @param note what it was for, or `null`.
-     * @return success, or the classified failure.
+     * @param participant the row as last read; supplies the version and the fields left alone.
+     * @param jobTypeId the job to assign, or `null` to clear the assignment.
+     * @return the row as it now stands, or the classified failure — `409` when the version is
+     *   stale, which is the case a concurrent manager edit produces.
      */
-    suspend fun addFinanceEntry(
+    suspend fun setPlannedFunction(
         missionId: String,
-        participantId: String,
-        income: Boolean,
-        amount: String,
-        note: String?,
-    ): ApiResult<Unit>
-
-    /**
-     * Rewrites one booking.
-     *
-     * @param entryId the entry.
-     * @param income whether it is money in rather than money out.
-     * @param amount the magnitude.
-     * @param note what it was for, or `null`.
-     * @param version the entry's version, echoed from the read.
-     * @return success, or the classified failure.
-     */
-    suspend fun updateFinanceEntry(
-        entryId: String,
-        income: Boolean,
-        amount: String,
-        note: String?,
-        version: Long?,
-    ): ApiResult<Unit>
-
-    /**
-     * Removes one booking.
-     *
-     * @param entryId the entry.
-     * @return success, or the classified failure.
-     */
-    suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit>
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant>
 }
 
 /**
@@ -254,7 +581,8 @@ interface MissionSource {
  */
 class MissionRepository(
     private val reader: ApiReader,
-) : MissionSource {
+) : MissionSource,
+    MissionAdminSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -434,6 +762,147 @@ class MissionRepository(
             ),
         )
 
+    override suspend fun patchCore(
+        missionId: String,
+        name: String,
+        description: String?,
+        meetingPoint: String?,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.send(
+                "${missionPath(missionId)}/core",
+                PATCH,
+                PatchMissionCoreRequest(
+                    name = name,
+                    version = version,
+                    description = description,
+                    meetingPoint = meetingPoint,
+                ),
+                PatchMissionCoreRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun patchSchedule(
+        missionId: String,
+        meetingTime: String?,
+        plannedStartTime: String?,
+        plannedEndTime: String?,
+        actualStartTime: String?,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.send(
+                "${missionPath(missionId)}/schedule",
+                PATCH,
+                PatchMissionScheduleRequest(
+                    version = version,
+                    meetingTime = meetingTime,
+                    plannedStartTime = plannedStartTime,
+                    plannedEndTime = plannedEndTime,
+                    actualStartTime = actualStartTime,
+                ),
+                PatchMissionScheduleRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun patchFlags(
+        missionId: String,
+        internal: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.send(
+                "${missionPath(missionId)}/flags",
+                PATCH,
+                PatchMissionFlagsRequest(isInternal = internal, version = version),
+                PatchMissionFlagsRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun setPartyLead(
+        missionId: String,
+        userId: String?,
+        guestName: String?,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.put(
+                "${missionPath(missionId)}/party-lead",
+                SetPartyLeadRequest(version = version, userId = userId, guestName = guestName),
+                SetPartyLeadRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun addManager(
+        missionId: String,
+        userId: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.post("${missionPath(missionId)}/managers/$userId", MissionDto.serializer()),
+        )
+
+    override suspend fun removeManager(
+        missionId: String,
+        userId: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(missionId, reader.delete("${missionPath(missionId)}/managers/$userId", MissionDto.serializer()))
+
+    override suspend fun addParticipant(
+        missionId: String,
+        userId: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.post(
+                "${missionPath(missionId)}/participants",
+                AddParticipantRequest(userId = userId),
+                AddParticipantRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun setPlannedFunction(
+        missionId: String,
+        participant: MissionParticipant,
+        jobTypeId: String?,
+    ): ApiResult<MissionParticipant> =
+        oneRow(
+            reader.put(
+                participantPath(missionId, participant.id, null),
+                UpdateParticipantRequest(
+                    version = participant.version,
+                    plannedMissionJobTypeId = jobTypeId,
+                    // Everything below is echoed, not chosen. `PUT …/participants/{id}` replaces
+                    // the row: the server clears desiredMissionJobType and comment on a null, and
+                    // assigns startTime/endTime UNCONDITIONALLY — so an omitted startTime checks
+                    // the member out. Only payoutPreference survives a null, and it is echoed too
+                    // rather than relying on that asymmetry.
+                    desiredMissionJobTypeId = participant.desiredJobTypeId,
+                    comment = participant.comment,
+                    startTime = participant.startTime,
+                    endTime = participant.endTime,
+                    payoutPreference =
+                        when (participant.donating) {
+                            true -> UpdateParticipantRequest.PayoutPreference.DONATE
+                            false -> UpdateParticipantRequest.PayoutPreference.PAYOUT
+                            null -> null
+                        },
+                ),
+                UpdateParticipantRequest.serializer(),
+                MissionParticipantDto.serializer(),
+            ),
+        )
+
     override suspend fun addFinanceEntry(
         missionId: String,
         participantId: String,
@@ -598,10 +1067,26 @@ class MissionRepository(
          */
         const val FINANCE_PAGE_SIZE: Int = 50
 
+        /** The verb the three section edits use; [ApiReader] has no dedicated `patch`. */
+        private const val PATCH = "PATCH"
+
         private const val SEARCH_PATH = "/api/v1/missions/search"
 
-        /** The Funktionen catalogue, read only when the sign-up sheet opens. */
-        private const val JOB_TYPES_PATH = "/api/v1/job-types?page=0&size=200"
+        /**
+         * The Funktionen a **participant** can be asked for or assigned — read when the sign-up
+         * sheet opens, and by a manager on the Teilnehmer tab.
+         *
+         * `archetype=MISSION` is load-bearing, not tidiness. The catalogue holds two kinds and the
+         * backend refuses the wrong one outright — "Planned JobType Pilot is not of archetype
+         * MISSION", a 400 found on a device. `CREW` types (Pilot, Turret, Cargo, Scan, Medic) are
+         * the roles inside an Einheit and are assigned through the unit's crew, not through the
+         * participant. The two share names, which is exactly why an unfiltered read looks right on
+         * screen and fails on write.
+         *
+         * The web asks the same way, through two separate cached catalogues (`JOB_TYPES_MISSION` /
+         * `JOB_TYPES_CREW`).
+         */
+        private const val JOB_TYPES_PATH = "/api/v1/job-types?archetype=MISSION&page=0&size=200"
 
         /**
          * Where a booking is written.
@@ -611,14 +1096,6 @@ class MissionRepository(
          * on the Einsatz prefix.
          */
         private const val FINANCE_ENTRIES_PATH = "/api/v1/finance-entries"
-
-        /**
-         * The detail path for one Einsatz.
-         *
-         * @param id the Einsatz's id.
-         * @return the path.
-         */
-        private fun missionPath(id: String) = "/api/v1/missions/$id"
 
         /**
          * One participant row's slim path.
@@ -793,8 +1270,232 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
                     value = frequency.name.orEmpty(),
                 )
             },
+        // The server's own verdict, not a role check repeated here. An absent field means "no",
+        // so a server that predates the flag locks the manager actions instead of offering writes
+        // it would refuse.
+        canManage = canEdit ?: false,
+        coreVersion = sectionVersion(coreVersion),
+        scheduleVersion = sectionVersion(scheduleVersion),
+        flagsVersion = sectionVersion(flagsVersion),
+        partyLeadVersion = sectionVersion(partyLeadVersion),
+        stepsVersion = sectionVersion(stepsVersion),
+        objectivesVersion = sectionVersion(objectivesVersion),
     )
 }
+
+/**
+ * The Einsatz's structure, over HTTP.
+ *
+ * A second class rather than more methods on [MissionRepository], which had reached the point where
+ * one type carried the list, the detail, the books, the roster, the Einsatz's own record **and**
+ * everything it is made of. They share the same [ApiReader] and the same base URL; what differs is
+ * what a caller has to depend on.
+ *
+ * @property reader the HTTP seam.
+ */
+class MissionStructureRepository(
+    private val reader: ApiReader,
+) : MissionStructureSource {
+    /**
+     * Convenience constructor for the object graph.
+     *
+     * @param httpClient the shared client, so the bearer, the correlation id and the org pin are
+     *   already on every request.
+     * @param baseUrl where the API lives.
+     */
+    constructor(httpClient: OkHttpClient, baseUrl: String) : this(
+        ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = "MissionStructure"),
+    )
+
+    override suspend fun addFrequency(
+        missionId: String,
+        frequencyTypeId: String,
+        value: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.post(
+                "${missionPath(missionId)}/frequencies",
+                AddFrequencyRequest(frequencyTypeId = frequencyTypeId, value = KrtDecimal(BigDecimal(value))),
+                AddFrequencyRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun addCustomFrequency(
+        missionId: String,
+        current: MissionDetail,
+        name: String,
+        value: String,
+    ): ApiResult<MissionDetail> =
+        when (
+            val result =
+                reader.post(
+                    "${missionPath(missionId)}/frequencies/custom/slim",
+                    AddCustomFrequencyRequest(name = name, value = KrtDecimal(BigDecimal(value))),
+                    AddCustomFrequencyRequest.serializer(),
+                    ListSerializer(MissionFrequencyDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    current.copy(
+                        frequencies =
+                            result.value.mapNotNull { dto ->
+                                dto.id?.let {
+                                    MissionFrequency(
+                                        id = it,
+                                        type = dto.frequencyType?.name,
+                                        value = dto.name.orEmpty(),
+                                    )
+                                }
+                            },
+                    ),
+                )
+            }
+        }
+
+    override suspend fun removeFrequency(
+        missionId: String,
+        frequencyId: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.delete("${missionPath(missionId)}/frequencies/$frequencyId", MissionDto.serializer()),
+        )
+
+    override suspend fun addUnit(
+        missionId: String,
+        name: String,
+        highValue: Boolean,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.post(
+                "${missionPath(missionId)}/units",
+                AddUnitRequest(name = name, highValueUnit = highValue),
+                AddUnitRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun updateUnit(
+        missionId: String,
+        unitId: String,
+        name: String,
+        highValue: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.put(
+                "${missionPath(missionId)}/units/$unitId",
+                // The version is echoed, not omitted. `UpdateUnitRequest` makes it nullable and the
+                // server treats an absent one as "do not check" — which turns a concurrent rename
+                // into a silent overwrite instead of the 409 the counter exists to raise.
+                UpdateUnitRequest(name = name, highValueUnit = highValue, version = version),
+                UpdateUnitRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun setCrewRoles(
+        missionId: String,
+        unitId: String,
+        crewId: String,
+        jobTypeIds: Set<String>,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.put(
+                "${missionPath(missionId)}/units/$unitId/crew/$crewId",
+                UpdateCrewRequest(jobTypeIds = jobTypeIds, version = version),
+                UpdateCrewRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun removeUnit(
+        missionId: String,
+        unitId: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(missionId, reader.delete("${missionPath(missionId)}/units/$unitId", MissionDto.serializer()))
+
+    override suspend fun addCrew(
+        missionId: String,
+        unitId: String,
+        participantId: String,
+        jobTypeIds: Set<String>,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.post(
+                "${missionPath(missionId)}/units/$unitId/crew",
+                AddCrewRequest(participantId = participantId, jobTypeIds = jobTypeIds),
+                AddCrewRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun removeCrew(
+        missionId: String,
+        unitId: String,
+        crewId: String,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.delete("${missionPath(missionId)}/units/$unitId/crew/$crewId", MissionDto.serializer()),
+        )
+}
+
+/**
+ * Folds a write's answer back into the model.
+ *
+ * The Einsatz's writes answer with the **whole** Einsatz, so a screen swaps one object rather than
+ * re-reading — which also means every other section's counter arrives fresh, and a manager can make
+ * two edits in a row without a 409 from a version they never saw.
+ *
+ * At file scope because both [MissionRepository] and [MissionStructureRepository] fold the same
+ * answer; two copies would be two places for the id fallback to drift.
+ *
+ * @param missionId the Einsatz, for the id fallback.
+ * @param result what the write answered.
+ * @return the Einsatz, or the failure unchanged.
+ */
+private fun oneMission(
+    missionId: String,
+    result: ApiResult<MissionDto>,
+): ApiResult<MissionDetail> =
+    when (result) {
+        is ApiResult.Failure -> result
+        is ApiResult.Success -> ApiResult.Success(result.value.toModel(missionId))
+    }
+
+/**
+ * The path of one Einsatz.
+ *
+ * @param missionId which one.
+ * @return the API path.
+ */
+internal fun missionPath(missionId: String): String = "/api/v1/missions/$missionId"
+
+/**
+ * A section's optimistic-lock counter as the client should hold it.
+ *
+ * An absent counter becomes `0`, which is deliberately **not** a value the server ever issues: a
+ * write carrying it is refused with a `409` rather than silently overwriting whatever is there. The
+ * three sections each have their own, so a stale one only ever collides with an edit of that same
+ * section.
+ *
+ * @param raw what the wire carried, or `null`.
+ * @return the counter to echo on the next write against that section.
+ */
+private fun sectionVersion(raw: Long?): Long = raw ?: 0L
 
 /**
  * Maps one participant row.
@@ -812,10 +1513,21 @@ private fun MissionParticipantDto.toModel(): MissionParticipant? {
         role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
         // A start time is what a check-in writes; there is no separate flag on the wire.
         checkedIn = startTime != null,
+        startTime = startTime,
+        endTime = endTime,
         comment = comment?.takeIf { it.isNotBlank() },
         // Absent means the server stated no preference, which is a different thing from "pays
         // out": the screen shows nothing rather than claiming one of the two.
         donating = payoutPreference?.let { it == MissionParticipantDto.PayoutPreference.DONATE },
+        // Both job types are carried separately even though `role` collapses them for display. A
+        // manager's write has to send the row whole (see setPlannedFunction), so the one it is not
+        // changing must survive the round trip.
+        desiredJobTypeId = desiredMissionJobType?.id,
+        desiredJobName = desiredMissionJobType?.name,
+        plannedJobTypeId = plannedMissionJobType?.id,
+        // A row with no version cannot be written to. 0 is not a valid server version, so the
+        // write fails loudly with a 409 rather than silently overwriting a concurrent edit.
+        version = version ?: 0L,
     )
 }
 
@@ -839,8 +1551,11 @@ private fun MissionUnitDto.toModel(): MissionUnit? {
                     id = crewId,
                     name = member.participantName.orEmpty(),
                     roles = member.jobTypes.orEmpty().map { it.name },
+                    roleIds = member.jobTypes.orEmpty().mapNotNull { it.id },
+                    version = member.version ?: 0L,
                 )
             },
+        version = version ?: 0L,
     )
 }
 

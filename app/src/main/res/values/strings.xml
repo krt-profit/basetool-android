@@ -195,13 +195,14 @@
 
     <!-- Einsatz-Detail (design spec ch. 06 §2), read-only. -->
     <string name="mission_detail_title">Einsatz</string>
-    <string name="mission_detail_tab_overview">Übersicht</string>
+    <string name="mission_detail_tab_overview">Briefing</string>
     <string name="mission_detail_tab_participants">Teilnehmer</string>
     <string name="mission_detail_tab_units">Einheiten</string>
     <string name="mission_detail_tab_steps">Ablauf</string>
     <string name="mission_detail_tab_objectives">Ziele</string>
     <string name="mission_detail_tab_frequencies">Frequenzen</string>
     <string name="mission_detail_tab_finances">Finanzen</string>
+    <string name="mission_detail_tab_admin">Verwaltung</string>
     <string name="mission_detail_fact_meeting">TS</string>
     <string name="mission_detail_fact_join">Join</string>
     <string name="mission_detail_fact_end">Ende</string>
@@ -1047,6 +1048,7 @@
     <string name="mission_detail_check_in">Einchecken</string>
     <string name="mission_detail_check_out">Auschecken</string>
     <string name="mission_detail_donate">Spenden</string>
+    <string name="mission_detail_payout_label">Anteil</string>
     <string name="mission_detail_payout_self">Auszahlung</string>
     <string name="mission_detail_payout_org">Org-Kasse</string>
     <string name="mission_detail_take_payout">Auszahlen</string>
@@ -1274,6 +1276,55 @@
         <item quantity="one">Ein Eintrag wird an den gewählten Ort verschoben.</item>
         <item quantity="other">%1$d Einträge werden an den gewählten Ort verschoben.</item>
     </plurals>
+    <string name="mission_struct_units">Einheiten</string>
+    <string name="mission_struct_add_unit">Einheit hinzufügen</string>
+    <string name="mission_struct_unit_name">Name der Einheit</string>
+    <string name="mission_struct_hvu">Hochwertiges Ziel (HVU)</string>
+    <string name="mission_struct_remove_unit">Einheit entfernen</string>
+    <string name="mission_struct_add_crew">Person zuweisen</string>
+    <string name="mission_struct_remove_crew">Von Bord nehmen</string>
+    <string name="mission_struct_freqs">Frequenzen</string>
+    <string name="mission_struct_add_freq">Frequenz hinzufügen</string>
+    <string name="mission_struct_freq_name">Bezeichnung</string>
+    <string name="mission_struct_freq_value">Frequenz</string>
+    <string name="mission_struct_remove_freq">Frequenz entfernen</string>
+    <string name="mission_struct_party_lead">Einsatzleitung</string>
+    <string name="mission_struct_set_lead">Als Leitung setzen</string>
+    <string name="mission_struct_managers">Manager</string>
+    <string name="mission_struct_add_manager">Manager hinzufügen</string>
+    <string name="mission_struct_remove_manager">Manager entfernen</string>
+    <string name="mission_struct_add_participant">Teilnehmer hinzufügen</string>
+    <string name="mission_struct_remove_participant">Teilnehmer entfernen</string>
+    <string name="mission_struct_pick_member">Mitglied suchen</string>
+    <string name="mission_struct_pick_participant">Teilnehmer wählen</string>
+    <string name="mission_struct_empty_units">Noch keine Einheiten.</string>
+    <string name="mission_struct_confirm_remove">Wirklich entfernen?</string>
+    <string name="mission_admin_title">Einsatz verwalten</string>
+    <string name="mission_admin_core">Kern</string>
+    <string name="mission_admin_schedule">Zeitplan</string>
+    <string name="mission_admin_flags">Sichtbarkeit</string>
+    <string name="mission_admin_name">Titel</string>
+    <string name="mission_admin_description">Beschreibung</string>
+    <string name="mission_admin_meeting_point">Treffpunkt</string>
+    <string name="mission_admin_meeting_time">Teamspeak (ISO 8601)</string>
+    <string name="mission_admin_planned_start">Serverjoin (ISO 8601)</string>
+    <string name="mission_admin_planned_end">Ende (ISO 8601)</string>
+    <string name="mission_admin_actual_start">Tatsächlicher Start (ISO 8601)</string>
+    <string name="mission_admin_start_now">Einsatz läuft jetzt</string>
+    <string name="mission_admin_internal">Nur für die eigene Einheit sichtbar</string>
+    <string name="mission_admin_save_core">Kern speichern</string>
+    <string name="mission_admin_save_schedule">Zeitplan speichern</string>
+    <string name="mission_admin_save_flags">Sichtbarkeit speichern</string>
+    <string name="mission_admin_section_hint">Jeder Abschnitt wird einzeln gespeichert — so kollidiert eine Änderung hier nicht mit einer gleichzeitigen Änderung woanders.</string>
+    <string name="mission_admin_start_hint">Vor dem tatsächlichen Start weist der Server jeden Check-in ab.</string>
+    <string name="gate_role_mission_manager">Dafür brauchst du die Rolle Missions-Manager.</string>
+    <string name="gate_role_mission_manager_detail">Vergeben je Staffel durch die Administration — oder die Leitung des Einsatzes.</string>
+    <string name="mission_detail_wish">Wunsch: %1$s</string>
+    <string name="mission_detail_function_none">Keine Funktion</string>
+    <string name="mission_detail_check_in_row">Einchecken</string>
+    <string name="mission_detail_check_out_row">Auschecken</string>
+    <string name="mission_detail_payout_row">Auszahlung umstellen</string>
+    <string name="mission_detail_function_label">Funktion an Bord</string>
     <string name="gate_role_logistician">Dafür brauchst du die Rolle Logistiker.</string>
     <string name="gate_role_logistician_detail">Vergeben je Staffel durch die Administration.</string>
     <string name="gate_own_row">Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker.</string>
@@ -1286,4 +1337,45 @@
     <string name="route_not_found_title">Signal Lost</string>
     <string name="route_not_found_message">Diese Adresse gibt es in dieser App nicht.</string>
     <string name="route_not_found_action">Zurück zur Basis</string>
+    <!-- Einsatz: the Ablauf and Ziele editors (round 11 asks for their drawing) -->
+    <string name="mission_step_new">Neuer Schritt</string>
+    <string name="mission_step_editing">Schritt bearbeiten</string>
+    <string name="mission_step_title">Was passiert</string>
+    <string name="mission_step_meta">Zeit / Ort</string>
+    <string name="mission_step_add">Schritt hinzufügen</string>
+    <string name="mission_step_save_edit">Schritt speichern</string>
+    <string name="mission_step_tick">Abhaken</string>
+    <string name="mission_step_untick">Zurücksetzen</string>
+    <string name="mission_objective_new">Neues Ziel</string>
+    <string name="mission_objective_editing">Ziel bearbeiten</string>
+    <string name="mission_objective_title">Ziel</string>
+    <string name="mission_objective_add">Ziel hinzufügen</string>
+    <string name="mission_objective_save_edit">Ziel speichern</string>
+    <string name="mission_objective_kind_primary">Primär</string>
+    <string name="mission_objective_kind_secondary">Sekundär</string>
+    <string name="mission_objective_kind_non_goal">Kein Ziel</string>
+    <string name="mission_timeline_edit">Bearbeiten</string>
+    <string name="mission_timeline_remove">Entfernen</string>
+    <string name="mission_timeline_cancel">Abbrechen</string>
+    <!-- Einsatz: the member picker behind the three member-shaped writes -->
+    <string name="mission_member_party_lead">Einsatzleitung setzen</string>
+    <string name="mission_member_manager">Manager hinzufügen</string>
+    <string name="mission_member_participant">Teilnehmer hinzufügen</string>
+    <string name="mission_member_search">Mitglied</string>
+    <string name="mission_member_search_hint">Namen tippen</string>
+    <string name="mission_member_searching">Suche läuft …</string>
+    <string name="mission_member_hint">Einsatzleitung, Manager und zusätzliche Teilnehmer werden über die Mitgliedersuche benannt.</string>
+    <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
+    <string name="mission_unit_rename">Umbenennen</string>
+    <string name="mission_unit_rename_save">Einheit speichern</string>
+    <string name="mission_crew_roles">Funktion an Bord</string>
+    <string name="mission_crew_roles_empty">Keine CREW-Funktionen hinterlegt.</string>
+    <string name="mission_admin_people">Personen</string>
+    <string name="mission_timeline_up">Hoch</string>
+    <string name="mission_timeline_down">Runter</string>
+    <plurals name="mission_member_notice">
+        <item quantity="one">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
+        <item quantity="other">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
+    </plurals>
+    <string name="mission_crew_assign">Person zuweisen</string>
 </resources>
