@@ -1498,4 +1498,28 @@
         <item quantity="one">%1$d Material</item>
         <item quantity="other">%1$d Materialien</item>
     </plurals>
+    <!-- Handel: Preis-Übersicht und Profitberechnung (design ch. 16, artboards 3 + 4) -->
+    <string name="materials_matrix_title">Preis-Übersicht</string>
+    <string name="materials_matrix_material">Material</string>
+    <string name="materials_matrix_sell">Verkauf</string>
+    <string name="materials_matrix_buy">Einkauf</string>
+    <string name="materials_matrix_systems_all">Alle Systeme</string>
+    <string name="materials_matrix_loading">Lade Matrix …</string>
+    <string name="materials_matrix_empty_title">Keine Einträge gefunden.</string>
+    <string name="materials_matrix_error_message">Die Preis-Matrix konnte nicht geladen werden.</string>
+    <string name="materials_profit_title">Profitberechnung</string>
+    <string name="materials_profit_ship">Schiff wählen</string>
+    <string name="materials_profit_ship_label">%1$s (%2$d SCU)</string>
+    <string name="materials_profit_systems">Systeme einschränken</string>
+    <string name="materials_profit_autoload">Berücksichtigt nur Auto-Load Terminals.</string>
+    <string name="materials_profit_hullc">Hull C Sonderregel (Loading Dock) aktiv.</string>
+    <string name="materials_profit_calculating">Berechnung läuft …</string>
+    <string name="materials_profit_error">Fehler beim Abrufen der Profitberechnung.</string>
+    <string name="materials_profit_no_data">Keine Handelsdaten für die gewählten Filter verfügbar.</string>
+    <string name="materials_profit_select_ship">Wähle ein Schiff, um die Berechnung zu starten.</string>
+    <string name="materials_profit_col_material">Material</string>
+    <string name="materials_profit_col_per_scu">Gewinn / SCU</string>
+    <string name="materials_profit_col_total">Max Profit</string>
+    <string name="materials_profit_col_margin">Marge (%)</string>
+    <string name="materials_actions">Weitere Handelsansichten</string>
 </resources>

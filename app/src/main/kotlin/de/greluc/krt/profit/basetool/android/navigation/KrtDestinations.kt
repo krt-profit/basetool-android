@@ -131,6 +131,12 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_clipboard_check,
     ),
 
+    /** The Material × Terminal price matrix, pushed from Handel's overflow. */
+    MaterialMatrix("material-matrix", R.string.materials_matrix_title, DesignR.drawable.ic_krt_list),
+
+    /** The profit calculation for one ship's full load, pushed from Handel's overflow. */
+    MaterialProfit("material-profit", R.string.materials_profit_title, DesignR.drawable.ic_krt_ship),
+
     /**
      * One material's prices across every terminal, pushed from the Handel list.
      *
@@ -262,6 +268,8 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // Without this the bar would light up „Übersicht" while a member reads a material they
         // opened from „Handel".
         KrtDestination.MaterialDetail to KrtDestination.Materials,
+        KrtDestination.MaterialMatrix to KrtDestination.Materials,
+        KrtDestination.MaterialProfit to KrtDestination.Materials,
         // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
         // behind "Mehr", and the bar has to keep saying so.
         KrtDestination.OperationDetail to KrtDestination.Operations,

@@ -64,7 +64,9 @@ import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
+import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
@@ -151,6 +153,8 @@ fun BasetoolApp(
     refineryOrder: (String) -> RefineryDetailViewModel,
     materials: MaterialsViewModel,
     materialDetail: (String) -> MaterialDetailViewModel,
+    materialMatrix: () -> MaterialMatrixViewModel,
+    materialProfit: () -> ProfitViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     inventory: InventoryViewModel,
@@ -323,6 +327,8 @@ fun BasetoolApp(
                         refineryOrder = refineryOrder,
                         materials = materials,
                         materialDetail = materialDetail,
+                        materialMatrix = materialMatrix,
+                        materialProfit = materialProfit,
                         refineryCreate = refineryCreate,
                         orderCreate = orderCreate,
                         inventory = inventory,

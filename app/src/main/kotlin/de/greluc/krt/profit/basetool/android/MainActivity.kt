@@ -67,7 +67,9 @@ import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
 import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
+import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionSeams
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
@@ -413,6 +415,10 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                         )
                                     },
+                                    materialMatrix = {
+                                        MaterialMatrixViewModel(container.materialCatalog)
+                                    },
+                                    materialProfit = { ProfitViewModel(container.materialCatalog) },
                                     refineryCreate = {
                                         RefineryCreateViewModel(container.refinery)
                                     },

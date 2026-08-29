@@ -54,8 +54,12 @@ import de.greluc.krt.profit.basetool.android.inventory.InventoryRoute
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialDetailRoute
 import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixRoute
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialsRoute
 import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
+import de.greluc.krt.profit.basetool.android.materials.ProfitRoute
+import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
@@ -158,6 +162,8 @@ fun BasetoolNavHost(
     refineryOrder: (String) -> RefineryDetailViewModel,
     materials: MaterialsViewModel,
     materialDetail: (String) -> MaterialDetailViewModel,
+    materialMatrix: () -> MaterialMatrixViewModel,
+    materialProfit: () -> ProfitViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     personalInventory: PersonalInventoryViewModel,
@@ -237,7 +243,12 @@ fun BasetoolNavHost(
                             bankStaff = bankStaff,
                             orderDetail = orderDetail,
                             refineryOrder = refineryOrder,
-                            materialDetail = materialDetail,
+                            material =
+                                MaterialBindings(
+                                    detail = materialDetail,
+                                    matrix = materialMatrix,
+                                    profit = materialProfit,
+                                ),
                             refineryCreate = refineryCreate,
                             orderCreate = orderCreate,
                             fleetImport = fleetImport,
@@ -465,6 +476,10 @@ private fun materialsDestination(
             onOpen = {
                 if (wide) selected = it else navController.navigate(materialDetailRoute(it))
             },
+            // A plain push on both form factors: neither is a row of the list, so neither belongs
+            // in the detail pane beside it.
+            onOpenMatrix = { navController.navigate(KrtDestination.MaterialMatrix.route) },
+            onOpenProfit = { navController.navigate(KrtDestination.MaterialProfit.route) },
         )
     }
     return true
@@ -633,31 +648,56 @@ private fun listDetailDestination(
 }
 
 /**
- * The two pushed screens that need nothing but an id from the route.
+ * The view models the Handel area's three pushed screens are built from.
+ *
+ * @property detail builds a view model for one material.
+ * @property matrix builds the price matrix.
+ * @property profit builds the profit calculation.
+ */
+private data class MaterialBindings(
+    val detail: (String) -> MaterialDetailViewModel,
+    val matrix: () -> MaterialMatrixViewModel,
+    val profit: () -> ProfitViewModel,
+)
+
+/**
+ * The pushed screens that need nothing from the route but, at most, one id.
  *
  * Grouped rather than given a branch each: `PushedDestination`'s switch is at the complexity the
- * project's static analysis allows, and these two are the same shape — read one argument, build one
- * view model, draw one route.
+ * project's static analysis allows, and these four are the same shape — read at most one argument,
+ * build one view model, draw one route.
  *
- * @param destination which of the two.
- * @param backStackEntry carries the id.
+ * @param destination which of them.
+ * @param backStackEntry carries the id where there is one.
  * @param refineryOrder builds a view model for one Raffinerie order.
- * @param materialDetail builds a view model for one material.
+ * @param material the three Handel view models.
  */
 @Composable
-private fun IdOnlyDestination(
+private fun SimplePushedDestination(
     destination: KrtDestination,
     backStackEntry: NavBackStackEntry,
     refineryOrder: (String) -> RefineryDetailViewModel,
-    materialDetail: (String) -> MaterialDetailViewModel,
+    material: MaterialBindings,
 ) {
-    if (destination == KrtDestination.MaterialDetail) {
-        val materialId = backStackEntry.arguments?.getString(MATERIAL_ID_ARG).orEmpty()
-        MaterialDetailRoute(viewModel = remember(materialId) { materialDetail(materialId) })
-        return
+    when (destination) {
+        KrtDestination.MaterialMatrix -> {
+            MaterialMatrixRoute(viewModel = remember { material.matrix() })
+        }
+
+        KrtDestination.MaterialProfit -> {
+            ProfitRoute(viewModel = remember { material.profit() })
+        }
+
+        KrtDestination.MaterialDetail -> {
+            val materialId = backStackEntry.arguments?.getString(MATERIAL_ID_ARG).orEmpty()
+            MaterialDetailRoute(viewModel = remember(materialId) { material.detail(materialId) })
+        }
+
+        else -> {
+            val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
+            RefineryOrderDetailRoute(viewModel = remember(orderId) { refineryOrder(orderId) })
+        }
     }
-    val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
-    RefineryOrderDetailRoute(viewModel = remember(orderId) { refineryOrder(orderId) })
 }
 
 /**
@@ -677,6 +717,7 @@ private fun IdOnlyDestination(
  * @param bankHolder builds a view model for one holder's custody.
  * @param bankStaff answers whether the caller may move custody.
  * @param orderDetail builds a view model for one order.
+ * @param material the Handel area's three pushed view models.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -695,7 +736,7 @@ private fun PushedDestination(
     bankStaff: BankStaffViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
-    materialDetail: (String) -> MaterialDetailViewModel,
+    material: MaterialBindings,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     fleetImport: FleetImportViewModel,
@@ -747,12 +788,16 @@ private fun PushedDestination(
             OrderDetailRoute(viewModel = viewModel)
         }
 
-        KrtDestination.RefineryOrder, KrtDestination.MaterialDetail -> {
-            IdOnlyDestination(
+        KrtDestination.RefineryOrder,
+        KrtDestination.MaterialDetail,
+        KrtDestination.MaterialMatrix,
+        KrtDestination.MaterialProfit,
+        -> {
+            SimplePushedDestination(
                 destination = destination,
                 backStackEntry = backStackEntry,
                 refineryOrder = refineryOrder,
-                materialDetail = materialDetail,
+                material = material,
             )
         }
 

@@ -59,16 +59,23 @@ data class Ship(
 )
 
 /**
- * A hull the member can pick when adding a ship.
+ * A hull — the one the member picks when adding a ship, and the one whose hold the profit
+ * calculation fills.
+ *
+ * One type for both because it is one thing. The Hangar has no use for the capacity and the profit
+ * calculation has none for the maker, so each carries what it needs and leaves the other `null`.
  *
  * @property id what a write sends
  * @property name the hull
  * @property manufacturerName the maker, or `null` — what tells two similar hulls apart
+ * @property scu how much it carries, or `null` where the read did not ask. A full load of nothing
+ *   is not a calculation, which is why the profit screen only offers hulls with a positive hold
  */
 data class ShipTypeOption(
     val id: String,
     val name: String,
     val manufacturerName: String?,
+    val scu: Int? = null,
 )
 
 /**

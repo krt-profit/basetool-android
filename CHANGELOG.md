@@ -4,6 +4,12 @@
 
 ### Added
 
+- **„Handel" bekommt zwei weitere Ansichten im Überlaufmenü.** Die **Preis-Übersicht** zeigt die
+  Matrix Material × Terminal — die Materialspalte bleibt stehen, die Terminals scrollen darunter,
+  der beste Preis je Zeile ist getont, umschaltbar zwischen Verkauf und Einkauf. Die
+  **Profitberechnung** rechnet eine volle Ladung eines gewählten Schiffs je Material durch,
+  optional auf einzelne Systeme eingeschränkt.
+
 - **Neuer Bereich „Handel" unter „Mehr".** Die Material-Übersicht zeigt alle Materialien mit
   Einkaufs- und Verkaufspreis, filterbar nach Name, Kategorie und Preisgrenzen; ein Tipp öffnet
   „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.

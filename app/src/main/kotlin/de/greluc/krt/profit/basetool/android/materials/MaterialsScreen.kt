@@ -26,6 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -45,11 +48,14 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
@@ -74,6 +80,8 @@ const val MATERIALS_SEARCH_TAG: String = "materials-search"
  * @param state what to draw.
  * @param actions what the filters report back.
  * @param onOpen a row was tapped.
+ * @param onOpenMatrix open the Preis-Übersicht.
+ * @param onOpenProfit open the Profitberechnung.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,8 +90,14 @@ fun MaterialsScreen(
     state: MaterialsState,
     actions: MaterialsActions,
     onOpen: (String) -> Unit,
+    onOpenMatrix: () -> Unit,
+    onOpenProfit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Chapter 16 puts the other two trade surfaces in THIS screen's overflow rather than in the
+    // „Mehr" list: all three answer the same question at different resolutions, and three sibling
+    // menu entries would suggest three unrelated areas.
+    MaterialsOverflow(onOpenMatrix = onOpenMatrix, onOpenProfit = onOpenProfit)
     when (state.phase) {
         is MaterialsPhase.Loading -> {
             KrtLoadingIndicator(
@@ -112,6 +126,43 @@ fun MaterialsScreen(
             }
         }
     }
+}
+
+/**
+ * The two sibling trade surfaces, in the top bar's own menu.
+ *
+ * @param onOpenMatrix open the Preis-Übersicht.
+ * @param onOpenProfit open the Profitberechnung.
+ */
+@Composable
+private fun MaterialsOverflow(
+    onOpenMatrix: () -> Unit,
+    onOpenProfit: () -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val matrix = stringResource(R.string.materials_matrix_title)
+    val profit = stringResource(R.string.materials_profit_title)
+    val label = stringResource(R.string.materials_actions)
+    ProvideScreenTopBar(
+        actions = {
+            KrtOverflowMenu(
+                contentDescription = label,
+                expanded = open,
+                onExpandedChange = { open = it },
+                items =
+                    listOf(
+                        KrtMenuItem(label = matrix, iconRes = DesignR.drawable.ic_krt_list) {
+                            open = false
+                            onOpenMatrix()
+                        },
+                        KrtMenuItem(label = profit, iconRes = DesignR.drawable.ic_krt_ship) {
+                            open = false
+                            onOpenProfit()
+                        },
+                    ),
+            )
+        },
+    )
 }
 
 /**
@@ -370,12 +421,16 @@ data class MaterialsActions(
  *
  * @param viewModel drives the screen.
  * @param onOpen a row was tapped.
+ * @param onOpenMatrix open the Preis-Übersicht.
+ * @param onOpenProfit open the Profitberechnung.
  * @param modifier layout modifier.
  */
 @Composable
 fun MaterialsRoute(
     viewModel: MaterialsViewModel,
     onOpen: (String) -> Unit,
+    onOpenMatrix: () -> Unit,
+    onOpenProfit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -392,6 +447,8 @@ fun MaterialsRoute(
                 onRetryNow = viewModel::onRetry,
             ),
         onOpen = onOpen,
+        onOpenMatrix = onOpenMatrix,
+        onOpenProfit = onOpenProfit,
         modifier = modifier,
     )
 }
