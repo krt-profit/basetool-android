@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtDashedBorder
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -269,7 +270,10 @@ fun KrtEmptyState(
         modifier =
             modifier
                 .fillMaxWidth()
-                .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                // Dashed, not solid: an empty state marks a place something goes, and a
+                // solid border reads as a filled surface that happens to be blank
+                // (print edition § 3, "Empty = dashed border").
+                .krtDashedBorder(KrtPalette.Gray3, KrtSpacing.hairline)
                 .padding(vertical = KrtSpacing.xl, horizontal = KrtSpacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -340,7 +344,7 @@ fun KrtTotalTile(
                         text = unit,
                         modifier = Modifier.padding(start = KrtSpacing.xs, bottom = KrtSpacing.xs),
                         style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.Gray2,
+                        color = KrtPalette.TextMuted,
                     )
                 }
             }
@@ -387,7 +391,7 @@ fun KrtFigureTile(
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
             Text(
                 text = value,

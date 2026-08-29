@@ -727,7 +727,7 @@ private fun PreviewLine(
             Text(
                 text = time,
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
     }

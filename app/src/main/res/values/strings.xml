@@ -1370,7 +1370,6 @@
     <string name="mission_unit_rename_save">Einheit speichern</string>
     <string name="mission_crew_roles">Funktion an Bord</string>
     <string name="mission_crew_roles_empty">Keine CREW-Funktionen hinterlegt.</string>
-    <string name="mission_admin_people">Personen</string>
     <string name="mission_timeline_up">Hoch</string>
     <string name="mission_timeline_down">Runter</string>
     <plurals name="mission_member_notice">
@@ -1378,4 +1377,41 @@
         <item quantity="other">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
     </plurals>
     <string name="mission_crew_assign">Person zuweisen</string>
+    <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
+    <string name="mission_admin_people">Personen</string>
+    <string name="mission_admin_state_saving">Speichert…</string>
+    <string name="mission_admin_state_saved">Gespeichert %1$s</string>
+    <string name="mission_admin_state_dirty">Geändert</string>
+    <string name="mission_admin_state_conflict">Konflikt</string>
+    <string name="mission_admin_not_started_chip">Nicht gestartet</string>
+    <string name="mission_admin_not_started">Noch nicht gestartet — Check-in ist für alle gesperrt.</string>
+    <string name="mission_admin_running_since">Läuft seit %1$s</string>
+    <string name="mission_admin_correct_start">Startzeit korrigieren</string>
+    <string name="mission_admin_visibility_internal">Nur intern</string>
+    <string name="mission_admin_visibility_open">Ganze Organisation</string>
+    <string name="mission_admin_internal_hint">Aus: die ganze Organisation sieht den Einsatz.</string>
+    <string name="mission_section_core">Kern</string>
+    <string name="mission_section_schedule">Zeitplan</string>
+    <string name="mission_section_flags">Sichtbarkeit</string>
+    <string name="mission_section_people">Personen</string>
+    <string name="mission_start_confirm_title">Einsatz jetzt starten?</string>
+    <plurals name="mission_start_confirm_body">
+        <item quantity="one">Der tatsächliche Start wird auf jetzt gesetzt. Damit kann sich der eine Angemeldete einchecken — vorher weist der Server jeden Check-in ab.</item>
+        <item quantity="other">Der tatsächliche Start wird auf jetzt gesetzt. Damit können sich alle %1$d Angemeldeten einchecken — vorher weist der Server jeden Check-in ab.</item>
+    </plurals>
+    <string name="mission_start_confirm_reversible">Korrigierbar: die Startzeit lässt sich im Zeitplan nachträglich ändern.</string>
+    <string name="mission_start_confirm_cta">Einsatz starten</string>
+    <string name="mission_conflict_title">%1$s wurde geändert</string>
+    <string name="mission_conflict_body">Jemand hat den Abschnitt %1$s gespeichert, während du getippt hast. Deine Fassung wurde nicht übernommen.</string>
+    <string name="mission_conflict_theirs">Aktueller Stand (Server)</string>
+    <string name="mission_conflict_mine">Deine Fassung</string>
+    <string name="mission_conflict_others_unaffected">Die übrigen Abschnitte sind nicht betroffen.</string>
+    <string name="mission_conflict_reload">Neu laden</string>
+    <string name="mission_conflict_keep_mine">Meine Fassung übernehmen</string>
+    <string name="krt_date_hint">TT.MM.JJJJ</string>
+    <string name="krt_time_hint">HH:MM</string>
+    <string name="krt_empty_value">—</string>
+    <string name="mission_timeline_sort">Sortieren</string>
+    <string name="mission_timeline_sort_hint">Reihenfolge ändern: Pfeile je Zeile.</string>
+    <string name="mission_crew_assign_title">Person zuweisen — %1$s</string>
 </resources>

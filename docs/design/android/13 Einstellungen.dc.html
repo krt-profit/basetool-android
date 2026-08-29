@@ -71,11 +71,11 @@
                   <div style="display:grid;grid-template-columns:1fr 92px 92px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums;background:{{ m.bg }}">
                     <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.topic }}</div>
                     <div style="padding:6px;text-align:center;font:700 13px/1 Lato,sans-serif;color:{{ m.leadColor }}">{{ m.lead }}</div>
-                    <div style="padding:6px;text-align:center;font:300 12px/1 Lato,sans-serif;color:#646464">≥ {{ m.goal }}</div>
+                    <div style="padding:6px;text-align:center;font:300 12px/1 Lato,sans-serif;color:#8A8A8A">≥ {{ m.goal }}</div>
                   </div>
                 </sc-for>
               </div>
-              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:8px">Skala 1–5 · Bewertung unter Ziel = gelb. Read-only für Mitglieder; Bewertungen pflegt die Bewertungsverwaltung (Web).</div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:8px">Skala 1–5 · Bewertung unter Ziel = gelb. Read-only für Mitglieder; Bewertungen pflegt die Bewertungsverwaltung (Web).</div>
             </div>
           </div>
         </div>
@@ -110,7 +110,7 @@
                   <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-users"></use></svg>
                   <div style="flex:1"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Aktive Org-Einheit</div></div>
                   <span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Bereich Profit</span>
-                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px">
                   <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-bank"></use></svg>
@@ -132,12 +132,12 @@
                 </div>
                 <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px;border-bottom:1px solid #1C1C1C" onClick="{{ toggleLock }}">
                   <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-fingerprint"></use></svg>
-                  <div style="flex:1;text-align:left"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">App-Sperre (Biometrie)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#646464">{{ lockSub }}</div></div>
+                  <div style="flex:1;text-align:left"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">App-Sperre (Biometrie)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">{{ lockSub }}</div></div>
                   <span style="width:44px;height:24px;flex:none;border:1px solid {{ lockBorder }};background:{{ lockTrack }};position:relative;transition:all .2s"><span style="position:absolute;top:2px;left:{{ lockKnobX }};width:18px;height:18px;background:{{ lockKnob }};transition:all .2s"></span></span>
                 </button>
                 <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px" onClick="{{ toggleBp }}">
                   <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-blueprint"></use></svg>
-                  <div style="flex:1;text-align:left"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Blueprints mit Org teilen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#646464">Sichtbar in der Verfügbarkeits-Übersicht</div></div>
+                  <div style="flex:1;text-align:left"><div style="font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">Blueprints mit Org teilen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Sichtbar in der Verfügbarkeits-Übersicht</div></div>
                   <span style="width:44px;height:24px;flex:none;border:1px solid {{ bpBorder }};background:{{ bpTrack }};position:relative;transition:all .2s"><span style="position:absolute;top:2px;left:{{ bpKnobX }};width:18px;height:18px;background:{{ bpKnob }};transition:all .2s"></span></span>
                 </button>
               </div>
@@ -149,7 +149,7 @@
                   <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 14px;border-bottom:1px solid #1C1C1C">
                     <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A;flex:none"><use href="{{ l.icon }}"></use></svg>
                     <span style="flex:1;font:300 13.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ l.label }}</span>
-                    <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-external-link"></use></svg>
+                    <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-external-link"></use></svg>
                   </div>
                 </sc-for>
                 <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px" onClick="{{ openWipe }}">
@@ -164,7 +164,7 @@
             </div>
             <button class="btn-quiet-danger btn" style="background:transparent;min-height:50px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-logout"></use></svg>Abmelden</button>
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 4px">
-              <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2 (Build 37) · API v1</div>
+              <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2 (Build 37) · API v1</div>
             </div>
           </div>
           <sc-if value="{{ wipeOpen }}" hint-placeholder-val="{{ false }}">
@@ -246,7 +246,7 @@
                     <div style="display:grid;grid-template-columns:1fr 88px 88px;border-bottom:1px solid #1C1C1C;min-height:42px;align-items:center;font-variant-numeric:tabular-nums;background:{{ m.bg }}">
                       <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.topic }}</div>
                       <div style="padding:6px;text-align:center;font:700 12.5px/1 Lato,sans-serif;color:{{ m.leadColor }}">{{ m.lead }}</div>
-                      <div style="padding:6px;text-align:center;font:300 11.5px/1 Lato,sans-serif;color:#646464">≥ {{ m.goal }}</div>
+                      <div style="padding:6px;text-align:center;font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">≥ {{ m.goal }}</div>
                     </div>
                   </sc-for>
                 </div>

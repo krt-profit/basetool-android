@@ -675,19 +675,28 @@ between the pinned head and the tab row.
 
 It matches the web, which names the same surface `mission.tab.admin=Verwaltung`.
 
-**The tab is absent for a caller who may not manage, not locked.** That is the one deliberate
-exception to `REQ-APP-AUTH-013`'s lock-in-place rule, and the reason is what a lock says:
-„you could, but not now". A member who does not run this Einsatz is not one grant away from
-running it, and eight tabs where seven are inert is a worse screen than seven that all work.
-Per-control locking still applies **inside** the tab for a manager who is offline or mid-write.
+**The tab is LOCKED for a caller who may not manage — drawn, never hidden.**
+
+> **Corrected 2026-08-29.** This requirement first said the opposite: absent rather than locked, as
+> a deliberate exception to `REQ-APP-AUTH-013`. The design handoff's round-7 app audit rejected that
+> (ch. 06 artboard 6, README correction 13a) and it was wrong on its own terms — **this organisation
+> grants roles by hand, and a function nobody sees is never requested.** There is no exception for a
+> surface that happens to be large; the app's own Bank had it right all along.
+
+Concretely: label at 45 % alpha **plus** a lock glyph at full opacity (alpha alone is
+indistinguishable from a loading state); still tappable, never `enabled = false`; a tap raises the
+corner-bracket toast naming the **Missions-Manager** role and the active tab stays where it was.
+Per-control locking still applies **inside** the tab, as a backstop for a `canManage` that changes
+during a sitting.
 
 The gate is `MissionDetail.canManage`, carried from the server's `MissionDto.canEdit` and never
 derived from a role string (see [REQ-APP-MIS-020](#req-app-mis-020--a-manager-acts-on-the-roster-and-the-app-asks-the-server-whether-they-are-one)).
 Drawing decides what is offered; the backend decides what is allowed, and refuses every write
 behind this tab regardless of what was drawn.
 
-**The tab row's indices are into the visible list, not into the enum.** A tab row built from all
-eight entries while only seven are drawn reports the wrong tab for every non-manager.
+**All eight tabs are always drawn**, so there is no index skew to guard against. (The first version
+filtered the list and had to map indices back through it — a hazard that disappeared with the
+hiding.)
 
 **The form's lifecycle belongs to the tab.** Entering it fills the form from the Einsatz as last
 read; leaving it clears the form. This is required, not cosmetic: the form carries the three
@@ -696,9 +705,8 @@ stale set would produce a `409` the member did nothing to cause.
 
 **Acceptance**
 
-- [ ] A caller with `canEdit = true` sees a „Verwaltung" tab; one with `canEdit = false` or absent
-  sees seven tabs and no eighth.
-- [ ] A non-manager tapping „Finanzen" reaches Finanzen — not the tab one place further along.
+- [ ] Every caller sees eight tabs; without `canEdit` the eighth is dimmed and carries a lock.
+- [ ] Tapping the locked tab does **not** open it, and the toast names the Missions-Manager role.
 - [ ] Entering the tab fills the form; leaving it and returning re-reads the section counters.
 - [ ] Each section saves on its own, with its own counter (REQ-APP-MIS-013).
 
@@ -839,3 +847,101 @@ the tab says so in a sentence.
 - [ ] An empty catalogue renders a sentence, not an empty row.
 
 **Enforced by:** `MissionRepositoryTest`, `MissionManagerScreenTest`.
+
+### REQ-APP-MIS-028 — The Verwaltung is four folded sections, each with its own state and its own save
+
+Design ch. 06 artboards 7–12, ratified 2026-08-29. The tab holds **Kern · Zeitplan · Sichtbarkeit ·
+Personen** as panel headers; Kern starts open and the rest closed, several may be open at once (no
+accordion), and the fold state lives only for the sitting.
+
+**Each head carries its section's own state, so the fold hides nothing needed for a decision.** Two
+kinds share the slot: the standing value („Nicht gestartet" / „Läuft seit …", „Nur intern" / „Ganze
+Organisation") and the write state („Speichert…", „Gespeichert HH:MM", „Geändert", „Konflikt"). The
+write state wins while it lasts, because it is the newer fact.
+
+**The save button sits INSIDE its section**, full width, never at the form's foot. A closed section
+has no visible save and needs none.
+
+**One write locks every save** — they share a form and a counter race. That is a **waiting** lock,
+not a permission one, so it carries no lock glyph: the design system distinguishes the two by
+exactly that (ch. 09).
+
+**Acceptance**
+
+- [ ] Kern is open on arrival; the other three are closed and still show their state.
+- [ ] Saving one section disables all four saves and marks only the running one.
+- [ ] A saved section shows „Gespeichert HH:MM" at its head, not a toast.
+- [ ] Editing any field marks its own section „Geändert".
+
+**Enforced by:** `MissionAdminTest`, `MissionManagerScreenTest`.
+
+### REQ-APP-MIS-029 — A timestamp is a date/time pair, and the start is a verb with a confirmation
+
+**No timestamp is ever a free text field.** Each is one `KrtDateTimeField` — date 1.35 fr, time
+1 fr, both centred and tabular — and the wire value is built from the pair. UTC on the wire, the
+device's zone on screen. An unreadable or half-typed pair sends `null`, which for these fields is
+what the server reads as a clear.
+
+**„Tatsächlicher Start" is not a field at all.** It is a state line — „Noch nicht gestartet —
+Check-in ist für alle gesperrt." or „Läuft seit …" — plus one action. Before the start that action is
+the tab's single filled CTA, „Einsatz läuft jetzt"; after it, a ghost „Startzeit korrigieren".
+
+**Starting asks first** (artboard 9). A **standard** modal, not a danger one: the step frees check-in
+for everyone, which is consequential but correctable, because the start time stays editable. The
+body names the consequence **in numbers** — how many signed-up members can then check in — never
+„Bist du sicher?".
+
+**Acceptance**
+
+- [ ] No `KrtTextField` carries an ISO timestamp anywhere in the Verwaltung.
+- [ ] Before the start, the state line says check-in is locked and the CTA offers to start.
+- [ ] The confirmation names the registered count and says the start remains correctable.
+- [ ] After the start, the action becomes a correction and the CTA is gone.
+
+**Enforced by:** `MissionAdminTest`, `MissionDateTimeTest`.
+
+### REQ-APP-MIS-030 — A 409 names the section it belongs to
+
+The Einsatz carries independent section counters, so a refused save must say **which** section
+somebody else changed — and say plainly that the others are untouched. A shared error slot at the
+foot of the form can do neither (ch. 06 artboard 11).
+
+The modal shows both versions, server first, in the same shape as the Auftrag's note conflict
+(ch. 10): „Neu laden" (ghost, discards) against „Meine Fassung übernehmen" (CTA, re-writes against
+the fresh counter). Until it is answered, what was typed stays and that section's save stays locked;
+the other sections stay normally usable.
+
+**Acceptance**
+
+- [ ] A 409 on Kern is titled „Kern wurde geändert" and marks only Kern's head „Konflikt".
+- [ ] The modal states that the other sections are unaffected.
+- [ ] „Meine Fassung übernehmen" re-writes; „Neu laden" re-fills from the server.
+
+**Enforced by:** `MissionAdminTest`.
+
+### REQ-APP-MIS-031 — Row actions are icon buttons, and a boolean is a checkbox
+
+**A repeated row action with universal meaning is a 44 dp icon button** (`.btn-icon`), always with a
+content description **and** a tooltip. The Ablauf and Ziele rows carry three — tick/reset · edit ·
+remove — not three rows of German-labelled buttons. Reordering is a drag handle with a **click
+fallback**; the arrows appear only in that mode, never permanently on every row.
+
+**Creating and editing a row is a sheet**, not a permanent form under the list: an open editor
+competes with a list somebody is sorting for the same surface.
+
+**A yes/no is a square checkbox.** The round radio is the design system's only circular element and
+stays reserved for one-of-N — the payout preference. This governs „Nur intern" and „HVU"; the label
+names **both** sides, because a flag whose off-state is unnamed gets guessed at.
+
+**„+ Person zuweisen" is one dashed `.assoc-add` surface** opening a roster picker — never a chip
+field over the whole roster, which grows with it and is four rows high at fourteen names on a
+412 dp phone.
+
+**Acceptance**
+
+- [ ] No Ablauf or Ziele row carries a full-width labelled button.
+- [ ] Every icon-only action has a content description and a tooltip.
+- [ ] „Nur intern" and „HVU" are checkboxes; the payout preference stays radios.
+- [ ] The crew picker lists only roster members not already aboard that Einheit.
+
+**Enforced by:** `MissionManagerScreenTest`.

@@ -370,7 +370,7 @@ private fun SettingsColumn(
             text =
                 stringResource(R.string.settings_version, versionName, versionCode, API_VERSION),
             style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.md),
         )

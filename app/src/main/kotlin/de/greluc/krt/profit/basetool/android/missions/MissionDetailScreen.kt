@@ -199,6 +199,7 @@ fun MissionDetailScreen(
                         selected = state.tab,
                         detail = state.detail,
                         canManage = state.canManage,
+                        denials = roster.denials,
                         onTabSelected = onTabSelected,
                     )
                     PullToRefreshBox(
@@ -274,8 +275,68 @@ fun MissionDetailScreen(
                 }
             }
         }
-        MemberPickerSheet(members = members)
+        MissionDetailOverlays(
+            state = state,
+            admin = admin,
+            structure = structure,
+            members = members,
+            timeline = timeline,
+        )
         DenialToast(state = roster.denials)
+    }
+}
+
+/**
+ * Everything the Einsatz detail floats over its content.
+ *
+ * All six are owned by the **screen** rather than by a tab, and for one reason: a sheet or a modal
+ * owned by a `LazyColumn` item dies the moment that item recycles, which on a long Ablauf happens
+ * while the member is still looking at it.
+ *
+ * @param state what the screen knows.
+ * @param admin what the Verwaltung tab can do.
+ * @param structure what a manager may do to Einheiten and crew.
+ * @param members the one picker behind the three member-shaped writes.
+ * @param timeline what a manager may do to the Ablauf and the Ziele.
+ */
+@Composable
+private fun MissionDetailOverlays(
+    state: MissionDetailState,
+    admin: MissionAdminActions,
+    structure: MissionStructureActions,
+    members: MissionMemberActions,
+    timeline: MissionTimelineActions,
+) {
+    MemberPickerSheet(members = members)
+    state.structure.crewPickerUnitId?.let { unitId ->
+        state.detail?.units?.firstOrNull { it.id == unitId }?.let { unit ->
+            CrewPickerSheet(
+                unit = unit,
+                roster = state.detail.participants,
+                structure = structure,
+            )
+        }
+    }
+    when (state.timeline.composing) {
+        true -> StepEditorSheet(timeline = timeline)
+        false -> ObjectiveEditorSheet(timeline = timeline)
+        null -> Unit
+    }
+    state.adminForm?.let { form ->
+        if (form.startConfirm) {
+            MissionStartConfirm(
+                registered = state.detail?.registeredParticipants ?: 0,
+                onConfirm = admin.onStart,
+                onDismiss = admin.onDismissStart,
+            )
+        }
+        form.conflict?.let { conflict ->
+            MissionSectionConflictModal(
+                conflict = conflict,
+                onKeepMine = admin.onKeepMine,
+                onReload = admin.onReload,
+            )
+        }
     }
 }
 
@@ -559,39 +620,64 @@ private fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
- * The tab row.
+ * The tab row — all eight, always.
  *
- * Horizontally scrollable because seven German tab labels do not fit a phone's width, and the
- * design's alternative — truncating them — would make "Teilnehmer" and "Frequenzen" indistinguishable.
+ * Horizontally scrollable because eight German tab labels do not fit a phone's width, and the
+ * design's alternative — truncating them — would make "Teilnehmer" and "Frequenzen"
+ * indistinguishable.
  *
- * **Verwaltung is drawn only for a caller who may manage.** The gate is the server's own
- * `canEdit`, not a role read on the device, and the tab is absent rather than locked: a lock says
- * "you could, but not now", and for a member who simply does not run this Einsatz that is not the
- * truth. Every write behind it is refused by the backend regardless — this decides what is drawn,
- * never what is allowed.
+ * > **Verwaltung is LOCKED for a non-manager, never hidden** (design ch. 06 artboard 6). An
+ * > earlier build hid it, on the argument that a member who does not run this Einsatz is not one
+ * > grant away from running it. The designer rejected that on 2026-08-29 and the rule stands as
+ * > `REQ-APP-AUTH-013` always stated it: this organisation grants roles by hand, and **a function
+ * > nobody sees is never requested**. The app's own Bank had it right all along.
+ * >
+ * > A tap on the locked tab does **not** open it. It raises the corner-bracket toast naming the
+ * > Missions-Manager role, and the active tab stays where it was — which is why the gate lives
+ * > here rather than only inside the tab.
  *
  * @param selected which tab is showing.
  * @param detail the Einsatz, for the per-tab counts.
- * @param canManage whether the Verwaltung tab is drawn at all.
- * @param onTabSelected a tab was picked.
+ * @param canManage whether the Verwaltung tab may be opened.
+ * @param denials where the refused tap is announced.
+ * @param onTabSelected a tab was picked — called only for a tab the caller may open.
  */
 @Composable
 private fun MissionTabRow(
     selected: MissionTab,
     detail: MissionDetail?,
     canManage: Boolean,
+    denials: DenialState,
     onTabSelected: (MissionTab) -> Unit,
 ) {
-    // Indices are into the VISIBLE list, not into the enum. Handing `KrtPageTabs` an enum ordinal
-    // while it draws a shorter list selects the wrong tab for everyone who is not a manager.
-    val tabs = MissionTab.entries.filter { canManage || it != MissionTab.ADMIN }
+    val gate =
+        Gate(
+            allowed = canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
+        )
+    val tabs = MissionTab.entries
     KrtPageTabs(
         tabs =
             tabs.map { tab ->
-                KrtPageTab(label = stringResource(tab.labelRes()), count = detail?.let(tab::countIn))
+                val locked = tab == MissionTab.ADMIN && !canManage
+                KrtPageTab(
+                    label = stringResource(tab.labelRes()),
+                    count = detail?.let(tab::countIn),
+                    // 45 % alpha PLUS a lock glyph: alpha alone is indistinguishable from a
+                    // loading state, which is why the design system pairs the two.
+                    locked = locked,
+                )
             },
         selectedIndex = tabs.indexOf(selected).coerceAtLeast(0),
-        onSelect = { onTabSelected(tabs[it]) },
+        onSelect = { index ->
+            val tab = tabs[index]
+            if (tab == MissionTab.ADMIN && !gate.allowed) {
+                denials.raise(gate)
+            } else {
+                onTabSelected(tab)
+            }
+        },
         modifier = Modifier.testTag(MISSION_DETAIL_TABS_TAG),
     )
 }
@@ -810,7 +896,7 @@ private fun ParticipantFunctionSelect(
     Text(
         text = stringResource(R.string.mission_detail_function_label),
         style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.Gray2,
+        color = KrtPalette.TextMuted,
     )
     // The same control as the sign-up sheet's, for the same reason it is a FlowRow there: five
     // Funktionen do not fit one phone line, and a horizontal scroller would hide the ones past the
@@ -913,9 +999,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
     detail: MissionDetail,
     timeline: MissionTimelineActions,
 ) {
-    item { StepComposer(timeline) }
     if (detail.steps.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_steps) }
+        item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
         return
     }
     items(detail.steps, key = { it.id }) { step ->
@@ -945,6 +1031,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
             )
         }
     }
+    item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
 }
 
 /**
@@ -956,9 +1043,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
     detail: MissionDetail,
     timeline: MissionTimelineActions,
 ) {
-    item { ObjectiveComposer(timeline) }
     if (detail.objectives.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_objectives) }
+        item {
+            TimelineListActions(R.string.mission_objective_add, MISSION_OBJECTIVE_ADD_TAG, timeline)
+        }
         return
     }
     items(detail.objectives, key = { it.id }) { objective ->
@@ -991,6 +1080,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
             )
         }
     }
+    item { TimelineListActions(R.string.mission_objective_add, MISSION_OBJECTIVE_ADD_TAG, timeline) }
 }
 
 /**
@@ -1495,6 +1585,8 @@ fun MissionDetailRoute(
                 },
                 onSetCrewRoles = viewModel.structure::setCrewRoles,
                 onAddCrew = viewModel.structure::addCrew,
+                onOpenCrewPicker = { viewModel.structure.openCrewPicker(it.id) },
+                onDismissCrewPicker = viewModel.structure::dismissCrewPicker,
                 crewJobTypes = state.crewJobTypes,
             ),
         timeline =
@@ -1502,8 +1594,10 @@ fun MissionDetailRoute(
                 canManage = state.canManage,
                 enabled = state.writable && !state.timeline.busy,
                 draft = state.timeline,
+                sorting = state.timeline.sorting,
                 denials = denials,
                 onChange = viewModel.timeline::change,
+                onCompose = viewModel.timeline::compose,
                 onSaveStep = viewModel.timeline::saveStep,
                 onEditStep = viewModel.timeline::editStep,
                 onToggleStep = viewModel.timeline::toggleStep,
@@ -1513,6 +1607,7 @@ fun MissionDetailRoute(
                 onEditObjective = viewModel.timeline::editObjective,
                 onRemoveObjective = viewModel.timeline::removeObjective,
                 onMoveObjective = viewModel.timeline::moveObjective,
+                onToggleSorting = viewModel.timeline::toggleSorting,
                 onCancel = viewModel.timeline::cancel,
             ),
         members =
@@ -1529,8 +1624,15 @@ fun MissionDetailRoute(
         admin =
             MissionAdminActions(
                 onChange = viewModel.admin::change,
+                onToggle = viewModel.admin::toggle,
                 onSave = viewModel.admin::save,
-                onStartNow = viewModel.admin::startNow,
+                onAskStart = viewModel.admin::askStart,
+                onStart = viewModel.admin::startNow,
+                onDismissStart = viewModel.admin::dismissStart,
+                onCorrectStart = viewModel.admin::correctStart,
+                onCancelCorrectStart = viewModel.admin::cancelCorrectStart,
+                onKeepMine = viewModel.admin::keepMine,
+                onReload = viewModel.admin::reloadAfterConflict,
             ),
         modifier = modifier,
     )
@@ -1635,7 +1737,7 @@ private fun MissionJoinSheet(
                 Text(
                     text = stringResource(R.string.mission_join_function_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.Gray2,
+                    color = KrtPalette.TextMuted,
                 )
             }
             sheet.error?.let { SignUpError(error = it) }
@@ -1655,7 +1757,7 @@ private fun MissionJoinSheet(
             Text(
                 text = stringResource(R.string.mission_join_footnote),
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
     }

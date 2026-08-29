@@ -254,7 +254,7 @@ fun KrtSettingRow(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.Gray2,
+                    color = KrtPalette.TextMuted,
                 )
             }
         }
@@ -310,7 +310,7 @@ fun KrtEndOfList(
         Text(
             text = text.krtUppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
             textAlign = TextAlign.Center,
         )
         KrtHairlineRule(modifier = Modifier.weight(1f))

@@ -187,7 +187,7 @@ fun KrtTableCell(
                 text = unit,
                 modifier = Modifier.padding(start = KrtSpacing.xs),
                 style = MaterialTheme.typography.labelMedium,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
     }
@@ -234,7 +234,7 @@ fun KrtRecordCard(
                         text = unit,
                         modifier = Modifier.padding(start = KrtSpacing.xs),
                         style = MaterialTheme.typography.labelMedium,
-                        color = KrtPalette.Gray2,
+                        color = KrtPalette.TextMuted,
                     )
                 }
             }

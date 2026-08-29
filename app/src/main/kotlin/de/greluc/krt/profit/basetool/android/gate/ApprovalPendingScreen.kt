@@ -189,7 +189,7 @@ fun ApprovalPendingScreen(
         Text(
             text = stringResource(R.string.gate_poll_hint),
             style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
             textAlign = TextAlign.Center,
             modifier =
                 Modifier

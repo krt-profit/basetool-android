@@ -3,7 +3,7 @@
 ## Overview
 Complete UI specification for the native Android companion app of the **Profit Basetool**
 (squadron-management tool of DAS KARTELL / Bereich Profit, Star Citizen). Target stack:
-**Kotlin + Jetpack Compose, Material 3, minSdk 30 / targetSdk 37**, phones portrait,
+**Kotlin + Jetpack Compose, Material 3, minSdk 31 / targetSdk 37**, phones portrait,
 tablets landscape (list-detail). Dark-ONLY — there is no light theme; Material You dynamic
 color is deliberately disabled.
 
@@ -16,6 +16,35 @@ Open `00 Index.dc.html` in a browser (keep the folder structure intact — the p
 `_ds/…` CSS, `assets/…` and `support.js` relatively). `Spec Print Edition.html` is the
 compact paper digest of everything.
 
+## Compose implementation package
+
+`artifacts/compose/` is the design system as Kotlin: `KrtTokens.kt` (palette incl. the text
+tints, spacing, sizes, RectangleShape everywhere, Lato typography, the Material 3
+`darkColorScheme` mapping), `KrtGlow.kt`, `KrtComponents.kt`, `KrtFieldsAndOverlays.kt`,
+`KrtPatterns.kt` and its own README with the ten rules, the permission-gate recipe, a
+web-class → composable table and the two design-system defects not to mirror. Start there, not
+from the chapters: the chapters say what a screen shows, that package says what it is built from.
+
+**Glow is capped (29.08.2026).** One scale, three sizes, and nothing may exceed radius 12 dp /
+alpha 0.10: focus 6 dp / .10, emphasis 12 dp / .07, overlay 12 dp / .10. Every glow in all 18
+chapters was brought down to it (69 declarations), `KrtGlow.krtGlow` refuses anything larger, and
+elevation stays 0.dp on every container — depth is hairlines and corner brackets, never shadow.
+**Design-system finding (report upstream, corrected in the mirror):** the loud blooms did not live
+in the chapters at all — they are stylesheet tokens. `colors_and_type.css` defined
+`--glow-primary` at 5px/.30, `--glow-primary-lg` and `--glow-danger-lg` at 20px/.20; the
+component sheet added literals at 10px/.30 (`.scu-hint__bubble`), a 55 % presence keyframe and
+0.45–0.5 alpha dropdown shadows. The mirror now carries the capped scale plus a new
+`--glow-primary-emphasis` (12px/.07) for the CTA hover, with the caps written into the token
+block as a comment. The web repo should take the same values.
+   Two things the first pass missed, both worth knowing when auditing CSS: the bloom on
+   `.scu-hint__bubble` was authored **colour-first** (`rgba(...) 0 0 10px`, later in percentage
+   syntax) so a blur-first search never saw it — it now uses `var(--glow-primary-lg)`; and the
+   `--shadow-dropdown` / `--shadow-drawer` TOKENS were left loud while their literal equivalents
+   were softened, so the same popover archetype had two strengths. **Black separation shadows are
+   now one value: alpha 0.30, blur ≤ 12 px**, and they exist only to lift a popover or drawer off
+   what is behind it — never to suggest elevation. On Android none of them are ported: Compose
+   popovers sit on hairline borders with no shadow at all.
+
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the
@@ -24,7 +53,8 @@ manufacturer lettermarks (see Assets).
 ## Corrections carried in this bundle
 Regenerations of this bundle have repeatedly dropped the items below. They are factual
 corrections, not preferences — preserve them verbatim in every re-export.
-1. **minSdk 30, never 29** (ADR-0006, owner-approved, implemented): on API 29 the only
+1. **minSdk 31, never below 30** (floor raised to 31 by owner instruction 27.08.2026; ADR-0006
+   had already raised it to 30 and deleted the API-29 path): on API 29 the only
    auth-bound Keystore key is time-bound — no CryptoObject accepts it and Cipher.init throws
    until an authentication already exists, so the app lock can neither be armed nor opened.
    The API-29 path was deleted; a spec saying 29 invites reinstating a path that cannot work.
@@ -75,6 +105,96 @@ corrections, not preferences — preserve them verbatim in every re-export.
    its third ® — never harmonise (tests pin both byte-exact plus the spacing-difference
    assertion). Never folded behind a tap; both notices 14 sp; the login PAGE scrolls,
    Einstellungen shows the full paragraph.
+13. **Round-7 app audit — Einsätze (ch. 06, artboards 6–14, 29.08.2026).** Checked against
+   basetool-android@main. Six deviations to fix in the app, each with its repo location in the
+   findings card of ch. 06:
+   a) `MissionDetailScreen.kt:587` hides the Verwaltung tab (`filter { canManage || it != ADMIN }`)
+      — the binding rule is locked-but-tappable, never hidden; the app's own Bank does it right.
+      A tap on the locked tab does NOT open it, it raises the role toast (artboard 6).
+   b) The four schedule timestamps are free `KrtTextField`s — must be Datum+Zeit pairs, and
+      "tatsächlicher Start" is a state line plus an action, not a text field (artboard 8).
+   c) `KrtRadioRow` used for the booleans "Nur intern" and "HVU" — booleans are square
+      checkboxes; the round radio stays reserved for one-of-N (artboard 10).
+   d) `CrewAdd` offers the whole roster as `KrtFilterChip`s — must be one `.assoc-add` surface
+      opening a roster picker (artboard 14).
+   e) `MissionAdminUi.Hint` uses `KrtPalette.Gray2` (#646464) as text — fails AA; use
+      `TextMuted` (#8A8A8A) as the same helper in `MissionStructureUi` already does.
+   f) `StepRowActions` stacks up to five full-width buttons per row — three 44 dp icon buttons
+      (aria-label + title) plus drag-handle reordering with a click fallback (artboard 13).
+   Also newly drawn because the code says it is unratified: the Verwaltung tab as folded
+   panel-header sections (7), the start confirmation (9), per-section save/saved/conflict states
+   (10, 11) and the Personen section with the shared member picker (12).
+   Accepted FROM the app into the spec: tab 1 is „Briefing", German Zielart labels, payout
+   preference above the action bar.
+14. **Round-8 web-parity coverage (29.08.2026).** Every open ❌ of the Web Parity Programme that is
+   in scope now has a drawing. New chapters: **16 Materialien & Referenz** (the six web reference
+   pages folded into one list + a three-tab detail + the profit-calculation sheet; read-only) and
+   **17 Börse & Mein Inventar** (item offer/request behind ONE Material-|-Item switch, editing an
+   existing row, the selection-mode bulk actions, org-wide blueprint availability, Officer+).
+   Extended chapters: **10** artboards 10–16 (order edit full + requester-limited, item lines with
+   the two-level sub-assembly tree, claims, HANDOVER and Herstellung — the one gap that stopped an
+   order being finished from the app —, unlink); **06** artboards 15–17 (Operation create, edit,
+   revoke a paid-out); **11** artboards 6–7 (refinery order edit, delete); **09** artboards 20–21
+   (bulk check-out, game-item stock page); **12** artboards 9–10 (direct booking — the delta is
+   CONFIRMED and drawn, Verwaltung-only — and the KRT-Freigaben approval-tier tab).
+   Decisions that close the programme's open questions: the extractor import stays out (item 10);
+   the direct booking forms stay IN but only in the Verwaltung scope; the reference pages become
+   two screens, not five nav entries; bulk actions always run through the ch. 02 §4 selection mode
+   rather than a menu item that deletes an unseen list. Still deliberately web-only: deleting an
+   Einsatz/Auftrag/Operation (admin), Beförderung, the admin area, and moving stock between Lager
+   and private inventory (the read side does not exist — see the programme's own note).
+   Not drawn because unmapped: `profile.html` — enumerate what it offers beyond the KONTO rows
+   first.
+15. **Round-8 grounding pass (29.08.2026) — three specs were wrong and are corrected.** The first
+   draft of chapters 16/17 and the bank's fifth tab was derived from the parity programme's
+   one-line summaries; re-derived from `frontend/.../messages_de.properties` (correction 11 applies
+   to NEW chapters too):
+   a) The profit calculation is a **ship/route** table, not a per-material calculator:
+      `profit.filter.ship` „Schiff wählen", `profit.filter.systems` „Systeme einschränken",
+      `profit.col.margin` „Marge (%)", mandatory notes „Berücksichtigt nur Auto-Load Terminals."
+      and „Hull C Sonderregel (Loading Dock) aktiv.", states „Berechnung läuft…" /
+      „Fehler beim Abrufen der Profitberechnung." (ch. 16 artboard 4).
+   b) **Material-/Itemsammelübersicht belong to the ORDER, not to the material reference**
+      (`material.collection.back` = „Zurück zum Auftrag"): columns Besitzer · Standort ·
+      Material/Item · Qualität · Menge („von {0} im Bestand") · Geliefert, with three INLINE
+      editable fields and their verbatim toasts. Drawn in ch. 10 artboard 16, removed from ch. 16.
+   c) The bank's fifth tab is **Freigabe-Limits**, not approval tiers: per tier (incl.
+      „Alle Mitglieder der Org-Einheit") and per user an amount up to which no extra approval is
+      needed; actions „Setzen" / „Entfernen"; both hint texts verbatim; the request side carries
+      „Freigabe erteilen", „Über Limit", „Freigegeben" and the confirm checkbox
+      „Freigabe durch Kontoverantwortlichen erfolgt" (ch. 12 artboard 10).
+   Also corrected: material types are „Rohmaterial" / „Veredelt" (+ „Unsortiert"), price columns
+   „Einkaufspreis" / „Verkaufspreis", `materials-overview` is a **matrix** („Lade Matrix…"), and
+   `blueprintOverview` has two columns — „Blueprint" and „Verfügbar bei" — with per-row owner
+   loading states and „kein Einheitsmitglied", not a craftability chip.
+   **Known copy gap:** the exchange's ITEM routes (`/item-offers`, `/item-requests`) have no
+   `messages_de` keys at all. Ch. 17 artboards 1–3 mark „Zustand" and „Bis wann" as PROPOSALS
+   („unbelegt") to be reconciled with the web — or created there — before implementation.
+16. **Contrast sweep (29.08.2026) — correction 2 enforced across all 18 chapters.** 243 text fills
+   of `#646464` were swapped to `#8A8A8A` (`--color-gray-2-text` / `KrtPalette.TextMuted`):
+   search placeholders, „—" missing-value cells, dimmed units, chip labels and field caps all read
+   at 2.9–3.6:1 against their surface and failed the AA floor the token exists for. `#646464`
+   remains only where it belongs — hairlines, scrollbar thumbs, disabled fills, decorative glyphs
+   (`border-color` / `background-color` declarations were left untouched). When implementing:
+   `KrtPalette.Gray2` is never a text colour.
+   **Design-system finding (report upstream):** `krt-components.css` gives EVERY `.chip--<tone>`
+   the canonical FILL value as its `color` — `muted` #646464 (3.55:1), `info` #355DDC (2.92:1),
+   `success` #239E33 (4.20:1), `danger` #A3000A — while the text tints `--color-gray-2-text`
+   #8A8A8A, `--color-info-text` #6C93EF, `--color-success-text` #2EBC3D and `--color-danger-text`
+   #F2564B sit defined and unused. That is the case correction 2 and the system's own rule
+   („Farbe als TEXT nimmt die Text-Tints") both forbid. Every toned chip in this bundle therefore
+   pins its text tint inline — muted #8A8A8A, success #2EBC3D, info #6C93EF, danger #F2564B (71 occurrences across
+   12 chapters). The Compose mirror must use `KrtPalette.TextMuted` for `KrtChip`'s muted
+   label, not `Gray2`; the Compose mirror must likewise use `SuccessText` / `InfoText` /
+   `DangerText` for `KrtChip`'s toned labels, never the fill colours. The web side should change
+   the `color` token in all four `.chip--<tone>` rules (fills and borders keep the canonical values).
+17. **Provenance discipline for new copy.** Chapters may only assert a `messages_de` key they were
+   read against; anything else is marked „unbelegt" inline (yellow) and in the artboard's card.
+   Currently marked: ch. 17 „Zustand" / „Bis wann" (no keys for the item routes at all), ch. 16
+   „Gewinn" (only `profit.col.material` and `profit.col.margin` are backed) and the derived screen
+   title „Profitberechnung". Titles that ARE backed now use the web's own navigation strings —
+   `nav.materials` „Handel", `nav.materials.list` „Material-Übersicht",
+   `nav.materials.overview` „Preis-Übersicht" (the chapter previously invented „Preismatrix").
 
 ## Binding sources & precedence
 1. **DAS KARTELL design system** (`krt-profit/design-system`, mirrored in `_ds/…` here) —
