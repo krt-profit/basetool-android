@@ -38,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialCatalogRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
@@ -231,6 +232,15 @@ class AuthContainer(
      */
     val orderWork: JobOrderWorkRepository by lazy {
         JobOrderWorkRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The trade reference — the material catalogue and what the universe pays for it.
+     *
+     * Read-only: prices come from the UEX sync, and nothing in the app writes one.
+     */
+    val materialCatalog: MaterialCatalogRepository by lazy {
+        MaterialCatalogRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

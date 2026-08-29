@@ -1442,4 +1442,39 @@
     <string name="order_production_cta">Book production</string>
     <string name="order_production_alloc_error">The plan does not cover the material demand exactly.</string>
     <string name="order_production_not_allowed">You need the Logistician role for that.</string>
+    <!-- Trade: material list and prices (design ch. 16) -->
+    <string name="nav_materials">Trade</string>
+    <string name="materials_title">Material list</string>
+    <string name="materials_search_placeholder">Search materials …</string>
+    <string name="materials_min_buy">Min. buy price</string>
+    <string name="materials_max_sell">Max. sell price</string>
+    <string name="materials_category_all">All</string>
+    <string name="materials_reset_filters">Reset filters</string>
+    <string name="materials_illegal">Illegal</string>
+    <string name="materials_price_sell">+%1$s</string>
+    <string name="materials_price_buy">−%1$s</string>
+    <string name="materials_empty_title">No materials found.</string>
+    <string name="materials_empty_message">Reset the filters or search for something else.</string>
+    <string name="materials_error_title">Prices unavailable</string>
+    <string name="materials_error_message">The material list could not be loaded.</string>
+    <string name="materials_type_raw">Rohmaterial</string>
+    <string name="materials_type_refined">Veredelt</string>
+    <string name="materials_unit_scu">SCU</string>
+    <string name="materials_unit_piece">pieces</string>
+    <string name="materials_detail_title">Prices and terminals</string>
+    <string name="materials_detail_prices_title">Prices and terminals</string>
+    <string name="materials_detail_filter_placeholder">Search terminals …</string>
+    <string name="materials_detail_th_terminal">Terminal</string>
+    <string name="materials_detail_th_buy">Buy price</string>
+    <string name="materials_detail_th_sell">Sell price</string>
+    <string name="materials_detail_th_buy_short">Buy</string>
+    <string name="materials_detail_th_sell_short">Sell</string>
+    <string name="materials_detail_no_prices">No price data available.</string>
+    <string name="materials_detail_no_terminals">No terminals found.</string>
+    <string name="materials_detail_missing_title">Material not found</string>
+    <string name="materials_detail_missing_message">No data exists for this material.</string>
+    <plurals name="materials_count">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materials</item>
+    </plurals>
 </resources>

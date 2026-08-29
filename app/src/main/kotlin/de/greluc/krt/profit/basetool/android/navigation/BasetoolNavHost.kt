@@ -52,6 +52,10 @@ import de.greluc.krt.profit.basetool.android.inventory.BookingMode
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryRoute
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailRoute
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialsRoute
+import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
@@ -152,6 +156,8 @@ fun BasetoolNavHost(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     personalInventory: PersonalInventoryViewModel,
@@ -211,6 +217,8 @@ fun BasetoolNavHost(
                             exchange = exchange,
                             refinery = refinery,
                             refineryOrder = refineryOrder,
+                            materials = materials,
+                            materialDetail = materialDetail,
                             personalInventory = personalInventory,
                             personalBlueprints = personalBlueprints,
                             booking = booking,
@@ -229,6 +237,7 @@ fun BasetoolNavHost(
                             bankStaff = bankStaff,
                             orderDetail = orderDetail,
                             refineryOrder = refineryOrder,
+                            materialDetail = materialDetail,
                             refineryCreate = refineryCreate,
                             orderCreate = orderCreate,
                             fleetImport = fleetImport,
@@ -293,6 +302,8 @@ private fun listDestination(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -300,6 +311,12 @@ private fun listDestination(
     orgUnitName: String?,
 ): Boolean {
     if (
+        materialsDestination(
+            destination = destination,
+            navController = navController,
+            materials = materials,
+            materialDetail = materialDetail,
+        ) ||
         listDetailDestination(
             destination = destination,
             navController = navController,
@@ -406,6 +423,51 @@ private fun listDestination(
         }
     }
     return handled
+}
+
+/**
+ * „Handel" — the material list beside one material's prices.
+ *
+ * Its own function rather than another branch of [listDetailDestination]: that switch is already at
+ * the complexity the project's static analysis allows, and a screen is a poor reason to raise a
+ * limit that exists to keep this file readable.
+ *
+ * @param destination the route being drawn.
+ * @param navController for the phone's push.
+ * @param materials the catalogue list.
+ * @param materialDetail builds a view model for one material.
+ * @return `true` when this function drew the destination.
+ */
+@Composable
+private fun materialsDestination(
+    destination: KrtDestination,
+    navController: NavHostController,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
+): Boolean {
+    if (destination != KrtDestination.Materials) {
+        return false
+    }
+    // Design ch. 16: „Tablet 1280×800 — Liste (480 dp) + Detail". The same split as the Einsätze
+    // and the Aufträge: beside the list on a wide window, pushed on a phone.
+    val wide = isWideWindow()
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    KrtListDetail(
+        detail =
+            selected?.let { id ->
+                {
+                    MaterialDetailRoute(viewModel = remember(id) { materialDetail(id) })
+                }
+            },
+    ) {
+        MaterialsRoute(
+            viewModel = materials,
+            onOpen = {
+                if (wide) selected = it else navController.navigate(materialDetailRoute(it))
+            },
+        )
+    }
+    return true
 }
 
 /**
@@ -571,6 +633,34 @@ private fun listDetailDestination(
 }
 
 /**
+ * The two pushed screens that need nothing but an id from the route.
+ *
+ * Grouped rather than given a branch each: `PushedDestination`'s switch is at the complexity the
+ * project's static analysis allows, and these two are the same shape — read one argument, build one
+ * view model, draw one route.
+ *
+ * @param destination which of the two.
+ * @param backStackEntry carries the id.
+ * @param refineryOrder builds a view model for one Raffinerie order.
+ * @param materialDetail builds a view model for one material.
+ */
+@Composable
+private fun IdOnlyDestination(
+    destination: KrtDestination,
+    backStackEntry: NavBackStackEntry,
+    refineryOrder: (String) -> RefineryDetailViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
+) {
+    if (destination == KrtDestination.MaterialDetail) {
+        val materialId = backStackEntry.arguments?.getString(MATERIAL_ID_ARG).orEmpty()
+        MaterialDetailRoute(viewModel = remember(materialId) { materialDetail(materialId) })
+        return
+    }
+    val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
+    RefineryOrderDetailRoute(viewModel = remember(orderId) { refineryOrder(orderId) })
+}
+
+/**
  * Renders a destination that is **pushed** from another screen, plus the two settings pages.
  *
  * Each detail view model is keyed on its id and scoped to this back-stack entry, so opening a second
@@ -605,6 +695,7 @@ private fun PushedDestination(
     bankStaff: BankStaffViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     fleetImport: FleetImportViewModel,
@@ -656,10 +747,13 @@ private fun PushedDestination(
             OrderDetailRoute(viewModel = viewModel)
         }
 
-        KrtDestination.RefineryOrder -> {
-            val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
-            val viewModel = remember(orderId) { refineryOrder(orderId) }
-            RefineryOrderDetailRoute(viewModel = viewModel)
+        KrtDestination.RefineryOrder, KrtDestination.MaterialDetail -> {
+            IdOnlyDestination(
+                destination = destination,
+                backStackEntry = backStackEntry,
+                refineryOrder = refineryOrder,
+                materialDetail = materialDetail,
+            )
         }
 
         KrtDestination.More -> {

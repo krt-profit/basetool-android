@@ -66,6 +66,8 @@ import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionSeams
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
@@ -194,6 +196,9 @@ class MainActivity : AppCompatActivity() {
 
     /** The member's own Raffinerie orders; activity-scoped like every other list. */
     private val refineryViewModel: RefineryViewModel by viewModels { authViewModels(container) }
+
+    /** „Handel" — the material catalogue with its UEX prices. */
+    private val materialsViewModel: MaterialsViewModel by viewModels { authViewModels(container) }
 
     /** The Materialbörse. */
     private val exchangeViewModel: MaterialBoardViewModel by viewModels {
@@ -400,6 +405,14 @@ class MainActivity : AppCompatActivity() {
                                     inventory = inventoryViewModel,
                                     exchange = exchangeViewModel,
                                     refinery = refineryViewModel,
+                                    materials = materialsViewModel,
+                                    materialDetail = {
+                                        MaterialDetailViewModel(
+                                            container.materialCatalog,
+                                            it,
+                                            container.connectivity,
+                                        )
+                                    },
                                     refineryCreate = {
                                         RefineryCreateViewModel(container.refinery)
                                     },
@@ -687,6 +700,7 @@ class MainActivity : AppCompatActivity() {
                 bankViewModels(container)
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
+                initializer { MaterialsViewModel(container.materialCatalog, container.connectivity) }
                 initializer {
                     MaterialBoardViewModel(
                         container.materialBoard,

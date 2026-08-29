@@ -79,6 +79,15 @@ enum class KrtDestination(
     /** Bank — org-unit accounts and booking requests. */
     Bank("bank", R.string.nav_bank, DesignR.drawable.ic_krt_bank),
 
+    /**
+     * Handel — the material catalogue and what the universe pays for it.
+     *
+     * One entry, not three: design chapter 16 puts the Preis-Übersicht and the Profitberechnung in
+     * this screen's own overflow rather than in the „Mehr" list, because all three answer the same
+     * question at different resolutions.
+     */
+    Materials("materials", R.string.nav_materials, DesignR.drawable.ic_krt_list),
+
     /** Benachrichtigungen — the inbox behind the bell. */
     Notifications("notifications", R.string.nav_notifications, DesignR.drawable.ic_krt_bell),
 
@@ -120,6 +129,18 @@ enum class KrtDestination(
         "operation/{operationId}",
         R.string.operation_detail_title,
         DesignR.drawable.ic_krt_clipboard_check,
+    ),
+
+    /**
+     * One material's prices across every terminal, pushed from the Handel list.
+     *
+     * Parameterised for the reason the Einsatz detail is: the page is about one material, and the
+     * route has to say which.
+     */
+    MaterialDetail(
+        "material/{materialId}",
+        R.string.materials_detail_title,
+        DesignR.drawable.ic_krt_list,
     ),
 
     /** One bank account with its ledger, pushed from the Konten list. */
@@ -217,6 +238,7 @@ val MORE_DESTINATIONS =
         KrtDestination.Refinery,
         KrtDestination.PersonalInventory,
         KrtDestination.Bank,
+        KrtDestination.Materials,
         KrtDestination.Settings,
     )
 
@@ -237,6 +259,9 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // Without this the bar would light up "Übersicht" — the fallback for an unknown
         // destination — while the member is looking at an Einsatz they opened from "Einsätze".
         KrtDestination.MissionDetail to KrtDestination.Missions,
+        // Without this the bar would light up „Übersicht" while a member reads a material they
+        // opened from „Handel".
+        KrtDestination.MaterialDetail to KrtDestination.Materials,
         // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
         // behind "Mehr", and the bar has to keep saying so.
         KrtDestination.OperationDetail to KrtDestination.Operations,
@@ -259,6 +284,18 @@ fun missionDetailRoute(missionId: String): String = "mission/" + missionId
 
 /** The name of the id argument in [KrtDestination.MissionDetail]'s route. */
 const val MISSION_ID_ARG: String = "missionId"
+
+/**
+ * The route that opens one material's prices.
+ *
+ * @param materialId the material to open.
+ * @return the concrete route, with the id substituted into [KrtDestination.MaterialDetail]'s
+ *   pattern.
+ */
+fun materialDetailRoute(materialId: String): String = "material/" + materialId
+
+/** The name of the id argument in [KrtDestination.MaterialDetail]'s route. */
+const val MATERIAL_ID_ARG: String = "materialId"
 
 /**
  * The route that opens one Operation.

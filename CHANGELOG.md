@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Neuer Bereich „Handel" unter „Mehr".** Die Material-Übersicht zeigt alle Materialien mit
+  Einkaufs- und Verkaufspreis, filterbar nach Name, Kategorie und Preisgrenzen; ein Tipp öffnet
+  „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
+  Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
+
 - **Die Herstellung eines Item-Auftrags lässt sich jetzt in der App buchen.** Je Position wird
   eingetragen, wie viele Einheiten gebaut wurden, aus welchen verknüpften Lagereinträgen die
   Materialien entnommen werden und wo die fertigen Einheiten eingelagert werden. Der Bedarf muss je
