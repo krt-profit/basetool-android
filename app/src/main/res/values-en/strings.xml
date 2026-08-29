@@ -1411,4 +1411,35 @@
     <string name="order_handover_not_allowed">You need the Logistiker role for that.</string>
     <string name="order_handover_record_title">Record a handover for</string>
     <string name="order_handover_record_for">Hand over %1$s</string>
+    <!-- Auftrag: record production (design ch. 10 artboard 15) -->
+    <string name="order_production_record">Record production</string>
+    <string name="order_production_title">Record production</string>
+    <string name="order_production_subject">%1$s · built %2$d / %3$d</string>
+    <string name="order_production_amount">Units built</string>
+    <string name="order_production_remaining">Still open: %1$d</string>
+    <string name="order_production_amount_too_many">At most %1$d — no more is open on this line.</string>
+    <string name="order_production_after">After this booking</string>
+    <string name="order_production_after_value">%1$d / %2$d</string>
+    <string name="order_production_fulfils">Fulfilled</string>
+    <string name="order_production_consumption">Material use &amp; stock withdrawal</string>
+    <string name="order_production_consumption_hint">Pick, per material, which linked stock entries it is drawn from and how much. The plan has to cover the demand exactly.</string>
+    <string name="order_production_skip">Do not book out</string>
+    <string name="order_production_skip_hint">This material is not booked out of the Lager — it was consumed outside the tool.</string>
+    <string name="order_production_skipped">not booked out</string>
+    <string name="order_production_reconcile">needs %1$s · assigned %2$s · left %3$s</string>
+    <string name="order_production_available">available %1$s</string>
+    <string name="order_production_no_stock">No linked stock entries for this material.</string>
+    <string name="order_production_autofill">Cover the demand</string>
+    <string name="order_production_bookin">Storage</string>
+    <string name="order_production_bookin_hint">Where and for whom the built units are stored as item stock.</string>
+    <string name="order_production_location">Location</string>
+    <string name="order_production_owner">Owner</string>
+    <string name="order_production_owner_hint">Leave empty and the units are booked to you.</string>
+    <string name="order_production_orgunit">Book into org unit</string>
+    <string name="order_production_personal">Store as a personal entry</string>
+    <string name="order_production_allocate">Earmark for the Auftrag</string>
+    <string name="order_production_allocate_hint">The built units are earmarked for the Auftrag. Personal stock never carries earmarks.</string>
+    <string name="order_production_cta">Book production</string>
+    <string name="order_production_alloc_error">The plan does not cover the material demand exactly.</string>
+    <string name="order_production_not_allowed">You need the Logistician role for that.</string>
 </resources>

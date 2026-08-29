@@ -237,9 +237,10 @@ class ApiReader(
     /**
      * Sends a body and expects no answer.
      *
-     * For an endpoint that acknowledges rather than replies — `202 Accepted` with an empty body,
-     * which is what the live-sync signal gets. Distinct from [post] for the reason [delete] is:
-     * handing an empty body to the parser would turn every success into a reported server error.
+     * For an endpoint whose answer the caller does not need — `202 Accepted` with an empty body,
+     * which is what the live-sync signal gets, or a `201 Created` whose returned row the caller
+     * re-reads anyway. Distinct from [post] for the reason [delete] is: handing an empty body to
+     * the parser would turn every such success into a reported server error.
      *
      * @param B the request type
      * @param path the API path, beginning with a slash

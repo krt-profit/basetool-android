@@ -25,6 +25,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -53,6 +54,9 @@ class OrdersScreenTest {
 
         /** The assignee edge's own version, deliberately a different number. */
         const val EDGE_VERSION = 7L
+
+        /** How many of the item the fixture's line asks for. */
+        const val ITEM_AMOUNT = 3
     }
 
     @get:Rule
@@ -64,6 +68,7 @@ class OrdersScreenTest {
         status: JobOrderStatus = JobOrderStatus.IN_PROGRESS,
         redacted: Boolean = false,
         materials: List<JobOrderMaterial> = listOf(material()),
+        items: List<JobOrderItem> = emptyList(),
     ) = JobOrder(
         id = id,
         displayId = displayId,
@@ -73,9 +78,10 @@ class OrdersScreenTest {
         type = "MATERIAL",
         requestingOrgUnit = "Staffel 1",
         responsibleOrgUnit = "SK Vanguard",
+        responsibleOrgUnitId = null,
         comment = "Qualität ist zweitrangig.",
         materials = materials,
-        items = emptyList(),
+        items = items,
         handovers = emptyList(),
         assignees = emptyList(),
         createdAt = Instant.parse("2026-08-01T10:00:00Z"),
@@ -132,6 +138,7 @@ class OrdersScreenTest {
         assigned: MutableList<Unit> = mutableListOf(),
         statuses: MutableList<JobOrderStatus> = mutableListOf(),
         notes: MutableList<String> = mutableListOf(),
+        produced: MutableList<String> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -141,6 +148,26 @@ class OrdersScreenTest {
                         OrderHandoverActions(
                             draft = null,
                             onChange = {},
+                            onSubmit = {},
+                            onDismiss = {},
+                        ),
+                    production =
+                        OrderProductionActions(
+                            draft = null,
+                            onAmount = {},
+                            onDraw = { _, _, _ -> },
+                            onSkip = {},
+                            onAutoFill = {},
+                            bookIn =
+                                ProductionBookInActions(
+                                    onLocationQuery = {},
+                                    onLocation = { _, _ -> },
+                                    onOwnerQuery = {},
+                                    onOwner = { _, _ -> },
+                                    onOrgUnit = {},
+                                    onPersonal = {},
+                                    onAllocate = {},
+                                ),
                             onSubmit = {},
                             onDismiss = {},
                         ),
@@ -164,11 +191,94 @@ class OrdersScreenTest {
                             onLowerPriority = {},
                             onTabSelected = {},
                             onRecordHandover = {},
+                            onRecordProduction = { produced.add(it.id.orEmpty()) },
                         ),
                 )
             }
         }
     }
+
+    /**
+     * A member without the grant still sees the Herstellung — and is told what to ask for.
+     *
+     * Hiding the control was the alternative and is what this project's gate rule forbids: roles
+     * here are handed out by a person, and a feature nobody can see is a feature nobody requests
+     * (ADR-0011). So the button is drawn, it takes the tap, it writes nothing, and it names the
+     * role.
+     */
+    @Test
+    fun `the production action is drawn for a member who may not use it`() {
+        val produced = mutableListOf<String>()
+        showDetail(
+            OrderDetailState(
+                orderId = "o1",
+                order = order(items = listOf(itemLine())),
+                phase = OrderDetailPhase.Ready,
+                me = Identity("u1", logistician = false),
+            ),
+            produced = produced,
+        )
+
+        compose.onNodeWithTag(ORDER_PRODUCTION_OPEN_TAG).assertIsDisplayed().performClick()
+
+        assertEquals(emptyList<String>(), produced)
+        compose.onNodeWithText(
+            "Dafür brauchst du die Rolle Logistiker.",
+            substring = true,
+        ).assertIsDisplayed()
+    }
+
+    /** And a Logistician's tap opens the sheet for that line. */
+    @Test
+    fun `a logistician's tap opens the production sheet for the line`() {
+        val produced = mutableListOf<String>()
+        showDetail(
+            OrderDetailState(
+                orderId = "o1",
+                order = order(items = listOf(itemLine())),
+                phase = OrderDetailPhase.Ready,
+                me = Identity("u1", logistician = true),
+            ),
+            produced = produced,
+        )
+
+        compose.onNodeWithTag(ORDER_PRODUCTION_OPEN_TAG).performClick()
+
+        assertEquals(listOf("i1"), produced)
+    }
+
+    /** A line with nothing left to build carries no production action — that is not a lock. */
+    @Test
+    fun `a finished line offers no production action`() {
+        showDetail(
+            OrderDetailState(
+                orderId = "o1",
+                order = order(items = listOf(itemLine(manufactured = ITEM_AMOUNT))),
+                phase = OrderDetailPhase.Ready,
+                me = Identity("u1", logistician = true),
+            ),
+        )
+
+        compose.onAllNodesWithTag(ORDER_PRODUCTION_OPEN_TAG).assertCountEquals(0)
+    }
+
+    /**
+     * One item line of an order.
+     *
+     * @param manufactured how many are already built.
+     * @return the line.
+     */
+    private fun itemLine(manufactured: Int = 0) =
+        JobOrderItem(
+            id = "i1",
+            name = "Ballistic Gatling",
+            blueprintName = "Gatling — Standard",
+            amount = ITEM_AMOUNT,
+            manufactured = manufactured,
+            delivered = 0,
+            blueprintStale = false,
+            version = ORDER_VERSION,
+        )
 
     /**
      * One member on an order.

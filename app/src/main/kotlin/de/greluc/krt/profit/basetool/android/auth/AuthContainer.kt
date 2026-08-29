@@ -34,8 +34,8 @@ import de.greluc.krt.profit.basetool.android.core.data.BankStaffRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
-import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
@@ -223,13 +223,14 @@ class AuthContainer(
     }
 
     /**
-     * Recording that material changed hands — the write that finishes an Auftrag.
+     * Recording the work done on an Auftrag: the Übergabe that finishes it, and the Herstellung
+     * that builds what an item Auftrag asked for.
      *
-     * Its own repository rather than more methods on [orders]: it reads a different endpoint family
-     * (the order's linked stock rows) and writes an append-only log.
+     * Its own repository rather than more methods on [orders]: both reads reach a different
+     * endpoint family (the order's linked stock rows), and both writes append rather than replace.
      */
-    val orderHandovers: JobOrderHandoverRepository by lazy {
-        JobOrderHandoverRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    val orderWork: JobOrderWorkRepository by lazy {
+        JobOrderWorkRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

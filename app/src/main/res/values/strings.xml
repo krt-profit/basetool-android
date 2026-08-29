@@ -1432,4 +1432,35 @@
     <string name="order_handover_not_allowed">Dafür brauchst du die Rolle Logistiker.</string>
     <string name="order_handover_record_title">Übergabe erfassen für</string>
     <string name="order_handover_record_for">%1$s übergeben</string>
+    <!-- Auftrag: Herstellung erfassen (design ch. 10 artboard 15) -->
+    <string name="order_production_record">Herstellung erfassen</string>
+    <string name="order_production_title">Herstellung erfassen</string>
+    <string name="order_production_subject">%1$s · hergestellt %2$d / %3$d</string>
+    <string name="order_production_amount">Anzahl herstellen</string>
+    <string name="order_production_remaining">Noch offen: %1$d</string>
+    <string name="order_production_amount_too_many">Höchstens %1$d — mehr ist für diese Position nicht offen.</string>
+    <string name="order_production_after">Nach dieser Meldung</string>
+    <string name="order_production_after_value">%1$d / %2$d</string>
+    <string name="order_production_fulfils">Erfüllt</string>
+    <string name="order_production_consumption">Materialverbrauch &amp; Lagerentnahme</string>
+    <string name="order_production_consumption_hint">Wähle je Material, aus welchen verknüpften Lagereinträgen und in welcher Menge entnommen wird. Die Zuweisung muss den Bedarf exakt decken.</string>
+    <string name="order_production_skip">Nicht ausbuchen</string>
+    <string name="order_production_skip_hint">Dieses Material wird nicht aus dem Lager ausgebucht — es wurde außerhalb des Tools verbraucht.</string>
+    <string name="order_production_skipped">nicht ausgebucht</string>
+    <string name="order_production_reconcile">benötigt %1$s · zugewiesen %2$s · Rest %3$s</string>
+    <string name="order_production_available">verfügbar %1$s</string>
+    <string name="order_production_no_stock">Keine verknüpften Lagereinträge für dieses Material.</string>
+    <string name="order_production_autofill">Bedarf decken</string>
+    <string name="order_production_bookin">Einlagerung</string>
+    <string name="order_production_bookin_hint">Wohin und für wen die hergestellten Einheiten als Item-Bestand eingelagert werden.</string>
+    <string name="order_production_location">Lagerort</string>
+    <string name="order_production_owner">Bei wem</string>
+    <string name="order_production_owner_hint">Leer lassen: die Einheiten laufen auf dich.</string>
+    <string name="order_production_orgunit">Buchen in OrgUnit</string>
+    <string name="order_production_personal">Als persönlichen Eintrag einlagern</string>
+    <string name="order_production_allocate">Dem Auftrag zuordnen</string>
+    <string name="order_production_allocate_hint">Die hergestellten Einheiten werden dem Auftrag als Marke zugeordnet. Persönlicher Bestand trägt keine Marken.</string>
+    <string name="order_production_cta">Herstellung buchen</string>
+    <string name="order_production_alloc_error">Zuweisung deckt den Materialbedarf nicht exakt.</string>
+    <string name="order_production_not_allowed">Dafür brauchst du die Rolle Logistiker.</string>
 </resources>

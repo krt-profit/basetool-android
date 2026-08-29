@@ -4,6 +4,13 @@
 
 ### Added
 
+- **Die Herstellung eines Item-Auftrags lässt sich jetzt in der App buchen.** Je Position wird
+  eingetragen, wie viele Einheiten gebaut wurden, aus welchen verknüpften Lagereinträgen die
+  Materialien entnommen werden und wo die fertigen Einheiten eingelagert werden. Der Bedarf muss je
+  Material exakt gedeckt sein — „Bedarf decken" füllt ihn auf einen Tipp. Material, das außerhalb
+  des Tools verbraucht wurde, kann je Zeile von der Ausbuchung ausgenommen werden. Ohne die Rolle
+  Logistiker ist die Schaltfläche gesperrt sichtbar statt versteckt.
+
 - **Übergaben lassen sich jetzt in der App erfassen** — damit ist ein Auftrag erstmals aus der App
   heraus abschließbar. Das Formular zeigt live, wo die Position danach steht („Nach dieser Übergabe
   300 / 400"), bucht die gewählte Lagerzeile aus und sagt vorab, dass eine erfasste Übergabe nicht

@@ -8,16 +8,21 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
+import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
-import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -40,12 +45,22 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+/** Where produced stock could land — never asked here. */
+private object NoBookInOptions : BookInOptions {
+    override suspend fun locations(query: String): ApiResult<List<LocationOption>> = ApiResult.Success(emptyList())
+
+    override suspend fun members(query: String): ApiResult<List<MemberOption>> = ApiResult.Success(emptyList())
+
+    override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> = ApiResult.Success(emptyList())
+}
+
 /**
- * The handover seam, which this class does not exercise.
+ * The two work seams, neither of which this class exercises.
  *
- * `OrderHandoverTest` covers it; here it exists so the view model can be built.
+ * `OrderHandoverTest` and `OrderProductionTest` cover them; here they exist so the view model can
+ * be built.
  */
-private object NoHandoverSource : JobOrderHandoverSource {
+private object NoWorkSource : JobOrderWorkSource {
     override suspend fun stockFor(
         orderId: String,
         materialId: String,
@@ -59,6 +74,14 @@ private object NoHandoverSource : JobOrderHandoverSource {
         recipientSquadron: String?,
         handoverTime: String,
     ): ApiResult<JobOrderHandoverDto> = error("the handover has its own test")
+
+    override suspend fun linkedStock(
+        orderId: String,
+        materialId: String,
+    ): ApiResult<List<HandoverStockRow>> = error("the Herstellung has its own test")
+
+    override suspend fun bookProduction(booking: ProductionBooking): ApiResult<Unit> =
+        error("the Herstellung has its own test")
 }
 
 /**
@@ -186,6 +209,7 @@ class OrderDetailViewModelTest {
             type = "MATERIAL",
             requestingOrgUnit = null,
             responsibleOrgUnit = null,
+            responsibleOrgUnitId = null,
             comment = null,
             materials = emptyList(),
             items = emptyList(),
@@ -202,7 +226,16 @@ class OrderDetailViewModelTest {
     private fun model(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = OrderDetailViewModel(source, NoHandoverSource, FakeIdentity(identity), connectivity, "o1")
+    ) = OrderDetailViewModel(
+        OrderDetailSources(
+            orders = source,
+            work = NoWorkSource,
+            bookIn = NoBookInOptions,
+            identity = FakeIdentity(identity),
+        ),
+        connectivity,
+        "o1",
+    )
 
     @Test
     fun `the caller's own row is the one that offers anything`() =

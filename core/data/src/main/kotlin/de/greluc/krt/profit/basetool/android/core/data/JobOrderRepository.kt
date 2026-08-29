@@ -61,6 +61,25 @@ enum class JobOrderStatus {
 }
 
 /**
+ * What one item line consumes of one material, as the blueprint derived it.
+ *
+ * `requiredTotal` is the demand of the **whole line**, not of a single unit: the server sends the
+ * line's own figure and the web divides it by the line's count to price a partial run. Keeping the
+ * server's number rather than a per-unit one avoids compounding a rounding error over every unit.
+ *
+ * @property materialId which material — the consumption plan is addressed by it.
+ * @property name what it is called.
+ * @property unit `SCU` or `PIECE`; a piece count is never booked in fractions.
+ * @property requiredTotal how much the whole line needs.
+ */
+data class JobOrderItemRequirement(
+    val materialId: String,
+    val name: String,
+    val unit: String?,
+    val requiredTotal: Double,
+)
+
+/**
  * One item line of an order.
  *
  * An item order asks for finished items and the server derives their materials, so the figures here
@@ -75,6 +94,11 @@ enum class JobOrderStatus {
  * @property delivered how many have been handed over
  * @property blueprintStale whether the blueprint has changed since the order was raised, which the
  *   web flags because the derived material demand may no longer match what will be built
+ * @property requirements what one whole line of this item consumes, as the server derived it from
+ *   the blueprint. Carried because the Herstellung has to state a demand per material and cover it
+ *   exactly; without it the booking would be a number typed against nothing
+ * @property version the line's **own** optimistic lock. The Herstellung echoes it, not the order's:
+ *   two members booking production on two different lines of the same Auftrag must not collide
  */
 data class JobOrderItem(
     val id: String?,
@@ -84,7 +108,13 @@ data class JobOrderItem(
     val manufactured: Int,
     val delivered: Int,
     val blueprintStale: Boolean,
+    val requirements: List<JobOrderItemRequirement> = emptyList(),
+    val version: Long? = null,
 ) {
+    /** How many of this line are still to be built — the cap on one Herstellung. */
+    val remaining: Int
+        get() = (amount - manufactured).coerceAtLeast(0)
+
     /**
      * How far along this line is, between 0 and 1, or `null` when nothing was asked for.
      *
@@ -205,6 +235,8 @@ data class JobOrderAssignee(
  * @property type `MATERIAL` or `ITEM` as the server names it
  * @property requestingOrgUnit who asked for it
  * @property responsibleOrgUnit who is working on it
+ * @property responsibleOrgUnitId the same unit by id — the Herstellung's book-in preselects it when
+ *   the owner belongs to it, which is a comparison a name cannot make
  * @property comment the requester's note, or `null`
  * @property materials the material lines
  * @property items the item lines, for an order of type `ITEM`
@@ -224,6 +256,7 @@ data class JobOrder(
     val type: String?,
     val requestingOrgUnit: String?,
     val responsibleOrgUnit: String?,
+    val responsibleOrgUnitId: String?,
     val comment: String?,
     val materials: List<JobOrderMaterial>,
     val items: List<JobOrderItem>,
@@ -992,6 +1025,7 @@ private fun JobOrderDto.toModel(): JobOrder? {
         type = type?.value,
         requestingOrgUnit = requestingOrgUnit?.name,
         responsibleOrgUnit = responsibleOrgUnit?.name,
+        responsibleOrgUnitId = responsibleOrgUnit?.id,
         comment = comment?.trim()?.takeIf { it.isNotEmpty() },
         materials = materials.orEmpty().map { it.toModel() },
         items = items.orEmpty().map { it.toModel() },
@@ -1053,6 +1087,25 @@ private fun JobOrderItemDto.toModel(): JobOrderItem =
         manufactured = manufacturedAmount ?: 0,
         delivered = deliveredAmount ?: 0,
         blueprintStale = blueprintStale == true,
+        requirements =
+            materials
+                .orEmpty()
+                .mapNotNull { line ->
+                    val materialId = line.material?.id ?: return@mapNotNull null
+                    JobOrderItemRequirement(
+                        materialId = materialId,
+                        name = line.material?.name.orEmpty(),
+                        unit = line.material?.quantityType,
+                        requiredTotal = line.requiredQuantity ?: 0.0,
+                    )
+                }
+                // A blueprint can list the same ingredient twice, and a resource plus a bridged
+                // non-craftable item can map to the same material. The server merges the demand per
+                // material id; two rows sharing an id here would give the sheet two cards for one
+                // material, and the second could never be reconciled.
+                .groupBy { it.materialId }
+                .map { (_, rows) -> rows.first().copy(requiredTotal = rows.sumOf { it.requiredTotal }) },
+        version = version,
     )
 
 /**

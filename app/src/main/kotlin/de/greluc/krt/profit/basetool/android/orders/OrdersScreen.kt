@@ -90,8 +90,13 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.DenialToast
+import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
+import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -666,6 +671,51 @@ internal fun MaterialLine(material: JobOrderMaterial) {
 }
 
 /**
+ * The production action on one item line: whether the caller may, and what to do when they tap.
+ *
+ * @property allowed whether the caller holds the grant the endpoint requires.
+ * @property denials where a refused tap is announced.
+ * @property onProduce open the Herstellung for this line.
+ */
+data class ItemProduceGate(
+    val allowed: Boolean,
+    val denials: DenialState,
+    val onProduce: () -> Unit,
+)
+
+/**
+ * „Herstellung erfassen" on one item line — **drawn even when it is refused**.
+ *
+ * Hiding it was the alternative and is the thing this project's own gate rule forbids: this
+ * organisation grants roles by hand, and a control nobody can see is a grant nobody asks for. So a
+ * caller without the Logistician role gets the button at 45 %, the lock ahead of the label (design
+ * ch. 09 artboard 13), and a tap that names the grant instead of writing anything.
+ *
+ * @param gate whether the caller may, and what to do about it.
+ */
+@Composable
+private fun ProduceAction(gate: ItemProduceGate) {
+    val role =
+        Gate(
+            allowed = gate.allowed,
+            reason = stringResource(R.string.gate_role_logistician),
+            detail = stringResource(R.string.gate_role_logistician_detail),
+        )
+    val (dim, click) = rememberGated(role, gate.onProduce, gate.denials)
+    KrtGhostButton(
+        text = stringResource(R.string.order_production_record),
+        onClick = click,
+        iconRes =
+            if (gate.allowed) {
+                DesignR.drawable.ic_krt_clipboard_check
+            } else {
+                DesignR.drawable.ic_krt_lock
+            },
+        modifier = Modifier.fillMaxWidth().then(dim).testTag(ORDER_PRODUCTION_OPEN_TAG),
+    )
+}
+
+/**
  * One item line of an order.
  *
  * The figures are counts, not quantities: built over asked-for, with the handed-over count under
@@ -673,9 +723,14 @@ internal fun MaterialLine(material: JobOrderMaterial) {
  * carries the web's warning chip — what will be built may no longer be what was costed.
  *
  * @param item the line.
+ * @param produce the production action's gate and callback, or `null` on a line that cannot carry
+ *   one at all — nothing left to build, or a row the server sent without an id or a version.
  */
 @Composable
-internal fun ItemLine(item: JobOrderItem) {
+internal fun ItemLine(
+    item: JobOrderItem,
+    produce: ItemProduceGate? = null,
+) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
@@ -730,6 +785,10 @@ internal fun ItemLine(item: JobOrderItem) {
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+        // The write that moves this line's own figure. It sits on the line rather than in a tab
+        // of its own because a production run is booked against one line, and the count above is
+        // exactly what it changes.
+        produce?.let { ProduceAction(gate = it) }
     }
 }
 
@@ -819,7 +878,11 @@ private fun JobOrder.statusTone(): KrtStatusTone =
  * short sections a member reads together are worse behind a control than beneath each other.
  *
  * @param state what to draw.
+ * @param handover the Übergabe sheet's own state and callbacks.
+ * @param production the Herstellung sheet's own state and callbacks.
  * @param onRefresh pull-to-refresh.
+ * @param onRetryNow the member asked for the failed first load again.
+ * @param actions what the screen reports back.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -827,6 +890,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
 fun OrderDetailScreen(
     state: OrderDetailState,
     handover: OrderHandoverActions,
+    production: OrderProductionActions,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
     actions: OrderDetailActions,
@@ -834,6 +898,7 @@ fun OrderDetailScreen(
 ) {
     val order = state.order
     val phase = state.phase
+    val denials = rememberDenialState()
     when {
         order != null -> {
             PullToRefreshBox(
@@ -841,7 +906,15 @@ fun OrderDetailScreen(
                 onRefresh = onRefresh,
                 modifier = modifier.fillMaxSize(),
             ) {
-                OrderDetailBody(state = state, order = order, actions = actions)
+                OrderDetailBody(
+                    state = state,
+                    order = order,
+                    actions = actions,
+                    denials = denials,
+                )
+                // At the screen, never inside the list: a LazyColumn recycles its rows, and a
+                // toast owned by one would vanish the moment that row scrolled away.
+                DenialToast(state = denials)
             }
             // Design ch. 14's conflict dialog -- but NOT for the note, which already has the
             // richer recovery chapter 10 draws: a refused note comes back as `rejectedNote` with
@@ -858,6 +931,7 @@ fun OrderDetailScreen(
                 StatusSheet(current = order.status, state = state, actions = actions)
             }
             OrderHandoverSheet(actions = handover)
+            OrderProductionSheet(actions = production)
         }
 
         phase is OrderDetailPhase.Failed -> {
@@ -918,6 +992,8 @@ data class OrderDetailActions(
     /** Marks a status as intended without moving the order (design ch. 10 artboard 8). */
     val onStatusSelected: (JobOrderStatus) -> Unit,
     val onRecordHandover: (JobOrderMaterial) -> Unit,
+    /** Opens „Herstellung erfassen" for one item line (design ch. 10 artboard 15). */
+    val onRecordProduction: (JobOrderItem) -> Unit,
     /** Applies the marked status, asking first when the target cannot be taken back. */
     val onApplyStatus: () -> Unit,
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
@@ -932,12 +1008,14 @@ data class OrderDetailActions(
  * @param state what to draw.
  * @param order the order.
  * @param actions what the screen reports back.
+ * @param denials the screen's single refusal slot, for the controls a caller may not use.
  */
 @Composable
 private fun OrderDetailBody(
     state: OrderDetailState,
     order: JobOrder,
     actions: OrderDetailActions,
+    denials: DenialState,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(ORDER_DETAIL_TAG),
@@ -1023,9 +1101,22 @@ private fun OrderDetailBody(
             )
         }
         when (state.tab) {
-            OrderTab.POSITIONS -> positionsTab(order = order)
-            OrderTab.ASSIGNEES -> assigneesTab(order = order, state = state, actions = actions)
-            OrderTab.HANDOVERS -> handoversTab(order = order, onRecord = actions.onRecordHandover)
+            OrderTab.POSITIONS -> {
+                positionsTab(
+                    order = order,
+                    allowed = state.productionAllowed,
+                    denials = denials,
+                    onProduce = actions.onRecordProduction,
+                )
+            }
+
+            OrderTab.ASSIGNEES -> {
+                assigneesTab(order = order, state = state, actions = actions)
+            }
+
+            OrderTab.HANDOVERS -> {
+                handoversTab(order = order, onRecord = actions.onRecordHandover)
+            }
         }
     }
 }
@@ -1285,6 +1376,26 @@ fun OrderDetailRoute(
                 onSubmit = { viewModel.handover.submit(state.orderId) },
                 onDismiss = viewModel.handover::dismiss,
             ),
+        production =
+            OrderProductionActions(
+                draft = state.production,
+                onAmount = viewModel.production::changeAmount,
+                onDraw = viewModel.production::changeDraw,
+                onSkip = viewModel.production::toggleSkip,
+                onAutoFill = viewModel.production::autoFill,
+                bookIn =
+                    ProductionBookInActions(
+                        onLocationQuery = viewModel.production::searchLocations,
+                        onLocation = viewModel.production::chooseLocation,
+                        onOwnerQuery = viewModel.production::searchMembers,
+                        onOwner = viewModel.production::chooseOwner,
+                        onOrgUnit = viewModel.production::chooseOrgUnit,
+                        onPersonal = viewModel.production::togglePersonal,
+                        onAllocate = viewModel.production::toggleAllocate,
+                    ),
+                onSubmit = viewModel.production::submit,
+                onDismiss = viewModel.production::dismiss,
+            ),
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         actions =
@@ -1312,6 +1423,16 @@ fun OrderDetailRoute(
                         orderId = state.orderId,
                         material = material,
                         alreadyDone = state.order?.krtHandedOver(material.materialId)?.toString(),
+                    )
+                },
+                onRecordProduction = { line ->
+                    viewModel.production.open(
+                        orderId = state.orderId,
+                        item = line,
+                        // The unit working the Auftrag is the book-in pool the web preselects —
+                        // but only when the owner belongs to it, which is why the holder checks
+                        // rather than the screen.
+                        responsibleOrgUnitId = state.order?.responsibleOrgUnitId,
                     )
                 },
             ),

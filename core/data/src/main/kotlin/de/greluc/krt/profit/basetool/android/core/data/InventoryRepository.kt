@@ -455,10 +455,48 @@ interface MaterialDetailSource {
 }
 
 /**
+ * Where stock can land: the three lookups every book-in form asks for.
+ *
+ * Its own seam rather than part of [InventorySource] alone, because the Herstellung books produced
+ * units into the Lager without reading it — a form that needs „wo, bei wem, in welchen Pool" should
+ * not have to stand up the whole warehouse to be tested.
+ */
+interface BookInOptions {
+    /**
+     * Searches places.
+     *
+     * @param query what the member typed.
+     * @return the matches.
+     */
+    suspend fun locations(query: String): ApiResult<List<LocationOption>>
+
+    /**
+     * Searches members.
+     *
+     * @param query what the member typed.
+     * @return the matches.
+     */
+    suspend fun members(query: String): ApiResult<List<MemberOption>>
+
+    /**
+     * Reads the org units stock may be booked into for one member.
+     *
+     * Asked for the **owning** member, not the caller: the server validates the picked unit against
+     * that member's own memberships, so offering the caller's would offer choices the write then
+     * refuses.
+     *
+     * @param userId the member the stock would belong to.
+     * @return their memberships across all four org-unit kinds.
+     */
+    suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>>
+}
+
+/**
  * The Lager reads, as a seam.
  */
 interface InventorySource :
     MaterialLookup,
+    BookInOptions,
     InventoryAllocationSource {
     /**
      * Reads one page of material groups.
@@ -549,34 +587,6 @@ interface InventorySource :
         version: Long?,
         note: String?,
     ): ApiResult<Unit>
-
-    /**
-     * Searches places.
-     *
-     * @param query what the member typed.
-     * @return the matches.
-     */
-    suspend fun locations(query: String): ApiResult<List<LocationOption>>
-
-    /**
-     * Searches members, for a transfer.
-     *
-     * @param query what the member typed.
-     * @return the matches.
-     */
-    suspend fun members(query: String): ApiResult<List<MemberOption>>
-
-    /**
-     * Reads the org units a transfer may hand stock to.
-     *
-     * Asked for the **receiving** member, not the caller: the server validates the picked unit
-     * against that member's own memberships, so offering the caller's would offer choices the
-     * write then refuses.
-     *
-     * @param userId the member who would receive the stock.
-     * @return their memberships across all four org-unit kinds.
-     */
-    suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>>
 
     /**
      * Reads the terminals that buy a material.

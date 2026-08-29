@@ -487,3 +487,69 @@ shows them must not be rejected for it.
 - [ ] A successful write closes the sheet and re-reads the Auftrag; a refusal keeps everything typed.
 
 **Enforced by:** `OrderHandoverTest`, `OrdersScreenTest`.
+
+## REQ-APP-ORDERS-019 — Die Herstellung: was ein Item-Auftrag tatsächlich baut
+
+**Status:** implemented · **Since:** 2026-08-29
+
+An item Auftrag has **two** writes and they are not the same thing. The Übergabe hands finished
+goods to somebody; the **Herstellung** consumes the earmarked raw material and creates item stock,
+and it is the only one that moves a line's „hergestellt" figure. Until this existed the app could
+deliver items it could never record having built.
+
+`POST /api/v1/orders/{id}/items/{itemId}/production`, gated `LOGISTICIAN | OFFICER | ADMIN` plus
+`canEditJobOrder`.
+
+**The plan must cover each material's demand exactly.** The server refuses anything else
+(`ProductionAllocationException` → „Zuweisung deckt den Materialbedarf nicht exakt."), so the sheet
+holds its own submit until every non-skipped material reconciles. The demand for a partial run is
+the **line's** total scaled by the share being built (`requiredTotal × units ÷ lineAmount`), rounded
+per the material's `quantityType` — whole numbers for `PIECE`, thousandths otherwise; the app never
+derives a per-unit figure and multiplies it back up, which would compound the rounding.
+
+**Only rows earmarked to this Auftrag are candidates**, and each can give at most
+`min(earmark, stock)`: an earmark can outlive the material it was made against, and offering the
+promise as if it were material would put a number on screen the server then refuses. Each draw
+echoes the row's own `version`, so a concurrent stock change is a 409 rather than a double-spend.
+
+**„Nicht ausbuchen" is per material, not per run.** A material consumed outside the tool goes on
+`skippedMaterialIds`; its demand drops out of the gate and no draw is sent for it. The amounts
+already typed are kept, so unticking restores the plan.
+
+**„Bedarf decken" fills the plan.** Three rows and a demand of 1 234,5 is a subtraction nobody
+should do on a phone; the action takes from the rows in order and never asks one for more than it
+can give.
+
+**The Einlagerung is mandatory** — `bookIn.locationId` is `@NotNull`. The owner defaults to the
+acting member (the server's own default for a `null` `ownerUserId`, and the reason the app does not
+have to hold a name for it). The org-unit picker appears only when the owner has more than one
+membership, preselecting the Auftrag's responsible unit when they belong to it — which keeps the
+REQ-ORG-004 „more than one membership and no pick → 400" branch unreachable. „Persönlich" and „dem
+Auftrag zuordnen" are mutually exclusive; ticking the first clears and disables the second.
+
+> [!warning] Three artboard elements are **not** built, and are on the design gap list
+> Design ch. 10 artboard 15 draws a smaller form than the endpoint takes:
+>
+> - a **single** „Zutaten aus dem Lager ausbuchen" checkbox for the whole run — the server takes a
+>   plan per material over named rows, so the sheet carries the web's per-material skip instead;
+> - **„Verwendete Variante"** — the payload has no variant field; blueprint-variant counting is an
+>   order-level setting (`PATCH /{id}/blueprint-variant-counting`);
+> - **„Übergeben an"** — handing over is the separate `POST /{id}/item-handovers` write.
+>
+> And the artboard omits the Einlagerung, which the server requires. Flagged, not coded around.
+
+**The action is drawn even when refused** (ADR-0011): a member without the Logistician role sees the
+button at 45 % with the lock ahead of its label, and the tap names the grant. A line with nothing
+left to build carries no action at all — that is not a permission question.
+
+**Acceptance**
+
+- [ ] Every item line with something left to build offers „Herstellung erfassen".
+- [ ] The submit is held until the amount is within what is open, every non-skipped material
+      reconciles exactly, and a Lagerort is picked.
+- [ ] A skipped material is named in `skippedMaterialIds` and contributes no draw.
+- [ ] Each draw carries its stock row's own version; the booking carries the item line's.
+- [ ] „Persönlich" clears the order earmark, and the org unit is only sent when there is a choice.
+- [ ] A booked run closes the sheet and re-reads the Auftrag; a refusal keeps the whole plan.
+
+**Enforced by:** `OrderProductionTest`, `OrdersScreenTest`.

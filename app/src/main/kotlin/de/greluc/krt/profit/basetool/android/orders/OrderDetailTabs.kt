@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
@@ -39,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRail
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -46,14 +48,38 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
  * Positionen: the requester's note, then what was ordered and how much has arrived.
  *
  * @param order the order.
+ * @param allowed whether the caller may book a production run — a hint, so the control is drawn
+ *   either way and the server stays the authority.
+ * @param denials where a refused tap is announced.
+ * @param onProduce open „Herstellung erfassen" for one item line.
  */
-internal fun LazyListScope.positionsTab(order: JobOrder) {
+internal fun LazyListScope.positionsTab(
+    order: JobOrder,
+    allowed: Boolean,
+    denials: DenialState,
+    onProduce: (JobOrderItem) -> Unit,
+) {
     order.comment?.let { comment ->
         item(key = "comment") { CommentCard(comment = comment) }
     }
     items(order.items, key = { "item-" + (it.id ?: it.name.orEmpty()) }) { line ->
         Column(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
-            ItemLine(item = line)
+            ItemLine(
+                item = line,
+                // A line the server sent without an id or a version cannot be addressed by the
+                // write, and one that is already fully built has nothing left to book — neither is
+                // a permission question, so neither is drawn as a locked control.
+                produce =
+                    if (line.id != null && line.version != null && line.remaining > 0) {
+                        ItemProduceGate(
+                            allowed = allowed,
+                            denials = denials,
+                            onProduce = { onProduce(line) },
+                        )
+                    } else {
+                        null
+                    },
+            )
         }
     }
     if (order.materials.isEmpty()) {

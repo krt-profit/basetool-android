@@ -76,6 +76,7 @@ import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailSources
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
@@ -385,12 +386,15 @@ class MainActivity : AppCompatActivity() {
                                     orders = ordersViewModel,
                                     orderDetail = {
                                         OrderDetailViewModel(
-                                            container.orders,
-                                            container.orderHandovers,
-                                            container.identity,
+                                            OrderDetailSources(
+                                                orders = container.orders,
+                                                work = container.orderWork,
+                                                bookIn = container.inventory,
+                                                identity = container.identity,
+                                                liveSync = container.liveSync,
+                                            ),
                                             container.connectivity,
                                             it,
-                                            container.liveSync,
                                         )
                                     },
                                     inventory = inventoryViewModel,

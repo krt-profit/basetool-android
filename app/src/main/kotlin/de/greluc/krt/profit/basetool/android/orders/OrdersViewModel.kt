@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.orders
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
@@ -18,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
@@ -309,6 +311,14 @@ data class OrderDetailState(
      */
     val rejectedNote: String? = null,
     val handover: OrderHandoverDraft? = null,
+    /**
+     * The production run being filled in, or `null` when the sheet is shut.
+     *
+     * A **second** write on an item Auftrag, not a variant of the handover: the Übergabe hands
+     * finished goods over, the Herstellung consumes the earmarked material and creates item stock
+     * (design ch. 10 artboard 15).
+     */
+    val production: ProductionDraft? = null,
     /** Which page of the Auftrag is showing (design ch. 10 artboard 2). */
     val tab: OrderTab = OrderTab.POSITIONS,
     val statusPickerOpen: Boolean = false,
@@ -345,6 +355,20 @@ data class OrderDetailState(
         get() = me?.logistician == true
 
     /**
+     * Whether the caller may book a production run.
+     *
+     * The endpoint's own gate is `LOGISTICIAN or OFFICER or ADMIN` plus edit scope on the Auftrag;
+     * the flag the app holds covers the first and is a **hint, never a gate** — the control is
+     * drawn either way and the server stays the authority (ADR-0011).
+     *
+     * Deliberately **not** folded together with [writable]. Being offline is not a missing grant,
+     * and the refusal this flag drives names one — „Dafür brauchst du die Rolle Logistiker." would
+     * be a false statement about a member who simply has no signal.
+     */
+    val productionAllowed: Boolean
+        get() = me?.logistician == true
+
+    /**
      * Whether the priority control belongs on this screen.
      *
      * The same grant as the status control, plus a queue position to move: an order the server
@@ -356,22 +380,43 @@ data class OrderDetailState(
 }
 
 /**
+ * Everything one order's screen reads and writes through.
+ *
+ * A parameter object rather than five constructor arguments: the screen genuinely needs all of
+ * them, and a constructor that wide is both hard to read at the call site and past what the
+ * codebase's own static analysis allows.
+ *
+ * @property orders where the order comes from.
+ * @property work the two writes that record work on it — the Übergabe and the Herstellung.
+ * @property bookIn where produced stock may land.
+ * @property identity who the caller is — which decides whose row on this order is theirs, and
+ *   whether the status control is offered at all.
+ * @property liveSync a peer's change on the same order, or `null` where none is wired.
+ */
+data class OrderDetailSources(
+    val orders: JobOrderSource,
+    val work: JobOrderWorkSource,
+    val bookIn: BookInOptions,
+    val identity: IdentitySource,
+    val liveSync: LiveSyncSource? = null,
+)
+
+/**
  * Drives one order.
  *
- * @property source where the order comes from
- * @property identity who the caller is — which decides whose row on this order is theirs, and
- *   whether the status control is offered at all
+ * @property sources everything the screen reads and writes through
  * @property connectivity whether the device has a network
  * @property orderId which order to load
  */
 class OrderDetailViewModel(
-    private val source: JobOrderSource,
-    handoverSource: JobOrderHandoverSource,
-    private val identity: IdentitySource,
+    sources: OrderDetailSources,
     connectivity: Connectivity,
     private val orderId: String,
-    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
+    private val source = sources.orders
+    private val identity = sources.identity
+    private val liveSync = sources.liveSync
+
     private val mutableState = MutableStateFlow(OrderDetailState(orderId = orderId))
 
     /** What the screen draws. */
@@ -385,7 +430,7 @@ class OrderDetailViewModel(
      */
     val handover =
         OrderHandover(
-            source = handoverSource,
+            source = sources.work,
             scope = viewModelScope,
             read = { mutableState.value.handover },
             write = { draft -> mutableState.value = mutableState.value.copy(handover = draft) },
@@ -393,6 +438,29 @@ class OrderDetailViewModel(
             // the order's status and possibly the whole order into „completed", and none of that is
             // in the answer.
             onRecorded = { reload(keepContent = true) },
+        )
+
+    /**
+     * Booking a production run — the write that moves an item line's „hergestellt" figure.
+     *
+     * Public for the same reason [handover] is: the screen drives it directly rather than through
+     * a wrapper per callback.
+     */
+    val production =
+        OrderProduction(
+            source = sources.work,
+            options = sources.bookIn,
+            myUserId = { mutableState.value.me?.userId ?: (identity.myUserId() as? ApiResult.Success)?.value },
+            scope = viewModelScope,
+            slot =
+                ProductionSlot(
+                    read = { mutableState.value.production },
+                    write = { draft -> mutableState.value = mutableState.value.copy(production = draft) },
+                ),
+            // Re-read rather than patched: a run moves the line's manufactured count, the order's
+            // derived material demand, the linked stock it consumed and possibly the whole order
+            // into „completed" — none of which is in the answer.
+            onBooked = { reload(keepContent = true) },
         )
 
     /** The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003). */

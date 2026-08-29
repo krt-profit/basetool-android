@@ -105,6 +105,7 @@ class OrdersViewModelTest {
             type = "MATERIAL",
             requestingOrgUnit = null,
             responsibleOrgUnit = null,
+            responsibleOrgUnitId = null,
             comment = null,
             materials = emptyList(),
             items = emptyList(),
