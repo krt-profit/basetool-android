@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Übergaben lassen sich jetzt in der App erfassen** — damit ist ein Auftrag erstmals aus der App
+  heraus abschließbar. Das Formular zeigt live, wo die Position danach steht („Nach dieser Übergabe
+  300 / 400"), bucht die gewählte Lagerzeile aus und sagt vorab, dass eine erfasste Übergabe nicht
+  zurücknehmbar ist.
+
 - **Einsatz-Leitung kann die Teilnehmerliste jetzt in der App führen.** Wer einen Einsatz verwaltet,
   checkt Mitglieder direkt in deren Zeile ein und aus, stellt ihre Auszahlung um und weist die
   Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,

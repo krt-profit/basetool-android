@@ -108,6 +108,8 @@ data class JobOrderItem(
  * server's own `openAmount` already accounts for them, and that is what the screen shows instead —
  * the design's "noch offen".
  *
+ * @property materialId which material — the handover's stock picker is addressed by it, so a line
+ *   without one cannot be handed over from the app
  * @property name the material's name
  * @property needed how much the order asks for, as the server rendered it
  * @property inStock how much the responsible unit already holds
@@ -115,6 +117,7 @@ data class JobOrderItem(
  * @property open how much is still missing, as the server computed it
  */
 data class JobOrderMaterial(
+    val materialId: String?,
     val name: String,
     val needed: String?,
     val inStock: String?,
@@ -141,6 +144,22 @@ data class JobOrderMaterial(
 }
 
 /**
+ * One material inside a handover.
+ *
+ * Carried because it is the **only** honest source of „how much of this line has actually changed
+ * hands". The obvious alternative — `amount - openAmount` — measures something else: the server's
+ * `openRemaining` is `required - claimed` (`MaterialClaimService`), so it counts promises, and a
+ * screen that showed it as delivered would overstate every line somebody had merely claimed.
+ *
+ * @property materialId which material, or `null` when the answer redacted it.
+ * @property amount how much this handover carried, as the server rendered it.
+ */
+data class JobOrderHandoverLine(
+    val materialId: String?,
+    val amount: Double,
+)
+
+/**
  * One handover already recorded against an order.
  *
  * @property id the handover's id
@@ -153,6 +172,7 @@ data class JobOrderHandover(
     val recipient: String?,
     val executor: String?,
     val at: Instant?,
+    val lines: List<JobOrderHandoverLine> = emptyList(),
 )
 
 /**
@@ -213,6 +233,24 @@ data class JobOrder(
     val version: Long?,
     val redacted: Boolean,
 )
+
+/**
+ * How much of one material line has actually changed hands.
+ *
+ * The sum of every handover item naming it — never `amount - openAmount`, which counts claims.
+ *
+ * @receiver the Auftrag.
+ * @param materialId which line.
+ * @return the delivered amount, `0.0` when nothing has.
+ */
+fun JobOrder.krtHandedOver(materialId: String?): Double {
+    if (materialId == null) {
+        return 0.0
+    }
+    return handovers.sumOf { handover ->
+        handover.lines.filter { it.materialId == materialId }.sumOf { it.amount }
+    }
+}
 
 /**
  * One page of the queue.
@@ -965,6 +1003,13 @@ private fun JobOrderDto.toModel(): JobOrder? {
                         recipient = handover.recipientHandle,
                         executor = handover.executingUser?.effectiveName,
                         at = handover.handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
+                        lines =
+                            handover.items.orEmpty().map { line ->
+                                JobOrderHandoverLine(
+                                    materialId = line.material?.id,
+                                    amount = line.amount ?: 0.0,
+                                )
+                            },
                     )
                 }
             },
@@ -1017,6 +1062,7 @@ private fun JobOrderItemDto.toModel(): JobOrderItem =
  */
 private fun JobOrderMaterialDto.toModel(): JobOrderMaterial =
     JobOrderMaterial(
+        materialId = material?.id,
         name = material?.name.orEmpty(),
         // Doubles, not decimals — the server declares these quantities as doubles, so the choice
         // of precision is already made upstream and mirroring it is the honest thing to do.

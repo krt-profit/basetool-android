@@ -445,3 +445,45 @@ by opening the order.
 
 **Code:** `core/data/JobOrderRepository.kt` (`JobOrderItem`), `orders/OrdersScreen.kt` (`ItemLine`),
 `orders/OrderDetailTabs.kt`, `orders/OrderTab.kt`
+
+### REQ-APP-ORDERS-018 — A handover is what finishes an Auftrag, and it books a stock row out
+
+Design ch. 10 artboard 14, the round-8 parity programme's heaviest item: in the web the handover is
+what **closes** an Auftrag, so an app that could take one on and record no delivery could never end
+one either.
+
+**A stock row is mandatory.** `JobOrderHandoverItemCreateDto.inventoryItemId` is `@NotNull` on the
+server and the web's own form refuses to submit without one
+(`error.joborder.handover.noitems`). The candidates come from
+`GET /orders/{id}/materials/{matId}/inventory` — the rows already linked to **this** order line —
+which is what makes the handover a booking-out rather than a search. A single candidate is
+preselected; two or more are not, because choosing for the member would book out a row they did not
+pick.
+
+> [!warning] The artboard's „Ohne Lagerbezug erfassen" is **not** built
+> The endpoint cannot serve it and the web does not offer it. Flagged in the design gap list rather
+> than coded around (`CLAUDE.md`: flag a contract mismatch, never work around it).
+
+**The projection is computed, never formed in somebody's head** — „Nach dieser Übergabe 300 / 400 ·
+75 %", turning Success and saying „Erfüllt" at the need.
+
+> [!danger] „Already handed over" is the sum of the handover LINES, never `amount - openAmount`
+> The server's `openRemaining` is `required - claimed` (`MaterialClaimService`), so it measures
+> **promises**. Subtracting it would report every merely-claimed line as delivered. The app carries
+> `JobOrderHandover.lines` for exactly this and sums the ones naming the material.
+
+**Append-only, said in the form.** Nothing in the app takes a handover back, and the warning sits in
+the form rather than in a modal afterwards — a warning that arrives after the decision is one nobody
+acted on.
+
+**A comma is a decimal point.** A German keyboard sends `,`; a member typing the number their locale
+shows them must not be rejected for it.
+
+**Acceptance**
+
+- [ ] The Übergaben tab offers a record action per material line that carries a material id.
+- [ ] The form is not submittable without a stock row, an amount > 0 and a non-blank handle.
+- [ ] The projection adds what is typed to the summed handover lines, never to `amount - openAmount`.
+- [ ] A successful write closes the sheet and re-reads the Auftrag; a refusal keeps everything typed.
+
+**Enforced by:** `OrderHandoverTest`, `OrdersScreenTest`.

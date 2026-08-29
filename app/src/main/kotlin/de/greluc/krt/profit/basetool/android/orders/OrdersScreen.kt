@@ -56,6 +56,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.data.krtHandedOver
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
@@ -825,6 +826,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
 @Composable
 fun OrderDetailScreen(
     state: OrderDetailState,
+    handover: OrderHandoverActions,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
     actions: OrderDetailActions,
@@ -855,6 +857,7 @@ fun OrderDetailScreen(
             if (state.statusPickerOpen) {
                 StatusSheet(current = order.status, state = state, actions = actions)
             }
+            OrderHandoverSheet(actions = handover)
         }
 
         phase is OrderDetailPhase.Failed -> {
@@ -914,6 +917,7 @@ data class OrderDetailActions(
     val onDismissStatusPicker: () -> Unit,
     /** Marks a status as intended without moving the order (design ch. 10 artboard 8). */
     val onStatusSelected: (JobOrderStatus) -> Unit,
+    val onRecordHandover: (JobOrderMaterial) -> Unit,
     /** Applies the marked status, asking first when the target cannot be taken back. */
     val onApplyStatus: () -> Unit,
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
@@ -1021,7 +1025,7 @@ private fun OrderDetailBody(
         when (state.tab) {
             OrderTab.POSITIONS -> positionsTab(order = order)
             OrderTab.ASSIGNEES -> assigneesTab(order = order, state = state, actions = actions)
-            OrderTab.HANDOVERS -> handoversTab(order = order)
+            OrderTab.HANDOVERS -> handoversTab(order = order, onRecord = actions.onRecordHandover)
         }
     }
 }
@@ -1274,6 +1278,13 @@ fun OrderDetailRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     OrderDetailScreen(
         state = state,
+        handover =
+            OrderHandoverActions(
+                draft = state.handover,
+                onChange = viewModel.handover::change,
+                onSubmit = { viewModel.handover.submit(state.orderId) },
+                onDismiss = viewModel.handover::dismiss,
+            ),
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         actions =
@@ -1293,6 +1304,16 @@ fun OrderDetailRoute(
                 onApplyStatus = viewModel::onApplyStatus,
                 onDismissStatusConfirm = viewModel::onDismissStatusConfirm,
                 onTabSelected = viewModel::onTabSelected,
+                onRecordHandover = { material ->
+                    // The delivered figure comes from the handover LINES, never from
+                    // `amount - openAmount`: the server's open remainder counts claims, not
+                    // deliveries, so that subtraction would overstate every claimed line.
+                    viewModel.handover.open(
+                        orderId = state.orderId,
+                        material = material,
+                        alreadyDone = state.order?.krtHandedOver(material.materialId)?.toString(),
+                    )
+                },
             ),
         modifier = modifier,
     )

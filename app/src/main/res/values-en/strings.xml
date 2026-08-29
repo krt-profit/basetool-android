@@ -1393,4 +1393,22 @@
     <string name="mission_timeline_sort">Sort</string>
     <string name="mission_timeline_sort_hint">Change the order: arrows on each row.</string>
     <string name="mission_crew_assign_title">Assign someone — %1$s</string>
+    <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
+    <string name="order_handover_title">Record handover</string>
+    <string name="order_handover_subject">%1$s · %2$s of %3$s</string>
+    <string name="order_handover_amount">Amount</string>
+    <string name="order_handover_after">After this handover</string>
+    <string name="order_handover_after_value">%1$s / %2$s</string>
+    <string name="order_handover_fulfils">Fulfilled</string>
+    <string name="order_handover_stock">From which stock</string>
+    <string name="order_handover_stock_hint">The handover books the chosen stock row out.</string>
+    <string name="order_handover_no_stock">No stock row is linked to this Auftrag.</string>
+    <string name="order_handover_quality">Q %1$d</string>
+    <string name="order_handover_recipient">Recipient (handle)</string>
+    <string name="order_handover_squadron">Staffel of the recipient</string>
+    <string name="order_handover_append_only">A recorded handover cannot be taken back in the app — the log is append-only.</string>
+    <string name="order_handover_cta">Record handover</string>
+    <string name="order_handover_not_allowed">You need the Logistiker role for that.</string>
+    <string name="order_handover_record_title">Record a handover for</string>
+    <string name="order_handover_record_for">Hand over %1$s</string>
 </resources>

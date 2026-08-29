@@ -34,6 +34,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankStaffRepository
 import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
@@ -219,6 +220,16 @@ class AuthContainer(
      */
     val missions: MissionRepository by lazy {
         MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Recording that material changed hands — the write that finishes an Auftrag.
+     *
+     * Its own repository rather than more methods on [orders]: it reads a different endpoint family
+     * (the order's linked stock rows) and writes an append-only log.
+     */
+    val orderHandovers: JobOrderHandoverRepository by lazy {
+        JobOrderHandoverRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

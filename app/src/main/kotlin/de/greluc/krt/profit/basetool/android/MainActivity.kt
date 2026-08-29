@@ -386,6 +386,7 @@ class MainActivity : AppCompatActivity() {
                                     orderDetail = {
                                         OrderDetailViewModel(
                                             container.orders,
+                                            container.orderHandovers,
                                             container.identity,
                                             container.connectivity,
                                             it,

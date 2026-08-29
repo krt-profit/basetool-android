@@ -203,21 +203,21 @@ class JobOrderRepositoryTest {
     fun `a need of zero has no progress rather than a full bar`() {
         // Nothing was asked for, so nothing can be complete — and a full green bar would say the
         // opposite.
-        val material = JobOrderMaterial("Quantainium", "0", "10", 0, null)
+        val material = JobOrderMaterial("m1", "Quantainium", "0", "10", 0, null)
 
         assertNull(material.progress)
     }
 
     @Test
     fun `no stock figure means no bar, because an empty bar claims none in stock`() {
-        val material = JobOrderMaterial("Quantainium", "500", null, 0, null)
+        val material = JobOrderMaterial("m1", "Quantainium", "500", null, 0, null)
 
         assertNull(material.progress)
     }
 
     @Test
     fun `progress never exceeds one`() {
-        val material = JobOrderMaterial("Quantainium", "100", "250", 0, null)
+        val material = JobOrderMaterial("m1", "Quantainium", "100", "250", 0, null)
 
         assertEquals(1f, material.progress)
     }
