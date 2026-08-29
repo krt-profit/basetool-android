@@ -1349,7 +1349,6 @@
     <string name="mission_unit_rename_save">Save Einheit</string>
     <string name="mission_crew_roles">Function aboard</string>
     <string name="mission_crew_roles_empty">No CREW functions defined.</string>
-    <string name="mission_admin_people">People</string>
     <string name="mission_timeline_up">Up</string>
     <string name="mission_timeline_down">Down</string>
     <plurals name="mission_member_notice">
@@ -1357,4 +1356,41 @@
         <item quantity="other">%1$d of at most %2$d matches — keep typing to narrow it</item>
     </plurals>
     <string name="mission_crew_assign">Assign someone</string>
+    <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
+    <string name="mission_admin_people">People</string>
+    <string name="mission_admin_state_saving">Saving…</string>
+    <string name="mission_admin_state_saved">Saved %1$s</string>
+    <string name="mission_admin_state_dirty">Changed</string>
+    <string name="mission_admin_state_conflict">Conflict</string>
+    <string name="mission_admin_not_started_chip">Not started</string>
+    <string name="mission_admin_not_started">Not started yet — check-in is locked for everyone.</string>
+    <string name="mission_admin_running_since">Running since %1$s</string>
+    <string name="mission_admin_correct_start">Correct the start time</string>
+    <string name="mission_admin_visibility_internal">Internal only</string>
+    <string name="mission_admin_visibility_open">Whole organisation</string>
+    <string name="mission_admin_internal_hint">Off: the whole organisation sees the Einsatz.</string>
+    <string name="mission_section_core">Kern</string>
+    <string name="mission_section_schedule">Zeitplan</string>
+    <string name="mission_section_flags">Sichtbarkeit</string>
+    <string name="mission_section_people">Personen</string>
+    <string name="mission_start_confirm_title">Start the Einsatz now?</string>
+    <plurals name="mission_start_confirm_body">
+        <item quantity="one">The actual start is set to now. The one signed-up member can then check in — before that the server refuses every check-in.</item>
+        <item quantity="other">The actual start is set to now. All %1$d signed-up members can then check in — before that the server refuses every check-in.</item>
+    </plurals>
+    <string name="mission_start_confirm_reversible">Correctable: the start time can still be changed in the Zeitplan.</string>
+    <string name="mission_start_confirm_cta">Start the Einsatz</string>
+    <string name="mission_conflict_title">%1$s was changed</string>
+    <string name="mission_conflict_body">Somebody saved the %1$s section while you were typing. Your version was not applied.</string>
+    <string name="mission_conflict_theirs">Current state (server)</string>
+    <string name="mission_conflict_mine">Your version</string>
+    <string name="mission_conflict_others_unaffected">The other sections are unaffected.</string>
+    <string name="mission_conflict_reload">Reload</string>
+    <string name="mission_conflict_keep_mine">Keep my version</string>
+    <string name="krt_date_hint">DD.MM.YYYY</string>
+    <string name="krt_time_hint">HH:MM</string>
+    <string name="krt_empty_value">—</string>
+    <string name="mission_timeline_sort">Sort</string>
+    <string name="mission_timeline_sort_hint">Change the order: arrows on each row.</string>
+    <string name="mission_crew_assign_title">Assign someone — %1$s</string>
 </resources>

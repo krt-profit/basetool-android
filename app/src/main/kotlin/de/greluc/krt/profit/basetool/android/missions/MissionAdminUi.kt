@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,11 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateTimeField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPanelHeader
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -29,40 +34,56 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 /** Test handle for the Verwaltung tab's content. */
 const val MISSION_ADMIN_SHEET_TAG: String = "mission-admin-sheet"
 
+/** Test handle for the „Einsatz läuft jetzt" action. */
+const val MISSION_ADMIN_START_TAG: String = "mission-admin-start"
+
+/** A multi-line briefing field: a one-line box visually truncates prose (design ch. 06 artboard 7). */
+private val DESCRIPTION_MIN = 88.dp
+
+/** How many lines the briefing field shows before it scrolls. */
+private const val MIN_BRIEFING_LINES = 3
+
 /**
  * What the Verwaltung tab can do.
  *
  * Opening and closing are absent on purpose: the form's lifecycle belongs to the tab, so
- * `MissionDetailViewModel.onTabSelected` fills it on arrival and clears it on departure. A screen
- * that could also open it would give the form two owners, and one of them a stale set of section
- * counters.
+ * `MissionDetailViewModel.onTabSelected` fills it on arrival and clears it on departure.
  *
- * @property onChange a field changed.
+ * @property onChange a field changed, naming the section so its head can say „Geändert".
+ * @property onToggle a section was folded open or shut.
  * @property onSave one section is to be saved.
- * @property onStartNow stamp the Einsatz as running now.
+ * @property onAskStart „Einsatz läuft jetzt" was pressed — opens the confirmation.
+ * @property onStart the confirmation was accepted.
+ * @property onDismissStart the confirmation was declined.
+ * @property onCorrectStart the started time is to be corrected.
+ * @property onCancelCorrectStart that correction was abandoned.
+ * @property onKeepMine a conflict is resolved by re-writing the member's own version.
+ * @property onReload a conflict is resolved by taking the server's.
  */
 data class MissionAdminActions(
-    val onChange: ((MissionAdminForm) -> MissionAdminForm) -> Unit,
+    val onChange: (MissionSection, (MissionAdminForm) -> MissionAdminForm) -> Unit,
+    val onToggle: (MissionSection) -> Unit,
     val onSave: (MissionSection) -> Unit,
-    val onStartNow: () -> Unit,
+    val onAskStart: () -> Unit,
+    val onStart: () -> Unit,
+    val onDismissStart: () -> Unit,
+    val onCorrectStart: () -> Unit,
+    val onCancelCorrectStart: () -> Unit,
+    val onKeepMine: () -> Unit,
+    val onReload: () -> Unit,
 )
 
 /**
- * Verwaltung: editing the Einsatz itself — Kern, Zeitplan, Sichtbarkeit, each saved on its own.
+ * Verwaltung: the Einsatz itself, as four folded sections.
  *
- * **The eighth tab, and the repository owner's answer to round 10's question 10a** (2026-08-29):
- * the Verwaltung is a tab of the Einsatz rather than a sheet over it. That is the better half of
- * the choice the prompt offered — editing an Einsatz is a place rather than a modal errand, the
- * back gesture keeps meaning „leave the Einsatz" instead of „close a sheet", and each section can
- * be saved and re-read without the surface disappearing underneath it. It also keeps every manager
- * affordance in one place instead of scattering a pencil across a pinned head.
+ * **Composition ratified 2026-08-29** (design ch. 06 artboards 7–12). It shipped first as a flat
+ * stack — four sections and three saves inside one item, with a single error slot at the foot. The
+ * drawing that came back makes each section a panel header (Kern open, the rest closed, no
+ * accordion), puts its save **inside** it, and gives its head a state chip, so a folded section
+ * still says whether it is started, changed, saving, saved or in conflict.
  *
- * It is drawn only for a caller the server says may manage this Einsatz; `MissionTabRow` holds
- * that gate, and every write behind it is refused by the backend regardless.
- *
- * The three sections are three saves, not one. Each carries its own version counter on the server,
- * deliberately, so that two managers editing different sections both commit. A single save for all
- * three would throw that away and turn every concurrent edit into a 409 nobody can explain.
+ * The tab is reachable only for a caller the server says may manage; `MissionTabRow` draws it
+ * **locked rather than hidden** for everyone else.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now — online, and nothing already in flight.
@@ -76,37 +97,136 @@ fun LazyListScope.adminTab(
     members: MissionMemberActions,
 ) {
     item {
-        // One item rather than one per field: the sections are a form, and a form that recycles its
-        // rows loses the focus and the soft keyboard the moment a field scrolls out of the viewport.
         Column(
             modifier = Modifier.fillMaxWidth().testTag(MISSION_ADMIN_SHEET_TAG),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
         ) {
             Hint(text = stringResource(R.string.mission_admin_section_hint))
-            AdminCoreSection(form = form, writable = writable, actions = actions)
-            AdminScheduleSection(form = form, writable = writable, actions = actions)
-            AdminFlagsSection(form = form, writable = writable, actions = actions)
-            AdminPeopleSection(members = members)
+            AdminSection(MissionSection.CORE, form, actions) { CoreFields(form, writable, actions) }
+            AdminSection(MissionSection.SCHEDULE, form, actions) { ScheduleFields(form, writable, actions) }
+            AdminSection(MissionSection.FLAGS, form, actions) { FlagsFields(form, writable, actions) }
+            AdminSection(MissionSection.PEOPLE, form, actions) {
+                Hint(text = stringResource(R.string.mission_member_hint))
+                MemberSection(members = members)
+            }
             form.error?.let { SignUpError(error = it) }
         }
     }
 }
 
 /**
- * Personen: who leads the Einsatz, who may manage it, and who is on it.
+ * One folded section: its head, its state chip, and its body when open.
  *
- * The fourth section, and the only one that is not a form: all three writes name a member, so all
- * three go through one picker rather than three fields. Not version-locked as a section — the party
- * lead carries its own counter and the other two are membership rows, so there is nothing here to
- * „save".
- *
- * @param members the actions and the picker's state.
+ * @param section which one.
+ * @param form the form, for the fold and the state.
+ * @param actions what the tab can do.
+ * @param body what the section holds.
  */
 @Composable
-private fun AdminPeopleSection(members: MissionMemberActions) {
-    KrtSectionTitle(text = stringResource(R.string.mission_admin_people))
-    Hint(text = stringResource(R.string.mission_member_hint))
-    MemberSection(members = members)
+private fun AdminSection(
+    section: MissionSection,
+    form: MissionAdminForm,
+    actions: MissionAdminActions,
+    body: @Composable () -> Unit,
+) {
+    val open = form.expanded.contains(section)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        KrtPanelHeader(
+            title = stringResource(section.titleRes()),
+            expanded = open,
+            onToggle = { actions.onToggle(section) },
+            stateChip = { SectionStateChip(section, form) },
+        )
+        if (open) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            ) {
+                body()
+            }
+        }
+    }
+}
+
+/**
+ * What a section's head says about itself.
+ *
+ * Two kinds of chip share the slot: the section's **standing** value (started or not, internal or
+ * open) and its **write** state (saving, saved, changed, conflict). The write state wins while it
+ * lasts, because it is the newer fact.
+ *
+ * @param section which one.
+ * @param form the form.
+ */
+@Composable
+private fun SectionStateChip(
+    section: MissionSection,
+    form: MissionAdminForm,
+) {
+    when (form.stateOf(section)) {
+        MissionSectionState.SAVING -> {
+            KrtChip(text = stringResource(R.string.mission_admin_state_saving), tone = KrtChipTone.Muted)
+        }
+
+        MissionSectionState.SAVED -> {
+            KrtChip(
+                text = stringResource(R.string.mission_admin_state_saved, form.savedAt[section].orEmpty()),
+                tone = KrtChipTone.Success,
+            )
+        }
+
+        MissionSectionState.DIRTY -> {
+            KrtChip(text = stringResource(R.string.mission_admin_state_dirty), tone = KrtChipTone.Warning)
+        }
+
+        MissionSectionState.CONFLICT -> {
+            KrtChip(text = stringResource(R.string.mission_admin_state_conflict), tone = KrtChipTone.Danger)
+        }
+
+        MissionSectionState.IDLE -> {
+            StandingChip(section, form)
+        }
+    }
+}
+
+/**
+ * The section's own standing value, shown when no write state overrides it.
+ *
+ * @param section which one.
+ * @param form the form.
+ */
+@Composable
+private fun StandingChip(
+    section: MissionSection,
+    form: MissionAdminForm,
+) {
+    // Only two sections have a standing value: Kern has none worth a chip, and Personen's counts
+    // live on its own rows. Written as two guards rather than an exhaustive `when` with an empty
+    // branch, which is an unused expression the compiler rejects under -Werror.
+    if (section == MissionSection.SCHEDULE) {
+        KrtChip(
+            text =
+                if (form.started) {
+                    stringResource(R.string.mission_admin_running_since, form.actualStart.toKrtStartedAt())
+                } else {
+                    stringResource(R.string.mission_admin_not_started_chip)
+                },
+            tone = if (form.started) KrtChipTone.Success else KrtChipTone.Muted,
+        )
+    }
+    if (section == MissionSection.FLAGS) {
+        KrtChip(
+            text =
+                stringResource(
+                    if (form.internal) {
+                        R.string.mission_admin_visibility_internal
+                    } else {
+                        R.string.mission_admin_visibility_open
+                    },
+                ),
+            tone = KrtChipTone.Muted,
+        )
+    }
 }
 
 /**
@@ -117,126 +237,210 @@ private fun AdminPeopleSection(members: MissionMemberActions) {
  * @param actions what the tab can do.
  */
 @Composable
-private fun AdminCoreSection(
+private fun CoreFields(
     form: MissionAdminForm,
     writable: Boolean,
     actions: MissionAdminActions,
 ) {
-    KrtSectionTitle(text = stringResource(R.string.mission_admin_core))
     KrtTextField(
         value = form.name,
-        onValueChange = { v -> actions.onChange { it.copy(name = v) } },
+        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(name = v) } },
         label = stringResource(R.string.mission_admin_name),
+        enabled = writable,
     )
     KrtTextField(
         value = form.description,
-        onValueChange = { v -> actions.onChange { it.copy(description = v) } },
+        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(description = v) } },
+        modifier = Modifier.heightIn(min = DESCRIPTION_MIN),
         label = stringResource(R.string.mission_admin_description),
+        enabled = writable,
+        minLines = MIN_BRIEFING_LINES,
     )
     KrtTextField(
         value = form.meetingPoint,
-        onValueChange = { v -> actions.onChange { it.copy(meetingPoint = v) } },
+        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(meetingPoint = v) } },
         label = stringResource(R.string.mission_admin_meeting_point),
+        enabled = writable,
     )
-    SectionSave(
-        label = stringResource(R.string.mission_admin_save_core),
-        section = MissionSection.CORE,
-        form = form,
-        writable = writable,
-        onSave = actions.onSave,
-    )
+    SectionSave(R.string.mission_admin_save_core, MissionSection.CORE, form, writable, actions.onSave)
 }
 
 /**
- * Zeitplan: the four times, one of which decides whether anybody can check in at all.
+ * Zeitplan: three planned times as date/time pairs, and the start as a state plus an action.
  *
  * @param form what is typed.
  * @param writable whether a write may run right now.
  * @param actions what the tab can do.
  */
 @Composable
-private fun AdminScheduleSection(
+private fun ScheduleFields(
     form: MissionAdminForm,
     writable: Boolean,
     actions: MissionAdminActions,
 ) {
-    KrtSectionTitle(text = stringResource(R.string.mission_admin_schedule))
-    Hint(text = stringResource(R.string.mission_admin_start_hint))
-    KrtTextField(
-        value = form.meetingTime,
-        onValueChange = { v -> actions.onChange { it.copy(meetingTime = v) } },
-        label = stringResource(R.string.mission_admin_meeting_time),
+    ScheduleTime(
+        labelRes = R.string.mission_admin_meeting_time,
+        date = form.meetingDate,
+        time = form.meetingClock,
+        writable = writable,
+        onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(meetingDate = v) } },
+        onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(meetingClock = v) } },
     )
-    KrtTextField(
-        value = form.plannedStart,
-        onValueChange = { v -> actions.onChange { it.copy(plannedStart = v) } },
-        label = stringResource(R.string.mission_admin_planned_start),
+    ScheduleTime(
+        labelRes = R.string.mission_admin_planned_start,
+        date = form.plannedStartDate,
+        time = form.plannedStartClock,
+        writable = writable,
+        onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(plannedStartDate = v) } },
+        onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(plannedStartClock = v) } },
     )
-    KrtTextField(
-        value = form.plannedEnd,
-        onValueChange = { v -> actions.onChange { it.copy(plannedEnd = v) } },
-        label = stringResource(R.string.mission_admin_planned_end),
+    ScheduleTime(
+        labelRes = R.string.mission_admin_planned_end,
+        date = form.plannedEndDate,
+        time = form.plannedEndClock,
+        writable = writable,
+        onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(plannedEndDate = v) } },
+        onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(plannedEndClock = v) } },
     )
-    KrtTextField(
-        value = form.actualStart,
-        onValueChange = { v -> actions.onChange { it.copy(actualStart = v) } },
-        label = stringResource(R.string.mission_admin_actual_start),
+    ActualStart(form, writable, actions)
+    SectionSave(R.string.mission_admin_save_schedule, MissionSection.SCHEDULE, form, writable, actions.onSave)
+}
+
+/**
+ * One planned time as the drawn date/time pair.
+ *
+ * @param labelRes what the pair means.
+ * @param date the date half.
+ * @param time the time half.
+ * @param writable whether a write may run right now.
+ * @param onDate the date changed.
+ * @param onTime the time changed.
+ */
+@Composable
+private fun ScheduleTime(
+    labelRes: Int,
+    date: String,
+    time: String,
+    writable: Boolean,
+    onDate: (String) -> Unit,
+    onTime: (String) -> Unit,
+) {
+    KrtDateTimeField(
+        label = stringResource(labelRes),
+        date = date,
+        time = time,
+        onDate = onDate,
+        onTime = onTime,
+        enabled = writable,
+        datePlaceholder = stringResource(R.string.krt_date_hint),
+        timePlaceholder = stringResource(R.string.krt_time_hint),
     )
-    // „Der Einsatz läuft jetzt" is a verb, and typing an ISO timestamp to express it is paperwork.
-    // It is this section's primary action — nothing else on the screen unlocks the check-in the
-    // whole Einsatz exists for — so it is drawn as one, filled and full width, rather than as a
-    // third ghost among the saves.
-    if (!form.started) {
-        KrtCtaButton(
-            text = stringResource(R.string.mission_admin_start_now),
-            onClick = actions.onStartNow,
-            iconRes = DesignR.drawable.ic_krt_check,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = writable && form.saving == null,
-        )
+}
+
+/**
+ * „Tatsächlicher Start" — a state line and an action, never a text field.
+ *
+ * Design ch. 06 artboard 8 names the reason: a free field for the start timestamp is what made the
+ * one action the whole screen exists for look like bookkeeping. Before the start, the line says
+ * check-in is locked for everyone and the filled CTA offers to start; after it, the line says since
+ * when, and a ghost offers to correct it.
+ *
+ * @param form what is typed.
+ * @param writable whether a write may run right now.
+ * @param actions what the tab can do.
+ */
+@Composable
+private fun ActualStart(
+    form: MissionAdminForm,
+    writable: Boolean,
+    actions: MissionAdminActions,
+) {
+    Text(
+        text =
+            if (form.started) {
+                stringResource(R.string.mission_admin_running_since, form.actualStart.toKrtStartedAt())
+            } else {
+                stringResource(R.string.mission_admin_not_started)
+            },
+        style = MaterialTheme.typography.bodySmall,
+        color = if (form.started) KrtPalette.Gray1 else KrtPalette.TextMuted,
+    )
+    when {
+        form.started && form.correctingStart -> {
+            KrtDateTimeField(
+                label = stringResource(R.string.mission_admin_correct_start),
+                date = form.correctStartDate,
+                time = form.correctStartClock,
+                onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(correctStartDate = v) } },
+                onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(correctStartClock = v) } },
+                enabled = writable,
+                datePlaceholder = stringResource(R.string.krt_date_hint),
+                timePlaceholder = stringResource(R.string.krt_time_hint),
+            )
+            KrtGhostButton(
+                text = stringResource(R.string.mission_timeline_cancel),
+                onClick = actions.onCancelCorrectStart,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = writable,
+            )
+        }
+
+        form.started -> {
+            KrtGhostButton(
+                text = stringResource(R.string.mission_admin_correct_start),
+                onClick = actions.onCorrectStart,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = writable,
+            )
+        }
+
+        else -> {
+            // The one filled action of this tab. It asks first (artboard 9): the step frees
+            // check-in for everyone, which is consequential — but correctable, so it is a standard
+            // modal rather than a danger one.
+            KrtCtaButton(
+                text = stringResource(R.string.mission_admin_start_now),
+                onClick = actions.onAskStart,
+                iconRes = DesignR.drawable.ic_krt_check,
+                modifier = Modifier.fillMaxWidth().testTag(MISSION_ADMIN_START_TAG),
+                enabled = writable && form.saving == null,
+            )
+        }
     }
-    SectionSave(
-        label = stringResource(R.string.mission_admin_save_schedule),
-        section = MissionSection.SCHEDULE,
-        form = form,
-        writable = writable,
-        onSave = actions.onSave,
-    )
 }
 
 /**
- * Sichtbarkeit: whether the Einsatz is the owning unit's business or the whole organisation's.
+ * Sichtbarkeit: one checkbox, naming both of its sides.
+ *
+ * A yes/no is **not** one-of-N, so it is a square checkbox — the round radio is the design system's
+ * only circular element and stays reserved for a real choice, such as the payout preference
+ * (ch. 06 artboard 10).
  *
  * @param form what is typed.
  * @param writable whether a write may run right now.
  * @param actions what the tab can do.
  */
 @Composable
-private fun AdminFlagsSection(
+private fun FlagsFields(
     form: MissionAdminForm,
     writable: Boolean,
     actions: MissionAdminActions,
 ) {
-    KrtSectionTitle(text = stringResource(R.string.mission_admin_flags))
-    KrtRadioRow(
-        selected = form.internal,
-        onSelect = { actions.onChange { it.copy(internal = !it.internal) } },
+    KrtCheckboxRow(
+        checked = form.internal,
+        onCheckedChange = { v -> actions.onChange(MissionSection.FLAGS) { it.copy(internal = v) } },
         label = stringResource(R.string.mission_admin_internal),
         enabled = writable,
     )
-    SectionSave(
-        label = stringResource(R.string.mission_admin_save_flags),
-        section = MissionSection.FLAGS,
-        form = form,
-        writable = writable,
-        onSave = actions.onSave,
-    )
+    // A flag whose off-state is not named gets guessed at.
+    Hint(text = stringResource(R.string.mission_admin_internal_hint))
+    SectionSave(R.string.mission_admin_save_flags, MissionSection.FLAGS, form, writable, actions.onSave)
 }
 
 /**
- * One section's save.
+ * One section's save, inside the section it saves.
  *
- * @param label what it says.
+ * @param labelRes what it says.
  * @param section which section it writes.
  * @param form the form, for the in-flight state.
  * @param writable whether a write may run right now.
@@ -244,26 +448,44 @@ private fun AdminFlagsSection(
  */
 @Composable
 private fun SectionSave(
-    label: String,
+    labelRes: Int,
     section: MissionSection,
     form: MissionAdminForm,
     writable: Boolean,
     onSave: (MissionSection) -> Unit,
 ) {
     KrtGhostButton(
-        text = label,
+        text = stringResource(labelRes),
         onClick = { onSave(section) },
         iconRes = DesignR.drawable.ic_krt_check,
         modifier = Modifier.fillMaxWidth(),
-        // Every save is disabled while ANY of them is in flight: the three share one form, and a
-        // second write launched against a counter the first is about to bump is a 409 the member
-        // caused by being quick.
+        // Every save is disabled while ANY of them is in flight: they share one form, and a second
+        // write launched against a counter the first is about to bump is a 409 the member caused by
+        // being quick. That is a WAITING lock, not a permission one — hence no lock glyph, which
+        // the design system reserves for a missing right (artboard 10).
         enabled = writable && form.saving == null,
     )
 }
 
 /**
+ * What a section is called on its head.
+ *
+ * @return the string resource.
+ */
+private fun MissionSection.titleRes(): Int =
+    when (this) {
+        MissionSection.CORE -> R.string.mission_admin_core
+        MissionSection.SCHEDULE -> R.string.mission_admin_schedule
+        MissionSection.FLAGS -> R.string.mission_admin_flags
+        MissionSection.PEOPLE -> R.string.mission_admin_people
+    }
+
+/**
  * A muted line of explanation between the controls it is about.
+ *
+ * `TextMuted`, never `Gray2`: #646464 is the hairline value and fails AA as small text on the
+ * section ground — the same helper in `MissionStructureUi` had it right, and this one did not
+ * (design README correction 16).
  *
  * @param text what it says.
  */
@@ -272,6 +494,6 @@ private fun Hint(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.Gray2,
+        color = KrtPalette.TextMuted,
     )
 }

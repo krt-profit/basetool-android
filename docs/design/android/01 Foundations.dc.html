@@ -59,7 +59,7 @@
             </div>
             <div style="width:150px;flex:none;padding:10px 14px;border-left:1px solid #282828">
               <div style="font:700 14px/1.2 Lato,sans-serif;color:{{ s.text }}">{{ s.sample }}</div>
-              <div style="font:300 11px/1.4 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">text {{ s.textHex }} · {{ s.ratio }}</div>
+              <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">text {{ s.textHex }} · {{ s.ratio }}</div>
             </div>
           </div>
         </sc-for>
@@ -71,7 +71,7 @@
           <sc-for list="{{ depts }}" as="d" hint-placeholder-count="6">
             <div style="display:flex;align-items:center;gap:10px;border:1px solid #282828;background:#141414;padding:8px 10px">
               <span style="width:14px;height:14px;flex:none;background:{{ d.hex }}"></span>
-              <div style="min-width:0"><div style="font:700 11px/1.2 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</div><div style="font:300 11px/1.2 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">{{ d.hex }}</div></div>
+              <div style="min-width:0"><div style="font:700 11px/1.2 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</div><div style="font:300 11px/1.2 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">{{ d.hex }}</div></div>
             </div>
           </sc-for>
         </div>
@@ -81,7 +81,7 @@
           <div><span style="color:#FFFFFF;font-weight:700">#FFFFFF</span> data values — the brightest thing on screen</div>
           <div><span style="color:#D2D2D2;font-weight:700">#D2D2D2</span> body text, neutral bold labels</div>
           <div><span style="color:#8A8A8A;font-weight:700">#8A8A8A</span> muted TEXT (AA-safe)</div>
-          <div><span style="color:#646464;font-weight:700">#646464</span> decorative only — rails, rules, disabled strokes. Fails contrast as text</div>
+          <div><span style="color:#8A8A8A;font-weight:700">#646464</span> decorative only — rails, rules, disabled strokes. Fails contrast as text</div>
           <div><span style="color:#D2D2D2;font-weight:700">#282828</span> hairlines & pressed-row fill · <span style="font-weight:700">#1C1C1C</span> input/table-head fill · <span style="font-weight:700">#141414</span> surface · <span style="font-weight:700">#000</span> canvas</div>
         </div>
       </div>
@@ -123,7 +123,7 @@
       </div>
       <div style="border:1px solid #282828;background:#141414;padding:16px">
         <div style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Focus & bloom — the only glow</div>
-        <div style="height:48px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:0 0 5px rgba(231,126,35,.3);display:flex;align-items:center;padding:0 14px;font:300 14px/1 Lato,sans-serif;color:#FFFFFF">Quantainium<span style="width:1.5px;height:18px;background:#E77E23;margin-left:2px"></span></div>
+        <div style="height:48px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:0 0 6px rgba(231,126,35,.10);display:flex;align-items:center;padding:0 14px;font:300 14px/1 Lato,sans-serif;color:#FFFFFF">Quantainium<span style="width:1.5px;height:18px;background:#E77E23;margin-left:2px"></span></div>
         <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px">Focus: orange border + 0 0 5 dp rgba(231,126,35,.3). Modals/CTAs: 0 0 20 dp at 20%. No soft drop shadows anywhere.</div>
       </div>
       <div style="border:1px solid #282828;background:#141414;padding:0;position:relative;overflow:hidden">

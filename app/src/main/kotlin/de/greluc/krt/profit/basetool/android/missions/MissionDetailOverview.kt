@@ -136,7 +136,7 @@ private fun FactCell(
         Text(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelMedium,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
         )
         Text(
             text = value,
@@ -208,7 +208,7 @@ private fun AttendanceBox(detail: MissionDetail) {
                         // in a sentence.
                         text = stringResource(R.string.mission_detail_registered).uppercase(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = KrtPalette.Gray2,
+                        color = KrtPalette.TextMuted,
                     )
                 }
                 Text(
@@ -351,7 +351,7 @@ private fun BriefingCard(detail: MissionDetail) {
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = KrtPalette.Gray2,
+                    color = KrtPalette.TextMuted,
                     modifier = Modifier.padding(start = KrtSpacing.lg).width(BRIEF_LABEL_WIDTH),
                 )
                 Text(

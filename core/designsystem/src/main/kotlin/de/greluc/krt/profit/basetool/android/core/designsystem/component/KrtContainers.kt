@@ -197,6 +197,7 @@ fun KrtPanelHeader(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     count: Int? = null,
+    stateChip: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -228,6 +229,10 @@ fun KrtPanelHeader(
             )
         }
         Box(modifier = Modifier.weight(1f))
+        // The state chip is what makes the fold honest: a closed section still says whether it is
+        // started, saved, changed or in conflict, so nothing needed for a decision is hidden
+        // (design ch. 02 §10, ch. 06 artboard 7).
+        stateChip?.invoke()
         KrtIcon(
             id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
             contentDescription = null,

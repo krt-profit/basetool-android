@@ -45,6 +45,7 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,6 +59,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 
 /** Opacity of a disabled field. */
 private const val DISABLED_FIELD_ALPHA = 0.45f
+
+/** The date half is wider than the time half: 1.35 fr to 1 fr, per design ch. 06 artboard 8. */
+private const val DATE_WEIGHT = 1.35f
 
 /**
  * The field label.
@@ -367,7 +371,7 @@ private fun KrtFieldDecoration(
             Text(
                 text = placeholder,
                 style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
         innerTextField()
@@ -425,6 +429,67 @@ fun KrtStepperField(
                 label = "Mehr",
                 onClick = onIncrement,
                 enabled = enabled,
+            )
+        }
+    }
+}
+
+/**
+ * One point in time as a **date and a time**, never as free text.
+ *
+ * Design ch. 06 artboard 8 and ch. 11 artboard 5 draw every timestamp this way — the web's own
+ * `.datetime-split-inputs`. The wire value is built from the pair; the member never types an ISO
+ * string, which is what made the Einsatz's schedule read as paperwork.
+ *
+ * Weights are 1.35 fr for the date and 1 fr for the time, per the artboard, and both halves are
+ * centred with tabular figures so a column of them lines up.
+ *
+ * @param label what the pair means, drawn once above both halves.
+ * @param date the date half, as typed (`TT.MM.JJJJ`).
+ * @param time the time half, as typed (`HH:MM`).
+ * @param onDate the date changed.
+ * @param onTime the time changed.
+ * @param modifier layout modifier.
+ * @param enabled whether either half accepts input.
+ * @param datePlaceholder the date's own hint; the shared label names the pair, so each half still
+ *   needs to say what shape it wants.
+ * @param timePlaceholder the time's own hint.
+ */
+@Composable
+fun KrtDateTimeField(
+    label: String,
+    date: String,
+    time: String,
+    onDate: (String) -> Unit,
+    onTime: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    datePlaceholder: String? = null,
+    timePlaceholder: String? = null,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        KrtFieldLabel(text = label, enabled = enabled)
+        Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            KrtTextField(
+                value = date,
+                onValueChange = onDate,
+                modifier = Modifier.weight(DATE_WEIGHT),
+                placeholder = datePlaceholder,
+                enabled = enabled,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textAlign = TextAlign.Center,
+                tabularFigures = true,
+            )
+            KrtTextField(
+                value = time,
+                onValueChange = onTime,
+                modifier = Modifier.weight(1f),
+                placeholder = timePlaceholder,
+                enabled = enabled,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textAlign = TextAlign.Center,
+                tabularFigures = true,
             )
         }
     }

@@ -629,7 +629,7 @@ private fun MaterialTableHead() {
             Text(
                 text = stringResource(res).krtUppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
                 modifier = Modifier.weight(weight),
             )
         }
@@ -1602,7 +1602,7 @@ private fun BulkMoveSheet(
             Text(
                 text = stringResource(R.string.inventory_bulk_move_skip_hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
             // A refusal keeps the sheet open and the selection standing: nothing was changed, and
             // re-picking twelve rows to retry punishes the member for the server's answer

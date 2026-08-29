@@ -338,7 +338,7 @@ private fun HangarBody(
                     text = stringResource(R.string.hangar_org_note),
                     modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
                     style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.Gray2,
+                    color = KrtPalette.TextMuted,
                 )
             }
         }
@@ -1021,7 +1021,7 @@ private fun BulkHomeLocationSheet(
             Text(
                 text = pluralStringResource(R.plurals.hangar_bulk_home_location_scope, count, count),
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
             bulk.error?.let {
                 KrtFieldError(text = stringResource(R.string.hangar_bulk_home_location_refused))

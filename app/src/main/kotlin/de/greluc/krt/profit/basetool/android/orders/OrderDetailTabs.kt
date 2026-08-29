@@ -167,7 +167,7 @@ internal fun OrderFactsBar(order: JobOrder) {
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = KrtPalette.Gray2,
+                    color = KrtPalette.TextMuted,
                 )
                 Text(
                     text = value,

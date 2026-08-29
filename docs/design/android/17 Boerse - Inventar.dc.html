@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:4700px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">17</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Börse & Mein Inventar — offene Parität</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Die Item-Seite der Materialbörse, das Bearbeiten bestehender Einträge, die Sammelaktionen in „Mein Inventar" und die org-weite Blueprint-Verfügbarkeit. Die gebauten Flächen (Board, Material-Angebot/-Gesuch, Mein Inventar, Blueprints) sind in Kap. 10 Artboard 3–4 und in der App gezeichnet — hier steht nur, was fehlt.</div>
+    </div>
+  </header>
+  <div class="card" style="padding:14px 16px;max-width:1200px;margin-bottom:18px">
+    <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Entscheidungen für dieses Kapitel</div>
+    <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+      <li><b style="color:#fff">Material und Item sind EIN Formular mit einem Umschalter</b> — nicht zwei Einträge im FAB. Präzedenz: das Auftragsformular macht es seit Runde 5 genauso („Material / Items"). Ein zweiter FAB-Eintrag wäre die vierte Stelle, an der dieselbe Unterscheidung neu erklärt werden müsste</li>
+      <li><b style="color:#fff">Anlegen und Bearbeiten sind dasselbe Sheet</b>, vorbefüllt — beim Bearbeiten trägt es „Zurückziehen" als stillen Danger-Button. Am Material-Gesuch ist alles änderbar, am Angebot nur die Anmerkung (Web-Regel: die Bestandsbindung bleibt)</li>
+      <li><b style="color:#fff">Sammelaktionen brauchen den Auswahlmodus, den Kap. 02 §4 kanonisiert</b> — langer Druck, orange Balken, Haken, untere Aktionsleiste. „Alle löschen" ist dieselbe Leiste mit „Alles wählen", nicht ein eigener Menüpunkt, der eine Liste löscht, die man nicht gesehen hat</li>
+      <li><b style="color:#fff">Blueprint-Verfügbarkeit ist ein eigener Screen</b> (Officer-und-höher, Oversight-Scope) und liegt unter „Mehr" — nicht als dritter Tab in „Mein Inventar": die Liste ist org-weit und persönlich dort fehl am Platz. Ohne die Rolle: gesperrt-antippbar, nie versteckt</li>
+      <li><b style="color:#FFD23F">Provenienz &amp; Lücke (29.08.2026):</b> Artboards 4–6 folgen <code style="color:#8A8A8A">messages_de.properties</code> wörtlich (<code style="color:#8A8A8A">blueprintOverview.*</code>, <code style="color:#8A8A8A">material.quantity.*</code>). Für die <b style="color:#fff">Item-Seite der Börse gibt es in messages_de KEINE Schlüssel</b> — die Routen <code style="color:#8A8A8A">/item-offers/ajax</code> und <code style="color:#8A8A8A">/item-requests/ajax</code> existieren (ADR-0087/0108), ihre deutsche Copy nicht. Die Beschriftungen in Artboards 1–3 sind daher <b style="color:#fff">Vorschlag, nicht Übernahme</b>: „Zustand" und „Bis wann" sind neu erfunden und müssen mit der Web-Seite abgeglichen oder dort erst angelegt werden, bevor implementiert wird. Belegt und übernommen sind nur die Rahmen-Begriffe („Anzahl", „Stück", „Anmerkung")</li>
+    </ul>
+  </div>
+  <section data-screen-label="Boerse Parität" style="display:flex;gap:28px;align-items:flex-start;margin-bottom:32px">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Angebot erstellen — Umschalter Material / Item</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+                <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Angebot erstellen</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Materialbörse · org-weit sichtbar</div></div>
+                <div style="display:flex;border:1px solid #282828;height:44px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Material</button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Item</button>
+                </div>
+                <div><label style="font-size:12.5px;margin-bottom:5px">Item</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="Ballistic Gatling" style="height:46px;font-size:13.5px"></div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Aus deinem persönlichen Bestand oder frei benannt — Vorschläge zeigen erst deinen Bestand.</div></div>
+                <div><label style="font-size:12.5px;margin-bottom:5px">Blueprint (Variante)</label><select style="width:100%;height:46px;font-size:13.5px"><option>Gatling — Standard</option><option>Gatling — Verstärkt</option></select><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Nur bei mehreren Varianten; bei genau einer sofort gesetzt.</div></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div><label style="font-size:12.5px;margin-bottom:5px">Anzahl</label><input type="text" value="2" style="width:100%;height:46px;font-size:15px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"></div>
+                  <div><label style="font-size:12.5px;margin-bottom:5px">Zustand</label><select style="width:100%;height:46px;font-size:13.5px"><option>Neu</option><option>Gebraucht</option></select></div>
+                </div>
+                <div><label style="font-size:12.5px;margin-bottom:5px">Anmerkung</label><input type="text" value="Abgabe an ARC-L1, TS-Absprache" style="width:100%;height:46px;font-size:13.5px"><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Übergabe und Ort bleiben wie im Web außerhalb des Tools.</div></div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Angebot einstellen</button>
+                </div>
+              </div>
+            </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Item-Angebot (/item-offers)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Der Umschalter steht GANZ oben und schaltet nur die Mittelfelder: Material → Menge in SCU + Mindestqualität; Item → Variante, Anzahl, Zustand. Rahmen (Anmerkung, CTA) bleibt gleich</li>
+          <li>Item-Angebot ohne Lagerbindung: die App schickt keine inventoryItemId, weil Items im persönlichen Bestand liegen — die Vorschläge kommen trotzdem zuerst aus „Mein Inventar", damit der Normalfall ein Tipp ist</li>
+          <li><b style="color:#FFD23F">Unbelegte Copy:</b> „Zustand" (Neu/Gebraucht) ist ein Vorschlag — messages_de führt für die Item-Routen KEINE Schlüssel. Vor der Umsetzung mit dem Web abgleichen; fällt das Feld dort weg, entfällt es hier ersatzlos</li>
+          <li>Zustände: Schreiben = CTA-Spinner · Erfolg = Sheet zu, eigene Zeile oben im Board + Toast · 400 (Variante fehlt) = Zeile am Feld, nicht als Toast · Offline = CTA gedimmt mit Grund</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Gesuch erstellen — Item-Seite</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+                <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Gesuch erstellen</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Materialbörse · org-weit sichtbar</div></div>
+                <div style="display:flex;border:1px solid #282828;height:44px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Material</button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Item</button>
+                </div>
+                <div><label style="font-size:12.5px;margin-bottom:5px">Item</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="Medpen (Hemozal)" style="height:46px;font-size:13.5px"></div></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div><label style="font-size:12.5px;margin-bottom:5px">Anzahl</label><input type="text" value="24" style="width:100%;height:46px;font-size:15px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"></div>
+                  <div><label style="font-size:12.5px;margin-bottom:5px">Bis wann</label><input type="text" value="05.09.2026" style="width:100%;height:46px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"></div>
+                </div>
+                <div><label style="font-size:12.5px;margin-bottom:5px">Anmerkung</label><input type="text" value="Für Einsatz „Vertikaler Abbau" — Abgabe im TS" style="width:100%;height:46px;font-size:13.5px"></div>
+                <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+                  <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Ein Gesuch ist keine Bestellung: es sammelt „Ich kann liefern", der Auftrag entsteht getrennt (Kap. 10).</div>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Gesuch einstellen</button>
+                </div>
+              </div>
+            </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Item-Gesuch (/item-requests)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Gleiche Form wie das Angebot, ein Feld anders: „Bis wann" statt „Zustand" — ein Gesuch hat eine Frist, ein Angebot einen Zustand. <b style="color:#FFD23F">Beide Feldnamen sind unbelegt</b> (keine messages_de-Schlüssel für /item-offers und /item-requests) und vor der Umsetzung abzugleichen</li>
+          <li>Kein Blueprint-Feld: wer etwas sucht, sucht das Item, nicht eine Bauvariante. Die Variante entscheidet, wer liefert</li>
+          <li>Der Info-Block trennt Gesuch und Auftrag ausdrücklich — die häufigste Verwechslung an dieser Fläche</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Eigenen Eintrag bearbeiten · zurückziehen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+                <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Angebot bearbeiten</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · 200 SCU · eingestellt heute, 18:02</div></div>
+                <div style="border:1px solid #282828;background:#1C1C1C;padding:10px 12px;font-variant-numeric:tabular-nums">
+                  <div style="font:700 10.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Nicht änderbar</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:6px;opacity:.45"><span style="flex:1;font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">Quantainium · 200 SCU · Q 874 · Lagerzeile Rhea/ARC-L1</span><svg class="krt-icon" style="width:13px;height:13px;color:#8A8A8A;opacity:2.2"><use href="#krt-icon-lock"></use></svg></div>
+                  <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Material, Menge und Bestandsbindung stehen fest — zum Ändern zurückziehen und neu einstellen.</div>
+                </div>
+                <div><label style="font-size:12.5px;margin-bottom:5px">Anmerkung</label><input type="text" value="Abgabe ARC-L1 · ab Freitag" style="width:100%;height:46px;font-size:13.5px"><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Das Einzige, was am laufenden Angebot geändert werden kann (Web-Regel).</div></div>
+                <div style="display:flex;align-items:center;gap:10px;border:1px solid #282828;padding:10px 12px">
+                  <div style="flex:1"><div style="font:700 10.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Interessenten</div><div style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF;margin-top:3px">Dorn · Vex</div></div>
+                  <span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-quiet-danger btn" style="background:transparent;min-height:52px;flex:1">Zurückziehen</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Speichern</button>
+                </div>
+              </div>
+            </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Eintrag bearbeiten (Angebot / Gesuch)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Einstieg: eigene Zeile im Board antippen → dieses Sheet. Bisher gab es nur „Zurückziehen" und kein Update — beides liegt jetzt hier</li>
+          <li>ANGEBOT: nur die Anmerkung ist änderbar, der Rest steht gezeichnet-gesperrt mit Grund. GESUCH: Anzahl, Frist und Anmerkung sind änderbar, das Item nicht (sonst wäre es ein anderes Gesuch)</li>
+          <li>Interessenten stehen im Sheet, weil das Zurückziehen sie betrifft: mit Interessenten fragt es nach und nennt sie, ohne Interessenten zieht es sofort zurück (Undo-Toast 5 s)</li>
+          <li>Zustände: fremder Eintrag → dieses Sheet erscheint nicht, stattdessen „Ich kann liefern" (Kap. 10 Artboard 3) · bereits erledigt → Sheet zeigt nur die Anmerkung lesend + Hinweiszeile</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Mein Inventar — Auswahlmodus &amp; Sammelaktion</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Mein Inventar</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">2 von 18 gewählt</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Persönlicher Bestand</span><button class="btn-ghost btn" style="background:transparent;min-height:40px;font-size:10.5px;flex:none">Alles wählen</button></div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:inset 3px 0 0 #E77E23;font-variant-numeric:tabular-nums">
+              <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">24 Stück · ARC-L1</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:inset 3px 0 0 #E77E23;font-variant-numeric:tabular-nums">
+              <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">80 SCU · Lorville</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none"></span>
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">40 SCU · ARC-L1</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none"></span>
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">1 Stück · Hangar</div></div>
+            </div>
+          </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #E77E23;padding:10px 16px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.08)">
+              <div style="flex:none;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">2<div style="font:300 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">gewählt</div></div>
+              <button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:1;font-size:11px">Aufheben</button>
+              <button class="btn" style="min-height:48px;flex:1.2;font-size:11px;background:#A3000A;border:1px solid #A3000A;color:#FFFFFF"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-trash"></use></svg>Löschen</button>
+            </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Sammelaktionen (/delete-all)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Der Auswahlmodus aus Kap. 02 §4, unverändert übernommen: langer Druck wählt, weitere Zeilen mit einem Tipp, orange Kante + Haken, untere Leiste mit Anzahl · Aufheben · Aktion. Kein neues Muster für diese Liste</li>
+          <li>„Alle löschen" gibt es NICHT als Menüpunkt: es ist „Alles wählen" + Löschen. Eine Aktion, die 18 Zeilen löscht, muss die 18 Zeilen vorher gezeigt haben</li>
+          <li>Löschen fragt nach (Danger-Modal, nennt die Anzahl) und ist NICHT rückholbar — anders als der Posteingang, dessen Undo an einer Serverzeile hängt, die hier gelöscht ist</li>
+          <li>Zustände: Auswahl überlebt Scrollen und Filter (Chip zählt weiter) · Server lehnt eine Zeile ab → Leiste bleibt, Ergebnis nennt gelöscht/übersprungen wie das Bulk-Umbuchen (Kap. 09 Artboard 9)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">5 · Blueprints — mehrere auf einmal übernehmen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:13px">
+                <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Blueprints hinzufügen</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Produktsuche · 3 gewählt · POST /add-selected</div></div>
+                <div class="krt-combobox">
+                  <input class="krt-combobox__input" type="text" value="gatl" style="height:48px;font-size:14px">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#1C1C1C;border:1px solid #E77E23;cursor:pointer">
+                    <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                    <span style="flex:1;font:300 13px/1.4 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling — Standard</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#1C1C1C;border:1px solid #E77E23;cursor:pointer">
+                    <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                    <span style="flex:1;font:300 13px/1.4 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling — Verstärkt</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#1C1C1C;border:1px solid #E77E23;cursor:pointer">
+                    <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+                    <span style="flex:1;font:300 13px/1.4 Lato,sans-serif;color:#FFFFFF">Gatling-Gehäuse</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#141414;border:1px solid #282828;cursor:pointer">
+                    <span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none"></span>
+                    <span style="flex:1;font:300 13px/1.4 Lato,sans-serif;color:#FFFFFF">Gatling-Lauf-Set</span>
+                  </label>
+                  <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;font-style:italic;padding:4px 2px">4 von 12 Treffern — weiter tippen grenzt ein.</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;border:1px solid #282828;background:#1C1C1C;padding:9px 12px"><span style="flex:1;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Bereits vorhanden werden nicht angeboten.</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">3 gewählt</span></div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>3 Blueprints übernehmen</button>
+                </div>
+              </div>
+            </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Mehrfach-Übernahme (/add-selected)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Dasselbe Suchfeld wie die Einzel-Übernahme, nur mit Kästchen: kein zweiter Einstieg, kein „Massen-Modus" — die Auswahl ist der Normalfall, sobald mehr als eines passt</li>
+          <li>Der CTA nennt die Anzahl („3 Blueprints übernehmen") und ist ohne Auswahl gedimmt (Validierung, kein Schloss)</li>
+          <li>Was man schon hat, erscheint nicht in der Liste (Web-Verhalten) — die Notice-Zeile sagt das, damit ein fehlender Treffer nicht als Suchfehler gelesen wird</li>
+          <li>Zustände: Suchen = Spinner in der Notice-Zeile · kein Treffer = „Kein Blueprint passt." · Teilerfolg = Ergebniszeile „2 übernommen · 1 bereits vorhanden" im Sheet, dann schließen</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Blueprint-Verfügbarkeit — „Verfügbar bei" (Officer+)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Blueprint-Verfügbarkeit</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Bereich Profit · Oversight-Scope</div></div>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px"><svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg><span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Nach Blueprint suchen…</span></div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px"><span class="chip chip--primary" style="font-size:10px;flex:none">Alle</span><span class="chip" style="font-size:10px;flex:none">Nicht erfasst</span></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:12px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;font-variant-numeric:tabular-nums">64 Blueprints</div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 14px">
+              <div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling</div>
+              <div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:8px">Verfügbar bei</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+                <span class="chip chip--data" style="font-size:9.5px">Rhea</span>
+                <span class="chip chip--data" style="font-size:9.5px">Dorn</span>
+                <span class="chip chip--muted" style="color:#8A8A8A;font-size:9.5px">Teadora · kein Einheitsmitglied</span>
+              </div>
+              <div style="font:300 10.5px/1.45 Lato,sans-serif;color:#8A8A8A;margin-top:7px">Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit.</div>
+            </div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 14px">
+              <div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Panzerplatte S2</div>
+              <div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:8px">Verfügbar bei</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span class="krt-spinner" style="width:13px;height:13px"></span><span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Besitzer werden geladen…</span></div>
+            </div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 14px">
+              <div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantum-Drive M</div>
+              <div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:8px">Verfügbar bei</div>
+              <div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:6px">Keine Besitzer in deiner Orgeinheit.</div>
+            </div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 14px">
+              <div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Gatling-Lauf-Set</div>
+              <div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:8px">Verfügbar bei</div>
+              <div style="font:300 12px/1.4 Lato,sans-serif;color:#F2564B;margin-top:6px">Besitzer konnten nicht geladen werden.</div>
+            </div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — blueprint-overview.html · blueprintOverview.*</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>KORREKTUR der ersten Fassung: die Web-Seite hat ZWEI Spalten — „Blueprint" und <b style="color:#fff">„Verfügbar bei"</b> (blueprintOverview.column.blueprint/owners). Es gibt keinen Baubarkeits-Chip: die Frage der Seite ist „wer hat es", nicht „kann man es bauen" — Baubarkeit lebt am eigenen Blueprint in „Mein Inventar"</li>
+          <li>Eigener Screen unter „Mehr", nicht ein Tab von „Mein Inventar": org-weite Daten in einer persönlichen Liste wären der falsche Ort — und der Screen hat eine eigene Rolle</li>
+          <li>Karte statt Tabellenzeile, weil die Besitzerliste umbricht: Namen als Daten-Chips, fremde Besitzer als Muted-Chip „kein Einheitsmitglied" mit der wörtlichen Hint-Zeile „Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit."</li>
+          <li>Die Besitzer laden JE ZEILE nach — alle drei Zustände sind belegt und im Artboard gezeichnet: „Besitzer werden geladen…" · „Keine Besitzer in deiner Orgeinheit." · „Besitzer konnten nicht geladen werden." Eine fehlgeschlagene Zeile bricht die Liste nicht ab</li>
+          <li>Ohne Rolle Officer: Menüpunkt sichtbar, gesperrt-antippbar, Toast „Dafür brauchst du die Rolle Officer." (Muster Kap. 09) — der Screen selbst wird nie halb geladen gezeigt</li>
+          <li>Titel und Filter wörtlich: „Blueprint-Verfügbarkeit" · „Nach Blueprint suchen..."; Listen-Leerzustand „Keine Blueprints in deiner Orgeinheit erfasst."</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="16 Materialien.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 16 Materialien</a>
+    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">00 Index →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

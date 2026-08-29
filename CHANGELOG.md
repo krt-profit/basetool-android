@@ -33,6 +33,25 @@
 
 ### Changed
 
+- **Der Verwaltungs-Tab im Einsatz ist jetzt sichtbar und gesperrt statt versteckt.** Wer den
+  Einsatz nicht verwaltet, sieht ihn ausgegraut mit Schloss; ein Tipp nennt die fehlende Rolle.
+  Eine Funktion, die niemand sieht, wird nie angefragt.
+
+- **Der Verwaltungs-Tab ist in vier aufklappbare Abschnitte geteilt** — Kern, Zeitplan,
+  Sichtbarkeit, Personen. Jeder Kopf zeigt seinen Stand, auch zugeklappt, und hat seinen eigenen
+  Speichern-Knopf. Ein Konflikt nennt jetzt den betroffenen Abschnitt und sagt, dass die übrigen
+  nicht betroffen sind.
+
+- **Zeiten werden als Datum und Uhrzeit eingegeben statt als ISO-Text.** „Einsatz läuft jetzt"
+  fragt vorher nach und nennt, wie viele Angemeldete sich danach einchecken können.
+
+- **Ablauf- und Ziele-Zeilen tragen drei Symbolschaltflächen statt mehrerer Knopfreihen**;
+  Anlegen und Bearbeiten öffnen ein Sheet. „Nur intern" und „HVU" sind Kästchen statt Radios,
+  und „Person zuweisen" öffnet eine Auswahl statt einer Chip-Reihe über alle Angemeldeten.
+
+- **Gedämpfter Text ist überall auf den lesbaren Grauton umgestellt** (23 Stellen) — der bisherige
+  Wert ist die Hairline-Farbe und unterschreitet den Kontrast-Grenzwert als Text.
+
 - **Der erste Tab im Einsatz heißt jetzt „Briefing" statt „Übersicht".** Direkt darunter steht in der
   unteren Leiste ebenfalls „Übersicht" — das Dashboard. Zwei gleich benannte Bedienelemente auf
   einem Handy-Bildschirm; der Tab-Name passt jetzt auch besser zu seinem Inhalt.

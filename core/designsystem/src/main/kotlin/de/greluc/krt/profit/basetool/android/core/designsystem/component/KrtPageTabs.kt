@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
@@ -100,11 +101,20 @@ private fun PageTab(
         Row(
             modifier = Modifier.padding(horizontal = TAB_PADDING_H, vertical = TAB_PADDING_V),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = tab.label.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (selected) KrtPalette.White else KrtPalette.Gray2,
+                // TextMuted, never Gray2: #646464 is the HAIRLINE value and reads at ~3.5:1 on the
+                // tab band, below the AA floor. The token `--color-gray-2-text` exists precisely so
+                // this mistake has a fix (design README correction 16).
+                color =
+                    when {
+                        selected -> KrtPalette.White
+                        tab.locked -> KrtPalette.TextMuted.copy(alpha = LOCKED_LABEL_ALPHA)
+                        else -> KrtPalette.TextMuted
+                    },
                 maxLines = 1,
             )
             tab.count?.let {
@@ -112,6 +122,17 @@ private fun PageTab(
                     text = it.toString(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            // The lock is drawn at FULL opacity beside the dimmed label. Alpha alone is
+            // indistinguishable from a loading state, which is the reason the design system pairs
+            // the two rather than choosing one.
+            if (tab.locked) {
+                KrtIcon(
+                    id = R.drawable.ic_krt_lock,
+                    contentDescription = null,
+                    size = LOCK_GLYPH,
+                    tint = KrtPalette.TextMuted,
                 )
             }
         }
@@ -125,6 +146,12 @@ private fun PageTab(
         )
     }
 }
+
+/** A locked tab's label opacity — the design system's disabled-style 45 %. */
+private const val LOCKED_LABEL_ALPHA = 0.45f
+
+/** The lock glyph beside a locked tab's label. */
+private val LOCK_GLYPH = 12.dp
 
 /** The open tab's underline, for the test that measures it is not zero pixels wide. */
 const val TAB_UNDERLINE_TAG: String = "krt-page-tab-underline"

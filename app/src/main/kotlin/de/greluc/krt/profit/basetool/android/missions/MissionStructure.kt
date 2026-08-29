@@ -31,6 +31,10 @@ private const val LOG_TAG = "MissionStructure"
  * @property editingUnitVersion that Einheit's optimistic lock as last read, echoed by the rename.
  * @property crewRolesFor the crew slot whose Funktionen are open for editing, as
  *   `unitId to crewId`, or `null`.
+ * @property crewPickerUnitId the Einheit whose roster picker is open, or `null`. „+ Person
+ *   zuweisen" is one surface that opens a picker (design ch. 06 artboard 14), not a chip
+ *   field over the whole roster — that grows with the roster and is four rows high at
+ *   fourteen names on a 412 dp phone.
  * @property freqName the new frequency's label, as typed.
  * @property freqValue the frequency itself, as typed.
  * @property busy whether a write is running.
@@ -42,6 +46,7 @@ data class MissionStructureDraft(
     val editingUnitId: String? = null,
     val editingUnitVersion: Long = 0L,
     val crewRolesFor: Pair<String, String>? = null,
+    val crewPickerUnitId: String? = null,
     val freqName: String = "",
     val freqValue: String = "",
     val busy: Boolean = false,
@@ -154,6 +159,22 @@ class MissionStructure(
     }
 
     /**
+     * Opens the roster picker for one Einheit.
+     *
+     * @param unitId which Einheit it will fill.
+     */
+    fun openCrewPicker(unitId: String) {
+        val (draft, _) = read()
+        write(draft.copy(crewPickerUnitId = unitId), null)
+    }
+
+    /** Closes it without assigning anybody. */
+    fun dismissCrewPicker() {
+        val (draft, _) = read()
+        write(draft.copy(crewPickerUnitId = null), null)
+    }
+
+    /**
      * Puts a participant aboard an Einheit.
      *
      * @param unitId which unit.
@@ -164,10 +185,14 @@ class MissionStructure(
         participantId: String,
     ) {
         val (draft, _) = read()
-        // No roles: the CREW catalogue is a second, differently-archetyped list and no drawn control
-        // picks from it yet. The server accepts an empty set, so somebody can be put aboard now and
-        // given their roles when round 10 says what that control looks like.
-        run(draft) { structure.addCrew(missionId, unitId, participantId, emptySet()) }
+        // No roles at assignment: the CREW catalogue is a second, differently-archetyped list, and
+        // the drawn flow puts somebody aboard first and gives them their Funktionen from the crew
+        // row's own toggle chips afterwards (ch. 06 artboard 14). The server accepts an empty set.
+        //
+        // The picker closes with the write: it is a pick, not a multi-select.
+        run(draft.copy(crewPickerUnitId = null)) {
+            structure.addCrew(missionId, unitId, participantId, emptySet())
+        }
     }
 
     /**

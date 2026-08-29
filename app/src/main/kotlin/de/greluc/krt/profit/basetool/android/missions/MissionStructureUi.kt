@@ -27,9 +27,13 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionCrewMember
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionUnit
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtAssocAdd
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -37,6 +41,12 @@ import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
+
+/** Test handle for the „+ Person zuweisen" surface. */
+const val MISSION_CREW_ADD_TAG: String = "mission-crew-add"
+
+/** Test handle for the roster picker it opens. */
+const val MISSION_CREW_PICKER_TAG: String = "mission-crew-picker"
 
 /** Test handle for one Einheit's rename action. */
 const val MISSION_UNIT_EDIT_TAG: String = "mission-unit-edit"
@@ -76,6 +86,8 @@ data class MissionStructureActions(
     val onSaveUnit: (String, Long) -> Unit,
     val onSetCrewRoles: (String, String, Set<String>, Long) -> Unit,
     val onAddCrew: (String, String) -> Unit,
+    val onOpenCrewPicker: (MissionUnit) -> Unit,
+    val onDismissCrewPicker: () -> Unit,
     val crewJobTypes: List<MissionJobType>,
 )
 
@@ -110,9 +122,12 @@ fun UnitComposer(structure: MissionStructureActions) {
             label = stringResource(R.string.mission_struct_unit_name),
             enabled = structure.enabled && gate.allowed,
         )
-        KrtRadioRow(
-            selected = structure.draft.unitHighValue,
-            onSelect = { structure.onChange { it.copy(unitHighValue = !it.unitHighValue) } },
+        // A yes/no is not one-of-N, so it is a square checkbox. The round radio is the design
+        // system's only circular element and stays reserved for a real choice — the payout
+        // preference (ch. 06 artboards 3 and 10).
+        KrtCheckboxRow(
+            checked = structure.draft.unitHighValue,
+            onCheckedChange = { v -> structure.onChange { it.copy(unitHighValue = v) } },
             label = stringResource(R.string.mission_struct_hvu),
             enabled = structure.enabled && gate.allowed,
         )
@@ -196,22 +211,46 @@ fun CrewAdd(
     if (candidates.isEmpty()) {
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        Text(
-            text = stringResource(R.string.mission_crew_assign),
-            style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.TextMuted,
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    val (dim, click) = rememberGated(gate, { structure.onOpenCrewPicker(unit) }, structure.denials)
+    KrtAssocAdd(
+        text = stringResource(R.string.mission_crew_assign),
+        onClick = click,
+        modifier = dim.testTag(MISSION_CREW_ADD_TAG),
+        enabled = structure.enabled,
+        locked = !gate.allowed,
+    )
+}
+
+/**
+ * The roster picker „+ Person zuweisen" opens.
+ *
+ * Candidates come from the **roster**, not from a server search: crew is drawn from the people
+ * already signed up to this Einsatz, and they are already in hand. Anyone aboard this unit is
+ * dropped, so the list is what can still be done rather than what exists.
+ *
+ * @param unit which Einheit the picker is filling.
+ * @param roster everybody signed up to the Einsatz.
+ * @param structure the actions.
+ */
+@Composable
+fun CrewPickerSheet(
+    unit: MissionUnit,
+    roster: List<MissionParticipant>,
+    structure: MissionStructureActions,
+) {
+    val aboard = unit.crew.map { it.name }.toSet()
+    val candidates = roster.filterNot { aboard.contains(it.name) }
+    KrtBottomSheet(
+        onDismiss = structure.onDismissCrewPicker,
+        title = stringResource(R.string.mission_crew_assign_title, unit.name),
+        modifier = Modifier.testTag(MISSION_CREW_PICKER_TAG),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             candidates.forEach { participant ->
-                val (dim, click) =
-                    rememberGated(gate, { structure.onAddCrew(unit.id, participant.id) }, structure.denials)
-                KrtFilterChip(
+                KrtSheetOption(
                     text = participant.name,
                     selected = false,
-                    onClick = click,
-                    modifier = dim,
-                    enabled = structure.enabled,
+                    onClick = { structure.onAddCrew(unit.id, participant.id) },
                 )
             }
         }
