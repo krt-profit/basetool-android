@@ -21,8 +21,10 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
+import de.greluc.krt.profit.basetool.android.core.data.MissionPeopleSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -162,6 +164,8 @@ data class MissionSeams(
     val read: MissionSource,
     val admin: MissionAdminSource,
     val structure: MissionStructureSource,
+    val timeline: MissionTimelineSource,
+    val people: MissionPeopleSource,
 )
 
 /**
@@ -176,8 +180,15 @@ data class MissionSeams(
  * @property retryIn seconds until the automatic retry, or `null` when nothing is counting
  * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
  *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
- * @property adminForm the open Verwaltung sheet, or `null` when it is closed
+ * @property adminForm the open Verwaltung form, or `null` when the tab is not on screen
  * @property structure what a manager is composing on the Einheiten or Frequenzen tab
+ * @property timeline what a manager is composing on the Ablauf or Ziele tab
+ * @property memberPicker the one member lookup behind the party lead, the managers and
+ *   „Teilnehmer hinzufügen"
+ * @property crewJobTypes the CREW Funktionen a crew slot can hold; empty until the Einheiten tab is
+ *   opened by someone who may assign one. A **second** catalogue from [rosterJobTypes], sharing its
+ *   names — a participant's Funktion is a MISSION type and a crew role is a CREW one, and the
+ *   backend refuses a write that confuses them.
  */
 data class MissionDetailState(
     val missionId: String,
@@ -195,6 +206,9 @@ data class MissionDetailState(
     val rosterJobTypes: List<MissionJobType> = emptyList(),
     val adminForm: MissionAdminForm? = null,
     val structure: MissionStructureDraft = MissionStructureDraft(),
+    val timeline: MissionTimelineDraft = MissionTimelineDraft(),
+    val memberPicker: MissionMemberPickerState = MissionMemberPickerState(),
+    val crewJobTypes: List<MissionJobType> = emptyList(),
     val error: ApiError? = null,
 ) {
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
@@ -360,6 +374,60 @@ class MissionDetailViewModel(
         )
 
     /**
+     * The Ablauf and the Ziele, as a manager writes them.
+     *
+     * A holder of its own rather than more methods on [structure]: these two sections carry their
+     * own version counters and their endpoints answer with a list rather than the Einsatz, so
+     * nothing about them shares a code path with the Einheiten.
+     */
+    val timeline =
+        MissionTimeline(
+            missionId = missionId,
+            source = seams.timeline,
+            scope = viewModelScope,
+            read = { mutableState.value.let { it.timeline to it.detail } },
+            write = { draft, saved ->
+                val current = mutableState.value
+                mutableState.value = current.copy(timeline = draft, detail = saved ?: current.detail)
+                if (saved != null) {
+                    announce(LiveSyncSections.MISSION_OVERVIEW)
+                }
+            },
+        )
+
+    /**
+     * The one member picker behind the three member-shaped writes.
+     *
+     * It only names somebody; the write that follows is [structure]'s, which is why the pick lands
+     * back here and is dispatched by target rather than the picker holding three callbacks.
+     */
+    val memberPicker =
+        MissionMemberPicker(
+            source = seams.people,
+            scope = viewModelScope,
+            read = { mutableState.value.memberPicker },
+            write = { picker -> mutableState.value = mutableState.value.copy(memberPicker = picker) },
+            onPicked = { target, option ->
+                when (target) {
+                    MissionMemberTarget.PARTY_LEAD -> {
+                        structure.setPartyLead(
+                            option.id,
+                            mutableState.value.detail?.partyLeadVersion ?: 0L,
+                        )
+                    }
+
+                    MissionMemberTarget.MANAGER -> {
+                        structure.addManager(option.id)
+                    }
+
+                    MissionMemberTarget.PARTICIPANT -> {
+                        structure.addParticipant(option.id)
+                    }
+                }
+            },
+        )
+
+    /**
      * The manager's half of the Teilnehmer tab.
      *
      * Public, and called by the screen directly rather than through wrappers here — the same shape
@@ -388,6 +456,33 @@ class MissionDetailViewModel(
             onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
             onRetry = { reload(keepContent = false) },
         )
+
+    /**
+     * Reads the CREW catalogue once, for a manager on the Einheiten tab.
+     *
+     * Guarded on both counts the roster's own loader is: a caller who may not assign gets no
+     * catalogue at all, and a catalogue already in hand is not fetched twice.
+     */
+    private fun loadCrewJobTypes() {
+        val current = mutableState.value
+        if (!current.canManage || current.crewJobTypes.isNotEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            when (val result = seams.people.crewJobTypes()) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.copy(crewJobTypes = result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    // Silent: an empty catalogue renders as a picker with no options, which is the
+                    // truth for an organisation that has never defined a CREW type either. The
+                    // write the member is heading for reports its own failure.
+                    KrtLog.w(LOG_TAG) { "the CREW catalogue could not be read: ${result.error}" }
+                }
+            }
+        }
+    }
 
     /** The member asked again. Cancels the countdown and starts the ladder over. */
     fun onRetry() {
@@ -832,6 +927,12 @@ class MissionDetailViewModel(
         }
         if (tab == MissionTab.FINANCES && mutableState.value.finances is MissionFinancesPhase.Idle) {
             loadFinances()
+        }
+        // The CREW catalogue, once, and only for somebody who may assign a role. It is the second
+        // of two catalogues that share their names; reading it on the Teilnehmer tab instead would
+        // offer Pilot and Turret for a participant's Funktion, which the server refuses with a 400.
+        if (tab == MissionTab.UNITS) {
+            loadCrewJobTypes()
         }
         if (tab == MissionTab.PARTICIPANTS) {
             val current = mutableState.value

@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
+import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineRepository
 import de.greluc.krt.profit.basetool.android.core.data.NotificationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OperationRepository
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitRepository
@@ -230,6 +231,16 @@ class AuthContainer(
      */
     val missionStructure: MissionStructureRepository by lazy {
         MissionStructureRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The Einsatz's Ablauf and Ziele, plus the two catalogues a manager's pickers read.
+     *
+     * Split off again for the same reason, and for one more: every write here answers with a
+     * **list** rather than the Einsatz, so none of it shares a code path with the structure writes.
+     */
+    val missionTimeline: MissionTimelineRepository by lazy {
+        MissionTimelineRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

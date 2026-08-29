@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionCor
 import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionFlagsRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionScheduleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.SetPartyLeadRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateCrewRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateUnitRequest
@@ -352,6 +353,29 @@ interface MissionStructureSource {
         unitId: String,
         name: String,
         highValue: Boolean,
+        version: Long,
+    ): ApiResult<MissionDetail>
+
+    /**
+     * Sets which Funktionen somebody holds aboard an Einheit.
+     *
+     * A **replace**: the request carries the whole set, so a caller that sends one id has assigned
+     * exactly that one and revoked the rest. Roles come from the **CREW** catalogue, which shares
+     * its names with the MISSION one — see [MissionPeopleSource.crewJobTypes].
+     *
+     * @param missionId the Einsatz.
+     * @param unitId which Einheit.
+     * @param crewId which slot aboard it.
+     * @param jobTypeIds the roles they are to hold, whole.
+     * @param version the crew row's own optimistic lock, as last read.
+     * @return the Einsatz as it now stands, or the classified failure.
+     */
+    suspend fun setCrewRoles(
+        missionId: String,
+        unitId: String,
+        crewId: String,
+        jobTypeIds: Set<String>,
+        version: Long,
     ): ApiResult<MissionDetail>
 
     /**
@@ -1253,6 +1277,9 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         coreVersion = sectionVersion(coreVersion),
         scheduleVersion = sectionVersion(scheduleVersion),
         flagsVersion = sectionVersion(flagsVersion),
+        partyLeadVersion = sectionVersion(partyLeadVersion),
+        stepsVersion = sectionVersion(stepsVersion),
+        objectivesVersion = sectionVersion(objectivesVersion),
     )
 }
 
@@ -1361,13 +1388,34 @@ class MissionStructureRepository(
         unitId: String,
         name: String,
         highValue: Boolean,
+        version: Long,
     ): ApiResult<MissionDetail> =
         oneMission(
             missionId,
             reader.put(
                 "${missionPath(missionId)}/units/$unitId",
-                UpdateUnitRequest(name = name, highValueUnit = highValue),
+                // The version is echoed, not omitted. `UpdateUnitRequest` makes it nullable and the
+                // server treats an absent one as "do not check" — which turns a concurrent rename
+                // into a silent overwrite instead of the 409 the counter exists to raise.
+                UpdateUnitRequest(name = name, highValueUnit = highValue, version = version),
                 UpdateUnitRequest.serializer(),
+                MissionDto.serializer(),
+            ),
+        )
+
+    override suspend fun setCrewRoles(
+        missionId: String,
+        unitId: String,
+        crewId: String,
+        jobTypeIds: Set<String>,
+        version: Long,
+    ): ApiResult<MissionDetail> =
+        oneMission(
+            missionId,
+            reader.put(
+                "${missionPath(missionId)}/units/$unitId/crew/$crewId",
+                UpdateCrewRequest(jobTypeIds = jobTypeIds, version = version),
+                UpdateCrewRequest.serializer(),
                 MissionDto.serializer(),
             ),
         )
@@ -1434,7 +1482,7 @@ private fun oneMission(
  * @param missionId which one.
  * @return the API path.
  */
-private fun missionPath(missionId: String): String = "/api/v1/missions/$missionId"
+internal fun missionPath(missionId: String): String = "/api/v1/missions/$missionId"
 
 /**
  * A section's optimistic-lock counter as the client should hold it.
@@ -1503,8 +1551,11 @@ private fun MissionUnitDto.toModel(): MissionUnit? {
                     id = crewId,
                     name = member.participantName.orEmpty(),
                     roles = member.jobTypes.orEmpty().map { it.name },
+                    roleIds = member.jobTypes.orEmpty().mapNotNull { it.id },
+                    version = member.version ?: 0L,
                 )
             },
+        version = version ?: 0L,
     )
 }
 

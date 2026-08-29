@@ -63,155 +63,7 @@ class MissionDetailScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun detail(
-        description: String? = "Quantainium-Abbau an der Lyria-Südwand.",
-        started: Boolean = true,
-        participants: List<MissionParticipant> = emptyList(),
-        units: List<MissionUnit> = emptyList(),
-        steps: List<MissionStep> = emptyList(),
-        objectives: List<MissionObjective> = emptyList(),
-        frequencies: List<MissionFrequency> = emptyList(),
-        canManage: Boolean = false,
-    ) = MissionDetail(
-        id = "m1",
-        name = "Vertikaler Abbau",
-        description = description,
-        status = MissionStatus.PLANNED,
-        rawStatus = "PLANNED",
-        meetingTime = null,
-        plannedStartTime = null,
-        actualStartTime = if (started) Instant.parse("2026-08-23T12:00:00Z") else null,
-        plannedEndTime = null,
-        isInternal = false,
-        meetingPoint = "ARC-L1",
-        operationName = null,
-        orgUnitName = null,
-        orgUnitShorthand = "S1",
-        partyLeadName = "Rhea",
-        registeredParticipants = 14,
-        checkedInParticipants = 9,
-        participants = participants,
-        units = units,
-        steps = steps,
-        objectives = objectives,
-        frequencies = frequencies,
-        canManage = canManage,
-    )
-
-    /**
-     * The structure actions, recording every tap by name.
-     *
-     * Its own function so [show] stays under the length the gate allows — eleven fields inline made
-     * the harness longer than the tests it serves.
-     *
-     * @param canManage whether the controls are unlocked.
-     * @param taps where a tap is recorded.
-     * @return the actions.
-     */
-    @Composable
-    private fun structureActions(
-        canManage: Boolean,
-        taps: MutableList<String>,
-    ) = MissionStructureActions(
-        canManage = canManage,
-        enabled = true,
-        draft = MissionStructureDraft(),
-        denials = rememberDenialState(),
-        onChange = {},
-        onAddUnit = { taps.add("add-unit") },
-        onRemoveUnit = { taps.add("remove-unit:$it") },
-        onAddFrequency = { taps.add("add-freq") },
-        onRemoveFrequency = { taps.add("remove-freq:$it") },
-        onRemoveCrew = { unit, crew -> taps.add("remove-crew:$unit:$crew") },
-    )
-
-    /**
-     * Renders the screen, recording tab changes.
-     *
-     * @param state what to draw.
-     * @param tabs receives every tab the member picked.
-     * @param signUps receives the sign-up action.
-     * @param checkIns receives the check-in action.
-     * @param payouts receives the payout-preference action.
-     * @param bookings receives every money action, by name.
-     */
-    private fun show(
-        state: MissionDetailState,
-        tabs: MutableList<MissionTab> = mutableListOf(),
-        signUps: MutableList<Unit> = mutableListOf(),
-        checkIns: MutableList<Unit> = mutableListOf(),
-        payouts: MutableList<Unit> = mutableListOf(),
-        bookings: MutableList<String> = mutableListOf(),
-        rosterTaps: MutableList<String> = mutableListOf(),
-        canManage: Boolean = false,
-        jobTypes: List<MissionJobType> = emptyList(),
-    ) {
-        compose.setContent {
-            KrtTheme {
-                val roster =
-                    MissionRosterActions(
-                        canManage = canManage,
-                        enabled = true,
-                        checkInPossible = true,
-                        jobTypes = jobTypes,
-                        denials = rememberDenialState(),
-                        onCheckIn = { rosterTaps.add("check-in:$it") },
-                        onPayout = { rosterTaps.add("payout:$it") },
-                        onFunction = { id, job -> rosterTaps.add("function:$id:${job.id}") },
-                    )
-                MissionDetailScreen(
-                    state = state,
-                    onTabSelected = { tabs.add(it) },
-                    onRefresh = {},
-                    onRetryNow = {},
-                    onRetryFinances = {},
-                    actions =
-                        MissionSignUpActions(
-                            onToggleSignUp = { signUps.add(Unit) },
-                            onToggleCheckIn = { checkIns.add(Unit) },
-                            onTogglePayoutPreference = { payouts.add(Unit) },
-                            onJoinPayout = {},
-                            onDesiredFunction = {},
-                            onJoinConfirmed = {},
-                            onJoinDismissed = {},
-                        ),
-                    roster = roster,
-                    structure = structureActions(canManage, rosterTaps),
-                    admin =
-                        MissionAdminActions(
-                            onChange = {},
-                            onSave = {},
-                            onStartNow = {},
-                        ),
-                    finances =
-                        MissionFinanceActions(
-                            onAdd = { bookings.add("add") },
-                            onEdit = { bookings.add("edit") },
-                            onDelete = { bookings.add("delete") },
-                            onIncome = {},
-                            onAmount = {},
-                            onNote = {},
-                            onSave = { bookings.add("save") },
-                            onDismiss = {},
-                        ),
-                )
-            }
-        }
-    }
-
-    private fun ready(
-        detail: MissionDetail = detail(),
-        tab: MissionTab = MissionTab.OVERVIEW,
-        finances: MissionFinancesPhase = MissionFinancesPhase.Idle,
-        adminForm: MissionAdminForm? = null,
-    ) = MissionDetailState(
-        missionId = "m1",
-        detail = detail,
-        phase = MissionDetailPhase.Ready,
-        tab = tab,
-        finances = finances,
-        adminForm = adminForm,
-    )
+    private val robot by lazy { MissionScreenRobot(compose) }
 
     /**
      * The Verwaltung tab exists only for a caller the server says may manage this Einsatz.
@@ -222,14 +74,14 @@ class MissionDetailScreenTest {
      */
     @Test
     fun `the Verwaltung tab is drawn only for a manager`() {
-        show(ready(detail = detail(canManage = true)))
+        robot.show(robot.ready(detail = robot.detail(canManage = true)))
 
         compose.onNodeWithText("Verwaltung", ignoreCase = true).assertExists()
     }
 
     @Test
     fun `a member who may not manage never sees the Verwaltung tab`() {
-        show(ready(detail = detail(canManage = false)))
+        robot.show(robot.ready(detail = robot.detail(canManage = false)))
 
         compose.onAllNodesWithText("Verwaltung", ignoreCase = true).assertCountEquals(0)
     }
@@ -242,7 +94,7 @@ class MissionDetailScreenTest {
     @Test
     fun `a non-manager's tab taps still name the tab they tapped`() {
         val tabs = mutableListOf<MissionTab>()
-        show(ready(detail = detail(canManage = false)), tabs = tabs)
+        robot.show(robot.ready(detail = robot.detail(canManage = false)), tabs = tabs)
 
         compose.onNodeWithText("Finanzen", ignoreCase = true).performClick()
 
@@ -252,9 +104,9 @@ class MissionDetailScreenTest {
     /** And the Verwaltung tab draws the form rather than a sheet over the screen. */
     @Test
     fun `the Verwaltung tab draws the three sections`() {
-        show(
-            ready(
-                detail = detail(canManage = true),
+        robot.show(
+            robot.ready(
+                detail = robot.detail(canManage = true),
                 tab = MissionTab.ADMIN,
                 adminForm = MissionAdminForm(name = "Vertikaler Abbau"),
             ),
@@ -265,7 +117,7 @@ class MissionDetailScreenTest {
 
     @Test
     fun `the head names the Einsatz and states its sign-ups`() {
-        show(ready())
+        robot.show(robot.ready())
 
         // The name, its status and the org badge live in the TOP BAR now (design ch. 06
         // artboard 2), which this harness does not render — the screen publishes them through
@@ -283,7 +135,7 @@ class MissionDetailScreenTest {
     @Test
     fun `a tap on a tab reports which one`() {
         val tabs = mutableListOf<MissionTab>()
-        show(ready(), tabs = tabs)
+        robot.show(robot.ready(), tabs = tabs)
 
         // The tab now carries its count (design ch. 06), so the label is a prefix rather than the
         // whole node text.
@@ -296,7 +148,7 @@ class MissionDetailScreenTest {
     fun `a redacted Einsatz says the description is members-only rather than showing a blank`() {
         // An outsider read carries no description (main repo ADR-0034). A blank section reads as
         // an Einsatz nobody bothered to describe, which is a different and wrong statement.
-        show(ready(detail = detail(description = null)))
+        robot.show(robot.ready(detail = robot.detail(description = null)))
 
         // Below the attendance block and the briefing card now, so it may sit off-screen in the
         // test's viewport: assert it EXISTS rather than that it happens to be visible.
@@ -311,10 +163,10 @@ class MissionDetailScreenTest {
 
     @Test
     fun `the roster marks who has checked in`() {
-        show(
-            ready(
+        robot.show(
+            robot.ready(
                 detail =
-                    detail(
+                    robot.detail(
                         participants =
                             listOf(
                                 // Deliberately not "Rhea": she is the party lead in the head, so
@@ -351,10 +203,10 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a unit shows its ship, its HVU mark and its crew`() {
-        show(
-            ready(
+        robot.show(
+            robot.ready(
                 detail =
-                    detail(
+                    robot.detail(
                         units =
                             listOf(
                                 MissionUnit(
@@ -363,7 +215,15 @@ class MissionDetailScreenTest {
                                     shipName = "Carrack Meridian",
                                     highValue = true,
                                     responsibleName = "Rhea",
-                                    crew = listOf(MissionCrewMember("c1", "Dorn", listOf("Turret"))),
+                                    crew =
+                                        listOf(
+                                            MissionCrewMember(
+                                                id = "c1",
+                                                name = "Dorn",
+                                                roles = listOf("Turret"),
+                                                roleIds = listOf("j-turret"),
+                                            ),
+                                        ),
                                 ),
                             ),
                     ),
@@ -376,22 +236,27 @@ class MissionDetailScreenTest {
         compose.onNodeWithText("HVU").assertIsDisplayed()
         // The sign-up band above the tabs costs a row of height, so the crew line can sit below
         // the fold on a compact screen. That it is drawn is the assertion.
-        compose.onNodeWithText("Dorn — Turret").assertExists()
+        //
+        // The name and the roles are two nodes now, not one joined string: the roles became the
+        // Funktions-Auswahl, so for a manager the chips ARE the reading of them. Without a CREW
+        // catalogue in hand — which is what a plain member has — the sentence stands in for them.
+        compose.onNodeWithText("Dorn").assertExists()
+        compose.onNodeWithText("Keine CREW-Funktionen hinterlegt.").assertExists()
     }
 
     @Test
     fun `an empty tab says so instead of showing nothing at all`() {
         // A blank tab is indistinguishable from a rendering fault; a sentence is not.
-        show(ready(tab = MissionTab.STEPS))
+        robot.show(robot.ready(tab = MissionTab.STEPS))
 
         compose.onNodeWithText("Kein Ablauf hinterlegt.").assertIsDisplayed()
     }
 
     @Test
     fun `an objective kind this build does not know is shown verbatim`() {
-        show(
-            ready(
-                detail = detail(objectives = listOf(MissionObjective("o1", "500 SCU", "STRETCH_GOAL"))),
+        robot.show(
+            robot.ready(
+                detail = robot.detail(objectives = listOf(MissionObjective("o1", "500 SCU", "STRETCH_GOAL"))),
                 tab = MissionTab.OBJECTIVES,
             ),
         )
@@ -401,8 +266,8 @@ class MissionDetailScreenTest {
 
     @Test
     fun `the Finanzen totals band renders its three sums`() {
-        show(
-            ready(
+        robot.show(
+            robot.ready(
                 tab = MissionTab.FINANCES,
                 finances =
                     MissionFinancesPhase.Ready(
@@ -429,14 +294,14 @@ class MissionDetailScreenTest {
     @Test
     fun `a refused Finanzen tab says so in its own words, and offers no retry`() {
         // Retrying a permission the member does not have is advice that cannot help.
-        show(ready(tab = MissionTab.FINANCES, finances = MissionFinancesPhase.Failed(ApiError.Forbidden())))
+        robot.show(robot.ready(tab = MissionTab.FINANCES, finances = MissionFinancesPhase.Failed(ApiError.Forbidden())))
 
         compose.onNodeWithText("Die Finanzen dieses Einsatzes sind für dich nicht einsehbar.").assertIsDisplayed()
     }
 
     @Test
     fun `a refused Einsatz reads Access Denied, not Signal Lost`() {
-        show(
+        robot.show(
             MissionDetailState(
                 missionId = "m1",
                 phase = MissionDetailPhase.Failed(ApiError.Forbidden()),
@@ -448,7 +313,7 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a missing Einsatz reads Signal Lost`() {
-        show(
+        robot.show(
             MissionDetailState(
                 missionId = "m1",
                 phase = MissionDetailPhase.Failed(ApiError.NotFound()),
@@ -460,7 +325,7 @@ class MissionDetailScreenTest {
 
     @Test
     fun `any other failure reads System Malfunction`() {
-        show(
+        robot.show(
             MissionDetailState(
                 missionId = "m1",
                 phase = MissionDetailPhase.Failed(ApiError.Network(IOException("offline"))),
@@ -475,7 +340,7 @@ class MissionDetailScreenTest {
         // Check-in and the payout preference act on a row. Offering them before there is one
         // would be offering a 404.
         val signed = mutableListOf<Unit>()
-        show(readyForMe(), signUps = signed)
+        robot.show(readyForMe(), signUps = signed)
 
         compose.onNodeWithTag(MISSION_SIGN_UP_TAG).assertIsEnabled().performClick()
         compose.onAllNodesWithTag(MISSION_CHECK_IN_TAG).assertCountEquals(0)
@@ -488,7 +353,7 @@ class MissionDetailScreenTest {
     fun `a signed-up caller is offered the withdrawal, the check-in and the preference`() {
         val checked = mutableListOf<Unit>()
         val paid = mutableListOf<Unit>()
-        show(readyForMe(mine()), checkIns = checked, payouts = paid)
+        robot.show(readyForMe(mine()), checkIns = checked, payouts = paid)
 
         compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
         compose.onNodeWithTag(MISSION_CHECK_IN_TAG).performClick()
@@ -502,14 +367,14 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a checked-in caller is offered the way back out`() {
-        show(readyForMe(mine(checkedIn = true)))
+        robot.show(readyForMe(mine(checkedIn = true)))
 
         compose.onNodeWithText("Auschecken", ignoreCase = true).assertIsDisplayed()
     }
 
     @Test
     fun `a donating caller is offered the payout instead`() {
-        show(readyForMe(mine(donating = true)))
+        robot.show(readyForMe(mine(donating = true)))
 
         // Both standing states are on screen as radios (ch. 02 §6), and the one the caller is in is
         // the one that reads as chosen — a toggle labelled with the other state left that ambiguous.
@@ -519,14 +384,14 @@ class MissionDetailScreenTest {
 
     @Test
     fun `a refusal on this Einsatz is said in the app's own words`() {
-        show(readyForMe(mine()).copy(error = ApiError.Forbidden()))
+        robot.show(readyForMe(mine()).copy(error = ApiError.Forbidden()))
 
         compose.onNodeWithText("Für diesen Einsatz fehlt dir die Berechtigung.").assertIsDisplayed()
     }
 
     @Test
     fun `offline the Einsatz says so and offers no write`() {
-        show(readyForMe().copy(online = false))
+        robot.show(readyForMe().copy(online = false))
 
         compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
@@ -562,17 +427,17 @@ class MissionDetailScreenTest {
     private fun readyForMe(vararg roster: MissionParticipant) =
         MissionDetailState(
             missionId = "m1",
-            detail = detail(participants = roster.toList()),
+            detail = robot.detail(participants = roster.toList()),
             phase = MissionDetailPhase.Ready,
             me = Identity("u1", logistician = false),
         )
 
     @Test
     fun `an Einsatz that has not started offers no check-in, and says why`() {
-        show(
+        robot.show(
             MissionDetailState(
                 missionId = "m1",
-                detail = detail(started = false, participants = listOf(mine())),
+                detail = robot.detail(started = false, participants = listOf(mine())),
                 phase = MissionDetailPhase.Ready,
                 me = Identity("u1", logistician = false),
             ),
@@ -586,10 +451,10 @@ class MissionDetailScreenTest {
     @Test
     fun `the Finanzen tab offers a booking once the caller has signed up`() {
         val actions = mutableListOf<String>()
-        show(
+        robot.show(
             readyForMe(mine()).copy(
                 tab = MissionTab.FINANCES,
-                finances = MissionFinancesPhase.Ready(finances()),
+                finances = MissionFinancesPhase.Ready(robot.finances()),
             ),
             bookings = actions,
         )
@@ -604,10 +469,10 @@ class MissionDetailScreenTest {
 
     @Test
     fun `without a sign-up the tab says why it cannot book`() {
-        show(
+        robot.show(
             readyForMe().copy(
                 tab = MissionTab.FINANCES,
-                finances = MissionFinancesPhase.Ready(finances()),
+                finances = MissionFinancesPhase.Ready(robot.finances()),
             ),
         )
 
@@ -618,10 +483,10 @@ class MissionDetailScreenTest {
 
     @Test
     fun `the caller's own booking offers a change and a delete`() {
-        show(
+        robot.show(
             readyForMe(mine()).copy(
                 tab = MissionTab.FINANCES,
-                finances = MissionFinancesPhase.Ready(finances(entry(participantId = "p1"))),
+                finances = MissionFinancesPhase.Ready(robot.finances(robot.entry(participantId = "p1"))),
             ),
         )
 
@@ -637,10 +502,10 @@ class MissionDetailScreenTest {
     fun `somebody else's booking offers neither`() {
         // The server refuses an edit by anyone but the owner or an admin. Offering it anyway is
         // offering a refusal.
-        show(
+        robot.show(
             readyForMe(mine()).copy(
                 tab = MissionTab.FINANCES,
-                finances = MissionFinancesPhase.Ready(finances(entry(participantId = "p9"))),
+                finances = MissionFinancesPhase.Ready(robot.finances(robot.entry(participantId = "p9"))),
             ),
         )
 
@@ -651,10 +516,10 @@ class MissionDetailScreenTest {
 
     @Test
     fun `the booking form opens on what the entry holds`() {
-        show(
+        robot.show(
             readyForMe(mine()).copy(
                 tab = MissionTab.FINANCES,
-                finances = MissionFinancesPhase.Ready(finances()),
+                finances = MissionFinancesPhase.Ready(robot.finances()),
                 entryDraft = FinanceEntryDraft(entryId = "e1", income = false, amount = "2500"),
             ),
         )
@@ -662,141 +527,4 @@ class MissionDetailScreenTest {
         compose.onNodeWithTag(MISSION_FINANCE_SHEET_TAG).assertIsDisplayed()
         compose.onNodeWithText("2500").performScrollTo().assertIsDisplayed()
     }
-
-    /**
-     * The Finanzen tab's contents.
-     *
-     * @param entries the bookings.
-     * @return the totals and the list.
-     */
-    private fun finances(vararg entries: MissionFinanceEntry) =
-        MissionFinances(
-            total = "74700",
-            incomeSum = "86400",
-            incomeCount = 3,
-            expenseSum = "11700",
-            expenseCount = 2,
-            entries = entries.toList(),
-            totalEntries = entries.size.toLong(),
-        )
-
-    /**
-     * One booking.
-     *
-     * @param id the entry's id.
-     * @param participantId whose sign-up it hangs off.
-     * @return the entry.
-     */
-    private fun entry(
-        id: String = "e1",
-        participantId: String? = "p1",
-    ) = MissionFinanceEntry(
-        id = id,
-        income = true,
-        amount = "12000",
-        note = "Erlös",
-        participantName = "Rhea",
-        participantId = participantId,
-        version = 4L,
-    )
-
-    /**
-     * The Funktions-Select renders for a manager and its chips are live.
-     *
-     * The catalogue is only loaded for someone who may assign, so an empty one is what a plain
-     * member gets — which is why this test hands one in rather than relying on the screen to ask.
-     */
-    @Test
-    fun `a manager can assign a Funktion from the roster`() {
-        val taps = mutableListOf<String>()
-        show(
-            ready(
-                detail = detail(participants = listOf(rosterRow())),
-                tab = MissionTab.PARTICIPANTS,
-            ),
-            rosterTaps = taps,
-            canManage = true,
-            jobTypes = listOf(MissionJobType("j2", "Turret")),
-        )
-
-        compose.onNodeWithText("Turret", ignoreCase = true).performClick()
-
-        assertEquals(listOf("function:p2:j2"), taps)
-    }
-
-    /** And the drawn per-row check-in reaches the manager's action, not the caller's own. */
-    @Test
-    fun `a manager checks another member in from their row`() {
-        val taps = mutableListOf<String>()
-        show(
-            ready(
-                detail = detail(participants = listOf(rosterRow())),
-                tab = MissionTab.PARTICIPANTS,
-            ),
-            rosterTaps = taps,
-            canManage = true,
-        )
-
-        compose.onNodeWithText("Einchecken", ignoreCase = true).performClick()
-
-        assertEquals(listOf("check-in:p2"), taps)
-    }
-
-    /**
-     * „Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast
-     * nennt die Rolle." So the tap must still land, and it must produce the refusal rather than a
-     * write. `enabled = false` was the rejected alternative: a control that cannot be tapped cannot
-     * say why it is dim.
-     */
-    @Test
-    fun `a member without the role is refused in place rather than shown nothing`() {
-        val taps = mutableListOf<String>()
-        show(
-            ready(
-                detail = detail(participants = listOf(rosterRow())),
-                tab = MissionTab.PARTICIPANTS,
-            ),
-            rosterTaps = taps,
-            canManage = false,
-        )
-
-        compose.onNodeWithText("Einchecken", ignoreCase = true).assertIsDisplayed()
-        compose.onNodeWithText("Einchecken", ignoreCase = true).performClick()
-
-        assertTrue("a locked control must not write", taps.isEmpty())
-        compose.onNodeWithText("Missions-Manager", substring = true).assertIsDisplayed()
-    }
-
-    /** „Wunsch: …" is drawn beside the assignment, and only when it says something new. */
-    @Test
-    fun `the roster shows what a member asked to fly`() {
-        show(
-            ready(
-                detail = detail(participants = listOf(rosterRow())),
-                tab = MissionTab.PARTICIPANTS,
-            ),
-        )
-
-        compose.onNodeWithText("Wunsch: Pilot", substring = true).assertIsDisplayed()
-    }
-
-    /**
-     * Somebody other than the caller, with a wish and no assignment.
-     *
-     * @return the row.
-     */
-    private fun rosterRow() =
-        MissionParticipant(
-            id = "p2",
-            userId = "u2",
-            name = "Dorn",
-            role = null,
-            checkedIn = false,
-            comment = null,
-            donating = null,
-            desiredJobTypeId = "j1",
-            desiredJobName = "Pilot",
-            plannedJobTypeId = null,
-            version = 3L,
-        )
 }

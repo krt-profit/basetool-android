@@ -1337,4 +1337,45 @@
     <string name="route_not_found_title">Signal Lost</string>
     <string name="route_not_found_message">Diese Adresse gibt es in dieser App nicht.</string>
     <string name="route_not_found_action">Zurück zur Basis</string>
+    <!-- Einsatz: the Ablauf and Ziele editors (round 11 asks for their drawing) -->
+    <string name="mission_step_new">Neuer Schritt</string>
+    <string name="mission_step_editing">Schritt bearbeiten</string>
+    <string name="mission_step_title">Was passiert</string>
+    <string name="mission_step_meta">Zeit / Ort</string>
+    <string name="mission_step_add">Schritt hinzufügen</string>
+    <string name="mission_step_save_edit">Schritt speichern</string>
+    <string name="mission_step_tick">Abhaken</string>
+    <string name="mission_step_untick">Zurücksetzen</string>
+    <string name="mission_objective_new">Neues Ziel</string>
+    <string name="mission_objective_editing">Ziel bearbeiten</string>
+    <string name="mission_objective_title">Ziel</string>
+    <string name="mission_objective_add">Ziel hinzufügen</string>
+    <string name="mission_objective_save_edit">Ziel speichern</string>
+    <string name="mission_objective_kind_primary">Primär</string>
+    <string name="mission_objective_kind_secondary">Sekundär</string>
+    <string name="mission_objective_kind_non_goal">Kein Ziel</string>
+    <string name="mission_timeline_edit">Bearbeiten</string>
+    <string name="mission_timeline_remove">Entfernen</string>
+    <string name="mission_timeline_cancel">Abbrechen</string>
+    <!-- Einsatz: the member picker behind the three member-shaped writes -->
+    <string name="mission_member_party_lead">Einsatzleitung setzen</string>
+    <string name="mission_member_manager">Manager hinzufügen</string>
+    <string name="mission_member_participant">Teilnehmer hinzufügen</string>
+    <string name="mission_member_search">Mitglied</string>
+    <string name="mission_member_search_hint">Namen tippen</string>
+    <string name="mission_member_searching">Suche läuft …</string>
+    <string name="mission_member_hint">Einsatzleitung, Manager und zusätzliche Teilnehmer werden über die Mitgliedersuche benannt.</string>
+    <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
+    <string name="mission_unit_rename">Umbenennen</string>
+    <string name="mission_unit_rename_save">Einheit speichern</string>
+    <string name="mission_crew_roles">Funktion an Bord</string>
+    <string name="mission_crew_roles_empty">Keine CREW-Funktionen hinterlegt.</string>
+    <string name="mission_admin_people">Personen</string>
+    <string name="mission_timeline_up">Hoch</string>
+    <string name="mission_timeline_down">Runter</string>
+    <plurals name="mission_member_notice">
+        <item quantity="one">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
+        <item quantity="other">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
+    </plurals>
+    <string name="mission_crew_assign">Person zuweisen</string>
 </resources>

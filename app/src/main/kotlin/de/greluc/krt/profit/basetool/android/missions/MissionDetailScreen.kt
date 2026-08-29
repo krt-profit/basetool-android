@@ -150,6 +150,11 @@ const val MISSION_FINANCE_SAVE_TAG: String = "mission-finance-save"
  * @param onRetryFinances the Finanzen tab's retry.
  * @param actions what the caller may do to their own sign-up.
  * @param finances what they may do to the Einsatz's money.
+ * @param roster what a manager may do to a roster row.
+ * @param admin what a manager may do to the Einsatz itself.
+ * @param structure what a manager may do to its Einheiten and Frequenzen.
+ * @param timeline what a manager may do to its Ablauf and Ziele.
+ * @param members the one picker behind the party lead, the managers and „Teilnehmer hinzufügen".
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -165,6 +170,8 @@ fun MissionDetailScreen(
     roster: MissionRosterActions,
     admin: MissionAdminActions,
     structure: MissionStructureActions,
+    timeline: MissionTimelineActions,
+    members: MissionMemberActions,
     modifier: Modifier = Modifier,
 ) {
     val detail = state.detail
@@ -210,6 +217,8 @@ fun MissionDetailScreen(
                             roster = roster,
                             structure = structure,
                             admin = admin,
+                            timeline = timeline,
+                            members = members,
                         )
                     }
                     // Design ch. 06: ONE filled CTA, bottom-anchored. It sat between the facts and the
@@ -265,6 +274,7 @@ fun MissionDetailScreen(
                 }
             }
         }
+        MemberPickerSheet(members = members)
         DenialToast(state = roster.denials)
     }
 }
@@ -596,6 +606,8 @@ private fun MissionTabRow(
  * @param roster what a manager may do to a roster row.
  * @param structure what a manager may do to its Einheiten and Frequenzen.
  * @param admin what a manager may do to the Einsatz itself.
+ * @param timeline what a manager may do to its Ablauf and Ziele.
+ * @param members the one picker behind the three member-shaped writes.
  */
 @Composable
 private fun MissionTabContent(
@@ -606,6 +618,8 @@ private fun MissionTabContent(
     roster: MissionRosterActions,
     structure: MissionStructureActions,
     admin: MissionAdminActions,
+    timeline: MissionTimelineActions,
+    members: MissionMemberActions,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
@@ -619,9 +633,9 @@ private fun MissionTabContent(
 
             MissionTab.UNITS -> unitsTab(detail, structure)
 
-            MissionTab.STEPS -> stepsTab(detail)
+            MissionTab.STEPS -> stepsTab(detail, timeline)
 
-            MissionTab.OBJECTIVES -> objectivesTab(detail)
+            MissionTab.OBJECTIVES -> objectivesTab(detail, timeline)
 
             MissionTab.FREQUENCIES -> frequenciesTab(detail, structure)
 
@@ -630,7 +644,7 @@ private fun MissionTabContent(
             // The form is filled by `onTabSelected` as the tab is entered, so it is present
             // whenever this tab is. Null-safe rather than forced: a state restored with the tab
             // already selected must draw an empty tab, never crash the screen.
-            MissionTab.ADMIN -> state.adminForm?.let { adminTab(it, state.writable, admin) }
+            MissionTab.ADMIN -> state.adminForm?.let { adminTab(it, state.writable, admin, members) }
         }
     }
 }
@@ -865,21 +879,27 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
                     color = KrtPalette.TextMuted,
                 )
             }
+            UnitRowActions(unit = unit, structure = structure)
+            CrewAdd(unit = unit, roster = detail.participants, structure = structure)
             unit.crew.forEach { member ->
-                Text(
-                    text =
-                        listOf(member.name, member.roles.joinToString(" · ")).filter { it.isNotBlank() }
-                            .joinToString(" — "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.White,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+                    Text(
+                        text = member.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.White,
+                    )
+                    // The roles are the picker now rather than a joined string: for a manager the
+                    // chips ARE the reading of them, selected meaning held. For everybody else they
+                    // render locked, which reads the same and says why on a tap.
+                    CrewRoleSelect(unitId = unit.id, member = member, structure = structure)
+                    StructureRemove(
+                        label = stringResource(R.string.mission_struct_remove_crew),
+                        structure = structure,
+                        onRemove = { structure.onRemoveCrew(unit.id, member.id) },
+                    )
+                }
             }
             KrtHairlineRule()
-            StructureRemove(
-                label = stringResource(R.string.mission_struct_remove_unit),
-                structure = structure,
-                onRemove = { structure.onRemoveUnit(unit.id) },
-            )
         }
     }
 }
@@ -889,7 +909,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
  *
  * @param detail the Einsatz.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(detail: MissionDetail) {
+private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
+    detail: MissionDetail,
+    timeline: MissionTimelineActions,
+) {
+    item { StepComposer(timeline) }
     if (detail.steps.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_steps) }
         return
@@ -914,6 +938,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(detail: Miss
             step.meta?.let {
                 Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
             }
+            StepRowActions(
+                step = MissionStepEdit(id = step.id, title = step.title, meta = step.meta),
+                done = step.done,
+                timeline = timeline,
+            )
         }
     }
 }
@@ -923,26 +952,43 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(detail: Miss
  *
  * @param detail the Einsatz.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(detail: MissionDetail) {
+private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
+    detail: MissionDetail,
+    timeline: MissionTimelineActions,
+) {
+    item { ObjectiveComposer(timeline) }
     if (detail.objectives.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_objectives) }
         return
     }
     items(detail.objectives, key = { it.id }) { objective ->
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = objective.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = KrtPalette.White,
-                modifier = Modifier.weight(1f),
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = objective.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = KrtPalette.White,
+                    modifier = Modifier.weight(1f),
+                )
+                // A kind the app knows gets its German label; one it does not is shown verbatim.
+                // Both halves matter: „SECONDARY" is a wire constant and has no business on a
+                // German screen now that the picker has a word for it — and a goal whose kind the
+                // app does not recognise must still be marked rather than silently unlabelled.
+                objective.kind?.let { KrtChip(text = it.kindLabel()) }
+            }
+            ObjectiveRowActions(
+                objective =
+                    MissionObjectiveEdit(
+                        id = objective.id,
+                        title = objective.title,
+                        kind = objective.kind.toObjectiveKind(),
+                    ),
+                timeline = timeline,
             )
-            // Verbatim: this build does not interpret the kind, and an unrecognised one shown as
-            // it came beats a goal with no marking at all.
-            objective.kind?.let { KrtChip(text = it) }
         }
     }
 }
@@ -1430,6 +1476,55 @@ fun MissionDetailRoute(
                 onAddFrequency = viewModel.structure::addFrequency,
                 onRemoveFrequency = viewModel.structure::removeFrequency,
                 onRemoveCrew = viewModel.structure::removeCrew,
+                onEditUnit = { unit ->
+                    // The rename reuses the composer at the top of the tab, filled from the unit —
+                    // including its version, because the write is a replace and a guessed counter
+                    // would overwrite a concurrent rename instead of colliding with it.
+                    viewModel.structure.change {
+                        it.copy(
+                            unitName = unit.name,
+                            unitHighValue = unit.highValue,
+                            editingUnitId = unit.id,
+                            editingUnitVersion = unit.version,
+                        )
+                    }
+                },
+                onSaveUnit = { unitId, version ->
+                    val draft = state.structure
+                    viewModel.structure.updateUnit(unitId, draft.unitName, draft.unitHighValue, version)
+                },
+                onSetCrewRoles = viewModel.structure::setCrewRoles,
+                onAddCrew = viewModel.structure::addCrew,
+                crewJobTypes = state.crewJobTypes,
+            ),
+        timeline =
+            MissionTimelineActions(
+                canManage = state.canManage,
+                enabled = state.writable && !state.timeline.busy,
+                draft = state.timeline,
+                denials = denials,
+                onChange = viewModel.timeline::change,
+                onSaveStep = viewModel.timeline::saveStep,
+                onEditStep = viewModel.timeline::editStep,
+                onToggleStep = viewModel.timeline::toggleStep,
+                onRemoveStep = viewModel.timeline::removeStep,
+                onMoveStep = viewModel.timeline::moveStep,
+                onSaveObjective = viewModel.timeline::saveObjective,
+                onEditObjective = viewModel.timeline::editObjective,
+                onRemoveObjective = viewModel.timeline::removeObjective,
+                onMoveObjective = viewModel.timeline::moveObjective,
+                onCancel = viewModel.timeline::cancel,
+            ),
+        members =
+            MissionMemberActions(
+                canManage = state.canManage,
+                enabled = state.writable && !state.structure.busy,
+                state = state.memberPicker,
+                denials = denials,
+                onOpen = viewModel.memberPicker::open,
+                onQuery = viewModel.memberPicker::query,
+                onPick = viewModel.memberPicker::pick,
+                onDismiss = viewModel.memberPicker::dismiss,
             ),
         admin =
             MissionAdminActions(

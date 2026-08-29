@@ -746,3 +746,96 @@ destination.
 
 - [ ] The Einsatz's first tab reads „Briefing" in DE and EN.
 - [ ] No page-tab label on any screen equals a bottom-bar or rail label.
+
+### REQ-APP-MIS-025 — The Ablauf and the Ziele own their section counters, because the answer does not
+
+`PUT/POST/PATCH/DELETE …/steps/…` and `…/objectives/…` exist **only** as `/slim` variants, and every
+one of them answers with the **list** — never with the Einsatz. Two consequences follow and the
+client must handle both.
+
+**The answer is spliced onto the Einsatz as last read.** There is no plain variant to fall back on,
+so the repository takes `current: MissionDetail`, replaces the one list, and returns the whole
+object. Callers therefore see the same contract as every structure write.
+
+**The section counter is advanced by the client.** The answer carries no new `stepsVersion` or
+`objectivesVersion`. The server bumps by exactly one per accepted write — `bumpStepsVersionIfMatches`
+runs `UPDATE … SET steps_version = steps_version + 1 WHERE steps_version = :expected` — so the splice
+sets `current + 1`. Leaving it stale is not a cosmetic defect: the **first** edit in a sitting
+succeeds and the **second** fails with a `409` the member did nothing to cause, which is the hardest
+class of bug to report.
+
+**A reorder sends every id.** The request carries the whole list in its new order, taken from the
+Einsatz as last read, so a row somebody else added is carried along rather than dropped — and if it
+arrived after that read, the counter is stale and the server refuses instead of losing it. A move at
+either end of the list writes nothing at all.
+
+**Ticking a step sends the state it is to be in**, never a flip. Two managers tapping at once then
+converge on „done" instead of cancelling each other out.
+
+**Acceptance**
+
+- [ ] Two consecutive step edits echo `n` then `n+1`.
+- [ ] A Ziel write echoes `objectivesVersion` and never `stepsVersion`.
+- [ ] A reorder sends every id of the list as last read.
+- [ ] Moving the first row up, or the last row down, writes nothing.
+- [ ] A refused write keeps the editor filled.
+
+**Enforced by:** `MissionTimelineTest`, `MissionDetailViewModelTest`.
+
+### REQ-APP-MIS-026 — One member picker, three writes, and the cap is never silent
+
+The party lead, adding a manager and adding a participant all ask one question — *which member?* —
+so they share **one** picker: chapter 12's `KrtCombobox` in a sheet whose title says which write it
+is serving (`REQ-APP-MIS-022`'s Personen section). This closes round 10's § 10e.
+
+**The lookup is debounced and single-flight.** A new keystroke cancels the request in flight, so a
+slow answer to „Ma" can never land on top of a fresh answer to „Marc". An answer that arrives after
+the picker was dismissed is **dropped**, or a closed picker snaps back open holding it.
+
+**The cap is stated** (`REQ-APP-UI-*`, the no-silent-caps rule): the server is asked for at most 25
+rows and the notice under the list says so, because a full list is a list that may be hiding
+somebody.
+
+**A refused lookup reads as „no matches", not as a banner.** The write the member is heading for
+reports its own failure; a second refusal over the sheet would say the same thing twice.
+
+**The party lead echoes `partyLeadVersion`.** It is a section-locked field like the other five, and
+the pick is a write.
+
+**Acceptance**
+
+- [ ] Four keystrokes produce one request, carrying the last text.
+- [ ] A pick closes the picker and runs the write the sheet was titled for.
+- [ ] An answer arriving after a dismiss leaves the picker closed and empty.
+- [ ] The notice states the count and the cap.
+
+**Enforced by:** `MissionMemberPickerTest`, `MissionManagerScreenTest`.
+
+### REQ-APP-MIS-027 — An Einheit rename and a crew role are both replaces, and echo their own lock
+
+`PUT …/units/{unitId}` carries the name **and** the HVU flag together, so a request that sends one
+clears the other. The app therefore always sends both, and echoes the unit's own `version`.
+
+> `UpdateUnitRequest.version` is **nullable**, and the server reads an absent one as „do not check".
+> Omitting it turns a concurrent rename into a silent overwrite rather than the `409` the counter
+> exists to raise. It MUST be sent.
+
+`PUT …/units/{unitId}/crew/{crewId}` is the same shape for the roles: the whole `jobTypeIds` set
+goes over the wire, so dropping one id revokes exactly that role, and the crew row's own `version`
+is echoed.
+
+**The roles come from the CREW catalogue, never the MISSION one.** `job_type.archetype` splits the
+two and they **share their names** — Pilot, Turret, Cargo. Reading either unfiltered offers the
+wrong list and the backend refuses with *"is not of archetype …"*, a `400` that looks right on
+screen and only appears on save. The catalogue is read once, on the Einheiten tab, and only for a
+caller who may assign. An organisation with no CREW types is an ordinary state, not a failure, and
+the tab says so in a sentence.
+
+**Acceptance**
+
+- [ ] A rename sends the name, the HVU flag and the unit's version.
+- [ ] Toggling one role sends the whole remaining set plus the crew row's version.
+- [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
+- [ ] An empty catalogue renders a sentence, not an empty row.
+
+**Enforced by:** `MissionRepositoryTest`, `MissionManagerScreenTest`.

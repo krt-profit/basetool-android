@@ -1316,4 +1316,45 @@
     <string name="route_not_found_title">Signal Lost</string>
     <string name="route_not_found_message">This address does not exist in this app.</string>
     <string name="route_not_found_action">Back to base</string>
+    <!-- Einsatz: the Ablauf and Ziele editors (round 11 asks for their drawing) -->
+    <string name="mission_step_new">New step</string>
+    <string name="mission_step_editing">Edit step</string>
+    <string name="mission_step_title">What happens</string>
+    <string name="mission_step_meta">Time / place</string>
+    <string name="mission_step_add">Add step</string>
+    <string name="mission_step_save_edit">Save step</string>
+    <string name="mission_step_tick">Tick off</string>
+    <string name="mission_step_untick">Undo</string>
+    <string name="mission_objective_new">New objective</string>
+    <string name="mission_objective_editing">Edit objective</string>
+    <string name="mission_objective_title">Objective</string>
+    <string name="mission_objective_add">Add objective</string>
+    <string name="mission_objective_save_edit">Save objective</string>
+    <string name="mission_objective_kind_primary">Primary</string>
+    <string name="mission_objective_kind_secondary">Secondary</string>
+    <string name="mission_objective_kind_non_goal">Non-goal</string>
+    <string name="mission_timeline_edit">Edit</string>
+    <string name="mission_timeline_remove">Remove</string>
+    <string name="mission_timeline_cancel">Cancel</string>
+    <!-- Einsatz: the member picker behind the three member-shaped writes -->
+    <string name="mission_member_party_lead">Set party lead</string>
+    <string name="mission_member_manager">Add manager</string>
+    <string name="mission_member_participant">Add participant</string>
+    <string name="mission_member_search">Member</string>
+    <string name="mission_member_search_hint">Type a name</string>
+    <string name="mission_member_searching">Searching …</string>
+    <string name="mission_member_hint">Party lead, managers and extra participants are named through the member search.</string>
+    <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
+    <string name="mission_unit_rename">Rename</string>
+    <string name="mission_unit_rename_save">Save Einheit</string>
+    <string name="mission_crew_roles">Function aboard</string>
+    <string name="mission_crew_roles_empty">No CREW functions defined.</string>
+    <string name="mission_admin_people">People</string>
+    <string name="mission_timeline_up">Up</string>
+    <string name="mission_timeline_down">Down</string>
+    <plurals name="mission_member_notice">
+        <item quantity="one">%1$d of at most %2$d matches — keep typing to narrow it</item>
+        <item quantity="other">%1$d of at most %2$d matches — keep typing to narrow it</item>
+    </plurals>
+    <string name="mission_crew_assign">Assign someone</string>
 </resources>

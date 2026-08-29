@@ -333,6 +333,8 @@ class MainActivity : AppCompatActivity() {
                                                 read = container.missions,
                                                 admin = container.missions,
                                                 structure = container.missionStructure,
+                                                timeline = container.missionTimeline,
+                                                people = container.missionTimeline,
                                             ),
                                             container.identity,
                                             container.connectivity,

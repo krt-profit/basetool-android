@@ -60,11 +60,16 @@ data class MissionParticipant(
  * @property id the crew row's id
  * @property name the assigned participant's name
  * @property roles the jobs they hold in this unit, in server order
+ * @property roleIds the same jobs as ids, because a role write sends the whole set and a name is
+ *   not an id — the CREW catalogue shares its names with the MISSION one
+ * @property version the row's own optimistic lock, echoed by a role write
  */
 data class MissionCrewMember(
     val id: String,
     val name: String,
     val roles: List<String>,
+    val roleIds: List<String> = emptyList(),
+    val version: Long = 0L,
 )
 
 /**
@@ -76,6 +81,7 @@ data class MissionCrewMember(
  * @property highValue whether it is flagged HVU, which the design marks with its own chip
  * @property responsibleName who leads it, or `null`
  * @property crew who is aboard, in server order
+ * @property version the unit's own optimistic lock, echoed by a rename or an HVU toggle
  */
 data class MissionUnit(
     val id: String,
@@ -84,6 +90,7 @@ data class MissionUnit(
     val highValue: Boolean,
     val responsibleName: String?,
     val crew: List<MissionCrewMember>,
+    val version: Long = 0L,
 )
 
 /**
@@ -199,6 +206,13 @@ data class MissionDetail(
     val coreVersion: Long = 0L,
     val scheduleVersion: Long = 0L,
     val flagsVersion: Long = 0L,
+    val partyLeadVersion: Long = 0L,
+    // The Ablauf and the Ziele are two more of the same, and they carry a trap the other five do
+    // not: their endpoints answer with the LIST, never with the Einsatz, so the answer cannot
+    // supply the next counter. The server bumps by exactly one per accepted write
+    // (`bumpStepsVersionIfMatches`), so the client advances its own by one and splices the list.
+    val stepsVersion: Long = 0L,
+    val objectivesVersion: Long = 0L,
 )
 
 /**

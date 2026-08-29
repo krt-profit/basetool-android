@@ -67,11 +67,13 @@ data class MissionAdminActions(
  * @param form what is typed.
  * @param writable whether a write may run right now — online, and nothing already in flight.
  * @param actions what the tab can do.
+ * @param members the one picker behind the party lead, the managers and „Teilnehmer hinzufügen".
  */
 fun LazyListScope.adminTab(
     form: MissionAdminForm,
     writable: Boolean,
     actions: MissionAdminActions,
+    members: MissionMemberActions,
 ) {
     item {
         // One item rather than one per field: the sections are a form, and a form that recycles its
@@ -84,9 +86,27 @@ fun LazyListScope.adminTab(
             AdminCoreSection(form = form, writable = writable, actions = actions)
             AdminScheduleSection(form = form, writable = writable, actions = actions)
             AdminFlagsSection(form = form, writable = writable, actions = actions)
+            AdminPeopleSection(members = members)
             form.error?.let { SignUpError(error = it) }
         }
     }
+}
+
+/**
+ * Personen: who leads the Einsatz, who may manage it, and who is on it.
+ *
+ * The fourth section, and the only one that is not a form: all three writes name a member, so all
+ * three go through one picker rather than three fields. Not version-locked as a section — the party
+ * lead carries its own counter and the other two are membership rows, so there is nothing here to
+ * „save".
+ *
+ * @param members the actions and the picker's state.
+ */
+@Composable
+private fun AdminPeopleSection(members: MissionMemberActions) {
+    KrtSectionTitle(text = stringResource(R.string.mission_admin_people))
+    Hint(text = stringResource(R.string.mission_member_hint))
+    MemberSection(members = members)
 }
 
 /**

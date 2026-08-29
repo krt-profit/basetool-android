@@ -19,6 +19,15 @@
   den tatsächlichen Start — davor weist der Server jeden Check-in ab, was bislang nur im Web
   aufhebbar war. Der Tab erscheint nur, wenn man den Einsatz auch verwalten darf.
 
+- **Ablauf und Ziele lassen sich jetzt in der App pflegen.** Schritte anlegen, bearbeiten, abhaken,
+  entfernen und verschieben; Ziele ebenso, mit Primär / Sekundär / Kein Ziel.
+
+- **Einsatzleitung, Manager und zusätzliche Teilnehmer werden über eine Mitgliedersuche benannt.**
+  Tippen, die Liste grenzt ein, darunter steht wie viele Treffer angezeigt werden.
+
+- **Eine Einheit lässt sich umbenennen, jemand an Bord nehmen, und die Funktion an Bord wird pro
+  Person gesetzt.**
+
 - **Die Zeile zeigt jetzt auch den Funktionswunsch** („Wunsch: Pilot"), damit eine Zuweisung nicht
   geraten werden muss.
 
@@ -29,6 +38,9 @@
   einem Handy-Bildschirm; der Tab-Name passt jetzt auch besser zu seinem Inhalt.
 
 ### Fixed
+
+- **Die Zielart hieß „SECONDARY" statt „Sekundär".** Die Leseseite zeigte den Rohwert des Servers,
+  während die Auswahl daneben das deutsche Wort nannte.
 
 - **„ABMELDEN" brach in eine Spalte aus einzelnen Buchstaben um.** In der Aktionsleiste standen drei
   Dinge nebeneinander; die Auszahlungspräferenz ist keine Aktion und steht jetzt über der Leiste,

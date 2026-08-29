@@ -22,8 +22,15 @@ private const val LOG_TAG = "MissionStructure"
 /**
  * What a manager is composing right now, on the Einheiten or Frequenzen tab.
  *
- * @property unitName the new Einheit's name, as typed.
+ * @property unitName the new Einheit's name, as typed — or the edited one's, while
+ *   [editingUnitId] names a unit.
  * @property unitHighValue whether it is to be flagged HVU.
+ * @property editingUnitId the Einheit being renamed, or `null` while composing a new one. One set
+ *   of fields serves both, because only one Einheit can be edited at a time and a second pair would
+ *   only be a second thing to keep in sync.
+ * @property editingUnitVersion that Einheit's optimistic lock as last read, echoed by the rename.
+ * @property crewRolesFor the crew slot whose Funktionen are open for editing, as
+ *   `unitId to crewId`, or `null`.
  * @property freqName the new frequency's label, as typed.
  * @property freqValue the frequency itself, as typed.
  * @property busy whether a write is running.
@@ -32,6 +39,9 @@ private const val LOG_TAG = "MissionStructure"
 data class MissionStructureDraft(
     val unitName: String = "",
     val unitHighValue: Boolean = false,
+    val editingUnitId: String? = null,
+    val editingUnitVersion: Long = 0L,
+    val crewRolesFor: Pair<String, String>? = null,
     val freqName: String = "",
     val freqValue: String = "",
     val busy: Boolean = false,
@@ -84,6 +94,53 @@ class MissionStructure(
             return
         }
         run(draft) { structure.addUnit(missionId, name, draft.unitHighValue) }
+    }
+
+    /**
+     * Renames an Einheit, or flips its HVU mark.
+     *
+     * Both in one write because the endpoint is a **replace**: `UpdateUnitRequest` carries the
+     * name and the flag together, so sending one without the other would clear whichever was
+     * omitted.
+     *
+     * @param unitId which one.
+     * @param name what it is now called.
+     * @param highValue whether it is flagged HVU.
+     * @param version the unit's own optimistic lock, as last read.
+     */
+    fun updateUnit(
+        unitId: String,
+        name: String,
+        highValue: Boolean,
+        version: Long,
+    ) {
+        val (draft, _) = read()
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) {
+            return
+        }
+        run(draft) { structure.updateUnit(missionId, unitId, trimmed, highValue, version) }
+    }
+
+    /**
+     * Sets which Funktionen somebody holds aboard an Einheit.
+     *
+     * Also a **replace**: the whole set goes over the wire, so a caller that drops one id has
+     * revoked exactly that role and kept the rest.
+     *
+     * @param unitId which Einheit.
+     * @param crewId which slot.
+     * @param jobTypeIds the roles they are to hold, whole.
+     * @param version the crew row's own optimistic lock, as last read.
+     */
+    fun setCrewRoles(
+        unitId: String,
+        crewId: String,
+        jobTypeIds: Set<String>,
+        version: Long,
+    ) {
+        val (draft, _) = read()
+        run(draft) { structure.setCrewRoles(missionId, unitId, crewId, jobTypeIds, version) }
     }
 
     /**
