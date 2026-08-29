@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
@@ -307,6 +308,7 @@ data class OrderDetailState(
      * because a colleague saved first is the failure this whole mechanism exists to prevent.
      */
     val rejectedNote: String? = null,
+    val handover: OrderHandoverDraft? = null,
     /** Which page of the Auftrag is showing (design ch. 10 artboard 2). */
     val tab: OrderTab = OrderTab.POSITIONS,
     val statusPickerOpen: Boolean = false,
@@ -364,6 +366,7 @@ data class OrderDetailState(
  */
 class OrderDetailViewModel(
     private val source: JobOrderSource,
+    handoverSource: JobOrderHandoverSource,
     private val identity: IdentitySource,
     connectivity: Connectivity,
     private val orderId: String,
@@ -373,6 +376,24 @@ class OrderDetailViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<OrderDetailState> = mutableState.asStateFlow()
+
+    /**
+     * Recording that material changed hands — the write that finishes an Auftrag.
+     *
+     * Public, and called by the screen directly rather than through wrappers here: the same shape
+     * the Einsatz's own holders use.
+     */
+    val handover =
+        OrderHandover(
+            source = handoverSource,
+            scope = viewModelScope,
+            read = { mutableState.value.handover },
+            write = { draft -> mutableState.value = mutableState.value.copy(handover = draft) },
+            // The Auftrag is re-read rather than patched: a handover moves the line's open amount,
+            // the order's status and possibly the whole order into „completed", and none of that is
+            // in the answer.
+            onRecorded = { reload(keepContent = true) },
+        )
 
     /** The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003). */
     private val retry =

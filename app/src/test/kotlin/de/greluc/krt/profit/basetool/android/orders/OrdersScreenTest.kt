@@ -85,6 +85,7 @@ class OrdersScreenTest {
 
     private fun material() =
         JobOrderMaterial(
+            materialId = "m1",
             name = "Quantainium",
             needed = "500.0",
             inStock = "125.0",
@@ -136,6 +137,13 @@ class OrdersScreenTest {
             KrtTheme {
                 OrderDetailScreen(
                     state = state,
+                    handover =
+                        OrderHandoverActions(
+                            draft = null,
+                            onChange = {},
+                            onSubmit = {},
+                            onDismiss = {},
+                        ),
                     onRefresh = {},
                     onRetryNow = {},
                     actions =
@@ -155,6 +163,7 @@ class OrdersScreenTest {
                             onRaisePriority = {},
                             onLowerPriority = {},
                             onTabSelected = {},
+                            onRecordHandover = {},
                         ),
                 )
             }

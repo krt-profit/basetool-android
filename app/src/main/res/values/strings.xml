@@ -1414,4 +1414,22 @@
     <string name="mission_timeline_sort">Sortieren</string>
     <string name="mission_timeline_sort_hint">Reihenfolge ändern: Pfeile je Zeile.</string>
     <string name="mission_crew_assign_title">Person zuweisen — %1$s</string>
+    <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
+    <string name="order_handover_title">Übergabe erfassen</string>
+    <string name="order_handover_subject">%1$s · %2$s von %3$s</string>
+    <string name="order_handover_amount">Menge</string>
+    <string name="order_handover_after">Nach dieser Übergabe</string>
+    <string name="order_handover_after_value">%1$s / %2$s</string>
+    <string name="order_handover_fulfils">Erfüllt</string>
+    <string name="order_handover_stock">Aus welchem Bestand</string>
+    <string name="order_handover_stock_hint">Die Übergabe bucht die gewählte Lagerzeile aus.</string>
+    <string name="order_handover_no_stock">Keine Lagerzeile für diesen Auftrag hinterlegt.</string>
+    <string name="order_handover_quality">Q %1$d</string>
+    <string name="order_handover_recipient">Empfänger (Handle)</string>
+    <string name="order_handover_squadron">Staffel des Empfängers</string>
+    <string name="order_handover_append_only">Eine erfasste Übergabe lässt sich in der App nicht zurücknehmen — das Protokoll ist append-only.</string>
+    <string name="order_handover_cta">Übergabe erfassen</string>
+    <string name="order_handover_not_allowed">Dafür brauchst du die Rolle Logistiker.</string>
+    <string name="order_handover_record_title">Übergabe erfassen für</string>
+    <string name="order_handover_record_for">%1$s übergeben</string>
 </resources>

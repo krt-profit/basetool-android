@@ -31,12 +31,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRailCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /**
  * Positionen: the requester's note, then what was ordered and how much has arrived.
@@ -99,11 +103,21 @@ internal fun LazyListScope.assigneesTab(
 }
 
 /**
- * Übergaben: what has physically changed hands.
+ * Übergaben: what has physically changed hands — and the action that adds to it.
+ *
+ * Read-only until 2026-08-29. In the web the handover is what **closes** an Auftrag, so an app that
+ * could take one on and never record a delivery could never finish one either — the round-8 parity
+ * programme's heaviest item (design ch. 10 artboard 14).
+ *
+ * One entry per material line, because a handover is booked against a line and its stock rows.
  *
  * @param order the order.
+ * @param onRecord open the sheet for one material line.
  */
-internal fun LazyListScope.handoversTab(order: JobOrder) {
+internal fun LazyListScope.handoversTab(
+    order: JobOrder,
+    onRecord: (JobOrderMaterial) -> Unit,
+) {
     if (order.handovers.isEmpty()) {
         item(key = "handovers-empty") {
             Body(text = stringResource(R.string.order_detail_handovers_empty))
@@ -117,6 +131,22 @@ internal fun LazyListScope.handoversTab(order: JobOrder) {
                         handover.recipient.orEmpty(),
                         handover.at?.relativeToNow().orEmpty(),
                     ),
+            )
+        }
+    }
+    // A line the server sent without a material id cannot be handed over — the write is addressed
+    // by it — so it is not offered rather than offered and refused.
+    val recordable = order.materials.filter { it.materialId != null }
+    if (recordable.isNotEmpty()) {
+        item(key = "handover-record") {
+            KrtSectionTitle(text = stringResource(R.string.order_handover_record_title))
+        }
+        items(recordable, key = { "record-${'$'}{it.materialId}" }) { material ->
+            KrtGhostButton(
+                text = stringResource(R.string.order_handover_record_for, material.name),
+                onClick = { onRecord(material) },
+                iconRes = DesignR.drawable.ic_krt_bookout,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

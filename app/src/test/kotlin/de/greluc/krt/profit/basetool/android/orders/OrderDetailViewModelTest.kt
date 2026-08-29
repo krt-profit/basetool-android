@@ -7,11 +7,14 @@
 
 package de.greluc.krt.profit.basetool.android.orders
 
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
+import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
@@ -36,6 +39,27 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+
+/**
+ * The handover seam, which this class does not exercise.
+ *
+ * `OrderHandoverTest` covers it; here it exists so the view model can be built.
+ */
+private object NoHandoverSource : JobOrderHandoverSource {
+    override suspend fun stockFor(
+        orderId: String,
+        materialId: String,
+    ): ApiResult<List<HandoverStockRow>> = error("the handover has its own test")
+
+    override suspend fun record(
+        orderId: String,
+        inventoryItemId: String,
+        amount: String,
+        recipientHandle: String,
+        recipientSquadron: String?,
+        handoverTime: String,
+    ): ApiResult<JobOrderHandoverDto> = error("the handover has its own test")
+}
 
 /**
  * What one order's screen may do.
@@ -178,7 +202,7 @@ class OrderDetailViewModelTest {
     private fun model(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = OrderDetailViewModel(source, FakeIdentity(identity), connectivity, "o1")
+    ) = OrderDetailViewModel(source, NoHandoverSource, FakeIdentity(identity), connectivity, "o1")
 
     @Test
     fun `the caller's own row is the one that offers anything`() =
