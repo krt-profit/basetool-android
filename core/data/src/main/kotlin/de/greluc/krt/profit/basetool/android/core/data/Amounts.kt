@@ -36,3 +36,21 @@ fun parseTypedAmount(text: String?): Double? =
  */
 fun parseTypedDecimal(text: String?): java.math.BigDecimal? =
     text?.trim()?.takeIf { it.isNotEmpty() }?.replace(',', '.')?.toBigDecimalOrNull()
+
+/**
+ * Writes a figure back into a field a member will edit.
+ *
+ * The inverse of [parseTypedAmount], and deliberately plain: no grouping separators and no
+ * currency, because whatever comes out here is read straight back by [parseTypedAmount] when the
+ * form is sent. A whole number loses its `.0`, so a prefilled cost field reads `4200` rather than
+ * `4200.0` — the second looks like a value the app invented.
+ *
+ * @param value the figure, or `null` for a field the server left unset.
+ * @return the text, empty when there is no figure.
+ */
+fun formatTypedAmount(value: Double?): String =
+    when {
+        value == null -> ""
+        value == value.toLong().toDouble() -> value.toLong().toString()
+        else -> value.toString()
+    }

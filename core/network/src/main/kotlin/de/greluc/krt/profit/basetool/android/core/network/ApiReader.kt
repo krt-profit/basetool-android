@@ -237,9 +237,10 @@ class ApiReader(
     /**
      * Sends a body and expects no answer.
      *
-     * For an endpoint that acknowledges rather than replies — `202 Accepted` with an empty body,
-     * which is what the live-sync signal gets. Distinct from [post] for the reason [delete] is:
-     * handing an empty body to the parser would turn every success into a reported server error.
+     * For an endpoint whose answer the caller does not need — `202 Accepted` with an empty body,
+     * which is what the live-sync signal gets, or a `201 Created` whose returned row the caller
+     * re-reads anyway. Distinct from [post] for the reason [delete] is: handing an empty body to
+     * the parser would turn every such success into a reported server error.
      *
      * @param B the request type
      * @param path the API path, beginning with a slash
@@ -257,6 +258,31 @@ class ApiReader(
             Request.Builder()
                 .url("$baseUrl$path".toHttpUrl())
                 .post(json.encodeToString(bodySerializer, body).toRequestBody(JSON_MEDIA_TYPE)),
+        )
+
+    /**
+     * Replaces a row and ignores what comes back.
+     *
+     * The [put] sibling parses the answer, which is right when the caller needs the new version.
+     * It is wrong when the caller re-reads the row anyway: a field the app never touches drifting
+     * on the server would then fail a write that in fact succeeded.
+     *
+     * @param B the request type
+     * @param path the API path, beginning with a slash
+     * @param body the payload
+     * @param bodySerializer the serializer for [B]
+     * @return success, or the classified failure
+     */
+    suspend fun <B> putAccepted(
+        path: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+    ): ApiResult<Unit> =
+        withoutBody(
+            path,
+            Request.Builder()
+                .url("$baseUrl$path".toHttpUrl())
+                .put(json.encodeToString(bodySerializer, body).toRequestBody(JSON_MEDIA_TYPE)),
         )
 
     /**

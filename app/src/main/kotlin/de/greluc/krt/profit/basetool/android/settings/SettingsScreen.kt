@@ -191,8 +191,8 @@ private fun SettingsColumn(
                 .widthIn(max = COLUMN_MAX_WIDTH)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
     ) {
         if (accountName != null) {
             SettingsGroup(stringResource(R.string.settings_section_account)) {
@@ -370,9 +370,9 @@ private fun SettingsColumn(
             text =
                 stringResource(R.string.settings_version, versionName, versionCode, API_VERSION),
             style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s12),
         )
     }
 }
@@ -388,7 +388,7 @@ private fun SettingsGroup(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtSectionTitle(text = title)
         KrtCard(variant = KrtCardVariant.Flush, content = content)
     }

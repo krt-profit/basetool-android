@@ -191,19 +191,26 @@ the request queue with confirm and reject, the account lifecycle, the grants mat
 detail with its transfer, plus the staff account detail's two additions over the member one
 (reversal and the two reports).
 
-**The design defines the scope, and three things stay out because of it.**
+**The design defines the scope, and one thing stays out because of it.**
 
 1. **`/api/v1/bank/admin/**` — permanently.** Wipe-reset and the bank audit log are the admin
    area, which is web-only by owner decision (`ANDROID_APP_PLAN` Q6) and is named in the owner's
    own carve-out („außer beförderung und admin bereich").
-2. **The direct booking forms** — `POST /bank/deposits`, `/withdrawals`, `/transfers` and
-   `GET /transfer-fee-rate`. No artboard draws them, and artboard 4's handoff is explicit about
-   what the staff account detail adds over the member one: „+ Storno + Berichte". A booking that
-   had no request is therefore still a browser act. **This is a known delta to the web frontend**
-   and is raised with the design side rather than guessed at
-   ([`MISSING_ARTBOARD_PROMPTS_7.md`](../design/android/MISSING_ARTBOARD_PROMPTS_7.md)).
-3. **`PATCH /bank/accounts/{id}/approval-tiers`** — the KRT ladder editor. The app's four tabs are
-   ÜBERSICHT · ANTRÄGE · KONTEN · GRANTS; the web's „KRT-Freigaben" tab is not among them.
+
+> [!bug]- Two items stood here until 2026-08-30 and are now built
+> They were listed as out of scope on the grounds that **no artboard drew them**. Round 11's
+> chapter 12 drew both, so the grounds fell away:
+>
+> - **The direct booking forms** — `POST /bank/deposits`, `/withdrawals`, `/transfers`. Artboard 9
+>   settled the delta the parity programme had carried since round 7: the direct booking **stays**,
+>   because it covers what nobody files a request for. Built as `REQ-APP-BANK-016`.
+> - **The Freigabe-Limits** — artboard 10, and the correction that the web has limits *per tier*
+>   rather than a „KRT-Freigaben" ladder. Built as `REQ-APP-BANK-017`, on the account rather than
+>   as a fifth tab, for the reason recorded there.
+>
+> `GET /transfer-fee-rate` and `PATCH /bank/accounts/{id}/approval-tiers` are still unused: the fee
+> is shown from the figures the booking answers carry, and the approval-tiers endpoint is the
+> ladder the artboard replaced.
 
 **Every admitted path is named individually and anchored.** `/api/v1/bank` is **not** in the
 vhost's read-only family, so naming a path opens every verb the backend serves on it — which is
@@ -667,3 +674,87 @@ it „Transaktionen".
 
 **Code:** `bank/BankScreen.kt` (`BookingDirection`, `BookingRow`)
 
+---
+
+### REQ-APP-BANK-016 — The Verwaltung's direct booking: one sheet, three modes, and no second approval
+
+Design ch. 12 artboard 9, and the resolution of the parity programme's longest-standing bank delta.
+The programme had it open as *„Confirming a request IS the booking"*; the design side decided the
+direct booking **stays**, because it covers the case nobody files a request for — cash handed over
+in-game, or a correction of somebody else's booking. It lives **only** in the Verwaltung and never
+in the member view.
+
+**One sheet, three modes** over a segment, not the web's three forms: `POST /bank/deposits`,
+`/bank/withdrawals` and `/bank/transfers` differ in one field each, and a member choosing between
+three screens would have to know which they wanted before seeing any of them.
+
+**The holder is required in all three** — the server requires it too. Custody is kept per **org
+unit**, not per account, so a balance without a holder is money nobody is accountable for. It is
+the same rule the request confirmation already carries.
+
+**„Stand nach Buchung" and the no-second-approval warning stand above the CTA**, because they are
+what distinguishes this from a request and have to be read before typing, not after. A withdrawal
+over the balance is **validation-dimmed with a line at the field**, not locked: nothing here is
+forbidden, the figure is simply larger than the account holds — a distinction the design draws
+deliberately.
+
+**The entry is locked, not hidden.** Without `canManageBank` the Verwaltung's „Direktbuchung"
+button is tappable and answers with the role, as artboard 9 asks („403 … gesperrt-antippbar schon
+am Einstieg") and as the Grants tab beside it already does.
+
+**Acceptance**
+
+- [x] A deposit sends its mode, account, holder and amount, and the sheet closes
+  (`BankStaffViewModelTest`).
+- [x] A withdrawal over the balance cannot be sent, and becomes sendable when it fits
+  (`BankStaffViewModelTest`).
+- [x] Without a holder nothing is sent, in any mode (`BankStaffViewModelTest`).
+- [x] A transfer needs both halves of its target (`BankStaffViewModelTest`).
+- [ ] Observed on a device, with and without Bank-Management.
+
+**Code:** `BankStaffRepository.bookDirectly`, `DirectBooking`, `DirectBookingState`,
+`BankStaffViewModel.DirectBookingActions`, `BankDirectBookingSheet`
+
+---
+
+### REQ-APP-BANK-017 — Freigabe-Limits live on the account, not in a fifth tab
+
+Design ch. 12 artboard 10, and the second of the parity programme's two bank deltas. **Limits per
+tier**, which the chapter's own correction settles: up to the limit a booking may be requested
+without a further approval, above it the account's owner must release it. A **user** limit beats
+the tier limit.
+
+Four dimensions, four endpoints under `…/bank/accounts/{id}/approval-limit/`: `all-members`,
+`area-members`, `role/{roleCode}`, `user/{userId}`. `PUT {limit}` sets, `DELETE` removes, and both
+answer with the account's settings — so the write is also the re-read.
+
+**The read is free.** `BankApprovalLimitsDto` rides on the account's settings response, which the
+app already fetches for the balance target and the visibility grants.
+
+**The actions are the artboard's words: „Setzen" and „Entfernen"** — not „Speichern", which would
+promise a form, and not „Löschen", which would promise a deletion. Removing asks first and the
+confirmation **names the limit that then applies**, because removing one is not the same as setting
+it to zero; removing „Alle Mitglieder" leaves none at all, and the modal says so in words rather
+than naming a figure.
+
+**`area-members` is drawn when the server says it exists.** The artboard shows three tiers; the API
+has a fourth, and the flag `areaMembersSupported` decides — a hardcoded three would hide a limit
+somebody had set.
+
+> [!warning] Not a fifth tab of the Verwaltung
+> The artboard makes it one, beside Grants, with a horizontally scrolling tab bar. It cannot be:
+> every endpoint addresses **one account** and the values ride on that account's settings, so the
+> tab would have to make the member pick an account before it could show anything — a tab that is
+> really a picker. The section therefore sits **in the account's own settings sheet**, next to the
+> visibility grants it resembles: same scope, same owner, same read, and reached the same way. On
+> the design gap list.
+
+**Acceptance**
+
+- [x] Setting a limit sends the dimension it was opened on (`BankViewModelTest`).
+- [x] An unreadable amount is not sent (`BankViewModelTest`).
+- [x] Removing asks first, names the fallback, and then sends the dimension (`BankViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `BankApprovalLimits`, `BankLimitTarget`, `BankRepository.setApprovalLimit` /
+`.clearApprovalLimit`, `BankAccountViewModel.ApprovalLimitActions`, `BankApprovalLimitsSection`

@@ -37,7 +37,7 @@ fun PlaceholderScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         KrtEmptyState(

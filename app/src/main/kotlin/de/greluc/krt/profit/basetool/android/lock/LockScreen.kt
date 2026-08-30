@@ -95,7 +95,7 @@ fun LockScreen(
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
-                    .padding(horizontal = KrtSpacing.xxl),
+                    .padding(horizontal = KrtSpacing.s32),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -105,7 +105,7 @@ fun LockScreen(
                 size = BRAND_MARK,
                 tint = KrtPalette.Orange,
             )
-            Spacer(Modifier.height(KrtSpacing.xl))
+            Spacer(Modifier.height(KrtSpacing.s24))
 
             Box(
                 modifier =
@@ -124,14 +124,14 @@ fun LockScreen(
                 )
             }
 
-            Spacer(Modifier.height(KrtSpacing.xl))
+            Spacer(Modifier.height(KrtSpacing.s24))
             Text(
                 text = stringResource(R.string.lock_title).krtUppercase(),
                 style = MaterialTheme.typography.titleLarge,
                 color = KrtPalette.White,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(KrtSpacing.sm))
+            Spacer(Modifier.height(KrtSpacing.s8))
             Text(
                 text = stringResource(R.string.lock_body),
                 style = MaterialTheme.typography.bodyMedium,
@@ -140,7 +140,7 @@ fun LockScreen(
             )
 
             messageRes?.let { message ->
-                Spacer(Modifier.height(KrtSpacing.md))
+                Spacer(Modifier.height(KrtSpacing.s12))
                 Text(
                     text = stringResource(message),
                     style = MaterialTheme.typography.bodyMedium,
@@ -156,7 +156,7 @@ fun LockScreen(
                     .align(Alignment.BottomCenter)
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.xxl, vertical = KrtSpacing.xl),
+                    .padding(horizontal = KrtSpacing.s32, vertical = KrtSpacing.s24),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             onUnlock?.let { unlock ->
@@ -168,7 +168,7 @@ fun LockScreen(
                 )
             }
             onSignOut?.let { signOut ->
-                Spacer(Modifier.height(KrtSpacing.md))
+                Spacer(Modifier.height(KrtSpacing.s12))
                 KrtQuietDangerButton(
                     text = stringResource(R.string.logout),
                     onClick = signOut,

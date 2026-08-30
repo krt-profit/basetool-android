@@ -118,7 +118,7 @@ fun LoginScreen(
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
-                    .padding(horizontal = KrtSpacing.xl),
+                    .padding(horizontal = KrtSpacing.s24),
         ) {
             // The PAGE scrolls as a whole — not the band, and the notice is never folded behind a
             // disclosure (design ch. 04 artboard 1). At the drawn 412×812 dp nothing scrolls: the
@@ -152,7 +152,7 @@ fun LoginScreen(
                         modifier = Modifier.align(Alignment.TopCenter),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Spacer(Modifier.height(KrtSpacing.xxl))
+                        Spacer(Modifier.height(KrtSpacing.s32))
                         Brand()
                     }
 
@@ -170,7 +170,7 @@ fun LoginScreen(
                         // The message occupies its own slot rather than replacing the button: a
                         // member whose login was refused still needs the button to try again.
                         state.messageRes?.let { message ->
-                            Spacer(Modifier.height(KrtSpacing.md))
+                            Spacer(Modifier.height(KrtSpacing.s12))
                             Text(
                                 text = stringResource(message),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -198,11 +198,11 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     KrtFanKitBand()
-                    Spacer(Modifier.height(KrtSpacing.lg))
+                    Spacer(Modifier.height(KrtSpacing.s16))
                     Footer(onOpenPrivacy = onOpenPrivacy, onOpenImprint = onOpenImprint)
-                    Spacer(Modifier.height(KrtSpacing.sm))
+                    Spacer(Modifier.height(KrtSpacing.s8))
                     Version(versionName = versionName, versionCode = versionCode)
-                    Spacer(Modifier.height(KrtSpacing.lg))
+                    Spacer(Modifier.height(KrtSpacing.s16))
                 }
             }
         }
@@ -220,7 +220,7 @@ private fun Brand() {
             style = MaterialTheme.typography.labelMedium,
             color = KrtPalette.TextMuted,
         )
-        Spacer(Modifier.height(KrtSpacing.sm))
+        Spacer(Modifier.height(KrtSpacing.s8))
         KrtHeading(text = stringResource(R.string.app_name))
     }
 }

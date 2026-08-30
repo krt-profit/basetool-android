@@ -25,6 +25,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -53,6 +54,9 @@ class OrdersScreenTest {
 
         /** The assignee edge's own version, deliberately a different number. */
         const val EDGE_VERSION = 7L
+
+        /** How many of the item the fixture's line asks for. */
+        const val ITEM_AMOUNT = 3
     }
 
     @get:Rule
@@ -64,6 +68,7 @@ class OrdersScreenTest {
         status: JobOrderStatus = JobOrderStatus.IN_PROGRESS,
         redacted: Boolean = false,
         materials: List<JobOrderMaterial> = listOf(material()),
+        items: List<JobOrderItem> = emptyList(),
     ) = JobOrder(
         id = id,
         displayId = displayId,
@@ -72,10 +77,13 @@ class OrdersScreenTest {
         priority = 1,
         type = "MATERIAL",
         requestingOrgUnit = "Staffel 1",
+        requestingOrgUnitId = null,
         responsibleOrgUnit = "SK Vanguard",
+        responsibleOrgUnitId = null,
+        handle = "Rhea",
         comment = "Qualität ist zweitrangig.",
         materials = materials,
-        items = emptyList(),
+        items = items,
         handovers = emptyList(),
         assignees = emptyList(),
         createdAt = Instant.parse("2026-08-01T10:00:00Z"),
@@ -85,6 +93,7 @@ class OrdersScreenTest {
 
     private fun material() =
         JobOrderMaterial(
+            materialId = "m1",
             name = "Quantainium",
             needed = "500.0",
             inStock = "125.0",
@@ -116,6 +125,7 @@ class OrdersScreenTest {
                     onLoadMore = {},
                     onOpenOrder = { opened.add(it) },
                     onCreate = {},
+                    onOpenDemand = {},
                 )
             }
         }
@@ -131,35 +141,188 @@ class OrdersScreenTest {
         assigned: MutableList<Unit> = mutableListOf(),
         statuses: MutableList<JobOrderStatus> = mutableListOf(),
         notes: MutableList<String> = mutableListOf(),
+        produced: MutableList<String> = mutableListOf(),
+        handedOver: MutableList<String> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
                 OrderDetailScreen(
                     state = state,
+                    handover =
+                        OrderHandoverActions(
+                            draft = null,
+                            onChange = {},
+                            onSubmit = {},
+                            onDismiss = {},
+                        ),
+                    itemHandover =
+                        OrderItemHandoverActions(
+                            draft = null,
+                            onChange = {},
+                            onSubmit = {},
+                            onDismiss = {},
+                        ),
+                    claims =
+                        ClaimActions(
+                            draft = null,
+                            onOpen = { _, _ -> },
+                            onChange = {},
+                            onSubmit = {},
+                            onWithdraw = {},
+                            onDismiss = {},
+                        ),
+                    production =
+                        OrderProductionActions(
+                            draft = null,
+                            onAmount = {},
+                            onDraw = { _, _, _ -> },
+                            onSkip = {},
+                            onAutoFill = {},
+                            bookIn =
+                                ProductionBookInActions(
+                                    onLocationQuery = {},
+                                    onLocation = { _, _ -> },
+                                    onOwnerQuery = {},
+                                    onOwner = { _, _ -> },
+                                    onOrgUnit = {},
+                                    onPersonal = {},
+                                    onAllocate = {},
+                                ),
+                            onSubmit = {},
+                            onDismiss = {},
+                        ),
                     onRefresh = {},
                     onRetryNow = {},
-                    actions =
-                        OrderDetailActions(
-                            onToggleAssignment = { assigned.add(Unit) },
-                            onEditNote = { notes.add("open") },
-                            onNoteChanged = { notes.add(it) },
-                            onSaveNote = { notes.add("save") },
-                            onDismissNote = {},
-                            onReapplyRejectedNote = { notes.add("reapply") },
-                            onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
-                            onStatusChosen = { statuses.add(it) },
-                            onDismissStatusPicker = {},
-                            onStatusSelected = { statuses.add(it) },
-                            onApplyStatus = {},
-                            onDismissStatusConfirm = {},
-                            onRaisePriority = {},
-                            onLowerPriority = {},
-                            onTabSelected = {},
-                        ),
+                    actions = detailActions(assigned, statuses, notes, produced, handedOver),
                 )
             }
         }
     }
+
+    /**
+     * A member without the grant still sees the Herstellung — and is told what to ask for.
+     *
+     * Hiding the control was the alternative and is what this project's gate rule forbids: roles
+     * here are handed out by a person, and a feature nobody can see is a feature nobody requests
+     * (ADR-0011). So the button is drawn, it takes the tap, it writes nothing, and it names the
+     * role.
+     */
+    @Test
+    fun `the production action is drawn for a member who may not use it`() {
+        val produced = mutableListOf<String>()
+        showDetail(
+            OrderDetailState(
+                orderId = "o1",
+                order = order(items = listOf(itemLine())),
+                phase = OrderDetailPhase.Ready,
+                me = Identity("u1", logistician = false),
+            ),
+            produced = produced,
+        )
+
+        compose.onNodeWithTag(ORDER_PRODUCTION_OPEN_TAG).assertIsDisplayed().performClick()
+
+        assertEquals(emptyList<String>(), produced)
+        compose.onNodeWithText(
+            "Dafür brauchst du die Rolle Logistiker.",
+            substring = true,
+        ).assertIsDisplayed()
+    }
+
+    /** And a Logistician's tap opens the sheet for that line. */
+    @Test
+    fun `a logistician's tap opens the production sheet for the line`() {
+        val produced = mutableListOf<String>()
+        showDetail(
+            OrderDetailState(
+                orderId = "o1",
+                order = order(items = listOf(itemLine())),
+                phase = OrderDetailPhase.Ready,
+                me = Identity("u1", logistician = true),
+            ),
+            produced = produced,
+        )
+
+        compose.onNodeWithTag(ORDER_PRODUCTION_OPEN_TAG).performClick()
+
+        assertEquals(listOf("i1"), produced)
+    }
+
+    /** A line with nothing left to build carries no production action — that is not a lock. */
+    @Test
+    fun `a finished line offers no production action`() {
+        showDetail(
+            OrderDetailState(
+                orderId = "o1",
+                order = order(items = listOf(itemLine(manufactured = ITEM_AMOUNT))),
+                phase = OrderDetailPhase.Ready,
+                me = Identity("u1", logistician = true),
+            ),
+        )
+
+        compose.onAllNodesWithTag(ORDER_PRODUCTION_OPEN_TAG).assertCountEquals(0)
+    }
+
+    /**
+     * One item line of an order.
+     *
+     * @param manufactured how many are already built.
+     * @return the line.
+     */
+    private fun itemLine(manufactured: Int = 0) =
+        JobOrderItem(
+            id = "i1",
+            gameItemId = "g1",
+            name = "Ballistic Gatling",
+            blueprintName = "Gatling — Standard",
+            blueprintId = "b1",
+            amount = ITEM_AMOUNT,
+            manufactured = manufactured,
+            delivered = 0,
+            blueprintStale = false,
+            version = ORDER_VERSION,
+        )
+
+    /**
+     * Everything one order's screen reports back, wired to the lists a test reads.
+     *
+     * Its own function so [showDetail] stays inside the length the project's analysis allows.
+     *
+     * @param assigned records the assignment toggle.
+     * @param statuses records every status the screen asked for.
+     * @param notes records the note editor's own steps.
+     * @param produced records which item line was asked to record production.
+     * @param handedOver records which item line was asked to record a handover.
+     * @return the actions.
+     */
+    private fun detailActions(
+        assigned: MutableList<Unit>,
+        statuses: MutableList<JobOrderStatus>,
+        notes: MutableList<String>,
+        produced: MutableList<String>,
+        handedOver: MutableList<String>,
+    ) = OrderDetailActions(
+        onToggleAssignment = { assigned.add(Unit) },
+        onEditNote = { notes.add("open") },
+        onNoteChanged = { notes.add(it) },
+        onSaveNote = { notes.add("save") },
+        onDismissNote = {},
+        onReapplyRejectedNote = { notes.add("reapply") },
+        onOpenStatusPicker = { statuses.add(JobOrderStatus.UNKNOWN) },
+        onStatusChosen = { statuses.add(it) },
+        onDismissStatusPicker = {},
+        onStatusSelected = { statuses.add(it) },
+        onApplyStatus = {},
+        onDismissStatusConfirm = {},
+        onRaisePriority = {},
+        onLowerPriority = {},
+        onTabSelected = {},
+        onRecordHandover = {},
+        onRecordProduction = { produced.add(it.id.orEmpty()) },
+        onRecordItemHandover = { handedOver.add(it.id.orEmpty()) },
+        onEditOrder = {},
+        onOpenCollection = {},
+    )
 
     /**
      * One member on an order.
@@ -448,7 +611,7 @@ class OrdersScreenTest {
     fun `offline the detail says so and offers no write`() {
         showDetail(ready().copy(online = false))
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(ORDER_ASSIGN_TAG).assertIsNotEnabled()
     }

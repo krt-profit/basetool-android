@@ -62,27 +62,40 @@ import de.greluc.krt.profit.basetool.android.gate.UpdateGateViewModel
 import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
 import de.greluc.krt.profit.basetool.android.lock.BiometricGate
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
+import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionSeams
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
+import de.greluc.krt.profit.basetool.android.navigation.BlueprintOverviewBindings
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderDetailSources
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderFormMode
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
+import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailWrites
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
@@ -193,6 +206,9 @@ class MainActivity : AppCompatActivity() {
 
     /** The member's own Raffinerie orders; activity-scoped like every other list. */
     private val refineryViewModel: RefineryViewModel by viewModels { authViewModels(container) }
+
+    /** „Handel" — the material catalogue with its UEX prices. */
+    private val materialsViewModel: MaterialsViewModel by viewModels { authViewModels(container) }
 
     /** The Materialbörse. */
     private val exchangeViewModel: MaterialBoardViewModel by viewModels {
@@ -385,21 +401,74 @@ class MainActivity : AppCompatActivity() {
                                     orders = ordersViewModel,
                                     orderDetail = {
                                         OrderDetailViewModel(
-                                            container.orders,
-                                            container.identity,
+                                            OrderDetailSources(
+                                                orders = container.orders,
+                                                work = container.orderWork,
+                                                bookIn = container.inventory,
+                                                claims = container.orderClaims,
+                                                orgUnits = container.orgUnits,
+                                                identity = container.identity,
+                                                liveSync = container.liveSync,
+                                            ),
                                             container.connectivity,
                                             it,
-                                            container.liveSync,
                                         )
                                     },
                                     inventory = inventoryViewModel,
                                     exchange = exchangeViewModel,
                                     refinery = refineryViewModel,
-                                    refineryCreate = {
-                                        RefineryCreateViewModel(container.refinery)
+                                    materials = materialsViewModel,
+                                    materialDetail = {
+                                        MaterialDetailViewModel(
+                                            container.materialCatalog,
+                                            it,
+                                            container.connectivity,
+                                        )
+                                    },
+                                    materialMatrix = {
+                                        MaterialMatrixViewModel(container.materialCatalog)
+                                    },
+                                    materialProfit = { ProfitViewModel(container.materialCatalog) },
+                                    refineryCreate = { editedRun ->
+                                        RefineryCreateViewModel(container.refinery, editedRun)
                                     },
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
+                                    },
+                                    gameItems = { GameItemStockViewModel(container.inventory) },
+                                    materialDemand = { MaterialDemandViewModel(container.materialDemand) },
+                                    blueprints =
+                                        BlueprintOverviewBindings(
+                                            // `null` before the first /me lands reads as "not
+                                            // allowed", which locks the row rather than opening a
+                                            // screen the server would refuse. It unlocks on the
+                                            // next composition once the identity is known.
+                                            allowed =
+                                                container.identity.known?.blueprintOverview == true,
+                                            build = {
+                                                BlueprintOverviewViewModel(
+                                                    container.personalBlueprints,
+                                                )
+                                            },
+                                        ),
+                                    operationForm = { editedOperation ->
+                                        OperationFormViewModel(container.operations, editedOperation)
+                                    },
+                                    orderCollection = { collectionId ->
+                                        OrderCollectionViewModel(
+                                            container.orderCollection,
+                                            container.orders,
+                                            collectionId,
+                                        )
+                                    },
+                                    orderEdit = { editedId ->
+                                        OrderCreateViewModel(
+                                            source = container.orders,
+                                            orgUnits = container.orgUnits,
+                                            orders = container.orders,
+                                            orderId = editedId,
+                                            mode = OrderFormMode.EDIT,
+                                        )
                                     },
                                     refineryOrder = {
                                         RefineryDetailViewModel(
@@ -407,7 +476,10 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
-                                            container.refinery,
+                                            RefineryDetailWrites(
+                                                store = container.refinery,
+                                                delete = container.refinery,
+                                            ),
                                         )
                                     },
                                     personalInventory = personalInventoryViewModel,
@@ -491,7 +563,7 @@ class MainActivity : AppCompatActivity() {
                         // over a dropped connection, and the member has no way to tell that is what
                         // happened: the login screen carries no explanation at all.
                         Box(
-                            Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            Modifier.fillMaxSize().padding(KrtSpacing.s16),
                             contentAlignment = Alignment.Center,
                         ) {
                             KrtEmptyState(
@@ -682,6 +754,7 @@ class MainActivity : AppCompatActivity() {
                 bankViewModels(container)
                 initializer { OrdersViewModel(container.orders, container.liveSync) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
+                initializer { MaterialsViewModel(container.materialCatalog, container.connectivity) }
                 initializer {
                     MaterialBoardViewModel(
                         container.materialBoard,
@@ -694,7 +767,6 @@ class MainActivity : AppCompatActivity() {
                     InventoryViewModel(
                         container.inventory,
                         container.connectivity,
-                        container.inventory,
                         container.liveSync,
                     )
                 }
@@ -703,7 +775,11 @@ class MainActivity : AppCompatActivity() {
                     PersonalInventoryViewModel(container.personalInventory, container.connectivity)
                 }
                 initializer {
-                    PersonalBlueprintsViewModel(container.personalBlueprints, container.connectivity)
+                    PersonalBlueprintsViewModel(
+                        container.personalBlueprints,
+                        container.personalBlueprints,
+                        container.connectivity,
+                    )
                 }
                 initializer {
                     DashboardViewModel(

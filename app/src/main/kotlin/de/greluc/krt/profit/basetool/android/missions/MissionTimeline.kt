@@ -31,6 +31,11 @@ private const val LOG_TAG = "MissionTimeline"
  * @property objectiveTitle the new or edited Ziel, as typed.
  * @property objectiveKind what the Ziel is for.
  * @property editingObjectiveId the Ziel being rewritten, or `null` while composing a new one.
+ * @property composing which editor sheet is open — `true` for the Ablauf, `false` for the Ziele,
+ *   `null` for neither. The editor is a sheet rather than a permanent form under the list, because
+ *   an open form competes with a list somebody is sorting for the same surface (ch. 06 artboard 13).
+ * @property sorting whether the reorder mode is on — the click fallback the design system requires
+ *   beside any drag.
  * @property busy whether a write is running.
  * @property error the last refusal.
  */
@@ -41,6 +46,8 @@ data class MissionTimelineDraft(
     val objectiveTitle: String = "",
     val objectiveKind: MissionObjectiveKind = MissionObjectiveKind.PRIMARY,
     val editingObjectiveId: String? = null,
+    val composing: Boolean? = null,
+    val sorting: Boolean = false,
     val busy: Boolean = false,
     val error: ApiError? = null,
 )
@@ -79,7 +86,28 @@ class MissionTimeline(
     }
 
     /**
-     * Loads one step into the editor so it can be rewritten.
+     * Opens the editor sheet for a **new** row.
+     *
+     * @param step `true` for an Ablauf step, `false` for a Ziel.
+     */
+    fun compose(step: Boolean) {
+        val (draft, _) = read()
+        write(
+            draft.copy(
+                composing = step,
+                stepTitle = "",
+                stepMeta = "",
+                editingStepId = null,
+                objectiveTitle = "",
+                editingObjectiveId = null,
+                error = null,
+            ),
+            null,
+        )
+    }
+
+    /**
+     * Loads one step into the editor sheet so it can be rewritten.
      *
      * @param step which one.
      */
@@ -87,6 +115,7 @@ class MissionTimeline(
         val (draft, _) = read()
         write(
             draft.copy(
+                composing = true,
                 stepTitle = step.title,
                 stepMeta = step.meta.orEmpty(),
                 editingStepId = step.id,
@@ -96,11 +125,12 @@ class MissionTimeline(
         )
     }
 
-    /** Abandons whichever editor is open, keeping the Einsatz untouched. */
+    /** Closes the editor sheet, keeping the Einsatz and the reorder mode untouched. */
     fun cancel() {
         val (draft, _) = read()
         write(
             draft.copy(
+                composing = null,
                 stepTitle = "",
                 stepMeta = "",
                 editingStepId = null,
@@ -161,6 +191,23 @@ class MissionTimeline(
     }
 
     /**
+     * Appends a copy of one step — „Duplizieren" of the row's overflow (design ch. 18 §3, E5).
+     *
+     * A copy, not a link: the server has no duplicate call, so this is the ordinary append with the
+     * same title and meta. It lands at the end of the list, where an append lands, rather than
+     * beside its original — there is no insert-at-position on the wire either.
+     *
+     * @param step the row to copy.
+     */
+    fun duplicateStep(step: MissionStepEdit) {
+        val (draft, detail) = read()
+        if (detail == null) {
+            return
+        }
+        run(draft) { source.addStep(missionId, detail, step.title, step.meta) }
+    }
+
+    /**
      * Moves one step one place up or down.
      *
      * > **Buttons, not a drag.** The reorder endpoint wants the whole id list in its new order, and
@@ -188,6 +235,19 @@ class MissionTimeline(
     }
 
     /**
+     * Appends a copy of one Ziel, the same way [duplicateStep] copies a step.
+     *
+     * @param objective the row to copy.
+     */
+    fun duplicateObjective(objective: MissionObjectiveEdit) {
+        val (draft, detail) = read()
+        if (detail == null) {
+            return
+        }
+        run(draft) { source.addObjective(missionId, detail, objective.title, objective.kind) }
+    }
+
+    /**
      * Moves one Ziel one place up or down, under the same rule as [moveStep].
      *
      * @param objectiveId which Ziel.
@@ -206,7 +266,7 @@ class MissionTimeline(
     }
 
     /**
-     * Loads one Ziel into the editor so it can be rewritten.
+     * Loads one Ziel into the editor sheet so it can be rewritten.
      *
      * @param objective which one.
      */
@@ -214,6 +274,7 @@ class MissionTimeline(
         val (draft, _) = read()
         write(
             draft.copy(
+                composing = false,
                 objectiveTitle = objective.title,
                 objectiveKind = objective.kind,
                 editingObjectiveId = objective.id,
@@ -267,9 +328,11 @@ class MissionTimeline(
         scope.launch {
             when (val result = request()) {
                 is ApiResult.Success -> {
-                    // The editor clears on success and only on success: a refusal that emptied it
-                    // would make the member type it all again to find out what was wrong.
-                    write(MissionTimelineDraft(), result.value)
+                    // The editor clears and closes on success and only on success: a refusal that
+                    // emptied it would make the member type it all again to find out what was
+                    // wrong. The reorder mode survives — somebody sorting a list is mid-task, and
+                    // dropping them out of it after every move is the opposite of helping.
+                    write(MissionTimelineDraft(sorting = draft.sorting), result.value)
                 }
 
                 is ApiResult.Failure -> {

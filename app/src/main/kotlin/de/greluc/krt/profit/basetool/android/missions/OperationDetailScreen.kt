@@ -61,8 +61,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
@@ -77,6 +79,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the scrolling content of the Operation detail. */
 const val OPERATION_DETAIL_CONTENT_TAG: String = "operation-detail-content"
+
+/** Test handle for the „⋮" that opens „Operation bearbeiten". */
+const val OPERATION_EDIT_MENU_TAG: String = "operation-edit-menu"
 
 /** Test handle for a payout row's confirmation. */
 const val OPERATION_PAID_OUT_TAG: String = "operation-paid-out"
@@ -107,6 +112,7 @@ fun OperationDetailScreen(
     onOpenMission: (String) -> Unit,
     onTogglePaidOut: (OperationPayout) -> Unit,
     modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null,
 ) {
     val overview = state.overview
     // Bound so the smart cast survives the branch; `state.phase` is a property read.
@@ -114,7 +120,11 @@ fun OperationDetailScreen(
     Column(modifier = modifier.fillMaxSize()) {
         when {
             overview != null -> {
-                OperationDetailHead(detail = overview.detail, overview = overview)
+                OperationDetailHead(
+                    detail = overview.detail,
+                    overview = overview,
+                    onEdit = onEdit,
+                )
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
                     onRefresh = onRefresh,
@@ -143,7 +153,7 @@ fun OperationDetailScreen(
                         message = stringResource(R.string.retry_busy_message, retryIn),
                         retryLabel = stringResource(R.string.retry_now),
                         onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 } else {
                     OperationDetailFailure(error = phase.error)
@@ -165,11 +175,13 @@ fun OperationDetailScreen(
  *
  * @param detail the Operation.
  * @param overview everything loaded with it, which is where the counts come from.
+ * @param onEdit opens the edit form, or `null` where the screen cannot navigate.
  */
 @Composable
 private fun OperationDetailHead(
     detail: OperationDetail,
     overview: OperationOverview,
+    onEdit: (() -> Unit)?,
 ) {
     // Artboard 06.5 puts the Operation's own name in the TOP BAR with its status and counts under
     // it, the way every other detail in this app now reads. The bar used to say "OPERATION" - the
@@ -185,11 +197,38 @@ private fun OperationDetailHead(
                 overview.payouts.participants,
                 overview.payouts.participants,
             )
+    // Drawn for everyone rather than hidden from those who may not write: whether the caller is a
+    // Missions-Manager is the server's answer, and an action that is simply absent teaches nobody
+    // what to ask for (ADR-0011). A refusal comes back as the form's 403.
+    val editLabel = stringResource(R.string.operation_form_edit_title)
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
     ProvideScreenTopBar(
         title = detail.name,
+        actions =
+            onEdit?.let { edit ->
+                {
+                    KrtOverflowMenu(
+                        contentDescription = editLabel,
+                        expanded = menuOpen,
+                        onExpandedChange = { menuOpen = it },
+                        modifier = Modifier.testTag(OPERATION_EDIT_MENU_TAG),
+                        items =
+                            listOf(
+                                KrtMenuItem(
+                                    label = editLabel,
+                                    iconRes = DesignR.drawable.ic_krt_edit,
+                                    onClick = {
+                                        menuOpen = false
+                                        edit()
+                                    },
+                                ),
+                            ),
+                    )
+                }
+            },
         subtitle = {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KrtStatusBadge(text = detail.statusLabel(), tone = detail.status.tone())
@@ -205,8 +244,8 @@ private fun OperationDetailHead(
     // invented from an absent field would put a caveat on a figure that may well be final.
     if (detail.payoutPreliminary == true) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Text(
                 text = stringResource(R.string.operation_detail_preliminary),
@@ -265,7 +304,7 @@ private fun OperationDetailBody(
         item(key = "missions-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_missions_title),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             )
         }
         if (overview.rollup.missions.isEmpty()) {
@@ -286,7 +325,7 @@ private fun OperationDetailBody(
                     text = stringResource(R.string.operation_detail_missions_truncated),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.Warning,
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                 )
             }
         }
@@ -295,7 +334,7 @@ private fun OperationDetailBody(
         item(key = "rollup-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_rollup),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             )
         }
         item(key = "rollup") {
@@ -304,7 +343,7 @@ private fun OperationDetailBody(
         item(key = "payouts-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_payouts_title),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             )
         }
         if (overview.payouts.rows.isEmpty()) {
@@ -337,7 +376,7 @@ private fun MyShareBand(
     // The band the artboard leads with: a HUD box behind an orange rail, saying in one line what
     // the member is owed and whether it has been paid. It was a muted caption and a plain number,
     // which on a screen of other people's money did not read as the member's own row.
-    Box(modifier = Modifier.padding(KrtSpacing.md)) {
+    Box(modifier = Modifier.padding(KrtSpacing.s12)) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             Box(
                 modifier =
@@ -349,12 +388,12 @@ private fun MyShareBand(
             KrtHudBox(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     ) {
                         Text(
                             text = stringResource(R.string.operation_detail_my_share).uppercase(),
@@ -421,7 +460,7 @@ private fun MyShareSubline(
  */
 @Composable
 private fun RollupBlock(overview: OperationOverview) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12)) {
         KrtKeyValueRow(
             label = stringResource(R.string.operation_detail_rollup_net),
             value = formatAmount(overview.rollup.total.orEmpty()),
@@ -473,8 +512,8 @@ private fun MissionResultRow(
             Modifier
                 .fillMaxWidth()
                 .then(if (id != null) Modifier.clickable { onOpenMission(id) } else Modifier)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -552,13 +591,13 @@ private fun PayoutRow(
     onTogglePaidOut: (OperationPayout) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
             Text(
                 text = row.participantName,
@@ -658,7 +697,12 @@ private fun PayoutCheckbox(
             cancelText = stringResource(R.string.personal_inventory_cancel),
         ) {
             Text(
-                text = stringResource(R.string.operation_detail_payout_undo_body, row.participantName),
+                text =
+                    stringResource(
+                        R.string.operation_detail_payout_undo_body,
+                        row.participantName,
+                        row.payout.orEmpty(),
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.Gray1,
             )
@@ -704,7 +748,7 @@ private fun EmptyLine(text: String) {
         text = text,
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.TextMuted,
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
     )
 }
 
@@ -752,7 +796,7 @@ private fun OperationDetailFailure(error: ApiError) {
         iconRes = DesignR.drawable.ic_krt_clipboard_check,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -768,6 +812,7 @@ fun OperationDetailRoute(
     viewModel: OperationDetailViewModel,
     onOpenMission: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     OperationDetailScreen(
@@ -777,6 +822,7 @@ fun OperationDetailRoute(
         onOpenMission = onOpenMission,
         onTogglePaidOut = viewModel::onTogglePaidOut,
         modifier = modifier,
+        onEdit = onEdit,
     )
 }
 

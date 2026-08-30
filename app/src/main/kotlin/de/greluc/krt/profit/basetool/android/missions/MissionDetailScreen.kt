@@ -66,6 +66,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
@@ -76,6 +77,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHair
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
@@ -183,6 +186,24 @@ fun MissionDetailScreen(
     // a refused save under a scrolled form.
     ConflictOn(error = state.error, onReload = onRefresh)
     state.joinSheet?.let { ConflictOn(error = it.error, onReload = onRefresh) }
+    // Taking a manager off withdraws a right, so it asks first and names the person — the artboard's
+    // own distinction from changing the Einsatzleitung, which is replaced rather than taken away.
+    state.structure.removingManager?.let { manager ->
+        KrtModal(
+            title = stringResource(R.string.mission_member_remove_manager_title),
+            confirmText = stringResource(R.string.mission_struct_remove_manager),
+            onConfirm = structure.onConfirmRemoveManager,
+            onDismiss = structure.onDismissRemoveManager,
+            tone = KrtModalTone.Danger,
+            modifier = Modifier.testTag(MISSION_MANAGER_REMOVE_MODAL_TAG),
+        ) {
+            Text(
+                text = stringResource(R.string.mission_member_remove_manager_body, manager.name),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+        }
+    }
     // Boxed so the refusal can overlay the content. The toast belongs to the SCREEN and not to the
     // route above it: this is the composable that draws the locked controls, so it is the one that
     // has to be able to explain them — and a screen test that can reach the lock can then reach the
@@ -195,10 +216,18 @@ fun MissionDetailScreen(
                         OfflineBand()
                     }
                     MissionDetailHead(detail = detail)
+                    MissionLifecycleBand(
+                        detail = detail,
+                        next = state.lifecycleNext,
+                        enabled = state.writable && !state.saving,
+                        denials = roster.denials,
+                        onAsk = admin.onAskLifecycle,
+                    )
                     MissionTabRow(
                         selected = state.tab,
                         detail = state.detail,
                         canManage = state.canManage,
+                        denials = roster.denials,
                         onTabSelected = onTabSelected,
                     )
                     PullToRefreshBox(
@@ -259,7 +288,7 @@ fun MissionDetailScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         MissionDetailFailure(error = phase.error)
@@ -274,8 +303,70 @@ fun MissionDetailScreen(
                 }
             }
         }
-        MemberPickerSheet(members = members)
+        MissionDetailOverlays(
+            state = state,
+            admin = admin,
+            structure = structure,
+            members = members,
+            timeline = timeline,
+        )
         DenialToast(state = roster.denials)
+    }
+}
+
+/**
+ * Everything the Einsatz detail floats over its content.
+ *
+ * All six are owned by the **screen** rather than by a tab, and for one reason: a sheet or a modal
+ * owned by a `LazyColumn` item dies the moment that item recycles, which on a long Ablauf happens
+ * while the member is still looking at it.
+ *
+ * @param state what the screen knows.
+ * @param admin what the Verwaltung tab can do.
+ * @param structure what a manager may do to Einheiten and crew.
+ * @param members the one picker behind the three member-shaped writes.
+ * @param timeline what a manager may do to the Ablauf and the Ziele.
+ */
+@Composable
+private fun MissionDetailOverlays(
+    state: MissionDetailState,
+    admin: MissionAdminActions,
+    structure: MissionStructureActions,
+    members: MissionMemberActions,
+    timeline: MissionTimelineActions,
+) {
+    MemberPickerSheet(members = members)
+    UnitRenameSheet(structure = structure)
+    state.structure.crewPickerUnitId?.let { unitId ->
+        state.detail?.units?.firstOrNull { it.id == unitId }?.let { unit ->
+            CrewPickerSheet(
+                unit = unit,
+                roster = state.detail.participants,
+                structure = structure,
+            )
+        }
+    }
+    when (state.timeline.composing) {
+        true -> StepEditorSheet(timeline = timeline)
+        false -> ObjectiveEditorSheet(timeline = timeline)
+        null -> Unit
+    }
+    state.lifecycleAsk?.let { next ->
+        MissionLifecycleConfirm(
+            next = next,
+            registered = state.detail?.registeredParticipants ?: 0,
+            onConfirm = admin.onConfirmLifecycle,
+            onDismiss = admin.onDismissLifecycle,
+        )
+    }
+    state.adminForm?.let { form ->
+        form.conflict?.let { conflict ->
+            MissionSectionConflictModal(
+                conflict = conflict,
+                onKeepMine = admin.onKeepMine,
+                onReload = admin.onReload,
+            )
+        }
     }
 }
 
@@ -374,7 +465,7 @@ private fun SignUpBar(
     val mine = state.mySignUp
     Column(modifier = Modifier.fillMaxWidth()) {
         state.error?.let { error ->
-            Box(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+            Box(modifier = Modifier.padding(horizontal = KrtSpacing.s12)) {
                 SignUpError(error = error)
             }
         }
@@ -386,7 +477,7 @@ private fun SignUpBar(
                 text = stringResource(R.string.mission_detail_check_in_not_yet),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
-                modifier = Modifier.padding(horizontal = KrtSpacing.md),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             )
         }
         // The payout preference is a standing SETTING, not an action, and it used to sit in the
@@ -498,10 +589,10 @@ private fun PayoutPreference(
             Modifier
                 .fillMaxWidth()
                 .background(KrtPalette.Gray4)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                 .testTag(MISSION_PAYOUT_TAG)
                 .writeAlpha(state.writable),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Text(
             text = stringResource(R.string.mission_detail_payout_label),
@@ -510,7 +601,7 @@ private fun PayoutPreference(
         )
         // Wrapping, not a fixed row: „Auszahlung an mich" and „An die Organisation spenden" are
         // long enough together that a narrow phone would otherwise clip the second label.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtRadioRow(
                 selected = mine.donating != true,
                 onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
@@ -559,39 +650,64 @@ private fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
- * The tab row.
+ * The tab row — all eight, always.
  *
- * Horizontally scrollable because seven German tab labels do not fit a phone's width, and the
- * design's alternative — truncating them — would make "Teilnehmer" and "Frequenzen" indistinguishable.
+ * Horizontally scrollable because eight German tab labels do not fit a phone's width, and the
+ * design's alternative — truncating them — would make "Teilnehmer" and "Frequenzen"
+ * indistinguishable.
  *
- * **Verwaltung is drawn only for a caller who may manage.** The gate is the server's own
- * `canEdit`, not a role read on the device, and the tab is absent rather than locked: a lock says
- * "you could, but not now", and for a member who simply does not run this Einsatz that is not the
- * truth. Every write behind it is refused by the backend regardless — this decides what is drawn,
- * never what is allowed.
+ * > **Verwaltung is LOCKED for a non-manager, never hidden** (design ch. 06 artboard 6). An
+ * > earlier build hid it, on the argument that a member who does not run this Einsatz is not one
+ * > grant away from running it. The designer rejected that on 2026-08-29 and the rule stands as
+ * > `REQ-APP-AUTH-013` always stated it: this organisation grants roles by hand, and **a function
+ * > nobody sees is never requested**. The app's own Bank had it right all along.
+ * >
+ * > A tap on the locked tab does **not** open it. It raises the corner-bracket toast naming the
+ * > Missions-Manager role, and the active tab stays where it was — which is why the gate lives
+ * > here rather than only inside the tab.
  *
  * @param selected which tab is showing.
  * @param detail the Einsatz, for the per-tab counts.
- * @param canManage whether the Verwaltung tab is drawn at all.
- * @param onTabSelected a tab was picked.
+ * @param canManage whether the Verwaltung tab may be opened.
+ * @param denials where the refused tap is announced.
+ * @param onTabSelected a tab was picked — called only for a tab the caller may open.
  */
 @Composable
 private fun MissionTabRow(
     selected: MissionTab,
     detail: MissionDetail?,
     canManage: Boolean,
+    denials: DenialState,
     onTabSelected: (MissionTab) -> Unit,
 ) {
-    // Indices are into the VISIBLE list, not into the enum. Handing `KrtPageTabs` an enum ordinal
-    // while it draws a shorter list selects the wrong tab for everyone who is not a manager.
-    val tabs = MissionTab.entries.filter { canManage || it != MissionTab.ADMIN }
+    val gate =
+        Gate(
+            allowed = canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
+        )
+    val tabs = MissionTab.entries
     KrtPageTabs(
         tabs =
             tabs.map { tab ->
-                KrtPageTab(label = stringResource(tab.labelRes()), count = detail?.let(tab::countIn))
+                val locked = tab == MissionTab.ADMIN && !canManage
+                KrtPageTab(
+                    label = stringResource(tab.labelRes()),
+                    count = detail?.let(tab::countIn),
+                    // 45 % alpha PLUS a lock glyph: alpha alone is indistinguishable from a
+                    // loading state, which is why the design system pairs the two.
+                    locked = locked,
+                )
             },
         selectedIndex = tabs.indexOf(selected).coerceAtLeast(0),
-        onSelect = { onTabSelected(tabs[it]) },
+        onSelect = { index ->
+            val tab = tabs[index]
+            if (tab == MissionTab.ADMIN && !gate.allowed) {
+                denials.raise(gate)
+            } else {
+                onTabSelected(tab)
+            }
+        },
         modifier = Modifier.testTag(MISSION_DETAIL_TABS_TAG),
     )
 }
@@ -623,8 +739,8 @@ private fun MissionTabContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         when (state.tab) {
             MissionTab.OVERVIEW -> overviewTab(detail)
@@ -686,10 +802,10 @@ private fun ParticipantRow(
     isMine: Boolean,
     roster: MissionRosterActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -757,7 +873,7 @@ private fun ParticipantManagerActions(
         rememberGated(gate, { roster.onPayout(participant.id) }, roster.denials)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtGhostButton(
@@ -810,19 +926,21 @@ private fun ParticipantFunctionSelect(
     Text(
         text = stringResource(R.string.mission_detail_function_label),
         style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.Gray2,
+        color = KrtPalette.TextMuted,
     )
     // The same control as the sign-up sheet's, for the same reason it is a FlowRow there: five
     // Funktionen do not fit one phone line, and a horizontal scroller would hide the ones past the
     // edge behind a gesture nothing announces.
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         roster.jobTypes.forEach { jobType ->
             val (dim, click) =
                 rememberGated(gate, { roster.onFunction(participant.id, jobType) }, roster.denials)
-            KrtFilterChip(
+            // A choice, not a filter: design ch. 18 §3 (E6) keeps the two chips deliberately
+            // different, and this one IS the value rather than a way of narrowing a list.
+            KrtChoiceChip(
                 text = jobType.name,
                 selected = participant.plannedJobTypeId == jobType.id,
                 onClick = click,
@@ -852,10 +970,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
         return
     }
     items(detail.units, key = { it.id }) { unit ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -882,7 +1000,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
             UnitRowActions(unit = unit, structure = structure)
             CrewAdd(unit = unit, roster = detail.participants, structure = structure)
             unit.crew.forEach { member ->
-                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                     Text(
                         text = member.name,
                         style = MaterialTheme.typography.bodySmall,
@@ -891,7 +1009,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
                     // The roles are the picker now rather than a joined string: for a manager the
                     // chips ARE the reading of them, selected meaning held. For everybody else they
                     // render locked, which reads the same and says why on a tap.
-                    CrewRoleSelect(unitId = unit.id, member = member, structure = structure)
+                    CrewRoleSelect(
+                        unitId = unit.id,
+                        member = member,
+                        crew = unit.crew,
+                        structure = structure,
+                    )
                     StructureRemove(
                         label = stringResource(R.string.mission_struct_remove_crew),
                         structure = structure,
@@ -913,16 +1036,16 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
     detail: MissionDetail,
     timeline: MissionTimelineActions,
 ) {
-    item { StepComposer(timeline) }
     if (detail.steps.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_steps) }
+        item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
         return
     }
     items(detail.steps, key = { it.id }) { step ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -942,9 +1065,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
                 step = MissionStepEdit(id = step.id, title = step.title, meta = step.meta),
                 done = step.done,
                 timeline = timeline,
+                position =
+                    RowPosition(
+                        first = step.id == detail.steps.first().id,
+                        last = step.id == detail.steps.last().id,
+                    ),
             )
         }
     }
+    item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
 }
 
 /**
@@ -956,16 +1085,18 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
     detail: MissionDetail,
     timeline: MissionTimelineActions,
 ) {
-    item { ObjectiveComposer(timeline) }
     if (detail.objectives.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_objectives) }
+        item {
+            TimelineListActions(R.string.mission_objective_add, MISSION_OBJECTIVE_ADD_TAG, timeline)
+        }
         return
     }
     items(detail.objectives, key = { it.id }) { objective ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -988,9 +1119,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
                         kind = objective.kind.toObjectiveKind(),
                     ),
                 timeline = timeline,
+                position =
+                    RowPosition(
+                        first = objective.id == detail.objectives.first().id,
+                        last = objective.id == detail.objectives.last().id,
+                    ),
             )
         }
     }
+    item { TimelineListActions(R.string.mission_objective_add, MISSION_OBJECTIVE_ADD_TAG, timeline) }
 }
 
 /**
@@ -1026,8 +1163,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
                             )
                         }
                     }
-                    .padding(vertical = KrtSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    .padding(vertical = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -1105,7 +1242,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(
     actions: MissionFinanceActions,
 ) {
     item {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             KrtKeyValueRow(
                 label = stringResource(R.string.mission_detail_finance_income),
                 value = formatSignedAmount(finances.incomeSum.orEmpty(), income = true),
@@ -1178,7 +1315,7 @@ private fun FinanceEntryRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -1246,8 +1383,8 @@ private fun FinanceEntrySheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtFieldLabel(text = stringResource(R.string.mission_detail_finance_type))
             KrtSegmentedControl(
@@ -1294,7 +1431,7 @@ private fun FinanceEntrySheet(
                 enabled = !state.saving,
             )
             state.error?.let { error -> SignUpError(error = error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = actions.onDismiss,
@@ -1323,7 +1460,7 @@ private fun EmptyTab(messageRes: Int) {
         text = stringResource(messageRes),
         style = MaterialTheme.typography.bodyMedium,
         color = KrtPalette.TextMuted,
-        modifier = Modifier.padding(vertical = KrtSpacing.md),
+        modifier = Modifier.padding(vertical = KrtSpacing.s12),
     )
 }
 
@@ -1356,7 +1493,7 @@ private fun MissionDetailFailure(error: ApiError) {
         iconRes = DesignR.drawable.ic_krt_target,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -1475,26 +1612,37 @@ fun MissionDetailRoute(
                 onRemoveUnit = viewModel.structure::removeUnit,
                 onAddFrequency = viewModel.structure::addFrequency,
                 onRemoveFrequency = viewModel.structure::removeFrequency,
+                onConfirmRemoveManager = viewModel.structure::confirmRemoveManager,
+                onDismissRemoveManager = viewModel.structure::dismissRemoveManager,
                 onRemoveCrew = viewModel.structure::removeCrew,
                 onEditUnit = { unit ->
-                    // The rename reuses the composer at the top of the tab, filled from the unit —
-                    // including its version, because the write is a replace and a guessed counter
-                    // would overwrite a concurrent rename instead of colliding with it.
+                    // Opens the rename sheet, filled from the unit — including its version, because
+                    // the write is a replace and a guessed counter would overwrite a concurrent
+                    // rename instead of colliding with it, and including its HVU mark, which the
+                    // one-field sheet does not show but the call still carries.
                     viewModel.structure.change {
                         it.copy(
                             unitName = unit.name,
-                            unitHighValue = unit.highValue,
                             editingUnitId = unit.id,
                             editingUnitVersion = unit.version,
+                            editingUnitOriginalName = unit.name,
+                            editingUnitHighValue = unit.highValue,
                         )
                     }
                 },
                 onSaveUnit = { unitId, version ->
                     val draft = state.structure
-                    viewModel.structure.updateUnit(unitId, draft.unitName, draft.unitHighValue, version)
+                    viewModel.structure.updateUnit(
+                        unitId,
+                        draft.unitName,
+                        draft.editingUnitHighValue,
+                        version,
+                    )
                 },
                 onSetCrewRoles = viewModel.structure::setCrewRoles,
                 onAddCrew = viewModel.structure::addCrew,
+                onOpenCrewPicker = { viewModel.structure.openCrewPicker(it.id) },
+                onDismissCrewPicker = viewModel.structure::dismissCrewPicker,
                 crewJobTypes = state.crewJobTypes,
             ),
         timeline =
@@ -1504,15 +1652,18 @@ fun MissionDetailRoute(
                 draft = state.timeline,
                 denials = denials,
                 onChange = viewModel.timeline::change,
+                onCompose = viewModel.timeline::compose,
                 onSaveStep = viewModel.timeline::saveStep,
                 onEditStep = viewModel.timeline::editStep,
                 onToggleStep = viewModel.timeline::toggleStep,
                 onRemoveStep = viewModel.timeline::removeStep,
                 onMoveStep = viewModel.timeline::moveStep,
+                onDuplicateStep = viewModel.timeline::duplicateStep,
                 onSaveObjective = viewModel.timeline::saveObjective,
                 onEditObjective = viewModel.timeline::editObjective,
                 onRemoveObjective = viewModel.timeline::removeObjective,
                 onMoveObjective = viewModel.timeline::moveObjective,
+                onDuplicateObjective = viewModel.timeline::duplicateObjective,
                 onCancel = viewModel.timeline::cancel,
             ),
         members =
@@ -1525,12 +1676,22 @@ fun MissionDetailRoute(
                 onQuery = viewModel.memberPicker::query,
                 onPick = viewModel.memberPicker::pick,
                 onDismiss = viewModel.memberPicker::dismiss,
+                partyLeadName = state.detail?.partyLeadName,
+                managers = state.detail?.managers.orEmpty(),
+                onRemoveManager = viewModel.structure::askRemoveManager,
             ),
         admin =
             MissionAdminActions(
                 onChange = viewModel.admin::change,
+                onToggle = viewModel.admin::toggle,
                 onSave = viewModel.admin::save,
-                onStartNow = viewModel.admin::startNow,
+                onAskLifecycle = viewModel.lifecycle::ask,
+                onConfirmLifecycle = viewModel.lifecycle::confirm,
+                onDismissLifecycle = viewModel.lifecycle::dismiss,
+                onCorrectStart = viewModel.admin::correctStart,
+                onCancelCorrectStart = viewModel.admin::cancelCorrectStart,
+                onKeepMine = viewModel.admin::keepMine,
+                onReload = viewModel.admin::reloadAfterConflict,
             ),
         modifier = modifier,
     )
@@ -1593,8 +1754,8 @@ private fun MissionJoinSheet(
         modifier = Modifier.testTag(MISSION_JOIN_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
                 text = subject,
@@ -1621,8 +1782,8 @@ private fun MissionJoinSheet(
                 // FlowRow: five Funktionen do not fit one phone line, and a horizontal scroller
                 // would hide the ones past the edge behind a gesture nothing announces.
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                    verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 ) {
                     sheet.jobTypes.forEach { jobType ->
                         KrtFilterChip(
@@ -1635,7 +1796,7 @@ private fun MissionJoinSheet(
                 Text(
                     text = stringResource(R.string.mission_join_function_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.Gray2,
+                    color = KrtPalette.TextMuted,
                 )
             }
             sheet.error?.let { SignUpError(error = it) }
@@ -1655,7 +1816,7 @@ private fun MissionJoinSheet(
             Text(
                 text = stringResource(R.string.mission_join_footnote),
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
     }

@@ -190,10 +190,10 @@ fun UpdateRequiredScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.xl)
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s24)
                 .testTag(UPDATE_GATE_TAG),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12, Alignment.CenterVertically),
     ) {
         KrtIcon(
             id = DesignR.drawable.ic_krt_download,

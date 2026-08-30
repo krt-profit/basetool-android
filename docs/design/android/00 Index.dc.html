@@ -25,8 +25,8 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
       <span class="chip chip--primary">Dark-only</span>
-      <span class="chip chip--muted">minSdk 30 · target 37</span>
-      <span class="chip chip--muted">DE primary · EN</span>
+      <span class="chip chip--muted" style="color:#8A8A8A">minSdk 31 · target 37</span>
+      <span class="chip chip--muted" style="color:#8A8A8A">DE primary · EN</span>
     </div>
   </header>
 
@@ -74,13 +74,13 @@
             <div style="font:300 13px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:4px">{{ ch.desc }}</div>
           </div>
           <span class="chip {{ ch.chipClass }}">{{ ch.status }}</span>
-          <svg class="krt-icon" style="width:20px;height:20px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+          <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg>
         </div>
       </a>
     </sc-for>
   </section>
 
-  <footer style="margin-top:48px;border-top:1px solid #282828;padding-top:16px;display:flex;justify-content:space-between;font:300 12px/1.5 Lato,sans-serif;color:#646464">
+  <footer style="margin-top:48px;border-top:1px solid #282828;padding-top:16px;display:flex;justify-content:space-between;font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">
     <span>Spec v0.1 · 2026-08-17 · annotations EN, UI copy DE</span>
     <span>Sources: github.com/krt-profit/basetool · krt-profit/design-system</span>
   </footer>
@@ -93,7 +93,7 @@ class Component extends DCLogic {
     const live = 'chip--primary', queued = 'chip--muted';
     return { chapters: [
       { num: '01', title: 'Foundations & tokens', desc: 'M3 colorScheme / typography / shapes mapping · spacing · Theme.kt', href: '01 Foundations.dc.html', status: 'READY', chipClass: 'chip--success' },
-      { num: '02', title: 'Component sheet', desc: 'Buttons ladder · HUD box · chips & pills · rows · tables · forms · modal · toast · states', href: '02 Components.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '02', title: 'Component sheet', desc: 'Datum-Zeit-Wähler (§11) · Ausklapp-Zustände (§10) · Buttons · HUD box · chips · rows · tables · forms · modal · toast · states', href: '02 Components.dc.html', status: 'READY', chipClass: 'chip--success' },
       { num: '03', title: 'Navigation map', desc: 'Bottom bar · rail · Mehr · back behavior · deep links', href: '03 Navigation.dc.html', status: 'READY', chipClass: 'chip--success' },
       { num: '04', title: 'Auth', desc: 'Login (Keycloak + Discord) · approval pending · terms · app-lock', href: '04 Auth.dc.html', status: 'READY', chipClass: 'chip--success' },
       { num: '05', title: 'Dashboard', desc: 'Next missions · notifications · announcement · quick actions', href: '05 Dashboard.dc.html', status: 'READY', chipClass: 'chip--success' },
@@ -107,6 +107,9 @@ class Component extends DCLogic {
       { num: '13', title: 'Beförderung & Einstellungen', desc: 'Evaluations matrix · eligibility · settings · app-lock toggle', href: '13 Einstellungen.dc.html', status: 'READY', chipClass: 'chip--success' },
       { num: '14', title: 'System states & app icon', desc: 'Offline · 409/429/503 · forced update · adaptive icon · push shade', href: '14 System States.dc.html', status: 'READY', chipClass: 'chip--success' },
       { num: '15', title: 'Open-Source-Lizenzen', desc: 'Build-generiertes Lizenzregister · Sticky-Gruppen · Kein-Browser-Fallback · Laden/Fehler', href: '15 Open-Source-Lizenzen.dc.html', status: 'READY', chipClass: 'chip--success' },
+      { num: '16', title: 'Materialien & Referenz', desc: 'Preisübersicht · Material-Detail · Bestand · Verwendung · Gewinnrechnung', href: '16 Materialien.dc.html', status: 'NEU', chipClass: 'chip chip--primary' },
+      { num: '17', title: 'Börse & Mein Inventar', desc: 'Item-Angebot/-Gesuch · Eintrag bearbeiten · Sammelaktionen · Blueprint-Verfügbarkeit', href: '17 Boerse - Inventar.dc.html', status: 'NEU', chipClass: 'chip chip--primary' },
+      { num: '18', title: 'Abweichungs-Register', desc: 'Runden 12–13 · Materialbedarf · Blueprint-Import · ratifizierte Kompositionen · Register C/D/G/H', href: '18 Abweichungs-Register.dc.html', status: 'NEU', chipClass: 'chip chip--primary' },
     ]};
   }
 }

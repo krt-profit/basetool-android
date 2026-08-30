@@ -9,4 +9,41 @@
 
     <!-- Spoken description of the Fan Kit artwork; this one IS localizable. -->
     <string name="krt_fankit_logo_description">Star Citizen — Made by the Community</string>
+
+    <!-- Design ch. 02 §11 — the date and time picker. -->
+    <string name="krt_date_placeholder">Pick a date</string>
+    <string name="krt_time_placeholder">--:--</string>
+    <string name="krt_date_pick_title">Pick a date</string>
+    <string name="krt_time_pick_title">Pick a time</string>
+    <string name="krt_range_pick_title">Pick a period</string>
+    <string name="krt_apply">Apply</string>
+    <string name="krt_filter_action">Filter</string>
+    <string name="krt_today">Today</string>
+    <string name="krt_tomorrow">Tomorrow</string>
+    <string name="krt_next_friday">Next Friday</string>
+    <string name="krt_this_week">This week</string>
+    <string name="krt_next_seven_days">Next 7 days</string>
+    <string name="krt_this_month">This month</string>
+    <string name="krt_hour">Hour</string>
+    <string name="krt_minute">Minute</string>
+    <string name="krt_full_hour">:00</string>
+    <string name="krt_half_hour">:30</string>
+    <string name="krt_now">Now</string>
+    <string name="krt_range_from">From</string>
+    <string name="krt_range_until">Until</string>
+    <string name="krt_in_the_past">Lies in the past</string>
+    <string name="krt_previous_month">Previous month</string>
+    <string name="krt_following_month">Next month</string>
+    <string name="krt_hour_up">Hour up</string>
+    <string name="krt_hour_down">Hour down</string>
+    <string name="krt_minute_up">Minute up</string>
+    <string name="krt_minute_down">Minute down</string>
+    <string name="krt_pick_date_for">Pick a date for %1$s</string>
+    <string name="krt_pick_time_for">Pick a time for %1$s</string>
+
+    <!-- Spoken labels of the shared stepper and of every modal's close glyph. -->
+    <string name="krt_less">Less</string>
+    <string name="krt_more">More</string>
+    <string name="krt_close">Close</string>
+    <string name="krt_reconnect">Reconnect</string>
 </resources>

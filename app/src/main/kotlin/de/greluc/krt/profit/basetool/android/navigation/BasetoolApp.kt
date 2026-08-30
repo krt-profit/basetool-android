@@ -62,12 +62,20 @@ import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
+import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
@@ -147,8 +155,18 @@ fun BasetoolApp(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
-    refineryCreate: () -> RefineryCreateViewModel,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
+    materialMatrix: () -> MaterialMatrixViewModel,
+    materialProfit: () -> ProfitViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
+    orderCollection: (String) -> OrderCollectionViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
+    blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -280,8 +298,11 @@ fun BasetoolApp(
                     LocalScreenTopBar provides screenBar,
                     LocalCaller provides who,
                 ) {
+                    // No content cap. Design ch. 01 §5 struck the 1200 dp one as a web rule: a
+                    // tablet surface picks one of §8's three answers instead, and each of those
+                    // decides its own widths.
                     BasetoolNavHost(
-                        modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         navController = navController,
                         rootScroll = rootScroll,
                         onOpenDestination = { navController.navigateToTopLevel(it.route) },
@@ -317,8 +338,18 @@ fun BasetoolApp(
                         exchange = exchange,
                         refinery = refinery,
                         refineryOrder = refineryOrder,
+                        materials = materials,
+                        materialDetail = materialDetail,
+                        materialMatrix = materialMatrix,
+                        materialProfit = materialProfit,
                         refineryCreate = refineryCreate,
                         orderCreate = orderCreate,
+                        orderEdit = orderEdit,
+                        orderCollection = orderCollection,
+                        operationForm = operationForm,
+                        blueprints = blueprints,
+                        gameItems = gameItems,
+                        materialDemand = materialDemand,
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,

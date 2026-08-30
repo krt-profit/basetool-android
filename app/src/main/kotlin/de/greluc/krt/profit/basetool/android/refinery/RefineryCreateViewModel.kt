@@ -35,6 +35,7 @@ import java.time.Instant
  * @property created the new order's id once it exists, which is what the screen navigates to.
  * @property materials the candidates the goods lines' material pickers show.
  * @property error what the last read or write was refused with.
+ * @property editing whether this rewrites an order or raises one.
  */
 data class RefineryCreateState(
     val draft: RefineryOrderDraft = RefineryOrderDraft(goods = listOf(RefineryGoodDraft())),
@@ -45,7 +46,19 @@ data class RefineryCreateState(
     val created: String? = null,
     val materials: List<Pair<String, String>> = emptyList(),
     val error: ApiError? = null,
+    val editing: Boolean = false,
 ) {
+    /**
+     * Whether the run's core and its goods are locked.
+     *
+     * Once the yield has been booked into the Lager, the goods describe rows that already exist
+     * somewhere else, and moving them here would leave the two disagreeing. The **server does not
+     * enforce this** — `PUT /refinery-orders/{id}` rewrites a booked order's goods without
+     * complaint — so the rule is the app's, drawn as a lock rather than as an absence
+     * (`REQ-APP-REF-011`).
+     */
+    val coreLocked: Boolean get() = editing && draft.stored
+
     /**
      * When the run ends, computed from start and duration.
      *
@@ -86,12 +99,15 @@ data class RefineryCreateState(
  * ingest gateway and is consumed once in a browser; a phone cannot receive it (design chapter 11,
  * „Entscheidungen — Create"). The form is deliberately manual.
  *
- * @property source the pickers and the creation.
+ * @property source the pickers and the two writes.
+ * @property orderId the order being rewritten, or `null` when raising one. The edit is the **same
+ *   form pre-filled**, which design ch. 11 artboard 6 is explicit about: no second layout.
  */
 class RefineryCreateViewModel(
     private val source: RefineryCreateSource,
+    private val orderId: String? = null,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(RefineryCreateState())
+    private val mutableState = MutableStateFlow(RefineryCreateState(editing = orderId != null))
 
     /** What the screen renders. */
     val state: StateFlow<RefineryCreateState> = mutableState.asStateFlow()
@@ -108,15 +124,27 @@ class RefineryCreateViewModel(
         viewModelScope.launch {
             val refineries = source.refineries()
             val methods = source.methods()
+            val existing = orderId?.let { source.orderDraft(it) }
             mutableState.value =
                 mutableState.value.copy(
+                    draft =
+                        (existing as? ApiResult.Success)?.value?.let { loaded ->
+                            // A run with no goods line would leave the editor with nothing to edit;
+                            // the create's own empty line is the right shape for that.
+                            if (loaded.goods.isEmpty()) {
+                                loaded.copy(goods = listOf(RefineryGoodDraft()))
+                            } else {
+                                loaded
+                            }
+                        } ?: mutableState.value.draft,
                     refineries = (refineries as? ApiResult.Success)?.value.orEmpty(),
                     methods = (methods as? ApiResult.Success)?.value.orEmpty(),
                     loading = false,
                     // Either list failing leaves the form unusable, so the failure is shown rather
                     // than an empty picker that looks like "there are none".
                     error =
-                        (refineries as? ApiResult.Failure)?.error
+                        (existing as? ApiResult.Failure)?.error
+                            ?: (refineries as? ApiResult.Failure)?.error
                             ?: (methods as? ApiResult.Failure)?.error,
                 )
         }
@@ -197,22 +225,32 @@ class RefineryCreateViewModel(
             )
     }
 
-    /** Creates the order the form describes. */
+    /** Sends the form — raising the order, or rewriting the one being edited. */
     fun onCreate() {
         val current = mutableState.value
-        if (!current.draft.sendable || current.saving) {
+        if (!current.draft.sendable || current.saving || current.loading) {
             return
         }
         mutableState.value = current.copy(saving = true, error = null)
         viewModelScope.launch {
-            when (val result = source.createOrder(current.draft)) {
+            val id = orderId
+            val result =
+                if (id == null) {
+                    source.createOrder(current.draft)
+                } else {
+                    when (val write = source.updateOrder(id, current.draft)) {
+                        is ApiResult.Success -> ApiResult.Success(id)
+                        is ApiResult.Failure -> write
+                    }
+                }
+            when (result) {
                 is ApiResult.Success -> {
                     mutableState.value =
                         mutableState.value.copy(saving = false, created = result.value)
                 }
 
                 is ApiResult.Failure -> {
-                    KrtLog.w(LOG_TAG) { "creating the order was refused: ${result.error}" }
+                    KrtLog.w(LOG_TAG) { "writing the order was refused: ${result.error}" }
                     mutableState.value =
                         mutableState.value.copy(saving = false, error = result.error)
                 }

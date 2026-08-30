@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.exchange
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
@@ -50,6 +51,21 @@ sealed interface BoardPhase {
     ) : BoardPhase
 }
 
+/**
+ * Which half of a create sheet is showing.
+ *
+ * **One form with a switch, not two entries in the menu** — design ch. 17's first decision, and the
+ * precedent is the Auftrag form, which has split „Material / Items" the same way since round 5. A
+ * second menu entry would be a fourth place where the same distinction has to be explained.
+ */
+enum class BoardKind {
+    /** A material: SCU, from stock for an offer, with a minimum quality for a request. */
+    MATERIAL,
+
+    /** A craftable item: pieces, addressed by product key and bound to no stock row. */
+    ITEM,
+}
+
 /** Which sheet is open, if any. */
 sealed interface BoardSheet {
     /** None. */
@@ -72,16 +88,25 @@ sealed interface BoardSheet {
         val amount: String = "",
         val minQuality: String = "",
         val remark: String = "",
+        val kind: BoardKind = BoardKind.MATERIAL,
+        val productKey: String? = null,
+        val productName: String = "",
+        val products: List<BlueprintProduct> = emptyList(),
     ) : BoardSheet {
         /**
          * Whether „Gesuch veröffentlichen" may be pressed.
          *
-         * The material has to be **picked**, not typed: the request addresses it by id, and a name
-         * the member typed and never selected has none. That is the failure mode the web app's
-         * comboboxes have hit before — a field that looks filled and submits nothing.
+         * The material — or the product — has to be **picked**, not typed: the request addresses
+         * it by an id the wire needs, and a name the member typed and never selected has none. That
+         * is the failure mode the web app's comboboxes have hit before: a field that looks filled
+         * and submits nothing.
          */
         val submittable: Boolean
-            get() = materialId != null && (amount.toDoubleOrNull() ?: 0.0) > 0.0
+            get() =
+                when (kind) {
+                    BoardKind.MATERIAL -> materialId != null && (amount.toDoubleOrNull() ?: 0.0) > 0.0
+                    BoardKind.ITEM -> productKey != null && (amount.trim().toIntOrNull() ?: 0) > 0
+                }
     }
 
     /**
@@ -99,12 +124,82 @@ sealed interface BoardSheet {
         val picked: ReleasableStock? = null,
         val amount: String = "",
         val remark: String = "",
+        val kind: BoardKind = BoardKind.MATERIAL,
+        val productKey: String? = null,
+        val productName: String = "",
+        val products: List<BlueprintProduct> = emptyList(),
     ) : BoardSheet {
         /** Whether „Angebot veröffentlichen" may be pressed. */
         val submittable: Boolean
-            get() = picked != null && (amount.toDoubleOrNull() ?: 0.0) > 0.0
+            get() =
+                when (kind) {
+                    BoardKind.MATERIAL -> picked != null && (amount.toDoubleOrNull() ?: 0.0) > 0.0
+                    BoardKind.ITEM -> productKey != null && (amount.trim().toIntOrNull() ?: 0) > 0
+                }
+    }
+
+    /**
+     * „Eigenen Eintrag bearbeiten" (design ch. 17 artboard 3).
+     *
+     * One sheet for both halves, because the two writes differ in one field. What may be changed
+     * is **not** what the artboard says: it claims only the remark is editable on an offer and
+     * calls that the web rule, while the web's own modal edits the amount with an „Alles" shortcut
+     * and `MaterialExchangeOfferUpdateRequest` requires `offeredAmount`. So the amount is editable
+     * here too, and the stock bound stays the server's to enforce — the board row carries no
+     * stock figure to check it against.
+     *
+     * @property entry the row being rewritten, which carries the version to echo.
+     * @property amount the amount, as typed.
+     * @property minQuality the minimum quality, as typed; a request's field only.
+     * @property remark the note, as typed.
+     * @property confirmingWithdrawal whether the withdrawal confirmation is up.
+     */
+    data class EditEntry(
+        val entry: BoardEntry,
+        val amount: String = "",
+        val minQuality: String = "",
+        val remark: String = "",
+        val confirmingWithdrawal: Boolean = false,
+    ) : BoardSheet {
+        /** Whether „Speichern" may be pressed. */
+        val submittable: Boolean
+            get() = (amount.replace(',', '.').trim().toDoubleOrNull() ?: 0.0) > 0.0
+
+        /** Whether this row's minimum-quality field applies — requests carry one, offers do not. */
+        val hasQuality: Boolean get() = entry.side == BoardSide.REQUESTS
     }
 }
+
+/**
+ * The item half's write, or `null` when the sheet does not describe one.
+ *
+ * The two create sheets carry the same three item fields and hand them to two different endpoints,
+ * so the *shape* of the check lives here once rather than as a return ladder in each.
+ *
+ * @receiver the sheet.
+ * @param write what to do with a picked key and a whole number of pieces.
+ * @return the write, or `null` when either is missing.
+ */
+private fun BoardSheet.NewRequest.itemWrite(
+    write: suspend (String, Int) -> ApiResult<Unit>,
+): (suspend () -> ApiResult<Unit>)? =
+    productKey?.let { key ->
+        amount.trim().toIntOrNull()?.takeIf { it > 0 }?.let { pieces -> { write(key, pieces) } }
+    }
+
+/**
+ * The same, for the offer sheet.
+ *
+ * @receiver the sheet.
+ * @param write what to do with a picked key and a whole number of pieces.
+ * @return the write, or `null` when either is missing.
+ */
+private fun BoardSheet.NewOffer.itemWrite(
+    write: suspend (String, Int) -> ApiResult<Unit>,
+): (suspend () -> ApiResult<Unit>)? =
+    productKey?.let { key ->
+        amount.trim().toIntOrNull()?.takeIf { it > 0 }?.let { pieces -> { write(key, pieces) } }
+    }
 
 /**
  * Everything the board draws.
@@ -310,6 +405,13 @@ class MaterialBoardViewModel(
                         latest.copy(
                             entries = latest.entries.filterNot { it.id == entry.id },
                             busyEntryId = null,
+                            // The sheet the withdrawal was started from has lost its subject.
+                            sheet =
+                                if (latest.sheet is BoardSheet.EditEntry) {
+                                    BoardSheet.None
+                                } else {
+                                    latest.sheet
+                                },
                         )
                     announce()
                 }
@@ -321,6 +423,27 @@ class MaterialBoardViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * The member pressed „Zurückziehen" in the edit sheet.
+     *
+     * With interested members it asks first and names them, because withdrawing is visible to
+     * them; with nobody waiting it withdraws straight away. Design ch. 17 artboard 3.
+     *
+     * > **No undo.** The artboard offers a five-second undo toast. Withdrawal is
+     * > `POST …/deactivate` and there is **no endpoint that reactivates a row**, so an undo would
+     * > have to re-post the entry as a new one — a different row, with a new id, a new timestamp
+     * > and no interested members. Flagged on the design gap list rather than faked.
+     */
+    fun onWithdrawRequested() {
+        val sheet = mutableState.value.sheet as? BoardSheet.EditEntry ?: return
+        if (sheet.entry.interestCount > 0) {
+            mutableState.value =
+                mutableState.value.copy(sheet = sheet.copy(confirmingWithdrawal = true))
+            return
+        }
+        onWithdraw(sheet.entry)
     }
 
     /** Opens „Gesuch erstellen". */
@@ -430,40 +553,221 @@ class MaterialBoardViewModel(
         updateOfferSheet(edit)
     }
 
-    /** Publishes the request the sheet describes. */
+    /** Publishes the request the sheet describes — material or item, as the switch stands. */
     fun onRequestSubmitted() {
-        val sheet = mutableState.value.sheet as? BoardSheet.NewRequest
-        val materialId = sheet?.materialId
-        val amount = sheet?.amount?.toDoubleOrNull()
         // Guarded rather than trusted: `submittable` gates the button, and this repeats the check
         // because a screen is not the only thing that can call a public method on a ViewModel.
-        if (sheet == null || materialId == null || amount == null) {
-            return
-        }
-        submit {
-            source.createRequest(
-                materialId = materialId,
-                amount = amount,
-                minQuality = sheet.minQuality.toIntOrNull(),
-                remark = sheet.remark,
-            )
-        }
+        val sheet = (mutableState.value.sheet as? BoardSheet.NewRequest)?.takeIf { it.submittable }
+        val write: (suspend () -> ApiResult<Unit>)? =
+            when {
+                sheet == null -> {
+                    null
+                }
+
+                sheet.kind == BoardKind.ITEM -> {
+                    sheet.itemWrite { key, pieces ->
+                        source.createItemRequest(
+                            productKey = key,
+                            quantity = pieces,
+                            minQuality = sheet.minQuality.toIntOrNull(),
+                            remark = sheet.remark,
+                        )
+                    }
+                }
+
+                else -> {
+                    sheet.materialId?.let { id ->
+                        sheet.amount.toDoubleOrNull()?.let { amount ->
+                            {
+                                source.createRequest(
+                                    materialId = id,
+                                    amount = amount,
+                                    minQuality = sheet.minQuality.toIntOrNull(),
+                                    remark = sheet.remark,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        write?.let { submit(it) }
     }
 
-    /** Publishes the offer the sheet describes. */
+    /** Publishes the offer the sheet describes — material or item, as the switch stands. */
     fun onOfferSubmitted() {
-        val sheet = mutableState.value.sheet as? BoardSheet.NewOffer
-        val picked = sheet?.picked
-        val amount = sheet?.amount?.toDoubleOrNull()
-        if (sheet == null || picked == null || amount == null) {
+        val sheet = (mutableState.value.sheet as? BoardSheet.NewOffer)?.takeIf { it.submittable }
+        val write: (suspend () -> ApiResult<Unit>)? =
+            when {
+                sheet == null -> {
+                    null
+                }
+
+                sheet.kind == BoardKind.ITEM -> {
+                    sheet.itemWrite { key, pieces ->
+                        source.createItemOffer(
+                            productKey = key,
+                            quantity = pieces,
+                            remark = sheet.remark,
+                        )
+                    }
+                }
+
+                else -> {
+                    sheet.picked?.let { picked ->
+                        sheet.amount.toDoubleOrNull()?.let { amount ->
+                            {
+                                source.createOffer(
+                                    inventoryItemId = picked.inventoryItemId,
+                                    amount = amount,
+                                    remark = sheet.remark,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        write?.let { submit(it) }
+    }
+
+    /**
+     * Searches the craftable products behind the item half of either create sheet.
+     *
+     * The picked key is cleared as soon as the text changes, for the reason
+     * [onMaterialQueryChanged] gives.
+     *
+     * @param query what the member typed.
+     */
+    fun onProductQueryChanged(query: String) {
+        withProductSheet(
+            request = { it.copy(productName = query, productKey = null) },
+            offer = { it.copy(productName = query, productKey = null) },
+        )
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            withProductSheet(
+                request = { it.copy(products = emptyList()) },
+                offer = { it.copy(products = emptyList()) },
+            )
             return
         }
-        submit {
-            source.createOffer(
-                inventoryItemId = picked.inventoryItemId,
-                amount = amount,
-                remark = sheet.remark,
+        searchJob =
+            viewModelScope.launch {
+                delay(SEARCH_DEBOUNCE_MS)
+                val found =
+                    when (val result = source.searchProducts(query)) {
+                        is ApiResult.Success -> {
+                            result.value
+                        }
+
+                        is ApiResult.Failure -> {
+                            KrtLog.w(LOG_TAG) { "the product search failed: ${result.error}" }
+                            emptyList()
+                        }
+                    }
+                withProductSheet(
+                    request = { it.copy(products = found) },
+                    offer = { it.copy(products = found) },
+                )
+            }
+    }
+
+    /**
+     * Takes one of the product results.
+     *
+     * @param product the picked product.
+     */
+    fun onProductPicked(product: BlueprintProduct) {
+        searchJob?.cancel()
+        withProductSheet(
+            request = {
+                it.copy(
+                    productKey = product.productKey,
+                    productName = product.name,
+                    products = emptyList(),
+                )
+            },
+            offer = {
+                it.copy(
+                    productKey = product.productKey,
+                    productName = product.name,
+                    products = emptyList(),
+                )
+            },
+        )
+    }
+
+    /**
+     * Opens „Eintrag bearbeiten" on one of the caller's own rows.
+     *
+     * @param entry the row.
+     */
+    fun onEditEntry(entry: BoardEntry) {
+        if (!entry.mine) {
+            return
+        }
+        mutableState.value =
+            mutableState.value.copy(
+                sheet =
+                    BoardSheet.EditEntry(
+                        entry = entry,
+                        amount = entry.amount,
+                        minQuality = entry.quality?.toString().orEmpty(),
+                        remark = entry.remark.orEmpty(),
+                    ),
+                error = null,
             )
+    }
+
+    /**
+     * Edits the open „bearbeiten" sheet.
+     *
+     * @param edit what to change.
+     */
+    fun onEntryEdited(edit: (BoardSheet.EditEntry) -> BoardSheet.EditEntry) {
+        val sheet = mutableState.value.sheet as? BoardSheet.EditEntry ?: return
+        mutableState.value = mutableState.value.copy(sheet = edit(sheet))
+    }
+
+    /** Sends the rewritten row. */
+    fun onEntrySubmitted() {
+        val sheet = (mutableState.value.sheet as? BoardSheet.EditEntry)?.takeIf { it.submittable }
+        val amount = sheet?.amount?.replace(',', '.')?.trim()?.toDoubleOrNull()
+        if (sheet == null || amount == null) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            val result =
+                when (sheet.entry.side) {
+                    BoardSide.OFFERS -> {
+                        source.updateOffer(sheet.entry, amount, sheet.remark)
+                    }
+
+                    BoardSide.REQUESTS -> {
+                        source.updateRequest(
+                            sheet.entry,
+                            amount,
+                            sheet.minQuality.toIntOrNull(),
+                            sheet.remark,
+                        )
+                    }
+                }
+            when (result) {
+                is ApiResult.Success -> {
+                    // The write answers with the row, so it is replaced in place rather than the
+                    // page re-read — the member keeps their scroll position.
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, sheet = BoardSheet.None)
+                    replace(result.value)
+                    announce()
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the board entry could not be rewritten: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(saving = false, error = result.error)
+                }
+            }
         }
     }
 
@@ -500,6 +804,29 @@ class MaterialBoardViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Applies whichever of the two edits fits the open create sheet.
+     *
+     * The item half lives on both sheets and behaves identically on each, so one call site rather
+     * than a `when` repeated at every one of them.
+     *
+     * @param request what to change on the request sheet.
+     * @param offer what to change on the offer sheet.
+     */
+    private fun withProductSheet(
+        request: (BoardSheet.NewRequest) -> BoardSheet.NewRequest,
+        offer: (BoardSheet.NewOffer) -> BoardSheet.NewOffer,
+    ) {
+        val sheet = mutableState.value.sheet
+        val next =
+            when (sheet) {
+                is BoardSheet.NewRequest -> request(sheet)
+                is BoardSheet.NewOffer -> offer(sheet)
+                else -> null
+            }
+        next?.let { mutableState.value = mutableState.value.copy(sheet = it) }
     }
 
     /**

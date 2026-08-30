@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.refinery
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,8 +26,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -34,6 +39,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
@@ -51,18 +57,25 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
+import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
+import kotlinx.coroutines.delay
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
@@ -144,7 +157,7 @@ fun RefineryOrdersScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 KrtEmptyState(
@@ -153,7 +166,7 @@ fun RefineryOrdersScreen(
                     message = stringResource(R.string.refinery_error_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRefresh,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
         }
@@ -176,7 +189,7 @@ fun RefineryOrdersScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = KrtSpacing.md)
+                                    .padding(horizontal = KrtSpacing.s12)
                                     .testTag(REFINERY_CREATE_CTA_TAG),
                             iconRes = DesignR.drawable.ic_krt_plus,
                         )
@@ -187,15 +200,15 @@ fun RefineryOrdersScreen(
                                 iconRes = DesignR.drawable.ic_krt_refinery,
                                 title = stringResource(R.string.refinery_empty_title),
                                 message = stringResource(R.string.refinery_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.lg),
+                                modifier = Modifier.padding(KrtSpacing.s16),
                             )
                         }
                     } else {
                         LazyColumn(
                             state = rememberRootListState(),
                             modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
-                            contentPadding = PaddingValues(KrtSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            contentPadding = PaddingValues(KrtSpacing.s12),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                         ) {
                             items(state.orders, key = { it.id }) { order ->
                                 OrderRow(
@@ -221,12 +234,12 @@ fun RefineryOrdersScreen(
                                             ),
                                         onClick = onLoadMore,
                                         enabled = !state.loadingMore,
-                                        modifier = Modifier.padding(KrtSpacing.md),
+                                        modifier = Modifier.padding(KrtSpacing.s12),
                                     )
                                 } else {
                                     KrtEndOfList(
                                         text = stringResource(R.string.refinery_end_of_list),
-                                        modifier = Modifier.padding(KrtSpacing.md),
+                                        modifier = Modifier.padding(KrtSpacing.s12),
                                     )
                                 }
                             }
@@ -257,9 +270,9 @@ private fun FilterRow(
             Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                 .testTag(REFINERY_FILTERS_TAG),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         RefineryFilter.entries.forEach { filter ->
             KrtFilterChip(
@@ -292,7 +305,7 @@ private fun OrderRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -338,8 +351,8 @@ private fun OrderRow(
 @Composable
 private fun GoodRow(good: RefineryYield) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -383,8 +396,8 @@ private fun CardFooter(
         return
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -485,6 +498,18 @@ private const val SECONDS_PER_MINUTE = 60L
 /** Separator between the parts of a row's second line. */
 private const val SEPARATOR = " · "
 
+/** Test handle for the order detail's `⋮`. */
+const val REFINERY_DETAIL_MENU_TAG: String = "refinery-detail-menu"
+
+/** Test handle for the deletion confirmation. */
+const val REFINERY_DELETE_MODAL_TAG: String = "refinery-delete-modal"
+
+/** Test handle for „Auftrag gelöscht.". */
+const val REFINERY_DELETED_TOAST_TAG: String = "refinery-deleted-toast"
+
+/** How long „Auftrag gelöscht." stands before the screen leaves — two seconds, as chapter 02. */
+private const val DELETED_TOAST_MS = 2000L
+
 /**
  * One order in full, with „In Lager buchen" (design spec ch. 11 §2).
  *
@@ -495,6 +520,8 @@ private const val SEPARATOR = " · "
  * @param onStoreConfirmed the confirmation was accepted.
  * @param onStoreDismissed the confirmation was dismissed.
  * @param modifier layout modifier.
+ * @param menu the two actions of design ch. 11 artboards 6 and 7, or `null` where the screen
+ *   cannot navigate.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -506,6 +533,7 @@ fun RefineryOrderDetailScreen(
     onStoreConfirmed: () -> Unit,
     onStoreDismissed: () -> Unit,
     modifier: Modifier = Modifier,
+    menu: RefineryDetailMenu? = null,
 ) {
     when (state.phase) {
         is RefineryDetailPhase.Loading -> {
@@ -524,7 +552,7 @@ fun RefineryOrderDetailScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 KrtEmptyState(
@@ -533,19 +561,20 @@ fun RefineryOrderDetailScreen(
                     message = stringResource(R.string.refinery_error_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRefresh,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
         }
 
         is RefineryDetailPhase.Ready -> {
             val order = state.order
+            menu?.let { OrderMenu(state = state, menu = it) }
             if (order == null) {
                 KrtEmptyState(
                     iconRes = DesignR.drawable.ic_krt_refinery,
                     title = stringResource(R.string.refinery_error_title),
                     message = stringResource(R.string.refinery_error_message),
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
                 return
             }
@@ -567,6 +596,137 @@ fun RefineryOrderDetailScreen(
                     onDismiss = onStoreDismissed,
                 )
             }
+            if (state.confirmingDelete) {
+                DeleteConfirmation(
+                    order = order,
+                    busy = state.deleting,
+                    onConfirm = menu?.onDeleteConfirmed ?: {},
+                    onDismiss = menu?.onDeleteDismissed ?: {},
+                )
+            }
+        }
+    }
+}
+
+/**
+ * What the Raffinerie detail's `⋮` offers.
+ *
+ * @property onEdit open the pre-filled form (artboard 6).
+ * @property onDeleteRequested raise the deletion confirmation (artboard 7).
+ * @property onDeleteConfirmed it was accepted.
+ * @property onDeleteDismissed it was dismissed.
+ */
+data class RefineryDetailMenu(
+    val onEdit: () -> Unit,
+    val onDeleteRequested: () -> Unit,
+    val onDeleteConfirmed: () -> Unit,
+    val onDeleteDismissed: () -> Unit,
+)
+
+/**
+ * The `⋮` of the order detail.
+ *
+ * Both entries are **drawn for everyone**: whether the caller owns this run or is a logistician is
+ * the server's answer. „Löschen" on a booked run is drawn **locked with its reason** rather than
+ * left out — the rule is real (its yield exists as Lager rows), but it is the app's rule, so the
+ * member is told it rather than shown a menu that quietly lost an entry.
+ *
+ * @param state what the detail holds.
+ * @param menu the four callbacks.
+ */
+@Composable
+private fun OrderMenu(
+    state: RefineryDetailState,
+    menu: RefineryDetailMenu,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val edit = stringResource(R.string.refinery_edit_title)
+    val delete = stringResource(R.string.refinery_delete_action)
+    val lockedReason = stringResource(R.string.refinery_delete_locked_stored)
+    ProvideScreenTopBar(
+        actions = {
+            KrtOverflowMenu(
+                contentDescription = edit,
+                expanded = open,
+                onExpandedChange = { open = it },
+                modifier = Modifier.testTag(REFINERY_DETAIL_MENU_TAG),
+                items =
+                    listOf(
+                        KrtMenuItem(
+                            label = edit,
+                            iconRes = DesignR.drawable.ic_krt_edit,
+                            onClick = {
+                                open = false
+                                menu.onEdit()
+                            },
+                        ),
+                        KrtMenuItem(
+                            label = delete,
+                            iconRes = DesignR.drawable.ic_krt_trash,
+                            danger = true,
+                            locked = !state.deletable,
+                            reason = lockedReason.takeIf { !state.deletable },
+                            onClick = {
+                                open = false
+                                // A locked row keeps its tap target so it can state its reason —
+                                // which the row itself draws. It must not go on to raise the
+                                // confirmation for a deletion that will not happen.
+                                if (state.deletable) {
+                                    menu.onDeleteRequested()
+                                }
+                            },
+                        ),
+                    ),
+            )
+        },
+    )
+}
+
+/**
+ * The deletion confirmation of artboard 7.
+ *
+ * A danger modal and **no typing hurdle**: the hurdle is reserved for wipe-grade actions (design
+ * ch. 02 §7), and a refinery order is one row. The body names what goes — the goods lines and a
+ * yield that was never booked — and the one thing that does not apply, because each sentence
+ * heads off a different wrong conclusion.
+ *
+ * @param order the run.
+ * @param busy whether the deletion is in flight.
+ * @param onConfirm it was accepted.
+ * @param onDismiss it was dismissed.
+ */
+@Composable
+private fun DeleteConfirmation(
+    order: RefineryOrder,
+    busy: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtModal(
+        title = stringResource(R.string.refinery_delete_title),
+        onDismiss = onDismiss,
+        tone = KrtModalTone.Danger,
+        confirmText = stringResource(R.string.refinery_delete_confirm),
+        onConfirm = { if (!busy) onConfirm() },
+        modifier = Modifier.testTag(REFINERY_DELETE_MODAL_TAG),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
+            Text(
+                text =
+                    pluralStringResource(
+                        R.plurals.refinery_delete_body,
+                        order.yields.size,
+                        order.locationName,
+                        order.yields.size,
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+            Text(
+                text = stringResource(R.string.refinery_delete_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
         }
     }
 }
@@ -590,8 +750,8 @@ private fun OrderDetailBody(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                .padding(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (!state.online) {
             OfflineBand()
@@ -611,7 +771,7 @@ private fun OrderDetailBody(
         // Artboard 2 puts the four facts in the HUD box, brackets and all — the same container the
         // rest of the app uses for a block of facts that belong together.
         KrtHudBox(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtKeyValueRow(
                     label = stringResource(R.string.refinery_station),
                     value =
@@ -888,13 +1048,41 @@ fun RefineryOrdersRoute(
  *
  * @param viewModel drives the screen.
  * @param modifier layout modifier.
+ * @param onEdit open the pre-filled form, or `null` where the screen cannot navigate — which also
+ *   takes the whole `⋮` away, because the deletion has nowhere to return to either.
+ * @param onDeleted the run was deleted and this screen has nothing left to draw.
  */
 @Composable
 fun RefineryOrderDetailRoute(
     viewModel: RefineryDetailViewModel,
     modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null,
+    onDeleted: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // The run is gone; the screen showing it has nothing left to show, so the caller takes over —
+    // but not before the confirmation has been read. Artboard 7 puts „Auftrag gelöscht." on the
+    // list the member lands on; a toast raised there would have to be handed across two view
+    // models, so it is shown here for its two seconds and the navigation follows it.
+    LaunchedEffect(state.deleted) {
+        if (state.deleted) {
+            delay(DELETED_TOAST_MS)
+            onDeleted?.invoke()
+        }
+    }
+    if (state.deleted) {
+        Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = Alignment.BottomCenter) {
+            KrtToast(
+                title = stringResource(R.string.refinery_delete_title),
+                message = stringResource(R.string.refinery_deleted),
+                modifier =
+                    Modifier
+                        .padding(horizontal = KrtSpacing.s16)
+                        .padding(bottom = KrtSpacing.s16 + LocalKrtBottomBarInset.current)
+                        .testTag(REFINERY_DELETED_TOAST_TAG),
+            )
+        }
+    }
     RefineryOrderDetailScreen(
         state = state,
         onRefresh = viewModel::onRefresh,
@@ -903,6 +1091,15 @@ fun RefineryOrderDetailRoute(
         onStoreConfirmed = viewModel::onStoreConfirmed,
         onStoreDismissed = viewModel::onStoreDismissed,
         modifier = modifier,
+        menu =
+            onEdit?.let {
+                RefineryDetailMenu(
+                    onEdit = it,
+                    onDeleteRequested = viewModel::onDeleteRequested,
+                    onDeleteConfirmed = viewModel::onDeleteConfirmed,
+                    onDeleteDismissed = viewModel::onDeleteDismissed,
+                )
+            },
     )
     if (state.lines.isNotEmpty()) {
         RefineryStoreSheet(

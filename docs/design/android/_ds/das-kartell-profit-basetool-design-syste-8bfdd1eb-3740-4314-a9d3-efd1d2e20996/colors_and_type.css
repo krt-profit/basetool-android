@@ -241,11 +241,26 @@
     --border-heading: 2px solid var(--color-primary);
 
     /* Glows / shadows — orange bloom is the brand's only "shadow" idiom */
-    --glow-primary: 0 0 5px rgba(231, 126, 35, 0.3);   /* input focus */
-    --glow-primary-lg: 0 0 20px rgba(231, 126, 35, 0.2); /* toasts, modals */
-    --glow-danger-lg: 0 0 20px rgba(163, 0, 10, 0.2);
-    --shadow-drawer: 5px 0 15px rgba(0, 0, 0, 0.5);
-    --shadow-dropdown: 0 8px 16px rgba(0, 0, 0, 0.8);
+    --glow-primary: 0 0 6px rgba(231, 126, 35, 0.10);  /* FOCUS — capped scale, see note below */
+    --glow-primary-lg: 0 0 12px rgba(231, 126, 35, 0.10); /* OVERLAY — sheets, modals, toasts */
+  --glow-primary-emphasis: 0 0 12px rgba(231, 126, 35, 0.07); /* EMPHASIS — a bar carrying the one primary action */
+    --glow-danger-lg: 0 0 12px rgba(163, 0, 10, 0.10);
+  /* GLOW IS CAPPED (29.08.2026, owner instruction „jeder glow muss sehr dezent sein").
+     Nothing in the product may exceed radius 12px OR alpha 0.10. Three sizes only:
+       focus     6px / .10   input focus, focused chip or tab — sits ON the border
+       emphasis 12px / .07   a bar that carries the one primary action
+       overlay  12px / .10   a surface floating over content (sheet, modal, toast)
+     Depth stays hairlines + corner brackets; there are no drop shadows for elevation.
+     Android mirror: KrtGlow (artifacts/compose/KrtGlow.kt) refuses anything larger at runtime.
+
+     BLACK SEPARATION SHADOWS are a separate, single value: 0.30 alpha, blur <= 12px, and they
+     exist ONLY to lift a popover or drawer off what is behind it — never to suggest elevation.
+     Every popover archetype uses the same strength: --shadow-dropdown, --shadow-drawer,
+     .autocomplete-items, .multi-select-options, .krt-combobox__listbox, .assoc-pop,
+     .mission-livesync-pill. Two strengths for the same archetype is the bug this note prevents.
+     Android: none of these are ported — Compose popovers sit on hairline borders, no shadow. */
+    --shadow-drawer: 5px 0 12px rgba(0, 0, 0, 0.30);   /* separation only — one strength, see note */
+    --shadow-dropdown: 0 4px 8px rgba(0, 0, 0, 0.30);  /* same strength as .autocomplete-items */
 
     /* Spacing rhythm (the app works in rem multiples of 0.5) */
     --space-1: 0.25rem;

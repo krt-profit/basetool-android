@@ -125,6 +125,8 @@ internal class MissionScreenRobot(
         onEditUnit = { taps.add("edit-unit:${'$'}{it.id}") },
         onSaveUnit = { unit, version -> taps.add("save-unit:$unit:$version") },
         onAddCrew = { unit, participant -> taps.add("add-crew:$unit:$participant") },
+        onOpenCrewPicker = { taps.add("open-crew-picker:${'$'}{it.id}") },
+        onDismissCrewPicker = { taps.add("dismiss-crew-picker") },
         onSetCrewRoles = { unit, crew, ids, version ->
             taps.add("crew-roles:$unit:$crew:${'$'}{ids.sorted().joinToString(" + ")}:$version")
         },
@@ -148,15 +150,18 @@ internal class MissionScreenRobot(
         draft = MissionTimelineDraft(),
         denials = rememberDenialState(),
         onChange = {},
+        onCompose = { taps.add("compose:$it") },
         onSaveStep = { taps.add("save-step") },
         onEditStep = { taps.add("edit-step:${'$'}{it.id}") },
         onToggleStep = { id, done -> taps.add("toggle-step:$id:$done") },
         onRemoveStep = { taps.add("remove-step:$it") },
         onMoveStep = { id, up -> taps.add("move-step:$id:$up") },
+        onDuplicateStep = { taps.add("duplicate-step") },
         onSaveObjective = { taps.add("save-objective") },
         onEditObjective = { taps.add("edit-objective:${'$'}{it.id}") },
         onRemoveObjective = { taps.add("remove-objective:$it") },
         onMoveObjective = { id, up -> taps.add("move-objective:$id:$up") },
+        onDuplicateObjective = { taps.add("duplicate-objective") },
         onCancel = {},
     )
 
@@ -183,6 +188,49 @@ internal class MissionScreenRobot(
         onPick = { taps.add("pick:${'$'}{it.id}") },
         onDismiss = { taps.add("dismiss-picker") },
     )
+
+    /**
+     * The caller's own sign-up actions, recording every tap.
+     *
+     * Extracted from [show] so the harness stays under the length the gate allows — the same
+     * reason `structureActions` was extracted before it.
+     *
+     * @param signUps receives the sign-up action.
+     * @param checkIns receives the check-in action.
+     * @param payouts receives the payout-preference action.
+     * @return the record the screen takes.
+     */
+    private fun signUpActions(
+        signUps: MutableList<Unit>,
+        checkIns: MutableList<Unit>,
+        payouts: MutableList<Unit>,
+    ) = MissionSignUpActions(
+        onToggleSignUp = { signUps.add(Unit) },
+        onToggleCheckIn = { checkIns.add(Unit) },
+        onTogglePayoutPreference = { payouts.add(Unit) },
+        onJoinPayout = {},
+        onDesiredFunction = {},
+        onJoinConfirmed = {},
+        onJoinDismissed = {},
+    )
+
+    /**
+     * The money actions, recording every tap by name.
+     *
+     * @param bookings receives each money action.
+     * @return the record the screen takes.
+     */
+    private fun financeActions(bookings: MutableList<String>) =
+        MissionFinanceActions(
+            onAdd = { bookings.add("add") },
+            onEdit = { bookings.add("edit") },
+            onDelete = { bookings.add("delete") },
+            onIncome = {},
+            onAmount = {},
+            onNote = {},
+            onSave = { bookings.add("save") },
+            onDismiss = {},
+        )
 
     /**
      * Renders the screen, recording tab changes.
@@ -226,37 +274,25 @@ internal class MissionScreenRobot(
                     onRefresh = {},
                     onRetryNow = {},
                     onRetryFinances = {},
-                    actions =
-                        MissionSignUpActions(
-                            onToggleSignUp = { signUps.add(Unit) },
-                            onToggleCheckIn = { checkIns.add(Unit) },
-                            onTogglePayoutPreference = { payouts.add(Unit) },
-                            onJoinPayout = {},
-                            onDesiredFunction = {},
-                            onJoinConfirmed = {},
-                            onJoinDismissed = {},
-                        ),
+                    actions = signUpActions(signUps, checkIns, payouts),
                     roster = roster,
                     structure = structureActions(canManage, rosterTaps, crewJobTypes),
                     timeline = timelineActions(canManage, rosterTaps),
                     members = memberActions(canManage, rosterTaps, picker),
                     admin =
                         MissionAdminActions(
-                            onChange = {},
+                            onChange = { _, _ -> },
+                            onToggle = {},
                             onSave = {},
-                            onStartNow = {},
+                            onAskLifecycle = {},
+                            onConfirmLifecycle = {},
+                            onDismissLifecycle = {},
+                            onCorrectStart = {},
+                            onCancelCorrectStart = {},
+                            onKeepMine = {},
+                            onReload = {},
                         ),
-                    finances =
-                        MissionFinanceActions(
-                            onAdd = { bookings.add("add") },
-                            onEdit = { bookings.add("edit") },
-                            onDelete = { bookings.add("delete") },
-                            onIncome = {},
-                            onAmount = {},
-                            onNote = {},
-                            onSave = { bookings.add("save") },
-                            onDismiss = {},
-                        ),
+                    finances = financeActions(bookings),
                 )
             }
         }

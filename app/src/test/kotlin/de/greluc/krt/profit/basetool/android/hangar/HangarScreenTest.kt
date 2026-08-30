@@ -220,7 +220,7 @@ class HangarScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(HANGAR_ADD_TAG).assertIsNotEnabled()
     }

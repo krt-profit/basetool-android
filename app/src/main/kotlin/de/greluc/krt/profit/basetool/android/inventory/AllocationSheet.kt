@@ -52,6 +52,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -109,14 +110,16 @@ fun AllocationSheet(
         onDismiss = callbacks.onDismiss,
         title = stringResource(R.string.allocation_title),
         modifier = Modifier.testTag(ALLOCATION_SHEET_TAG),
+        // The Lager's other booking surface, and the same reason (design ch. 18 §3, E9).
+        centred = isWideWindow(),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
                 text = state.subjectLine(),
@@ -126,7 +129,7 @@ fun AllocationSheet(
             // Read-only, not hidden: the numbers are the reason to open this sheet at all, so a
             // caller without the grant still sees them — only the editors recede (artboard 13).
             Box(modifier = Modifier.alpha(if (saveGate.allowed) 1f else LOCKED_EDITOR_ALPHA)) {
-                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
                     Split(kind = AllocationKind.JOB_ORDER, state = state, callbacks = callbacks)
                     Split(kind = AllocationKind.MISSION, state = state, callbacks = callbacks)
                 }
@@ -177,10 +180,10 @@ private fun Split(
     callbacks: AllocationCallbacks,
 ) {
     val rail = kind.rail()
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -275,8 +278,8 @@ private fun AllocationRowView(
                 .fillMaxWidth()
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, rail)
-                .padding(KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -328,8 +331,8 @@ private fun TargetRow(
                 .background(KrtPalette.Gray4)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .clickable(onClick = onPick)
-                .padding(KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -364,7 +367,7 @@ private fun Box(rail: Color) {
             Modifier
                 .width(SPLIT_RAIL)
                 .background(rail)
-                .padding(vertical = KrtSpacing.md),
+                .padding(vertical = KrtSpacing.s12),
     )
 }
 

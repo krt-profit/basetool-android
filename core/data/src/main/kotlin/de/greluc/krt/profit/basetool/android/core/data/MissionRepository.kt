@@ -35,6 +35,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateCrewReque
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateUnitRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UserReferenceDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -154,12 +155,24 @@ interface MissionFinanceSource {
  */
 interface MissionAdminSource {
     /**
-     * Rewrites the Kern section: title, briefing, meeting point, status.
+     * Rewrites the Kern section: title, briefing, meeting point, calendar link, status.
+     *
+     * > **This replaces the whole section, it does not merge into it.** The server assigns every
+     * > one of these fields unconditionally, so anything left out is set to `null` — which is how
+     * > the app used to clear a mission's `calendarLink` on every rename, having never mapped the
+     * > field at all. Pass the value as it stands unless you mean to change it.
+     *
+     * `status` is the exception and the only sparse field: `null` leaves the status alone. Setting
+     * it to `ACTIVE` also stamps `actualStartTime` server-side, in the same transaction, and bumps
+     * the **schedule** counter with it — which is what makes „Starten" one call rather than two,
+     * and why the caller must take the returned detail's counters rather than its own.
      *
      * @param missionId the Einsatz.
      * @param name the title; the server requires one.
      * @param description the briefing, or `null` to clear it.
-     * @param meetingPoint the gathering place, or `null`.
+     * @param meetingPoint the gathering place, or `null` to clear it.
+     * @param calendarLink the external calendar entry, or `null` to clear it.
+     * @param status the new lifecycle status, or `null` to leave it untouched.
      * @param version the **Kern** section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
      *   stale, which is a concurrent edit of *this* section and nothing else.
@@ -169,6 +182,8 @@ interface MissionAdminSource {
         name: String,
         description: String?,
         meetingPoint: String?,
+        calendarLink: String?,
+        status: String?,
         version: Long,
     ): ApiResult<MissionDetail>
 
@@ -767,6 +782,8 @@ class MissionRepository(
         name: String,
         description: String?,
         meetingPoint: String?,
+        calendarLink: String?,
+        status: String?,
         version: Long,
     ): ApiResult<MissionDetail> =
         oneMission(
@@ -779,6 +796,8 @@ class MissionRepository(
                     version = version,
                     description = description,
                     meetingPoint = meetingPoint,
+                    calendarLink = calendarLink,
+                    status = status,
                 ),
                 PatchMissionCoreRequest.serializer(),
                 MissionDto.serializer(),
@@ -1211,6 +1230,43 @@ private fun String.toInstantOrNull(): Instant? =
     runCatching { Instant.parse(this) }.getOrNull()
 
 /**
+ * The Einsatz's radio plan.
+ *
+ * Lifted out of [toModel] rather than nested in it: the mapper had grown past detekt's length
+ * limit, and a frequency without an id is a row nothing can address, so it is dropped here.
+ *
+ * @receiver what the server sent.
+ * @return the frequencies, in the server's order.
+ */
+private fun MissionDto.frequencyModels(): List<MissionFrequency> =
+    frequencies.orEmpty().mapNotNull { frequency ->
+        frequency.id?.let {
+            MissionFrequency(
+                id = it,
+                type = frequency.frequencyType?.name,
+                value = frequency.name.orEmpty(),
+            )
+        }
+    }
+
+/**
+ * One manager as the Verwaltung tab holds them.
+ *
+ * A row without an id is dropped: the id is what a removal addresses, so a chip without one is a
+ * name nobody can act on.
+ *
+ * @receiver what the server sent.
+ * @return the manager, or `null` when it carries no id.
+ */
+private fun UserReferenceDto.toManager(): MissionManager? =
+    id?.let {
+        MissionManager(
+            userId = it,
+            name = effectiveName ?: displayName ?: username.orEmpty(),
+        )
+    }
+
+/**
  * Maps the full wire DTO onto the detail model.
  *
  * @param requestedId the id that was asked for, used when the server omits its own. A detail read
@@ -1234,10 +1290,13 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         plannedEndTime = plannedEndTime?.toInstantOrNull(),
         isInternal = isInternal ?: false,
         meetingPoint = meetingPoint?.takeIf { it.isNotBlank() },
+        calendarLink = calendarLink?.takeIf { it.isNotBlank() },
         operationName = operation?.name,
         orgUnitName = owningSquadron?.name,
         orgUnitShorthand = owningSquadron?.shorthand,
         partyLeadName = partyLeadUser?.effectiveName ?: partyLeadUser?.displayName ?: partyLeadGuestName,
+        managers = managers.orEmpty().mapNotNull { it.toManager() },
+        canManageManagers = canManageManagers == true,
         registeredParticipants = registeredParticipants ?: 0,
         checkedInParticipants = checkedInParticipants ?: 0,
         participants = participants.orEmpty().mapNotNull { it.toModel() },
@@ -1261,15 +1320,7 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
                     kind = objective.kind?.value,
                 )
             },
-        frequencies =
-            frequencies.orEmpty().mapNotNull { frequency ->
-                val frequencyId = frequency.id ?: return@mapNotNull null
-                MissionFrequency(
-                    id = frequencyId,
-                    type = frequency.frequencyType?.name,
-                    value = frequency.name.orEmpty(),
-                )
-            },
+        frequencies = frequencyModels(),
         // The server's own verdict, not a role check repeated here. An absent field means "no",
         // so a server that predates the flag locks the manager actions instead of offering writes
         // it would refuse.

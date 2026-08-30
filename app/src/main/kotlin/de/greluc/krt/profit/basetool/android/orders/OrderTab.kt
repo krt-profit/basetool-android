@@ -39,6 +39,14 @@ enum class OrderTab(
     /** What has physically changed hands. */
     HANDOVERS(R.string.order_tab_handovers),
 
+    /**
+     * Which Staffel has signed up to deliver what.
+     *
+     * **Only on a Spezialkommando order.** The server refuses a claim on anything else, so this tab
+     * is not among the ones a Staffel's own order offers — see [OrderDetailState.tabs].
+     */
+    CLAIMS(R.string.order_tab_claims),
+
     ;
 
     /**
@@ -55,6 +63,10 @@ enum class OrderTab(
 
             ASSIGNEES -> order.assignees.size
 
-            HANDOVERS -> order.handovers.size
+            HANDOVERS -> order.handovers.size + order.itemHandovers.size
+
+            // The pledges are their own read, not part of the order aggregate, so this tab carries
+            // no count rather than a stale one.
+            CLAIMS -> 0
         }
 }

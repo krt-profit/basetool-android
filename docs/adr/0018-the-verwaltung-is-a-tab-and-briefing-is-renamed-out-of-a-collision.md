@@ -42,12 +42,12 @@ This answers 10a in favour of a place rather than a modal errand:
 - It matches the web, which has had `mission.tab.admin=Verwaltung` all along — so the two products
   now name and place the same thing the same way.
 
-The tab is **absent** for a caller who may not manage, not locked. ADR-0011 settles that a control
-the caller could earn is drawn locked and says why; a whole editing surface for an Einsatz somebody
-else runs is not something they are one grant away from, and a lock there would say „not yet" about
-something that is simply not theirs. The gate is the server's own `canEdit`, relayed as
-`MissionDetail.canManage` — never a role read on the device — and every write behind it is refused
-by the backend regardless. Drawing decides what is offered, never what is allowed.
+~~The tab is **absent** for a caller who may not manage, not locked.~~ **Amended 2026-08-29 — see
+below.** The tab is **locked and drawn**, like every other refused control in this app.
+
+The gate is the server's own `canEdit`, relayed as `MissionDetail.canManage` — never a role read on
+the device — and every write behind it is refused by the backend regardless. Drawing decides what is
+offered, never what is allowed.
 
 The form's lifecycle belongs to the tab: entering fills it from the Einsatz as last read, leaving
 clears it. That is not tidiness. The form carries the three **independent** section version
@@ -65,11 +65,37 @@ Renaming the shell's destination instead was rejected: „Übersicht" is fixed b
 the top bar and the navigation on every form factor, and is the more established of the two words.
 Changing the one that appears once beats changing the one that appears everywhere.
 
+## Amendment — 2026-08-29: the tab is locked, not hidden
+
+The paragraph above was wrong and shipped that way for a few hours. The design handoff's round-7
+app audit (ch. 06 artboard 6, README correction 13a) names the exact line —
+`MissionDetailScreen.kt:587`, `filter { canManage || it != ADMIN }` — and rejects the reasoning:
+
+> Entschieden ist das Gegenteil (26.08.2026, Kap. 09 Artboards 11–14), und die App macht es in der
+> Bank schon richtig.
+
+The argument that a non-manager is „not one grant away" from running this Einsatz sounds careful and
+is not: **this organisation grants roles by hand, and a function nobody sees is never requested.**
+That is the whole reason `REQ-APP-AUTH-013` exists, and it does not carve out an exception for a
+surface that happens to be large. The app's own Bank had it right; the Einsatz did not.
+
+What the amended rule looks like:
+
+- The eighth tab is **always drawn**. Without the right: label at 45 % alpha **plus** a lock glyph
+  at full opacity — alpha alone is indistinguishable from a loading state.
+- A tap does **not** open it. It raises the corner-bracket toast naming the **Missions-Manager**
+  role, and the active tab stays where it was. Never `enabled = false`: what cannot be tapped
+  cannot explain itself.
+- The inner gates stay as a backstop, because `canManage` can change during a sitting.
+
+The owner's original instruction — *„den nur berechtigte öffnen können"* — was compatible with this
+all along: it says who may **open** it, not who may **see** it. The narrowing was mine.
+
 ## Consequences
 
-- `MissionTab` gains `ADMIN`, and the tab row is built from a **filtered** list. Indices are into
-  the visible list, not the enum: handing `KrtPageTabs` an ordinal while it draws a shorter list
-  selects the wrong tab for every non-manager. A screen test pins that.
+- `MissionTab` gains `ADMIN`. ~~The tab row is built from a filtered list.~~ **Amended:** all eight
+  are always drawn, so there is no index skew to guard against and the test that pinned it now
+  pins the locked tab's refusal instead.
 - `docs/design/android/MISSING_ARTBOARD_PROMPTS_10.md` § 10a and § 10d are **answered** and are
   marked so; the drawing is still wanted, and what it now corrects is a tab, not a sheet.
 - The app and the web diverge on the first tab's label (`mission.tab.overview=Übersicht`). That is

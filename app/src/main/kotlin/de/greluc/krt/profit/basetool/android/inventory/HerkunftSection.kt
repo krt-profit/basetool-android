@@ -69,7 +69,7 @@ fun HerkunftSection(
         return
     }
     Column(
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         modifier = Modifier.fillMaxWidth().testTag(HERKUNFT_TAG),
     ) {
         KrtFieldLabel(text = stringResource(R.string.herkunft_title), enabled = !state.saving)
@@ -123,7 +123,7 @@ private fun Dimension(
             AllocationKind.JOB_ORDER -> MaterialTheme.colorScheme.primary
             AllocationKind.MISSION -> KrtTheme.colors.infoText
         }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -144,8 +144,8 @@ private fun Dimension(
                         .fillMaxWidth()
                         .border(KrtSpacing.hairline, if (dimension.valid) accent else KrtPalette.DangerText)
                         .background(KrtPalette.SurfaceInput)
-                        .padding(KrtSpacing.sm),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                        .padding(KrtSpacing.s8),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {

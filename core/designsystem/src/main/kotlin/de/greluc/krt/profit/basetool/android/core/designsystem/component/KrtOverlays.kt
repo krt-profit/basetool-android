@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -57,14 +58,19 @@ private val MODAL_TOP_EDGE = 3.dp
 /** Bracket leg length on a modal — longer than on a container, the modal is the loudest surface. */
 private val MODAL_BRACKET = 13.dp
 
-/** Bracket stroke width on a modal. */
-private val MODAL_BRACKET_STROKE = 3.dp
+/**
+ * Bracket stroke width on a modal.
+ *
+ * The same 2 dp the HUD box uses. Only the **arm** differs (13 dp against 10) — two values, both
+ * straight from the stylesheet, deliberately not unified (design ch. 01 §1, corrected 2026-08-30).
+ */
+private val MODAL_BRACKET_STROKE = 2.dp
 
 /** Maximum width of a modal on any form factor. */
 private val MODAL_MAX_WIDTH = 440.dp
 
 /** Reach of the bloom around a modal or toast. */
-private val MODAL_BLOOM = 20.dp
+private val MODAL_BLOOM = KrtSpacing.glowOverlay
 
 /**
  * Whether a modal asks for a routine confirmation or for a destructive one.
@@ -85,7 +91,8 @@ enum class KrtModalTone {
  *
  * The app never uses platform dialogs: their rounded corners, tonal surface and system typography
  * contradict the design system, and Android's own alert never looks like this product. The frame is
- * the loudest surface in the app — accent top edge, 13 dp brackets, 20 dp bloom — because a modal
+ * the loudest surface in the app — accent top edge, 13 dp brackets, the overlay glow — because a
+ * modal
  * interrupts, and an interruption must be unmistakable.
  *
  * Exactly one filled CTA, placed right, with a ghost cancel to its left; back and the scrim both
@@ -128,7 +135,7 @@ fun KrtModal(
                 modifier =
                     modifier
                         .widthIn(max = MODAL_MAX_WIDTH)
-                        .padding(KrtSpacing.lg)
+                        .padding(KrtSpacing.s16)
                         .krtBloom(bloom, MODAL_BLOOM)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(KrtSpacing.hairline, KrtPalette.Gray3)
@@ -142,28 +149,28 @@ fun KrtModal(
                             .background(accent),
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = KrtSpacing.lg),
+                    modifier = Modifier.fillMaxWidth().padding(start = KrtSpacing.s16),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = title.krtUppercase(),
-                        modifier = Modifier.weight(1f).padding(vertical = KrtSpacing.md),
+                        modifier = Modifier.weight(1f).padding(vertical = KrtSpacing.s12),
                         style = MaterialTheme.typography.titleLarge,
                         color = KrtPalette.White,
                     )
                     KrtIconButton(
                         iconRes = R.drawable.ic_krt_close,
-                        label = "Schließen",
+                        label = stringResource(R.string.krt_close),
                         onClick = onDismiss,
                     )
                 }
                 Column(
-                    modifier = Modifier.padding(horizontal = KrtSpacing.lg),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s16),
                     content = content,
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.End),
+                    modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.End),
                 ) {
                     KrtGhostButton(text = cancelText, onClick = onDismiss)
                     if (tone == KrtModalTone.Danger) {
@@ -226,7 +233,7 @@ fun KrtToast(
                 .background(KrtPalette.Black.copy(alpha = TOAST_FILL_ALPHA))
                 .border(KrtSpacing.hairline, accent)
                 .krtCornerBrackets(color = accent)
-                .padding(KrtSpacing.lg),
+                .padding(KrtSpacing.s16),
     ) {
         Text(
             text = title.krtUppercase(),
@@ -235,7 +242,7 @@ fun KrtToast(
         )
         Text(
             text = message,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.Gray1,
         )
@@ -243,7 +250,7 @@ fun KrtToast(
             KrtGhostButton(
                 text = actionLabel,
                 onClick = onAction,
-                modifier = Modifier.padding(top = KrtSpacing.sm),
+                modifier = Modifier.padding(top = KrtSpacing.s8),
             )
         }
     }
@@ -265,6 +272,11 @@ private const val TOAST_FILL_ALPHA = 0.95f
  * @param onDismiss invoked on swipe-down, scrim tap or back.
  * @param modifier layout modifier applied to the sheet body.
  * @param title optional uppercase heading rendered under the handle.
+ * @param centred whether to draw a **centred 560 dp dialog** instead of a bottom sheet. The caller
+ *   decides, because the window class lives in the app module and because it is a per-surface
+ *   choice: design ch. 18 §3 (E9) asks for it at the Lager's booking sheet, which is the one
+ *   surface a tablet has room beside. A picker or a switcher stays a sheet at every width, because
+ *   it belongs to the control it was opened from.
  * @param content the sheet content, typically a column of [KrtSheetOption]s.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -273,8 +285,13 @@ fun KrtBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    centred: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    if (centred) {
+        KrtCentredSheet(onDismiss = onDismiss, modifier = modifier, title = title, content = content)
+        return
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         // The sheet is bottom-anchored and draws to the very edge of the screen, which puts its
@@ -300,7 +317,7 @@ fun KrtBottomSheet(
                 Box(
                     modifier =
                         Modifier
-                            .padding(top = KrtSpacing.sm, bottom = KrtSpacing.xs)
+                            .padding(top = KrtSpacing.s8, bottom = KrtSpacing.s4)
                             .size(width = DRAG_HANDLE_WIDTH, height = DRAG_HANDLE_HEIGHT)
                             .clip(PillShape)
                             .background(KrtPalette.Gray2),
@@ -320,7 +337,7 @@ fun KrtBottomSheet(
                 Text(
                     text = title.krtUppercase(),
                     modifier =
-                        Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                        Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
                     style = MaterialTheme.typography.labelLarge,
                     color = KrtPalette.White,
                 )
@@ -329,6 +346,66 @@ fun KrtBottomSheet(
         }
     }
 }
+
+/**
+ * The same sheet as a centred dialog, for a window with room beside its content.
+ *
+ * Not a [KrtModal]: a modal asks a question and carries the two buttons that answer it, while this
+ * holds a **form** whose own action is inside it. What changes with the width is where the surface
+ * sits, not what it is — so it keeps the accent top edge and drops only the drag handle, which
+ * would promise a gesture a dialog does not have.
+ *
+ * @param onDismiss invoked on scrim tap or back.
+ * @param modifier layout modifier applied to the dialog body.
+ * @param title optional uppercase heading.
+ * @param content the same content the sheet would hold.
+ */
+@Composable
+private fun KrtCentredSheet(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(KrtPalette.Black.copy(alpha = SCRIM_ALPHA)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier =
+                    modifier
+                        .width(CENTRED_SHEET_WIDTH)
+                        .krtBloom(KrtTheme.colors.glowPrimaryLg, MODAL_BLOOM)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(KrtSpacing.hairline, KrtPalette.Gray3),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(MODAL_TOP_EDGE)
+                            .background(MaterialTheme.colorScheme.primary),
+                )
+                if (title != null) {
+                    Text(
+                        text = title.krtUppercase(),
+                        modifier = Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = KrtPalette.White,
+                    )
+                }
+                content()
+            }
+        }
+    }
+}
+
+/** What a centred sheet is worth on a tablet — design ch. 18 §3 (E9). */
+private val CENTRED_SHEET_WIDTH = 560.dp
 
 /** Width of the sheet drag handle. */
 private val DRAG_HANDLE_WIDTH = 32.dp
@@ -364,7 +441,7 @@ fun KrtSheetOption(
                 .fillMaxWidth()
                 .background(background)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -388,7 +465,7 @@ fun KrtSheetOption(
 @Composable
 private fun ToastPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtToast(title = "Gespeichert", message = "Schiff erfolgreich hinzugefügt.")
             KrtToast(
                 title = "Fehler 409",

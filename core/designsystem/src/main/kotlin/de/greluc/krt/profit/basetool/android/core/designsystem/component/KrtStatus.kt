@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -110,7 +111,7 @@ fun KrtOrgBadge(
                 .then(
                     if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier,
                 )
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
     ) {
         Text(
             text = text.krtUppercase(),
@@ -189,7 +190,7 @@ fun KrtChip(
             modifier
                 .background(fill)
                 .border(KrtSpacing.hairline, borderColor)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
     ) {
         Text(
             text = if (tone == KrtChipTone.Data) text else text.krtUppercase(),
@@ -210,12 +211,19 @@ fun KrtChip(
  * orange chip would claim the visual weight of a primary action, and a row of filters is not a row
  * of calls to action.
  *
+ * A chip that carries a **value** rather than a yes/no can also be cleared: pass [onClear] and the
+ * chip grows an ✕ that removes the filter, while a tap on the label still opens whatever set it.
+ * Design ch. 02 §11 d asks for exactly that for the date range („Zeitraum ✕") so the picker itself
+ * does not need a reset button.
+ *
  * @param text the filter's label; uppercased for display like every other chip.
  * @param selected whether this filter is currently applied.
  * @param onClick invoked on tap.
  * @param modifier layout modifier.
  * @param enabled whether the chip responds; a disabled chip dims rather than disappearing, so the
  *   row does not reflow while a load is in flight.
+ * @param onClear removes the filter this chip carries, or `null` for a chip that only toggles.
+ * @param clearLabel what a screen reader calls the ✕; required whenever [onClear] is given.
  */
 @Composable
 fun KrtFilterChip(
@@ -224,20 +232,25 @@ fun KrtFilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    onClear: (() -> Unit)? = null,
+    clearLabel: String? = null,
 ) {
     val hue = if (selected) MaterialTheme.colorScheme.primary else KrtPalette.TextMuted
     val borderColor = if (selected) hue else KrtPalette.Gray3
-    Box(
+    Row(
         modifier =
             modifier
                 .background(if (selected) hue.copy(alpha = CHIP_TINT_ALPHA) else KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, borderColor)
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs)
                 .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text.krtUppercase(),
+            modifier =
+                Modifier
+                    .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                    .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
             style = MaterialTheme.typography.labelMedium,
             color = hue,
             // A chip's label is one word or one short phrase and is atomic: it either fits or the
@@ -247,6 +260,82 @@ fun KrtFilterChip(
             maxLines = 1,
             softWrap = false,
         )
+        if (onClear != null) {
+            Box(
+                modifier =
+                    Modifier
+                        .clickable(enabled = enabled, role = Role.Button, onClick = onClear)
+                        .padding(end = KrtSpacing.s8, top = KrtSpacing.s4, bottom = KrtSpacing.s4),
+            ) {
+                KrtIcon(
+                    id = R.drawable.ic_krt_close,
+                    contentDescription = clearLabel,
+                    size = CHIP_CLEAR_GLYPH,
+                    tint = hue,
+                )
+            }
+        }
+    }
+}
+
+/** The ✕ of a clearable filter chip, sized to the chip's own label rather than to a row icon. */
+private val CHIP_CLEAR_GLYPH = 12.dp
+
+/**
+ * A **choice** chip: hairline while it is on offer, filled orange with black text once it is taken.
+ *
+ * Its own component rather than a fill option on [KrtFilterChip], because design ch. 18 §3 (E6)
+ * ratified the two as deliberately different and they are: a filter narrows a list and must not
+ * claim the weight of a primary action, while a choice **is** the value — „Funktion an Bord", a
+ * crew role. A chip that looks like a value and behaves like a switch is the worse mistake of the
+ * two, so the difference is drawn rather than configured.
+ *
+ * Filled orange carries black text, which is the system's rule for every filled orange surface.
+ *
+ * @param text the option's name; uppercased for display like every other chip.
+ * @param selected whether this option is the chosen one.
+ * @param onClick invoked on tap.
+ * @param modifier layout modifier.
+ * @param enabled whether the chip responds; a disabled chip dims rather than disappearing.
+ * @param suffix what stands behind the name in the muted tint — the holder of a role already
+ *   taken, which is what makes „vergeben" readable instead of merely dim.
+ */
+@Composable
+fun KrtChoiceChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    suffix: String? = null,
+) {
+    val hue = MaterialTheme.colorScheme.primary
+    Row(
+        modifier =
+            modifier
+                .background(if (selected) hue else KrtPalette.SurfaceInput)
+                .border(KrtSpacing.hairline, if (selected) hue else KrtPalette.Gray3)
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4)
+                .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+    ) {
+        Text(
+            text = text.krtUppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) KrtPalette.Black else KrtPalette.Gray1,
+            maxLines = 1,
+            softWrap = false,
+        )
+        suffix?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) KrtPalette.Black else KrtPalette.TextMuted,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
     }
 }
 
@@ -271,7 +360,7 @@ fun KrtDepartmentTag(
             modifier
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, color)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
     ) {
         Text(
             text = text.krtUppercase(),
@@ -339,7 +428,7 @@ fun KrtStatusPill(
     val color = tone.color()
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(STATUS_DOT).background(color))
@@ -372,25 +461,25 @@ fun KrtStatusBadge(
         modifier =
             modifier
                 .background(color.copy(alpha = CHIP_TINT_ALPHA))
-                .defaultMinSize(minHeight = KrtSpacing.xl),
+                .defaultMinSize(minHeight = KrtSpacing.s24),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(width = STATUS_BADGE_EDGE, height = KrtSpacing.xl)
+                    .size(width = STATUS_BADGE_EDGE, height = KrtSpacing.s24)
                     .background(color),
         )
         Box(
             modifier =
                 Modifier
-                    .padding(start = KrtSpacing.sm)
+                    .padding(start = KrtSpacing.s8)
                     .size(10.dp)
                     .background(color),
         )
         Text(
             text = text.krtUppercase(),
-            modifier = Modifier.padding(horizontal = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s8),
             style = MaterialTheme.typography.labelMedium,
             color = color,
         )
@@ -436,7 +525,7 @@ fun KrtPresenceIndicator(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -485,7 +574,7 @@ fun KrtUpdateAvailablePill(
                 .border(KrtSpacing.hairline, MaterialTheme.colorScheme.primary)
                 .defaultMinSize(minHeight = KrtSpacing.touchTarget)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s16),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -500,13 +589,13 @@ fun KrtUpdateAvailablePill(
 @Composable
 private fun StatusPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtOrgBadge("Bereich Profit")
                 KrtOrgBadge("TITAN", kind = KrtOrgBadgeKind.Foreign)
                 KrtOrgBadge("Alle Einheiten", kind = KrtOrgBadgeKind.Muted)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtChip("Auftrag", tone = KrtChipTone.Primary)
                 KrtChip("Ausgezahlt", tone = KrtChipTone.Success)
                 KrtChip("Überbucht", tone = KrtChipTone.Danger)

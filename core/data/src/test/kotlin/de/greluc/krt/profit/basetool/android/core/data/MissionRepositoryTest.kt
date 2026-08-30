@@ -544,7 +544,15 @@ class MissionRepositoryTest {
         runTest {
             respond("""{"id":"m1","name":"Neu"}""")
 
-            repository.patchCore("m1", name = "Neu", description = "d", meetingPoint = "ARC-L1", version = CORE_VERSION)
+            repository.patchCore(
+                "m1",
+                name = "Neu",
+                description = "d",
+                meetingPoint = "ARC-L1",
+                calendarLink = null,
+                status = null,
+                version = CORE_VERSION,
+            )
 
             val request = server.takeRequest()
             assertEquals("PATCH", request.method)

@@ -16,7 +16,7 @@
   <style>body{background:#000}</style>
 </helmet>
 <div style="min-height:100vh;background:#000;padding:40px 24px 80px">
-<div style="max-width:3800px;margin:0 auto">
+<div style="max-width:4800px;margin:0 auto">
   <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
   <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">09</div>
@@ -49,7 +49,7 @@
                   <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828" onClick="{{ g.onToggle }}">
                     <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate({{ g.chev }});transition:transform .15s;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
                     <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.name }}</span>
-                    <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ g.total }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">{{ g.unit }}</span></span>
+                    <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ g.total }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">{{ g.unit }}</span></span>
                   </button>
                   <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
                     <div>
@@ -57,16 +57,16 @@
                         <div>
                           <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                             <span style="flex:1;min-width:0;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ st.name }}</span>
-                            <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ st.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">{{ g.unit }}</span></span>
+                            <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ st.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">{{ g.unit }}</span></span>
                           </div>
                           <sc-for list="{{ st.entries }}" as="e" hint-placeholder-count="2">
                             <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 14px 6px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C" style-hover="background:#1C1C1C">
                               <div style="flex:1;min-width:0">
                                 <div style="display:flex;align-items:center;gap:8px"><span style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ e.ort }}</span><sc-if value="{{ e.chip }}" hint-placeholder-val="{{ false }}"><span class="assoc-chip {{ e.chipCls }}" style="font-size:8.5px;padding:1px 6px;cursor:default">{{ e.chip }}</span></sc-if></div>
-                                <div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="font:300 10.5px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q {{ e.q }}</span><span style="width:44px;height:3px;background:#282828;position:relative;display:inline-block"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ e.qPct }};background:#E77E23"></span></span></div>
+                                <div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q {{ e.q }}</span><span style="width:44px;height:3px;background:#282828;position:relative;display:inline-block"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ e.qPct }};background:#E77E23"></span></span></div>
                               </div>
-                              <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ e.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">{{ g.unit }}</span></span>
-                              <svg class="krt-icon" style="width:15px;height:15px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                              <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ e.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">{{ g.unit }}</span></span>
+                              <svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
                             </button>
                           </sc-for>
                         </div>
@@ -76,9 +76,9 @@
                 </div>
               </sc-for>
             </div>
-            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;margin-top:10px">Tiefe = Einzug + Rails, nie wiederholte Header. Eintrag antippen → Detail mit Zuordnung (Frame 3). Langdruck = Mehrfachauswahl für Sammel-Umbuchen.</div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:10px">Tiefe = Einzug + Rails, nie wiederholte Header. Eintrag antippen → Detail mit Zuordnung (Frame 3). Langdruck = Mehrfachauswahl für Sammel-Umbuchen.</div>
           </div>
-          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Einbuchen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-bank-in"></use></svg></button>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(231,126,35,.10)" aria-label="Einbuchen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-bank-in"></use></svg></button>
           <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
             <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
               <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
@@ -132,12 +132,12 @@
             <div><label style="font-size:13px;margin-bottom:6px">{{ ortLabel }}</label><select style="width:100%;height:48px;font-size:14px"><option>Lager Bereich Profit · ARC-L1</option><option>Lager Bereich Profit · Lorville</option><option>Persönlich (nur für dich sichtbar)</option></select></div>
             <sc-if value="{{ isRebook }}" hint-placeholder-val="{{ false }}">
               <div style="border:1px solid #E77E23;background:rgba(231,126,35,.05);padding:12px 14px;display:flex;flex-direction:column;gap:12px">
-                <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Transfer — Ziel</span><span style="flex:1"></span><span class="chip chip--muted" style="font-size:8.5px">3 Zielfelder</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Transfer — Ziel</span><span style="flex:1"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">3 Zielfelder</span></div>
                 <div><label style="font-size:12px;margin-bottom:4px">Umbuchen zu Nutzer</label><select style="width:100%;height:44px;font-size:13.5px"><option>Dorn</option><option>GrafRotz (unverändert)</option></select></div>
                 <div><label style="font-size:12px;margin-bottom:4px">Umbuchen zu Ort</label><select style="width:100%;height:44px;font-size:13.5px"><option>Lorville (L19)</option><option>ARC-L1 (unverändert)</option></select></div>
                 <div><label style="font-size:12px;margin-bottom:4px">Ziel-Einheit (Pool)</label><select style="width:100%;height:44px;font-size:13.5px"><option>Bereich Profit — vorbelegt</option><option>Staffel IRIDIUM</option></select></div>
-                <label style="display:flex;align-items:center;gap:10px;min-height:40px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12px/1.4 Lato,sans-serif;color:#D2D2D2">Mit gleichartigem Bestand zusammenführen <span style="color:#646464">(nur SCU)</span></span></label>
-                <div style="font:300 10.5px/1.5 Lato,sans-serif;color:#646464">Regeln &amp; Zustände: Artboards 15–16 · Persönlich ↔ Geteilt = Umbuchungsart in Mein Lager (Artboard 17)</div>
+                <label style="display:flex;align-items:center;gap:10px;min-height:40px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12px/1.4 Lato,sans-serif;color:#D2D2D2">Mit gleichartigem Bestand zusammenführen <span style="color:#8A8A8A">(nur SCU)</span></span></label>
+                <div style="font:300 10.5px/1.5 Lato,sans-serif;color:#8A8A8A">Regeln &amp; Zustände: Artboards 15–16 · Persönlich ↔ Geteilt = Umbuchungsart in Mein Lager (Artboard 17)</div>
               </div>
             </sc-if>
             <div><label style="font-size:13px;margin-bottom:6px">Notiz (optional)</label><input type="text" placeholder="z. B. aus Raffinerieauftrag #7841" style="width:100%;height:48px;font-size:14px"></div>
@@ -145,7 +145,7 @@
               <div class="alert alert-warning" style="margin:0;padding:10px 14px;font-size:12.5px">Ausbuchen ist endgültig (append-only). Der Verlauf bleibt nachvollziehbar.</div>
             </sc-if>
           </div></div>
-          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
             <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
             <button class="btn btn--cta" style="min-height:52px;flex:1.4"><svg class="krt-icon" style="width:16px;height:16px"><use href="{{ bookCtaIcon }}"></use></svg>{{ bookCta }}</button>
           </div>
@@ -166,7 +166,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:200px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);max-height:88%;display:flex;flex-direction:column">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:88%;display:flex;flex-direction:column">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -177,7 +177,7 @@
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aufträge</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip {{ orderRestCls }}" style="font-size:9.5px;font-variant-numeric:tabular-nums">{{ orderRestLabel }}</span></div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                   <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:8px 12px;min-height:52px">
-                    <span style="flex:1;min-width:0;font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#A-1042 Laranite-Beschaffung</span>
+                    <span style="flex:1;min-width:0;font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#1042 Laranite-Beschaffung</span>
                     <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;border:1px solid #282828;color:#D2D2D2;display:flex;align-items:center;justify-content:center" onClick="{{ ordMinus }}" aria-label="Weniger"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-minus"></use></svg></button>
                     <span style="min-width:64px;text-align:center;font:700 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ ordAmt }}</span>
                     <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;border:1px solid #282828;color:#D2D2D2;display:flex;align-items:center;justify-content:center" onClick="{{ ordPlus }}" aria-label="Mehr"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-plus"></use></svg></button>
@@ -186,7 +186,7 @@
                 </div>
               </div>
               <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.6px">Einsätze</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="font-size:9.5px;font-variant-numeric:tabular-nums">442 frei</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.6px">Einsätze</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9.5px;font-variant-numeric:tabular-nums">442 frei</span></div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                   <div style="display:flex;align-items:center;gap:10px;border:1px solid #355DDC;background:rgba(53,93,220,.12);padding:8px 12px;min-height:52px">
                     <span style="flex:1;min-width:0;font:700 12px/1.3 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</span>
@@ -195,7 +195,7 @@
                   <button class="assoc-add" style="min-height:44px;justify-content:center;font-size:11px">+ Einsatz zuordnen</button>
                 </div>
               </div>
-              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464">Zwei unabhängige Splits (Modell G): Auftrags- und Einsatz-Mengen werden getrennt gegen die Eintragsmenge abgeglichen. Rest &gt; 0 erlaubt · Überbuchung wird abgelehnt.</div>
+              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A">Zwei unabhängige Splits (Modell G): Auftrags- und Einsatz-Mengen werden getrennt gegen die Eintragsmenge abgeglichen. Rest &gt; 0 erlaubt · Überbuchung wird abgelehnt.</div>
               <button class="btn btn--cta" style="min-height:52px;width:100%;{{ assignCtaStyle }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Zuordnung speichern</button>
             </div>
           </div>
@@ -204,9 +204,9 @@
       <div class="card" style="padding:12px 16px">
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Rest-Abgleich (drücke +/− oben)</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
-          <li><span class="chip chip--success" style="font-size:9px">Rest 0</span> voll zugeordnet</li>
-          <li><span class="chip chip--muted" style="font-size:9px">… frei</span> unzugeordneter Rest — erlaubt</li>
-          <li><span class="chip chip--danger" style="font-size:9px">Überbucht</span> Summe &gt; Eintrag — Speichern gesperrt</li>
+          <li><span class="chip chip--success" style="color:#2EBC3D;font-size:9px">Rest 0</span> voll zugeordnet</li>
+          <li><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">… frei</span> unzugeordneter Rest — erlaubt</li>
+          <li><span class="chip chip--danger" style="color:#F2564B;font-size:9px">Überbucht</span> Summe &gt; Eintrag — Speichern gesperrt</li>
           <li>Persönliche Einträge tragen keine Zuordnung. Ohne Rolle Logistiker: Aktionen im Gesperrt-Stil — sichtbar, antippbar, Toast nennt die Rolle (Artboards 11–14); nie versteckt</li>
         </ul>
       </div>
@@ -233,11 +233,11 @@
                 <sc-for list="{{ myItems }}" as="i" hint-placeholder-count="3">
                   <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;background:#141414;border:1px solid #282828">
                     <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ i.name }}</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ i.sub }}</div></div>
-                    <span style="font-variant-numeric:tabular-nums"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ i.n }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">{{ i.unit }}</span></span>
+                    <span style="font-variant-numeric:tabular-nums"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ i.n }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">{{ i.unit }}</span></span>
                     <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Bearbeiten"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-edit"></use></svg></button>
                   </div>
                 </sc-for>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:4px">Nur für dich sichtbar. Editor = Buchen-Formular (Frame 2) im Modus „Persönlich".</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Nur für dich sichtbar. Editor = Buchen-Formular (Frame 2) im Modus „Persönlich".</div>
               </div>
             </sc-if>
             <sc-if value="{{ showBp }}" hint-placeholder-val="{{ false }}">
@@ -248,7 +248,7 @@
                       <svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A;flex:none"><use href="#krt-icon-blueprint"></use></svg>
                       <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</div><div style="font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">{{ b.sub }}</div></div>
                       <span class="chip {{ b.chipCls }}" style="font-size:9.5px;flex:none">{{ b.chip }}</span>
-                      <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                      <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
                     </div>
                     <sc-if value="{{ b.missing }}" hint-placeholder-val="{{ false }}">
                       <div style="border-top:1px solid #1C1C1C;padding:8px 14px 10px 46px;display:flex;flex-direction:column;gap:4px">
@@ -291,34 +291,34 @@
                 <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
                 <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
                 <span class="chip chip--primary" style="font-size:9px;font-variant-numeric:tabular-nums;flex:none">1/3 gewählt</span>
-                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                 <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Rhea</span>
-                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">642</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">642</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
                 <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px 6px 44px;background:rgba(231,126,35,.08);border-bottom:1px solid #1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
                   <div style="flex:1;min-width:0">
                     <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt</div>
-                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 874 · 442 SCU</div>
                   </div>
                   <span style="width:22px;height:22px;flex:none;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px 6px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C;">
                   <div style="flex:1;min-width:0">
                     <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt</div>
-                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 901 · 200 SCU</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 901 · 200 SCU</div>
                   </div>
                   <span style="width:22px;height:22px;flex:none;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center"></span>
                 </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                 <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Dorn</span>
-                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
                 <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px 6px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C;">
                   <div style="flex:1;min-width:0">
                     <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Lorville · geteilt</div>
-                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 655 · 442 SCU</div>
+                    <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 655 · 442 SCU</div>
                   </div>
                   <span style="width:22px;height:22px;flex:none;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center"></span>
                 </div>
@@ -326,12 +326,12 @@
                 <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23"><use href="#krt-icon-chevron-right"></use></svg>
                 <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span>
                 <span class="chip chip--primary" style="font-size:9px;font-variant-numeric:tabular-nums;flex:none">1 gewählt</span>
-                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">2.310</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">2.310</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
             </div>
-            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;margin-top:10px">Tap = Auswahl umschalten; Detail/Buchen ausgesetzt. FAB und Bottom-Nav weichen der Aktionsleiste.</div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:10px">Tap = Auswahl umschalten; Detail/Buchen ausgesetzt. FAB und Bottom-Nav weichen der Aktionsleiste.</div>
           </div>
-          <div style="flex:none;display:flex;align-items:center;gap:10px;background:#141414;border-top:2px solid #E77E23;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.15)">
+          <div style="flex:none;display:flex;align-items:center;gap:10px;background:#141414;border-top:2px solid #E77E23;padding:12px 16px 16px;box-shadow:0 0 12px rgba(231,126,35,.08)">
             <span style="font:900 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;flex:none">2</span>
             <span style="font:700 10px/1.2 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;flex:1">gewählt</span>
             <button class="btn-ghost btn" style="background:transparent;min-height:48px">Aufheben</button>
@@ -345,7 +345,7 @@
           <li>Auswahl ist IMMER Eintrags-Menge. Langdruck auf Gruppe/Stapel wählt alle Blatt-Einträge darunter — Gruppen-/Stapelzeilen tragen keinen eigenen Auswahlzustand. Gruppe über 3 Hangars: unkritisch — bulk-rebook nimmt Eintrags-IDs + EIN Ziel, die Quelle darf je Eintrag verschieden sein</li>
           <li>Zeilenaktionen ausgesetzt: Tap = Auswahl umschalten statt Detail; Buchen/Zuordnen inaktiv, FAB und Bottom-Nav weichen der Aktionsleiste; Verlassen: X oder System-Zurück</li>
           <li>Gruppenzeile zeigt „n/m gewählt" (offen) bzw. „n gewählt" (eingeklappt)</li>
-          <li>Auswahl überlebt das Einklappen: eingeklappte Gruppen behalten ihre gewählten Einträge (Chip zählt sie), die Leiste zählt weiter — Einklappen ist Ansicht, nicht Auswahl</li>
+          <li>Auswahl überlebt das Einklappen: eingeklappte Gruppen behalten ihre gewählten Einträge (Chip zählt sie), die Leiste zählt weiter — Einklappen ist Ansicht, nicht Auswahl. Beide Zustände der Gruppenzeile als Paar in Kap. 02 §10</li>
           <li>Enthält die Auswahl fremde Zeilen, rendert „Umbuchen" für Nicht-Logistiker im Gesperrt-Stil (Muster Artboards 11–14) — Toast nennt die Regel, die Auswahl bleibt bestehen</li>
         </ul>
       </div>
@@ -356,7 +356,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -366,11 +366,11 @@
               <div>
                 <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
                 <div class="krt-combobox"><input class="krt-combobox__input" type="text" placeholder="Ziel wählen…" style="height:48px;font-size:14px"></div>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
               </div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
-                <button class="btn btn--cta" style="min-height:52px;flex:1.6;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none">Markierte umbuchen (12)</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.6;background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none">Markierte umbuchen (12)</button>
               </div>
             </div>
           </div>
@@ -383,7 +383,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -393,7 +393,7 @@
               <div>
                 <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
                 <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
               </div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
@@ -410,7 +410,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -420,7 +420,7 @@
               <div style="opacity:.55;pointer-events:none">
                 <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
                 <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
               </div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1;opacity:.45;pointer-events:none">Abbrechen</button>
@@ -437,7 +437,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -446,7 +446,7 @@
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div class="kpi-total" style="padding:10px 12px;border-left-color:#239E33"><div class="kpi-label" style="font-size:9px">Umgebucht</div><div class="kpi-value" style="font-size:24px;color:#2EBC3D">11</div></div>
-                <div class="kpi-total" style="padding:10px 12px;border-left-color:#646464"><div class="kpi-label" style="font-size:9px">Übersprungen</div><div class="kpi-value" style="font-size:24px;color:#D2D2D2">1</div></div>
+                <div class="kpi-total" style="padding:10px 12px;border-left-color:#8A8A8A"><div class="kpi-label" style="font-size:9px">Übersprungen</div><div class="kpi-value" style="font-size:24px;color:#D2D2D2">1</div></div>
               </div>
               <div style="font:300 12.5px/1.6 Lato,sans-serif;color:#D2D2D2">Massenumbuchung erfolgreich: 11 Einträge umgebucht. 1 Eintrag stand bereits an <b style="color:#fff">ARC-L1</b> und wurde übersprungen — kein Fehler, keine Änderung nötig.</div>
               <button class="btn btn--cta" style="min-height:52px;width:100%">Schließen</button>
@@ -461,7 +461,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -475,7 +475,7 @@
               <div>
                 <label style="font-size:13px;margin-bottom:6px">Ziel (Ort)</label>
                 <div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Wide Forest Station)" style="height:48px;font-size:14px"></div>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:6px">Einträge, die bereits am Zielort stehen, werden übersprungen — kein Fehler.</div>
               </div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
@@ -509,26 +509,26 @@
               <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
                 <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
                 <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
-                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                 <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">GrafRotz (du)</span>
-                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
                 <div style="flex:1;min-width:0">
                   <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt · Org-Bestand</div>
-                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
                 <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Buchen" title="Buchen"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-bank-in"></use></svg></button>
                 <button style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828" aria-label="Zuordnen — gesperrt, Rolle fehlt" title="Zuordnen"><svg class="krt-icon" style="width:15px;height:15px;color:#D2D2D2;opacity:.45"><use href="#krt-icon-clipboard-list"></use></svg><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></button>
                 <span style="flex:1"></span>
-                <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#646464;text-align:right">Buchen: eigene Zeile → aktiv<br>Zuordnen: Rolle Logistiker → gesperrt</span>
+                <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-align:right">Buchen: eigene Zeile → aktiv<br>Zuordnen: Rolle Logistiker → gesperrt</span>
               </div>
             </div>
-            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;margin-top:10px">Gesperrt-Stil = Alpha 45 % + Schloss-Badge (voll deckend). Das Element bleibt Tippziel — ausdrücklich KEIN enabled=false.</div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:10px">Gesperrt-Stil = Alpha 45 % + Schloss-Badge (voll deckend). Das Element bleibt Tippziel — ausdrücklich KEIN enabled=false.</div>
           </div>
         </div>
       </x-import>
@@ -546,16 +546,16 @@
               <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
                 <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
                 <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
-                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                 <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">GrafRotz (du)</span>
-                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
                 <div style="flex:1;min-width:0">
                   <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt · Org-Bestand</div>
-                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
@@ -564,7 +564,7 @@
               </div>
             </div>
           </div>
-          <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#141414;border:1px solid #FFD23F;box-shadow:0 0 20px rgba(255,210,63,.25)">
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#141414;border:1px solid #FFD23F;box-shadow:0 0 12px rgba(255,210,63,.10)">
             <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-lock"></use></svg>
             <div style="flex:1"><div style="font:700 13px/1.4 Lato,sans-serif;color:#FFFFFF">Dafür brauchst du die Rolle Logistiker.</div><div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Vergeben je Staffel durch die Administration. Toast steht 4 s; erneuter Tipp setzt die Zeit zurück.</div></div>
           </div>
@@ -577,7 +577,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -585,14 +585,14 @@
                 <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · 442 SCU · Org-Bestand Bereich Profit</div>
               </div>
               <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aufträge</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="font-size:9.5px;font-variant-numeric:tabular-nums">242 frei</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aufträge</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9.5px;font-variant-numeric:tabular-nums">242 frei</span></div>
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:8px 12px;min-height:48px;opacity:.55">
-                  <span style="flex:1;min-width:0;font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px">#A-1042 Laranite-Beschaffung</span>
+                  <span style="flex:1;min-width:0;font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px">#1042 Laranite-Beschaffung</span>
                   <span style="font:700 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">200</span>
                 </div>
               </div>
-              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464">Werte sichtbar, Editoren gedimmt — der CTA erklärt beim Antippen, was fehlt.</div>
-              <button class="btn btn--cta" style="min-height:52px;width:100%;background:#282828;color:#646464;border-color:#282828;box-shadow:none;cursor:pointer"><svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg>Zuordnung speichern</button>
+              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A">Werte sichtbar, Editoren gedimmt — der CTA erklärt beim Antippen, was fehlt.</div>
+              <button class="btn btn--cta" style="min-height:52px;width:100%;background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;cursor:pointer"><svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg>Zuordnung speichern</button>
             </div>
           </div>
         </div>
@@ -611,16 +611,16 @@
               <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 14px;background:#1C1C1C;border-left:4px solid #E77E23;border-bottom:1px solid #282828">
                 <svg class="krt-icon" style="width:16px;height:16px;color:#E77E23;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg>
                 <span style="flex:1;min-width:0;font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span>
-                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums;flex:none"><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">1.084</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                 <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">GrafRotz (du)</span>
-                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
                 <div style="flex:1;min-width:0">
                   <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">ARC-L1 · geteilt · Org-Bestand</div>
-                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 874 · 442 SCU · eigene Zeile</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
@@ -629,12 +629,12 @@
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 14px 4px 28px;border-bottom:1px solid #1C1C1C;box-shadow:inset 18px 0 0 -17px #646464">
                 <span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Dorn</span>
-                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                <span style="font-variant-numeric:tabular-nums"><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">442</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 2px 44px;background:rgba(0,0,0,.35)">
                 <div style="flex:1;min-width:0">
                   <div style="font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Lorville · geteilt · Org-Bestand</div>
-                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums">Q 655 · 442 SCU · Zeile von Dorn</div>
+                  <div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">Q 655 · 442 SCU · Zeile von Dorn</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 10px 44px;background:rgba(0,0,0,.35);border-bottom:1px solid #1C1C1C">
@@ -643,7 +643,7 @@
               </div>
             </div>
           </div>
-          <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#141414;border:1px solid #FFD23F;box-shadow:0 0 20px rgba(255,210,63,.25)">
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#141414;border:1px solid #FFD23F;box-shadow:0 0 12px rgba(255,210,63,.10)">
             <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-lock"></use></svg>
             <div style="flex:1"><div style="font:700 13px/1.4 Lato,sans-serif;color:#FFFFFF">Nur deine eigene Zeile — fremde Einträge ändert nur ein Logistiker.</div><div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Regel: eigene Zeile oder Bearbeitungsrecht auf Bereich Profit (self-or-Logistician).</div></div>
           </div>
@@ -666,7 +666,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);max-height:94%;display:flex;flex-direction:column">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
               <div>
@@ -675,9 +675,9 @@
               </div>
               <div><label style="font-size:12.5px;margin-bottom:5px">Umbuchen zu Nutzer (targetUserId)</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="Dorn" style="height:46px;font-size:13.5px"></div></div>
               <div><label style="font-size:12.5px;margin-bottom:5px">Umbuchen zu Ort (targetLocationId)</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="Lorville (L19)" style="height:46px;font-size:13.5px"></div></div>
-              <div><label style="font-size:12.5px;margin-bottom:5px">Ziel-Einheit (targetOwningOrgUnitId)</label><select style="width:100%;height:46px;font-size:13.5px"><option>Bereich Profit — vorbelegt (aktuelle Einheit)</option></select><div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;margin-top:5px">Mitgliedschaften von Dorn über alle vier Arten — Staffel · SK · Bereich · OL (/users/{id}/memberships?allKinds=true). Unverändert lassen = Pool bleibt.</div></div>
-              <label style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#D2D2D2">Mit gleichartigem Bestand zusammenführen <span style="color:#646464">(mergeStock — nur SCU; gleiche Qualität, Ort, Auftrag, Einsatz — gilt nur für diese Buchung)</span></span></label>
-              <div style="display:flex;align-items:center;gap:10px;border-top:1px solid #282828;padding-top:12px"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Herkunft der Menge</span><span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#646464">Standard: vom Rest — Planer: Artboards 18–19</span><svg class="krt-icon" style="width:14px;height:14px;color:#646464"><use href="#krt-icon-chevron-down"></use></svg></div>
+              <div><label style="font-size:12.5px;margin-bottom:5px">Ziel-Einheit (targetOwningOrgUnitId)</label><select style="width:100%;height:46px;font-size:13.5px"><option>Bereich Profit — vorbelegt (aktuelle Einheit)</option></select><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Mitgliedschaften von Dorn über alle vier Arten — Staffel · SK · Bereich · OL (/users/{id}/memberships?allKinds=true). Unverändert lassen = Pool bleibt.</div></div>
+              <label style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#D2D2D2">Mit gleichartigem Bestand zusammenführen <span style="color:#8A8A8A">(mergeStock — nur SCU; gleiche Qualität, Ort, Auftrag, Einsatz — gilt nur für diese Buchung)</span></span></label>
+              <div style="display:flex;align-items:center;gap:10px;border-top:1px solid #282828;padding-top:12px"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Herkunft der Menge</span><span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Standard: vom Rest — Planer: Artboards 18–19</span><svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A"><use href="#krt-icon-chevron-down"></use></svg></div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
                 <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Umbuchen</button>
@@ -701,7 +701,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);max-height:94%;display:flex;flex-direction:column">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
               <div>
@@ -715,10 +715,10 @@
                 <div style="font:300 11px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Die App prüft inline vor dem Senden; Server-Backstop: 400 „Transfer must change either the user or the location".</div>
               </div>
               <div><label style="font-size:12.5px;margin-bottom:5px">Ziel-Einheit (targetOwningOrgUnitId)</label><select style="width:100%;height:46px;font-size:13.5px"><option>Bereich Profit — vorbelegt</option></select></div>
-              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Stück-Material: wird am Ziel immer zusammengeführt — keine Option (Server-Regel).</div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Stück-Material: wird am Ziel immer zusammengeführt — keine Option (Server-Regel).</div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
-                <button class="btn btn--cta" style="min-height:52px;flex:1.5;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Umbuchen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.5;background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Umbuchen</button>
               </div>
             </div>
           </div>
@@ -738,7 +738,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);max-height:94%;display:flex;flex-direction:column">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
               <div>
@@ -746,7 +746,7 @@
                 <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Medpen (Hemozal) · 24 Stück · POST inventory/{id}/personal-rebook · Seite: Mein Lager (/inventory/my)</div>
               </div>
               <div><label style="font-size:12.5px;margin-bottom:5px">Umbuchungsart</label><select style="width:100%;height:46px;font-size:13.5px"><option>Ins gemeinsame Lager umbuchen</option><option>Als persönlich umbuchen</option></select></div>
-              <div><label style="font-size:12.5px;margin-bottom:5px">Einheit</label><select style="width:100%;height:46px;font-size:13.5px"><option>Bereich Profit — vorbelegt</option></select><div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;margin-top:5px">Deine eigenen Mitgliedschaften — der Eintrag ist owner-scoped.</div></div>
+              <div><label style="font-size:12.5px;margin-bottom:5px">Einheit</label><select style="width:100%;height:46px;font-size:13.5px"><option>Bereich Profit — vorbelegt</option></select><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:5px">Deine eigenen Mitgliedschaften — der Eintrag ist owner-scoped.</div></div>
               <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
                 <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
                 <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Bestand im gemeinsamen Lager ist für die Einheit sichtbar und kann Aufträgen/Einsätzen zugeordnet werden.</div>
@@ -774,38 +774,38 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);max-height:94%;display:flex;flex-direction:column">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
               <div>
                 <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Ausbuchen</div>
                 <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · Eintrag Rhea · ARC-L1 · jobOrder-/missionReductions (REQ-INV-027)</div>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline;border:1px solid #282828;background:#1C1C1C;padding:10px 14px;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Abgang</span><span><span style="font:900 19px/1 Lato,sans-serif;color:#FFFFFF">200</span> <span style="font:300 12px/1 Lato,sans-serif;color:#646464">von 442 SCU</span></span></div>
-              <div><div style="font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Herkunft der Menge</div><div style="font:300 11px/1.5 Lato,sans-serif;color:#646464">Wähle, von welchen Auftrags- und Einsatz-Marken die ausgebuchte Menge abgezogen wird. Was du nicht zuweist, kommt vom noch nicht zugewiesenen Rest.</div></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;border:1px solid #282828;background:#1C1C1C;padding:10px 14px;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Abgang</span><span><span style="font:900 19px/1 Lato,sans-serif;color:#FFFFFF">200</span> <span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">von 442 SCU</span></span></div>
+              <div><div style="font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Herkunft der Menge</div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Wähle, von welchen Auftrags- und Einsatz-Marken die ausgebuchte Menge abgezogen wird. Was du nicht zuweist, kommt vom noch nicht zugewiesenen Rest.</div></div>
               <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aus Aufträgen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--success" style="font-size:9.5px;font-variant-numeric:tabular-nums">Gedeckt</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aus Aufträgen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--success" style="color:#2EBC3D;font-size:9.5px;font-variant-numeric:tabular-nums">Gedeckt</span></div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:8px 12px;min-height:52px">
-                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#A-1042 Laranite-Beschaffung</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 200 SCU</div></div>
+                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#1042 Laranite-Beschaffung</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 200 SCU</div></div>
                   <input type="text" value="150" style="width:76px;height:44px;text-align:center;font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:8px 12px;min-height:52px">
-                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#A-1061 Quantainium-Reserve</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 120 SCU</div></div>
+                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#1061 Quantainium-Reserve</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 120 SCU</div></div>
                   <input type="text" value="50" style="width:76px;height:44px;text-align:center;font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
                 </div>
                 </div>
-                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums;margin-top:8px"><span style="flex:1;font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Vom Rest</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">0 SCU</span><span style="font:300 11px/1 Lato,sans-serif;color:#646464">(frei: 122)</span></div>
+                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums;margin-top:8px"><span style="flex:1;font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Vom Rest</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">0 SCU</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">(frei: 122)</span></div>
               </div>
               <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.6px">Aus Einsätzen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="font-size:9.5px;font-variant-numeric:tabular-nums">Automatisch</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.6px">Aus Einsätzen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9.5px;font-variant-numeric:tabular-nums">Automatisch</span></div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #355DDC;background:rgba(53,93,220,.12);padding:8px 12px;min-height:52px">
                   <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">OP Goldrausch</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 442 SCU</div></div>
                   <span style="position:relative;width:76px;height:44px;border:1px solid #282828;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 15px/1 Lato,sans-serif;color:#D2D2D2;opacity:.6;font-variant-numeric:tabular-nums">200</span><span style="position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></span>
                 </div>
                 </div>
-                <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;margin-top:8px">Automatisch vorbefüllt: einzige Marke, kein Rest (inventory.herkunft.auto) — das Feld folgt dem Abgang und ist gesperrt.</div>
+                <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:8px">Automatisch vorbefüllt: einzige Marke, kein Rest (inventory.herkunft.auto) — das Feld folgt dem Abgang und ist gesperrt.</div>
               </div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
@@ -822,38 +822,38 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);max-height:94%;display:flex;flex-direction:column">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);max-height:94%;display:flex;flex-direction:column">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;flex:none"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="flex:1;overflow:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
               <div>
                 <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Ausbuchen — Verkauf</div>
                 <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Quantainium · Eintrag Rhea · ARC-L1 · Typ SELL</div>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline;border:1px solid #282828;background:#1C1C1C;padding:10px 14px;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Abgang</span><span><span style="font:900 19px/1 Lato,sans-serif;color:#FFFFFF">200</span> <span style="font:300 12px/1 Lato,sans-serif;color:#646464">von 442 SCU</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;border:1px solid #282828;background:#1C1C1C;padding:10px 14px;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px">Abgang</span><span><span style="font:900 19px/1 Lato,sans-serif;color:#FFFFFF">200</span> <span style="font:300 12px/1 Lato,sans-serif;color:#8A8A8A">von 442 SCU</span></span></div>
               <div><label style="font-size:12.5px;margin-bottom:5px">Verkaufsbetrag (aUEC)</label><input type="text" value="75.000" style="width:100%;height:50px;font-size:19px;font-weight:700;color:#2EBC3D;font-variant-numeric:tabular-nums;text-align:right;padding-right:14px"></div>
               <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
                 <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
                 <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#D2D2D2;font-variant-numeric:tabular-nums">Gekoppelter Verkaufserlös: <b style="color:#fff">45.000 aUEC</b> an OP Goldrausch (120 ∕ 200 des Abgangs) · Persönlich: <b style="color:#fff">30.000 aUEC</b>. Gutschrift nur an Einsätze mit eigener Teilnahme.</div>
               </div>
               <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.6px">Aus Einsätzen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="font-size:9.5px;font-variant-numeric:tabular-nums">80 aus Rest</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.6px">Aus Einsätzen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9.5px;font-variant-numeric:tabular-nums">80 aus Rest</span></div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #355DDC;background:rgba(53,93,220,.12);padding:8px 12px;min-height:52px">
                   <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">OP Goldrausch</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 300 SCU</div></div>
                   <input type="text" value="120" style="width:76px;height:44px;text-align:center;font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
                 </div>
                 </div>
-                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums;margin-top:8px"><span style="flex:1;font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Vom Rest</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">80 SCU</span><span style="font:300 11px/1 Lato,sans-serif;color:#646464">(frei: 142)</span></div>
+                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums;margin-top:8px"><span style="flex:1;font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Vom Rest</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">80 SCU</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">(frei: 142)</span></div>
               </div>
               <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aus Aufträgen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--danger" style="font-size:9.5px;font-variant-numeric:tabular-nums">Überzeichnet +100</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Aus Aufträgen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--danger" style="color:#F2564B;font-size:9.5px;font-variant-numeric:tabular-nums">Überzeichnet +100</span></div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #A3000A;background:rgba(163,0,10,.12);padding:8px 12px;min-height:52px">
-                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#A-1042 Laranite-Beschaffung</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 200 SCU</div></div>
+                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#1042 Laranite-Beschaffung</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 200 SCU</div></div>
                   <input type="text" value="180" style="width:76px;height:44px;text-align:center;font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;border:1px solid #A3000A;background:rgba(163,0,10,.12);padding:8px 12px;min-height:52px">
-                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#A-1061 Quantainium-Reserve</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 120 SCU</div></div>
+                  <div style="flex:1;min-width:0"><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#1061 Quantainium-Reserve</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">zugeordnet 120 SCU</div></div>
                   <input type="text" value="120" style="width:76px;height:44px;text-align:center;font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
                 </div>
                 </div>
@@ -861,7 +861,7 @@
               </div>
               <div style="display:flex;gap:10px">
                 <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
-                <button class="btn btn--cta" style="min-height:52px;flex:1.5;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Verkaufen</button>
+                <button class="btn btn--cta" style="min-height:52px;flex:1.5;background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-rebook"></use></svg>Verkaufen</button>
               </div>
             </div>
           </div>
@@ -896,14 +896,14 @@
         <div style="width:340px;flex:none;border-right:1px solid #282828;background:#0A0A0A;display:flex;flex-direction:column">
           <div style="padding:14px 16px;border-bottom:1px solid #282828">
             <div style="display:flex;align-items:center;gap:10px;height:44px;background:#1C1C1C;border:1px solid #282828;padding:0 12px">
-              <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-search"></use></svg>
-              <span style="font:300 13px/1 Lato,sans-serif;color:#646464;font-style:italic">Blueprints filtern…</span>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg>
+              <span style="font:300 13px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Blueprints filtern…</span>
             </div>
           </div>
           <div style="flex:1;overflow:auto">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23"><span style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Medizinische Station T2</span><span class="chip chip--success" style="font-size:9px">Baubar</span></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #141414"><span style="font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Quantum-Antrieb VK-00</span><span class="chip chip--danger" style="font-size:9px">2 fehlen</span></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #141414"><span style="font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Ballistischer Turm S4</span><span class="chip chip--success" style="font-size:9px">Baubar</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23"><span style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Medizinische Station T2</span><span class="chip chip--success" style="color:#2EBC3D;font-size:9px">Baubar</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #141414"><span style="font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Quantum-Antrieb VK-00</span><span class="chip chip--danger" style="color:#F2564B;font-size:9px">2 fehlen</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #141414"><span style="font:300 13px/1.3 Lato,sans-serif;color:#D2D2D2">Ballistischer Turm S4</span><span class="chip chip--success" style="color:#2EBC3D;font-size:9px">Baubar</span></div>
           </div>
         </div>
         <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0">
@@ -912,7 +912,7 @@
               <div style="font:700 19px/1.2 Lato,sans-serif;color:#FFFFFF">Medizinische Station T2</div>
               <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:3px">Freigeschaltet · geteilt mit Bereich Profit · Quelle: Extractor-Import 12.08.</div>
             </div>
-            <span class="chip chip--success" style="font-size:10px">Baubar · Bestand reicht</span>
+            <span class="chip chip--success" style="color:#2EBC3D;font-size:10px">Baubar · Bestand reicht</span>
           </div>
           <div class="card card--flush" style="padding:0;max-width:860px">
             <div style="display:grid;grid-template-columns:1fr 130px 130px 90px;background:#1C1C1C;border-bottom:2px solid #E77E23">
@@ -938,12 +938,109 @@
                 <input type="range" min="0" max="1000" value="{{ qVal }}" onInput="{{ qChange }}" style="width:220px">
                 <span class="quality-value">{{ qVal }} <small>/ 1000</small></span>
               </div>
-              <div class="quality-affects">Wirkt auf:<span class="chip chip--primary" style="font-size:9px">Haltbarkeit ×{{ qFactor }}</span><span class="chip chip--muted" style="font-size:9px">Heilrate — unbeeinflusst</span></div>
+              <div class="quality-affects">Wirkt auf:<span class="chip chip--primary" style="font-size:9px">Haltbarkeit ×{{ qFactor }}</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">Heilrate — unbeeinflusst</span></div>
             </div>
           </div>
         </div>
       </div>
     </x-import>
+  </section>
+
+  <section data-screen-label="Lager Parität" style="margin-bottom:32px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">Runde 8 · Sammel-Ausbuchen &amp; Game-Item-Bestand<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Zwei offene Punkte (Priorität 8). Das Sammel-Ausbuchen kommt im Web von der persönlichen Inventarseite; der Game-Item-Bestand ist eine eigene Seite ohne App-Fläche.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">20 · Sammel-Ausbuchen — nur Zeilen, alles oder nichts</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Sammel-Ausbuchen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">3 Einträge · POST /bulk-checkout</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:10px;border-left:4px solid #FFD23F;background:rgba(255,210,63,.12);padding:10px 12px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-warning"></use></svg>
+                <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Ausbuchen ist append-only: die Zeilen verschwinden aus dem Bestand, das Protokoll bleibt.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Gewählte Einträge</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">3</span></div>
+              <div class="card card--flush" style="padding:0">
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">24 Stück · ARC-L1</div></div><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">vollständig</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">80 SCU · Lorville</div></div><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">vollständig</span></div>
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">40 SCU · ARC-L1</div></div><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">vollständig</span></div>
+              </div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Ganze Zeilen, keine Teilmengen — der Endpunkt bucht vollständig aus. Für eine Teilmenge, einen Grund, eine Notiz oder einen Herkunft-Plan: Einzel-Ausbuchen (Artboards 18–19).</div>
+              <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+                <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2"><b style="color:#fff">Alles oder nichts:</b> eine fremde Zeile oder eine unbekannte ID lehnt den ganzen Aufruf ab. Es gibt kein Teilergebnis — die Auswahl bleibt dann stehen.</div>
+              </div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bookout"></use></svg>3 Einträge ausbuchen</button>
+            </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Korrektur (Runde 12, A3 + B4) — /bulk-checkout</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#FFD23F">Drei gezeichnete Elemente haben kein Feld:</b> POST /api/v1/inventory/bulk-checkout trägt <b style="color:#fff">itemIds und sonst nichts</b> — kein „Grund", keine „Notiz", keinen Herkunft-Plan. Alle drei gibt es am reichen Einzel-Aufruf /inventory/{id}/book-out, über den bewusst NICHT geschleift wird: eine Schleife gelingt halb (siehe B4)</li>
+          <li><b style="color:#FFD23F">Und der Ausgang ist anders:</b> der Aufruf ist ATOMAR. Die „ausgebucht / übersprungen"-Form war vom Bulk-Umbuchen geborgt, das wirklich zwei Zahlen liefert. Hier: Fertig-Schritt ODER Ablehnung, und eine Ablehnung behält die Auswahl</li>
+          <li>Das Sheet besteht damit aus: Zeilenliste mit „vollständig"-Chip, dem Append-only-Satz, dem Alles-oder-nichts-Satz und EINEM CTA. Weniger Felder, aber keine leere Fläche — jede Zeile trägt Information</li>
+          <li>Backend-Anfrage <b style="color:#fff">G1</b>: bekommt bulk-checkout reason und note, kommen die beiden Felder zurück — dann exakt in der Form des Einzel-Ausbuchens</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">21 · Game-Item-Bestand (eigene Fläche)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Game-Items</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Bereich Profit · Bestand nach Item</div></div>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px"><svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg><span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Item suchen…</span></div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px"><span class="chip chip--primary" style="font-size:10px;flex:none">Alle</span><span class="chip" style="font-size:10px;flex:none">Waffen</span><span class="chip" style="font-size:10px;flex:none">Medizin</span><span class="chip" style="font-size:10px;flex:none">Bauteile</span></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;font-variant-numeric:tabular-nums">27 Items · 412 Stück</div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">4 Halter · 3 Orte</div></div>
+              <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">96 Stück</span>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">2 Halter · ARC-L1</div></div>
+              <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">12 Stück</span>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Panzerplatte S2</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">1 Halter · Lorville</div></div>
+              <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">8 Stück</span>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Multi-Tool</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">6 Halter · 4 Orte</div></div>
+              <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">31 Stück</span>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Zeile antippen klappt Halter und Orte an ihrer Stelle auf — der Lagerbaum führt keine Items (G4).</div>
+          </div></div>
+          </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — inventory-game-item</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Eigene Fläche unter „Mehr", weil der Lagerbaum nach MATERIAL gruppiert und Game-Items dort zwischen SCU-Mengen untergehen: hier ist die Einheit Stück und die Frage „wie viele haben wir und wo"</li>
+          <li><b style="color:#FFD23F">Korrektur (Runde 12, B8):</b> Der Lagerbaum ist MATERIAL-ONLY — seine drei Reads senden keinen catalog-Parameter, ein Sprung dorthin landet im Leeren. Die Zeile klappt deshalb AN IHRER STELLE auf und listet Halter und Orte. Erst wenn der Baum catalog=ITEM lernt (Backend-Anfrage G4), wird der Sprung möglich</li>
+          <li>Zeile = Item + Halter/Orte-Kurzfassung + Summe. Keine Preisspalte: Game-Items haben keinen UEX-Preis</li>
+          <li>Zustände: leer = „Keine Game-Items in Bereich Profit." · Filter leer = „Kein Item passt zum Filter." + Zurücksetzen · Fehler/Offline nach Kap. 14</li>
+        </ul>
+      </div>
+    </div>
+
+    </div>
   </section>
 
   <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
@@ -965,7 +1062,7 @@ class Component extends DCLogic {
     const tree = [
       mkGroup('g0', 'Quantainium', '1.084', 'SCU', [
         { name: 'Rhea', amt: '642', entries: [
-          { ort: 'ARC-L1 · geteilt', q: '874', qPct: '87%', amt: '442', chip: '#A-1042 · 200', chipCls: 'assoc-chip--order' },
+          { ort: 'ARC-L1 · geteilt', q: '874', qPct: '87%', amt: '442', chip: '#1042 · 200', chipCls: 'assoc-chip--order' },
           { ort: 'ARC-L1 · geteilt', q: '901', qPct: '90%', amt: '200', chip: 'Einsatz · 200', chipCls: 'assoc-chip--mission' } ] },
         { name: 'Dorn', amt: '442', entries: [
           { ort: 'Lorville · geteilt', q: '655', qPct: '65%', amt: '442', chip: false, chipCls: '' } ] },

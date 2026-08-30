@@ -94,8 +94,8 @@ fun FleetImportScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                .padding(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (!state.online) {
             OfflineBand()
@@ -126,7 +126,7 @@ fun FleetImportScreen(
         // and a left-aligned caption reads as a heading over the box rather than as an "or".
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtHairlineRule(modifier = Modifier.weight(1f))
@@ -181,7 +181,7 @@ private fun PickedFile(
     enabled: Boolean,
     onClear: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Text(
             text = stringResource(R.string.fleet_import_picked, name),
             style = MaterialTheme.typography.bodySmall,

@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.GameItemStock
 import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
@@ -155,6 +156,18 @@ class BookingViewModelTest {
             entryIds: List<String>,
             locationId: String,
         ): ApiResult<BulkRebookResult> = ApiResult.Success(BulkRebookResult(entryIds.size, 0))
+
+        val checkedOut = mutableListOf<List<String>>()
+        var checkoutAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun bulkCheckout(entryIds: List<String>): ApiResult<Unit> {
+            checkedOut.add(entryIds)
+            return checkoutAnswer
+        }
+
+        var gameItemAnswer: ApiResult<List<GameItemStock>> = ApiResult.Success(emptyList())
+
+        override suspend fun gameItemStock(): ApiResult<List<GameItemStock>> = gameItemAnswer
 
         override suspend fun setAllocation(
             entryId: String,
@@ -402,7 +415,7 @@ class BookingViewModelTest {
     private fun allocation(
         id: String,
         amount: String,
-    ) = InventoryAllocation(targetId = id, label = "#A-$id", subtitle = null, amount = amount)
+    ) = InventoryAllocation(targetId = id, label = "#$id", subtitle = null, amount = amount)
 
     private fun entry(
         personal: Boolean = false,

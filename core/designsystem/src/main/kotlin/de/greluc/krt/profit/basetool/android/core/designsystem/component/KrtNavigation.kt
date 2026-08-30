@@ -170,10 +170,10 @@ private fun KrtNavItemContent(
     Column(
         modifier =
             modifier
-                .defaultMinSize(minHeight = KrtSpacing.touchTarget)
+                .defaultMinSize(minHeight = KrtSpacing.navIconFloor)
                 .clickable(role = Role.Tab, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4, Alignment.CenterVertically),
     ) {
         Box(
             modifier =
@@ -228,7 +228,7 @@ fun KrtBottomBar(
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .height(BOTTOM_BAR_HEIGHT)
-                .padding(top = KrtSpacing.sm, bottom = KrtSpacing.xs),
+                .padding(top = KrtSpacing.s8, bottom = KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         items.forEach { item ->
@@ -285,13 +285,13 @@ fun KrtNavigationRail(
                 .width(RAIL_WIDTH)
                 .fillMaxHeight()
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(vertical = KrtSpacing.md),
+                .padding(vertical = KrtSpacing.s12),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
             painter = painterResource(R.drawable.krt_basetool_logo),
             contentDescription = null,
-            modifier = Modifier.size(RAIL_LOGO).padding(bottom = KrtSpacing.md),
+            modifier = Modifier.size(RAIL_LOGO).padding(bottom = KrtSpacing.s12),
         )
         items.forEach { item ->
             KrtNavItemContent(

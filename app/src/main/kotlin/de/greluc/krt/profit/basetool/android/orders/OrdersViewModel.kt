@@ -10,16 +10,24 @@ package de.greluc.krt.profit.basetool.android.orders
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimSource
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitKind
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -307,8 +315,49 @@ data class OrderDetailState(
      * because a colleague saved first is the failure this whole mechanism exists to prevent.
      */
     val rejectedNote: String? = null,
+    val handover: OrderHandoverDraft? = null,
+    /**
+     * The item handover being filled in, or `null` when the sheet is shut.
+     *
+     * Its own slot beside [handover]: the two are separate writes against separate endpoints, and
+     * one shared slot would let a material sheet be submitted as an item one.
+     */
+    val itemHandover: ItemHandoverDraft? = null,
+    /**
+     * The production run being filled in, or `null` when the sheet is shut.
+     *
+     * A **second** write on an item Auftrag, not a variant of the handover: the Übergabe hands
+     * finished goods over, the Herstellung consumes the earmarked material and creates item stock
+     * (design ch. 10 artboard 15).
+     */
+    val production: ProductionDraft? = null,
     /** Which page of the Auftrag is showing (design ch. 10 artboard 2). */
     val tab: OrderTab = OrderTab.POSITIONS,
+    /** The Zusagen — their own read, because they are not part of the order aggregate. */
+    val claims: ClaimsState = ClaimsState(),
+    /**
+     * The units the caller belongs to.
+     *
+     * Read for one question: whether they are on the **requesting** side of this order, which is
+     * what `canEditJobOrderAsRequester` turns on and the only way to know which of the two edit
+     * forms to open.
+     */
+    val myUnitIds: Set<String> = emptySet(),
+    /**
+     * The game-item stock earmarked to this Auftrag, keyed by item id.
+     *
+     * Its own read (`/orders/{id}/item-stock`), because the order aggregate carries no stock. It
+     * fills the availability chip on each sub-assembly — „Lager" or „Fehlt n".
+     */
+    val itemStock: Map<String, JobOrderItemStock> = emptyMap(),
+    /**
+     * Whether this order's responsible unit is a Spezialkommando.
+     *
+     * Resolved by id against the active org units, because `SquadronReferenceDto` carries no kind.
+     * `null` while that read is still out — which is not the same as „no", and is why the Zusagen
+     * tab appears once the answer arrives rather than being guessed from the unit's name.
+     */
+    val responsibleIsSpecialCommand: Boolean? = null,
     val statusPickerOpen: Boolean = false,
     /**
      * The status the member has picked but not yet applied.
@@ -338,8 +387,99 @@ data class OrderDetailState(
     val writable: Boolean
         get() = online && !saving && me != null
 
+    /**
+     * Which edit form this caller may open, or `null` when they may open none.
+     *
+     * The two gates are the server's own. A Logistician rewrites the whole order
+     * (`canEditJobOrder`). A member of the **requesting** unit gets the narrower form
+     * (`canEditJobOrderAsRequester`) — and only while **nothing at all** has been delivered: the
+     * freeze is on the whole order, not per line, so one handover anywhere closes that path.
+     *
+     * Nothing else is inferred: the app is told which form it opened rather than the form working
+     * out what it is allowed to write.
+     */
+    val editMode: OrderFormMode?
+        get() =
+            when {
+                me?.logistician == true -> {
+                    OrderFormMode.EDIT
+                }
+
+                order?.requestingOrgUnitId in myUnitIds && order?.krtUndelivered() == true -> {
+                    OrderFormMode.EDIT_AS_REQUESTER
+                }
+
+                else -> {
+                    null
+                }
+            }
+
+    /**
+     * Whether editing is offered at all on this order.
+     *
+     * An **item** order is editable too since 2026-08-29 (`PUT /orders/{id}/items`) — but only by a
+     * Logistician: the requester's own item path (`/{id}/items/requested`) is not built. And the
+     * server refuses the write once anything has been handed over, because the lines are what the
+     * delivery was measured against, so the control is drawn with that reason rather than hidden.
+     */
+    val editableKind: Boolean
+        get() {
+            val current = order ?: return true
+            return current.items.isEmpty() ||
+                (me?.logistician == true && current.krtUndelivered())
+        }
+
+    /**
+     * The order's item lines as a two-level tree.
+     *
+     * The server models a sub-assembly as a **real ordered line with a parent**, so the tree is the
+     * order's own lines grouped by `parentItemId` rather than a recipe read. Design ch. 10 artboard
+     * 12 limits it to two levels on purpose — deeper does not fit a phone — and the app follows
+     * that: a line whose own child has children is drawn with the depth note rather than nested
+     * further.
+     */
+    val itemTree: List<ItemBranch>
+        get() {
+            val lines = order?.items.orEmpty()
+            val byParent = lines.filter { it.parentItemId != null }.groupBy { it.parentItemId }
+            return lines
+                .filter { it.parentItemId == null }
+                .map { parent ->
+                    val children = byParent[parent.id].orEmpty()
+                    ItemBranch(
+                        line = parent,
+                        children = children,
+                        deeper = children.any { child -> byParent[child.id].orEmpty().isNotEmpty() },
+                    )
+                }
+        }
+
+    /**
+     * The tabs this order actually has.
+     *
+     * Zusagen exist only on a Spezialkommando order — the server refuses a claim on anything else
+     * — so offering the tab elsewhere would offer a surface whose every action is a 400.
+     */
+    val tabs: List<OrderTab>
+        get() =
+            OrderTab.entries.filter { it != OrderTab.CLAIMS || responsibleIsSpecialCommand == true }
+
     /** Whether the status control belongs on this screen. */
     val statusChangeable: Boolean
+        get() = me?.logistician == true
+
+    /**
+     * Whether the caller may book a production run.
+     *
+     * The endpoint's own gate is `LOGISTICIAN or OFFICER or ADMIN` plus edit scope on the Auftrag;
+     * the flag the app holds covers the first and is a **hint, never a gate** — the control is
+     * drawn either way and the server stays the authority (ADR-0011).
+     *
+     * Deliberately **not** folded together with [writable]. Being offline is not a missing grant,
+     * and the refusal this flag drives names one — „Dafür brauchst du die Rolle Logistiker." would
+     * be a false statement about a member who simply has no signal.
+     */
+    val productionAllowed: Boolean
         get() = me?.logistician == true
 
     /**
@@ -354,25 +494,149 @@ data class OrderDetailState(
 }
 
 /**
+ * One top-level ordered item and the sub-assemblies under it.
+ *
+ * @property line the item that was ordered.
+ * @property children its sub-assemblies — ordered lines of their own, with this one as parent.
+ * @property deeper whether the recipe goes further than the two levels this screen draws, which the
+ *   card says out loud rather than silently truncating.
+ */
+data class ItemBranch(
+    val line: JobOrderItem,
+    val children: List<JobOrderItem>,
+    val deeper: Boolean,
+)
+
+/**
+ * Everything one order's screen reads and writes through.
+ *
+ * A parameter object rather than five constructor arguments: the screen genuinely needs all of
+ * them, and a constructor that wide is both hard to read at the call site and past what the
+ * codebase's own static analysis allows.
+ *
+ * @property orders where the order comes from.
+ * @property work the two writes that record work on it — the Übergabe and the Herstellung.
+ * @property bookIn where produced stock may land.
+ * @property claims the Zusagen on this order.
+ * @property orgUnits the caller's own Staffeln, and every active unit — the first says who may
+ *   pledge, the second says whether this order's responsible unit is a Spezialkommando.
+ * @property identity who the caller is — which decides whose row on this order is theirs, and
+ *   whether the status control is offered at all.
+ * @property liveSync a peer's change on the same order, or `null` where none is wired.
+ */
+data class OrderDetailSources(
+    val orders: JobOrderSource,
+    val work: JobOrderWorkSource,
+    val bookIn: BookInOptions,
+    val claims: MaterialClaimSource,
+    val orgUnits: OrgUnitSource,
+    val identity: IdentitySource,
+    val liveSync: LiveSyncSource? = null,
+)
+
+/**
+ * Whether nothing at all has been handed over on this order.
+ *
+ * The requester's edit is frozen by the **whole order**, not per line: one handover anywhere —
+ * material or item — closes the path, and the server answers 400 for the attempt.
+ *
+ * @receiver the order.
+ * @return whether the requester may still edit it.
+ */
+private fun JobOrder.krtUndelivered(): Boolean = handovers.isEmpty() && itemHandovers.isEmpty()
+
+/**
  * Drives one order.
  *
- * @property source where the order comes from
- * @property identity who the caller is — which decides whose row on this order is theirs, and
- *   whether the status control is offered at all
+ * @property sources everything the screen reads and writes through
  * @property connectivity whether the device has a network
  * @property orderId which order to load
  */
 class OrderDetailViewModel(
-    private val source: JobOrderSource,
-    private val identity: IdentitySource,
+    sources: OrderDetailSources,
     connectivity: Connectivity,
     private val orderId: String,
-    private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
+    private val source = sources.orders
+    private val identity = sources.identity
+    private val orgUnits = sources.orgUnits
+    private val liveSync = sources.liveSync
+
     private val mutableState = MutableStateFlow(OrderDetailState(orderId = orderId))
 
     /** What the screen draws. */
     val state: StateFlow<OrderDetailState> = mutableState.asStateFlow()
+
+    /**
+     * Recording that material changed hands — the write that finishes an Auftrag.
+     *
+     * Public, and called by the screen directly rather than through wrappers here: the same shape
+     * the Einsatz's own holders use.
+     */
+    val handover =
+        OrderHandover(
+            source = sources.work,
+            scope = viewModelScope,
+            read = { mutableState.value.handover },
+            write = { draft -> mutableState.value = mutableState.value.copy(handover = draft) },
+            // The Auftrag is re-read rather than patched: a handover moves the line's open amount,
+            // the order's status and possibly the whole order into „completed", and none of that is
+            // in the answer.
+            onRecorded = { reload(keepContent = true) },
+        )
+
+    /**
+     * The Zusagen — which Staffel has signed up to deliver what.
+     *
+     * Their own holder and their own read: they live on `/orders/{id}/claims` rather than in the
+     * order aggregate, and a pledge moves figures the server computes.
+     */
+    val claims =
+        OrderClaims(
+            source = sources.claims,
+            orgUnits = sources.orgUnits,
+            scope = viewModelScope,
+            read = { mutableState.value.claims },
+            write = { claims -> mutableState.value = mutableState.value.copy(claims = claims) },
+        )
+
+    /**
+     * Handing finished items over — the write that finishes an item Auftrag.
+     *
+     * A second holder rather than a mode on [handover]: the endpoints, the units and the ceilings
+     * differ, and folding them together would mean one form that is wrong for both.
+     */
+    val itemHandover =
+        OrderItemHandover(
+            source = sources.work,
+            scope = viewModelScope,
+            read = { mutableState.value.itemHandover },
+            write = { draft -> mutableState.value = mutableState.value.copy(itemHandover = draft) },
+            onRecorded = { reload(keepContent = true) },
+        )
+
+    /**
+     * Booking a production run — the write that moves an item line's „hergestellt" figure.
+     *
+     * Public for the same reason [handover] is: the screen drives it directly rather than through
+     * a wrapper per callback.
+     */
+    val production =
+        OrderProduction(
+            source = sources.work,
+            options = sources.bookIn,
+            myUserId = { mutableState.value.me?.userId ?: (identity.myUserId() as? ApiResult.Success)?.value },
+            scope = viewModelScope,
+            slot =
+                ProductionSlot(
+                    read = { mutableState.value.production },
+                    write = { draft -> mutableState.value = mutableState.value.copy(production = draft) },
+                ),
+            // Re-read rather than patched: a run moves the line's manufactured count, the order's
+            // derived material demand, the linked stock it consumed and possibly the whole order
+            // into „completed" — none of which is in the answer.
+            onBooked = { reload(keepContent = true) },
+        )
 
     /** The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003). */
     private val retry =
@@ -405,7 +669,74 @@ class OrderDetailViewModel(
     /** Loads the order. */
     fun load() {
         readIdentity()
+        readMyUnits()
         reload(keepContent = false)
+        claims.load(orderId)
+    }
+
+    /**
+     * Reads the item stock earmarked to this Auftrag.
+     *
+     * Only for an item order: a material order has no game-item stock, and asking would be a round
+     * trip for an answer that is always empty.
+     */
+    private fun readItemStock() {
+        if (mutableState.value.order?.items.isNullOrEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            val result = source.itemStock(orderId)
+            if (result is ApiResult.Success) {
+                mutableState.value =
+                    mutableState.value.copy(itemStock = result.value.associateBy { it.gameItemId })
+            }
+        }
+    }
+
+    /**
+     * Reads which units the caller belongs to, once.
+     *
+     * Only the ids are kept: the question is membership, and a name would answer it less exactly
+     * while carrying more than the screen needs.
+     */
+    private fun readMyUnits() {
+        if (mutableState.value.myUnitIds.isNotEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            val result = orgUnits.memberships()
+            if (result is ApiResult.Success) {
+                mutableState.value = mutableState.value.copy(myUnitIds = result.value.map { it.id }.toSet())
+            }
+        }
+    }
+
+    /**
+     * Works out whether this order's responsible unit is a Spezialkommando.
+     *
+     * `SquadronReferenceDto` carries no kind, so the id is matched against the active org units —
+     * the same list the order form's customer picker is built from. Guessing from the unit's name
+     * („SK …") was the alternative and is a naming convention, not a fact.
+     *
+     * A failure leaves the answer `null`, which keeps the Zusagen tab hidden rather than offering a
+     * surface whose every action would be a 400.
+     */
+    private fun resolveResponsibleKind() {
+        if (mutableState.value.responsibleIsSpecialCommand != null) {
+            return
+        }
+        viewModelScope.launch {
+            val responsibleId = mutableState.value.order?.responsibleOrgUnitId ?: return@launch
+            val result = orgUnits.activeAllKinds()
+            if (result is ApiResult.Success) {
+                mutableState.value =
+                    mutableState.value.copy(
+                        responsibleIsSpecialCommand =
+                            result.value.firstOrNull { it.id == responsibleId }?.kind ==
+                                OrgUnitKind.SPECIAL_COMMAND,
+                    )
+            }
+        }
     }
 
     /**
@@ -735,6 +1066,10 @@ class OrderDetailViewModel(
                             refreshing = false,
                         )
                     retry.onSuccess()
+                    readItemStock()
+                    // Only now: the responsible unit's id arrives with the order, so the kind
+                    // lookup has nothing to match against before this point.
+                    resolveResponsibleKind()
                 }
 
                 is ApiResult.Failure -> {

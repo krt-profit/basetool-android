@@ -40,11 +40,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 
 /** Opacity of a disabled field. */
 private const val DISABLED_FIELD_ALPHA = 0.45f
+
+/** The date half is wider than the time half: 1.35 fr to 1 fr, per design ch. 06 artboard 8. */
+private const val DATE_WEIGHT = 1.35f
 
 /**
  * The field label.
@@ -99,8 +104,8 @@ fun KrtFieldError(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = modifier.padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.Top,
     ) {
         KrtIcon(
@@ -113,6 +118,45 @@ fun KrtFieldError(
             text = text,
             style = MaterialTheme.typography.bodySmall,
             color = KrtTheme.colors.dangerText,
+        )
+    }
+}
+
+/**
+ * An inline **warning** with the same glyph as [KrtFieldError], in the warning tint `#FFD23F`.
+ *
+ * **Ratified as a component 2026-08-30** (design ch. 02 §1): two message lines under a field, same
+ * shape, different tone. An **error** means something is invalid and submitting is blocked; a
+ * **warning** means something is notable and permitted, and nothing is locked. Its first case is
+ * „liegt in der Vergangenheit" at a date field (§11) — the server, not the field, decides whether a
+ * past timestamp is legal.
+ *
+ * > **Never both at once.** The chapter is explicit: the error displaces the warning. A field that
+ * > shows two lines has told the member to fix something and, underneath, that it is fine.
+ *
+ * @param text the observation, stated plainly („Liegt in der Vergangenheit").
+ * @param modifier layout modifier.
+ */
+@Composable
+fun KrtFieldWarning(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+        verticalAlignment = Alignment.Top,
+    ) {
+        KrtIcon(
+            id = R.drawable.ic_krt_warning,
+            contentDescription = null,
+            size = 14.dp,
+            tint = KrtTheme.colors.warning,
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtTheme.colors.warning,
         )
     }
 }
@@ -193,7 +237,7 @@ fun KrtTextField(
     Column(modifier = modifier) {
         if (label != null) {
             KrtFieldLabel(text = label, enabled = enabled)
-            Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+            Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         }
         Box(
             modifier =
@@ -234,7 +278,7 @@ fun KrtTextField(
                     },
                 )
                 if (trailing != null) {
-                    Box(modifier = Modifier.padding(start = KrtSpacing.sm)) { trailing() }
+                    Box(modifier = Modifier.padding(start = KrtSpacing.s8)) { trailing() }
                 }
             }
         }
@@ -290,11 +334,11 @@ private fun Modifier.krtFieldFrame(
     this
         .fillMaxWidth()
         .alpha(if (enabled) 1f else DISABLED_FIELD_ALPHA)
-        .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.xs) else Modifier)
+        .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.glowFocus) else Modifier)
         .background(KrtPalette.SurfaceInput)
         .border(KrtSpacing.hairline, border)
-        .defaultMinSize(minHeight = KrtSpacing.touchTarget * minLines)
-        .padding(horizontal = KrtSpacing.md, vertical = if (minLines > 1) KrtSpacing.sm else 0.dp)
+        .defaultMinSize(minHeight = KrtSpacing.controlHeight * minLines)
+        .padding(horizontal = KrtSpacing.s12, vertical = if (minLines > 1) KrtSpacing.s8 else 0.dp)
 
 /**
  * How the typed value is rendered.
@@ -367,7 +411,7 @@ private fun KrtFieldDecoration(
             Text(
                 text = placeholder,
                 style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
         innerTextField()
@@ -401,12 +445,12 @@ fun KrtStepperField(
     Column(modifier = modifier) {
         if (label != null) {
             KrtFieldLabel(text = label, enabled = enabled)
-            Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+            Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             KrtIconButton(
                 iconRes = R.drawable.ic_krt_minus,
-                label = "Weniger",
+                label = stringResource(R.string.krt_less),
                 onClick = onDecrement,
                 enabled = enabled,
             )
@@ -422,7 +466,7 @@ fun KrtStepperField(
             )
             KrtIconButton(
                 iconRes = R.drawable.ic_krt_plus,
-                label = "Mehr",
+                label = stringResource(R.string.krt_more),
                 onClick = onIncrement,
                 enabled = enabled,
             )
@@ -475,7 +519,7 @@ private val HINT_SIZE = 18.dp
 @Composable
 private fun FieldsPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtTextField(value = "", onValueChange = {}, label = "Schiffsname", placeholder = "z. B. Carrack")
             KrtTextField(value = "Quantainium", onValueChange = {}, label = "Material")
             KrtTextField(

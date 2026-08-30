@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
@@ -59,6 +60,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
@@ -90,6 +93,21 @@ const val BOARD_SIGNAL_TAG: String = "board-signal"
 /** Test handle for a row's withdraw action. */
 const val BOARD_WITHDRAW_TAG: String = "board-withdraw"
 
+/** Test handle for the Material/Item switch on a create sheet. */
+const val BOARD_KIND_TAG: String = "board-kind"
+
+/** Test handle for the item half's product picker. */
+const val BOARD_PRODUCT_FIELD_TAG: String = "board-product-field"
+
+/** Test handle for „Eintrag bearbeiten". */
+const val BOARD_EDIT_SHEET_TAG: String = "board-edit-sheet"
+
+/** Test handle for its amount field. */
+const val BOARD_EDIT_AMOUNT_TAG: String = "board-edit-amount"
+
+/** Test handle for the withdrawal confirmation. */
+const val BOARD_WITHDRAW_MODAL_TAG: String = "board-withdraw-modal"
+
 /** Test handle for the create action. */
 const val BOARD_CREATE_TAG: String = "board-create"
 
@@ -105,9 +123,10 @@ const val BOARD_PRIVACY_TAG: String = "board-privacy"
 /**
  * How many card columns a tablet's board shows.
  *
- * Two, not a width-driven count: three at 1280 dp would put a card below the width its own row of
- * name, figures and chips needs, and the drawing that would settle a wider count does not exist yet
- * (design round 9 §5).
+ * Two, and **two at every width** — ratified by design ch. 18 §3 (E9): offers left, requests right,
+ * 480 dp each with a 24 dp gutter, and past 1600 dp the columns grow rather than a third appearing.
+ * A third at 1280 dp would put a card below the width its own row of name, figures and chips needs,
+ * which is narrower than the phone's.
  */
 private const val BOARD_WIDE_COLUMNS = 2
 
@@ -159,7 +178,7 @@ fun MaterialBoardScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 KrtEmptyState(
@@ -168,7 +187,7 @@ fun MaterialBoardScreen(
                     message = stringResource(R.string.board_error_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRefresh,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
         }
@@ -190,7 +209,7 @@ fun MaterialBoardScreen(
                             onSideChanged(if (it == 0) BoardSide.OFFERS else BoardSide.REQUESTS)
                         },
                         stretch = true,
-                        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+                        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                     )
                     // Part of the design, not decoration: chapter 10 states it as copy, because the
                     // board deliberately carries no place and no handover and a member must be able to
@@ -201,7 +220,7 @@ fun MaterialBoardScreen(
                         color = KrtPalette.TextMuted,
                         modifier =
                             Modifier
-                                .padding(horizontal = KrtSpacing.md)
+                                .padding(horizontal = KrtSpacing.s12)
                                 .testTag(BOARD_PRIVACY_TAG),
                     )
                     PullToRefreshBox(
@@ -215,7 +234,7 @@ fun MaterialBoardScreen(
                                     iconRes = DesignR.drawable.ic_krt_swap,
                                     title = stringResource(R.string.board_empty_title),
                                     message = stringResource(R.string.board_empty_message),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else if (isWideWindow()) {
@@ -252,7 +271,7 @@ fun MaterialBoardScreen(
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(KrtSpacing.lg)
+                            .padding(KrtSpacing.s16)
                             .padding(bottom = LocalKrtBottomBarInset.current)
                             .testTag(BOARD_CREATE_TAG),
                 )
@@ -280,8 +299,8 @@ private fun BoardColumn(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         items(state.entries, key = { it.id }) { entry ->
             BoardRow(
@@ -324,9 +343,11 @@ private fun BoardGrid(
         columns = GridCells.Fixed(BOARD_WIDE_COLUMNS),
         state = rememberRootGridState(),
         modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        // 10 dp down the column and a 24 dp gutter across it — design ch. 18 §3 (E9). They differ
+        // on purpose: the gutter separates two columns, the other is the rhythm within one.
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s10),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s24),
     ) {
         items(state.entries, key = { it.id }) { entry ->
             BoardRow(
@@ -365,12 +386,12 @@ private fun BoardFooter(
                 ),
             onClick = onLoadMore,
             enabled = !state.loadingMore,
-            modifier = Modifier.padding(KrtSpacing.md),
+            modifier = Modifier.padding(KrtSpacing.s12),
         )
     } else {
         KrtEndOfList(
             text = stringResource(R.string.board_end_of_list),
-            modifier = Modifier.padding(KrtSpacing.md),
+            modifier = Modifier.padding(KrtSpacing.s12),
         )
     }
 }
@@ -399,7 +420,7 @@ private fun BoardRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -473,15 +494,18 @@ private fun RowActions(
     onSignalToggled: () -> Unit,
     onWithdraw: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         if (entry.mine) {
-            // Chapter 10: the member's own rows get Zurückziehen instead of the toggle, in the
-            // quiet-danger style. There is no Bearbeiten here — see the spec's recorded scope.
-            KrtQuietDangerButton(
-                text = stringResource(R.string.board_withdraw),
+            // Design ch. 17 artboard 3 moved both of the member's own actions into one sheet:
+            // „Bisher gab es nur «Zurückziehen» und kein Update — beides liegt jetzt hier." So the
+            // row opens the sheet, and the withdrawal lives inside it next to „Speichern" — where
+            // the interested members it affects are also listed.
+            KrtOutlineButton(
+                text = stringResource(R.string.board_edit_entry),
                 onClick = onWithdraw,
                 enabled = enabled,
-                modifier = Modifier.testTag(BOARD_WITHDRAW_TAG),
+                iconRes = DesignR.drawable.ic_krt_edit,
+                modifier = Modifier.fillMaxWidth().testTag(BOARD_WITHDRAW_TAG),
             )
         } else {
             val label =
@@ -567,7 +591,7 @@ private fun String.relativeToNow(): String {
 @Composable
 private fun BoardAmount(entry: BoardEntry) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.Bottom,
     ) {
         Text(
@@ -622,8 +646,12 @@ private fun detailLine(entry: BoardEntry): String? {
  * @param onPicked a search result was taken.
  * @param onSubmit publish was pressed.
  * @param onDismiss the sheet was closed.
+ * @param onKind the Material/Item switch was moved.
+ * @param onProductQuery the item field changed.
+ * @param onProductPicked a product was taken.
  */
 @Composable
+@Suppress("LongParameterList")
 fun NewRequestSheet(
     sheet: BoardSheet.NewRequest,
     saving: Boolean,
@@ -632,41 +660,68 @@ fun NewRequestSheet(
     onPicked: (MaterialOption) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
+    onKind: (BoardKind) -> Unit = {},
+    onProductQuery: (String) -> Unit = {},
+    onProductPicked: (BlueprintProduct) -> Unit = {},
 ) {
     KrtBottomSheet(
         onDismiss = onDismiss,
         title = stringResource(R.string.board_new_request),
         modifier = Modifier.testTag(BOARD_SHEET_TAG),
     ) {
+        val kind = sheet.kind
+        // The switch stands at the very top and changes only the middle fields; the frame —
+        // remark and CTA — is the same on both halves (design ch. 17, artboards 1 and 2).
+        KrtSegmentedControl(
+            options =
+                listOf(
+                    stringResource(R.string.board_kind_material),
+                    stringResource(R.string.board_kind_item),
+                ),
+            selectedIndex = if (kind == BoardKind.ITEM) 1 else 0,
+            onSelect = { onKind(if (it == 1) BoardKind.ITEM else BoardKind.MATERIAL) },
+            modifier = Modifier.fillMaxWidth().testTag(BOARD_KIND_TAG),
+        )
         Text(
             text = stringResource(R.string.board_new_request_hint),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
         )
+        if (kind == BoardKind.ITEM) {
+            ProductField(
+                shown = sheet.productName,
+                selectedKey = sheet.productKey,
+                products = sheet.products,
+                onQuery = onProductQuery,
+                onPicked = onProductPicked,
+            )
+        }
         var open by rememberSaveable { mutableStateOf(false) }
-        KrtCombobox(
-            query = sheet.materialName,
-            onQueryChange = {
-                onQueryChanged(it)
-                open = true
-            },
-            options = sheet.matches.map { KrtOption(it.id, it.name) },
-            onSelect = { option ->
-                sheet.matches.firstOrNull { it.id == option.value }?.let(onPicked)
-                open = false
-            },
-            expanded = open && sheet.matches.isNotEmpty(),
-            onExpandedChange = { open = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = stringResource(R.string.board_field_material),
-            placeholder = stringResource(R.string.board_field_material_hint),
-            selectedValue = sheet.materialId,
-        )
+        if (kind == BoardKind.MATERIAL) {
+            KrtCombobox(
+                query = sheet.materialName,
+                onQueryChange = {
+                    onQueryChanged(it)
+                    open = true
+                },
+                options = sheet.matches.map { KrtOption(it.id, it.name) },
+                onSelect = { option ->
+                    sheet.matches.firstOrNull { it.id == option.value }?.let(onPicked)
+                    open = false
+                },
+                expanded = open && sheet.matches.isNotEmpty(),
+                onExpandedChange = { open = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.board_field_material),
+                placeholder = stringResource(R.string.board_field_material_hint),
+                selectedValue = sheet.materialId,
+            )
+        }
         // Menge and Min. Qualitaet share a row (artboard 10.4): both are short numbers about the
         // same stack, and full width each they pushed the CTA off the sheet on a phone.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.Bottom,
         ) {
             KrtTextField(
@@ -710,26 +765,65 @@ fun NewRequestSheet(
  * @param onEdit a field changed.
  * @param onSubmit publish was pressed.
  * @param onDismiss the sheet was closed.
+ * @param onKind the Material/Item switch was moved.
+ * @param onProductQuery the item field changed.
+ * @param onProductPicked a product was taken.
  */
 @Composable
+@Suppress("LongParameterList")
 fun NewOfferSheet(
     sheet: BoardSheet.NewOffer,
     saving: Boolean,
     onEdit: ((BoardSheet.NewOffer) -> BoardSheet.NewOffer) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
+    onKind: (BoardKind) -> Unit = {},
+    onProductQuery: (String) -> Unit = {},
+    onProductPicked: (BlueprintProduct) -> Unit = {},
 ) {
     KrtBottomSheet(
         onDismiss = onDismiss,
         title = stringResource(R.string.board_new_offer),
         modifier = Modifier.testTag(BOARD_SHEET_TAG),
     ) {
+        val kind = sheet.kind
+        KrtSegmentedControl(
+            options =
+                listOf(
+                    stringResource(R.string.board_kind_material),
+                    stringResource(R.string.board_kind_item),
+                ),
+            selectedIndex = if (kind == BoardKind.ITEM) 1 else 0,
+            onSelect = { onKind(if (it == 1) BoardKind.ITEM else BoardKind.MATERIAL) },
+            modifier = Modifier.fillMaxWidth().testTag(BOARD_KIND_TAG),
+        )
         Text(
-            text = stringResource(R.string.board_new_offer_hint),
+            text =
+                stringResource(
+                    if (kind == BoardKind.ITEM) {
+                        R.string.board_new_offer_item_hint
+                    } else {
+                        R.string.board_new_offer_hint
+                    },
+                ),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
         )
+        if (kind == BoardKind.ITEM) {
+            ProductField(
+                shown = sheet.productName,
+                selectedKey = sheet.productKey,
+                products = sheet.products,
+                onQuery = onProductQuery,
+                onPicked = onProductPicked,
+            )
+        }
         when {
+            kind == BoardKind.ITEM -> {
+                // An item offer binds no stock row: items live in the personal inventory and the
+                // endpoint takes a product key. Nothing to pick from here.
+            }
+
             sheet.loadingStock -> {
                 Text(
                     text = stringResource(R.string.board_stock_loading),
@@ -775,6 +869,180 @@ fun NewOfferSheet(
 }
 
 /**
+ * The item half's product picker.
+ *
+ * A picker rather than free text, for the reason the material field gives: the two item writes
+ * address a product by its **key**, and a typed name carries none.
+ *
+ * @param shown what is in the field.
+ * @param selectedKey the picked product's key, or `null`.
+ * @param products the candidates.
+ * @param onQuery a search was typed.
+ * @param onPicked a result was taken.
+ */
+@Composable
+private fun ProductField(
+    shown: String,
+    selectedKey: String?,
+    products: List<BlueprintProduct>,
+    onQuery: (String) -> Unit,
+    onPicked: (BlueprintProduct) -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    KrtCombobox(
+        query = shown,
+        onQueryChange = {
+            onQuery(it)
+            open = true
+        },
+        // The catalogue's own products, the caller's blueprints first: „Vorschläge zeigen erst
+        // deinen Bestand" (artboard 1). The manufacturer rides along because two products can
+        // share a name across makers.
+        // The variant count rides in the label, because the artboard's variant *select* has no wire
+        // field: a product key already identifies the product. Naming the count is what lets a
+        // member put the variant in the remark, which the help text below says in so many words.
+        options =
+            products.map { product ->
+                KrtOption(
+                    value = product.productKey,
+                    label =
+                        listOfNotNull(
+                            product.name,
+                            product.manufacturer,
+                            product.variantCount
+                                .takeIf { it > 1 }
+                                ?.let { variantLabel(it) },
+                        ).joinToString(SEPARATOR),
+                )
+            },
+        onSelect = { option ->
+            products.firstOrNull { it.productKey == option.value }?.let(onPicked)
+            open = false
+        },
+        expanded = open && products.isNotEmpty(),
+        onExpandedChange = { open = it },
+        modifier = Modifier.fillMaxWidth().testTag(BOARD_PRODUCT_FIELD_TAG),
+        label = stringResource(R.string.board_field_item),
+        placeholder = stringResource(R.string.board_field_item_hint),
+        selectedValue = selectedKey,
+    )
+    // Ch. 17 ab. 1: „Der Ort der Übergabe und — falls nötig — die Variante gehören hierher: der
+    // Vertrag hat für beides kein Feld." A remark that stands in for missing structure has to be
+    // explained, or it reads as a free-text box nobody fills.
+    Text(
+        text = stringResource(R.string.board_field_item_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.TextMuted,
+    )
+}
+
+/**
+ * „n Varianten" for a product that has more than one.
+ *
+ * @param count how many.
+ * @return the label.
+ */
+@Composable
+private fun variantLabel(count: Int): String =
+    pluralStringResource(R.plurals.board_item_variants, count, count)
+
+/**
+ * „Eintrag bearbeiten" — design ch. 17 artboard 3.
+ *
+ * One sheet for an offer and a request. What is fixed is drawn locked with its reason rather than
+ * removed: the material or item behind a row cannot change, because changing it would make the row
+ * a different entry with the same id and the same interested members.
+ *
+ * @param sheet the row and what has been typed.
+ * @param saving whether the write is in flight.
+ * @param onEdit a field changed.
+ * @param onSubmit „Speichern" was pressed.
+ * @param onWithdraw „Zurückziehen" was pressed.
+ * @param onDismiss the sheet was closed.
+ */
+@Composable
+@Suppress("LongParameterList")
+fun EditEntrySheet(
+    sheet: BoardSheet.EditEntry,
+    saving: Boolean,
+    onEdit: ((BoardSheet.EditEntry) -> BoardSheet.EditEntry) -> Unit,
+    onSubmit: () -> Unit,
+    onWithdraw: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val entry = sheet.entry
+    KrtBottomSheet(
+        onDismiss = onDismiss,
+        title =
+            stringResource(
+                if (entry.side == BoardSide.OFFERS) {
+                    R.string.board_edit_offer
+                } else {
+                    R.string.board_edit_request
+                },
+            ),
+        modifier = Modifier.testTag(BOARD_EDIT_SHEET_TAG),
+    ) {
+        Text(
+            text = entry.materialName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+        )
+        Text(
+            text = stringResource(R.string.board_edit_fixed),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+        KrtTextField(
+            value = sheet.amount,
+            onValueChange = { value -> onEdit { it.copy(amount = value) } },
+            label = stringResource(R.string.board_field_amount),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth().testTag(BOARD_EDIT_AMOUNT_TAG),
+        )
+        if (sheet.hasQuality) {
+            KrtTextField(
+                value = sheet.minQuality,
+                onValueChange = { value -> onEdit { it.copy(minQuality = value) } },
+                label = stringResource(R.string.board_field_min_quality),
+                placeholder = stringResource(R.string.board_field_min_quality_hint),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        KrtTextField(
+            value = sheet.remark,
+            onValueChange = { value -> onEdit { it.copy(remark = value) } },
+            label = stringResource(R.string.board_field_remark),
+            placeholder = stringResource(R.string.board_field_remark_hint),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        // The interested members belong in this sheet because withdrawing affects them — which is
+        // the artboard's own reason for putting them here rather than on the row.
+        entry.interestedHandles?.takeIf { it.isNotEmpty() }?.let { handles ->
+            Text(
+                text = stringResource(R.string.board_edit_interested, handles.joinToString(SEPARATOR)),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
+        KrtQuietDangerButton(
+            text = stringResource(R.string.board_withdraw),
+            onClick = onWithdraw,
+            enabled = !saving,
+            modifier = Modifier.fillMaxWidth().testTag(BOARD_WITHDRAW_TAG),
+        )
+        SheetActions(
+            submit = stringResource(R.string.board_save),
+            enabled = sheet.submittable && !saving,
+            saving = saving,
+            onSubmit = onSubmit,
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+/**
  * The two buttons that close a Boerse sheet.
  *
  * Both artboards of chapter 10 end in „ABBRECHEN" beside the publish CTA, and it is the same pair
@@ -795,7 +1063,7 @@ private fun SheetActions(
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtGhostButton(
             text = stringResource(R.string.personal_inventory_cancel),
             onClick = onDismiss,
@@ -837,8 +1105,8 @@ private fun StockRow(
                 .clickable(enabled = !stock.alreadyReleased) {
                     onEdit { it.copy(picked = stock, amount = stock.amount) }
                 }
-                .padding(vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -866,6 +1134,53 @@ private fun StockRow(
 }
 
 /**
+ * „Zurückziehen" with interested members waiting.
+ *
+ * With nobody waiting the withdrawal happens straight away; this asks only when somebody would be
+ * left standing, and names them — the artboard's own rule, and the reason the interested members
+ * are listed in the sheet in the first place.
+ *
+ * @param entry the row.
+ * @param busy whether the write is in flight.
+ * @param onConfirm it was accepted.
+ * @param onDismiss it was dismissed.
+ */
+@Composable
+private fun WithdrawConfirmation(
+    entry: BoardEntry,
+    busy: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtModal(
+        title = stringResource(R.string.board_withdraw_title),
+        confirmText = stringResource(R.string.board_withdraw),
+        onConfirm = { if (!busy) onConfirm() },
+        onDismiss = onDismiss,
+        tone = KrtModalTone.Danger,
+        modifier = Modifier.testTag(BOARD_WITHDRAW_MODAL_TAG),
+    ) {
+        Text(
+            text =
+                pluralStringResource(
+                    R.plurals.board_withdraw_body,
+                    entry.interestCount,
+                    entry.interestCount,
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+        )
+        entry.interestedHandles?.takeIf { it.isNotEmpty() }?.let { handles ->
+            Text(
+                text = handles.joinToString(SEPARATOR),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
+    }
+}
+
+/**
  * The board, bound to its view model.
  *
  * @param viewModel drives the screen.
@@ -884,7 +1199,8 @@ fun MaterialBoardRoute(
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
         onSignalToggled = viewModel::onSignalToggled,
-        onWithdraw = viewModel::onWithdraw,
+        // The own-row button opens the sheet; the withdrawal itself now lives inside it.
+        onWithdraw = viewModel::onEditEntry,
         onCreate = {
             if (state.side == BoardSide.OFFERS) viewModel.onNewOffer() else viewModel.onNewRequest()
         },
@@ -905,6 +1221,9 @@ fun MaterialBoardRoute(
                     onPicked = viewModel::onMaterialPicked,
                     onSubmit = viewModel::onRequestSubmitted,
                     onDismiss = viewModel::onSheetDismissed,
+                    onKind = { picked -> viewModel.onRequestEdited { it.copy(kind = picked) } },
+                    onProductQuery = viewModel::onProductQueryChanged,
+                    onProductPicked = viewModel::onProductPicked,
                 )
             }
 
@@ -915,7 +1234,31 @@ fun MaterialBoardRoute(
                     onEdit = viewModel::onOfferEdited,
                     onSubmit = viewModel::onOfferSubmitted,
                     onDismiss = viewModel::onSheetDismissed,
+                    onKind = { picked -> viewModel.onOfferEdited { it.copy(kind = picked) } },
+                    onProductQuery = viewModel::onProductQueryChanged,
+                    onProductPicked = viewModel::onProductPicked,
                 )
+            }
+
+            is BoardSheet.EditEntry -> {
+                EditEntrySheet(
+                    sheet = sheet,
+                    saving = state.saving,
+                    onEdit = viewModel::onEntryEdited,
+                    onSubmit = viewModel::onEntrySubmitted,
+                    onWithdraw = viewModel::onWithdrawRequested,
+                    onDismiss = viewModel::onSheetDismissed,
+                )
+                if (sheet.confirmingWithdrawal) {
+                    WithdrawConfirmation(
+                        entry = sheet.entry,
+                        busy = state.saving,
+                        onConfirm = { viewModel.onWithdraw(sheet.entry) },
+                        onDismiss = {
+                            viewModel.onEntryEdited { it.copy(confirmingWithdrawal = false) }
+                        },
+                    )
+                }
             }
         }
     }

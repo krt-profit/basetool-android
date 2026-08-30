@@ -19,6 +19,8 @@ import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffDashboard
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffSource
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffTotals
+import de.greluc.krt.profit.basetool.android.core.data.DirectBooking
+import de.greluc.krt.profit.basetool.android.core.data.DirectBookingKind
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +40,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.math.BigDecimal
 
 /**
  * The Verwaltung scope's Übersicht tab.
@@ -56,6 +59,96 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class BankStaffViewModelTest {
     private val dispatcher = StandardTestDispatcher()
+
+    @Test
+    fun `a direct deposit sends the mode, the holder and the amount`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.directBooking.open("acc-1")
+            model.directBooking.edit { it.copy(amount = "5000", holderId = "h1", note = "Bargeld") }
+            model.directBooking.confirm(null)
+            advanceUntilIdle()
+
+            assertEquals(1, source.directBookings.size)
+            val sent = source.directBookings.first()
+            assertEquals(DirectBookingKind.DEPOSIT, sent.kind)
+            assertEquals("acc-1", sent.accountId)
+            assertEquals("h1", sent.holderId)
+            assertEquals("5000", sent.amount)
+            // The sheet closes on success; the dashboard is re-read rather than patched.
+            assertNull(model.state.value.direct)
+        }
+
+    @Test
+    fun `a withdrawal over the balance cannot be sent`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.directBooking.open("acc-1")
+            model.directBooking.edit {
+                it.copy(
+                    kind = DirectBookingKind.WITHDRAWAL,
+                    amount = "5000",
+                    holderId = "h1",
+                )
+            }
+            // Validation, not a lock: the figure is simply larger than the account holds.
+            assertFalse(model.state.value.direct!!.submittable(BigDecimal("100")))
+            model.directBooking.confirm(BigDecimal("100"))
+            advanceUntilIdle()
+            assertTrue(source.directBookings.isEmpty())
+
+            assertTrue(model.state.value.direct!!.submittable(BigDecimal("9000")))
+        }
+
+    @Test
+    fun `without a holder nothing is sent, in any mode`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.directBooking.open("acc-1")
+            model.directBooking.edit { it.copy(amount = "5000") }
+
+            // The server requires it too: custody is kept per org unit, so a balance without a
+            // holder is money nobody is accountable for.
+            assertFalse(model.state.value.direct!!.submittable(null))
+            model.directBooking.confirm(null)
+            advanceUntilIdle()
+            assertTrue(source.directBookings.isEmpty())
+        }
+
+    @Test
+    fun `a transfer needs both halves of its target`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.directBooking.open("acc-1")
+            model.directBooking.edit {
+                it.copy(
+                    kind = DirectBookingKind.TRANSFER,
+                    amount = "5000",
+                    holderId = "h1",
+                    destinationAccountId = "acc-2",
+                )
+            }
+            assertFalse(model.state.value.direct!!.submittable(null))
+
+            model.directBooking.edit { it.copy(destinationHolderId = "h2") }
+            assertTrue(model.state.value.direct!!.submittable(null))
+        }
 
     /**
      * Answers the two staff reads.
@@ -93,6 +186,14 @@ class BankStaffViewModelTest {
         ): ApiResult<BankBookingRequest> {
             confirmations.add(confirmation)
             return decisionAnswer ?: ApiResult.Success(request("a1"))
+        }
+
+        val directBookings = mutableListOf<DirectBooking>()
+        var directAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit> {
+            directBookings.add(booking)
+            return directAnswer
         }
 
         override suspend fun rejectRequest(

@@ -42,9 +42,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtBloom
+import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtDashedBorder
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -244,14 +246,14 @@ fun KrtButton(
                     if (style.bloom &&
                         enabled
                     ) {
-                        Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.xs)
+                        Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.glowFocus)
                     } else {
                         Modifier
                     },
                 )
                 .background(container)
                 .then(if (borderColor != null) Modifier.border(KrtSpacing.hairline, borderColor) else Modifier)
-                .defaultMinSize(minHeight = KrtSpacing.touchTarget)
+                .defaultMinSize(minHeight = KrtSpacing.controlHeight)
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(
                     interactionSource = interactionSource,
@@ -261,7 +263,7 @@ fun KrtButton(
                     onClick = onClick,
                 )
                 .padding(horizontal = BUTTON_HORIZONTAL_PADDING),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CompositionLocalProvider(LocalContentColor provides content) {
@@ -390,6 +392,9 @@ fun KrtQuietDangerButton(
  * @param modifier layout modifier.
  * @param enabled whether the button reacts to input.
  * @param style ladder rung; ghost by default, quiet danger for destructive row actions.
+ * @param width how wide it is. The default is square; the reorder pair of design ch. 18 §3 (E5/E8)
+ *   is drawn narrower, at 40 × 44, so that a move pair plus an overflow still fits a 411 dp row.
+ * @param height how tall it is; never below the 44 dp touch floor.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -400,6 +405,8 @@ fun KrtIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     style: KrtButtonStyle = KrtButtonStyles.ghost,
+    width: Dp = KrtSpacing.controlHeight,
+    height: Dp = KrtSpacing.controlHeight,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -416,7 +423,7 @@ fun KrtIconButton(
             modifier =
                 modifier
                     .alpha(if (enabled) 1f else DISABLED_ALPHA)
-                    .size(KrtSpacing.touchTarget)
+                    .size(width = width, height = height)
                     .background(container)
                     .then(if (borderColor != null) Modifier.border(KrtSpacing.hairline, borderColor) else Modifier)
                     .clickable(
@@ -439,7 +446,7 @@ fun KrtIconButton(
 private fun ButtonLadderPreview() {
     KrtPreviewSurface {
         androidx.compose.foundation.layout.Column(
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtCtaButton("Anmelden", {}, iconRes = R.drawable.ic_krt_login)
             KrtSuccessButton("Check-In", {}, iconRes = R.drawable.ic_krt_check)
@@ -451,3 +458,67 @@ private fun ButtonLadderPreview() {
         }
     }
 }
+
+/**
+ * The dashed „+ …" surface that opens a picker — the design system's `.assoc-add`.
+ *
+ * Not a button in the ladder and deliberately quieter than one: it marks a **place something can be
+ * added to** rather than an action to take now, which is why the border is dashed and the label
+ * muted until it is touched. The design uses it wherever a set is being filled from a list too long
+ * to lay out — the Lager's allocation chips, and the Einsatz's crew (ch. 06 artboard 14).
+ *
+ * A chip field over the whole candidate list is the shape this replaces: it grows with the list and
+ * is four rows high at fourteen names on a 412 dp phone.
+ *
+ * @param text what will be added, e.g. „Person zuweisen". The „+" is drawn, not typed.
+ * @param onClick opens the picker.
+ * @param modifier layout modifier.
+ * @param enabled whether it may be used right now.
+ * @param locked whether the caller may not use it at all — draws the lock glyph in place of the
+ *   plus, at full opacity beside the dimmed label, and stays tappable so the refusal can be said.
+ */
+@Composable
+fun KrtAssocAdd(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    locked: Boolean = false,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val accent = if (pressed) MaterialTheme.colorScheme.primary else KrtPalette.TextMuted
+    val border = if (pressed) MaterialTheme.colorScheme.primary else KrtPalette.Gray3
+
+    Row(
+        modifier =
+            modifier
+                .defaultMinSize(minHeight = KrtSpacing.controlHeight)
+                .krtDashedBorder(border)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    role = Role.Button,
+                    onClick = onClick,
+                )
+                .padding(horizontal = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KrtIcon(
+            id = if (locked) R.drawable.ic_krt_lock else R.drawable.ic_krt_plus,
+            contentDescription = null,
+            size = ASSOC_GLYPH,
+            tint = if (locked) KrtPalette.TextMuted else accent,
+        )
+        Text(
+            text = text.krtUppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (locked) accent.copy(alpha = DISABLED_ALPHA) else accent,
+        )
+    }
+}
+
+/** The plus (or lock) on an `.assoc-add`. */
+private val ASSOC_GLYPH = 12.dp

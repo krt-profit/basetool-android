@@ -7,6 +7,14 @@
 
 package de.greluc.krt.profit.basetool.android.personalinventory
 
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintBatchResult
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportEntry
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportPreview
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportResult
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportSource
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportStatus
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintOverviewPage
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintOwner
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
@@ -66,7 +74,8 @@ class PersonalBlueprintsViewModelTest {
     private class FakeSource(
         var craftabilityAnswer: ApiResult<Map<String, Craftability>> =
             ApiResult.Success(mapOf("b1" to craftability())),
-    ) : PersonalBlueprintSource {
+    ) : PersonalBlueprintSource,
+        BlueprintImportSource {
         val added = mutableListOf<Pair<String, String?>>()
         val notes = mutableListOf<Triple<String, Long, String?>>()
         val removed = mutableListOf<String>()
@@ -112,9 +121,49 @@ class PersonalBlueprintsViewModelTest {
             return ApiResult.Success(products)
         }
 
+        val batches = mutableListOf<List<String>>()
+        var batchAnswer: ApiResult<BlueprintBatchResult> =
+            ApiResult.Success(BlueprintBatchResult(added = 1, alreadyOwned = 0, unresolved = 0))
+
+        override suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult> {
+            batches.add(productKeys)
+            return batchAnswer
+        }
+
+        override suspend fun overview(
+            query: String,
+            page: Int,
+            pageSize: Int,
+        ): ApiResult<BlueprintOverviewPage> = error("this test does not read the overview")
+
+        override suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>> =
+            error("this test does not read owners")
+
         var recipeAnswer: ApiResult<BlueprintRecipe> =
             ApiResult.Success(BlueprintRecipe(productName = "", variantCount = 1, ingredients = emptyList()))
         var recipeCalls = mutableListOf<String>()
+
+        var removeAllCalls = 0
+        var appliedEntries: List<BlueprintImportEntry>? = null
+        var previewAnswer: ApiResult<BlueprintImportPreview> =
+            ApiResult.Success(BlueprintImportPreview(emptyList()))
+
+        override suspend fun removeAll(): ApiResult<Int> {
+            removeAllCalls++
+            return ApiResult.Success(1)
+        }
+
+        override suspend fun importPreview(
+            fileName: String,
+            bytes: ByteArray,
+        ): ApiResult<BlueprintImportPreview> = previewAnswer
+
+        override suspend fun importApply(
+            entries: List<BlueprintImportEntry>,
+        ): ApiResult<BlueprintImportResult> {
+            appliedEntries = entries
+            return ApiResult.Success(BlueprintImportResult(added = entries.size, skipped = 0, alreadyOwned = 0))
+        }
 
         override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> {
             recipeCalls.add(id)
@@ -132,10 +181,167 @@ class PersonalBlueprintsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // ------------------------------------------------- selection mode and import (ch. 18 §§2-3)
+
+    /**
+     * „Alles wählen" goes through the one call that means everything.
+     *
+     * The endpoint takes neither ids nor a body, so it is all or nothing — and the flag is what
+     * separates „the member asked for all of them" from „every row that happens to be loaded".
+     */
+    @Test
+    fun `select all deletes through the one atomic call`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.selection.start("b1")
+            subject.selection.selectAll()
+            subject.selection.confirm()
+            advanceUntilIdle()
+
+            assertEquals(1, source.removeAllCalls)
+            assertTrue(source.removed.isEmpty())
+        }
+
+    /** A partial selection is looped, because there is no delete-by-ids. */
+    @Test
+    fun `a partial selection is deleted row by row`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.selection.start("b1")
+            subject.selection.confirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf("b1"), source.removed)
+            assertEquals(0, source.removeAllCalls)
+        }
+
+    /** Unticking anything drops the all-flag: the atomic call must never run on a narrower ask. */
+    @Test
+    fun `unticking a row leaves the atomic call behind`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.selection.start("b1")
+            subject.selection.selectAll()
+            subject.selection.toggle("b1")
+
+            assertEquals(false, subject.state.value.selection?.everything)
+        }
+
+    /**
+     * The import applies only what resolved.
+     *
+     * An unresolved row carries no product key, so it is skipped rather than refused — which is
+     * what keeps a file with two unknown names from failing outright.
+     */
+    @Test
+    fun `only resolved rows are applied`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            source.previewAnswer =
+                ApiResult.Success(
+                    BlueprintImportPreview(
+                        listOf(
+                            importEntry("Ballistic Gatling", BlueprintImportStatus.MATCHED, "bg"),
+                            importEntry("Panzerplatte S2", BlueprintImportStatus.ALREADY_OWNED, "pp"),
+                            importEntry("Prototype XR-9", BlueprintImportStatus.UNMATCHED, null),
+                            importEntry("Salvage Rig", BlueprintImportStatus.SUGGESTED, null),
+                        ),
+                    ),
+                )
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.import.open()
+            subject.import.onFile("export.json", ByteArray(1))
+            advanceUntilIdle()
+            subject.import.apply()
+            advanceUntilIdle()
+
+            assertEquals(listOf("Ballistic Gatling"), source.appliedEntries?.map { it.externalName })
+        }
+
+    /**
+     * The preview splits four ways, not three.
+     *
+     * „Zu klären" is not „Unbekannt": the server found candidates for those rows and simply could
+     * not choose. Counting them together would tell a member their file had two unreadable names
+     * when it has one unreadable name and one the web portal can finish (design ch. 18 §2, B2).
+     */
+    @Test
+    fun `the preview separates unclear rows from unknown ones`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            source.previewAnswer =
+                ApiResult.Success(
+                    BlueprintImportPreview(
+                        listOf(
+                            importEntry("Ballistic Gatling", BlueprintImportStatus.MATCHED, "bg"),
+                            importEntry("Panzerplatte S2", BlueprintImportStatus.ALREADY_OWNED, "pp"),
+                            importEntry("Prototype XR-9", BlueprintImportStatus.UNMATCHED, null),
+                            importEntry("Salvage Rig", BlueprintImportStatus.SUGGESTED, null),
+                        ),
+                    ),
+                )
+            val subject = viewModel(source)
+            subject.import.open()
+            subject.import.onFile("export.json", ByteArray(1))
+            advanceUntilIdle()
+
+            val preview = (subject.state.value.import as BlueprintImportStep.Preview).preview
+            assertEquals(listOf("Ballistic Gatling"), preview.importable.map { it.externalName })
+            assertEquals(1, preview.alreadyOwned)
+            assertEquals(listOf("Salvage Rig"), preview.unclear.map { it.externalName })
+            assertEquals(listOf("Prototype XR-9"), preview.unknown.map { it.externalName })
+        }
+
+    /** A file the device cannot read is a state, not a crash — and not an HTTP one either. */
+    @Test
+    fun `an unreadable file is reported`() =
+        runTest(dispatcher) {
+            val subject = viewModel(FakeSource())
+            subject.import.open()
+            subject.import.onFile("export.json", null)
+
+            assertTrue(subject.state.value.import is BlueprintImportStep.Failed)
+        }
+
+    /**
+     * One line of an import preview.
+     *
+     * @param name the external name.
+     * @param status how it resolved.
+     * @param key the resolved product key, or `null`.
+     * @return the entry.
+     */
+    private fun importEntry(
+        name: String,
+        status: BlueprintImportStatus,
+        key: String?,
+    ) = BlueprintImportEntry(
+        externalName = name,
+        status = status,
+        productKey = key,
+        productName = key,
+        acquiredAt = null,
+    )
+
     private fun viewModel(
-        source: PersonalBlueprintSource,
+        source: FakeSource,
         connectivity: Connectivity = FakeConnectivity(),
-    ) = PersonalBlueprintsViewModel(source, connectivity)
+    ) = PersonalBlueprintsViewModel(source, source, connectivity)
 
     @Test
     fun `the list and its craftability arrive together`() =
@@ -182,15 +388,61 @@ class PersonalBlueprintsViewModelTest {
         }
 
     @Test
-    fun `a product the member already owns cannot be submitted`() =
+    fun `a product the member already owns is not offered`() =
         runTest(dispatcher) {
-            // The server would refuse the create, and a picker that offers it sets up a failure.
+            // Design ch. 17 artboard 5, which is the web's behaviour: what the member already has
+            // does not appear in the list at all, and the sheet's notice line says so. This
+            // replaces the earlier rule, which listed it greyed out with „hast du schon" beside it
+            // — the server would refuse the create either way.
+            val owned = BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true)
+            val free = BlueprintProduct("drake.cutlass", "Cutlass Black", "Drake", owned = false)
+            val source = FakeSource()
+            source.products = listOf(owned, free)
+            val model = viewModel(source)
+            model.onAdd()
+            model.onProductQueryChanged("orn")
+            advanceUntilIdle()
+
+            val adding = model.state.value.editor as BlueprintEditor.Adding
+            assertEquals(listOf(free), adding.offered)
+        }
+
+    @Test
+    fun `several products go through the batch, and the sheet stays open to say what happened`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            source.batchAnswer =
+                ApiResult.Success(BlueprintBatchResult(added = 2, alreadyOwned = 1, unresolved = 0))
+            val model = viewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onAdd()
+            model.onProductChosen(BlueprintProduct("a", "A", null, owned = false))
+            model.onProductChosen(BlueprintProduct("b", "B", null, owned = false))
+            model.onProductChosen(BlueprintProduct("c", "C", null, owned = false))
+            model.onSave()
+            advanceUntilIdle()
+
+            assertEquals(listOf(listOf("a", "b", "c")), source.batches)
+            // The single create carries the note and is a different call; it must not have run.
+            assertEquals(emptyList<Pair<String, String?>>(), source.added)
+            val adding = model.state.value.editor as BlueprintEditor.Adding
+            assertEquals(2, adding.outcome?.added)
+            assertEquals(1, adding.outcome?.alreadyOwned)
+        }
+
+    @Test
+    fun `a second tap takes a product back off the list`() =
+        runTest(dispatcher) {
             val model = viewModel(FakeSource())
             model.onAdd()
+            val one = BlueprintProduct("a", "A", null, owned = false)
 
-            model.onProductChosen(BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true))
-
-            assertEquals(false, (model.state.value.editor as BlueprintEditor.Adding).submittable)
+            model.onProductChosen(one)
+            assertEquals(1, (model.state.value.editor as BlueprintEditor.Adding).count)
+            model.onProductChosen(one)
+            assertEquals(0, (model.state.value.editor as BlueprintEditor.Adding).count)
         }
 
     @Test

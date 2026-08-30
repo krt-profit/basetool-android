@@ -106,7 +106,7 @@ fun ApprovalPendingScreen(
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxSize()
-                    .padding(horizontal = KrtSpacing.xl),
+                    .padding(horizontal = KrtSpacing.s24),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -121,7 +121,7 @@ fun ApprovalPendingScreen(
                         size = STATUS_ICON,
                         tint = if (rejected) KrtPalette.DangerText else KrtPalette.Orange,
                     )
-                    Spacer(Modifier.height(KrtSpacing.md))
+                    Spacer(Modifier.height(KrtSpacing.s12))
                     // Uppercase, as chapter 04 sets every gate heading. The source strings stay
                     // sentence case so a screen reader is not handed shouting, and
                     // `krtUppercase` folds with the device's locale rather than the JVM default.
@@ -131,7 +131,7 @@ fun ApprovalPendingScreen(
                         color = KrtPalette.White,
                         textAlign = TextAlign.Center,
                     )
-                    Spacer(Modifier.height(KrtSpacing.md))
+                    Spacer(Modifier.height(KrtSpacing.s12))
                     Text(
                         text = stringResource(bodyRes),
                         style = MaterialTheme.typography.bodyMedium,
@@ -143,13 +143,13 @@ fun ApprovalPendingScreen(
                     // a bright label reads as data that failed to load rather than as data that
                     // was never promised.
                     accountName?.let { name ->
-                        Spacer(Modifier.height(KrtSpacing.lg))
+                        Spacer(Modifier.height(KrtSpacing.s16))
                         // The name is set in a data chip, not printed as a value: it is the string
                         // an administrator will search the approval queue for, and the artboard
                         // frames it for exactly that reason. `Data` is the design system's tone for
                         // it — white on the input surface, hairline border.
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
@@ -163,7 +163,7 @@ fun ApprovalPendingScreen(
                 }
             }
 
-            Spacer(Modifier.height(KrtSpacing.xl))
+            Spacer(Modifier.height(KrtSpacing.s24))
 
             KrtOutlineButton(
                 text = stringResource(R.string.gate_refresh),
@@ -172,7 +172,7 @@ fun ApprovalPendingScreen(
                 iconRes = DesignR.drawable.ic_krt_reset,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(KrtSpacing.md))
+            Spacer(Modifier.height(KrtSpacing.s12))
             KrtQuietDangerButton(
                 text = stringResource(R.string.logout),
                 onClick = onLogout,
@@ -189,14 +189,14 @@ fun ApprovalPendingScreen(
         Text(
             text = stringResource(R.string.gate_poll_hint),
             style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
             textAlign = TextAlign.Center,
             modifier =
                 Modifier
                     .align(Alignment.BottomCenter)
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
+                    .padding(horizontal = KrtSpacing.s24, vertical = KrtSpacing.s16),
         )
     }
 }

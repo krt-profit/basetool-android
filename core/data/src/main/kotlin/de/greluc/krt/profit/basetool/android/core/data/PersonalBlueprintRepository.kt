@@ -9,9 +9,19 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintCraftabilityDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintImportApplyRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintImportEntryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintImportPreviewDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintImportResolutionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintImportResultDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintOverviewOwnerDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintProductDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintRequirementIngredientDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBlueprintOverviewEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponsePersonalBlueprintResponse
+import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBatchCreateRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBatchResult
+import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBulkDeleteResult
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintCreateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintRecipeResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintResponse
@@ -113,6 +123,33 @@ data class Craftability(
 }
 
 /**
+ * One overview page as the screen holds it.
+ *
+ * A row without a product key is dropped: the key is how its owners are asked for, so a row
+ * without one is a card that can never fill in its own second line.
+ *
+ * @receiver what the server sent.
+ * @param page which page was asked for; the response does not always echo it.
+ * @return the page.
+ */
+private fun PageResponseBlueprintOverviewEntryDto.toModel(page: Int): BlueprintOverviewPage =
+    BlueprintOverviewPage(
+        entries =
+            content.orEmpty().mapNotNull { row ->
+                row.productKey?.takeIf { it.isNotBlank() }?.let {
+                    BlueprintOverviewEntry(
+                        productKey = it,
+                        productName = row.productName.orEmpty(),
+                        ownerCount = row.ownerCount ?: 0L,
+                    )
+                }
+            },
+        page = this.page ?: page,
+        totalPages = totalPages ?: 1,
+        totalElements = totalElements ?: 0L,
+    )
+
+/**
  * One product the member could add.
  *
  * @property productKey what a create sends
@@ -120,13 +157,120 @@ data class Craftability(
  * @property manufacturer who makes it, or `null`
  * @property owned whether the member already has this one — offering it again would be a create
  *   the server refuses
+ * @property variantCount how many blueprint variants produce it. Informational: no write carries a
+ *   variant, and the Materialbörse's item half shows it so a product with several can be named
+ *   precisely in the remark.
  */
 data class BlueprintProduct(
     val productKey: String,
     val name: String,
     val manufacturer: String?,
     val owned: Boolean,
+    val variantCount: Int = 0,
 )
+
+/**
+ * One row of the org-wide blueprint overview.
+ *
+ * @property productKey the catalogue key, which is also how its owners are asked for.
+ * @property productName what it is called.
+ * @property ownerCount how many members in the caller's oversight scope hold it. `0` is a real
+ *   answer — „nicht erfasst" — and not a missing one.
+ */
+data class BlueprintOverviewEntry(
+    val productKey: String,
+    val productName: String,
+    val ownerCount: Long,
+) {
+    /** Whether nobody in scope holds it. */
+    val unrecorded: Boolean get() = ownerCount <= 0
+}
+
+/**
+ * One page of that overview.
+ *
+ * @property entries the rows.
+ * @property page the zero-based page index.
+ * @property totalPages how many pages exist.
+ * @property totalElements how many blueprints the search matches.
+ */
+data class BlueprintOverviewPage(
+    val entries: List<BlueprintOverviewEntry>,
+    val page: Int,
+    val totalPages: Int,
+    val totalElements: Long,
+) {
+    /** Whether another page exists after this one. */
+    val hasMore: Boolean get() = page + 1 < totalPages
+}
+
+/**
+ * One member who holds a blueprint.
+ *
+ * @property name their display name, as the server rendered it.
+ * @property orgUnitMember whether they belong to the org unit the caller is looking at. `false`
+ *   means the row is visible through the **global blueprint sharing** rather than through the
+ *   unit, which the screen says in so many words — otherwise a stranger's name in a unit list
+ *   reads as a bug.
+ */
+data class BlueprintOwner(
+    val name: String,
+    val orgUnitMember: Boolean,
+)
+
+/**
+ * What a batch add did.
+ *
+ * The server answers with three counts rather than with rows, and the sheet reports them verbatim:
+ * design ch. 17 artboard 5 draws „2 übernommen · 1 bereits vorhanden", and inventing a total from
+ * the number sent would hide exactly the case the line exists for.
+ *
+ * @property added how many were taken over.
+ * @property alreadyOwned how many the member already had.
+ * @property unresolved how many keys the catalogue could not resolve — normally zero, because the
+ *   keys come from its own search, and worth showing when it is not.
+ */
+data class BlueprintBatchResult(
+    val added: Int,
+    val alreadyOwned: Int,
+    val unresolved: Int,
+) {
+    /** Whether anything at all was taken over. */
+    val anyAdded: Boolean get() = added > 0
+}
+
+/**
+ * Reads and applies a blueprint export file.
+ *
+ * Its own seam rather than two more methods on [PersonalBlueprintSource]: the import is a pair of
+ * calls with a state of their own between them, and only one of the two writes.
+ */
+interface BlueprintImportSource {
+    /**
+     * Reads an export file and answers what it found — **without writing anything**.
+     *
+     * The first of two steps. A one-step import would be a mass write with no preview, which is
+     * exactly what design ch. 18 §2 refuses.
+     *
+     * @param fileName the name the member picked it under; servers log it, so it says where the
+     *   bytes came from rather than being invented.
+     * @param bytes the file's content, read on the device and sent once.
+     * @return what the file contains, or the classified failure. A file the server cannot parse
+     *   comes back as an ordinary failure, not as an empty preview.
+     */
+    suspend fun importPreview(
+        fileName: String,
+        bytes: ByteArray,
+    ): ApiResult<BlueprintImportPreview>
+
+    /**
+     * Writes the lines the preview resolved. The only step of the two that writes.
+     *
+     * @param entries the resolved lines to take over; each carries its own product key.
+     * @return what was written, or the classified failure.
+     */
+    suspend fun importApply(entries: List<BlueprintImportEntry>): ApiResult<BlueprintImportResult>
+}
 
 /**
  * The member's own blueprints, as a seam.
@@ -199,13 +343,175 @@ interface PersonalBlueprintSource {
     suspend fun products(query: String): ApiResult<List<BlueprintProduct>>
 
     /**
+     * Takes over several products at once.
+     *
+     * `POST /personal-blueprints/batch`, which carries **only** the keys — no note, no acquisition
+     * date. A single add keeps [add], which does carry both.
+     *
+     * @param productKeys which products; the server skips the ones already owned.
+     * @return what it did, or the classified failure.
+     */
+    suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult>
+
+    /**
+     * Reads one page of the org-wide blueprint overview.
+     *
+     * Officer and above, in the caller's oversight scope — the server decides, and the app asks
+     * `GET /me/capabilities` (`canSeeBlueprintOverview`) before offering the screen at all.
+     *
+     * @param query a blueprint-name fragment, or blank for everything.
+     * @param page the zero-based page index.
+     * @param pageSize how many rows to ask for.
+     * @return the page, or the classified failure.
+     */
+    suspend fun overview(
+        query: String = "",
+        page: Int = 0,
+        pageSize: Int = PersonalBlueprintRepository.DEFAULT_PAGE_SIZE,
+    ): ApiResult<BlueprintOverviewPage>
+
+    /**
+     * Reads who holds one blueprint.
+     *
+     * A **separate** call per row, as the web does it: the overview page carries counts only, and
+     * one row's failure must not take the list with it (design ch. 17 artboard 6 draws all three
+     * states — loading, empty, failed — per row).
+     *
+     * @param productKey which blueprint.
+     * @return its owners, or the classified failure.
+     */
+    suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>>
+
+    /**
      * Reads the recipe of one owned blueprint — its ingredients and their required quality.
      *
      * @param id the owned-blueprint row, resolved server-side against the caller's own.
      * @return the recipe, or a failure the detail pane can show.
      */
     suspend fun recipe(id: String): ApiResult<BlueprintRecipe>
+
+    /**
+     * Deletes **every** blueprint the member owns, in one call.
+     *
+     * The endpoint takes neither ids nor a body: it is all or nothing. That is why the screen
+     * reaches it through „Alles wählen" rather than through a menu entry — deleting 41 rows is for
+     * somebody who has seen the 41 rows (design ch. 18 §3).
+     *
+     * @return how many were deleted, or the classified failure.
+     */
+    suspend fun removeAll(): ApiResult<Int>
 }
+
+/**
+ * How one line of an import file resolved against the product catalogue.
+ *
+ * Five states on the wire, three buckets on screen. `MATCHED` and `MATCHED_BY_ALIAS` are ready to
+ * write; `ALREADY_OWNED` is not a result; `UNMATCHED` is skipped. `SUGGESTED` is the awkward one:
+ * the server found fuzzy candidates but resolved nothing, so those rows need a human pick that this
+ * app has no picker for — see [BlueprintImportPreview.unresolved].
+ */
+enum class BlueprintImportStatus {
+    /** Resolved outright. */
+    MATCHED,
+
+    /** Resolved through an alias somebody taught the server earlier. */
+    MATCHED_BY_ALIAS,
+
+    /** Candidates were found, nothing was resolved; a pick is needed. */
+    SUGGESTED,
+
+    /** Nothing was found. */
+    UNMATCHED,
+
+    /** Resolved, and the member already owns it. */
+    ALREADY_OWNED,
+
+    /** A state this build does not know; treated as unresolvable rather than guessed at. */
+    UNKNOWN,
+    ;
+
+    companion object {
+        /**
+         * Maps the wire value.
+         *
+         * @param raw as the server wrote it.
+         * @return the status, or [UNKNOWN].
+         */
+        fun from(raw: String?): BlueprintImportStatus =
+            entries.firstOrNull { it.name == raw?.trim()?.uppercase() } ?: UNKNOWN
+    }
+}
+
+/**
+ * One line of the file, and what became of it.
+ *
+ * @property externalName the name exactly as it stood in the export — what is shown when nothing
+ *   resolved, because it is the only thing the member can recognise the line by.
+ * @property status how it resolved.
+ * @property productKey the resolved product, or `null`. `SUGGESTED` and `UNMATCHED` carry none.
+ * @property productName what the resolved product is called, or `null`.
+ * @property acquiredAt when the export says it was acquired, or `null`.
+ */
+data class BlueprintImportEntry(
+    val externalName: String,
+    val status: BlueprintImportStatus,
+    val productKey: String?,
+    val productName: String?,
+    val acquiredAt: String?,
+)
+
+/**
+ * What the preview found, before anything is written.
+ *
+ * @property entries every line of the file, in the order it stood there.
+ */
+data class BlueprintImportPreview(
+    val entries: List<BlueprintImportEntry>,
+) {
+    /** The lines that will be written — resolved, and not already owned. */
+    val importable: List<BlueprintImportEntry>
+        get() = entries.filter { it.productKey != null && it.status != BlueprintImportStatus.ALREADY_OWNED }
+
+    /** The lines the member already has. Not a result, so they are a number and never a list. */
+    val alreadyOwned: Int get() = entries.count { it.status == BlueprintImportStatus.ALREADY_OWNED }
+
+    /**
+     * The lines the server found **candidates** for and resolved none of — „Zu klären".
+     *
+     * Its own figure since design ch. 18 §2 (B2, ratified 2026-08-30), because it is not the same
+     * fact as „unbekannt": the server did find something, it just cannot choose. The app does not
+     * choose either — auto-accepting the top suggestion would write a decision nobody made — so
+     * these are skipped and the member is pointed at the web portal.
+     */
+    val unclear: List<BlueprintImportEntry>
+        get() = entries.filter { it.status == BlueprintImportStatus.SUGGESTED }
+
+    /**
+     * The lines the server found **nothing** for.
+     *
+     * Skipped, not refused: the import runs anyway, which is why they are counted and named rather
+     * than turned into an error.
+     */
+    val unknown: List<BlueprintImportEntry>
+        get() =
+            entries.filter {
+                it.productKey == null &&
+                    it.status !in setOf(BlueprintImportStatus.SUGGESTED, BlueprintImportStatus.ALREADY_OWNED)
+            }
+}
+
+/**
+ * What the apply wrote.
+ *
+ * @property added rows created.
+ * @property skipped rows the server passed over.
+ * @property alreadyOwned rows that were already there.
+ */
+data class BlueprintImportResult(
+    val added: Int,
+    val skipped: Int,
+    val alreadyOwned: Int,
+)
 
 /**
  * Reads and writes the member's own blueprints.
@@ -217,7 +523,8 @@ interface PersonalBlueprintSource {
  */
 class PersonalBlueprintRepository(
     private val reader: ApiReader,
-) : PersonalBlueprintSource {
+) : PersonalBlueprintSource,
+    BlueprintImportSource {
     /**
      * Convenience constructor for the object graph.
      *
@@ -310,6 +617,64 @@ class PersonalBlueprintRepository(
      * @param id the owned-blueprint row.
      * @return the recipe, or the classified failure.
      */
+
+    override suspend fun importPreview(
+        fileName: String,
+        bytes: ByteArray,
+    ): ApiResult<BlueprintImportPreview> =
+        when (
+            val result =
+                reader.postFile(
+                    path = IMPORT_PREVIEW_PATH,
+                    partName = FILE_PART,
+                    fileName = fileName,
+                    bytes = bytes,
+                    mediaType = JSON_MEDIA_TYPE,
+                    deserializer = BlueprintImportPreviewDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
+    override suspend fun importApply(
+        entries: List<BlueprintImportEntry>,
+    ): ApiResult<BlueprintImportResult> {
+        val request =
+            BlueprintImportApplyRequest(
+                resolutions =
+                    entries.mapNotNull { entry ->
+                        entry.productKey?.let {
+                            BlueprintImportResolutionDto(
+                                externalName = entry.externalName,
+                                productKey = it,
+                                acquiredAt = entry.acquiredAt,
+                            )
+                        }
+                    },
+            )
+        return when (
+            val result =
+                reader.post(
+                    IMPORT_APPLY_PATH,
+                    request,
+                    BlueprintImportApplyRequest.serializer(),
+                    BlueprintImportResultDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+    }
+
+    override suspend fun removeAll(): ApiResult<Int> =
+        when (
+            val result = reader.delete(PATH, PersonalBlueprintBulkDeleteResult.serializer())
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.deleted ?: 0)
+        }
+
     override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> =
         when (
             val result =
@@ -317,6 +682,79 @@ class PersonalBlueprintRepository(
         ) {
             is ApiResult.Failure -> result
             is ApiResult.Success -> ApiResult.Success(result.value.toModel())
+        }
+
+    override suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult> =
+        when (
+            val result =
+                reader.post(
+                    path = BATCH_PATH,
+                    body = PersonalBlueprintBatchCreateRequest(productKeys = productKeys),
+                    bodySerializer = PersonalBlueprintBatchCreateRequest.serializer(),
+                    deserializer = PersonalBlueprintBatchResult.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    BlueprintBatchResult(
+                        added = result.value.added ?: 0,
+                        alreadyOwned = result.value.skippedAlreadyOwned ?: 0,
+                        unresolved = result.value.skippedUnresolved ?: 0,
+                    ),
+                )
+            }
+        }
+
+    override suspend fun overview(
+        query: String,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BlueprintOverviewPage> {
+        val params =
+            listOfNotNull(
+                query.trim().takeIf { it.isNotEmpty() }?.let { SEARCH_PARAM to it },
+                PAGE_PARAM to page.toString(),
+                SIZE_PARAM to pageSize.toString(),
+            )
+        return when (
+            val result =
+                reader.get(
+                    OVERVIEW_PATH,
+                    params,
+                    PageResponseBlueprintOverviewEntryDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
+        }
+    }
+
+    override suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>> =
+        when (
+            val result =
+                reader.get(
+                    OWNERS_PATH,
+                    listOf(PRODUCT_KEY_PARAM to productKey),
+                    ListSerializer(BlueprintOverviewOwnerDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { row ->
+                        row.ownerName?.takeIf { it.isNotBlank() }?.let {
+                            BlueprintOwner(name = it, orgUnitMember = row.orgUnitMember == true)
+                        }
+                    },
+                )
+            }
         }
 
     override suspend fun products(query: String): ApiResult<List<BlueprintProduct>> {
@@ -344,6 +782,15 @@ class PersonalBlueprintRepository(
 
         private const val LOG_TAG = "personal-blueprints"
         private const val PATH = "/api/v1/personal-blueprints"
+        private const val IMPORT_PREVIEW_PATH = "/api/v1/personal-blueprints/import/preview"
+        private const val IMPORT_APPLY_PATH = "/api/v1/personal-blueprints/import/apply"
+        private const val FILE_PART = "file"
+        private const val JSON_MEDIA_TYPE = "application/json"
+        private const val BATCH_PATH = "/api/v1/personal-blueprints/batch"
+        private const val OVERVIEW_PATH = "/api/v1/personal-blueprints/overview"
+        private const val OWNERS_PATH = "/api/v1/personal-blueprints/overview/owners"
+        private const val SEARCH_PARAM = "search"
+        private const val PRODUCT_KEY_PARAM = "productKey"
         private const val CRAFTABILITY_PATH = "/api/v1/personal-blueprints/craftability"
         private const val PRODUCTS_PATH = "/api/v1/blueprints/products/search"
         private const val QUERY_PARAM = "q"
@@ -423,13 +870,14 @@ private fun BlueprintCraftabilityDto.toModel(): Craftability? {
  *
  * @return the model, or `null` without a key — a row that cannot be added is not worth offering.
  */
-private fun BlueprintProductDto.toModel(): BlueprintProduct? {
+internal fun BlueprintProductDto.toModel(): BlueprintProduct? {
     val key = productKey?.takeIf { it.isNotBlank() } ?: return null
     return BlueprintProduct(
         productKey = key,
         name = name.orEmpty(),
         manufacturer = manufacturerName?.takeIf { it.isNotBlank() },
         owned = ownedByCurrentUser == true,
+        variantCount = variantCount ?: 0,
     )
 }
 
@@ -508,4 +956,39 @@ private fun BlueprintRequirementIngredientDto.toModel(groupName: String?): Bluep
         quantityUnits = quantityUnits,
         minQuality = minQuality,
         groupName = groupName,
+    )
+
+/**
+ * The preview, as the app reads it.
+ *
+ * @return the preview.
+ */
+private fun BlueprintImportPreviewDto.toModel(): BlueprintImportPreview =
+    BlueprintImportPreview(entries = propertyEntries.orEmpty().map { it.toModel() })
+
+/**
+ * One line of it.
+ *
+ * @return the entry. A line with no external name is kept rather than dropped: it is still one of
+ *   the file's rows, and the counts have to add up to what the member can see in their export.
+ */
+private fun BlueprintImportEntryDto.toModel(): BlueprintImportEntry =
+    BlueprintImportEntry(
+        externalName = externalName.orEmpty(),
+        status = BlueprintImportStatus.from(status?.value),
+        productKey = productKey?.takeIf { it.isNotBlank() },
+        productName = productName?.takeIf { it.isNotBlank() },
+        acquiredAt = suggestedAcquiredAt,
+    )
+
+/**
+ * What the apply reported.
+ *
+ * @return the result.
+ */
+private fun BlueprintImportResultDto.toModel(): BlueprintImportResult =
+    BlueprintImportResult(
+        added = added ?: 0,
+        skipped = skipped ?: 0,
+        alreadyOwned = alreadyOwned ?: 0,
     )

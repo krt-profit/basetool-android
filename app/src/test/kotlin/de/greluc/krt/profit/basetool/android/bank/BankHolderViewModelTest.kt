@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankRequestPage
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffDashboard
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffSource
+import de.greluc.krt.profit.basetool.android.core.data.DirectBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.Dispatchers
@@ -101,6 +102,14 @@ class BankHolderViewModelTest {
         override suspend fun confirmRequest(
             confirmation: BankConfirmation,
         ): ApiResult<BankBookingRequest> = ApiResult.Failure(ApiError.Forbidden())
+
+        val directBookings = mutableListOf<DirectBooking>()
+        var directAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit> {
+            directBookings.add(booking)
+            return directAnswer
+        }
 
         override suspend fun rejectRequest(
             id: String,

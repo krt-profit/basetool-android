@@ -180,8 +180,8 @@ fun BankRequestSheet(
         modifier = Modifier.testTag(BANK_REQUEST_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+            modifier = Modifier.padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
         ) {
             KindField(kind = state.kind, enabled = !editing, onKind = actions.onKind)
             AccountFields(
@@ -215,7 +215,7 @@ private fun KindField(
     onKind: (BankRequestKind) -> Unit,
 ) {
     val kinds = BankRequestKind.entries
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtFieldLabel(stringResource(R.string.bank_request_field_kind))
         KrtSegmentedControl(
             options = kinds.map { stringResource(it.labelRes()) },
@@ -317,7 +317,7 @@ private fun AmountField(
     accounts: List<BankAccountSummary>,
     onAmount: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtTextField(
             value = state.amount,
             onValueChange = onAmount,
@@ -383,7 +383,7 @@ private fun SubmitBar(
     editing: Boolean,
     actions: BankRequestSheetActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         if (!online) {
             Text(
                 text = stringResource(R.string.bank_request_offline),
@@ -399,8 +399,8 @@ private fun SubmitBar(
             )
         }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             KrtGhostButton(
                 text = stringResource(R.string.bank_request_cancel),

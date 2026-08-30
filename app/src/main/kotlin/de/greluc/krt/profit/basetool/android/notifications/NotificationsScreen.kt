@@ -124,8 +124,8 @@ fun NotificationsScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 ) {
                     // Both carry their glyph, as artboard 1 draws them — and they are the same two
                     // the rows carry, so the header action and the per-row action read as the same
@@ -170,7 +170,7 @@ fun NotificationsScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -179,7 +179,7 @@ fun NotificationsScreen(
                             message = stringResource(R.string.notifications_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -196,7 +196,7 @@ fun NotificationsScreen(
                                     iconRes = DesignR.drawable.ic_krt_bell,
                                     title = stringResource(R.string.notifications_empty_title),
                                     message = stringResource(R.string.notifications_empty_message),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else {
@@ -223,7 +223,7 @@ fun NotificationsScreen(
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(KrtSpacing.lg),
+                        .padding(KrtSpacing.s16),
             )
         }
     }
@@ -289,12 +289,12 @@ private fun NotificationsList(
                         ),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.notifications_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -326,8 +326,8 @@ private fun NotificationRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(end = KrtSpacing.md, top = KrtSpacing.sm, bottom = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(end = KrtSpacing.s12, top = KrtSpacing.s8, bottom = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.Top,
     ) {
         Box(
@@ -349,7 +349,7 @@ private fun NotificationRow(
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
             Text(
                 text = notification.sentence(),
@@ -459,7 +459,7 @@ fun NotificationsRoute(
                                 state.unread,
                             ),
                         tone = KrtChipTone.Primary,
-                        modifier = Modifier.padding(end = KrtSpacing.lg),
+                        modifier = Modifier.padding(end = KrtSpacing.s16),
                     )
                 }
             } else {

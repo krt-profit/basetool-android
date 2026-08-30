@@ -66,24 +66,43 @@ class MissionDetailScreenTest {
     private val robot by lazy { MissionScreenRobot(compose) }
 
     /**
-     * The Verwaltung tab exists only for a caller the server says may manage this Einsatz.
+     * The Verwaltung tab is **drawn for everybody** and locked for a non-manager.
      *
-     * Absent, not locked. A lock reads as „you could, but not now"; for a member who simply does
-     * not run this Einsatz that is not true, and the seven reading tabs are the whole screen for
-     * them.
+     * This asserted the opposite until 2026-08-29. The app hid the tab, on the argument that a
+     * member who does not run this Einsatz is not one grant away from running it; the designer
+     * rejected that (ch. 06 artboard 6) and the rule stands as it always did — this organisation
+     * grants roles by hand, and **a function nobody sees is never requested**.
      */
     @Test
-    fun `the Verwaltung tab is drawn only for a manager`() {
+    fun `the Verwaltung tab is drawn for a manager`() {
         robot.show(robot.ready(detail = robot.detail(canManage = true)))
 
         compose.onNodeWithText("Verwaltung", ignoreCase = true).assertExists()
     }
 
     @Test
-    fun `a member who may not manage never sees the Verwaltung tab`() {
+    fun `a member who may not manage still sees the Verwaltung tab`() {
         robot.show(robot.ready(detail = robot.detail(canManage = false)))
 
-        compose.onAllNodesWithText("Verwaltung", ignoreCase = true).assertCountEquals(0)
+        compose.onNodeWithText("Verwaltung", ignoreCase = true).assertExists()
+    }
+
+    /**
+     * And tapping it does **not** open it: it raises the role toast and the active tab stays.
+     *
+     * The gate lives on the tab row rather than only inside the tab, because a tab that opened and
+     * then refused every control inside it would be a worse answer than a tab that says why up
+     * front.
+     */
+    @Test
+    fun `tapping the locked Verwaltung tab refuses instead of opening it`() {
+        val tabs = mutableListOf<MissionTab>()
+        robot.show(robot.ready(detail = robot.detail(canManage = false)), tabs = tabs)
+
+        compose.onNodeWithText("Verwaltung", ignoreCase = true).performClick()
+
+        assertTrue("the tab must not open", tabs.isEmpty())
+        compose.onNodeWithText("Missions-Manager", substring = true).assertExists()
     }
 
     /**
@@ -393,7 +412,7 @@ class MissionDetailScreenTest {
     fun `offline the Einsatz says so and offers no write`() {
         robot.show(readyForMe().copy(online = false))
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(MISSION_SIGN_UP_TAG).assertIsNotEnabled()
     }

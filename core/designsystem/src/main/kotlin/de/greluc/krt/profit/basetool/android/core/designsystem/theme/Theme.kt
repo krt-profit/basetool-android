@@ -173,7 +173,7 @@ internal fun KrtPreviewSurface(content: @Composable () -> Unit) {
             modifier =
                 Modifier
                     .background(KrtPalette.Black)
-                    .padding(KrtSpacing.lg),
+                    .padding(KrtSpacing.s16),
         ) {
             content()
         }

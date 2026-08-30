@@ -46,7 +46,7 @@ class AllocationSheetStateTest {
         // the first, so comparing the strings would re-send every untouched row on every save.
         val state =
             sheet(
-                jobOrders = listOf(AllocationRow("o1", "#A-1", null, "3", "3.0")),
+                jobOrders = listOf(AllocationRow("o1", "#1", null, "3", "3.0")),
                 missions = listOf(AllocationRow("m1", "Lyria", null, "4", "2")),
             )
 
@@ -56,7 +56,7 @@ class AllocationSheetStateTest {
 
     @Test
     fun `an untouched sheet has nothing to save`() {
-        val state = sheet(jobOrders = listOf(AllocationRow("o1", "#A-1", null, "3", "3")))
+        val state = sheet(jobOrders = listOf(AllocationRow("o1", "#1", null, "3", "3")))
 
         assertFalse(state.submittable)
     }

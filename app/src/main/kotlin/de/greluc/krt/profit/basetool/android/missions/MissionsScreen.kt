@@ -24,7 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -34,8 +36,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Mission
+import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateRangePickerModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
@@ -56,6 +60,7 @@ import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -79,6 +84,7 @@ const val MISSIONS_SEARCH_TAG: String = "missions-search"
  * @param onSearchChanged a keystroke in the search field.
  * @param onStatusToggled a status chip was tapped; the screen sends the resulting whole set.
  * @param onIncludePastChanged the "Vergangene" chip was tapped.
+ * @param onRangeChanged the date range was picked or cleared; both ends may be `null`.
  * @param onResetFilters the reset chip was tapped.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
@@ -94,6 +100,7 @@ fun MissionsScreen(
     onSearchChanged: (String) -> Unit,
     onStatusToggled: (Set<MissionStatus>) -> Unit,
     onIncludePastChanged: (Boolean) -> Unit,
+    onRangeChanged: (Instant?, Instant?) -> Unit,
     onResetFilters: () -> Unit,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
@@ -117,7 +124,9 @@ fun MissionsScreen(
             onSearchChanged = onSearchChanged,
             onStatusToggled = onStatusToggled,
             onIncludePastChanged = onIncludePastChanged,
+            onRangeChanged = onRangeChanged,
             onResetFilters = onResetFilters,
+            zone = zone,
         )
 
         // The classified cause is deliberately not shown: an error code means nothing to a member.
@@ -142,7 +151,7 @@ fun MissionsScreen(
                         message = stringResource(R.string.retry_busy_message, retryIn),
                         retryLabel = stringResource(R.string.retry_now),
                         onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 } else {
                     KrtEmptyState(
@@ -151,7 +160,7 @@ fun MissionsScreen(
                         message = stringResource(R.string.missions_error_message),
                         actionText = stringResource(R.string.missions_retry),
                         onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 }
             }
@@ -191,7 +200,9 @@ fun MissionsScreen(
  * @param onSearchChanged a keystroke.
  * @param onStatusToggled the resulting whole status set after a chip tap.
  * @param onIncludePastChanged the past toggle.
+ * @param onRangeChanged the date range was picked or cleared.
  * @param onResetFilters clears everything.
+ * @param zone the device zone the picked days are anchored in.
  */
 @Composable
 private fun MissionsFilterBar(
@@ -199,11 +210,13 @@ private fun MissionsFilterBar(
     onSearchChanged: (String) -> Unit,
     onStatusToggled: (Set<MissionStatus>) -> Unit,
     onIncludePastChanged: (Boolean) -> Unit,
+    onRangeChanged: (Instant?, Instant?) -> Unit,
     onResetFilters: () -> Unit,
+    zone: ZoneId,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
             // The typed value, not the debounced one. Binding a controlled field to the
@@ -218,8 +231,8 @@ private fun MissionsFilterBar(
         // breaks character by character („ABGEB ROCHE N"). Wrapping by chip keeps every filter
         // readable and reachable, which horizontal scrolling would not.
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             FILTERABLE_STATUSES.forEach { status ->
                 val selected = status in state.query.statuses
@@ -235,8 +248,8 @@ private fun MissionsFilterBar(
             }
         }
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             KrtFilterChip(
                 text =
@@ -250,6 +263,11 @@ private fun MissionsFilterBar(
                 selected = state.query.includePast,
                 onClick = { onIncludePastChanged(!state.query.includePast) },
             )
+            RangeFilterChip(
+                query = state.query,
+                zone = zone,
+                onRangeChanged = onRangeChanged,
+            )
             if (state.isNarrowed) {
                 KrtFilterChip(
                     text = stringResource(R.string.missions_filter_reset),
@@ -260,6 +278,79 @@ private fun MissionsFilterBar(
         }
     }
 }
+
+/**
+ * The date-range filter chip and its picker — design ch. 02 §11 d, spec §C7.
+ *
+ * The chip states the period it carries rather than the word „Zeitraum": „ab 05.09.", „bis 12.09."
+ * or both ends. Clearing is the chip's own ✕, which is why the picker has no reset button of its
+ * own. One end alone is a legal, open range.
+ *
+ * The end of the range is anchored to the **last instant of** the chosen day: „bis 12.09." has to
+ * include the twelfth, and a midnight bound would silently drop it.
+ *
+ * @param query what is currently narrowed; the ends come from here.
+ * @param zone the device zone the chosen days are anchored in.
+ * @param onRangeChanged the new ends, either of which may be `null`.
+ */
+@Composable
+private fun RangeFilterChip(
+    query: MissionQuery,
+    zone: ZoneId,
+    onRangeChanged: (Instant?, Instant?) -> Unit,
+) {
+    var picking by remember { mutableStateOf(false) }
+    val from = query.from?.atZone(zone)?.toLocalDate()
+    val until = query.until?.atZone(zone)?.toLocalDate()
+    val label =
+        when {
+            from != null && until != null -> {
+                stringResource(
+                    R.string.missions_filter_range_both,
+                    from.format(RANGE_CHIP_FORMAT),
+                    until.format(RANGE_CHIP_FORMAT),
+                )
+            }
+
+            from != null -> {
+                stringResource(R.string.missions_filter_range_from, from.format(RANGE_CHIP_FORMAT))
+            }
+
+            until != null -> {
+                stringResource(R.string.missions_filter_range_until, until.format(RANGE_CHIP_FORMAT))
+            }
+
+            else -> {
+                stringResource(R.string.missions_filter_range)
+            }
+        }
+
+    KrtFilterChip(
+        text = label,
+        selected = from != null || until != null,
+        onClick = { picking = true },
+        onClear = if (from != null || until != null) ({ onRangeChanged(null, null) }) else null,
+        clearLabel = stringResource(R.string.missions_filter_range_clear),
+    )
+
+    if (picking) {
+        KrtDateRangePickerModal(
+            from = from,
+            until = until,
+            onPick = { start, end ->
+                picking = false
+                onRangeChanged(
+                    start?.atStartOfDay(zone)?.toInstant(),
+                    end?.atTime(LocalTime.MAX)?.atZone(zone)?.toInstant(),
+                )
+            },
+            onDismiss = { picking = false },
+        )
+    }
+}
+
+/** The chip says „05.09." — a year in a filter chip is noise the list already implies. */
+private val RANGE_CHIP_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.")
 
 /**
  * The grouped, paginated list.
@@ -282,14 +373,14 @@ private fun MissionsList(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MISSIONS_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         sections.forEach { section ->
             item(key = "day-${section.day}") {
                 KrtSectionTitle(
                     text = section.day.label(),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                 )
             }
             items(section.missions, key = { it.id }) { mission ->
@@ -308,12 +399,12 @@ private fun MissionsList(
                         ),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.missions_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -338,7 +429,7 @@ private fun MissionRow(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -351,7 +442,7 @@ private fun MissionRow(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -399,7 +490,7 @@ private fun MissionsEmpty(
             ),
         actionText = if (narrowed) stringResource(R.string.missions_filter_reset) else null,
         onAction = if (narrowed) onResetFilters else null,
-        modifier = Modifier.padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.s16),
     )
 }
 
@@ -562,6 +653,7 @@ fun MissionsRoute(
         onSearchChanged = viewModel::onSearchChanged,
         onStatusToggled = viewModel::onStatusesChanged,
         onIncludePastChanged = viewModel::onIncludePastChanged,
+        onRangeChanged = viewModel::onRangeChanged,
         onResetFilters = viewModel::onResetFilters,
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,

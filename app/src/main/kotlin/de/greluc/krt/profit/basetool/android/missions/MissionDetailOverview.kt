@@ -26,26 +26,119 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
+
+/** Test handle for the badge band's lifecycle action. */
+const val MISSION_LIFECYCLE_TAG: String = "mission-lifecycle-action"
+
+/**
+ * The status band: the state, what it costs, and the one action that advances it.
+ *
+ * Design ch. 06 (F2). „Starten" used to be a filled CTA inside the Verwaltung form, which is not
+ * where anybody looks — the badge is the first thing an Einsatzleitung reads on the screen, so the
+ * lifecycle lives there and nowhere else. One surface: no form field, no overflow entry, no second
+ * place.
+ *
+ * The action is an **outline** button on purpose. The one filled orange on this screen belongs to
+ * „Anmelden", which is the primary action for everybody who is not managing; two filled oranges
+ * would be exactly the mistake the action hierarchy exists to prevent.
+ *
+ * Without the role the button is **drawn locked** rather than hidden: it keeps its target, wears
+ * the lock, and the toast names the role that is missing (ADR-0011).
+ *
+ * @param detail the Einsatz.
+ * @param next the status the badge may advance to, or `null` when it is at rest.
+ * @param enabled whether a write may run right now.
+ * @param denials where a refusal is announced.
+ * @param onAsk open the confirmation.
+ */
+@Composable
+internal fun MissionLifecycleBand(
+    detail: MissionDetail,
+    next: MissionStatus?,
+    enabled: Boolean,
+    denials: DenialState,
+    onAsk: () -> Unit,
+) {
+    if (next == null) {
+        return
+    }
+    val gate =
+        Gate(
+            allowed = detail.canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
+        )
+    val (dim, click) = rememberGated(gate, onAsk, denials)
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            KrtStatusBadge(text = detail.statusLabel(), tone = detail.statusTone())
+            Text(
+                text =
+                    pluralStringResource(
+                        R.plurals.mission_lifecycle_registered,
+                        detail.registeredParticipants,
+                        detail.registeredParticipants,
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+                modifier = Modifier.padding(top = KrtSpacing.s4),
+            )
+        }
+        KrtOutlineButton(
+            text =
+                stringResource(
+                    if (next == MissionStatus.ACTIVE) {
+                        R.string.mission_lifecycle_start
+                    } else {
+                        R.string.mission_lifecycle_complete
+                    },
+                ),
+            onClick = click,
+            modifier = dim.testTag(MISSION_LIFECYCLE_TAG),
+            // A locked control keeps its target so it can explain itself; only a genuinely busy
+            // screen disables it. Disabling a refused control is the thing the drawn-not-hidden
+            // rule exists to avoid.
+            enabled = if (detail.canManage) enabled else true,
+            iconRes = if (detail.canManage) null else DesignR.drawable.ic_krt_lock,
+        )
+    }
+}
 
 /**
  * The sticky head: title, status, org badge and the fact band.
@@ -65,7 +158,7 @@ internal fun MissionDetailHead(detail: MissionDetail) {
             title = detail.name,
             subtitle = {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp),
                 ) {
@@ -104,8 +197,8 @@ internal fun MissionDetailHead(detail: MissionDetail) {
                         .fillMaxWidth()
                         .background(KrtPalette.SurfaceInput)
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+                        .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 facts.forEach { (label, value) -> FactCell(label = label, value = value) }
@@ -136,7 +229,7 @@ private fun FactCell(
         Text(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelMedium,
-            color = KrtPalette.Gray2,
+            color = KrtPalette.TextMuted,
         )
         Text(
             text = value,
@@ -190,12 +283,12 @@ private fun AttendanceBox(detail: MissionDetail) {
     KrtHudBox(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Text(
@@ -208,7 +301,7 @@ private fun AttendanceBox(detail: MissionDetail) {
                         // in a sentence.
                         text = stringResource(R.string.mission_detail_registered).uppercase(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = KrtPalette.Gray2,
+                        color = KrtPalette.TextMuted,
                     )
                 }
                 Text(
@@ -273,7 +366,7 @@ private fun AttendanceMeter(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = KrtSpacing.xs)
+                .padding(top = KrtSpacing.s4)
                 .height(METER_HEIGHT)
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3),
@@ -340,25 +433,25 @@ private fun BriefingCard(detail: MissionDetail) {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+                    .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
         )
         KrtHairlineRule()
         rows.forEachIndexed { index, (label, value) ->
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = BRIEF_ROW_PADDING),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
             ) {
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = KrtPalette.Gray2,
-                    modifier = Modifier.padding(start = KrtSpacing.lg).width(BRIEF_LABEL_WIDTH),
+                    color = KrtPalette.TextMuted,
+                    modifier = Modifier.padding(start = KrtSpacing.s16).width(BRIEF_LABEL_WIDTH),
                 )
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyMedium,
                     color = KrtPalette.White,
-                    modifier = Modifier.weight(1f).padding(end = KrtSpacing.lg),
+                    modifier = Modifier.weight(1f).padding(end = KrtSpacing.s16),
                 )
             }
             if (index != rows.lastIndex) {

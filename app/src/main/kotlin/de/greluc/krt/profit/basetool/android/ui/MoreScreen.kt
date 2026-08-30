@@ -20,6 +20,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSect
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.KrtDestination
 import de.greluc.krt.profit.basetool.android.navigation.MORE_DESTINATIONS
+import de.greluc.krt.profit.basetool.android.ui.DenialToast
+import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
+import de.greluc.krt.profit.basetool.android.ui.rememberGated
 
 /**
  * The "Mehr" overflow list.
@@ -39,24 +43,41 @@ import de.greluc.krt.profit.basetool.android.navigation.MORE_DESTINATIONS
 fun MoreScreen(
     onOpen: (KrtDestination) -> Unit,
     modifier: Modifier = Modifier,
+    blueprintOverview: Boolean = true,
 ) {
+    val denials = rememberDenialState()
+    val locked = stringResource(R.string.blueprint_overview_locked)
+    val detail = stringResource(R.string.blueprint_overview_locked_detail)
     Column(
         modifier =
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberRootScrollState())
-                .padding(vertical = KrtSpacing.md),
+                .padding(vertical = KrtSpacing.s12),
     ) {
         KrtSectionTitle(
             text = stringResource(R.string.more_section_secondary),
-            modifier = Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
         )
         MORE_DESTINATIONS.forEach { destination ->
+            // Every entry is drawn; whether the caller may open it is the server's answer, and an
+            // entry that is simply absent teaches nobody what to ask for (app ADR-0011). The
+            // blueprint overview is the one entry here with a role behind it.
+            val gate =
+                Gate(
+                    allowed = destination != KrtDestination.BlueprintOverview || blueprintOverview,
+                    reason = locked,
+                    detail = detail,
+                )
+            val (dim, click) = rememberGated(gate, { onOpen(destination) }, denials)
             KrtListRow(
                 title = stringResource(destination.titleRes),
                 leadingIcon = destination.iconRes,
-                onClick = { onOpen(destination) },
+                onClick = click,
+                modifier = dim,
+                showChevron = gate.allowed,
             )
         }
     }
+    DenialToast(denials)
 }

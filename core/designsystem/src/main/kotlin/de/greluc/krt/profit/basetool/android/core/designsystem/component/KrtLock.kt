@@ -60,7 +60,7 @@ private val TOAST_GAP = 10.dp
 private val TOAST_MAX_WIDTH = 396.dp
 
 /** Bloom radius behind the refusal toast. */
-private val TOAST_BLOOM = 20.dp
+private val TOAST_BLOOM = KrtSpacing.glowOverlay
 
 /**
  * How strong that bloom is — the artboard measures `rgba(255, 210, 63, .25) 0 0 20px`.
@@ -180,7 +180,7 @@ fun KrtLockToast(
                 .background(KrtPalette.Gray4)
                 .border(KrtSpacing.hairline, KrtTheme.colors.warning)
                 .krtCornerBrackets(color = KrtTheme.colors.warning)
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
     ) {
         KrtIcon(
             id = R.drawable.ic_krt_lock,

@@ -31,9 +31,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
+import de.greluc.krt.profit.basetool.android.core.data.parseTypedAmount
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
@@ -135,11 +138,20 @@ fun OrderCreateScreen(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag(ORDER_CREATE_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
-        item(key = "kind") {
-            KindSwitch(kind = state.kind, onKind = actions.onKind)
+        if (state.mode == OrderFormMode.CREATE) {
+            item(key = "kind") {
+                KindSwitch(kind = state.kind, onKind = actions.onKind)
+            }
+        }
+        if (state.mode == OrderFormMode.EDIT_AS_REQUESTER) {
+            item(key = "requester-note") {
+                // Chapter 10 artboard 11's own sentence: what a requester may change, and what
+                // they may not, said once at the top rather than discovered field by field.
+                KrtHint(explanation = stringResource(R.string.order_edit_requester_note))
+            }
         }
         item(key = "who") {
             WhoBlock(state = state, actions = actions)
@@ -167,6 +179,10 @@ fun OrderCreateScreen(
                     onAmount = { actions.onAmount(index, it) },
                     onMinQuality = { actions.onMinQuality(index, it) },
                     onRemove = { actions.onRemoveLine(index) },
+                    // The floor under this line: „eine erfüllte Position lässt sich nicht unter
+                    // die übergebene Menge senken" (artboard 10). The server refuses it outright,
+                    // so the line says which one is wrong rather than the save failing unlabelled.
+                    delivered = state.deliveredOf(line.materialId),
                 )
             }
         } else {
@@ -227,7 +243,7 @@ private fun KindSwitch(
     kind: OrderKind,
     onKind: (OrderKind) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         SectionTitle(text = stringResource(R.string.order_create_kind))
         KrtSegmentedControl(
             options =
@@ -285,7 +301,7 @@ private fun ItemLineCard(
     onRemove: () -> Unit,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             ItemField(
                 shown = line.query,
                 selectedValue = line.gameItemId,
@@ -417,12 +433,13 @@ private fun WhoBlock(
     state: OrderCreateState,
     actions: OrderCreateActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         UnitField(
             label = stringResource(R.string.order_create_responsible),
             units = state.responsibleOptions,
             selectedValue = state.responsibleId,
             onSelect = actions.onResponsible,
+            enabled = state.mode.headEditable,
         )
         if (!state.loading && state.responsibleOptions.isEmpty()) {
             Text(
@@ -447,13 +464,21 @@ private fun WhoBlock(
             units = state.requestingOptions,
             selectedValue = state.requestingId,
             onSelect = actions.onRequesting,
+            enabled = state.mode.headEditable,
         )
         KrtTextField(
             value = state.handle,
             onValueChange = actions.onHandle,
             modifier = Modifier.fillMaxWidth(),
             label = stringResource(R.string.order_create_handle),
+            enabled = state.mode.headEditable,
         )
+        if (!state.mode.headEditable) {
+            // Drawn, not removed. A field that is simply gone reads as a bug; a field with a
+            // reason reads as a rule — and the server takes these three from the stored order
+            // whatever the payload says, so editing them would change nothing silently.
+            KrtHint(explanation = stringResource(R.string.order_edit_head_locked))
+        }
     }
 }
 
@@ -472,6 +497,8 @@ private fun WhoBlock(
  * @param onAmount the amount was edited.
  * @param onMinQuality the minimum quality was picked.
  * @param onRemove the line is to go.
+ * @param delivered how much of this material has already changed hands — the floor the amount may
+ *   not go under, and `0.0` on a form raising a new order.
  */
 @Composable
 private fun LineCard(
@@ -484,9 +511,10 @@ private fun LineCard(
     onAmount: (String) -> Unit,
     onMinQuality: (Int?) -> Unit,
     onRemove: () -> Unit,
+    delivered: Double = 0.0,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             MaterialField(
                 shown = line.query,
                 selectedValue = line.materialId,
@@ -512,7 +540,7 @@ private fun LineCard(
                     color = KrtPalette.TextMuted,
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtTextField(
                     value = line.amount,
                     onValueChange = onAmount,
@@ -525,6 +553,15 @@ private fun LineCard(
                     onSelect = onMinQuality,
                     modifier = Modifier.weight(1f),
                 )
+            }
+            if (delivered > 0.0) {
+                val typed = parseTypedAmount(line.amount) ?: 0.0
+                val floor = java.math.BigDecimal(delivered.toString()).stripTrailingZeros().toPlainString()
+                if (typed < delivered) {
+                    KrtFieldError(text = stringResource(R.string.order_edit_below_delivered, floor))
+                } else {
+                    KrtHint(explanation = stringResource(R.string.order_edit_delivered_floor, floor))
+                }
             }
             if (removable) {
                 KrtQuietDangerButton(
@@ -613,6 +650,7 @@ private fun MinQualityField(
  * @param units the candidates.
  * @param selectedValue which unit is picked.
  * @param onSelect a unit was picked.
+ * @param enabled whether it may be changed; a requester's edit draws it locked rather than absent.
  */
 @Composable
 private fun UnitField(
@@ -620,6 +658,7 @@ private fun UnitField(
     units: List<OrgUnit>,
     selectedValue: String?,
     onSelect: (String) -> Unit,
+    enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     KrtSelectField(
@@ -634,6 +673,7 @@ private fun UnitField(
         modifier = Modifier.fillMaxWidth(),
         label = label,
         selectedValue = selectedValue,
+        enabled = enabled,
     )
 }
 
@@ -648,7 +688,7 @@ private fun SubmitBlock(
     state: OrderCreateState,
     onSubmit: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         state.error?.let {
             Text(
                 text = stringResource(R.string.order_create_failed),
@@ -657,7 +697,14 @@ private fun SubmitBlock(
             )
         }
         KrtCtaButton(
-            text = stringResource(R.string.order_create_submit),
+            text =
+                stringResource(
+                    if (state.mode == OrderFormMode.CREATE) {
+                        R.string.order_create_submit
+                    } else {
+                        R.string.order_edit_submit
+                    },
+                ),
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth().testTag(ORDER_CREATE_SUBMIT_TAG),
             // Validation-dimmed, without a padlock: nothing here is forbidden, it is unfinished.

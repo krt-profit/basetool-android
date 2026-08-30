@@ -105,8 +105,8 @@ fun PersonalInventoryEditor(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
                 text = stringResource(R.string.personal_inventory_visible_only_to_you),
@@ -141,7 +141,7 @@ fun PersonalInventoryEditor(
                 enabled = !editor.saving,
             )
             editor.error?.let { EditorError(error = it) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = onDismiss,
@@ -199,7 +199,7 @@ private fun LocationPicker(
     onChosen: (PersonalLocation) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtCombobox(
             query = locations.query,
             onQueryChange = {

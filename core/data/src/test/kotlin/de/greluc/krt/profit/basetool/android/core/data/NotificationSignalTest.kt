@@ -29,7 +29,7 @@ class NotificationSignalTest {
                 """
                 {"type":"JOB_ORDER_CREATED","entityType":"JOB_ORDER",
                  "entityId":"7f000001-0000-0000-0000-000000000001",
-                 "params":{"displayId":"A-1042"}}
+                 "params":{"displayId":"1042"}}
                 """.trimIndent(),
             )
 
@@ -37,7 +37,7 @@ class NotificationSignalTest {
         assertEquals("JOB_ORDER_CREATED", signal.type)
         assertEquals("JOB_ORDER", signal.entityType)
         assertEquals("7f000001-0000-0000-0000-000000000001", signal.entityId)
-        assertEquals(mapOf("displayId" to "A-1042"), signal.params)
+        assertEquals(mapOf("displayId" to "1042"), signal.params)
     }
 
     @Test

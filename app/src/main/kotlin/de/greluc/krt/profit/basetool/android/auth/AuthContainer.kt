@@ -35,8 +35,13 @@ import de.greluc.krt.profit.basetool.android.core.data.HangarRepository
 import de.greluc.krt.profit.basetool.android.core.data.IdentityRepository
 import de.greluc.krt.profit.basetool.android.core.data.InventoryRepository
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderRepository
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialCatalogRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialCollectionRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialDemandRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
@@ -219,6 +224,46 @@ class AuthContainer(
      */
     val missions: MissionRepository by lazy {
         MissionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Recording the work done on an Auftrag: the Übergabe that finishes it, and the Herstellung
+     * that builds what an item Auftrag asked for.
+     *
+     * Its own repository rather than more methods on [orders]: both reads reach a different
+     * endpoint family (the order's linked stock rows), and both writes append rather than replace.
+     */
+    val orderWork: JobOrderWorkRepository by lazy {
+        JobOrderWorkRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The trade reference — the material catalogue and what the universe pays for it.
+     *
+     * Read-only: prices come from the UEX sync, and nothing in the app writes one.
+     */
+    val materialCatalog: MaterialCatalogRepository by lazy {
+        MaterialCatalogRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Zusagen — a Staffel signing up to deliver part of a Spezialkommando order.
+     *
+     * Its own repository rather than more methods on [orders]: the claims live on their own path
+     * under an order and are read by a screen the order aggregate knows nothing about.
+     */
+    val orderClaims: MaterialClaimRepository by lazy {
+        MaterialClaimRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The stock rows linked to one Auftrag, and the three writes on them.
+     *
+     * Its own repository because it spans two endpoint families — the order's collection read and
+     * the inventory row's own delivered flag.
+     */
+    val orderCollection: MaterialCollectionRepository by lazy {
+        MaterialCollectionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**
@@ -407,6 +452,16 @@ class AuthContainer(
      */
     val inventory: InventoryRepository by lazy {
         InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The cross-order material demand.
+     *
+     * Its own repository rather than a method on the Auftrag one: it reads a different endpoint,
+     * answers the whole picture in one call, and is the only reader of it (design ch. 18 §1).
+     */
+    val materialDemand: MaterialDemandRepository by lazy {
+        MaterialDemandRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

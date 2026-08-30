@@ -7,14 +7,29 @@
 
 package de.greluc.krt.profit.basetool.android.orders
 
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
+import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
+import de.greluc.krt.profit.basetool.android.core.data.ClaimBucket
+import de.greluc.krt.profit.basetool.android.core.data.ClaimQuality
+import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
+import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimSource
+import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
+import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -36,6 +51,81 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+
+/** The Zusagen, which this class does not exercise. */
+private object NoClaimSource : MaterialClaimSource {
+    override suspend fun buckets(orderId: String): ApiResult<List<ClaimBucket>> =
+        ApiResult.Success(emptyList())
+
+    override suspend fun upsert(
+        orderId: String,
+        materialId: String,
+        quality: ClaimQuality,
+        orgUnitId: String,
+        amount: Double,
+    ): ApiResult<Unit> = error("the Zusagen have their own test")
+
+    override suspend fun withdraw(
+        orderId: String,
+        claimId: String,
+    ): ApiResult<Unit> = error("the Zusagen have their own test")
+}
+
+/** The caller's units — never asked here. */
+private object NoOrgUnits : OrgUnitSource {
+    override suspend fun memberships(): ApiResult<List<OrgUnit>> = ApiResult.Success(emptyList())
+
+    override suspend fun activeAllKinds(): ApiResult<List<OrgUnit>> = ApiResult.Success(emptyList())
+
+    override suspend fun serverDefault(): ApiResult<String?> = ApiResult.Success(null)
+}
+
+/** Where produced stock could land — never asked here. */
+private object NoBookInOptions : BookInOptions {
+    override suspend fun locations(query: String): ApiResult<List<LocationOption>> = ApiResult.Success(emptyList())
+
+    override suspend fun members(query: String): ApiResult<List<MemberOption>> = ApiResult.Success(emptyList())
+
+    override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> = ApiResult.Success(emptyList())
+}
+
+/**
+ * The two work seams, neither of which this class exercises.
+ *
+ * `OrderHandoverTest` and `OrderProductionTest` cover them; here they exist so the view model can
+ * be built.
+ */
+private object NoWorkSource : JobOrderWorkSource {
+    override suspend fun stockFor(
+        orderId: String,
+        materialId: String,
+    ): ApiResult<List<HandoverStockRow>> = error("the handover has its own test")
+
+    override suspend fun record(
+        orderId: String,
+        inventoryItemId: String,
+        amount: String,
+        recipientHandle: String,
+        recipientSquadron: String?,
+        handoverTime: String,
+    ): ApiResult<JobOrderHandoverDto> = error("the handover has its own test")
+
+    override suspend fun recordItemHandover(
+        orderId: String,
+        itemId: String,
+        amount: Int,
+        recipientHandle: String,
+        handoverTime: String,
+    ): ApiResult<JobOrderItemHandoverDto> = error("the item handover has its own test")
+
+    override suspend fun linkedStock(
+        orderId: String,
+        materialId: String,
+    ): ApiResult<List<HandoverStockRow>> = error("the Herstellung has its own test")
+
+    override suspend fun bookProduction(booking: ProductionBooking): ApiResult<Unit> =
+        error("the Herstellung has its own test")
+}
 
 /**
  * What one order's screen may do.
@@ -100,6 +190,9 @@ class OrderDetailViewModelTest {
         /** The queue's age thresholds; the defaults, since no test tunes them. */
         override suspend fun ageThresholds(): JobOrderAgeThresholds = JobOrderAgeThresholds()
 
+        override suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>> =
+            ApiResult.Success(emptyList())
+
         override suspend fun detail(id: String): ApiResult<JobOrder> = ApiResult.Success(order)
 
         override suspend fun setAssigned(
@@ -161,7 +254,10 @@ class OrderDetailViewModelTest {
             priority = 1,
             type = "MATERIAL",
             requestingOrgUnit = null,
+            requestingOrgUnitId = null,
             responsibleOrgUnit = null,
+            responsibleOrgUnitId = null,
+            handle = "Rhea",
             comment = null,
             materials = emptyList(),
             items = emptyList(),
@@ -178,7 +274,18 @@ class OrderDetailViewModelTest {
     private fun model(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
         connectivity: Connectivity = FakeConnectivity(),
-    ) = OrderDetailViewModel(source, FakeIdentity(identity), connectivity, "o1")
+    ) = OrderDetailViewModel(
+        OrderDetailSources(
+            orders = source,
+            work = NoWorkSource,
+            bookIn = NoBookInOptions,
+            claims = NoClaimSource,
+            orgUnits = NoOrgUnits,
+            identity = FakeIdentity(identity),
+        ),
+        connectivity,
+        "o1",
+    )
 
     @Test
     fun `the caller's own row is the one that offers anything`() =

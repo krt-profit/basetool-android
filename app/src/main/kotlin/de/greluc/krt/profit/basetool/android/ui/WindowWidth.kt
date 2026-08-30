@@ -39,7 +39,7 @@ fun isWideWindow(): Boolean =
 /**
  * The left/right gutter a screen's scrolling content sits in.
  *
- * **Zero on a phone, [KrtSpacing.md] from a tablet's width up.** The design draws the two cases
+ * **Zero on a phone, [KrtSpacing.s12] from a tablet's width up.** The design draws the two cases
  * differently and both readings are right for their own width: on a phone a dense row list is
  * full-bleed inside the frame (chapter 09's Lager tree spans 49…411 of a 48…412 screen) and there
  * is no room to give away; on a tablet the same list would put a row's first character against the
@@ -66,7 +66,7 @@ fun contentGutter(): Dp =
             .windowSizeClass
             .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
     ) {
-        KrtSpacing.md
+        KrtSpacing.s12
     } else {
         0.dp
     }

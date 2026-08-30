@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,7 +63,7 @@ private val PANEL_BAR = 4.dp
 fun KrtHudBox(
     modifier: Modifier = Modifier,
     contentPadding: androidx.compose.foundation.layout.PaddingValues =
-        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.lg),
+        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s16),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -94,7 +96,7 @@ fun KrtHudBox(
 fun KrtRailCard(
     modifier: Modifier = Modifier,
     contentPadding: androidx.compose.foundation.layout.PaddingValues =
-        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.lg),
+        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s16),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     KrtCard(modifier = modifier, variant = KrtCardVariant.Flush) {
@@ -102,7 +104,7 @@ fun KrtRailCard(
             Box(
                 modifier =
                     Modifier
-                        .width(KrtSpacing.xs)
+                        .width(KrtSpacing.s4)
                         .fillMaxHeight()
                         .background(MaterialTheme.colorScheme.primary),
             )
@@ -150,7 +152,7 @@ fun KrtCard(
             KrtCardVariant.Inset -> KrtPalette.SurfaceInput
             else -> MaterialTheme.colorScheme.surface
         }
-    val padding = if (variant == KrtCardVariant.Flush) 0.dp else KrtSpacing.lg
+    val padding = if (variant == KrtCardVariant.Flush) 0.dp else KrtSpacing.s16
 
     Column(
         modifier =
@@ -189,6 +191,10 @@ fun KrtCard(
  * @param onToggle invoked when the header is tapped.
  * @param modifier layout modifier.
  * @param count optional item count rendered next to the title.
+ * @param stateChip what the head says about itself while it is folded.
+ * @param busy whether **this** section is writing. The spinner takes the chevron's place rather
+ *   than appearing as a screen overlay or a global bar: a section that is saving has to say so at
+ *   itself, or a Zeitplan write looks like it froze the Ziele too (design ch. 18 §3, E4).
  */
 @Composable
 fun KrtPanelHeader(
@@ -197,6 +203,8 @@ fun KrtPanelHeader(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     count: Int? = null,
+    stateChip: (@Composable () -> Unit)? = null,
+    busy: Boolean = false,
 ) {
     Row(
         modifier =
@@ -216,7 +224,7 @@ fun KrtPanelHeader(
         )
         Text(
             text = title.krtUppercase(),
-            modifier = Modifier.padding(horizontal = KrtSpacing.md),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             style = MaterialTheme.typography.titleSmall,
             color = KrtPalette.Gray1,
         )
@@ -228,15 +236,30 @@ fun KrtPanelHeader(
             )
         }
         Box(modifier = Modifier.weight(1f))
-        KrtIcon(
-            id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
-            contentDescription = null,
-            modifier = Modifier.padding(horizontal = KrtSpacing.lg),
-            size = 16.dp,
-            tint = KrtPalette.TextMuted,
-        )
+        // The state chip is what makes the fold honest: a closed section still says whether it is
+        // started, saved, changed or in conflict, so nothing needed for a decision is hidden
+        // (design ch. 02 §10, ch. 06 artboard 7).
+        stateChip?.invoke()
+        if (busy) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(horizontal = KrtSpacing.s16).size(PANEL_SPINNER),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = KrtSpacing.hairline * 2,
+            )
+        } else {
+            KrtIcon(
+                id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
+                contentDescription = null,
+                modifier = Modifier.padding(horizontal = KrtSpacing.s16),
+                size = 16.dp,
+                tint = KrtPalette.TextMuted,
+            )
+        }
     }
 }
+
+/** The spinner that replaces a saving section's chevron — the chevron's own size. */
+private val PANEL_SPINNER = 16.dp
 
 /**
  * One label/value pair of a key-value list.
@@ -258,7 +281,7 @@ fun KrtKeyValueRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
         verticalAlignment = Alignment.Top,
     ) {
         Text(
@@ -287,7 +310,7 @@ private val KEY_COLUMN_WIDTH = 120.dp
 @Composable
 private fun ContainersPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtHudBox {
                 Text(
                     text = "Nächster Einsatz",

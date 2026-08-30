@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.personalinventory
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -73,7 +74,7 @@ fun MeinInventarRoute(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                    .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                     .testTag(MEIN_INVENTAR_SEGMENT_TAG),
             stretch = true,
         )
@@ -88,6 +89,13 @@ fun MeinInventarRoute(
                 onCreate = items::onCreate,
                 onEdit = items::onEdit,
                 onDelete = items::onDeleteRequested,
+                selection =
+                    PersonalSelectionActions(
+                        onToggle = items::onToggleSelected,
+                        onSelectAll = items::onSelectAll,
+                        onClear = items::onSelectionCleared,
+                        onDelete = items::onBulkDeleteRequested,
+                    ),
             )
         } else {
             PersonalBlueprintsScreen(
@@ -101,6 +109,20 @@ fun MeinInventarRoute(
                 onEdit = blueprints::onEdit,
                 onDelete = blueprints::onDeleteRequested,
                 onSelect = blueprints::onSelect,
+                bulk =
+                    BlueprintBulkActions(
+                        onStartSelection = blueprints.selection::start,
+                        onToggleSelected = blueprints.selection::toggle,
+                        onSelectAll = blueprints.selection::selectAll,
+                        onCancelSelection = blueprints.selection::cancel,
+                        onAskDelete = { blueprints.selection.ask(true) },
+                        onDismissDelete = { blueprints.selection.ask(false) },
+                        onConfirmDelete = blueprints.selection::confirm,
+                        onImportOpen = blueprints.import::open,
+                        onImportFile = blueprints.import::onFile,
+                        onImportApply = blueprints.import::apply,
+                        onImportDismiss = blueprints.import::dismiss,
+                    ),
             )
         }
     }
@@ -136,6 +158,16 @@ fun MeinInventarRoute(
             onDismiss = items::onDeleteDismissed,
         )
     }
+    if (itemsState.confirmingBulkDelete) {
+        PersonalBulkDeleteModal(
+            count = itemsState.selection.size,
+            busy = itemsState.deleting,
+            onConfirm = items::onBulkDeleteConfirmed,
+            onDismiss = items::onBulkDeleteDismissed,
+        )
+    }
+    // Two ways out of the mode and no third: „Aufheben" on the bar, and the system back gesture.
+    BackHandler(enabled = itemsState.selecting, onBack = items::onSelectionCleared)
 
     val blueprintEditor = blueprintsState.editor
     // Design ch. 14's conflict dialog for both blueprint sheets: they share one editor state, so

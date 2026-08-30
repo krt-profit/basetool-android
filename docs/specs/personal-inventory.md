@@ -245,26 +245,143 @@ value is how that happens.
 
 ### REQ-APP-PI-012 — The catalogue picker will not offer what the member already owns
 
-A product with `ownedByCurrentUser` is listed — greyed, labelled "Hast du schon" — and **cannot be
-picked**.
+A product with `ownedByCurrentUser` is **not listed at all**, and the sheet carries a notice line
+saying so — design ch. 17 artboard 5, which follows the web („Bereits vorhandene werden nicht
+angeboten"; „die Notice-Zeile sagt das, damit ein fehlender Treffer nicht als Suchfehler gelesen
+wird").
 
-Hiding it would answer the member's actual question ("do I have this one?") with silence and send
-them looking. Offering it would set up a create the server refuses.
+> **Amended 2026-08-30.** The first version listed an owned product greyed out and labelled „Hast
+> du schon", on the reasoning that hiding it answers the member's real question with silence. The
+> design spec's chapter 17 settled it the other way and gave the notice line as the answer to that
+> objection. Recorded rather than quietly rewritten, so the earlier reasoning stays readable.
 
 **Acceptance**
 
-- [x] An owned product cannot be submitted (`PersonalBlueprintsViewModelTest`), and the picker says
-  why (`PersonalBlueprintsScreenTest`).
+- [x] An owned product is not offered (`PersonalBlueprintsViewModelTest`), and the sheet says why
+  (`PersonalBlueprintsScreenTest`).
 - [x] A product row without a key never reaches the picker (`PersonalBlueprintRepositoryTest`).
 - [x] The search is capped, debounced, and needs two characters, like the place picker
   (`PersonalBlueprintsViewModelTest`).
 - [x] **Observed on a device (2026-08-23):** added "9-Series Longsword Cannon", changed its note,
   removed it again — `201`, `200`, `204`.
 
+---
+
+### REQ-APP-PI-013 — Several blueprints at once, and the result line that says what happened
+
+Design ch. 17 artboard 5: the **same** search sheet with checkboxes, no second entry point and no
+„bulk mode" — picking several is the normal case as soon as more than one hit fits. A second tap
+takes a row back off. The CTA names the count („3 Blueprints übernehmen") and is validation-dimmed
+without a selection — dimmed, not locked: nothing here is forbidden, it is unfinished.
+
+**One picked keeps the single create.** `POST /personal-blueprints/batch` carries **only**
+`productKeys` — no note, no `acquiredAt`. So one product goes through `POST /personal-blueprints`,
+which carries the note, and several go through the batch; with several picked the note field is
+drawn locked with that reason rather than removed, because a note silently dropped is worse than a
+note that says it does not apply.
+
+**The sheet stays open on a batch and reports what the server did** — „2 übernommen · 1 bereits
+vorhanden", from `PersonalBlueprintBatchResult`. Closing on a partial result would hide the skipped
+ones, which is the one thing that line exists to say. The list is only re-read when something was
+actually added.
+
+**Acceptance**
+
+- [x] Several products go through the batch and never the single create
+  (`PersonalBlueprintsViewModelTest`).
+- [x] The sheet stays open and carries the two counts (`PersonalBlueprintsViewModelTest`).
+- [x] A second tap takes a product back off (`PersonalBlueprintsViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `PersonalBlueprintRepository.addAll`, `BlueprintBatchResult`,
+`BlueprintEditor.Adding.chosen` / `.noteApplies` / `.offered`, `BlueprintAddSheet`
+
+---
+
+### REQ-APP-PI-014 — „Blueprint-Verfügbarkeit" is a screen of its own, with a role
+
+Design ch. 17 artboard 6, reached from „Mehr". **Not** a third tab of „Mein Inventar": the data is
+org-wide and the screen has its own role, and org-wide rows in a personal list would be the wrong
+place twice over.
+
+Two columns, as the web page has: the blueprint, and **„Verfügbar bei"**. The chapter's own
+correction is explicit that there is **no buildability chip** here — the question this screen asks
+is *who has it*, not *can it be built*; buildability lives on the member's own blueprint. Drawn as
+cards rather than table rows, because the owner list wraps.
+
+**The role gate is drawn, never hidden** (app ADR-0011). The „Mehr" row is always there; without
+`canSeeBlueprintOverview` (`GET /me/capabilities` — officer and above, in the caller's oversight
+scope) it is locked-tappable and the toast names the role. Before the first `/me` lands the flag
+reads as `false`, which locks the row rather than opening a screen the server would refuse.
+
+**Owners load per row**, and all three of the artboard's per-row states are real: „Besitzer werden
+geladen …", „Keine Besitzer in deiner Orgeinheit.", „Besitzer konnten nicht geladen werden." The
+overview page carries counts only, so a second call per row is unavoidable — and one row's failure
+must not take the list with it. A row is asked once, when its card appears.
+
+An owner outside the unit gets the muted chip „kein Einheitsmitglied" and the artboard's sentence,
+quoted verbatim in **both** locales because it explains a server rule rather than describing the
+UI: „Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit."
+
+> [!warning] „Nicht erfasst" has no wire filter
+> `GET /personal-blueprints/overview` takes a search term and paging — nothing else. The chip
+> therefore narrows **the rows loaded so far**, and while the server has more pages the list says
+> so in a line of its own rather than letting a short result read as a complete answer (ADR-0104).
+> A server-side `ownerCount = 0` filter is the fix, and is on the gap list.
+
+**Acceptance**
+
+- [x] One row's failed owner read stays that row's (`BlueprintOverviewTest`).
+- [x] A row is asked for its owners once (`BlueprintOverviewTest`).
+- [x] The „Nicht erfasst" chip reports that it is partial while more pages exist
+  (`BlueprintOverviewTest`).
+- [ ] Observed on a device, with and without the role.
+
+**Code:** `PersonalBlueprintRepository.overview` / `.owners`, `Identity.blueprintOverview`,
+`BlueprintOverviewViewModel`, `BlueprintOverviewScreen`, `MoreScreen`
+
+---
+
+### REQ-APP-PI-015 — The selection mode, and a bulk delete the app has to loop
+
+Design ch. 17 artboard 4: the selection mode of ch. 02 §4, **taken over unchanged** — long press
+starts it, further rows join with a tap, the bar owns the bottom of the screen while it runs and
+the FAB steps aside, and back or „Aufheben" leaves it. No new pattern for this list.
+
+**There is no „alle löschen" menu entry.** It is „Alles wählen" plus delete, because *„eine Aktion,
+die 18 Zeilen löscht, muss die 18 Zeilen vorher gezeigt haben"*. „Alles wählen" ticks **what is
+loaded**, which is the only thing that label can honestly promise on a paged list — scrolling on
+and tapping again adds the rest.
+
+> [!warning] No bulk endpoint exists
+> The API has `DELETE /personal-inventory/{id}` and nothing else; the web's `/delete-all` route
+> belongs to the **blueprints** page, not to this one. So the app deletes one row at a time and
+> counts. That is also what makes the result line necessary rather than decorative: a loop can
+> half-succeed. A refused row **stays selected**, so the member can see which one did not go, and
+> the bar keeps standing to carry „2 gelöscht · 1 übersprungen" — the one number that cannot be
+> reconstructed from the list. A real bulk endpoint is on the gap list.
+
+**No undo.** Unlike the inbox, whose undo hangs on a server row that is gone here.
+
+**Acceptance**
+
+- [x] A bulk deletion deletes one at a time and names what was skipped
+  (`PersonalInventoryViewModelTest`).
+- [x] A refused row stays selected (`PersonalInventoryViewModelTest`).
+- [x] Selecting and unselecting starts and ends the mode (`PersonalInventoryViewModelTest`).
+- [x] Nothing selected sends no deletion (`PersonalInventoryViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `PersonalInventoryState.selection` / `.selected` / `.bulkResult`,
+`PersonalInventoryViewModel.onToggleSelected` / `.onSelectAll` / `.onBulkDelete*`,
+`PersonalInventoryScreen.SelectionActionBar`, `PersonalBulkDeleteModal`
+
 ## Known gaps
 
-- **The blueprint file import** (`/personal-blueprints/import/*`) and the bulk delete. Phase 4,
-  with the other file flows.
+- **The blueprint file import** (`/personal-blueprints/import/*`) and the blueprints' own „alle
+  löschen" (`DELETE /personal-blueprints`). Phase 4, with the other file flows. The **multi-add**
+  that once sat here landed 2026-08-30 as `REQ-APP-PI-013`, and the **items'** selection mode and
+  bulk delete as `REQ-APP-PI-015`.
 - **`acquiredAt`.** The API accepts it on create and update; the app offers no field for it and
   deliberately never sends it, so a save cannot rewrite a value the member cannot see.
 - **Sorting.** The list arrives in the server's default order; the web app offers no sort either.

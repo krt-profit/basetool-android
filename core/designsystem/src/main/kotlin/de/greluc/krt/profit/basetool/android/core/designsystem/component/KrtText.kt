@@ -100,7 +100,7 @@ fun KrtSectionTitle(
             modifier =
                 Modifier
                     .weight(1f)
-                    .padding(horizontal = KrtSpacing.md),
+                    .padding(horizontal = KrtSpacing.s12),
         )
         trailing?.invoke(this)
     }

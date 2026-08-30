@@ -124,6 +124,20 @@ class PersonalBlueprintsScreenTest {
                     onEdit = { edited.add(it) },
                     onDelete = { deleted.add(it) },
                     onSelect = {},
+                    bulk =
+                        BlueprintBulkActions(
+                            onStartSelection = {},
+                            onToggleSelected = {},
+                            onSelectAll = {},
+                            onCancelSelection = {},
+                            onAskDelete = {},
+                            onDismissDelete = {},
+                            onConfirmDelete = {},
+                            onImportOpen = {},
+                            onImportFile = { _, _ -> },
+                            onImportApply = {},
+                            onImportDismiss = {},
+                        ),
                 )
             }
         }
@@ -229,7 +243,7 @@ class PersonalBlueprintsScreenTest {
             BlueprintsState(items = listOf(entry()), total = 1, phase = BlueprintsPhase.Ready, online = false),
         )
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(BLUEPRINTS_ADD_TAG).assertIsNotEnabled()
     }
@@ -242,7 +256,7 @@ class PersonalBlueprintsScreenTest {
     }
 
     @Test
-    fun `the add sheet will not submit a product the member already owns`() {
+    fun `the add sheet does not offer a product the member already owns`() {
         val owned = BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true)
         compose.setContent {
             KrtTheme {
@@ -257,7 +271,10 @@ class PersonalBlueprintsScreenTest {
             }
         }
 
-        compose.onNodeWithText("Hast du schon").assertIsDisplayed()
+        // Not in the list at all (design ch. 17 artboard 5), and the notice line says why — so a
+        // missing hit does not read as a broken search.
+        compose.onNodeWithText("F7A Hornet", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Bereits vorhandene", substring = true).assertIsDisplayed()
         compose.onNodeWithTag(BLUEPRINTS_SAVE_TAG).assertIsNotEnabled()
     }
 

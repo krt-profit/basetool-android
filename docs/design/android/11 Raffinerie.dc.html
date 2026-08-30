@@ -16,7 +16,7 @@
   <style>body{background:#000}</style>
 </helmet>
 <div style="min-height:100vh;background:#000;padding:40px 24px 80px">
-<div style="max-width:3600px;margin:0 auto">
+<div style="max-width:4600px;margin:0 auto">
   <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
   <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">11</div>
@@ -53,19 +53,19 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <sc-for list="{{ o.yields }}" as="y" hint-placeholder-count="2">
-                    <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ y.mat }}</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></div>
+                    <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ y.mat }}</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></div>
                   </sc-for>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;border-top:1px solid #282828;padding-top:10px;font-variant-numeric:tabular-nums">
                   <span style="font:300 11.5px/1 Lato,sans-serif;color:{{ o.timeColor }}">{{ o.time }}</span>
                   <span style="flex:1"></span>
                   <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">Wert ≈</span><span style="font:700 13px/1 Lato,sans-serif;color:#2EBC3D">{{ o.value }}</span>
-                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg>
                 </div>
               </div>
             </sc-for>
           </div>
-          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Raffinerieauftrag anlegen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(231,126,35,.10)" aria-label="Raffinerieauftrag anlegen"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
           <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
             <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
               <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
@@ -102,7 +102,7 @@
             <div class="hud-box" style="padding:14px 16px">
               <dl class="kv-list" style="gap:8px 16px;font-size:13px;grid-template-columns:max-content 1fr">
                 <dt style="font-size:11px">Station</dt><dd style="font-size:13.5px">ARC-L1 Wide Forest</dd>
-                <dt style="font-size:11px">Methode</dt><dd style="font-size:13.5px">Dinyx-Solventierung <span class="chip chip--muted" style="font-size:8.5px;margin-left:4px">Ausbeute +</span></dd>
+                <dt style="font-size:11px">Methode</dt><dd style="font-size:13.5px">Dinyx-Solventierung <span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px;margin-left:4px">Ausbeute +</span></dd>
                 <dt style="font-size:11px">Gestartet</dt><dd style="font-size:13.5px;font-variant-numeric:tabular-nums">16.08. 22:41</dd>
                 <dt style="font-size:11px">Fertig</dt><dd style="font-size:13.5px;font-variant-numeric:tabular-nums">{{ readyText }}</dd>
               </dl>
@@ -113,7 +113,7 @@
                 <sc-for list="{{ detailYields }}" as="y" hint-placeholder-count="2">
                   <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums">
                     <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ y.mat }}</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Qualität {{ y.q }}</div></div>
-                    <span><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">SCU</span></span>
+                    <span><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></span>
                   </div>
                 </sc-for>
                 <div style="display:flex;align-items:center;gap:12px;min-height:44px;padding:6px 14px;background:#1C1C1C;font-variant-numeric:tabular-nums">
@@ -125,9 +125,9 @@
             <sc-if value="{{ booked }}" hint-placeholder-val="{{ false }}">
               <div class="alert alert-success" style="margin:0;padding:10px 14px;font-size:12.5px">Ertrag eingelagert — 2 Einträge im Lager Bereich Profit · ARC-L1 angelegt.</div>
             </sc-if>
-            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464"><b style="color:#FFD23F">Korrektur (27.08.2026):</b> „Einlagern" öffnet das Formular (Artboard 3) — ein POST je Material (RefineryOrderStoreItemDto): Menge korrigiert die berechnete Ausbeute, dazu Qualität, Ort (Pflicht), optional Empfänger/Einheit/Auftrag/Notiz oder Persönlich. Die Zuordnung geschieht IM Formular — nicht nachträglich im Lager.</div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A"><b style="color:#FFD23F">Korrektur (27.08.2026):</b> „Einlagern" öffnet das Formular (Artboard 3) — ein POST je Material (RefineryOrderStoreItemDto): Menge korrigiert die berechnete Ausbeute, dazu Qualität, Ort (Pflicht), optional Empfänger/Einheit/Auftrag/Notiz oder Persönlich. Die Zuordnung geschieht IM Formular — nicht nachträglich im Lager.</div>
           </div>
-          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 12px rgba(231,126,35,.07)">
             <button class="btn btn--cta" style="min-height:52px;width:100%;{{ bookBtnStyle }}" onClick="{{ bookNow }}"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bank-in"></use></svg>{{ bookBtnLabel }}</button>
           </div>
         </div>
@@ -146,9 +146,9 @@
             </div>
           </div>
           <div style="flex:1;overflow:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px">
-            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Ein Eintrag je Material — die Menge korrigiert die berechnete Ausbeute auf den realen Ertrag.</div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Ein Eintrag je Material — die Menge korrigiert die berechnete Ausbeute auf den realen Ertrag.</div>
             <div style="border:1px solid #282828;background:#141414">
-              <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23"><span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Quantainium</span><span class="chip chip--muted" style="font-size:8.5px">berechnet 442 SCU</span></div>
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23"><span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Quantainium</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">berechnet 442 SCU</span></div>
               <div style="padding:12px 14px;display:flex;flex-direction:column;gap:11px">
                 <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px">
                   <div><label style="font-size:12px;margin-bottom:4px">Menge (überschreibt)</label><input type="text" value="438" style="width:100%;height:44px;text-align:center;font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums"></div>
@@ -156,18 +156,18 @@
                 </div>
                 <div><label style="font-size:12px;margin-bottom:4px">Ort (Pflicht — nicht aus der Order impliziert)</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 (Ort der Order)" style="height:44px;font-size:13px"></div></div>
                 <div><label style="font-size:12px;margin-bottom:4px">Empfänger (optional)</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="GrafRotz (du)" style="height:44px;font-size:13px"></div></div>
-                <div><label style="font-size:12px;margin-bottom:4px">Einheit (owningOrgUnitId)</label><select style="width:100%;height:44px;font-size:13px"><option>Bereich Profit — vorbelegt (Einheit der Order)</option></select><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#646464;margin-top:4px">Pflicht (sonst 400), da der Empfänger mehrere Mitgliedschaften hält; bei genau einer entfällt das Feld.</div></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Einheit (owningOrgUnitId)</label><select style="width:100%;height:44px;font-size:13px"><option>Bereich Profit — vorbelegt (Einheit der Order)</option></select><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Pflicht (sonst 400), da der Empfänger mehrere Mitgliedschaften hält; bei genau einer entfällt das Feld.</div></div>
                 <div><label style="font-size:12px;margin-bottom:4px">Auftrag (optional — Zuordnung geschieht HIER)</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="#A-1042 Laranite-Beschaffung" style="height:44px;font-size:13px"></div></div>
                 <label style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none"></span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#D2D2D2">Als persönlichen Eintrag einlagern</span></label>
-                <div><label style="font-size:12px;margin-bottom:4px">Notiz</label><input type="text" value="Ertrag korrigiert: −4 SCU Verlust beim Abtanken" style="width:100%;height:44px;font-size:13px"><div style="text-align:right;font:300 10.5px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:4px">44 / 1000</div></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Notiz</label><input type="text" value="Ertrag korrigiert: −4 SCU Verlust beim Abtanken" style="width:100%;height:44px;font-size:13px"><div style="text-align:right;font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums;margin-top:4px">44 / 1000</div></div>
                 <button class="btn-outline btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-bank-in"></use></svg>Einlagern</button>
               </div>
             </div>
             <div style="border:1px solid #282828;background:#141414">
-              <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23"><span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Bexalit</span><span class="chip chip--muted" style="font-size:8.5px">berechnet 180 SCU</span></div>
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23"><span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Bexalit</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">berechnet 180 SCU</span></div>
               <div style="padding:12px 14px;display:flex;flex-direction:column;gap:11px">
                 <label style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#D2D2D2">Als persönlichen Eintrag einlagern</span></label>
-                <div><label style="font-size:12px;margin-bottom:4px">Auftrag</label><div style="position:relative;display:flex;align-items:center;gap:8px;border:1px solid #282828;height:44px;padding:0 12px"><span style="flex:1;font:300 13px/1 Lato,sans-serif;color:#646464;opacity:.6">Kein Auftrag wählbar</span><span style="width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></div><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#FFD23F;margin-top:4px">Persönlich schließt Auftrag aus (Server: 400) — und persönliche Zeilen erhalten kein Einsatz-Earmark der Order.</div></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Auftrag</label><div style="position:relative;display:flex;align-items:center;gap:8px;border:1px solid #282828;height:44px;padding:0 12px"><span style="flex:1;font:300 13px/1 Lato,sans-serif;color:#8A8A8A;opacity:.6">Kein Auftrag wählbar</span><span style="width:14px;height:14px;background:#141414;border:1px solid #282828;display:flex;align-items:center;justify-content:center"><svg class="krt-icon" style="width:9px;height:9px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></span></div><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#FFD23F;margin-top:4px">Persönlich schließt Auftrag aus (Server: 400) — und persönliche Zeilen erhalten kein Einsatz-Earmark der Order.</div></div>
                 <button class="btn-outline btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-bank-in"></use></svg>Einlagern</button>
               </div>
             </div>
@@ -202,7 +202,7 @@
               <div style="display:flex;gap:18px;margin-top:8px;padding:9px 12px;border:1px solid #282828;background:#141414"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Kosten</span><span style="display:flex;gap:3px"><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#282828"></span></span></div><div style="display:flex;flex-direction:column;gap:4px"><span style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Tempo</span><span style="display:flex;gap:3px"><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#282828"></span><span style="width:16px;height:6px;background:#282828"></span></span></div><div style="display:flex;flex-direction:column;gap:4px"><span style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Ausbeute</span><span style="display:flex;gap:3px"><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#E77E23"></span></span></div></div>
             </div>
             <div>
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Waren (min. 1)</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="font-size:9px">2</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Waren (min. 1)</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="border:1px solid #282828;background:#141414;padding:10px 12px;display:flex;align-items:center;gap:10px">
                   <div style="flex:1;min-width:0;font-variant-numeric:tabular-nums">
@@ -222,7 +222,7 @@
                 </div>
                 <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Ware</button>
               </div>
-              <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464;margin-top:8px">Zeile antippen → Zeilen-Editor (Eingangs-/Ausgangsmaterial + Mengen, optional Qualität &amp; Bonus-%): sechs Felder nebeneinander tragen auf 412 dp nicht.</div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:8px">Zeile antippen → Zeilen-Editor (Eingangs-/Ausgangsmaterial + Mengen, optional Qualität &amp; Bonus-%): sechs Felder nebeneinander tragen auf 412 dp nicht.</div>
             </div>
           </div>
         </div>
@@ -250,10 +250,10 @@
                 <div><label style="font-size:12px;margin-bottom:4px">Dauer — Stunden</label><input type="text" value="5" style="width:100%;height:44px;font-size:13.5px;font-variant-numeric:tabular-nums;text-align:center"></div>
                 <div><label style="font-size:12px;margin-bottom:4px">Minuten</label><input type="text" value="30" style="width:100%;height:44px;font-size:13.5px;font-variant-numeric:tabular-nums;text-align:center"></div>
               </div>
-              <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px;font-variant-numeric:tabular-nums"><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">Endet:</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">28.08.2026, 02:45</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">(live berechnet)</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px;font-variant-numeric:tabular-nums"><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">Endet:</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">28.08.2026, 02:45</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">(live berechnet)</span></div>
             </div>
             <div>
-              <button class="panel-header" style="width:100%;min-height:48px"><h3 style="font-size:13px">Geld</h3><span class="chip chip--danger" style="font-size:9px;margin-left:8px;font-variant-numeric:tabular-nums">−12.400</span><span style="flex:1"></span><svg class="krt-icon toggle-icon" style="width:16px;height:16px;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg></button>
+              <button class="panel-header" style="width:100%;min-height:48px"><h3 style="font-size:13px">Geld</h3><span class="chip chip--danger" style="color:#F2564B;font-size:9px;margin-left:8px;font-variant-numeric:tabular-nums">−12.400</span><span style="flex:1"></span><svg class="krt-icon toggle-icon" style="width:16px;height:16px;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg></button>
               <div style="border:1px solid #282828;border-top:none;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:11px">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                   <div><label style="font-size:12px;margin-bottom:4px">Kosten</label><input type="text" value="12.400" style="width:100%;height:44px;font-size:13.5px;font-variant-numeric:tabular-nums;text-align:right;padding-right:12px"></div>
@@ -274,7 +274,7 @@
               </div>
             </div>
           </div>
-          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
             <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
             <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Raffinerieauftrag anlegen</button>
           </div>
@@ -284,7 +284,7 @@
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Entscheidungen — Create (RefineryOrderDto)</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>KEIN Extractor-Import auf dem Phone: Der Extractor ist eine Windows-Desktop-App, sein Handoff läuft über das Ingest-Gateway und wird einmalig im Browser konsumiert — das Phone kann ihn nicht empfangen. Das Formular ist bewusst manuell; Scan-Icon und Import-Box aus Artboard 1/Tablet entfernt. Falls ein Mobile-Deep-Link je gebaut wird: eigener Auftrag mit Backend-Anschluss</li>
-          <li>Geld-Block = einklappbarer Abschnitt, startet ZU (drei Felder bleiben oft 0); der Kopf zeigt die Gewinn-Vorschau als Chip, sobald ein Feld ≠ 0 — hier offen gezeichnet. Gewinn-Hilfetext verbatim: „Automatisch berechnet: Ore Sales abzüglich Kosten und sonstiger Kosten des Raffinerieauftrags."</li>
+          <li>Geld-Block = einklappbarer Abschnitt, startet ZU (drei Felder bleiben oft 0); der Kopf zeigt die Gewinn-Vorschau als Chip, sobald ein Feld ≠ 0 — hier offen gezeichnet, <b style="color:#D2D2D2">beide Zustände als Paar in Kap. 02 §10</b>. Gewinn-Hilfetext verbatim: „Automatisch berechnet: Ore Sales abzüglich Kosten und sonstiger Kosten des Raffinerieauftrags."</li>
           <li>„Endet" wird live aus Start + Dauer (Std./Min.) berechnet — Anzeige, kein Feld</li>
           <li>Pflicht: Raffinerie (refineryorder.form.location), Methode, ≥ 1 Ware — sonst CTA validierungs-gedimmt (ohne Schloss); Methoden-Auswahl zeigt die drei Ratings Kosten/Tempo/Ausbeute als 3-Stufen-Balken</li>
           <li>Status-Vorbelegung „In Arbeit"; Inhaber vorbelegt mit dem Ersteller — beides änderbar wie im Web</li>
@@ -345,7 +345,7 @@
                   <div style="display:grid;grid-template-columns:1fr 110px 110px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
                     <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">{{ y.mat }}</div>
                     <div style="padding:6px 14px;text-align:right;font:300 12.5px/1 Lato,sans-serif;color:#D2D2D2">{{ y.q }}</div>
-                    <div style="padding:6px 14px;text-align:right"><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">SCU</span></div>
+                    <div style="padding:6px 14px;text-align:right"><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ y.amt }}</span> <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">SCU</span></div>
                   </div>
                 </sc-for>
                 <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 11px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.5px">Geschätzter Wert</span><span style="font:900 15px/1 Lato,sans-serif;color:#2EBC3D">+96.900 aUEC</span></div>
@@ -355,10 +355,100 @@
                 <div style="font:300 12px/1.6 Lato,sans-serif;color:#D2D2D2">Der Extractor-Handoff wird einmalig im Browser konsumiert (Ingest-Gateway) — auf Android gibt es bewusst keinen Import. Raffinerieaufträge entstehen manuell (Artboards 4–5).</div>
               </div>
             </div>
-            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;max-width:960px">Runde-5-Flächen auf dem Tablet: „Neuer Raffinerieauftrag" öffnet das Formular aus Artboards 4–5 als 560-dp-Dialog, „Einlagern" das Formular aus Artboard 3 ebenso — Feldbestand identisch zum Phone, Dialog statt Push.</div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A;max-width:960px">Runde-5-Flächen auf dem Tablet: „Neuer Raffinerieauftrag" öffnet das Formular aus Artboards 4–5 als 560-dp-Dialog, „Einlagern" das Formular aus Artboard 3 ebenso — Feldbestand identisch zum Phone, Dialog statt Push.</div>
           </div>
         </div>
       </x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Raffinerie Parität" style="margin-bottom:32px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">Runde 8 · Raffinerieauftrag bearbeiten &amp; löschen<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Zwei offene Punkte (Priorität 6). Beides ist der Inhaber des Auftrags oder ein Logistiker; das Löschen ist die einzige Stelle der Raffinerie, die Daten vernichtet.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">6 · Raffinerieauftrag bearbeiten</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Auftrag bearbeiten</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#7841 · In Arbeit · POST /{id}</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Solange nicht eingelagert ist, sind alle Angaben änderbar — danach nur noch Geld und Verknüpfung. Diese Grenze zieht die App, nicht der Server (G3).</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Kern</span><span style="flex:1;height:1px;background:#282828"></span></div>
+            <div><label style="font-size:12px;margin-bottom:4px">Raffinerie</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 Wide Forest" style="height:46px;font-size:13.5px"></div></div>
+            <div><label style="font-size:12px;margin-bottom:4px">Methode</label><select style="width:100%;height:46px;font-size:13.5px"><option>Dinyx-Solventierung</option></select><div style="display:flex;gap:18px;margin-top:8px;padding:9px 12px;border:1px solid #282828;background:#141414"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Kosten</span><span style="display:flex;gap:3px"><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#282828"></span></span></div><div style="display:flex;flex-direction:column;gap:4px"><span style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Tempo</span><span style="display:flex;gap:3px"><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#282828"></span><span style="width:16px;height:6px;background:#282828"></span></span></div><div style="display:flex;flex-direction:column;gap:4px"><span style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Ausbeute</span><span style="display:flex;gap:3px"><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#E77E23"></span><span style="width:16px;height:6px;background:#E77E23"></span></span></div></div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Waren</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 12px;display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">Quantainium (roh) 620 SCU <span style="color:#E77E23">→</span> 442 SCU</div><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">Qualität 874 · Bonus +4 %</div></div>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Ware bearbeiten" title="Ware bearbeiten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Ware entfernen" title="Ware entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button>
+            </div>
+            <div><label style="font-size:12px;margin-bottom:4px">Gestartet</label><div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px"><input type="text" value="27.08.2026" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"><input type="text" value="21:15" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div><label style="font-size:12px;margin-bottom:4px">Dauer — Std.</label><input type="text" value="5" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Min.</label><input type="text" value="30" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">Endet:</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">28.08.2026, 02:45</span></div>
+          </div></div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+            <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+            <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Speichern</button>
+          </div>
+          </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Auftrag bearbeiten</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Einstieg: Overflow im Auftrag-Detail (Artboard 2) → „Bearbeiten". Dasselbe Formular wie das Anlegen (Artboards 4–5), vorbefüllt — kein zweites Layout</li>
+          <li><b style="color:#FFD23F">Korrektur (Runde 12, B2):</b> Der SERVER sperrt nichts — RefineryOrderService.updateRefineryOrder hat keinen Status-Guard und leert die Waren eines COMPLETED-Auftrags widerspruchslos. Die Sperre nach dem Einlagern ist eine REGEL DER APP: Kern und Waren rendern gezeichnet-gesperrt mit Schloss, der Info-Block sagt es vorher. Die App ist damit das Einzige, was sie durchsetzt — Backend-Anfrage G3 (Datenintegrität: ein direkter API-Aufruf kann eine gebuchte Charge weiterhin umschreiben)</li>
+          <li>Waren-Zeilen werden über Icon-Aktionen bearbeitet/entfernt (Zeilen-Editor wie beim Anlegen) — keine sechs Felder nebeneinander auf 412 dp</li>
+          <li>Zustände: Laden = Feld-Skeletons · Schreiben = CTA-Spinner · 409 = Modal (Neu laden / Meine Fassung) · 403 = Canon-Copy</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">7 · Raffinerieauftrag löschen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Raffinerieauftrag #7841</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">In Arbeit · Restzeit 2:14</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+            <div class="hud-box" style="padding:12px 14px;font-variant-numeric:tabular-nums">
+              <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Erwarteter Ertrag</div>
+              <div style="font:900 20px/1.1 Lato,sans-serif;color:#FFFFFF;margin-top:4px">442 SCU Quantainium</div>
+              <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">≈ 38.940 aUEC · noch nicht eingelagert</div>
+            </div>
+          </div></div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:7"></div>
+          <div style="position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:24px">
+            <div class="krt-modal krt-modal--danger" style="max-width:360px;width:100%">
+              <div class="krt-modal-head"><h2>Raffinerieauftrag löschen?</h2></div>
+              <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Auftrag <b style="color:#fff">#7841</b> und seine <b style="color:#F2564B">2 Warenzeilen</b> werden gelöscht. Der Ertrag ist noch nicht eingelagert und geht damit verloren.</p><p style="margin:10px 0 0;font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Nicht rückholbar. Auf einer gebuchten Charge zeichnet die App „Löschen" gesperrt mit Grund — der Server setzt dort nur CANCELED und lässt die entstandenen Lagerzeilen stehen (G3).</p></div>
+              <div class="krt-modal-foot"><button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
+                <button class="btn" style="min-height:48px;background:#A3000A;border:1px solid #A3000A;color:#FFFFFF">Löschen</button></div>
+            </div>
+          </div>
+          </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Löschen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Danger-Modal, KEINE Tipp-Hürde: die Hürde bleibt Wipe-Grade-Aktionen vorbehalten (Kap. 02 §7), und ein Raffinerieauftrag ist eine Zeile, kein Bestand</li>
+            <li><b style="color:#FFD23F">Korrektur (Runde 12, B3):</b> „Ein eingelagerter Auftrag lässt sich nicht löschen" ist KEINE Server-Regel — DELETE setzt CANCELED in jedem Zustand, die Lagerzeilen bleiben. Die App zeichnet „Löschen" auf einer gebuchten Charge gesperrt mit Grund; client-seitig, siehe G3</li>
+            <li><b style="color:#D2D2D2">Ratifiziert (D7):</b> Der Erfolgs-Toast („Auftrag gelöscht.") steht 2 s auf dem DETAIL und navigiert dann — nicht auf der Liste; sonst müsste eine Nachricht über zwei ViewModels wandern</li>
+          <li>Der Text nennt, was verloren geht (Warenzeilen + nicht eingelagerter Ertrag) und was NICHT gilt (eingelagert = nicht löschbar) — beide Sätze verhindern je einen falschen Schluss</li>
+          <li>Ohne Rolle bzw. fremder Auftrag: Menüpunkt gesperrt-antippbar, Toast nennt die Regel („nur der eigene Auftrag")</li>
+          <li>Erfolg: zurück zur Liste, Zeile weg, Toast „Auftrag gelöscht." — kein Undo (der Server hat nichts zum Wiederherstellen)</li>
+        </ul>
+      </div>
+    </div>
+
     </div>
   </section>
 

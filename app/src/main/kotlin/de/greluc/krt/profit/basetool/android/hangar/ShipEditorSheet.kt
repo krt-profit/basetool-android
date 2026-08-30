@@ -112,8 +112,8 @@ fun ShipEditorSheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             // Artboard 08.2's order: identify the ship, then name it, then state its facts.
             // Name-first asked a member to name a thing they had not chosen yet.
@@ -135,7 +135,7 @@ fun ShipEditorSheet(
             // the hull stands, and full-width each they pushed Fitted off a phone screen.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.Top,
             ) {
                 Box(modifier = Modifier.weight(1f)) {
@@ -159,7 +159,7 @@ fun ShipEditorSheet(
             // A bordered row that lights up when set, not a toggle on a bare line: the artboard
             // gives Fitted its own box with a second line saying what it means, because
             // "einsatzbereit" is a claim about the ship that somebody else will rely on.
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtCheckboxRow(
                     checked = editor.fitted,
                     onCheckedChange = onFitted,
@@ -170,7 +170,7 @@ fun ShipEditorSheet(
                     text = stringResource(R.string.hangar_field_fitted_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
-                    modifier = Modifier.padding(start = KrtSpacing.xl),
+                    modifier = Modifier.padding(start = KrtSpacing.s24),
                 )
             }
             editor.error?.let { error ->
@@ -185,7 +185,7 @@ fun ShipEditorSheet(
                         ),
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = onDismiss,
@@ -240,7 +240,7 @@ private fun HullPicker(
     // field the moment it is answered.
     var open by rememberSaveable { mutableStateOf(false) }
     val shown = matches.take(HULL_RESULT_LIMIT)
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtCombobox(
             query = query,
             onQueryChange = {
@@ -299,7 +299,7 @@ private fun InsuranceField(
     onLti: (Boolean) -> Unit,
     onMonths: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtFieldLabel(text = stringResource(R.string.hangar_field_insurance), enabled = enabled)
         KrtSegmentedControl(
             options =

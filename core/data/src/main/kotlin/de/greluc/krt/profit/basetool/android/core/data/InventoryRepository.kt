@@ -11,6 +11,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AggregatedInventoryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.AllocationReductionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BulkCheckoutRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
@@ -212,6 +213,29 @@ data class AllocationTarget(
     val id: String,
     val label: String,
     val subtitle: String? = null,
+)
+
+/**
+ * One game item and where the org unit's copies of it sit (design ch. 09 artboard 21).
+ *
+ * @property id the game item.
+ * @property name what it is called.
+ * @property kind the catalogue's own category string — free text on the wire, which is why the
+ *   screen builds its filter chips from the values that actually turn up rather than from a list
+ *   it made up.
+ * @property manufacturer who makes it, or `null`.
+ * @property amount how many pieces there are in total.
+ * @property holders how many distinct members hold them.
+ * @property locations the distinct places, in the order the server listed them.
+ */
+data class GameItemStock(
+    val id: String,
+    val name: String,
+    val kind: String?,
+    val manufacturer: String?,
+    val amount: Double,
+    val holders: Int,
+    val locations: List<String>,
 )
 
 /** What a book-out does with the material. */
@@ -455,10 +479,48 @@ interface MaterialDetailSource {
 }
 
 /**
+ * Where stock can land: the three lookups every book-in form asks for.
+ *
+ * Its own seam rather than part of [InventorySource] alone, because the Herstellung books produced
+ * units into the Lager without reading it — a form that needs „wo, bei wem, in welchen Pool" should
+ * not have to stand up the whole warehouse to be tested.
+ */
+interface BookInOptions {
+    /**
+     * Searches places.
+     *
+     * @param query what the member typed.
+     * @return the matches.
+     */
+    suspend fun locations(query: String): ApiResult<List<LocationOption>>
+
+    /**
+     * Searches members.
+     *
+     * @param query what the member typed.
+     * @return the matches.
+     */
+    suspend fun members(query: String): ApiResult<List<MemberOption>>
+
+    /**
+     * Reads the org units stock may be booked into for one member.
+     *
+     * Asked for the **owning** member, not the caller: the server validates the picked unit against
+     * that member's own memberships, so offering the caller's would offer choices the write then
+     * refuses.
+     *
+     * @param userId the member the stock would belong to.
+     * @return their memberships across all four org-unit kinds.
+     */
+    suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>>
+}
+
+/**
  * The Lager reads, as a seam.
  */
 interface InventorySource :
     MaterialLookup,
+    BookInOptions,
     InventoryAllocationSource {
     /**
      * Reads one page of material groups.
@@ -522,6 +584,32 @@ interface InventorySource :
     ): ApiResult<BulkRebookResult>
 
     /**
+     * Books several of the caller's own rows out in one call (Sammel-Ausbuchen, design ch. 09
+     * artboard 20).
+     *
+     * **Whole rows, and all or nothing.** `POST /inventory/bulk-checkout` carries only the ids: it
+     * deletes each row in full, cascades its earmarks away, and writes one audit event. A row that
+     * is not the caller's, or an id it does not know, aborts the **whole** call — so there is no
+     * per-row outcome to report, unlike the bulk rebooking beside it.
+     *
+     * @param entryIds which rows.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun bulkCheckout(entryIds: List<String>): ApiResult<Unit>
+
+    /**
+     * Reads the org unit's **game-item** stock, grouped per item.
+     *
+     * One call and no paging: `GET /inventory/all/grouped?catalog=ITEM` answers with every item and
+     * its stacks, and each stack carries its holder and its place — which is where „N Halter · M
+     * Orte" comes from. Because everything arrives at once, the screen's search and its category
+     * chips filter a **complete** list rather than a page, so neither has a cap to declare.
+     *
+     * @return the items, or the classified failure.
+     */
+    suspend fun gameItemStock(): ApiResult<List<GameItemStock>>
+
+    /**
      * Books material out of one entry.
      *
      * @param id the entry.
@@ -549,34 +637,6 @@ interface InventorySource :
         version: Long?,
         note: String?,
     ): ApiResult<Unit>
-
-    /**
-     * Searches places.
-     *
-     * @param query what the member typed.
-     * @return the matches.
-     */
-    suspend fun locations(query: String): ApiResult<List<LocationOption>>
-
-    /**
-     * Searches members, for a transfer.
-     *
-     * @param query what the member typed.
-     * @return the matches.
-     */
-    suspend fun members(query: String): ApiResult<List<MemberOption>>
-
-    /**
-     * Reads the org units a transfer may hand stock to.
-     *
-     * Asked for the **receiving** member, not the caller: the server validates the picked unit
-     * against that member's own memberships, so offering the caller's would offer choices the
-     * write then refuses.
-     *
-     * @param userId the member who would receive the stock.
-     * @return their memberships across all four org-unit kinds.
-     */
-    suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>>
 
     /**
      * Reads the terminals that buy a material.
@@ -816,7 +876,7 @@ class InventoryRepository(
                         reference.id?.let { id ->
                             AllocationTarget(
                                 id = id,
-                                label = reference.displayId?.let { "#A-$it" } ?: id,
+                                label = reference.displayId?.let { "#$it" } ?: id,
                                 subtitle = reference.handle?.takeIf { it.isNotBlank() },
                             )
                         }
@@ -851,6 +911,26 @@ class InventoryRepository(
                 )
             }
         }
+
+    override suspend fun gameItemStock(): ApiResult<List<GameItemStock>> =
+        when (
+            val result =
+                reader.get(
+                    ALL_GROUPED_PATH,
+                    listOf(CATALOG_PARAM to CATALOG_ITEM),
+                    ListSerializer(GroupedInventoryDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toItemStock() })
+        }
+
+    override suspend fun bulkCheckout(entryIds: List<String>): ApiResult<Unit> =
+        reader.postAccepted(
+            BULK_CHECKOUT_PATH,
+            BulkCheckoutRequest(itemIds = entryIds),
+            BulkCheckoutRequest.serializer(),
+        )
 
     override suspend fun bulkRebook(
         entryIds: List<String>,
@@ -1067,6 +1147,10 @@ class InventoryRepository(
         private const val BOOK_IN_PATH = "/api/v1/inventory"
         private const val ALLOCATION_PATH_PREFIX = "/api/v1/inventory"
         private const val BULK_REBOOK_PATH = "/api/v1/inventory/bulk-rebook"
+        private const val BULK_CHECKOUT_PATH = "/api/v1/inventory/bulk-checkout"
+        private const val ALL_GROUPED_PATH = "/api/v1/inventory/all/grouped"
+        private const val CATALOG_PARAM = "catalog"
+        private const val CATALOG_ITEM = "ITEM"
 
         /** The status a 200 that could not be mapped is reported under. */
         private const val HTTP_OK = 200
@@ -1204,7 +1288,7 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
                 allocation.jobOrderId?.let { target ->
                     InventoryAllocation(
                         targetId = target,
-                        label = allocation.jobOrderDisplayId?.let { "#A-$it" } ?: target,
+                        label = allocation.jobOrderDisplayId?.let { "#$it" } ?: target,
                         subtitle = null,
                         amount = allocation.amount?.toPlainString() ?: "0",
                     )
@@ -1300,5 +1384,35 @@ private fun MaterialSellingTerminalDto.toOption(): TerminalOption? {
         id = terminal,
         name = terminalName.orEmpty(),
         price = priceSell?.value?.toPlainString(),
+    )
+}
+
+/**
+ * One grouped row as the game-item screen holds it.
+ *
+ * A group without a game item is a **material** group and is dropped: `catalog=ITEM` should not
+ * return one, and a row whose subject the screen cannot name is worse than a row that is missing.
+ *
+ * @receiver what the server sent.
+ * @return the row, or `null` when it names no game item.
+ */
+private fun GroupedInventoryDto.toItemStock(): GameItemStock? {
+    val item = gameItem
+    val id = item?.id
+    if (item == null || id == null) {
+        return null
+    }
+    val stacks = stacks.orEmpty()
+    return GameItemStock(
+        id = id,
+        name = item.name.orEmpty(),
+        kind = item.kind?.takeIf { it.isNotBlank() },
+        manufacturer = item.manufacturer?.takeIf { it.isNotBlank() },
+        amount = totalAmount ?: 0.0,
+        // Counted from the stacks rather than asked for: the server groups by item and hands the
+        // stacks along, so both figures are already here and a second call would ask what is on
+        // screen.
+        holders = stacks.mapNotNull { it.user?.id }.distinct().size,
+        locations = stacks.mapNotNull { it.location?.name?.takeIf { name -> name.isNotBlank() } }.distinct(),
     )
 }

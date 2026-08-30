@@ -69,182 +69,106 @@ class MissionDetailViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
 
+    // ------------------------------------------------------------ the badge's lifecycle (F2)
+
+    /** A planned Einsatz offers the step to running, and a finished one offers nothing. */
+    @Test
+    fun `the badge offers the next status and stops at the end`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = true)))
+            val planned = viewModel()
+            planned.load()
+            advanceUntilIdle()
+            assertEquals(MissionStatus.ACTIVE, planned.state.value.lifecycleNext)
+
+            val doneSource = RecordingSource()
+            doneSource.queueDetail(
+                ApiResult.Success(missionDetail(canManage = true, status = MissionStatus.COMPLETED)),
+            )
+            source = doneSource
+            val done = viewModel()
+            done.load()
+            advanceUntilIdle()
+            assertNull(done.state.value.lifecycleNext)
+        }
+
     /**
-     * Answers with whatever is queued and counts what was asked for.
+     * Starting writes the **Kern** section carrying the status — not the Zeitplan carrying a
+     * timestamp, which is what it used to do from inside the form.
      *
-     * @property detailAnswers responses for [detail], the last one repeating once exhausted.
-     * @property financeAnswers responses for [finances], likewise.
+     * Every other Kern field goes back as it stands, because that PATCH replaces the section rather
+     * than merging into it. The calendar link is in the assertion on purpose: the app did not map
+     * it at all, so every rename cleared it.
      */
-    private class RecordingSource(
-        private val detailAnswers: MutableList<ApiResult<MissionDetail>> = mutableListOf(),
-        private val financeAnswers: MutableList<ApiResult<MissionFinances>> = mutableListOf(),
-    ) : MissionSource {
-        var detailCalls = 0
-        var financeCalls = 0
+    @Test
+    fun `starting writes the core section with the status and echoes the rest`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = true)))
+            val subject = viewModel()
+            subject.load()
+            advanceUntilIdle()
 
-        fun queueDetail(answer: ApiResult<MissionDetail>) = detailAnswers.add(answer)
+            subject.lifecycle.ask()
+            subject.lifecycle.confirm()
+            advanceUntilIdle()
 
-        fun queueFinances(answer: ApiResult<MissionFinances>) = financeAnswers.add(answer)
-
-        override suspend fun search(
-            query: MissionQuery,
-            page: Int,
-            pageSize: Int,
-        ): ApiResult<MissionPage> = error("the detail screen never searches")
-
-        override suspend fun detail(id: String): ApiResult<MissionDetail> {
-            detailCalls++
-            return if (detailAnswers.size > 1) detailAnswers.removeAt(0) else detailAnswers.first()
+            assertEquals(
+                listOf(
+                    CorePatch(
+                        name = "Vertikaler Abbau",
+                        description = "Briefing",
+                        meetingPoint = "ARC-L1",
+                        calendarLink = "https://calendar.example/e",
+                        status = "ACTIVE",
+                        version = CORE_VERSION,
+                    ),
+                ),
+                corePatches,
+            )
         }
 
-        override suspend fun finances(missionId: String): ApiResult<MissionFinances> {
-            financeCalls++
-            return if (financeAnswers.size > 1) financeAnswers.removeAt(0) else financeAnswers.first()
+    /** The question closes on the way out, so a second tap cannot send the write twice. */
+    @Test
+    fun `confirming closes the question`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = true)))
+            val subject = viewModel()
+            subject.load()
+            advanceUntilIdle()
+
+            subject.lifecycle.ask()
+            subject.lifecycle.confirm()
+            subject.lifecycle.confirm()
+            advanceUntilIdle()
+
+            assertNull(subject.state.value.lifecycleAsk)
+            assertEquals(1, corePatches.size)
         }
 
-        /**
-         * The caller's own row as this fake hands it back.
-         *
-         * Defined on the fake rather than on the test class: a nested class cannot reach the
-         * outer one's helpers, and the row is the fake's own answer anyway.
-         *
-         * @param checkedIn whether it is checked in.
-         * @param donating whether the share is donated.
-         * @return the row.
-         */
-        fun row(
-            checkedIn: Boolean = false,
-            donating: Boolean? = null,
-        ) = MissionParticipant(
-            id = "p1",
-            userId = "u1",
-            name = "Rhea",
-            role = null,
-            checkedIn = checkedIn,
-            comment = null,
-            donating = donating,
-        )
+    /** Dismissing writes nothing, and neither does a member without the role. */
+    @Test
+    fun `nothing is written without a confirmation or without the role`() =
+        runTest(dispatcher) {
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = true)))
+            val manager = viewModel()
+            manager.load()
+            advanceUntilIdle()
+            manager.lifecycle.ask()
+            manager.lifecycle.dismiss()
+            manager.lifecycle.confirm()
+            advanceUntilIdle()
 
-        val joins = mutableListOf<String>()
-        val leaves = mutableListOf<Pair<String, String>>()
-        val checkIns = mutableListOf<Pair<String, Boolean>>()
-        val preferences = mutableListOf<Pair<String, Boolean>>()
-        var writeAnswer: ApiResult<MissionParticipant>? = null
-        var joinAnswer: ApiResult<MissionDetail>? = null
-        var leaveAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+            source = RecordingSource()
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = false)))
+            val member = viewModel()
+            member.load()
+            advanceUntilIdle()
+            member.lifecycle.ask()
+            member.lifecycle.confirm()
+            advanceUntilIdle()
 
-        var jobTypeAnswer: List<MissionJobType> = listOf(MissionJobType("j1", "Pilot"))
-        val joinRequests = mutableListOf<Triple<String, String?, Boolean>>()
-
-        override suspend fun jobTypes(): ApiResult<List<MissionJobType>> =
-            ApiResult.Success(jobTypeAnswer)
-
-        override suspend fun join(
-            missionId: String,
-            userId: String,
-            desiredJobTypeId: String?,
-            donate: Boolean,
-        ): ApiResult<MissionDetail> {
-            joins.add(missionId)
-            joinRequests.add(Triple(userId, desiredJobTypeId, donate))
-            return joinAnswer ?: detail(missionId)
+            assertTrue(corePatches.isEmpty())
         }
-
-        override suspend fun leave(
-            missionId: String,
-            participantId: String,
-        ): ApiResult<Unit> {
-            leaves.add(missionId to participantId)
-            return leaveAnswer
-        }
-
-        override suspend fun setCheckedIn(
-            missionId: String,
-            participantId: String,
-            checkedIn: Boolean,
-        ): ApiResult<MissionParticipant> {
-            checkIns.add(participantId to checkedIn)
-            return writeAnswer ?: ApiResult.Success(row(checkedIn = checkedIn))
-        }
-
-        override suspend fun setPlannedFunction(
-            missionId: String,
-            participant: MissionParticipant,
-            jobTypeId: String?,
-        ): ApiResult<MissionParticipant> = error("the manager's roster has its own test")
-
-        override suspend fun setDonating(
-            missionId: String,
-            participantId: String,
-            donating: Boolean,
-        ): ApiResult<MissionParticipant> {
-            preferences.add(participantId to donating)
-            return writeAnswer ?: ApiResult.Success(row(donating = donating))
-        }
-
-        val booked = mutableListOf<List<Any?>>()
-        val rewritten = mutableListOf<List<Any?>>()
-        val removed = mutableListOf<String>()
-        var bookAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
-
-        override suspend fun addFinanceEntry(
-            missionId: String,
-            participantId: String,
-            income: Boolean,
-            amount: String,
-            note: String?,
-        ): ApiResult<Unit> {
-            booked.add(listOf(missionId, participantId, income, amount, note))
-            return bookAnswer
-        }
-
-        override suspend fun updateFinanceEntry(
-            entryId: String,
-            income: Boolean,
-            amount: String,
-            note: String?,
-            version: Long?,
-        ): ApiResult<Unit> {
-            rewritten.add(listOf(entryId, income, amount, note, version))
-            return bookAnswer
-        }
-
-        override suspend fun deleteFinanceEntry(entryId: String): ApiResult<Unit> {
-            removed.add(entryId)
-            return bookAnswer
-        }
-    }
-
-    private fun detail(
-        name: String = "Vertikaler Abbau",
-        started: Boolean = true,
-        canManage: Boolean = false,
-        vararg roster: MissionParticipant,
-    ) = MissionDetail(
-        id = "m1",
-        name = name,
-        description = null,
-        status = MissionStatus.PLANNED,
-        rawStatus = "PLANNED",
-        meetingTime = null,
-        plannedStartTime = null,
-        actualStartTime = if (started) Instant.parse("2026-08-23T12:00:00Z") else null,
-        plannedEndTime = null,
-        isInternal = false,
-        meetingPoint = null,
-        operationName = null,
-        orgUnitName = null,
-        orgUnitShorthand = null,
-        partyLeadName = null,
-        registeredParticipants = roster.size,
-        checkedInParticipants = roster.count { it.checkedIn },
-        participants = roster.toList(),
-        units = emptyList(),
-        steps = emptyList(),
-        objectives = emptyList(),
-        frequencies = emptyList(),
-        canManage = canManage,
-    )
 
     private fun finances() =
         MissionFinances(
@@ -286,243 +210,12 @@ class MissionDetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    /**
-     * The caller, as the identity read answers.
-     *
-     * @property answer what to return.
-     */
-    private class FakeIdentity(
-        private val answer: ApiResult<Identity>,
-    ) : IdentitySource {
-        override fun forget() = Unit
+    private val corePatches = mutableListOf<CorePatch>()
 
-        override suspend fun myUserId(): ApiResult<String> =
-            when (answer) {
-                is ApiResult.Failure -> answer
-                is ApiResult.Success -> ApiResult.Success(answer.value.userId)
-            }
-
-        override suspend fun me(): ApiResult<Identity> = answer
-    }
-
-    private class FakeConnectivity(
-        initial: Boolean = true,
-    ) : Connectivity {
-        val state = MutableStateFlow(initial)
-        override val online: Flow<Boolean> get() = state
-    }
-
-    /** The Verwaltung seam; this class exercises the screen around it, not the three patches. */
-    private val admin =
-        object : MissionAdminSource {
-            override suspend fun patchCore(
-                missionId: String,
-                name: String,
-                description: String?,
-                meetingPoint: String?,
-                version: Long,
-            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
-
-            override suspend fun patchSchedule(
-                missionId: String,
-                meetingTime: String?,
-                plannedStartTime: String?,
-                plannedEndTime: String?,
-                actualStartTime: String?,
-                version: Long,
-            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
-
-            override suspend fun patchFlags(
-                missionId: String,
-                internal: Boolean,
-                version: Long,
-            ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
-
-            override suspend fun setPartyLead(
-                missionId: String,
-                userId: String?,
-                guestName: String?,
-                version: Long,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun addManager(
-                missionId: String,
-                userId: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun removeManager(
-                missionId: String,
-                userId: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun addParticipant(
-                missionId: String,
-                userId: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-        }
-
-    /** The structure seam; this class exercises the screen around it. */
-    private val structure =
-        object : MissionStructureSource {
-            override suspend fun addFrequency(
-                missionId: String,
-                frequencyTypeId: String,
-                value: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun addCustomFrequency(
-                missionId: String,
-                current: MissionDetail,
-                name: String,
-                value: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun removeFrequency(
-                missionId: String,
-                frequencyId: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun addUnit(
-                missionId: String,
-                name: String,
-                highValue: Boolean,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun updateUnit(
-                missionId: String,
-                unitId: String,
-                name: String,
-                highValue: Boolean,
-                version: Long,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun setCrewRoles(
-                missionId: String,
-                unitId: String,
-                crewId: String,
-                jobTypeIds: Set<String>,
-                version: Long,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun removeUnit(
-                missionId: String,
-                unitId: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun addCrew(
-                missionId: String,
-                unitId: String,
-                participantId: String,
-                jobTypeIds: Set<String>,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-
-            override suspend fun removeCrew(
-                missionId: String,
-                unitId: String,
-                crewId: String,
-            ): ApiResult<MissionDetail> = error("the structure has its own test")
-        }
-
-    /** Records every Ablauf and Ziele write, so the counter each one echoed can be asserted. */
-    private val timelineCalls = mutableListOf<Pair<String, Long>>()
-
-    /** The Ablauf and Ziele seam. Answers with the Einsatz it was handed, spliced as the real one is. */
-    private val timeline =
-        object : MissionTimelineSource {
-            override suspend fun addStep(
-                missionId: String,
-                current: MissionDetail,
-                title: String,
-                meta: String?,
-            ): ApiResult<MissionDetail> = step("add", current)
-
-            override suspend fun updateStep(
-                missionId: String,
-                current: MissionDetail,
-                stepId: String,
-                title: String,
-                meta: String?,
-            ): ApiResult<MissionDetail> = step("update", current)
-
-            override suspend fun toggleStep(
-                missionId: String,
-                current: MissionDetail,
-                stepId: String,
-                done: Boolean,
-            ): ApiResult<MissionDetail> = step("toggle", current)
-
-            override suspend fun removeStep(
-                missionId: String,
-                current: MissionDetail,
-                stepId: String,
-            ): ApiResult<MissionDetail> = step("remove", current)
-
-            override suspend fun reorderSteps(
-                missionId: String,
-                current: MissionDetail,
-                stepIds: List<String>,
-            ): ApiResult<MissionDetail> = step("reorder", current)
-
-            override suspend fun reorderObjectives(
-                missionId: String,
-                current: MissionDetail,
-                objectiveIds: List<String>,
-            ): ApiResult<MissionDetail> = objective("reorder", current)
-
-            override suspend fun addObjective(
-                missionId: String,
-                current: MissionDetail,
-                title: String,
-                kind: MissionObjectiveKind,
-            ): ApiResult<MissionDetail> = objective("add", current)
-
-            override suspend fun updateObjective(
-                missionId: String,
-                current: MissionDetail,
-                objectiveId: String,
-                title: String,
-                kind: MissionObjectiveKind,
-            ): ApiResult<MissionDetail> = objective("update", current)
-
-            override suspend fun removeObjective(
-                missionId: String,
-                current: MissionDetail,
-                objectiveId: String,
-            ): ApiResult<MissionDetail> = objective("remove", current)
-
-            private fun step(
-                what: String,
-                current: MissionDetail,
-            ): ApiResult<MissionDetail> {
-                timelineCalls.add(what to current.stepsVersion)
-                return ApiResult.Success(current.copy(stepsVersion = current.stepsVersion + 1))
-            }
-
-            private fun objective(
-                what: String,
-                current: MissionDetail,
-            ): ApiResult<MissionDetail> {
-                timelineCalls.add(what to current.objectivesVersion)
-                return ApiResult.Success(current.copy(objectivesVersion = current.objectivesVersion + 1))
-            }
-        }
-
-    /** What the member picker was asked for, and what it is answered with. */
-    private val memberQueries = mutableListOf<String>()
-    private var memberAnswer: ApiResult<List<MemberOption>> =
-        ApiResult.Success(listOf(MemberOption(id = "u9", name = "Rhea")))
-
-    /** The two catalogue lookups. */
-    private val people =
-        object : MissionPeopleSource {
-            override suspend fun members(query: String): ApiResult<List<MemberOption>> {
-                memberQueries.add(query)
-                return memberAnswer
-            }
-
-            override suspend fun crewJobTypes(): ApiResult<List<MissionJobType>> =
-                ApiResult.Success(listOf(MissionJobType("c1", "Turret")))
-        }
+    private val admin = RecordingMissionAdmin(corePatches)
+    private val structure = NoMissionStructure
+    private val timeline = NoMissionTimeline
+    private val people = RecordingMissionPeople()
 
     private fun viewModel(
         identity: ApiResult<Identity> = ApiResult.Success(Identity("u1", logistician = false)),
@@ -563,7 +256,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the Einsatz loads and the Uebersicht tab is the one showing`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
 
             model.load()
@@ -579,7 +272,7 @@ class MissionDetailViewModelTest {
         runTest(dispatcher) {
             // Six tabs come from one response. The seventh is two more calls most members never
             // look at, and one a member without the permission cannot make succeed at all.
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
 
@@ -593,7 +286,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `opening the Finanzen tab fetches it once, and only once`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
             model.load()
@@ -618,7 +311,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the Verwaltung tab fills the form on arrival and clears it on departure`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(canManage = true)))
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = true)))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -634,7 +327,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the Verwaltung tab stays empty for a caller who may not manage`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(canManage = false)))
+            source.queueDetail(ApiResult.Success(missionDetail(canManage = false)))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -649,7 +342,7 @@ class MissionDetailViewModelTest {
         runTest(dispatcher) {
             // The ordinary case for a member who may see the Einsatz but not its books. Turning
             // that into a failed screen would hide an Einsatz behind a permission it does not need.
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Failure(ApiError.Forbidden()))
             val model = viewModel()
             model.load()
@@ -665,7 +358,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the Finanzen tab can be retried without reloading the Einsatz around it`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Failure(ApiError.Network(IOException("offline"))))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
@@ -701,8 +394,8 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refresh keeps the Einsatz on screen while it runs`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail("Alt")))
-            source.queueDetail(ApiResult.Success(detail("Neu")))
+            source.queueDetail(ApiResult.Success(missionDetail("Alt")))
+            source.queueDetail(ApiResult.Success(missionDetail("Neu")))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -720,7 +413,7 @@ class MissionDetailViewModelTest {
         runTest(dispatcher) {
             // Refreshing must not silently acquire a permission-dependent read the member never
             // asked for -- nor skip one they are looking at.
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
             model.load()
@@ -740,7 +433,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `signing up opens the sheet rather than joining outright`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -760,7 +453,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the sheet reads the Funktionen when it opens, not with the Einsatz`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -774,7 +467,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the sign-up carries the payout choice and the desired function`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -800,7 +493,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `tapping the chosen function again clears it`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -817,7 +510,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refused sign-up keeps the sheet and the answers in it`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -839,7 +532,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the sheet still works when the Funktionen cannot be read`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             source.jobTypeAnswer = emptyList()
             val model = viewModel()
             model.load()
@@ -857,8 +550,8 @@ class MissionDetailViewModelTest {
         runTest(dispatcher) {
             // The withdrawal answers 204, so the counts above the roster would otherwise be the
             // app's guess rather than the server's.
-            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -873,7 +566,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `nothing is offered while the app does not know who the caller is`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
             val model = viewModel(identity = ApiResult.Failure(ApiError.NotFound()))
             model.load()
             advanceUntilIdle()
@@ -887,7 +580,7 @@ class MissionDetailViewModelTest {
         runTest(dispatcher) {
             // The slim endpoint answers with the row alone. Re-reading the whole Einsatz for one
             // timestamp would make a check-in cost what opening the screen costs.
-            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -905,7 +598,7 @@ class MissionDetailViewModelTest {
     fun `checking out is the same action once checked in`() =
         runTest(dispatcher) {
             source.queueDetail(
-                ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row(checkedIn = true)))),
+                ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row(checkedIn = true)))),
             )
             val model = viewModel()
             model.load()
@@ -920,7 +613,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `the payout preference flips between paid out and donated`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -935,7 +628,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refusal is kept and the row is left as it was`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail("Vertikaler Abbau", roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail("Vertikaler Abbau", roster = arrayOf(source.row()))))
             source.writeAnswer = ApiResult.Failure(ApiError.Forbidden())
             val model = viewModel()
             model.load()
@@ -954,7 +647,7 @@ class MissionDetailViewModelTest {
             // The server refuses it — "Cannot check in before mission actual start time is set",
             // found on a device — so the control is absent rather than returning a 400.
             source.queueDetail(
-                ApiResult.Success(detail("Vertikaler Abbau", started = false, roster = arrayOf(source.row()))),
+                ApiResult.Success(missionDetail("Vertikaler Abbau", started = false, roster = arrayOf(source.row()))),
             )
             val model = viewModel()
             model.load()
@@ -971,7 +664,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `nothing is written while the device has no network`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel(connectivity = FakeConnectivity(initial = false))
             model.load()
             advanceUntilIdle()
@@ -988,7 +681,7 @@ class MissionDetailViewModelTest {
         runTest(dispatcher) {
             // The create names a participant, and the only one the app may name is the caller's
             // own. Without a sign-up there is nothing to name.
-            source.queueDetail(ApiResult.Success(detail()))
+            source.queueDetail(ApiResult.Success(missionDetail()))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -1003,7 +696,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `a booking carries the direction, the amount and the caller's own row`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
             model.load()
@@ -1023,7 +716,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `an amount of nothing is not a booking`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -1037,7 +730,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `editing a booking echoes its version`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
             model.load()
@@ -1055,7 +748,7 @@ class MissionDetailViewModelTest {
     fun `the editor opens on a number the field can hold`() =
         runTest(dispatcher) {
             // The wire carries `12000.0000` and the field takes digits alone.
-            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             val model = viewModel()
             model.load()
             advanceUntilIdle()
@@ -1068,7 +761,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `a refused booking keeps the editor open with what was typed`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             source.bookAnswer = ApiResult.Failure(ApiError.OptimisticLock())
             val model = viewModel()
             model.load()
@@ -1086,7 +779,7 @@ class MissionDetailViewModelTest {
     @Test
     fun `a booking re-reads the tab, because the totals moved with it`() =
         runTest(dispatcher) {
-            source.queueDetail(ApiResult.Success(detail(roster = arrayOf(source.row()))))
+            source.queueDetail(ApiResult.Success(missionDetail(roster = arrayOf(source.row()))))
             source.queueFinances(ApiResult.Success(finances()))
             val model = viewModel()
             model.load()

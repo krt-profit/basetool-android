@@ -4,6 +4,108 @@
 
 ### Added
 
+- **Die Verwaltung eines Einsatzes zeigt jetzt, wer Einsatzleitung und wer Manager ist.** Vorher
+  standen dort nur drei Knöpfe; die Manager waren nirgends zu sehen und liessen sich deshalb auch
+  nicht entfernen. Jede Zeile nennt zuerst den aktuellen Stand, dann die Aktion — und das
+  Entfernen eines Managers fragt nach und nennt die Person.
+
+- **Freigabe-Limits je Konto.** In den Kontoeinstellungen steht jetzt, bis zu welchem Betrag welche
+  Stufe — und welches Mitglied — ohne zusätzliche Freigabe buchen darf. Setzen und Entfernen; beim
+  Entfernen sagt die Rückfrage, welches Limit danach gilt.
+
+- **Direktbuchung in der Bank-Verwaltung.** Ein Blatt mit drei Modi — Einzahlung, Auszahlung,
+  Umbuchung — samt Halter, Verwendungszweck und Vorschau „Stand nach Buchung". Ohne Antrag heisst
+  ohne zweite Freigabe; das steht über dem Knopf. Ohne die Rolle Bank-Management ist der Einstieg
+  gesperrt und nennt die Rolle.
+
+- **Sammel-Ausbuchen im Lager.** Zweite Aktion in derselben Auswahlleiste wie das Umbuchen. Es
+  werden immer ganze Zeilen ausgebucht — für Teilmengen bleibt das Einzel-Ausbuchen — und entweder
+  geht alles oder nichts; eine abgelehnte Aktion lässt die Auswahl stehen.
+
+- **Neue Ansicht „Game-Items" unter „Mehr".** Zeigt den Bestand nach Item statt nach Material: wie
+  viele Stück, bei wie vielen Haltern und an welchen Orten. Suche und Kategorien filtern die
+  vollständige Liste; eine Zeile klappt ihre Orte an Ort und Stelle auf.
+
+- **Mehrere Einträge in „Mein Inventar" auf einmal löschen.** Langer Druck wählt, weitere Zeilen mit
+  einem Tipp; unten stehen „Alles wählen", „Aufheben" und „Löschen". Gefragt wird nach, die Anzahl
+  steht dabei, und danach sagt die Leiste, wie viele gelöscht und wie viele übersprungen wurden —
+  abgelehnte Zeilen bleiben gewählt. Nicht rückholbar.
+
+- **Neue Ansicht „Blueprint-Verfügbarkeit" unter „Mehr".** Zeigt org-weit, wer welchen Blueprint
+  hat — Besitzer werden je Zeile nachgeladen, Mitglieder anderer Einheiten sind als solche
+  gekennzeichnet. Ohne die Rolle Officer steht der Eintrag gesperrt da und nennt die Rolle. Der
+  Filter „Nicht erfasst" gilt für die geladenen Zeilen und sagt das.
+
+- **Mehrere Blueprints auf einmal übernehmen.** Dieselbe Suche, jetzt mit Kästchen; der Knopf
+  nennt die Anzahl und das Blatt sagt danach, was passiert ist — „2 übernommen · 1 bereits
+  vorhanden". Bereits vorhandene Blueprints tauchen in der Liste nicht mehr auf; eine Zeile im Blatt
+  sagt warum. Eine Notiz geht nur bei einem einzelnen Blueprint mit.
+
+- **Die Materialbörse kennt jetzt Items — und eigene Einträge lassen sich bearbeiten.** Angebot und
+  Gesuch haben oben einen Umschalter „Material / Item"; die Item-Seite sucht das Produkt im Katalog
+  und hängt an keiner Lagerzeile. Ein Tipp auf die eigene Zeile öffnet ein Blatt mit Menge,
+  Mindestqualität, Anmerkung und dem Zurückziehen — das fragt nach, wenn Interessenten warten, und
+  nennt sie.
+
+- **Raffinerieaufträge lassen sich bearbeiten und löschen.** Beides im „⋮" der Auftragsansicht.
+  Bearbeitet wird im gewohnten Anlegen-Formular, vorbefüllt; nach dem Einlagern sind Raffinerie,
+  Methode und Waren festgeschrieben und stehen gesperrt mit dem Grund da — Geld und Einsatz bleiben
+  änderbar. Gelöscht wird nach Rückfrage; ein bereits eingelagerter Auftrag lässt sich nicht
+  löschen, dort korrigiert man die Lagerzeilen.
+
+- **Operationen lassen sich in der App anlegen und bearbeiten.** Über der Filterleiste der
+  Operationen-Liste und im „⋮" der Detailansicht; Name, Beschreibung und Status, ein Formular für
+  beides. Beginn, Ende und die Zuordnung von Einsätzen fehlen bewusst — die Schnittstelle kennt
+  keine solchen Felder, ein Einsatz wird über den Einsatz selbst zugeordnet; das Formular sagt das.
+
+- **„Handel" bekommt zwei weitere Ansichten im Überlaufmenü.** Die **Preis-Übersicht** zeigt die
+  Matrix Material × Terminal — die Materialspalte bleibt stehen, die Terminals scrollen darunter,
+  der beste Preis je Zeile ist getont, umschaltbar zwischen Verkauf und Einkauf. Die
+  **Profitberechnung** rechnet eine volle Ladung eines gewählten Schiffs je Material durch,
+  optional auf einzelne Systeme eingeschränkt.
+
+- **Neuer Bereich „Handel" unter „Mehr".** Die Material-Übersicht zeigt alle Materialien mit
+  Einkaufs- und Verkaufspreis, filterbar nach Name, Kategorie und Preisgrenzen; ein Tipp öffnet
+  „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
+  Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
+
+- **Item-Aufträge zeigen ihre Unterbaugruppen und lassen sich bearbeiten.** Unter jeder Position
+  steht, aus welchen Baugruppen sie besteht und was jede davon braucht — mit einem Chip, ob der
+  Auftrag sie schon im Lager hat. Die Positionen selbst ändert ein Logistiker im gewohnten Formular,
+  samt Blueprint-Variante, solange noch nichts übergeben wurde.
+
+- **Neue Materialsammelübersicht im Auftrag.** Zeigt, welche Lagereinträge diesem Auftrag zugeordnet
+  sind, mit Besitzer, Standort, Menge und Lieferstatus; der Lieferstatus lässt sich umstellen und
+  eine Zuordnung lösen — nachgefragt wird nur, wenn tatsächlich eine Menge daran hängt. Besitzer
+  und Standort ändert man weiterhin im Lager, weil das im Hintergrund eine Umbuchung ist.
+
+- **Aufträge lassen sich jetzt in der App bearbeiten.** Logistiker ändern das ganze Formular,
+  Antragsteller Mengen und Kommentar — die übrigen Felder stehen dort gesperrt mit dem Grund statt
+  zu fehlen. Eine Position kann nicht unter die bereits übergebene Menge fallen; das Formular sagt,
+  welche Zeile es ist. Item-Positionen werden weiterhin im Web bearbeitet.
+
+- **Zusagen: neuer Tab im Auftrag.** Bei Aufträgen eines Spezialkommandos sieht man je Material,
+  welche Staffel wie viel zugesagt hat und was noch offen ist, und kann für die eigene Staffel
+  zusagen, die Zusage ändern oder sie zurückziehen. Eine Zusage ist eine Absicht, keine Buchung —
+  geliefert wird weiterhin über die Übergabe.
+
+- **Item-Aufträge lassen sich jetzt übergeben — und der Übergaben-Tab zeigt sie endlich an.** Je
+  Position wird eingetragen, wie viele Stück an wen gegangen sind; die Obergrenze ist, was
+  hergestellt und noch nicht übergeben wurde. Bisher blieb das Item-Übergabeprotokoll ungelesen, so
+  dass ein vollständig gelieferter Item-Auftrag im Tab als „noch nichts übergeben" erschien.
+
+- **Die Herstellung eines Item-Auftrags lässt sich jetzt in der App buchen.** Je Position wird
+  eingetragen, wie viele Einheiten gebaut wurden, aus welchen verknüpften Lagereinträgen die
+  Materialien entnommen werden und wo die fertigen Einheiten eingelagert werden. Der Bedarf muss je
+  Material exakt gedeckt sein — „Bedarf decken" füllt ihn auf einen Tipp. Material, das außerhalb
+  des Tools verbraucht wurde, kann je Zeile von der Ausbuchung ausgenommen werden. Ohne die Rolle
+  Logistiker ist die Schaltfläche gesperrt sichtbar statt versteckt.
+
+- **Übergaben lassen sich jetzt in der App erfassen** — damit ist ein Auftrag erstmals aus der App
+  heraus abschließbar. Das Formular zeigt live, wo die Position danach steht („Nach dieser Übergabe
+  300 / 400"), bucht die gewählte Lagerzeile aus und sagt vorab, dass eine erfasste Übergabe nicht
+  zurücknehmbar ist.
+
 - **Einsatz-Leitung kann die Teilnehmerliste jetzt in der App führen.** Wer einen Einsatz verwaltet,
   checkt Mitglieder direkt in deren Zeile ein und aus, stellt ihre Auszahlung um und weist die
   Funktion an Bord zu. Wer die Rolle nicht hat, sieht dieselben Bedienelemente gesperrt — antippbar,
@@ -32,6 +134,25 @@
   geraten werden muss.
 
 ### Changed
+
+- **Der Verwaltungs-Tab im Einsatz ist jetzt sichtbar und gesperrt statt versteckt.** Wer den
+  Einsatz nicht verwaltet, sieht ihn ausgegraut mit Schloss; ein Tipp nennt die fehlende Rolle.
+  Eine Funktion, die niemand sieht, wird nie angefragt.
+
+- **Der Verwaltungs-Tab ist in vier aufklappbare Abschnitte geteilt** — Kern, Zeitplan,
+  Sichtbarkeit, Personen. Jeder Kopf zeigt seinen Stand, auch zugeklappt, und hat seinen eigenen
+  Speichern-Knopf. Ein Konflikt nennt jetzt den betroffenen Abschnitt und sagt, dass die übrigen
+  nicht betroffen sind.
+
+- **Zeiten werden als Datum und Uhrzeit eingegeben statt als ISO-Text.** „Einsatz läuft jetzt"
+  fragt vorher nach und nennt, wie viele Angemeldete sich danach einchecken können.
+
+- **Ablauf- und Ziele-Zeilen tragen drei Symbolschaltflächen statt mehrerer Knopfreihen**;
+  Anlegen und Bearbeiten öffnen ein Sheet. „Nur intern" und „HVU" sind Kästchen statt Radios,
+  und „Person zuweisen" öffnet eine Auswahl statt einer Chip-Reihe über alle Angemeldeten.
+
+- **Gedämpfter Text ist überall auf den lesbaren Grauton umgestellt** (23 Stellen) — der bisherige
+  Wert ist die Hairline-Farbe und unterschreitet den Kontrast-Grenzwert als Text.
 
 - **Der erste Tab im Einsatz heißt jetzt „Briefing" statt „Übersicht".** Direkt darunter steht in der
   unteren Leiste ebenfalls „Übersicht" — das Dashboard. Zwei gleich benannte Bedienelemente auf

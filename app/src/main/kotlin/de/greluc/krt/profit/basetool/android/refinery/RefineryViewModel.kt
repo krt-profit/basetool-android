@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrder
+import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDeleteSource
 import de.greluc.krt.profit.basetool.android.core.data.RefineryPhase
 import de.greluc.krt.profit.basetool.android.core.data.RefineryServerStatus
 import de.greluc.krt.profit.basetool.android.core.data.RefinerySource
@@ -379,11 +380,40 @@ data class RefineryDetailState(
     val now: OffsetDateTime = OffsetDateTime.now(),
     val lines: List<RefineryStoreLine> = emptyList(),
     val busy: String? = null,
+    val confirmingDelete: Boolean = false,
+    val deleting: Boolean = false,
+    val deleted: Boolean = false,
 ) {
     /** Whether the booking may be offered at all. */
     val storable: Boolean
         get() = online && !storing && order?.canStoreAt(now) == true
+
+    /**
+     * Whether deleting this run is allowed.
+     *
+     * A booked run is not deletable: its yield already exists as Lager rows, and cancelling the
+     * order here would not take them back — design ch. 11 artboard 7 says so in the modal, and
+     * the corresponding correction is made on the Lager rows instead. The **server allows it**
+     * (`DELETE` only sets `CANCELED`, whatever the status), so this is the app's rule and the
+     * action is drawn locked rather than left out (`REQ-APP-REF-012`).
+     */
+    val deletable: Boolean
+        get() = order != null && order.status != RefineryServerStatus.COMPLETED
 }
+
+/**
+ * The writes the Raffinerie detail performs.
+ *
+ * Bundled rather than passed one by one: the view model already carries the six arguments detekt
+ * allows, and a seventh would buy a suppression instead of a smaller constructor.
+ *
+ * @property store books a finished run's yield into the Lager, or `null` where that is not wired.
+ * @property delete cancels the run, or `null` where the action is not offered.
+ */
+data class RefineryDetailWrites(
+    val store: RefineryStoreSource? = null,
+    val delete: RefineryOrderDeleteSource? = null,
+)
 
 /**
  * Drives one Raffinerie order and its booking (REQ-APP-REF-005…006).
@@ -397,14 +427,15 @@ data class RefineryDetailState(
  * @property connectivity whether the device has a network
  * @property orderId which order to load
  * @property liveSync the shared change stream, or `null` when it is not wired
- * @property storeSource books one material at a time, or `null` when the booking is not wired
+ * @property writes the two writes this screen performs — the booking and the deletion — each
+ *   absent where it is not wired
  */
 class RefineryDetailViewModel(
     private val source: RefinerySource,
     connectivity: Connectivity?,
     orderId: String,
     private val liveSync: LiveSyncSource? = null,
-    private val storeSource: RefineryStoreSource? = null,
+    private val writes: RefineryDetailWrites = RefineryDetailWrites(),
     clock: Flow<OffsetDateTime> = minuteTicker(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(RefineryDetailState(orderId = orderId))
@@ -595,6 +626,54 @@ class RefineryDetailViewModel(
             )
     }
 
+    /** The member asked to delete this run; the confirmation is raised. */
+    fun onDeleteRequested() {
+        mutableState.value = mutableState.value.copy(confirmingDelete = true, error = null)
+    }
+
+    /** The confirmation was dismissed. */
+    fun onDeleteDismissed() {
+        mutableState.value = mutableState.value.copy(confirmingDelete = false)
+    }
+
+    /**
+     * Deletes the run.
+     *
+     * No undo is offered afterwards, because there is nothing to undo with: the server cancels the
+     * order and has no endpoint that brings it back.
+     */
+    fun onDeleteConfirmed() {
+        val current = mutableState.value
+        val writer = writes.delete
+        val id = current.order?.id.takeIf { current.deletable && !current.deleting }
+        if (writer == null || id == null) {
+            return
+        }
+        mutableState.value = current.copy(deleting = true, error = null)
+        viewModelScope.launch {
+            when (val answer = writer.deleteOrder(id)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            deleting = false,
+                            confirmingDelete = false,
+                            deleted = true,
+                        )
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "deleting the run was refused: ${answer.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(
+                            deleting = false,
+                            confirmingDelete = false,
+                            error = answer.error,
+                        )
+                }
+            }
+        }
+    }
+
     /**
      * Books every line of the form in one call.
      *
@@ -604,7 +683,7 @@ class RefineryDetailViewModel(
     fun onStoreAll() {
         val current = mutableState.value
         val orderId = current.order?.id
-        val writer = storeSource
+        val writer = writes.store
         val sendable = orderId != null && writer != null && current.lines.isNotEmpty()
         if (!sendable || current.busy != null) {
             return

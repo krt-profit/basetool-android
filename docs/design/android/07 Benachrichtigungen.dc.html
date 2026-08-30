@@ -53,7 +53,7 @@
                     <sc-if value="{{ n.unread }}" hint-placeholder-val="{{ false }}">
                       <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;flex:none" onClick="{{ n.onRead }}" aria-label="Als gelesen markieren" title="Als gelesen markieren"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg></button>
                     </sc-if>
-                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#646464;flex:none" style-hover="color:#F2564B;border-color:#A3000A" onClick="{{ n.onDel }}" aria-label="Löschen" title="Löschen"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-trash"></use></svg></button>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#8A8A8A;flex:none" style-hover="color:#F2564B;border-color:#A3000A" onClick="{{ n.onDel }}" aria-label="Löschen" title="Löschen"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-trash"></use></svg></button>
                   </div>
                 </sc-for>
                 <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;align-items:center">
@@ -64,7 +64,7 @@
             </sc-if>
             <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
               <div class="empty-state" style="margin:24px 16px;padding:32px 16px">
-                <svg class="krt-icon" style="width:28px;height:28px;color:#646464"><use href="#krt-icon-bell"></use></svg>
+                <svg class="krt-icon" style="width:28px;height:28px;color:#8A8A8A"><use href="#krt-icon-bell"></use></svg>
                 <div class="empty-title" style="font-size:13px">Keine Benachrichtigungen</div>
                 <div class="empty-text" style="font-size:12.5px">Neue Ereignisse aus Einsätzen, Aufträgen und Bank erscheinen hier.</div>
                 <button class="btn-ghost btn" style="background:transparent;min-height:48px" onClick="{{ reset }}">Demo zurücksetzen</button>
@@ -150,7 +150,7 @@
                       <div style="flex:1;min-width:0;font:{{ n.textFont }};color:{{ n.textColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.text }}</div>
                       <span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums;flex:none">{{ n.time }}</span>
                       <sc-if value="{{ n.unread }}" hint-placeholder-val="{{ false }}"><span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;flex:none"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-check"></use></svg></span></sc-if>
-                      <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#646464;flex:none"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-trash"></use></svg></span>
+                      <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#8A8A8A;flex:none"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-trash"></use></svg></span>
                     </div>
                   </sc-for>
                 </div>

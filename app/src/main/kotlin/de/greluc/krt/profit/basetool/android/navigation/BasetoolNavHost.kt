@@ -50,26 +50,44 @@ import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
 import de.greluc.krt.profit.basetool.android.inventory.BookingMode
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockRoute
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryRoute
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailRoute
+import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixRoute
+import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
+import de.greluc.krt.profit.basetool.android.materials.MaterialsRoute
+import de.greluc.krt.profit.basetool.android.materials.MaterialsViewModel
+import de.greluc.krt.profit.basetool.android.materials.ProfitRoute
+import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationFormRoute
+import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsPhase
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandRoute
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionRoute
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
+import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewRoute
+import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
@@ -152,8 +170,18 @@ fun BasetoolNavHost(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
-    refineryCreate: () -> RefineryCreateViewModel,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
+    materialMatrix: () -> MaterialMatrixViewModel,
+    materialProfit: () -> ProfitViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
+    orderCollection: (String) -> OrderCollectionViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
+    blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -211,6 +239,8 @@ fun BasetoolNavHost(
                             exchange = exchange,
                             refinery = refinery,
                             refineryOrder = refineryOrder,
+                            materials = materials,
+                            materialDetail = materialDetail,
                             personalInventory = personalInventory,
                             personalBlueprints = personalBlueprints,
                             booking = booking,
@@ -229,8 +259,20 @@ fun BasetoolNavHost(
                             bankStaff = bankStaff,
                             orderDetail = orderDetail,
                             refineryOrder = refineryOrder,
+                            material =
+                                MaterialBindings(
+                                    detail = materialDetail,
+                                    matrix = materialMatrix,
+                                    profit = materialProfit,
+                                ),
                             refineryCreate = refineryCreate,
                             orderCreate = orderCreate,
+                            orderEdit = orderEdit,
+                            orderCollection = orderCollection,
+                            operationForm = operationForm,
+                            blueprints = blueprints,
+                            gameItems = gameItems,
+                            materialDemand = materialDemand,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -293,6 +335,8 @@ private fun listDestination(
     exchange: MaterialBoardViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -300,6 +344,12 @@ private fun listDestination(
     orgUnitName: String?,
 ): Boolean {
     if (
+        materialsDestination(
+            destination = destination,
+            navController = navController,
+            materials = materials,
+            materialDetail = materialDetail,
+        ) ||
         listDetailDestination(
             destination = destination,
             navController = navController,
@@ -406,6 +456,55 @@ private fun listDestination(
         }
     }
     return handled
+}
+
+/**
+ * „Handel" — the material list beside one material's prices.
+ *
+ * Its own function rather than another branch of [listDetailDestination]: that switch is already at
+ * the complexity the project's static analysis allows, and a screen is a poor reason to raise a
+ * limit that exists to keep this file readable.
+ *
+ * @param destination the route being drawn.
+ * @param navController for the phone's push.
+ * @param materials the catalogue list.
+ * @param materialDetail builds a view model for one material.
+ * @return `true` when this function drew the destination.
+ */
+@Composable
+private fun materialsDestination(
+    destination: KrtDestination,
+    navController: NavHostController,
+    materials: MaterialsViewModel,
+    materialDetail: (String) -> MaterialDetailViewModel,
+): Boolean {
+    if (destination != KrtDestination.Materials) {
+        return false
+    }
+    // Design ch. 16: „Tablet 1280×800 — Liste (480 dp) + Detail". The same split as the Einsätze
+    // and the Aufträge: beside the list on a wide window, pushed on a phone.
+    val wide = isWideWindow()
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    KrtListDetail(
+        detail =
+            selected?.let { id ->
+                {
+                    MaterialDetailRoute(viewModel = remember(id) { materialDetail(id) })
+                }
+            },
+    ) {
+        MaterialsRoute(
+            viewModel = materials,
+            onOpen = {
+                if (wide) selected = it else navController.navigate(materialDetailRoute(it))
+            },
+            // A plain push on both form factors: neither is a row of the list, so neither belongs
+            // in the detail pane beside it.
+            onOpenMatrix = { navController.navigate(KrtDestination.MaterialMatrix.route) },
+            onOpenProfit = { navController.navigate(KrtDestination.MaterialProfit.route) },
+        )
+    }
+    return true
 }
 
 /**
@@ -522,7 +621,13 @@ private fun listDetailDestination(
                         {
                             val detailModel = remember(id) { orderDetail(id) }
                             LaunchedEffect(id) { detailModel.load() }
-                            OrderDetailRoute(viewModel = detailModel)
+                            OrderDetailRoute(
+                                viewModel = detailModel,
+                                onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                                onOpenCollection = {
+                                    navController.navigate(orderCollectionRoute(it))
+                                },
+                            )
                         }
                     },
             ) {
@@ -532,6 +637,7 @@ private fun listDetailDestination(
                         if (wide) selected = it else navController.navigate(orderDetailRoute(it))
                     },
                     onCreate = { navController.navigate(KrtDestination.OrderCreate.route) },
+                    onOpenDemand = { navController.navigate(KrtDestination.MaterialDemand.route) },
                 )
             }
         }
@@ -547,7 +653,12 @@ private fun listDetailDestination(
                     selected?.let { id ->
                         {
                             val detailModel = remember(id) { refineryOrder(id) }
-                            RefineryOrderDetailRoute(viewModel = detailModel)
+                            RefineryOrderDetailRoute(
+                                viewModel = detailModel,
+                                onEdit = { navController.navigate(refineryEditRoute(id)) },
+                                // The pane's subject is gone; the list beside it stays.
+                                onDeleted = { selected = null },
+                            )
                         }
                     },
             ) {
@@ -571,6 +682,73 @@ private fun listDetailDestination(
 }
 
 /**
+ * The view models the Handel area's three pushed screens are built from.
+ *
+ * @property detail builds a view model for one material.
+ * @property matrix builds the price matrix.
+ * @property profit builds the profit calculation.
+ */
+private data class MaterialBindings(
+    val detail: (String) -> MaterialDetailViewModel,
+    val matrix: () -> MaterialMatrixViewModel,
+    val profit: () -> ProfitViewModel,
+)
+
+/**
+ * The pushed screens that need nothing from the route but, at most, one id.
+ *
+ * Grouped rather than given a branch each: `PushedDestination`'s switch is at the complexity the
+ * project's static analysis allows, and these four are the same shape — read at most one argument,
+ * build one view model, draw one route.
+ *
+ * @param destination which of them.
+ * @param backStackEntry carries the id where there is one.
+ * @param refineryOrder builds a view model for one Raffinerie order.
+ * @param material the three Handel view models.
+ * @param orderCollection builds the view model for one Auftrag's linked stock rows.
+ */
+@Composable
+private fun SimplePushedDestination(
+    destination: KrtDestination,
+    backStackEntry: NavBackStackEntry,
+    navController: NavHostController,
+    refineryOrder: (String) -> RefineryDetailViewModel,
+    material: MaterialBindings,
+    orderCollection: (String) -> OrderCollectionViewModel,
+) {
+    when (destination) {
+        KrtDestination.OrderCollection -> {
+            val collectionOrderId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
+            OrderCollectionRoute(
+                viewModel = remember(collectionOrderId) { orderCollection(collectionOrderId) },
+            )
+        }
+
+        KrtDestination.MaterialMatrix -> {
+            MaterialMatrixRoute(viewModel = remember { material.matrix() })
+        }
+
+        KrtDestination.MaterialProfit -> {
+            ProfitRoute(viewModel = remember { material.profit() })
+        }
+
+        KrtDestination.MaterialDetail -> {
+            val materialId = backStackEntry.arguments?.getString(MATERIAL_ID_ARG).orEmpty()
+            MaterialDetailRoute(viewModel = remember(materialId) { material.detail(materialId) })
+        }
+
+        else -> {
+            val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
+            RefineryOrderDetailRoute(
+                viewModel = remember(orderId) { refineryOrder(orderId) },
+                onEdit = { navController.navigate(refineryEditRoute(orderId)) },
+                onDeleted = { navController.popBackStack() },
+            )
+        }
+    }
+}
+
+/**
  * Renders a destination that is **pushed** from another screen, plus the two settings pages.
  *
  * Each detail view model is keyed on its id and scoped to this back-stack entry, so opening a second
@@ -587,6 +765,11 @@ private fun listDetailDestination(
  * @param bankHolder builds a view model for one holder's custody.
  * @param bankStaff answers whether the caller may move custody.
  * @param orderDetail builds a view model for one order.
+ * @param material the Handel area's three pushed view models.
+ * @param blueprints the org-wide blueprint availability: whether it may be opened, and how to
+ *   build it.
+ * @param gameItems builds the game-item stock's view model.
+ * @param materialDemand builds the cross-order material demand's view model.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -605,8 +788,15 @@ private fun PushedDestination(
     bankStaff: BankStaffViewModel,
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
-    refineryCreate: () -> RefineryCreateViewModel,
+    material: MaterialBindings,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
+    orderCollection: (String) -> OrderCollectionViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
+    blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -627,6 +817,7 @@ private fun PushedDestination(
             OperationDetailRoute(
                 viewModel = viewModel,
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
+                onEdit = { navController.navigate(operationEditRoute(operationId)) },
             )
         }
 
@@ -640,12 +831,21 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.RefineryCreate, KrtDestination.OrderCreate -> {
+        KrtDestination.RefineryCreate,
+        KrtDestination.RefineryEdit,
+        KrtDestination.OrderCreate,
+        KrtDestination.OrderEdit,
+        KrtDestination.OperationCreate,
+        KrtDestination.OperationEdit,
+        -> {
             CreateFormDestination(
                 destination = destination,
+                backStackEntry = backStackEntry,
                 navController = navController,
                 refineryCreate = refineryCreate,
                 orderCreate = orderCreate,
+                orderEdit = orderEdit,
+                operationForm = operationForm,
             )
         }
 
@@ -653,17 +853,34 @@ private fun PushedDestination(
             val orderId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
             val viewModel = remember(orderId) { orderDetail(orderId) }
             LaunchedEffect(orderId) { viewModel.load() }
-            OrderDetailRoute(viewModel = viewModel)
+            OrderDetailRoute(
+                viewModel = viewModel,
+                onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                onOpenCollection = { navController.navigate(orderCollectionRoute(it)) },
+            )
         }
 
-        KrtDestination.RefineryOrder -> {
-            val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
-            val viewModel = remember(orderId) { refineryOrder(orderId) }
-            RefineryOrderDetailRoute(viewModel = viewModel)
+        KrtDestination.RefineryOrder,
+        KrtDestination.MaterialDetail,
+        KrtDestination.MaterialMatrix,
+        KrtDestination.MaterialProfit,
+        KrtDestination.OrderCollection,
+        -> {
+            SimplePushedDestination(
+                destination = destination,
+                backStackEntry = backStackEntry,
+                navController = navController,
+                refineryOrder = refineryOrder,
+                material = material,
+                orderCollection = orderCollection,
+            )
         }
 
         KrtDestination.More -> {
-            MoreScreen(onOpen = onOpenDestination)
+            MoreScreen(
+                onOpen = onOpenDestination,
+                blueprintOverview = blueprints.allowed,
+            )
         }
 
         KrtDestination.Settings -> {
@@ -697,12 +914,19 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.Licenses -> {
-            LicensesScreen(onOpenUrl = settings.onOpenUrl)
-        }
-
-        KrtDestination.FleetImport -> {
-            FleetImportRoute(viewModel = fleetImport)
+        KrtDestination.BlueprintOverview,
+        KrtDestination.GameItems,
+        KrtDestination.Licenses,
+        KrtDestination.FleetImport,
+        -> {
+            LeafDestination(
+                destination = destination,
+                blueprints = blueprints,
+                fleetImport = fleetImport,
+                onOpenUrl = settings.onOpenUrl,
+                gameItems = gameItems,
+                materialDemand = materialDemand,
+            )
         }
 
         KrtDestination.NotFound -> {
@@ -725,6 +949,21 @@ private fun PushedDestination(
         }
     }
 }
+
+/**
+ * The org-wide blueprint availability, as the shell hands it over.
+ *
+ * Two values rather than two parameters, because they travel together through four signatures and
+ * the host already carries every argument detekt allows.
+ *
+ * @property allowed whether the caller may open it — `canSeeBlueprintOverview` from
+ *   `/me/capabilities`. `false` draws the „Mehr" row locked with its reason rather than hiding it.
+ * @property build builds the view model, on first navigation.
+ */
+data class BlueprintOverviewBindings(
+    val allowed: Boolean,
+    val build: () -> BlueprintOverviewViewModel,
+)
 
 /**
  * Everything the Einstellungen screen needs from outside the navigation graph.
@@ -782,7 +1021,7 @@ data class SettingsBindings(
 )
 
 /**
- * The two create forms, behind one branch.
+ * The create and edit forms, behind one branch.
  *
  * Grouped the way the two bank details are: each form is its own composable below, and the host's
  * `when` stays under detekt's complexity limit without any branch being suppressed away.
@@ -790,20 +1029,129 @@ data class SettingsBindings(
  * @param destination which of the two forms.
  * @param navController where to go afterwards.
  * @param refineryCreate builds the Raffinerie form's view model.
+ * @param backStackEntry carries the edited id, where there is one.
  * @param orderCreate builds the Auftrag form's view model.
+ * @param orderEdit builds it for an existing Auftrag.
+ * @param operationForm builds the Operation form's view model, editing when given an id.
  */
 @Composable
+@Suppress("LongParameterList")
 private fun CreateFormDestination(
     destination: KrtDestination,
+    backStackEntry: NavBackStackEntry,
     navController: NavHostController,
-    refineryCreate: () -> RefineryCreateViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
 ) {
-    if (destination == KrtDestination.OrderCreate) {
-        OrderCreateDestination(navController = navController, build = orderCreate)
-    } else {
-        RefineryCreateDestination(navController = navController, build = refineryCreate)
+    when (destination) {
+        KrtDestination.OperationCreate, KrtDestination.OperationEdit -> {
+            // One screen for both, so the id decides which write happens rather than which layout.
+            val edited =
+                backStackEntry.arguments?.getString(OPERATION_ID_ARG).takeIf {
+                    destination == KrtDestination.OperationEdit
+                }
+            OperationFormDestination(
+                navController = navController,
+                build = { operationForm(edited) },
+            )
+        }
+
+        KrtDestination.OrderCreate -> {
+            OrderCreateDestination(navController = navController, build = orderCreate)
+        }
+
+        KrtDestination.OrderEdit -> {
+            // The same screen as the create, so it lands in the same destination — design ch. 10
+            // artboard 10 is explicit that there is no second layout.
+            val editedId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
+            OrderCreateDestination(navController = navController, build = { orderEdit(editedId) })
+        }
+
+        else -> {
+            // The edit is the same form pre-filled, so it lands in the same destination; only the
+            // id decides which of the two writes the CTA performs.
+            val edited =
+                backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).takeIf {
+                    destination == KrtDestination.RefineryEdit
+                }
+            RefineryCreateDestination(
+                navController = navController,
+                build = { refineryCreate(edited) },
+            )
+        }
     }
+}
+
+/**
+ * The three destinations that are one composable each and carry no argument of their own.
+ *
+ * Grouped for the reason the two bank details and the create forms are: the host's `when` stays
+ * under detekt's complexity ceiling without any branch being suppressed away.
+ *
+ * @param destination which of the three.
+ * @param blueprints the org-wide blueprint availability.
+ * @param fleetImport the Fleetview import.
+ * @param onOpenUrl opens a licence's URL.
+ * @param gameItems builds the game-item stock's view model.
+ * @param materialDemand builds the cross-order material demand's view model.
+ */
+@Composable
+private fun LeafDestination(
+    destination: KrtDestination,
+    blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
+    fleetImport: FleetImportViewModel,
+    onOpenUrl: (String) -> Boolean,
+) {
+    when (destination) {
+        KrtDestination.BlueprintOverview -> {
+            BlueprintOverviewRoute(viewModel = remember { blueprints.build() })
+        }
+
+        KrtDestination.GameItems -> {
+            GameItemStockRoute(viewModel = remember { gameItems() })
+        }
+
+        KrtDestination.MaterialDemand -> {
+            MaterialDemandRoute(viewModel = remember { materialDemand() })
+        }
+
+        KrtDestination.FleetImport -> {
+            FleetImportRoute(viewModel = fleetImport)
+        }
+
+        else -> {
+            LicensesScreen(onOpenUrl = onOpenUrl)
+        }
+    }
+}
+
+/**
+ * The Operation form as a pushed destination.
+ *
+ * Same shape as the order form's: the form's job ends when the Operation exists or has changed, and
+ * the member wants to look at the Operation rather than at a form they are finished with.
+ *
+ * @param navController where to go afterwards.
+ * @param build builds the view model.
+ */
+@Composable
+private fun OperationFormDestination(
+    navController: NavHostController,
+    build: () -> OperationFormViewModel,
+) {
+    val viewModel = remember { build() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.saved) {
+        state.saved?.let {
+            navController.popBackStack()
+            navController.navigate(operationDetailRoute(it))
+        }
+    }
+    OperationFormRoute(viewModel = viewModel)
 }
 
 /**
@@ -826,6 +1174,8 @@ private fun OrderCreateDestination(
     LaunchedEffect(state.created) {
         state.created?.let {
             navController.popBackStack()
+            // An edit reports the id it rewrote, so this lands on the order either way — for a
+            // create the one that now exists, for an edit the one the member came from.
             navController.navigate(orderDetailRoute(it))
         }
     }

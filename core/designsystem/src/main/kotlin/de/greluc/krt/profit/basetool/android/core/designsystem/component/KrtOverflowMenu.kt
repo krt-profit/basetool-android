@@ -189,8 +189,8 @@ private fun MenuRow(
                 // is merely inapplicable has nothing to say beyond its reason line and takes none.
                 .clickable(enabled = item.enabled || item.locked, role = Role.Button, onClick = onChosen)
                 .then(if (dimmed) Modifier.alpha(ROW_DISABLED_ALPHA) else Modifier)
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         item.iconRes?.let { icon ->

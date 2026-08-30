@@ -172,8 +172,8 @@ fun DenialToast(state: DenialState) {
             detail = denial.detail,
             modifier =
                 Modifier
-                    .padding(horizontal = KrtSpacing.lg)
-                    .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+                    .padding(horizontal = KrtSpacing.s16)
+                    .padding(bottom = KrtSpacing.s16 + LocalKrtBottomBarInset.current),
         )
     }
 }

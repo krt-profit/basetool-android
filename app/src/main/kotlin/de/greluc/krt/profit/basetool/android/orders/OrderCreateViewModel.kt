@@ -10,13 +10,16 @@ package de.greluc.krt.profit.basetool.android.orders
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderCreateSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderDraft
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderDraftLine
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemDraft
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemDraftLine
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
+import de.greluc.krt.profit.basetool.android.core.data.krtHandedOver
 import de.greluc.krt.profit.basetool.android.core.data.parseTypedAmount
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -148,7 +151,37 @@ data class OrderCreateState(
     val saving: Boolean = false,
     val created: String? = null,
     val error: ApiError? = null,
+    /** Whether this form raises an order or rewrites one, and under which of the two edit gates. */
+    val mode: OrderFormMode = OrderFormMode.CREATE,
+    /** The order being edited, or `null` while it is still being read. */
+    val version: Long? = null,
+    /**
+     * How much of each material has already been handed over, keyed by material id.
+     *
+     * The floor under every line: „eine erfüllte Position lässt sich nicht unter die übergebene
+     * Menge senken" (artboard 10), and the server answers 400 for the attempt. Summed from the
+     * handover **lines**, never from `amount − openAmount`, which counts claims.
+     */
+    val delivered: Map<String, Double> = emptyMap(),
+    /** Whether the edit's own read finished; `false` keeps the form as a skeleton. */
+    val saved: Boolean = false,
 ) {
+    /** How much of one line may not be undercut, or `0.0` when nothing has been delivered. */
+    fun deliveredOf(materialId: String?): Double = materialId?.let { delivered[it] } ?: 0.0
+
+    /**
+     * The lines whose typed amount is below what has already changed hands.
+     *
+     * The server refuses the save outright, so the form names the offending lines rather than
+     * letting somebody submit and read a 400 that does not say which one.
+     */
+    val underDelivered: List<OrderLineDraft>
+        get() =
+            lines.filter { line ->
+                val floor = deliveredOf(line.materialId)
+                floor > 0.0 && (parseTypedAmount(line.amount) ?: 0.0) < floor
+            }
+
     /**
      * Whether the form may be submitted.
      *
@@ -163,6 +196,7 @@ data class OrderCreateState(
                 responsibleId != null &&
                 requestingId != null &&
                 handle.isNotBlank() &&
+                underDelivered.isEmpty() &&
                 when (kind) {
                     OrderKind.MATERIAL -> lines.any { it.isComplete } && lines.none { it.isPartial }
                     OrderKind.ITEM -> itemLines.any { it.isComplete } && itemLines.none { it.isPartial }
@@ -192,6 +226,7 @@ data class OrderCreateState(
                         amount = requireNotNull(it.amount.trim().toIntOrNull()),
                     )
                 },
+            version = version,
         )
     }
 
@@ -220,9 +255,171 @@ data class OrderCreateState(
                         minQuality = it.minQuality,
                     )
                 },
+            // `null` on a create; on an edit it is what the order was read at, and a mismatch is
+            // the 409 that keeps two people from overwriting each other.
+            version = version,
         )
     }
 }
+
+/**
+ * What the order form is doing.
+ *
+ * One form, three writes. Design ch. 10 artboard 10 is explicit about it — „Dasselbe Formular wie
+ * ‚Auftrag anlegen', vorbefüllt — kein zweites Layout" — and the server agrees: the update takes the
+ * *same* payload as the create and replaces the details and the whole material list rather than
+ * patching either.
+ */
+enum class OrderFormMode {
+    /** Raising a new order. */
+    CREATE,
+
+    /** A Logistician rewriting one (`PUT /orders/{id}`). */
+    EDIT,
+
+    /**
+     * The requester's own, narrower edit (`PUT /orders/{id}/requested`, REQ-ORDERS-023).
+     *
+     * No Logistician role needed, and three fields are **drawn locked rather than removed**: the
+     * two units and the handle belong to the processing side. The server takes them from the stored
+     * order whatever the payload says, so editing them would be a control that silently does
+     * nothing — worse than one that says why it cannot.
+     */
+    EDIT_AS_REQUESTER,
+    ;
+
+    /** Whether this mode may change the two units and the handle. */
+    val headEditable: Boolean
+        get() = this != EDIT_AS_REQUESTER
+}
+
+/**
+ * The call this form makes when it is submitted.
+ *
+ * Three writes behind one button: raising an order, a Logistician's rewrite, and the requester's
+ * narrower one. Which it is follows from [OrderCreateState.mode] and nothing else — the app never
+ * infers a permission from a role it read, it is told which form it opened.
+ *
+ * An **edit of an item order is not offered here**: `PUT /orders/{id}/items` takes a different
+ * payload and needs the blueprint-variant picker and the sub-assembly tree of artboard 12, which is
+ * its own screen. An item form in an edit mode therefore writes nothing rather than sending the
+ * wrong shape.
+ *
+ * @receiver the form.
+ * @param source where the writes go.
+ * @param orderId the order being edited, or `null` on a create.
+ * @return the call, or `null` when the form cannot be sent.
+ */
+private fun OrderCreateState.krtWrite(
+    source: JobOrderCreateSource,
+    orderId: String?,
+): (suspend () -> ApiResult<String>)? {
+    if (mode == OrderFormMode.CREATE) {
+        return when (kind) {
+            OrderKind.MATERIAL -> toDraft()?.let { draft -> suspend { source.create(draft) } }
+            OrderKind.ITEM -> toItemDraft()?.let { draft -> suspend { source.createItems(draft) } }
+        }
+    }
+    val id = orderId
+    val write = if (id == null) null else krtRewrite(source, id)
+    return if (id == null || write == null) {
+        null
+    } else {
+        suspend {
+            // The screen goes to the order it wrote — for an edit, the one it came from.
+            when (val result = write()) {
+                is ApiResult.Success -> ApiResult.Success(id)
+                is ApiResult.Failure -> result
+            }
+        }
+    }
+}
+
+/**
+ * The rewrite behind an edit form — one of three endpoints, chosen by the mode and the kind.
+ *
+ * Its own function because the create's branch and the edit's are two different questions, and one
+ * `when` holding both was past the complexity the codebase allows.
+ *
+ * > **An item order's edit is a Logistician's alone.** `PUT /{id}/items` is the only item edit the
+ * > app makes; the requester's own item path (`/{id}/items/requested`) is not built, so a requester
+ * > form on an item order writes nothing rather than sending the wrong shape.
+ *
+ * @receiver the form.
+ * @param source where the writes go.
+ * @param id the order being rewritten.
+ * @return the call, or `null` when the form cannot be sent.
+ */
+private fun OrderCreateState.krtRewrite(
+    source: JobOrderCreateSource,
+    id: String,
+): (suspend () -> ApiResult<Unit>)? {
+    if (kind == OrderKind.ITEM) {
+        return toItemDraft()
+            ?.takeIf { mode == OrderFormMode.EDIT }
+            ?.let { draft -> suspend { source.updateItems(id, draft) } }
+    }
+    return toDraft()?.let { draft ->
+        if (mode == OrderFormMode.EDIT) {
+            suspend { source.update(id, draft) }
+        } else {
+            suspend { source.updateAsRequester(id, draft) }
+        }
+    }
+}
+
+/**
+ * Fills the form from the order it is editing.
+ *
+ * @receiver the empty form.
+ * @param order what the server holds.
+ * @return the form, pre-filled.
+ */
+private fun OrderCreateState.krtPrefilled(order: JobOrder): OrderCreateState =
+    copy(
+        responsibleId = order.responsibleOrgUnitId,
+        requestingId = order.requestingOrgUnitId,
+        handle = order.handle.orEmpty(),
+        comment = order.comment.orEmpty(),
+        kind = if (order.items.isNotEmpty()) OrderKind.ITEM else OrderKind.MATERIAL,
+        itemLines =
+            order.items
+                .filter { it.parentItemId == null && it.gameItemId != null && it.blueprintId != null }
+                .map { line ->
+                    OrderItemLineDraft(
+                        gameItemId = line.gameItemId,
+                        query = line.name.orEmpty(),
+                        // The variant this line was ordered with. Its alternatives are read on
+                        // prefill, so the picker can offer them without the member re-picking the
+                        // item first — that is the „blueprint variant counting" parity point.
+                        blueprintId = line.blueprintId,
+                        blueprints = listOfNotNull(line.blueprintId?.let { it to line.blueprintName.orEmpty() }),
+                        amount = line.amount.toString(),
+                    )
+                }
+                .ifEmpty { listOf(OrderItemLineDraft()) },
+        lines =
+            order.materials
+                .filter { it.materialId != null }
+                .map { material ->
+                    OrderLineDraft(
+                        materialId = material.materialId,
+                        materialName = material.name,
+                        query = material.name,
+                        amount = material.needed.orEmpty(),
+                    )
+                }
+                .ifEmpty { listOf(OrderLineDraft()) },
+        version = order.version,
+        // The floor under every line, summed from the handover lines rather than from the open
+        // remainder — that one counts claims (`MaterialClaimService`), not deliveries.
+        delivered =
+            order.materials
+                .mapNotNull { it.materialId }
+                .associateWith { order.krtHandedOver(it) }
+                .filterValues { it > 0.0 },
+        saved = true,
+    )
 
 /**
  * Drives the „Neuer Auftrag" form, in both of its kinds.
@@ -237,18 +434,49 @@ data class OrderCreateState(
  *
  * @property source the creation and the pickers behind both kinds.
  * @property orgUnits the two unit pickers.
+ * @property orders where an edit reads the order it is rewriting; `null` for a create.
+ * @property orderId which order is being edited; `null` for a create.
  */
 class OrderCreateViewModel(
     private val source: JobOrderCreateSource,
     private val orgUnits: OrgUnitSource,
+    private val orders: JobOrderSource? = null,
+    private val orderId: String? = null,
+    mode: OrderFormMode = OrderFormMode.CREATE,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(OrderCreateState())
+    private val mutableState = MutableStateFlow(OrderCreateState(mode = mode))
 
     /** What the screen draws. */
     val state: StateFlow<OrderCreateState> = mutableState.asStateFlow()
 
     init {
         load()
+        if (mode != OrderFormMode.CREATE) {
+            prefill()
+        }
+    }
+
+    /**
+     * Reads the order being edited and fills the form with it.
+     *
+     * The version arrives with it and travels back on the save; so does what has already been
+     * handed over, which is the floor under every line.
+     */
+    private fun prefill() {
+        val id = orderId ?: return
+        val reader = orders ?: return
+        viewModelScope.launch {
+            when (val result = reader.detail(id)) {
+                is ApiResult.Success -> {
+                    mutableState.value = mutableState.value.krtPrefilled(result.value)
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the order could not be read for editing: ${result.error}" }
+                    mutableState.value = mutableState.value.copy(error = result.error, saved = true)
+                }
+            }
+        }
     }
 
     /**
@@ -612,11 +840,7 @@ class OrderCreateViewModel(
         if (current.saving) {
             return
         }
-        val raise: (suspend () -> ApiResult<String>)? =
-            when (current.kind) {
-                OrderKind.MATERIAL -> current.toDraft()?.let { draft -> suspend { source.create(draft) } }
-                OrderKind.ITEM -> current.toItemDraft()?.let { draft -> suspend { source.createItems(draft) } }
-            }
+        val raise: (suspend () -> ApiResult<String>)? = current.krtWrite(source, orderId)
         if (raise == null) {
             return
         }

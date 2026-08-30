@@ -16,7 +16,7 @@
   <style>body{background:#000}</style>
 </helmet>
 <div style="min-height:100vh;background:#000;padding:40px 24px 80px">
-<div style="max-width:2900px;margin:0 auto">
+<div style="max-width:4200px;margin:0 auto">
   <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
   <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">10</div>
@@ -38,10 +38,10 @@
             <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Filter"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-filter"></use></svg></button>
           </div>
           <div style="flex:none;padding:12px 16px;display:flex;gap:6px;overflow-x:auto">
-            <span class="chip chip--info" style="font-size:10px;flex:none">Offen</span>
+            <span class="chip chip--info" style="color:#6C93EF;font-size:10px;flex:none">Offen</span>
             <span class="chip chip--warning" style="font-size:10px;flex:none">In Bearbeitung</span>
-            <span class="chip chip--muted" style="font-size:10px;flex:none;border-style:dashed">Abgelehnt</span>
-            <span class="chip chip--muted" style="font-size:10px;flex:none;border-style:dashed">Abgeschlossen</span>
+            <span class="chip chip--muted" style="color:#8A8A8A;font-size:10px;flex:none;border-style:dashed">Abgelehnt</span>
+            <span class="chip chip--muted" style="color:#8A8A8A;font-size:10px;flex:none;border-style:dashed">Abgeschlossen</span>
             <span class="chip" style="font-size:10px;flex:none">Einheit: Alle</span>
           </div>
           <div style="flex:1;overflow:auto;padding:0 16px 96px;display:flex;flex-direction:column;gap:10px">
@@ -50,7 +50,7 @@
                 <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px 8px">
                   <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px">
                     <span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ o.prio }}</span>
-                    <span style="font:700 8.5px/1 Lato,sans-serif;color:#646464;letter-spacing:.1em;text-transform:uppercase">Prio</span>
+                    <span style="font:700 8.5px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.1em;text-transform:uppercase">Prio</span>
                   </div>
                   <div style="flex:1;min-width:0">
                     <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14.5px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">{{ o.id }}</span><span class="chip {{ o.kindCls }}" style="font-size:8.5px">{{ o.kind }}</span></div>
@@ -59,22 +59,22 @@
                       <span style="font:300 11px/1 Lato,sans-serif;color:{{ o.ageColor }};font-variant-numeric:tabular-nums">{{ o.age }}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap">
-                      <span style="font:700 9px/1 Lato,sans-serif;color:#646464;letter-spacing:.08em;text-transform:uppercase">Für</span><span class="squadron-badge" style="font-size:9.5px">{{ o.req }}</span>
-                      <span style="font:700 9px/1 Lato,sans-serif;color:#646464;letter-spacing:.08em;text-transform:uppercase;margin-left:6px">Durch</span><span class="squadron-badge squadron-badge-sk" style="font-size:9.5px">{{ o.resp }}</span>
+                      <span style="font:700 9px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.08em;text-transform:uppercase">Für</span><span class="squadron-badge" style="font-size:9.5px">{{ o.req }}</span>
+                      <span style="font:700 9px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.08em;text-transform:uppercase;margin-left:6px">Durch</span><span class="squadron-badge squadron-badge-sk" style="font-size:9.5px">{{ o.resp }}</span>
                     </div>
                   </div>
-                  <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;margin-top:4px"><use href="#krt-icon-chevron-right"></use></svg>
+                  <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none;margin-top:4px"><use href="#krt-icon-chevron-right"></use></svg>
                 </div>
                 <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:4px 14px;border-top:1px solid #1C1C1C" onClick="{{ o.onToggle }}">
                   <svg class="krt-icon" style="width:13px;height:13px;color:#E77E23;transform:rotate({{ o.chev }});transition:transform .15s"><use href="#krt-icon-chevron-right"></use></svg>
                   <span style="font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;letter-spacing:.5px;text-transform:uppercase">Materialien</span>
-                  <span style="font:300 10.5px/1 Lato,sans-serif;color:#646464">({{ o.matCount }})</span>
+                  <span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">({{ o.matCount }})</span>
                 </button>
                 <sc-if value="{{ o.open }}" hint-placeholder-val="{{ false }}">
                   <div style="padding:0 14px 12px 35px;display:flex;flex-direction:column;gap:8px">
                     <sc-for list="{{ o.mats }}" as="m" hint-placeholder-count="2">
                       <div>
-                        <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.name }}</span><span style="font:700 12px/1 Lato,sans-serif;color:#FFFFFF">{{ m.have }}</span><span style="font:300 11px/1 Lato,sans-serif;color:#646464">/ {{ m.need }}</span></div>
+                        <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">{{ m.name }}</span><span style="font:700 12px/1 Lato,sans-serif;color:#FFFFFF">{{ m.have }}</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">/ {{ m.need }}</span></div>
                         <div style="height:4px;background:#282828;margin-top:4px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ m.pct }};background:{{ m.barColor }}"></span></div>
                       </div>
                     </sc-for>
@@ -83,7 +83,7 @@
               </div>
             </sc-for>
           </div>
-          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="Neuer Auftrag"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(231,126,35,.10)" aria-label="Neuer Auftrag"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
           <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
             <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
               <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
@@ -112,7 +112,7 @@
             <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px">
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
-                <div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#A-1042</span><span class="chip chip--primary" style="font-size:8.5px">Material</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#1042</span><span class="chip chip--primary" style="font-size:8.5px">Material</span></div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill" style="font-size:9.5px;color:#FFD23F">In Bearbeitung</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">Prio 1 · fällig 21.08.</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
@@ -133,7 +133,7 @@
               <div style="display:flex;flex-direction:column;gap:10px">
                 <sc-for list="{{ positions }}" as="p" hint-placeholder-count="2">
                   <div style="border:1px solid #282828;background:#141414;padding:12px 14px">
-                    <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#646464">/ {{ p.need }}</span></div>
+                    <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">/ {{ p.need }}</span></div>
                     <div style="height:5px;background:#282828;margin-top:8px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ p.pct }};background:{{ p.barColor }}"></span></div>
                     <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">Gebucht: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">Zugesagt: <strong>{{ p.claimed }}</strong></span></div>
                   </div>
@@ -147,7 +147,7 @@
                 <sc-for list="{{ demand }}" as="d" hint-placeholder-count="3">
                   <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
                     <span style="flex:1;min-width:0;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</span>
-                    <div style="text-align:right"><div style="font:700 13px/1.2 Lato,sans-serif;color:{{ d.color }}">{{ d.open }}</div><div style="font:300 10px/1.2 Lato,sans-serif;color:#646464">noch offen</div></div>
+                    <div style="text-align:right"><div style="font:700 13px/1.2 Lato,sans-serif;color:{{ d.color }}">{{ d.open }}</div><div style="font:300 10px/1.2 Lato,sans-serif;color:#8A8A8A">noch offen</div></div>
                   </div>
                 </sc-for>
               </div>
@@ -208,12 +208,12 @@
                         <div style="font:700 14.5px/1.3 Lato,sans-serif;color:#FFFFFF">{{ o.mat }}</div>
                         <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">{{ o.who }} · {{ o.when }}</div>
                       </div>
-                      <span style="text-align:right;font-variant-numeric:tabular-nums"><span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">{{ o.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#646464">{{ o.unit }}</span><br><span class="chip chip--muted" style="font-size:8.5px;margin-top:4px">Q {{ o.q }}</span></span>
+                      <span style="text-align:right;font-variant-numeric:tabular-nums"><span style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">{{ o.amt }}</span> <span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">{{ o.unit }}</span><br><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px;margin-top:4px">Q {{ o.q }}</span></span>
                     </div>
                     <button class="{{ o.btnCls }}" style="{{ o.btnStyle }}" onClick="{{ o.onInterest }}"><svg class="krt-icon" style="width:15px;height:15px"><use href="{{ o.btnIcon }}"></use></svg>{{ o.btnLabel }}</button>
                   </div>
                 </sc-for>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Übergabe & Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Übergabe & Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse.</div>
               </div>
             </sc-if>
             <sc-if value="{{ showReqs }}" hint-placeholder-val="{{ false }}">
@@ -226,7 +226,7 @@
                         <div style="font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Gesucht von {{ r.who }} · {{ r.when }}</div>
                         <div style="display:flex;gap:6px;margin-top:6px"><span class="chip chip--data" style="font-size:9px">Menge: <strong>{{ r.amt }}</strong></span><sc-if value="{{ r.minQ }}" hint-placeholder-val="{{ false }}"><span class="chip chip--data" style="font-size:9px">Min. Q: <strong>{{ r.minQ }}</strong></span></sc-if></div>
                       </div>
-                      <span class="chip chip--muted" style="font-size:9px;flex:none;font-variant-numeric:tabular-nums">{{ r.supplyCount }} Zusagen</span>
+                      <span class="chip chip--muted" style="color:#8A8A8A;font-size:9px;flex:none;font-variant-numeric:tabular-nums">{{ r.supplyCount }} Zusagen</span>
                     </div>
                     <button class="{{ r.btnCls }}" style="{{ r.btnStyle }}" onClick="{{ r.onInterest }}"><svg class="krt-icon" style="width:15px;height:15px"><use href="{{ r.btnIcon }}"></use></svg>{{ r.btnLabel }}</button>
                   </div>
@@ -234,7 +234,7 @@
               </div>
             </sc-if>
           </div>
-          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(231,126,35,.2)" aria-label="{{ boersenFabLabel }}"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
+          <button style="all:unset;box-sizing:border-box;cursor:pointer;position:absolute;right:16px;bottom:96px;width:56px;height:56px;background:#E77E23;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(231,126,35,.10)" aria-label="{{ boersenFabLabel }}"><svg class="krt-icon" style="width:24px;height:24px;color:#000"><use href="#krt-icon-plus"></use></svg></button>
           <div style="flex:none;display:flex;background:#141414;border-top:1px solid #282828;height:80px;padding:8px 0 4px">
             <sc-for list="{{ navB }}" as="n" hint-placeholder-count="5">
               <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
@@ -253,7 +253,7 @@
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
           <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
             <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
             <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
               <div>
@@ -298,21 +298,21 @@
           <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
             <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
             <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
               <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
               <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
                 <div>
                   <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Notiz zur Zuweisung</div>
-                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Nur deine eigene Zuweisung</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#1042 · Nur deine eigene Zuweisung</div>
                 </div>
                 <div>
                   <label style="font-size:13px;margin-bottom:6px">Notiz</label>
                   <textarea placeholder="z. B. Bringe 400 SCU Laranite am Freitag mit." style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
-                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">0 / 500</div>
+                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums;margin-top:6px">0 / 500</div>
                 </div>
                 <div style="display:flex;gap:10px">
                   <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
-                  <button class="btn btn--cta" style="min-height:52px;flex:1.4;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.4;background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
                 </div>
               </div>
             </div>
@@ -332,18 +332,18 @@
             </div>
             <sc-if value="{{ n6Open }}" hint-placeholder-val="{{ true }}">
               <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-              <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
                 <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
                 <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:16px">
                   <div>
                     <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Notiz zur Zuweisung</div>
-                    <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Nur deine eigene Zuweisung</div>
+                    <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#1042 · Nur deine eigene Zuweisung</div>
                   </div>
                   <div>
                     <label style="font-size:13px;margin-bottom:6px">Notiz</label>
                     <textarea value="{{ n6Draft }}" onChange="{{ n6OnChange }}" style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
                     <div style="display:flex;align-items:baseline;gap:12px;margin-top:6px">
-                      <span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#646464">Leeres Feld speichern entfernt die Notiz.</span>
+                      <span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Leeres Feld speichern entfernt die Notiz.</span>
                       <span style="font:300 11px/1 Lato,sans-serif;color:{{ n6CountColor }};font-variant-numeric:tabular-nums">{{ n6Count }}</span>
                     </div>
                   </div>
@@ -355,7 +355,7 @@
               </div>
             </sc-if>
             <sc-if value="{{ n6Toast }}" hint-placeholder-val="{{ false }}">
-              <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:#141414;border:1px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.3)">
+              <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:#141414;border:1px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
                 <svg class="krt-icon" style="width:16px;height:16px;color:#2EBC3D;flex:none"><use href="#krt-icon-check"></use></svg>
                 <div style="font:300 13px/1.4 Lato,sans-serif;color:#D2D2D2">Gespeichert.</div>
               </div>
@@ -379,12 +379,12 @@
           <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
             <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
             <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
               <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
               <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px">
                 <div>
                   <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Notiz zur Zuweisung</div>
-                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Nur deine eigene Zuweisung</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#1042 · Nur deine eigene Zuweisung</div>
                 </div>
                 <div style="border-left:4px solid #A3000A;background:rgba(163,0,10,.15);padding:10px 12px;display:flex;flex-direction:column;gap:8px">
                   <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B;text-transform:uppercase;letter-spacing:.06em">Konflikt — Notiz zwischenzeitlich geändert</div>
@@ -398,11 +398,11 @@
                 <div>
                   <label style="font-size:13px;margin-bottom:6px">Notiz</label>
                   <textarea defaultValue="Liefere Laranite ab Freitag — 400 SCU. Übergabe direkt an Vex." style="width:100%;min-height:120px;box-sizing:border-box;background:#1C1C1C;border:1px solid #282828;color:#FFFFFF;font:300 14px/1.5 Lato,sans-serif;padding:12px;resize:none"></textarea>
-                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#646464;font-variant-numeric:tabular-nums;margin-top:6px">62 / 500</div>
+                  <div style="text-align:right;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums;margin-top:6px">62 / 500</div>
                 </div>
                 <div style="display:flex;gap:10px">
                   <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
-                  <button class="btn btn--cta" style="min-height:52px;flex:1.4;background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
+                  <button class="btn btn--cta" style="min-height:52px;flex:1.4;background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Speichern</button>
                 </div>
               </div>
             </div>
@@ -423,12 +423,12 @@
           <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
             <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
             <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2)">
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10)">
               <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
               <div style="padding:4px 0 20px;display:flex;flex-direction:column;gap:14px">
                 <div style="padding:0 20px">
                   <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Status wechseln</div>
-                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Aktuell: In Bearbeitung</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#1042 · Aktuell: In Bearbeitung</div>
                 </div>
                 <div style="border-top:1px solid #282828">
                   <sc-for list="{{ stRows }}" as="r" hint-placeholder-count="4">
@@ -444,7 +444,7 @@
                   </sc-for>
                 </div>
                 <div style="padding:0 20px;display:flex;flex-direction:column;gap:14px">
-                  <div style="font:300 11px/1.5 Lato,sans-serif;color:#646464">Erlaubte Wechsel richten sich nach deiner Rolle.</div>
+                  <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Erlaubte Wechsel richten sich nach deiner Rolle.</div>
                   <div style="display:flex;gap:10px">
                     <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
                     <button class="btn btn--cta" style="{{ stCtaStyle }}">Status übernehmen</button>
@@ -462,12 +462,12 @@
           <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
             <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
             <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
-            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 20px rgba(231,126,35,.2);filter:brightness(.55)">
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);filter:brightness(.55)">
               <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
               <div style="padding:4px 0 20px;display:flex;flex-direction:column;gap:14px">
                 <div style="padding:0 20px">
                   <div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Status wechseln</div>
-                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#A-1042 · Aktuell: In Bearbeitung</div>
+                  <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">#1042 · Aktuell: In Bearbeitung</div>
                 </div>
                 <div style="border-top:1px solid #282828">
                   <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 20px;border-bottom:1px solid #1C1C1C;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
@@ -481,7 +481,7 @@
             <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px">
               <div class="krt-modal" style="max-width:360px;width:100%">
                 <div class="krt-modal-head"><h2>Auftrag abschließen?</h2></div>
-                <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">#A-1042 wird endgültig als <strong style="color:#2EBC3D">Abgeschlossen</strong> markiert. Terminale Status lassen sich in der App nicht zurücknehmen — Wiedereröffnung nur durch die Administration (Web).</p></div>
+                <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">#1042 wird endgültig als <strong style="color:#2EBC3D">Abgeschlossen</strong> markiert. Terminale Status lassen sich in der App nicht zurücknehmen — Wiedereröffnung nur durch die Administration (Web).</p></div>
                 <div class="krt-modal-foot">
                   <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
                   <button class="btn btn--cta" style="min-height:48px">Endgültig abschließen</button>
@@ -503,6 +503,349 @@
     </div>
   </section>
 
+  <section data-screen-label="Auftraege Parität" style="margin-bottom:32px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">Runde 8 · Web-Parität — die Arbeit erfassen<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Neun offene Punkte des Parität-Programms: Auftrag bearbeiten (voll + eingeschränkt), Item-Positionen samt Unterbaugruppen-Baum, Zusagen, Übergabe/Herstellung erfassen, Verknüpfung lösen, Blueprint-Varianten und der Materialbedarf über Aufträge. Ohne die Übergabe kann ein Auftrag in der App übernommen, aber nicht beendet werden — das ist der schwerste Punkt der Liste.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · Auftrag bearbeiten — Vollformular (Logistiker)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Auftrag bearbeiten</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#1042 · Material · POST /{id}/update</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Beteiligte</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Bearbeitende Einheit</label><input type="text" value="Bereich Profit" style="width:100%;height:46px;font-size:13.5px"><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Nur profit-fähige Einheiten — wie im Web.</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Auftraggeber</label><input type="text" value="Staffel IRIDIUM" style="width:100%;height:46px;font-size:13.5px"></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Handle (Ansprechpartner)</label><input type="text" value="GrafRotz" style="width:100%;height:46px;font-size:13.5px"></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Positionen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
+                <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#D2D2D2">400 SCU</span></div>
+                  <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:45%;background:#E77E23"></span></div>
+                  <div style="display:flex;gap:8px;margin-top:10px">
+                    <div style="flex:1"><label style="font-size:12px;margin-bottom:4px">Menge</label><input type="text" value="400" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div>
+                    <div style="flex:1"><label style="font-size:12px;margin-bottom:4px">Mindestqualität</label><input type="text" value="700" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div>
+                    <div style="align-self:flex-end"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:42px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Position entfernen" title="Position entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div>
+                  </div>
+                </div>
+                <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#D2D2D2">120 SCU</span></div>
+                  <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:100%;background:#E77E23"></span></div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:10px"><span class="chip chip--success" style="color:#2EBC3D;font-size:9px">Erfüllt</span><span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Menge kleiner als bereits übergeben — Server: 400.</span></div>
+                </div>
+                <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Position</button>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Kommentar</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div><textarea style="width:100%;min-height:80px;font-size:13.5px;resize:none">Abgabe an ARC-L1, Ansprechpartner im TS.</textarea></div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Speichern</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Auftrag bearbeiten (voll)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Einstieg: Overflow „Mehr" im Detail (Artboard 2) → „Auftrag bearbeiten". Ohne Rolle Logistiker gesperrt-antippbar im Overflow, nie versteckt (Muster Kap. 09)</li>
+            <li>Dasselbe Formular wie „Auftrag anlegen", vorbefüllt — kein zweites Layout. Unterschied: Positionen zeigen ihren Fortschritt, und eine erfüllte Position lässt sich nicht unter die übergebene Menge senken (Server 400, Hinweis steht an der Zeile)</li>
+            <li>Position entfernen mit bereits übergebener Menge → Danger-Modal, das die Übergaben benennt; ohne Übergaben entfällt die Rückfrage</li>
+            <li>409 wie überall: Modal mit „Neu laden" / „Meine Fassung übernehmen" (Muster Artboard 7); Eingaben bleiben stehen</li>
+            <li>Zustände: Laden = Formular-Skeleton (Felder als leere Rahmen, kein Spinner-Overlay) · Schreiben = CTA-Spinner, Felder gesperrt · 403 = Canon-Copy, Formular bleibt offen</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">11 · Auftrag bearbeiten — Antragsteller (eingeschränkt)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Auftrag bearbeiten</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#1042 · POST /{id}/requested-update</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+                <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Du hast diesen Auftrag gestellt: Mengen und Kommentar kannst du ändern, die Bearbeitung nicht.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Positionen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
+                <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#D2D2D2">400 SCU</span></div>
+                  <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:45%;background:#E77E23"></span></div>
+                  <div style="display:flex;gap:8px;margin-top:10px">
+                    <div style="flex:1"><label style="font-size:12px;margin-bottom:4px">Menge</label><input type="text" value="400" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div>
+                    <div style="flex:1"><label style="font-size:12px;margin-bottom:4px">Mindestqualität</label><input type="text" value="700" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div>
+                  </div>
+                </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Nicht änderbar</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Bearbeitende Einheit</label><div style="position:relative;display:flex;align-items:center;gap:8px;border:1px solid #282828;height:46px;padding:0 12px;opacity:.45"><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#D2D2D2">Bereich Profit</span><svg class="krt-icon" style="width:13px;height:13px;color:#8A8A8A;opacity:2.2"><use href="#krt-icon-lock"></use></svg></div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Dafür brauchst du die Rolle Logistiker.</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Status</label><div style="position:relative;display:flex;align-items:center;gap:8px;border:1px solid #282828;height:46px;padding:0 12px;opacity:.45"><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#D2D2D2">In Bearbeitung</span><svg class="krt-icon" style="width:13px;height:13px;color:#8A8A8A;opacity:2.2"><use href="#krt-icon-lock"></use></svg></div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Status wechselt die Bearbeitung (Artboard 8).</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Priorität</label><div style="position:relative;display:flex;align-items:center;gap:8px;border:1px solid #282828;height:46px;padding:0 12px;opacity:.45"><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#D2D2D2">Platz 2 der Warteschlange</span><svg class="krt-icon" style="width:13px;height:13px;color:#8A8A8A;opacity:2.2"><use href="#krt-icon-lock"></use></svg></div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Reihenfolge ändert die Bearbeitung (Artboard 2, Tablet).</div></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Kommentar</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div><textarea style="width:100%;min-height:80px;font-size:13.5px;resize:none">Abgabe an ARC-L1, Ansprechpartner im TS.</textarea></div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Speichern</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Antragsteller-Variante</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>EIN Screen, zwei Endpunkte: wer den Auftrag gestellt hat, schreibt gegen /requested-update, ein Logistiker gegen /update. Die App entscheidet nach Handle bzw. Rolle aus /users/me — nicht nach zwei getrennten Screens</li>
+            <li>Die gesperrten Felder werden GEZEICHNET, nicht entfernt: Abschnitt „Nicht änderbar" mit 45 % Alpha + Schloss und je einer Zeile, die den Weg nennt. Ein Feld, das fehlt, wird als Bug gemeldet; ein Feld mit Grund wird verstanden</li>
+            <li>Antippen eines gesperrten Feldes → derselbe Rollen-Toast wie überall</li>
+            <li>Ist der Auftrag bereits abgeschlossen oder abgelehnt, entfällt der Menüpunkt ganz — dann gibt es nichts mehr zu ändern (Server lehnt ohnehin ab)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">12 · Item-Positionen bearbeiten — Unterbaugruppen-Baum</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Item-Positionen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#1177 · Item · POST /{id}/items/update</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div style="border:1px solid #282828;background:#141414">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#1C1C1C;border-bottom:2px solid #E77E23"><span style="flex:1;font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">3 bestellt</span></div>
+                <div style="padding:10px 12px;display:flex;flex-direction:column;gap:10px">
+                  <div><label style="font-size:12px;margin-bottom:4px">Blueprint (Variante)</label><select style="width:100%;height:44px;font-size:13px"><option>Gatling — Standard (2 Varianten)</option><option>Gatling — Verstärkt</option></select><div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Zwei Varianten desselben Items — die Auswahl bestimmt die Zutatenliste. Bei genau einer Variante entfällt das Feld.</div></div>
+                  <div style="display:flex;gap:8px"><div style="flex:1"><label style="font-size:12px;margin-bottom:4px">Anzahl</label><input type="text" value="3" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div><div style="align-self:flex-end"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:42px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Position entfernen" title="Position entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div></div>
+                  <div style="border-top:1px solid #282828;padding-top:10px">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 10.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Unterbaugruppen</span><span style="flex:1"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">×3</span></div>
+                    <div style="display:flex;flex-direction:column;gap:0;margin-top:8px">
+                      <div style="display:flex;align-items:center;gap:8px;min-height:40px;font-variant-numeric:tabular-nums"><span style="width:10px;height:1px;background:#282828;flex:none"></span><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Gehäuse</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">3</span><span class="chip chip--success" style="color:#2EBC3D;font-size:8.5px">Lager</span></div>
+                      <div style="display:flex;align-items:center;gap:8px;min-height:40px;padding-left:16px;font-variant-numeric:tabular-nums"><span style="width:10px;height:1px;background:#282828;flex:none"></span><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Laranite</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">36 SCU</span></div>
+                      <div style="display:flex;align-items:center;gap:8px;min-height:40px;font-variant-numeric:tabular-nums"><span style="width:10px;height:1px;background:#282828;flex:none"></span><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Lauf-Set</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">6</span><span class="chip chip--warning" style="font-size:8.5px">Fehlt 2</span></div>
+                      <div style="display:flex;align-items:center;gap:8px;min-height:40px;padding-left:16px;font-variant-numeric:tabular-nums"><span style="width:10px;height:1px;background:#282828;flex:none"></span><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Bexalit</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">18 SCU</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Item</button>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Der Baum ist Anzeige: Mengen skalieren mit der Anzahl, nichts darin wird hier bestellt.</div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Speichern</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Item-Positionen &amp; Baum</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Der Unterbaugruppen-Baum (Runde 9 §2, bisher offen) ist READ-ONLY und auf ZWEI Ebenen begrenzt: Baugruppe → ihre Materialien. Tiefer geht das Telefon nicht sinnvoll; die volle Tiefe bleibt Web (Hinweiszeile am Fuß der Karte, wenn die Rezeptur tiefer ist)</li>
+            <li>Einrückung 16 dp je Ebene + kurzer Rail-Strich, keine Chevrons: der Baum klappt nicht, er zeigt. Mengen tabular-nums und mit der Anzahl skaliert</li>
+            <li>Verfügbarkeits-Chip je Baugruppe aus dem Lagerbestand: „Lager" (success) / „Fehlt n" (warning) — dieselbe Semantik wie die Craftability in Mein Inventar</li>
+            <li>Blueprint-Variante = Select mit der Variantenzahl im Label; genau eine Variante → Feld entfällt und ist sofort gesetzt (wie im Anlegen-Formular). Das ist der Parität-Punkt „Blueprint variant counting"</li>
+            <li>„Rezept veraltet" (Server-Flag) erscheint als Warn-Chip am Item-Kopf und sperrt das Speichern nicht — es erklärt nur abweichende Zutaten</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">13 · Zusage (Claim) setzen · zurückziehen</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Auftrag #1042</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Positionen · Zusagen</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+                <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#D2D2D2">180 / 400 SCU</span></div>
+                  <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:45%;background:#E77E23"></span></div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+                    <span class="chip chip--data" style="font-size:9px">IRI: 120 SCU</span>
+                    <span class="chip chip--data" style="font-size:9px">Dorn: 60 SCU</span>
+                    <span class="chip chip--primary" style="font-size:9px">Du: 100 SCU<svg class="krt-icon" style="width:10px;height:10px;margin-left:6px"><use href="#krt-icon-close"></use></svg></span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">280 SCU zugesagt · 120 SCU offen</span><button class="btn-ghost btn" style="background:transparent;min-height:40px;font-size:10.5px;flex:none">Zusage ändern</button></div>
+                </div>
+                <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#D2D2D2">120 / 120 SCU</span></div>
+                  <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:100%;background:#E77E23"></span></div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:10px"><span class="chip chip--success" style="color:#2EBC3D;font-size:9px">Vollständig zugesagt</span><span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Bucket voll — weitere Zusagen lehnt der Server ab.</span></div>
+                </div>
+              <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Zusage auf eine Position</button>
+            </div></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-top:3px solid #E77E23;box-shadow:0 0 12px rgba(231,126,35,.10);display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:32px;height:4px;border-radius:999px;background:#646464"></span></div>
+              <div style="padding:4px 20px 20px;display:flex;flex-direction:column;gap:12px">
+                <div><div style="font:700 16px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.8px">Zusage — Laranite</div><div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Offen: 120 von 400 SCU</div></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Deine Zusage (SCU)</label><input type="text" value="100" style="width:100%;height:50px;font-size:19px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"></div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Eine Zusage ist eine Absicht, keine Buchung — geliefert wird über die Übergabe (Artboard 14).</div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn-quiet-danger btn" style="background:transparent;min-height:50px;flex:1">Zurückziehen</button>
+                  <button class="btn btn--cta" style="min-height:50px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Zusagen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Zusagen (Material claims)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Zusagen sind Daten-Chips an der Position (weiß auf Chip, nie orange) — die EIGENE trägt den Primary-Ton und ein ×; fremde sind nicht antippbar</li>
+            <li>Setzen und Ändern ist dasselbe Sheet; Zurückziehen ist der stille Danger-Button darin — kein eigener Screen, keine Rückfrage (eine Zusage ist reversibel und bucht nichts)</li>
+            <li><b style="color:#FFD23F">Korrektur (Runde 12, B1):</b> Überzusage ist NICHT erlaubt — MaterialClaimService nimmt einen Row-Lock auf den Auftrag und lehnt jede Zusage ab, deren Summe über alle Staffeln den Bucket übersteigt (REQ-ORDERS-024, ADR-0092). Die Zeile zeigt zugesagt vs. offen, das Sheet begrenzt auf den offenen Rest, und eine Ablehnung wird als ÜBERZUSAGE benannt — nie als „ungültige Eingabe"</li>
+            <li>Zustände: 0 Zusagen → nur die gestrichelte „+ Zusage"-Fläche, kein leerer Chip-Streifen · Schreiben → CTA-Spinner, Chips bleiben stehen · 409 auf der Position → Modal wie Artboard 7</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">14 · Übergabe erfassen — Material</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Übergabe erfassen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#1042 · Laranite · 180 von 400 SCU</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div><label style="font-size:12px;margin-bottom:4px">Menge (SCU)</label><input type="text" value="120" style="width:100%;height:52px;font-size:20px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"></div>
+              <div style="display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;border:1px solid #282828;background:#1C1C1C;padding:10px 12px"><span style="flex:1;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Nach dieser Übergabe</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">300 / 400 SCU</span><span class="chip chip--warning" style="font-size:8.5px">75 %</span></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Aus welchem Bestand</label><select style="width:100%;height:46px;font-size:13.5px"><option>Lagerzeile: Rhea · ARC-L1 · Q 874 (442 SCU)</option><option>Lagerzeile: Dorn · Lorville · Q 733 (300 SCU)</option></select><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Pflichtfeld: die Übergabe bucht immer eine Lagerzeile aus. Eine Erfassung ohne Lagerbezug kann der Endpunkt nicht — und das Web bietet sie auch nicht an (Runde 12, A11).</div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Empfänger</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="Dorn" style="height:46px;font-size:13.5px"></div></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Notiz (optional)</label><input type="text" value="Abgabe an ARC-L1, Frachtraum 2" style="width:100%;height:46px;font-size:13.5px"></div>
+              <div style="display:flex;gap:10px;border-left:4px solid #FFD23F;background:rgba(255,210,63,.12);padding:10px 12px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-warning"></use></svg>
+                <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Eine erfasste Übergabe lässt sich in der App nicht zurücknehmen — das Protokoll ist append-only.</div>
+              </div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bookout"></use></svg>Übergabe erfassen</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Übergabe (der schwerste Punkt)</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Ohne diesen Screen kann ein Auftrag in der App übernommen, aber nicht beendet werden — im Web schließt die Übergabe den Auftrag. Einstieg: Tab „Übergaben" (bisher nur lesend) → CTA „Übergabe erfassen", und je Position aus Artboard 13</li>
+            <li>Der Bestandsbezug ist Pflicht und die Brücke ins Lager: der Server bucht die gewählte Zeile aus (Herkunft-Planer greift, Kap. 09 Artboards 18–19, wenn die Zeile Marken trägt). Eine reine Protokollierung ohne Lagerbezug gibt es nicht (Runde 12, A11)</li>
+            <li>Live-Vorschau „Nach dieser Übergabe 300 / 400" — die Zahl, die den Auftrag beendet, wird nie im Kopf gebildet. Erreicht sie 100 %, wechselt der Chip auf Success und die Notiz sagt, dass der Auftrag damit erfüllt ist</li>
+            <li>Append-only ist als Warnung ins Formular geschrieben, nicht als Modal danach — die Rückfrage kommt nur bei einer Menge über der offenen Restmenge</li>
+            <li>Zustände: Schreiben = CTA-Spinner, Felder gesperrt · Erfolg = Sheet schließt, Tab „Übergaben" zeigt die neue Zeile oben + Toast · 409 (Position inzwischen erfüllt) = Modal „Position wurde erfüllt" mit „Neu laden" · Offline = CTA gedimmt mit Zeile (kein Queueing, Kap. 14)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">15 · Herstellung erfassen — Plan je Material + Einlagerung</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Herstellung erfassen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#1177 · Ballistic Gatling · 1 von 3</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div><label style="font-size:12px;margin-bottom:4px">Anzahl hergestellt</label><input type="text" value="2" style="width:100%;height:52px;font-size:20px;font-weight:700;color:#fff;text-align:center;font-variant-numeric:tabular-nums"></div>
+              <div style="display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;border:1px solid #282828;background:#1C1C1C;padding:10px 12px"><span style="flex:1;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Nach dieser Meldung</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">3 / 3</span><span class="chip chip--success" style="color:#2EBC3D;font-size:8.5px">Erfüllt</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Einlagerung</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">Pflicht</span></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Ort</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1" style="height:44px;font-size:13px"></div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div><label style="font-size:12px;margin-bottom:4px">Qualität</label><input type="text" value="820" style="width:100%;height:44px;text-align:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums"></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Einheit</label><select style="width:100%;height:44px;font-size:13px"><option>Bereich Profit</option></select></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Zutaten ausbuchen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">je Material</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="border:1px solid #282828;background:#141414;padding:9px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Gehäuse</span><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">benötigt 6 Stück</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+                    <div style="flex:1;min-width:0"><div style="font:300 11px/1.3 Lato,sans-serif;color:#D2D2D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rhea · ARC-L1 · 12 Stück frei</div></div>
+                    <input type="text" value="6" style="width:70px;height:40px;text-align:center;font-size:14px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
+                  </div>
+                  
+                </div>
+                <div style="border:1px solid #FFD23F;background:rgba(255,210,63,.08);padding:9px 12px">
+                  <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">benötigt 24 SCU</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+                    <div style="flex:1;min-width:0"><div style="font:300 11px/1.3 Lato,sans-serif;color:#D2D2D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Dorn · Lorville · 18 SCU frei</div></div>
+                    <input type="text" value="18" style="width:70px;height:40px;text-align:center;font-size:14px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex:none">
+                  </div>
+                  <div style="font:300 10.5px/1.4 Lato,sans-serif;color:#FFD23F;margin-top:6px">Nur 18 von 24 SCU zugeordnet — der Server entscheidet; die Meldung bleibt möglich.</div>
+                </div>
+              </div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Der Server nimmt einen Plan JE MATERIAL über benannte Lagerzeilen — kein Sammel-Häkchen. Eine Position auf 0 setzen heißt: dieses Material wurde außerhalb des Tools verbraucht.</div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Herstellung melden</button>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Korrektur (Runde 12, A9) — Herstellung</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li><b style="color:#FFD23F">Drei Felder der ersten Fassung existieren nicht,</b> und eines fehlte: <b style="color:#fff">„Verwendete Variante"</b> — es gibt kein Variantenfeld; die Blueprint-Variantenzählung ist eine Auftrags-Einstellung (PATCH /{id}/blueprint-variant-counting). <b style="color:#fff">„Übergeben an"</b> — Übergeben ist der eigene Aufruf POST /{id}/item-handovers, nicht Teil der Meldung. <b style="color:#fff">Ein Sammel-Häkchen „Zutaten ausbuchen"</b> — der Server nimmt einen Plan JE MATERIAL über benannte Lagerzeilen</li>
+            <li><b style="color:#fff">Neu und Pflicht: die Einlagerung</b> (Ort · Qualität · Einheit) — der Endpunkt verlangt sie; die erste Fassung ließ sie weg und war damit nicht absendbar</li>
+            <li>Je Material eine Zeile mit „benötigt n", der Herkunftszeile und einem Mengenfeld. Reicht der freie Bestand nicht, warnt die Zeile in Gelb und die Meldung bleibt möglich — der Server entscheidet (Muster wie Kap. 09 Herkunft-Planer)</li>
+            <li>Position auf 0 = außerhalb des Tools verbraucht. Das ersetzt das frühere „aus"-Häkchen, ohne eine stille Massenausbuchung zu erlauben</li>
+            <li>Zustände wie Artboard 14: Schreiben = CTA-Spinner, Felder gesperrt · Erfolg = zurück + Toast · 409 = Modal „Position wurde erfüllt" · offline = CTA gedimmt mit Grund, kein Queueing</li>
+          </ul>
+        </div>
+      </div>
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">16 · Materialsammelübersicht — Inline-Zuordnung &amp; lösen</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Materialsammelübersicht</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">#1042 · Zurück zum Auftrag</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Lagereinträge</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;border:1px solid #282828;background:#141414;padding:8px 12px;font-variant-numeric:tabular-nums">
+                <div style="flex:1;min-width:0"><div style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite · Rhea</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">ARC-L1 · Q 874 · 150 SCU von 442 im Bestand</div></div>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Verknüpfung lösen" title="Verknüpfung lösen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-filter-off"></use></svg></button>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:56px;border:1px solid #282828;background:#141414;padding:8px 12px;font-variant-numeric:tabular-nums">
+                <div style="flex:1;min-width:0"><div style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium · Dorn</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Lorville · Q 733 · 120 SCU von 300 im Bestand</div></div>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Verknüpfung lösen" title="Verknüpfung lösen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-filter-off"></use></svg></button>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Verknüpfte Materialien (ohne Bestand)</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">1</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;border:1px solid #282828;background:#141414;padding:8px 12px">
+                <div style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</div>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Material lösen" title="Material lösen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-filter-off"></use></svg></button>
+              </div>
+            </div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px">
+              <div class="krt-modal krt-modal--danger" style="max-width:360px;width:100%">
+                <div class="krt-modal-head"><h2>Verknüpfung lösen?</h2></div>
+                <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Die Zuordnung von <b style="color:#fff">150 SCU Laranite</b> (Rhea · ARC-L1) zu diesem Auftrag wird entfernt. Der Lagerbestand selbst bleibt unverändert.</p></div>
+                <div class="krt-modal-foot">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
+                  <button class="btn" style="min-height:48px;background:#A3000A;border:1px solid #A3000A;color:#FFFFFF">Lösen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — material-collection.html / item-collection.html</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>KORREKTUR (29.08.2026): Die Web-Fläche heißt „Materialsammelübersicht" bzw. „Itemsammelübersicht" und gehört zum AUFTRAG, nicht zur Material-Referenz — der Zurück-Weg ist wörtlich „Zurück zum Auftrag" (material.collection.back). Deshalb liegt sie hier und nicht in Kap. 16</li>
+            <li>Spalten wörtlich: Besitzer · Standort · Material bzw. Item · Qualität (nur Material) · Menge · Geliefert (material.collection.col.*); die Mengenzeile trägt „von {0} im Bestand"</li>
+            <li><b style="color:#FFD23F">Korrektur (Runde 12, A10):</b> Nur der LIEFERSTATUS ist inline änderbar („Lieferstatus aktualisiert."). Besitzer und Standort posten im Web auf /inventory/{id}/transfer — einen Proxy auf das Ausbuchen: das ist Bestand bewegen, kein Feld bearbeiten. Beide Zeilen nennen deshalb den Weg (Buchen-Sheet im Lager, Kap. 09), wo Menge und Marken-Abzüge sichtbar sind, BEVOR etwas umzieht</li>
+            <li>Leerzustände wörtlich: „Keine Lagereinträge für diesen Auftrag vorhanden." bzw. „Kein Item-Bestand für diesen Auftrag vorhanden."</li>
+            <li>Lösen ist eine Icon-Aktion je Zeile (aria-label + title) — nicht ein breiter Ghost-Button pro Zeile; die Inline-Felder liegen als Selects in der Zeile darüber</li>
+            <li>Rückfrage NUR bei einer Lagerzeile mit zugeordneter Menge (die Zuordnung fällt weg, der Bestand bleibt) — ein Material ohne Menge löst ohne Modal, mit Undo-Toast (5 s), wie das Löschen im Posteingang</li>
+            <li>Ohne Rolle Logistiker: Inline-Felder und Icons gesperrt-antippbar, nie versteckt</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <section data-screen-label="Auftraege tablet" style="margin-bottom:32px">
     <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Tablet 1280×800 — Queue + Detail (Drag-Handles für Logistiker)</div>
     <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
@@ -518,21 +861,21 @@
         </div>
         <div style="width:400px;flex:none;border-right:1px solid #282828;background:#0A0A0A;display:flex;flex-direction:column">
           <div style="padding:14px 16px;display:flex;gap:6px;border-bottom:1px solid #282828;flex-wrap:wrap">
-            <span class="chip chip--info" style="font-size:9.5px">Offen</span><span class="chip chip--warning" style="font-size:9.5px">In Bearbeitung</span><span class="chip" style="font-size:9.5px">Einheit: Alle</span>
+            <span class="chip chip--info" style="color:#6C93EF;font-size:9.5px">Offen</span><span class="chip chip--warning" style="font-size:9.5px">In Bearbeitung</span><span class="chip" style="font-size:9.5px">Einheit: Alle</span>
           </div>
           <div style="flex:1;overflow:auto">
             <div style="display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 14px;background:#1C1C1C;box-shadow:inset 3px 0 0 #E77E23">
-              <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
               <span style="font:900 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;width:20px">1</span>
-              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">#A-1042</span><span class="chip chip--primary" style="font-size:8px">Material</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill" style="font-size:9px;color:#FFD23F">In Bearbeitung</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">STAFFEL 1 → SK VG</span></div></div>
+              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">#1042</span><span class="chip chip--primary" style="font-size:8px">Material</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill" style="font-size:9px;color:#FFD23F">In Bearbeitung</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">STAFFEL 1 → SK VG</span></div></div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 14px;border-bottom:1px solid #141414">
-              <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
               <span style="font:900 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;width:20px">2</span>
-              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2">#A-1039</span><span class="chip chip--info" style="font-size:8px">Item</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill status-planned" style="font-size:9px">Offen</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#F2564B">vor 94 Tagen</span></div></div>
+              <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2">#A-1039</span><span class="chip chip--info" style="color:#6C93EF;font-size:8px">Item</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill status-planned" style="font-size:9px">Offen</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#F2564B">vor 94 Tagen</span></div></div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 14px">
-              <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none;cursor:grab"><use href="#krt-icon-grip"></use></svg>
               <span style="font:900 14px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;width:20px">3</span>
               <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span style="font:700 13.5px/1.2 Lato,sans-serif;color:#D2D2D2">#A-1035</span><span class="chip chip--primary" style="font-size:8px">Material</span></div><div style="display:flex;gap:8px;margin-top:3px;align-items:center"><span class="status-pill status-planned" style="font-size:9px">Offen</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#FFD23F">vor 41 Tagen</span></div></div>
             </div>
@@ -541,7 +884,7 @@
         <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px;min-width:0">
           <div style="display:flex;align-items:flex-start;gap:16px">
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:10px"><span style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#A-1042</span><span class="chip chip--primary" style="font-size:9px">Material</span><span class="status-pill" style="font-size:10px;color:#FFD23F">In Bearbeitung</span></div>
+              <div style="display:flex;align-items:center;gap:10px"><span style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#1042</span><span class="chip chip--primary" style="font-size:9px">Material</span><span class="status-pill" style="font-size:10px;color:#FFD23F">In Bearbeitung</span></div>
               <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Prio 1 · angelegt 12.07. · fällig 21.08. · Für STAFFEL 1 · Durch SK VANGUARD · Zuständig Vex</div>
             </div>
             <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px">Status ändern</button>
@@ -555,7 +898,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:900px">
             <sc-for list="{{ positions }}" as="p" hint-placeholder-count="2">
               <div style="border:1px solid #282828;background:#141414;padding:12px 14px">
-                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#646464">/ {{ p.need }}</span></div>
+                <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">/ {{ p.need }}</span></div>
                 <div style="height:5px;background:#282828;margin-top:8px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ p.pct }};background:{{ p.barColor }}"></span></div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">Gebucht: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">Zugesagt: <strong>{{ p.claimed }}</strong></span></div>
               </div>
@@ -587,7 +930,7 @@ class Component extends DCLogic {
       onToggle: () => this.setState(s => ({ [key]: !s[key] })),
     });
     const orders = [
-      mkOrder('mats0', { id: '#A-1042', kind: 'Material', kindCls: 'chip--primary', prio: '1', status: 'In Bearbeitung', statusCls: '', age: 'vor 36 Tagen', ageColor: '#FFD23F', req: 'STAFFEL 1', resp: 'SK VG', matCount: 2, mats: [
+      mkOrder('mats0', { id: '#1042', kind: 'Material', kindCls: 'chip--primary', prio: '1', status: 'In Bearbeitung', statusCls: '', age: 'vor 36 Tagen', ageColor: '#FFD23F', req: 'STAFFEL 1', resp: 'SK VG', matCount: 2, mats: [
         { name: 'Laranite', have: '748', need: '1.200 SCU', pct: '62%', barColor: '#E77E23' },
         { name: 'Agricium', have: '96', need: '96 SCU', pct: '100%', barColor: '#239E33' } ] }),
       mkOrder('mats1', { id: '#A-1039', kind: 'Item', kindCls: 'chip--info', prio: '2', status: 'Offen', statusCls: 'status-planned', age: 'vor 94 Tagen', ageColor: '#F2564B', req: 'SK VG', resp: 'STAFFEL 2', matCount: 3, mats: [
@@ -673,7 +1016,7 @@ class Component extends DCLogic {
       n6OnChange: (e) => this.setState({ n6Draft: e.target.value.slice(0, 500) }),
       n6Saving: this.state.n6Saving, n6NotSaving: !this.state.n6Saving,
       n6SaveLabel: this.state.n6Saving ? 'Speichern…' : 'Speichern',
-      n6SaveStyle: 'min-height:52px;flex:1.4' + (n6Disabled && !this.state.n6Saving ? ';background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none' : ''),
+      n6SaveStyle: 'min-height:52px;flex:1.4' + (n6Disabled && !this.state.n6Saving ? ';background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none' : ''),
       n6Save: () => {
         if (n6Disabled) return;
         this.setState({ n6Saving: true });
@@ -686,7 +1029,7 @@ class Component extends DCLogic {
       n6Reopen: () => this.setState({ n6Open: true }),
       n6Toast: this.state.n6Toast,
       stRows,
-      stCtaStyle: 'min-height:52px;flex:1.4' + (stSel ? '' : ';background:#282828;color:#646464;border-color:#282828;box-shadow:none;pointer-events:none'),
+      stCtaStyle: 'min-height:52px;flex:1.4' + (stSel ? '' : ';background:#282828;color:#8A8A8A;border-color:#282828;box-shadow:none;pointer-events:none'),
       orders, oTabs, positions, demand, handovers, offers, requests, railNav,
       nav: mkNav(2), navB: mkNav(4),
       ot0: this.state.oTab === 0, ot1: this.state.oTab === 1, ot2: this.state.oTab === 2, ot3: this.state.oTab === 3,

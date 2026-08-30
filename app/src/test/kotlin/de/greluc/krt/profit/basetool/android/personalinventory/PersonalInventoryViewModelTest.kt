@@ -27,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -69,10 +70,12 @@ class PersonalInventoryViewModelTest {
      *
      * @property saveAnswer what a create or update returns.
      * @property deleteAnswer what a delete returns.
+     * @property rows what a page read answers with.
      */
     private class FakeSource(
         var saveAnswer: ApiResult<PersonalItem> = ApiResult.Success(item()),
         var deleteAnswer: ApiResult<Unit> = ApiResult.Success(Unit),
+        val rows: List<PersonalItem> = listOf(item()),
     ) : PersonalInventorySource {
         val created = mutableListOf<PersonalItemDraft>()
         val updated = mutableListOf<Triple<String, Long, PersonalItemDraft>>()
@@ -88,7 +91,12 @@ class PersonalInventoryViewModelTest {
         ): ApiResult<PersonalItemPage> {
             pageReads++
             return ApiResult.Success(
-                PersonalItemPage(items = listOf(item()), page = 0, totalElements = 1, totalPages = 1),
+                PersonalItemPage(
+                    items = rows,
+                    page = 0,
+                    totalElements = rows.size.toLong(),
+                    totalPages = 1,
+                ),
             )
         }
 
@@ -108,8 +116,11 @@ class PersonalInventoryViewModelTest {
 
         override suspend fun delete(id: String): ApiResult<Unit> {
             deleted.add(id)
-            return deleteAnswer
+            return refusals[id]?.let { ApiResult.Failure(it) } ?: deleteAnswer
         }
+
+        /** Rows the server refuses, keyed by id — a bulk deletion can half-succeed. */
+        val refusals = mutableMapOf<String, ApiError>()
 
         override suspend fun locations(query: String): ApiResult<List<PersonalLocation>> {
             searched.add(query)
@@ -126,6 +137,64 @@ class PersonalInventoryViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `a bulk deletion deletes one at a time and names what was skipped`() =
+        runTest(dispatcher) {
+            val first = item()
+            val second = item().copy(id = "p2", name = "Bexalit")
+            val source = FakeSource(rows = listOf(first, second))
+            // There is no bulk endpoint, so the loop can half-succeed — which is the whole reason
+            // the result is reported rather than assumed.
+            source.refusals["p2"] = ApiError.Forbidden()
+            val model = viewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onSelectAll()
+            assertEquals(2, model.state.value.selection.size)
+            model.onBulkDeleteRequested()
+            assertTrue(model.state.value.confirmingBulkDelete)
+            model.onBulkDeleteConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(listOf("p1", "p2"), source.deleted)
+            assertEquals(1, model.state.value.bulkResult?.deleted)
+            assertEquals(1, model.state.value.bulkResult?.skipped)
+            // The refused row stays selected, so the member can see which one did not go.
+            assertEquals(setOf("p2"), model.state.value.selection)
+        }
+
+    @Test
+    fun `selecting and unselecting starts and ends the mode`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val model = viewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            assertFalse(model.state.value.selecting)
+            model.onToggleSelected(item())
+            assertTrue(model.state.value.selecting)
+            model.onToggleSelected(item())
+            assertFalse(model.state.value.selecting)
+        }
+
+    @Test
+    fun `nothing selected sends no deletion`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val model = viewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onBulkDeleteRequested()
+            model.onBulkDeleteConfirmed()
+            advanceUntilIdle()
+
+            assertFalse(model.state.value.confirmingBulkDelete)
+            assertTrue(source.deleted.isEmpty())
+        }
 
     private fun viewModel(
         source: PersonalInventorySource,

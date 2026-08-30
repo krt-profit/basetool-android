@@ -79,6 +79,15 @@ enum class KrtDestination(
     /** Bank — org-unit accounts and booking requests. */
     Bank("bank", R.string.nav_bank, DesignR.drawable.ic_krt_bank),
 
+    /**
+     * Handel — the material catalogue and what the universe pays for it.
+     *
+     * One entry, not three: design chapter 16 puts the Preis-Übersicht and the Profitberechnung in
+     * this screen's own overflow rather than in the „Mehr" list, because all three answer the same
+     * question at different resolutions.
+     */
+    Materials("materials", R.string.nav_materials, DesignR.drawable.ic_krt_list),
+
     /** Benachrichtigungen — the inbox behind the bell. */
     Notifications("notifications", R.string.nav_notifications, DesignR.drawable.ic_krt_bell),
 
@@ -122,17 +131,118 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_clipboard_check,
     ),
 
+    /** The Material × Terminal price matrix, pushed from Handel's overflow. */
+    MaterialMatrix("material-matrix", R.string.materials_matrix_title, DesignR.drawable.ic_krt_list),
+
+    /** The profit calculation for one ship's full load, pushed from Handel's overflow. */
+    MaterialProfit("material-profit", R.string.materials_profit_title, DesignR.drawable.ic_krt_ship),
+
+    /**
+     * One material's prices across every terminal, pushed from the Handel list.
+     *
+     * Parameterised for the reason the Einsatz detail is: the page is about one material, and the
+     * route has to say which.
+     */
+    MaterialDetail(
+        "material/{materialId}",
+        R.string.materials_detail_title,
+        DesignR.drawable.ic_krt_list,
+    ),
+
     /** One bank account with its ledger, pushed from the Konten list. */
     BankAccount("bank-account/{accountId}", R.string.bank_title, DesignR.drawable.ic_krt_bank),
 
     /** One holder's custody, pushed from the holder register in the Konten tab. */
     BankHolder("bank-holder/{holderId}", R.string.bank_title, DesignR.drawable.ic_krt_users),
 
+    /**
+     * What every open Auftrag together still needs, pushed from the Auftragsliste's overflow.
+     *
+     * Not a navigation entry: it is a planning view, read before an Einsatz rather than daily
+     * (design ch. 18 §1).
+     */
+    MaterialDemand(
+        "material-demand",
+        R.string.orders_demand_title,
+        DesignR.drawable.ic_krt_crate,
+    ),
+
+    /**
+     * The org unit's game-item stock, reached from „Mehr".
+     *
+     * A surface of its own because the Lager tree groups by material, where an item counted in
+     * pieces disappears between SCU figures (design ch. 09 artboard 21).
+     */
+    GameItems(
+        "game-items",
+        R.string.game_items_title,
+        DesignR.drawable.ic_krt_crate,
+    ),
+
+    /**
+     * The org-wide blueprint availability, reached from „Mehr".
+     *
+     * A screen of its own rather than a third tab of „Mein Inventar" (design ch. 17 artboard 6):
+     * the data is org-wide and the screen has its own role, and org-wide rows in a personal list
+     * would be the wrong place twice over.
+     */
+    BlueprintOverview(
+        "blueprint-overview",
+        R.string.blueprint_overview_title,
+        DesignR.drawable.ic_krt_blueprint,
+    ),
+
     /** The form for a new refinery order, pushed from the Raffinerie list. */
     RefineryCreate(
         "refinery-create",
         R.string.refinery_create_title,
         DesignR.drawable.ic_krt_refinery,
+    ),
+
+    /**
+     * The same form rewriting one run, pushed from its detail's `⋮`.
+     *
+     * Design ch. 11 artboard 6 is explicit that this is the create form pre-filled — no second
+     * layout — so the two destinations differ only in whether they carry an id.
+     */
+    RefineryEdit(
+        "refinery-edit/{refineryOrderId}",
+        R.string.refinery_edit_title,
+        DesignR.drawable.ic_krt_edit,
+    ),
+
+    /**
+     * The form that rewrites one Auftrag, pushed from its detail's overflow.
+     *
+     * The same screen as [OrderCreate], pre-filled — design ch. 10 artboard 10 is explicit that
+     * there is no second layout — so it carries the order's id and nothing else.
+     */
+    OrderEdit("order-edit/{orderId}", R.string.order_edit_title, DesignR.drawable.ic_krt_edit),
+
+    /**
+     * The stock rows linked to one Auftrag, pushed from its detail's overflow.
+     *
+     * It belongs to the **Auftrag** and not to the material reference — `material.collection.back`
+     * reads „Zurück zum Auftrag", and design chapter 16 corrected itself about that.
+     */
+    OrderCollection(
+        "order-collection/{orderId}",
+        R.string.order_collection_title,
+        DesignR.drawable.ic_krt_crate,
+    ),
+
+    /** The form for a new Operation, pushed from the Operationen list. */
+    OperationCreate(
+        "operation-create",
+        R.string.operation_form_title,
+        DesignR.drawable.ic_krt_clipboard_check,
+    ),
+
+    /** The same form, rewriting one Operation; pushed from its detail. */
+    OperationEdit(
+        "operation-edit/{operationId}",
+        R.string.operation_form_edit_title,
+        DesignR.drawable.ic_krt_edit,
     ),
 
     /** The form for a new material order, pushed from the Aufträge queue. */
@@ -216,7 +326,10 @@ val MORE_DESTINATIONS =
         KrtDestination.Exchange,
         KrtDestination.Refinery,
         KrtDestination.PersonalInventory,
+        KrtDestination.GameItems,
+        KrtDestination.BlueprintOverview,
         KrtDestination.Bank,
+        KrtDestination.Materials,
         KrtDestination.Settings,
     )
 
@@ -237,12 +350,22 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // Without this the bar would light up "Übersicht" — the fallback for an unknown
         // destination — while the member is looking at an Einsatz they opened from "Einsätze".
         KrtDestination.MissionDetail to KrtDestination.Missions,
+        // Without this the bar would light up „Übersicht" while a member reads a material they
+        // opened from „Handel".
+        KrtDestination.MaterialDetail to KrtDestination.Materials,
+        KrtDestination.OrderEdit to KrtDestination.Orders,
+        KrtDestination.OrderCollection to KrtDestination.Orders,
+        KrtDestination.OperationCreate to KrtDestination.Operations,
+        KrtDestination.OperationEdit to KrtDestination.Operations,
+        KrtDestination.MaterialMatrix to KrtDestination.Materials,
+        KrtDestination.MaterialProfit to KrtDestination.Materials,
         // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
         // behind "Mehr", and the bar has to keep saying so.
         KrtDestination.OperationDetail to KrtDestination.Operations,
         KrtDestination.BankAccount to KrtDestination.Bank,
         KrtDestination.BankHolder to KrtDestination.Bank,
         KrtDestination.RefineryCreate to KrtDestination.Refinery,
+        KrtDestination.RefineryEdit to KrtDestination.Refinery,
         KrtDestination.OrderCreate to KrtDestination.Orders,
         KrtDestination.OrderDetail to KrtDestination.Orders,
         KrtDestination.RefineryOrder to KrtDestination.Refinery,
@@ -259,6 +382,42 @@ fun missionDetailRoute(missionId: String): String = "mission/" + missionId
 
 /** The name of the id argument in [KrtDestination.MissionDetail]'s route. */
 const val MISSION_ID_ARG: String = "missionId"
+
+/**
+ * The route that opens one material's prices.
+ *
+ * @param materialId the material to open.
+ * @return the concrete route, with the id substituted into [KrtDestination.MaterialDetail]'s
+ *   pattern.
+ */
+fun materialDetailRoute(materialId: String): String = "material/" + materialId
+
+/** The name of the id argument in [KrtDestination.MaterialDetail]'s route. */
+const val MATERIAL_ID_ARG: String = "materialId"
+
+/**
+ * The route that opens the edit form for one Auftrag.
+ *
+ * @param orderId the Auftrag to rewrite.
+ * @return the concrete route.
+ */
+fun orderEditRoute(orderId: String): String = "order-edit/" + orderId
+
+/**
+ * The route that opens one Auftrag's linked stock rows.
+ *
+ * @param orderId the Auftrag.
+ * @return the concrete route.
+ */
+fun orderCollectionRoute(orderId: String): String = "order-collection/" + orderId
+
+/**
+ * The route that opens the edit form for one Operation.
+ *
+ * @param operationId which Operation.
+ * @return the concrete route.
+ */
+fun operationEditRoute(operationId: String): String = "operation-edit/" + operationId
 
 /**
  * The route that opens one Operation.
@@ -313,6 +472,14 @@ const val ORDER_ID_ARG: String = "orderId"
  *   pattern.
  */
 fun refineryOrderRoute(orderId: String): String = "refinery-order/" + orderId
+
+/**
+ * The route that opens the pre-filled form for one refinery order.
+ *
+ * @param orderId which order.
+ * @return the concrete route.
+ */
+fun refineryEditRoute(orderId: String): String = "refinery-edit/" + orderId
 
 /** The name of the id argument in [KrtDestination.RefineryOrder]'s route. */
 const val REFINERY_ORDER_ID_ARG: String = "refineryOrderId"

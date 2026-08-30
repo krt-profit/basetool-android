@@ -147,6 +147,11 @@
     <string name="missions_filter_status_all">Status: all</string>
     <string name="missions_filter_past">Past hidden</string>
     <string name="missions_filter_past_on">Past shown</string>
+    <string name="missions_filter_range">Period</string>
+    <string name="missions_filter_range_from">from %1$s</string>
+    <string name="missions_filter_range_until">until %1$s</string>
+    <string name="missions_filter_range_both">%1$s – %2$s</string>
+    <string name="missions_filter_range_clear">Remove period</string>
     <string name="missions_filter_reset">Reset filters</string>
     <string name="missions_status_planned">Planned</string>
     <string name="missions_status_active">Active</string>
@@ -291,7 +296,7 @@
     <string name="operation_detail_payout_route_member">Payout</string>
     <string name="operation_detail_payout_route_org">Org treasury (waived)</string>
     <string name="operation_detail_payout_undo_title">Take the payout back?</string>
-    <string name="operation_detail_payout_undo_body">%1$s is recorded as paid out. The row goes back to open.</string>
+    <string name="operation_detail_payout_undo_body">%1$s counts as open again — %2$s. The booking in the Kartellbank is untouched by this; it has to be corrected there separately.</string>
     <string name="operation_detail_description">Description</string>
     <string name="operation_detail_error_forbidden_title">Access Denied</string>
     <string name="operation_detail_error_forbidden_message">This Operation is not visible to you.</string>
@@ -682,6 +687,32 @@
     <string name="orders_materials_count">(%1$d)</string>
     <string name="orders_kind_material">Material</string>
     <string name="orders_kind_item">Item</string>
+    <!-- Materialbedarf — design ch. 18 §1. Reached from the order list's overflow. -->
+    <string name="orders_demand_title">Materialbedarf</string>
+    <string name="orders_demand_lead">%1$s · %2$s</string>
+    <plurals name="orders_demand_uncovered">
+        <item quantity="one">%1$d uncovered</item>
+        <item quantity="other">%1$d uncovered</item>
+    </plurals>
+    <plurals name="orders_demand_materials">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materials</item>
+    </plurals>
+    <plurals name="orders_demand_orders">
+        <item quantity="one">%1$d Auftrag</item>
+        <item quantity="other">%1$d Aufträge</item>
+    </plurals>
+    <string name="orders_demand_open">%1$s %2$s open</string>
+    <string name="orders_demand_progress">%1$s %2$s claimed · %3$s %4$s handed over</string>
+    <string name="orders_demand_share">%1$s %2$s</string>
+    <string name="orders_demand_filter_all">All</string>
+    <string name="orders_demand_filter_uncovered">Uncovered</string>
+    <string name="orders_demand_filter_by_amount">By amount</string>
+    <string name="orders_demand_group_unassigned">No unit</string>
+    <string name="orders_demand_empty_title">No open material demand</string>
+    <string name="orders_demand_empty_message">Every open Auftrag is covered.</string>
+    <string name="orders_demand_failed_title">Signal Lost — Materialbedarf</string>
+    <string name="orders_demand_failed_message">The demand could not be read.</string>
     <string name="orders_number">#%1$s</string>
     <string name="orders_priority">Prio %1$d</string>
     <string name="orders_for">For %1$s</string>
@@ -795,8 +826,8 @@
     <string name="personal_inventory_delete_title">Delete entry</string>
     <string name="personal_inventory_delete_body">“%1$s” will be deleted. This cannot be undone.</string>
     <string name="personal_inventory_visible_only_to_you">Visible only to you.</string>
-    <string name="offline_banner_title">Offline</string>
-    <string name="offline_writes_disabled">No network — editing is disabled until the connection is back.</string>
+    <string name="offline_banner_title">Offline — no connection</string>
+    <string name="offline_writes_disabled">Writing is disabled until the connection is back.</string>
     <string name="value_absent">—</string>
     <string name="conflict_title">Conflict detected</string>
     <string name="conflict_body">Someone else changed this entry in the meantime. What you typed is still here — reload and save again.</string>
@@ -828,6 +859,58 @@
     <string name="blueprints_recipe_scu">%1$.2f SCU</string>
     <string name="blueprints_edit">Edit</string>
     <string name="blueprints_search">Search blueprint</string>
+    <!-- Blueprint import and selection mode — design ch. 18 §§2–3. -->
+    <string name="blueprints_import_title">Import blueprints</string>
+    <string name="blueprints_import_intro">A file from the extractor or the export.</string>
+    <string name="blueprints_import_privacy">JSON from the blueprint export. The file stays on the device until you confirm the preview.</string>
+    <string name="blueprints_import_pick">Pick from files</string>
+    <string name="blueprints_import_reading">Reading the file …</string>
+    <string name="blueprints_import_read">%1$s · %2$s</string>
+    <plurals name="blueprints_import_lines">
+        <item quantity="one">%1$d line read</item>
+        <item quantity="other">%1$d lines read</item>
+    </plurals>
+    <string name="blueprints_import_new">New</string>
+    <string name="blueprints_import_owned">Owned</string>
+    <string name="blueprints_import_unknown">Unknown</string>
+    <string name="blueprints_import_unknown_note">Unknown lines are skipped, not refused — the import runs anyway.</string>
+    <string name="blueprints_import_unclear">To resolve</string>
+    <string name="blueprints_import_unclear_note">The server found candidates for these lines but could not match one. They are not taken over — the matching happens in the web portal.</string>
+    <plurals name="blueprints_import_apply">
+        <item quantity="one">Take over %1$d</item>
+        <item quantity="other">Take over %1$d</item>
+    </plurals>
+    <plurals name="blueprints_import_writing">
+        <item quantity="one">Taking over %1$d …</item>
+        <item quantity="other">Taking over %1$d …</item>
+    </plurals>
+    <string name="blueprints_import_close">Close</string>
+    <string name="blueprints_import_failed">The file could not be read. Check that it is the JSON export.</string>
+    <plurals name="blueprints_import_done">
+        <item quantity="one">%1$d blueprint taken over.</item>
+        <item quantity="other">%1$d blueprints taken over.</item>
+    </plurals>
+    <plurals name="blueprints_import_more">
+        <item quantity="one">+ %1$d more</item>
+        <item quantity="other">+ %1$d more</item>
+    </plurals>
+    <plurals name="blueprints_selected">
+        <item quantity="one">%1$d of %2$d selected</item>
+        <item quantity="other">%1$d of %2$d selected</item>
+    </plurals>
+    <plurals name="blueprints_selected_all">
+        <item quantity="one">All %1$d selected</item>
+        <item quantity="other">All %1$d selected</item>
+    </plurals>
+    <string name="blueprints_select_all">Select all</string>
+    <string name="blueprints_selection_cancel">Cancel</string>
+    <string name="blueprints_selection_delete">Delete</string>
+    <string name="blueprints_delete_title">Delete blueprints?</string>
+    <plurals name="blueprints_delete_body">
+        <item quantity="one">%1$d blueprint will be deleted.</item>
+        <item quantity="other">%1$d blueprints will be deleted.</item>
+    </plurals>
+    <string name="blueprints_delete_consequence">The blueprints disappear from your list; your unit’s availability view will no longer show you as an owner. There is no way back.</string>
     <string name="blueprints_add">Add</string>
     <string name="blueprints_remove">Remove</string>
     <string name="blueprints_with_refinery">With refinery</string>
@@ -1116,10 +1199,7 @@
     <string name="refinery_create_add_good">+ Good</string>
     <string name="refinery_create_remove_good">Remove good</string>
     <string name="refinery_create_timing">Timing</string>
-    <string name="refinery_create_started_date">Started — date</string>
-    <string name="refinery_create_started_date_hint">DD.MM.YYYY</string>
-    <string name="refinery_create_started_time">Time</string>
-    <string name="refinery_create_started_time_hint">HH:MM</string>
+    <string name="refinery_create_started">Started</string>
     <string name="refinery_create_hours">Hours</string>
     <string name="refinery_create_minutes">Minutes</string>
     <string name="refinery_create_ends">Ends %1$s</string>
@@ -1333,6 +1413,8 @@
     <string name="mission_objective_kind_primary">Primary</string>
     <string name="mission_objective_kind_secondary">Secondary</string>
     <string name="mission_objective_kind_non_goal">Non-goal</string>
+    <string name="mission_timeline_duplicate">Duplicate</string>
+    <string name="mission_timeline_more">More actions</string>
     <string name="mission_timeline_edit">Edit</string>
     <string name="mission_timeline_remove">Remove</string>
     <string name="mission_timeline_cancel">Cancel</string>
@@ -1349,7 +1431,6 @@
     <string name="mission_unit_rename_save">Save Einheit</string>
     <string name="mission_crew_roles">Function aboard</string>
     <string name="mission_crew_roles_empty">No CREW functions defined.</string>
-    <string name="mission_admin_people">People</string>
     <string name="mission_timeline_up">Up</string>
     <string name="mission_timeline_down">Down</string>
     <plurals name="mission_member_notice">
@@ -1357,4 +1438,394 @@
         <item quantity="other">%1$d of at most %2$d matches — keep typing to narrow it</item>
     </plurals>
     <string name="mission_crew_assign">Assign someone</string>
+    <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
+    <string name="mission_admin_people">People</string>
+    <string name="mission_admin_state_saving">Saving…</string>
+    <string name="mission_admin_state_saved">Saved %1$s</string>
+    <string name="mission_admin_state_dirty">Changed</string>
+    <string name="mission_admin_state_conflict">Conflict</string>
+    <string name="mission_admin_not_started_chip">Not started</string>
+    <string name="mission_admin_not_started">Not started yet — check-in is locked for everyone.</string>
+    <string name="mission_admin_running_since">Running since %1$s</string>
+    <string name="mission_admin_correct_start">Correct the start time</string>
+    <string name="mission_admin_visibility_internal">Internal only</string>
+    <string name="mission_admin_visibility_open">Whole organisation</string>
+    <string name="mission_admin_internal_hint">Off: the whole organisation sees the Einsatz.</string>
+    <string name="mission_section_core">Kern</string>
+    <string name="mission_section_schedule">Zeitplan</string>
+    <string name="mission_section_flags">Sichtbarkeit</string>
+    <string name="mission_section_people">Personen</string>
+    <string name="mission_lifecycle_start">Start</string>
+    <string name="mission_lifecycle_complete">Complete</string>
+    <plurals name="mission_lifecycle_registered">
+        <item quantity="one">%1$d signed up</item>
+        <item quantity="other">%1$d signed up</item>
+    </plurals>
+    <string name="mission_lifecycle_start_title">Start the Einsatz?</string>
+    <string name="mission_lifecycle_start_irreversible">There is no way back to „Planned" in the app.</string>
+    <string name="mission_lifecycle_complete_title">Complete the Einsatz?</string>
+    <string name="mission_lifecycle_complete_body">The Einsatz moves to „Completed". Check-ins and changes to the plan are no longer expected after that.</string>
+    <string name="mission_lifecycle_complete_irreversible">There is no way back to „Active" in the app.</string>
+    <string name="mission_start_confirm_title">Start the Einsatz now?</string>
+    <plurals name="mission_start_confirm_body">
+        <item quantity="one">The actual start is set to now. The one signed-up member can then check in — before that the server refuses every check-in.</item>
+        <item quantity="other">The actual start is set to now. All %1$d signed-up members can then check in — before that the server refuses every check-in.</item>
+    </plurals>
+    <string name="mission_start_confirm_reversible">Correctable: the start time can still be changed in the Zeitplan.</string>
+    <string name="mission_start_confirm_cta">Start the Einsatz</string>
+    <string name="mission_conflict_title">%1$s was changed</string>
+    <string name="mission_conflict_body">Somebody saved the %1$s section while you were typing. Your version was not applied.</string>
+    <string name="mission_conflict_theirs">Current state (server)</string>
+    <string name="mission_conflict_mine">Your version</string>
+    <string name="mission_conflict_others_unaffected">The other sections are unaffected.</string>
+    <string name="mission_conflict_reload">Reload</string>
+    <string name="mission_conflict_keep_mine">Keep my version</string>
+    <string name="krt_empty_value">—</string>
+    <string name="mission_timeline_sort">Sort</string>
+    <string name="mission_timeline_sort_hint">Change the order: arrows on each row.</string>
+    <string name="mission_crew_assign_title">Assign someone — %1$s</string>
+    <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
+    <string name="order_handover_title">Record handover</string>
+    <string name="order_handover_subject">%1$s · %2$s of %3$s</string>
+    <string name="order_handover_amount">Amount</string>
+    <string name="order_handover_after">After this handover</string>
+    <string name="order_handover_after_value">%1$s / %2$s</string>
+    <string name="order_handover_fulfils">Fulfilled</string>
+    <string name="order_handover_stock">From which stock</string>
+    <string name="order_handover_stock_hint">The handover books the chosen stock row out.</string>
+    <string name="order_handover_no_stock">No stock row is linked to this Auftrag.</string>
+    <string name="order_handover_quality">Q %1$d</string>
+    <string name="order_handover_recipient">Recipient (handle)</string>
+    <string name="order_handover_squadron">Staffel of the recipient</string>
+    <string name="order_handover_append_only">A recorded handover cannot be taken back in the app — the log is append-only.</string>
+    <string name="order_handover_cta">Record handover</string>
+    <string name="order_handover_not_allowed">You need the Logistiker role for that.</string>
+    <string name="order_handover_record_title">Record a handover for</string>
+    <string name="order_handover_record_for">Hand over %1$s</string>
+    <!-- Auftrag: record production (design ch. 10 artboard 15) -->
+    <string name="order_production_record">Record production</string>
+    <string name="order_production_title">Record production</string>
+    <string name="order_production_subject">%1$s · built %2$d / %3$d</string>
+    <string name="order_production_amount">Units built</string>
+    <string name="order_production_remaining">Still open: %1$d</string>
+    <string name="order_production_amount_too_many">At most %1$d — no more is open on this line.</string>
+    <string name="order_production_after">After this booking</string>
+    <string name="order_production_after_value">%1$d / %2$d</string>
+    <string name="order_production_fulfils">Fulfilled</string>
+    <string name="order_production_consumption">Material use &amp; stock withdrawal</string>
+    <string name="order_production_consumption_hint">Pick, per material, which linked stock entries it is drawn from and how much. The plan has to cover the demand exactly.</string>
+    <string name="order_production_skip">Do not book out</string>
+    <string name="order_production_skip_hint">This material is not booked out of the Lager — it was consumed outside the tool.</string>
+    <string name="order_production_skipped">not booked out</string>
+    <string name="order_production_reconcile">needs %1$s · assigned %2$s · left %3$s</string>
+    <string name="order_production_available">available %1$s</string>
+    <string name="order_production_no_stock">No linked stock entries for this material.</string>
+    <string name="order_production_autofill">Cover the demand</string>
+    <string name="order_production_bookin">Storage</string>
+    <string name="order_production_bookin_hint">Where and for whom the built units are stored as item stock.</string>
+    <string name="order_production_location">Location</string>
+    <string name="order_production_owner">Owner</string>
+    <string name="order_production_owner_hint">Leave empty and the units are booked to you.</string>
+    <string name="order_production_orgunit">Book into org unit</string>
+    <string name="order_production_personal">Store as a personal entry</string>
+    <string name="order_production_allocate">Earmark for the Auftrag</string>
+    <string name="order_production_allocate_hint">The built units are earmarked for the Auftrag. Personal stock never carries earmarks.</string>
+    <string name="order_production_cta">Book production</string>
+    <string name="order_production_alloc_error">The plan does not cover the material demand exactly.</string>
+    <string name="order_production_not_allowed">You need the Logistician role for that.</string>
+    <!-- Trade: material list and prices (design ch. 16) -->
+    <string name="nav_materials">Trade</string>
+    <string name="materials_title">Material list</string>
+    <string name="materials_search_placeholder">Search materials …</string>
+    <string name="materials_min_buy">Min. buy price</string>
+    <string name="materials_max_sell">Max. sell price</string>
+    <string name="materials_category_all">All</string>
+    <string name="materials_reset_filters">Reset filters</string>
+    <string name="materials_illegal">Illegal</string>
+    <string name="materials_price_sell">+%1$s</string>
+    <string name="materials_price_buy">−%1$s</string>
+    <string name="materials_empty_title">No materials found.</string>
+    <string name="materials_empty_message">Reset the filters or search for something else.</string>
+    <string name="materials_error_title">Prices unavailable</string>
+    <string name="materials_error_message">The material list could not be loaded.</string>
+    <string name="materials_type_raw">Rohmaterial</string>
+    <string name="materials_type_refined">Veredelt</string>
+    <string name="materials_unit_scu">SCU</string>
+    <string name="materials_unit_piece">pieces</string>
+    <string name="materials_detail_title">Prices and terminals</string>
+    <string name="materials_detail_prices_title">Prices and terminals</string>
+    <string name="materials_detail_filter_placeholder">Search terminals …</string>
+    <string name="materials_detail_th_terminal">Terminal</string>
+    <string name="materials_detail_th_buy">Buy price</string>
+    <string name="materials_detail_th_sell">Sell price</string>
+    <string name="materials_detail_th_buy_short">Buy</string>
+    <string name="materials_detail_th_sell_short">Sell</string>
+    <string name="materials_detail_no_prices">No price data available.</string>
+    <string name="materials_detail_no_terminals">No terminals found.</string>
+    <string name="materials_detail_missing_title">Material not found</string>
+    <string name="materials_detail_missing_message">No data exists for this material.</string>
+    <plurals name="materials_count">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materials</item>
+    </plurals>
+    <!-- Trade: price matrix and profit calculation (design ch. 16, artboards 3 + 4) -->
+    <string name="materials_matrix_title">Price overview</string>
+    <string name="materials_matrix_material">Material</string>
+    <string name="materials_matrix_sell">Sell</string>
+    <string name="materials_matrix_buy">Buy</string>
+    <string name="materials_matrix_systems_all">All systems</string>
+    <string name="materials_matrix_loading">Loading matrix …</string>
+    <string name="materials_matrix_empty_title">No entries found.</string>
+    <string name="materials_matrix_error_message">The price matrix could not be loaded.</string>
+    <string name="materials_profit_title">Profit calculation</string>
+    <string name="materials_profit_ship">Pick a ship</string>
+    <string name="materials_profit_ship_label">%1$s (%2$d SCU)</string>
+    <string name="materials_profit_systems">Restrict systems</string>
+    <string name="materials_profit_autoload">Only auto-load terminals are considered.</string>
+    <string name="materials_profit_hullc">Hull C special rule (loading dock) active.</string>
+    <string name="materials_profit_calculating">Calculating …</string>
+    <string name="materials_profit_error">The profit calculation could not be fetched.</string>
+    <string name="materials_profit_no_data">No trade data available for the chosen filters.</string>
+    <string name="materials_profit_select_ship">Pick a ship to start the calculation.</string>
+    <string name="materials_profit_col_material">Material</string>
+    <string name="materials_profit_col_per_scu">Profit / SCU</string>
+    <string name="materials_profit_col_total">Max profit</string>
+    <string name="materials_profit_col_margin">Margin (%)</string>
+    <string name="materials_actions">More trade views</string>
+    <!-- Auftrag: handing over an item order (design ch. 10) -->
+    <string name="order_item_handover_record">Record handover</string>
+    <string name="order_item_handover_subject">%1$s · handed over %2$d / %3$d</string>
+    <string name="order_item_handover_amount">Units handed over</string>
+    <string name="order_item_handover_deliverable">Built and not yet handed over: %1$d</string>
+    <string name="order_item_handover_too_many">At most %1$d — no more has been built for this line.</string>
+    <string name="order_item_handover_rejected">The server refused the amount — somebody likely handed the same units over first. Reload the Auftrag.</string>
+    <plurals name="order_detail_item_handover_row">
+        <item quantity="one">%1$s · %2$d piece · %3$s</item>
+        <item quantity="other">%1$s · %2$d pieces · %3$s</item>
+    </plurals>
+    <!-- Auftrag: claims (design ch. 10 artboard 13) -->
+    <string name="order_tab_claims">Zusagen</string>
+    <string name="order_claims_progress">%1$s / %2$s claimed</string>
+    <string name="order_claims_open">Still open: %1$s</string>
+    <string name="order_claims_chip">%1$s: %2$s</string>
+    <string name="order_claims_add">Make a claim</string>
+    <string name="order_claims_change">Change the claim</string>
+    <string name="order_claims_empty">This Auftrag has no material lines.</string>
+    <string name="order_claims_error">The claims could not be loaded.</string>
+    <string name="order_claims_no_unit">A Staffel makes the claim. You belong to no profit-eligible Staffel.</string>
+    <string name="order_claims_sheet_title">Claim — %1$s</string>
+    <string name="order_claims_sheet_open">Open: %1$s of %2$s</string>
+    <string name="order_claims_amount">%1$s claims</string>
+    <string name="order_claims_intent_hint">A claim is an intention, not a booking — delivery happens through the handover.</string>
+    <string name="order_claims_cta">Claim</string>
+    <string name="order_claims_withdraw">Withdraw</string>
+    <string name="order_claims_overclaim">The server refuses more than is still open. The sum across Staffeln may not exceed what is needed.</string>
+    <string name="order_claims_not_allowed">You need the Logistician role for that.</string>
+    <!-- Editing an Auftrag (design ch. 10, artboards 10 + 11) -->
+    <string name="order_edit_title">Edit the Auftrag</string>
+    <string name="order_edit_submit">Save</string>
+    <string name="order_edit_requester_note">You raised this Auftrag: you can change amounts and the comment, not the processing.</string>
+    <string name="order_edit_head_locked">The processing unit, the customer and the handle belong to the processing side — you need the Logistician role for those.</string>
+    <string name="order_edit_delivered_floor">Already handed over: %1$s. The server refuses less.</string>
+    <string name="order_edit_below_delivered">Less than has already been handed over (%1$s) is refused by the server.</string>
+    <string name="order_edit_open">Edit the Auftrag</string>
+    <string name="order_detail_actions">More actions</string>
+    <!-- Auftrag: the linked stock overview (design ch. 10 artboard 16) -->
+    <string name="order_collection_title">Materialsammelübersicht</string>
+    <string name="order_collection_entries">Stock entries</string>
+    <string name="order_collection_unbacked">Linked materials (no stock)</string>
+    <string name="order_collection_empty">No stock entries linked to this Auftrag.</string>
+    <string name="order_collection_amount">%1$s of %2$s in stock</string>
+    <string name="order_collection_delivered">Delivered</string>
+    <string name="order_collection_delivered_label">Delivery status</string>
+    <string name="order_collection_unlink">Unlink</string>
+    <string name="order_collection_unlink_title">Remove the link?</string>
+    <string name="order_collection_unlink_body">The assignment of %1$s %2$s (%3$s) to this Auftrag is removed. The stock itself stays untouched.</string>
+    <string name="order_collection_transfer_note">Owner and location are changed in the Lager: behind the scenes that is a stock transfer, not a field edit.</string>
+    <string name="order_collection_open">Materialsammelübersicht</string>
+    <string name="order_detail_subassemblies">Sub-assemblies</string>
+    <string name="order_detail_subassembly_material">%1$s %2$s %3$s</string>
+    <string name="order_detail_subassembly_deeper">The recipe goes deeper — the full depth is on the web.</string>
+    <string name="order_detail_in_stock">In stock</string>
+    <string name="order_detail_missing">Missing %1$d</string>
+    <string name="order_edit_item_only_web">Only a Logistician edits item lines, and only while nothing has been handed over.</string>
+    <string name="order_edit_item_only_web_detail">Once anything has been handed over the lines are fixed.</string>
+    <!-- Creating and editing an Operation (design ch. 06, artboards 15 + 16) -->
+    <string name="operation_form_title">New Operation</string>
+    <string name="operation_form_edit_title">Edit the Operation</string>
+    <string name="operation_form_name">Name</string>
+    <string name="operation_form_description">Description</string>
+    <string name="operation_form_create">Create the Operation</string>
+    <string name="operation_form_save">Save</string>
+    <string name="operation_form_status_hint">“Completed” freezes the shares — the payouts stay usable.</string>
+    <string name="operation_form_missions_hint">Einsätze are assigned on the Einsatz itself: the field belongs there, because the assignment hangs off the Einsatz and writes its state along with it.</string>
+    <string name="operation_form_open">Edit the Operation</string>
+    <string name="operation_status_planned">Planned</string>
+    <string name="operation_status_active">Running</string>
+    <string name="operation_status_completed">Completed</string>
+    <!-- Editing and deleting a refinery order (design ch. 11, artboards 6 and 7) -->
+    <string name="refinery_edit_title">Edit order</string>
+    <string name="refinery_edit_submit">Save</string>
+    <string name="refinery_edit_locked_stored">Stored — the core and the goods are fixed. Money and the linked Einsatz stay editable.</string>
+    <string name="refinery_delete_action">Delete order</string>
+    <string name="refinery_delete_title">Delete refinery order?</string>
+    <string name="refinery_delete_confirm">Delete</string>
+    <string name="refinery_delete_note">Not recoverable. An order that has been stored cannot be deleted — correct the Lager rows there instead.</string>
+    <string name="refinery_delete_locked_stored">Already stored — the yield sits in the Lager and is not taken back here.</string>
+    <string name="refinery_deleted">Order deleted.</string>
+    <plurals name="refinery_delete_body">
+        <item quantity="one">The order at %1$s and its %2$d goods line will be deleted. A yield that was never stored is lost with it.</item>
+        <item quantity="other">The order at %1$s and its %2$d goods lines will be deleted. A yield that was never stored is lost with it.</item>
+    </plurals>
+    <!-- The board's item side and editing an entry (design ch. 17, artboards 1–3) -->
+    <string name="board_kind_material">Material</string>
+    <string name="board_kind_item">Item</string>
+    <string name="board_field_item">Item</string>
+    <string name="board_field_item_hint">Search for a product …</string>
+    <string name="board_new_offer_item_hint">From your personal inventory or named freely — an item offer is bound to no Lager row.</string>
+    <string name="board_edit_entry">Edit</string>
+    <string name="board_edit_offer">Edit offer</string>
+    <string name="board_edit_request">Edit request</string>
+    <string name="board_edit_fixed">The material or item is fixed — withdraw and post again to change it.</string>
+    <string name="board_edit_interested">Interested: %1$s</string>
+    <string name="board_save">Save</string>
+    <string name="board_withdraw_title">Withdraw the entry?</string>
+    <plurals name="board_withdraw_body">
+        <item quantity="one">%1$d member said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
+        <item quantity="other">%1$d members said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
+    </plurals>
+    <!-- Taking over several blueprints at once (design ch. 17, artboard 5) -->
+    <string name="blueprints_product_owned_hidden">Blueprints you already have are not offered.</string>
+    <string name="blueprints_note_single_only">A note only travels with a single blueprint — several are taken over without one.</string>
+    <plurals name="blueprints_batch_result">
+        <item quantity="one">%1$d taken over · %2$d already there</item>
+        <item quantity="other">%1$d taken over · %2$d already there</item>
+    </plurals>
+    <plurals name="blueprints_take_over">
+        <item quantity="one">Take over %1$d blueprint</item>
+        <item quantity="other">Take over %1$d blueprints</item>
+    </plurals>
+    <!-- Blueprint availability (design ch. 17, artboard 6) -->
+    <string name="blueprint_overview_title">Blueprint availability</string>
+    <string name="blueprint_overview_search">Search for a blueprint …</string>
+    <string name="blueprint_overview_filter_all">All</string>
+    <string name="blueprint_overview_filter_unrecorded">Not recorded</string>
+    <string name="blueprint_overview_filter_partial">"Not recorded" filters the rows loaded so far — scroll on to load more.</string>
+    <string name="blueprint_overview_owners">Available from</string>
+    <string name="blueprint_overview_owners_loading">Loading owners …</string>
+    <string name="blueprint_overview_owners_none">No owners in your org unit.</string>
+    <string name="blueprint_overview_owners_failed">Owners could not be loaded.</string>
+    <string name="blueprint_overview_owner_foreign">not a unit member</string>
+    <string name="blueprint_overview_owner_foreign_hint">Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit.</string>
+    <string name="blueprint_overview_failed_title">Signal Lost — overview unreachable</string>
+    <string name="blueprint_overview_failed_message">Blueprint availability could not be loaded.</string>
+    <string name="blueprint_overview_empty_title">No blueprint matches</string>
+    <string name="blueprint_overview_empty_message">Try another search or another filter.</string>
+    <string name="blueprint_overview_loading_more">Loading more …</string>
+    <string name="blueprint_overview_locked">You need the Officer role for this.</string>
+    <string name="blueprint_overview_locked_detail">Granted by the administration.</string>
+    <plurals name="blueprint_overview_count">
+        <item quantity="one">%1$d blueprint</item>
+        <item quantity="other">%1$d blueprints</item>
+    </plurals>
+    <!-- Selection mode and bulk delete in "Mein Inventar" (design ch. 17, artboard 4) -->
+    <string name="personal_inventory_selected_word">SELECTED</string>
+    <string name="personal_inventory_select_all">Select all</string>
+    <string name="personal_inventory_bulk_delete_title">Delete entries?</string>
+    <plurals name="personal_inventory_bulk_delete_body">
+        <item quantity="one">%1$d entry will be deleted. Not recoverable.</item>
+        <item quantity="other">%1$d entries will be deleted. Not recoverable.</item>
+    </plurals>
+    <plurals name="personal_inventory_bulk_result">
+        <item quantity="one">%1$d deleted · %2$d skipped</item>
+        <item quantity="other">%1$d deleted · %2$d skipped</item>
+    </plurals>
+    <!-- Bulk checkout (design ch. 09, artboard 20) -->
+    <string name="inventory_bulk_checkout">Bulk checkout</string>
+    <string name="inventory_bulk_checkout_hint">Checking out is append-only: the rows leave the stock, the log stays. Whole rows only — use the single checkout for partial amounts.</string>
+    <string name="inventory_bulk_checkout_full">in full</string>
+    <string name="inventory_bulk_checkout_failed">Checkout refused — nothing was booked out.</string>
+    <plurals name="inventory_bulk_checkout_cta">
+        <item quantity="one">Check out %1$d entry</item>
+        <item quantity="other">Check out %1$d entries</item>
+    </plurals>
+    <plurals name="inventory_bulk_checkout_done">
+        <item quantity="one">%1$d entry checked out.</item>
+        <item quantity="other">%1$d entries checked out.</item>
+    </plurals>
+    <!-- Game item stock (design ch. 09, artboard 21) -->
+    <string name="game_items_title">Game items</string>
+    <string name="game_items_search">Search for an item …</string>
+    <string name="game_items_filter_all">All</string>
+    <string name="game_items_unit">pieces</string>
+    <string name="game_items_failed_title">Signal Lost — stock unreachable</string>
+    <string name="game_items_failed_message">The game item stock could not be loaded.</string>
+    <string name="game_items_empty_title">No game items</string>
+    <string name="game_items_empty_message">Keine Game-Items in Bereich Profit.</string>
+    <string name="game_items_empty_filtered">No item matches the filter.</string>
+    <plurals name="game_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="game_items_pieces">
+        <item quantity="one">%1$d piece</item>
+        <item quantity="other">%1$d pieces</item>
+    </plurals>
+    <plurals name="game_items_holders">
+        <item quantity="one">%1$d holder</item>
+        <item quantity="other">%1$d holders</item>
+    </plurals>
+    <plurals name="game_items_places">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+    <!-- The Verwaltung's direct booking (design ch. 12, artboard 9) -->
+    <string name="bank_direct_title">Direct booking</string>
+    <string name="bank_direct_deposit">Deposit</string>
+    <string name="bank_direct_withdrawal">Withdrawal</string>
+    <string name="bank_direct_transfer">Transfer</string>
+    <string name="bank_direct_account">Account</string>
+    <string name="bank_direct_amount">Amount (aUEC)</string>
+    <string name="bank_direct_holder">Holder (who has the money)</string>
+    <string name="bank_direct_holder_hint">Required: custody is kept per org unit, not per account.</string>
+    <string name="bank_direct_target_account">Target account</string>
+    <string name="bank_direct_target_holder">Holder at the target</string>
+    <string name="bank_direct_note">Purpose</string>
+    <string name="bank_direct_no_approval">A direct booking has no request behind it and no second approval. A wrong one is corrected with a reversal.</string>
+    <string name="bank_direct_preview">Balance afterwards: %1$s aUEC</string>
+    <string name="bank_direct_over_balance">The amount exceeds the balance.</string>
+    <string name="bank_direct_failed">Booking refused — nothing was booked.</string>
+    <string name="bank_direct_book_deposit">Book the deposit</string>
+    <string name="bank_direct_book_withdrawal">Book the withdrawal</string>
+    <string name="bank_direct_book_transfer">Book the transfer</string>
+    <!-- Approval limits (design ch. 12, artboard 10) -->
+    <string name="bank_limits_title">Approval limits</string>
+    <string name="bank_limits_display_hint">Up to these amounts the tier may request bookings without a further approval.</string>
+    <string name="bank_limits_tiers">Tiers</string>
+    <string name="bank_limits_users">Individual members</string>
+    <string name="bank_limits_all_members">Every member of the org unit</string>
+    <string name="bank_limits_area_members">Every member of the Bereich</string>
+    <string name="bank_limits_none">no limit</string>
+    <string name="bank_limits_field">Limit (aUEC)</string>
+    <string name="bank_limits_set">Set</string>
+    <string name="bank_limits_set_hint">Up to this amount the tier may book without a further approval; above it your release is needed.</string>
+    <string name="bank_limits_remove">Remove</string>
+    <string name="bank_limits_remove_title">Remove the limit?</string>
+    <string name="bank_limits_remove_body">%1$s then falls back to the limit of %2$s aUEC.</string>
+    <string name="bank_limits_remove_body_none">%1$s then has no limit — every booking will need your release.</string>
+    <!-- Verwaltung → people (design ch. 06, artboard 12) -->
+    <string name="mission_member_party_lead_label">Party lead</string>
+    <string name="mission_member_manager_label">Managers</string>
+    <string name="mission_member_change">Change</string>
+    <string name="mission_member_none">not set</string>
+    <string name="mission_member_no_managers">No managers yet.</string>
+    <string name="mission_member_remove_manager_title">Remove the manager?</string>
+    <string name="mission_member_remove_manager_body">%1$s will no longer manage this Einsatz.</string>
+    <string name="bank_limits_tier_officer">Officer</string>
+    <string name="bank_limits_tier_logistician">Logistiker</string>
+    <string name="board_field_item_help">Where the handover happens — and the variant, when it matters — belong in the remark: the contract has no field for either.</string>
+    <plurals name="board_item_variants">
+        <item quantity="one">%1$d variant</item>
+        <item quantity="other">%1$d variants</item>
+    </plurals>
 </resources>

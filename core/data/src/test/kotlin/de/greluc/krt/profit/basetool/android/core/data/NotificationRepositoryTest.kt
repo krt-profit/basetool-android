@@ -45,7 +45,7 @@ class NotificationRepositoryTest {
             {
               "content": [
                 {"id": "n1", "type": "JOB_ORDER_CREATED",
-                 "params": {"displayId": "A-1042", "orgUnit": "Staffel 1"},
+                 "params": {"displayId": "1042", "orgUnit": "Staffel 1"},
                  "entityType": "JOB_ORDER", "entityId": "j1",
                  "read": false, "createdAt": "2026-08-22T10:00:00Z"},
                 {"id": "n2", "type": "BANK_BOOKING_REQUEST_CONFIRMED", "params": {},
@@ -114,7 +114,7 @@ class NotificationRepositoryTest {
             val first = page.notifications.first()
             assertEquals("n1", first.id)
             assertEquals("JOB_ORDER_CREATED", first.type)
-            assertEquals("A-1042", first.params["displayId"])
+            assertEquals("1042", first.params["displayId"])
             assertEquals("JOB_ORDER", first.entityType)
             assertFalse(first.read)
             assertEquals(Instant.parse("2026-08-22T10:00:00Z"), first.createdAt)

@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncEvent
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrder
+import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDeleteSource
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.RefineryPhase
 import de.greluc.krt.profit.basetool.android.core.data.RefineryServerStatus
@@ -181,6 +182,22 @@ class RefineryViewModelTest {
         Dispatchers.resetMain()
     }
 
+    /**
+     * Records the deletions.
+     *
+     * @property answer what the call returns.
+     */
+    private class RecordingDelete(
+        private val answer: ApiResult<Unit> = ApiResult.Success(Unit),
+    ) : RefineryOrderDeleteSource {
+        val deleted = mutableListOf<String>()
+
+        override suspend fun deleteOrder(orderId: String): ApiResult<Unit> {
+            deleted.add(orderId)
+            return answer
+        }
+    }
+
     @Test
     fun `the two live filters ask the server for the same pair`() =
         runTest(dispatcher) {
@@ -326,6 +343,31 @@ class RefineryViewModelTest {
                 RefineryPhase.RUNNING,
                 model.state.value.order?.phaseAt(BEFORE),
             )
+        }
+
+    @Test
+    fun `deleting the run reports it once and only for a run that may go`() =
+        runTest(dispatcher) {
+            val source = RecordingSource(detail = order("r1"))
+            val deletes = RecordingDelete()
+            val model =
+                RefineryDetailViewModel(
+                    source,
+                    null,
+                    "r1",
+                    writes = RefineryDetailWrites(delete = deletes),
+                    clock = emptyFlow(),
+                )
+            advanceUntilIdle()
+
+            model.onDeleteRequested()
+            assertTrue(model.state.value.confirmingDelete)
+            model.onDeleteConfirmed()
+            advanceUntilIdle()
+
+            assertEquals(listOf("r1"), deletes.deleted)
+            assertTrue(model.state.value.deleted)
+            assertFalse(model.state.value.confirmingDelete)
         }
 
     @Test

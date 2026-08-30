@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:4200px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">16</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Materialien &amp; Referenz</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Vier Web-Flächen ohne App-Pendant (Parität-Priorität 3): Material-Übersicht · Preis-Übersicht (<code style="color:#8A8A8A">materials-overview</code>) · Material-Detail „Preise und Terminals" · Profitberechnung je Schiff. Belegte Beschriftungen sind je Artboard mit ihrem <code style="color:#8A8A8A">messages_de</code>-Schlüssel ausgewiesen; alles ohne Schlüssel ist als <b style="color:#FFD23F">unbelegt</b> markiert und vor der Umsetzung abzugleichen.</div>
+    </div>
+  </header>
+  <div class="card" style="padding:14px 16px;max-width:1200px;margin-bottom:18px">
+    <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Korrektur (29.08.2026) — gegen das Frontend geprüft</div>
+    <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+      <li>Die erste Fassung dieses Kapitels war aus den Einzeilern des Parität-Programms abgeleitet und in drei Punkten falsch. Korrigiert nach <code style="color:#8A8A8A">messages_de.properties</code>:</li>
+      <li><b style="color:#fff">Die Profitberechnung ist keine Material-Rechnung, sondern eine Schiffs-/Routenrechnung</b> — <code style="color:#8A8A8A">profit.filter.ship</code> „Schiff wählen", <code style="color:#8A8A8A">profit.filter.systems</code> „Systeme einschränken", Spalte <code style="color:#8A8A8A">profit.col.margin</code> „Marge (%)", Hinweise „Berücksichtigt nur Auto-Load Terminals." und „Hull C Sonderregel (Loading Dock) aktiv." Artboard 4 zeichnet jetzt diese Fläche</li>
+      <li><b style="color:#fff">Material-Sammelübersicht und Item-Sammelübersicht gehören zum AUFTRAG, nicht zur Referenz</b> — <code style="color:#8A8A8A">material.collection.back</code> heißt „Zurück zum Auftrag", die Leermeldung nennt den Auftrag. Sie sind deshalb in Kap. 10 gezeichnet, nicht hier</li>
+      <li><b style="color:#fff">Materialtypen sind „Rohmaterial" und „Veredelt"</b> (<code style="color:#8A8A8A">material.type.RAW/REFINED</code>), Kategorie-Fallback „Unsortiert" — nicht Erz/Gas/Bauteil. Preisspalten heißen „Einkaufspreis" und „Verkaufspreis", nicht Kauf/Verkauf</li>
+      <li>Nicht belegt und deshalb nicht gezeichnet: eine Bestands- oder Verwendungs-Ansicht am Material. Beides existiert im Web nicht als Material-Seite — Bestand lebt im Lager (Kap. 09), Verwendung im Blueprint (Kap. 17)</li>
+    </ul>
+  </div>
+  <section data-screen-label="Materialien phone" style="display:flex;gap:28px;align-items:flex-start;margin-bottom:32px">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Material-Übersicht — Liste mit Preisfiltern</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;height:64px;padding:0 4px 0 16px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="flex:1;margin:0;font:700 18px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.9px">Material-Übersicht</h2>
+            <span class="squadron-badge" style="font-size:11px;flex:none">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px;flex:none">
+              <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg>
+              <span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Material suchen…</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div><label style="font-size:12px;margin-bottom:4px">Min. Einkaufspreis</label><input type="text" value="" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Max. Verkaufspreis</label><input type="text" value="" style="width:100%;height:42px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums"></div>
+            </div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px"><span class="chip chip--primary" style="font-size:10px;flex:none">Alle</span><span class="chip" style="font-size:10px;flex:none">Rohmaterial</span><span class="chip" style="font-size:10px;flex:none">Veredelt</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:10px;flex:none;border-style:dashed">Filter zurücksetzen</span></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:10px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;font-variant-numeric:tabular-nums">148 Materialien · UEX-Stand heute, 06:12</div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien</div></div>
+              <div style="text-align:right;flex:none">
+                <div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+88,10</div>
+                <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−79,40</div>
+              </div>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium (roh)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien (roh)</div></div>
+              <div style="text-align:right;flex:none">
+                <div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+18,60</div>
+                <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−12,20</div>
+              </div>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien</div></div>
+              <div style="text-align:right;flex:none">
+                <div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+40,50</div>
+                <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−36,80</div>
+              </div>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien</div></div>
+              <div style="text-align:right;flex:none">
+                <div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+31,20</div>
+                <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−28,10</div>
+              </div>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Unsortiert</div></div>
+              <div style="text-align:right;flex:none">
+                <div style="font:700 12.5px/1.3 Lato,sans-serif;color:#8A8A8A">—</div>
+                <div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−1.450</div>
+              </div>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+            </div>
+          </div></div>
+          <div style="flex:none;display:flex;height:64px;background:#141414;border-top:1px solid #282828">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="width:40px;height:26px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-dashboard"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Übersicht</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="width:40px;height:26px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-target"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Einsätze</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="width:40px;height:26px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-clipboard-list"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Aufträge</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="width:40px;height:26px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-crate"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Lager</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="width:40px;height:26px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16)"><svg class="krt-icon" style="width:20px;height:20px;color:#E77E23"><use href="#krt-icon-more-h"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#E77E23">Mehr</span></div>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — materials.html · messages_de: materials.*</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Filter 1:1 aus dem Web: <code style="color:#8A8A8A">materials.minPriceBuy</code> „Min. Einkaufspreis" · <code style="color:#8A8A8A">materials.maxPriceSell</code> „Max. Verkaufspreis" — zwei Zahlenfelder, keine Schieberegler; dazu Typ-Chips aus <code style="color:#8A8A8A">material.type.RAW/REFINED</code> und der Fallback <code style="color:#8A8A8A">material.category.unsorted</code> „Unsortiert"</li>
+          <li>Je Zeile beide Preise (Verkauf oben grün, Einkauf darunter rot) — die Web-Liste führt beide, und mit nur einem wäre die Filterzeile darüber unerklärlich. Einheit aus <code style="color:#8A8A8A">material.quantity.scu/piece</code></li>
+          <li>Leerzustand wörtlich: „Keine Materialien gefunden." (<code style="color:#8A8A8A">materials.list.noResults</code>). Fehlender Preis = Gedankenstrich, nie 0,00</li>
+          <li>Einstieg über „Mehr" → EIN Eintrag; Titel wörtlich aus der Web-Navigation: <code style="color:#8A8A8A">nav.materials</code> „Handel" als Menüeintrag, darunter <code style="color:#8A8A8A">nav.materials.list</code> „Material-Übersicht" und <code style="color:#8A8A8A">nav.materials.overview</code> „Preis-Übersicht". Die Preis-Übersicht (Artboard 3) und die Profitberechnung (4) liegen im Overflow dieses Screens, nicht als eigene Menüeinträge</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Material-Detail — „Preise und Terminals"</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Quantainium</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Erze &amp; Mineralien</div></div>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div class="hud-box" style="padding:12px 14px;display:flex;gap:14px;font-variant-numeric:tabular-nums">
+              <div style="flex:1"><div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Max. Verkaufspreis</div><div style="font:900 19px/1.1 Lato,sans-serif;color:#2EBC3D;margin-top:3px">+88,10</div><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">ARC-L1 · Refinery</div></div>
+              <div style="width:1px;background:#282828"></div>
+              <div style="flex:1"><div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Min. Einkaufspreis</div><div style="font:900 19px/1.1 Lato,sans-serif;color:#F2564B;margin-top:3px">−79,40</div><div style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">Lorville · TDD</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px;flex:none">
+              <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg>
+              <span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Terminal suchen…</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:10px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Preise und Terminals</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">14</span></div>
+            <div class="card card--flush" style="padding:0">
+              <div style="display:grid;grid-template-columns:1fr 88px 88px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                <div style="padding:8px 12px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Terminal</div>
+                <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Einkauf</div>
+                <div style="padding:8px 12px 8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Verkauf</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 88px 88px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">ARC-L1 · Refinery</div>
+                <div style="padding:6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#F2564B">−81,00</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#2EBC3D">+88,10</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 88px 88px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Lorville · TDD</div>
+                <div style="padding:6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#F2564B">−79,40</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#2EBC3D">+84,60</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 88px 88px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Area18 · TDD</div>
+                <div style="padding:6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#F2564B">−82,10</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#2EBC3D">+83,90</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 88px 88px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">HUR-L2 · Refinery</div>
+                <div style="padding:6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#8A8A8A">—</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#2EBC3D">+80,20</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 88px 88px;border-bottom:1px solid #1C1C1C;min-height:44px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Everus Harbor</div>
+                <div style="padding:6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#F2564B">−80,60</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12px/1 Lato,sans-serif;color:#2EBC3D">+82,10</div>
+              </div>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Spaltenköpfe voll: „Einkaufspreis" / „Verkaufspreis" — auf 412 dp gekürzt, im Tablet ausgeschrieben.</div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — material-detail.html · materials.detail.*</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Abschnittstitel wörtlich <code style="color:#8A8A8A">materials.detail.pricesTitle</code> „Preise und Terminals"; Spalten <code style="color:#8A8A8A">materials.detail.th.terminal/priceBuy/priceSell</code>; Filter <code style="color:#8A8A8A">materials.detail.filterPlaceholder</code> „Terminal suchen..."</li>
+          <li>Drei Leerzustände, alle wörtlich: „Keine Preisdaten verfügbar." (kein Preis am Material) · „Keine Terminals gefunden." (Filter greift) · „Material nicht gefunden" (404 → Kap.-14-Bild mit „Zurück zur Basis")</li>
+          <li>Die Tabelle bleibt auch am Telefon eine Tabelle (Ausnahme zu 02 §5): Preise vergleichen heißt Spalten lesen. Spaltenköpfe werden gekürzt, nicht die Regel gebrochen</li>
+          <li>Die zwei Kennzahlen darüber sind die Listenfilter als Werte (<code style="color:#8A8A8A">materials.maxPriceSell</code> / <code style="color:#8A8A8A">materials.minPriceBuy</code>) — dieselben Begriffe, damit Liste und Detail dasselbe Wort benutzen</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Preis-Übersicht (materials-overview) — Ladezustand</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Preis-Übersicht</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Material × Terminal</div></div>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;height:48px;background:#1C1C1C;border:1px solid #282828;padding:0 14px;flex:none">
+              <svg class="krt-icon" style="width:18px;height:18px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg>
+              <span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Material suchen…</span>
+            </div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px"><span class="chip chip--primary" style="font-size:10px;flex:none">Verkauf</span><span class="chip" style="font-size:10px;flex:none">Einkauf</span><span class="chip" style="font-size:10px;flex:none">Systeme: Stanton</span></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:10px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card card--flush" style="padding:0">
+              <div style="display:grid;grid-template-columns:104px repeat(3,1fr);background:#1C1C1C;border-bottom:2px solid #E77E23">
+                <div style="padding:8px 10px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;position:sticky;left:0;background:#1C1C1C">Material</div>
+                <div style="padding:8px 6px;font:700 9.5px/1.2 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">ARC-L1</div>
+                <div style="padding:8px 6px;font:700 9.5px/1.2 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Lorville</div>
+                <div style="padding:8px 10px 8px 6px;font:700 9.5px/1.2 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Area18</div>
+              </div>
+              <div style="display:grid;grid-template-columns:104px repeat(3,1fr);border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 10px;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;position:sticky;left:0;background:#141414">Quantainium</div>
+                <div style="padding:6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D;background:rgba(46,188,61,.12)">+88,10</div>
+                <div style="padding:6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+84,60</div>
+                <div style="padding:6px 10px 6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+83,90</div>
+              </div>
+              <div style="display:grid;grid-template-columns:104px repeat(3,1fr);border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 10px;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;position:sticky;left:0;background:#141414">Bexalit</div>
+                <div style="padding:6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+40,50</div>
+                <div style="padding:6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+39,10</div>
+                <div style="padding:6px 10px 6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#8A8A8A">—</div>
+              </div>
+              <div style="display:grid;grid-template-columns:104px repeat(3,1fr);border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 10px;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;position:sticky;left:0;background:#141414">Laranite</div>
+                <div style="padding:6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+31,20</div>
+                <div style="padding:6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+30,40</div>
+                <div style="padding:6px 10px 6px 6px;text-align:right;font:700 11.5px/1 Lato,sans-serif;color:#2EBC3D">+30,90</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;background:#141414;border-top:1px solid #1C1C1C">
+                <span class="krt-spinner" style="width:16px;height:16px"></span>
+                <span style="font:300 12.5px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Lade Matrix…</span>
+              </div>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Horizontal scrollbar; die Materialspalte bleibt stehen. Bester Wert je Zeile getönt.</div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — materials-overview.html · materials.matrix.*</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Die Web-Seite ist eine MATRIX Material × Terminal, kein zweiter Listen-Screen — Ladezeile wörtlich „Lade Matrix…" (<code style="color:#8A8A8A">materials.matrix.loading</code>), Leerzustand „Keine Einträge gefunden." (<code style="color:#8A8A8A">materials.matrix.noResults</code>), Zeilenkopf „Material" (<code style="color:#8A8A8A">materials.matrix.material</code>)</li>
+          <li>Auf 412 dp: horizontal scrollende Tabelle mit klebender Materialspalte (104 dp) — die einzige Fläche des Bundles, die quer scrollt, und das ist die Web-Regel für Tabellen ≤768 px</li>
+          <li>EIN Modus-Chip (Verkauf | Einkauf) statt zwei Zahlen je Zelle; der beste Wert der Zeile wird getönt (kein Fettdruck, keine zweite Farbe)</li>
+          <li>Nachladen zeilenweise: die Matrix kommt seitenweise vom Server, die Ladezeile bleibt unten stehen und wird nie durch einen Vollbild-Spinner ersetzt</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">4 · Profitberechnung — je Schiff (nicht je Material)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Profitberechnung <span style="color:#FFD23F">*</span></div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Schiff · Systeme · Marge</div></div>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px">
+            <div><label style="font-size:12px;margin-bottom:4px">Schiff wählen</label><select style="width:100%;height:46px;font-size:13.5px"><option>-- Schiff wählen --</option><option>Caterpillar (576 SCU)</option><option>Hull C (4.608 SCU)</option></select></div>
+            <div><label style="font-size:12px;margin-bottom:4px">Systeme einschränken</label><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip chip--primary" style="font-size:10px">Stanton</span><span class="chip" style="font-size:10px">Pyro</span><span class="chip" style="font-size:10px">Nyx</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;gap:8px;align-items:flex-start"><svg class="krt-icon" style="width:13px;height:13px;color:#8A8A8A;flex:none;margin-top:2px"><use href="#krt-icon-info"></use></svg><span style="font:300 11.5px/1.45 Lato,sans-serif;color:#8A8A8A">Berücksichtigt nur Auto-Load Terminals.</span></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><svg class="krt-icon" style="width:13px;height:13px;color:#FFD23F;flex:none;margin-top:2px"><use href="#krt-icon-warning"></use></svg><span style="font:300 11.5px/1.45 Lato,sans-serif;color:#D2D2D2">Hull C Sonderregel (Loading Dock) aktiv.</span></div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:10px 16px 16px"><div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card card--flush" style="padding:0">
+              <div style="display:grid;grid-template-columns:1fr 92px 76px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                <div style="padding:8px 12px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Material</div>
+                <div style="padding:8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Gewinn <span style="color:#FFD23F">*</span></div>
+                <div style="padding:8px 12px 8px 6px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Marge (%)</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 92px 76px;border-bottom:1px solid #1C1C1C;min-height:52px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</div></div>
+                <div style="padding:6px 6px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+4.986.240</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">10,9</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 92px 76px;border-bottom:1px solid #1C1C1C;min-height:52px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</div></div>
+                <div style="padding:6px 6px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+2.113.920</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">9,2</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 92px 76px;border-bottom:1px solid #1C1C1C;min-height:52px;align-items:center;font-variant-numeric:tabular-nums">
+                <div style="padding:6px 12px"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</div></div>
+                <div style="padding:6px 6px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+1.788.480</div>
+                <div style="padding:6px 12px 6px 6px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">8,1</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;background:#141414;border-top:1px solid #1C1C1C">
+                <span class="krt-spinner" style="width:16px;height:16px"></span>
+                <span style="font:300 12.5px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Berechnung läuft…</span>
+              </div>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Volle Ladung des gewählten Schiffs, je Material die beste Route in den gewählten Systemen.<br><span style="color:#FFD23F">*</span> „Gewinn" ist unbelegt — messages_de führt nur <code style="color:#8A8A8A">profit.col.material</code> und <code style="color:#8A8A8A">profit.col.margin</code>.</div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — materials-profit-calculation.html · profit.*</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>KORREKTUR der ersten Fassung: nicht Menge/Qualität/Kosten, sondern <b style="color:#fff">Schiff + Systeme → Tabelle je Material</b>. Wörtlich: <code style="color:#8A8A8A">profit.filter.ship</code> „Schiff wählen" mit Platzhalter „-- Schiff wählen --", <code style="color:#8A8A8A">profit.filter.systems</code> „Systeme einschränken", Spalten <code style="color:#8A8A8A">profit.col.material</code> / <code style="color:#8A8A8A">profit.col.margin</code> „Marge (%)"</li>
+          <li>Die zwei Hinweiszeilen sind Pflicht und wörtlich: „Berücksichtigt nur Auto-Load Terminals." (immer) und „Hull C Sonderregel (Loading Dock) aktiv." (nur bei Hull C) — sie erklären, warum eine Route fehlt bzw. anders rechnet</li>
+          <li>Ladezustand „Berechnung läuft…" (<code style="color:#8A8A8A">profit.info.loading</code>) als Zeile unter der Tabelle; Fehler „Fehler beim Abrufen der Profitberechnung." (<code style="color:#8A8A8A">profit.error.fetch</code>) mit „Erneut versuchen" — beides wörtlich, kein Fiction-Canon (die Fläche ist kein HTTP-Statusbild)</li>
+          <li>Ohne gewähltes Schiff ist die Tabelle leer und trägt eine Satzzeile — nicht ein Skeleton, das eine Rechnung vortäuscht. Mitglied-und-höher; ohne Recht erscheint der Overflow-Eintrag gesperrt-antippbar</li>
+          <li><span style="color:#FFD23F">*</span> Der Screen-Titel „Profitberechnung" ist abgeleitet (er steht nur im Satz <code style="color:#8A8A8A">profit.error.fetch</code>), nicht als eigener Schlüssel belegt — wie „Preis-Übersicht"/„Material-Übersicht", die aus <code style="color:#8A8A8A">nav.materials.*</code> übernommen sind</li>
+          <li><b style="color:#FFD23F">Unbelegt und deshalb offen:</b> Belegt sind nur die Spalten „Material" und „Marge (%)". Die dritte Spalte („Gewinn") und die Routen-Unterzeile sind ein <b style="color:#fff">Vorschlag</b> — <code style="color:#8A8A8A">materials-profit-calculation.html</code> und <code style="color:#8A8A8A">MaterialsPageController</code> wurden nicht gelesen. Vor der Umsetzung: echten Spaltensatz aus der Vorlage übernehmen; führt sie mehr Spalten, gehören sie auf dem Telefon in die Unterzeile der Materialzelle und auf dem Tablet in eigene Spalten</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <section data-screen-label="Materialien tablet" style="margin-bottom:32px">
+    <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Tablet 1280×800 — Liste (480 dp) + Detail; Spaltenköpfe ausgeschrieben</div>
+    <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" width="{{ 1280 }}" height="{{ 800 }}" hint-size="1296px,800px">
+      <div style="display:flex;height:100%;background:#000;font-family:Lato,sans-serif">
+        <div style="width:88px;flex:none;background:#141414;border-right:1px solid #282828;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:2px">
+          <img src="assets/basetool-favicon.svg" alt="Basetool" style="width:36px;height:36px;object-fit:contain;margin-bottom:12px">
+          <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-dashboard"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Übersicht</span></div>
+          <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-target"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Einsätze</span></div>
+          <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-clipboard-list"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Aufträge</span></div>
+          <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-crate"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Lager</span></div>
+          <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16)"><svg class="krt-icon" style="width:20px;height:20px;color:#E77E23"><use href="#krt-icon-list"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#E77E23">Material</span></div>
+          <div style="width:80px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:52px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent"><svg class="krt-icon" style="width:20px;height:20px;color:#8A8A8A"><use href="#krt-icon-more-h"></use></svg></span><span style="font:700 9.5px/1 Lato,sans-serif;letter-spacing:.3px;text-transform:uppercase;color:#8A8A8A">Mehr</span></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div style="display:flex;align-items:center;gap:12px;height:64px;padding:0 20px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <h2 style="margin:0;font:700 19px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.95px">Handel</h2>
+            <span style="flex:1"></span>
+            <button class="btn-ghost btn" style="background:transparent;min-height:40px;font-size:11px">Preis-Übersicht</button>
+            <button class="btn-ghost btn" style="background:transparent;min-height:40px;font-size:11px">Profitberechnung</button>
+            <span class="squadron-badge" style="font-size:12px">Bereich Profit</span>
+          </div>
+          <div style="flex:1;display:flex;min-height:0">
+            <div style="width:480px;flex:none;border-right:1px solid #282828;display:flex;flex-direction:column;padding:16px 20px;gap:8px;overflow:auto">
+              <div style="display:flex;align-items:center;gap:10px;height:44px;background:#1C1C1C;border:1px solid #282828;padding:0 14px;flex:none"><svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-search"></use></svg><span style="font:300 13px/1 Lato,sans-serif;color:#8A8A8A;font-style:italic">Material suchen…</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none">
+                <div><label style="font-size:11.5px;margin-bottom:4px">Min. Einkaufspreis</label><input type="text" style="width:100%;height:40px;font-size:12.5px;text-align:center"></div>
+                <div><label style="font-size:11.5px;margin-bottom:4px">Max. Verkaufspreis</label><input type="text" style="width:100%;height:40px;font-size:12.5px;text-align:center"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;background:#1C1C1C;border:1px solid #E77E23;font-variant-numeric:tabular-nums"><div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien</div></div><div style="text-align:right"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+88,10</div><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−79,40</div></div></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums"><div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien</div></div><div style="text-align:right"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+40,50</div><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−36,80</div></div></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums"><div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien</div></div><div style="text-align:right"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+31,20</div><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−28,10</div></div></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums"><div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Hydrogen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Erze &amp; Mineralien (roh)</div></div><div style="text-align:right"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#2EBC3D">+1,52</div><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−1,10</div></div></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums"><div style="flex:1"><div style="font:700 13.5px/1.3 Lato,sans-serif;color:#FFFFFF">Medpen (Hemozal)</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Unsortiert</div></div><div style="text-align:right"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#8A8A8A">—</div><div style="font:700 11.5px/1.3 Lato,sans-serif;color:#F2564B">−1.450</div></div></div>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+              <div style="padding:16px 24px 0;flex:none"><div style="font:900 20px/1.1 Lato,sans-serif;color:#FFFFFF">Quantainium</div><div style="font:300 12px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Erze &amp; Mineralien · 14 Terminals · UEX-Stand heute, 06:12</div></div>
+              <div style="flex:1;overflow:auto;padding:16px 24px 24px">
+                <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Preise und Terminals</div>
+                <div class="card card--flush" style="padding:0">
+                  <div style="display:grid;grid-template-columns:1.6fr 1fr 130px 130px 120px;background:#1C1C1C;border-bottom:2px solid #E77E23">
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Terminal</div>
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">System / Ort</div>
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Einkaufspreis</div>
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em;text-align:right">Verkaufspreis</div>
+                    <div style="padding:9px 14px;font:700 10.5px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Stand</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1.6fr 1fr 130px 130px 120px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                    <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">ARC-L1 · Refinery</div>
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Stanton · ARC-L1</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#F2564B">−81,00</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+88,10</div>
+                    <div style="padding:6px 14px;font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">heute, 06:12</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1.6fr 1fr 130px 130px 120px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                    <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Lorville · TDD</div>
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Stanton · Hurston</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#F2564B">−79,40</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+84,60</div>
+                    <div style="padding:6px 14px;font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">heute, 06:12</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1.6fr 1fr 130px 130px 120px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                    <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Area18 · TDD</div>
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Stanton · ArcCorp</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#F2564B">−82,10</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+83,90</div>
+                    <div style="padding:6px 14px;font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">heute, 06:12</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1.6fr 1fr 130px 130px 120px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                    <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">HUR-L2 · Refinery</div>
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Stanton · HUR-L2</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#8A8A8A">—</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+80,20</div>
+                    <div style="padding:6px 14px;font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">gestern, 22:40</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1.6fr 1fr 130px 130px 120px;border-bottom:1px solid #1C1C1C;min-height:46px;align-items:center;font-variant-numeric:tabular-nums">
+                    <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Everus Harbor</div>
+                    <div style="padding:6px 14px;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Stanton · Hurston</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#F2564B">−80,60</div>
+                    <div style="padding:6px 14px;text-align:right;font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">+82,10</div>
+                    <div style="padding:6px 14px;font:300 11.5px/1.3 Lato,sans-serif;color:#8A8A8A">heute, 06:12</div>
+                  </div>
+                </div>
+                <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A;margin-top:12px;max-width:80ch">Tablet: Spaltenköpfe ausgeschrieben („Einkaufspreis" / „Verkaufspreis") plus System/Ort und Sync-Stand; Matrix und Profitberechnung sind Kopfzeilen-Aktionen statt Overflow-Einträge. Rail-Eintrag „Material" ersetzt den Weg über „Mehr".</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </x-import>
+  </section>
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="15 Open-Source-Lizenzen.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 15 Open-Source-Lizenzen</a>
+    <a href="17 Boerse - Inventar.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">17 Börse &amp; Mein Inventar →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

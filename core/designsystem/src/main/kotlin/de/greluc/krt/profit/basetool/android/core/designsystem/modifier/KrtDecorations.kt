@@ -97,8 +97,8 @@ fun Modifier.krtBloom(
         val step = radiusPx / layers
         repeat(layers) { index ->
             val spread = step * (index + 1)
-            // Quadratic falloff: a linear ramp leaves visible concentric banding at the
-            // 20 dp radius the modals and toasts use.
+            // Quadratic falloff: a linear ramp leaves visible concentric banding even at the
+            // 12 dp radius the modals and toasts use.
             val distance = (index + 1).toFloat() / layers
             val alpha = color.alpha * (1f - distance) * (1f - distance)
             drawRect(
@@ -113,7 +113,7 @@ fun Modifier.krtBloom(
 /**
  * Number of stacked strokes approximating a CSS blur radius.
  *
- * Twelve is where the steps stop being visible at the 20 dp modal bloom; fewer layers band, more
+ * Twelve is where the steps stop being visible at the 12 dp overlay glow; fewer layers band, more
  * cost draw calls for no perceptible gain.
  */
 private const val DEFAULT_BLOOM_LAYERS = 12

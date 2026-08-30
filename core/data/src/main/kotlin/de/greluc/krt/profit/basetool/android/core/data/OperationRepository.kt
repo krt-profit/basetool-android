@@ -8,13 +8,16 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.OperationCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationFinanceSummaryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutStatusDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutStatusUpdateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OperationPayoutSummaryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OperationUpdateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseOperationDto
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import okhttp3.OkHttpClient
@@ -72,6 +75,29 @@ data class OperationOverview(
 )
 
 /**
+ * An Operation being raised or rewritten.
+ *
+ * > **The Einsatz assignment is not in here, and cannot be.** A mission joins an Operation through
+ * > its own core section (`PATCH /missions/{id}/core` with `operationId`), which needs that
+ * > mission's name and its core version. Design ch. 06 artboard 15 draws the assignment as a
+ * > multi-select inside this form; the wire has no such field. See the design gap list.
+ *
+ * @property name what it is called; the server requires it.
+ * @property description the free text, or `null`.
+ * @property status where it stands — required on both writes, which is why the form always shows
+ *   it rather than only on the edit.
+ * @property owningOrgUnitId which unit owns it, on a create; `null` lets the server stamp it.
+ * @property version the optimistic lock on an **edit**, `null` when raising a new one.
+ */
+data class OperationDraft(
+    val name: String,
+    val description: String?,
+    val status: OperationStatus,
+    val owningOrgUnitId: String? = null,
+    val version: Long? = null,
+)
+
+/**
  * The Operationen reads, as a seam.
  *
  * Separate from the HTTP implementation so the screens' rules can be exercised without a socket.
@@ -114,6 +140,33 @@ interface OperationSource {
         operationId: String,
         participantKey: String,
         paidOut: Boolean,
+    ): ApiResult<Unit>
+
+    /**
+     * Raises an Operation.
+     *
+     * > **No start and no end.** `OperationCreateDto` carries a name, a description, a status and
+     * > the owning unit — nothing else. Design ch. 06 artboard 15 draws „Beginn" and „Ende
+     * > (geplant)"; an Operation has no times of its own, they live on its Einsätze. Flagged rather
+     * > than invented.
+     *
+     * @param draft what to raise.
+     * @return the new Operation's id, or the classified failure.
+     */
+    suspend fun create(draft: OperationDraft): ApiResult<String>
+
+    /**
+     * Rewrites an Operation's head.
+     *
+     * The version is echoed, so a concurrent edit is a 409 rather than a silent overwrite.
+     *
+     * @param operationId which Operation.
+     * @param draft what it should become.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun update(
+        operationId: String,
+        draft: OperationDraft,
     ): ApiResult<Unit>
 }
 
@@ -208,6 +261,56 @@ class OperationRepository(
             is ApiResult.Success -> payoutsWith(id, detail, rollup.value.toModel())
         }
 
+    override suspend fun create(draft: OperationDraft): ApiResult<String> =
+        when (
+            val result =
+                reader.post(
+                    OPERATIONS_PATH,
+                    OperationCreateDto(
+                        name = draft.name,
+                        status = OperationCreateDto.Status.valueOf(draft.status.name),
+                        description = draft.description?.takeIf { it.isNotBlank() },
+                        owningOrgUnitId = draft.owningOrgUnitId,
+                    ),
+                    OperationCreateDto.serializer(),
+                    OperationDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                result.value.id?.let { ApiResult.Success(it) }
+                    // A 201 that names no Operation leaves the caller with nothing to open. That is
+                    // a contract break rather than an empty result, so it fails rather than
+                    // reporting a success the screen cannot act on.
+                    ?: ApiResult.Failure(ApiError.Server(status = HTTP_CREATED))
+            }
+        }
+
+    override suspend fun update(
+        operationId: String,
+        draft: OperationDraft,
+    ): ApiResult<Unit> =
+        when (
+            val result =
+                reader.put(
+                    "$OPERATIONS_PATH/$operationId",
+                    OperationUpdateDto(
+                        name = draft.name,
+                        status = OperationUpdateDto.Status.valueOf(draft.status.name),
+                        version = draft.version ?: 0L,
+                        description = draft.description?.takeIf { it.isNotBlank() },
+                    ),
+                    OperationUpdateDto.serializer(),
+                    OperationDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(Unit)
+        }
+
     override suspend fun setPaidOut(
         operationId: String,
         participantKey: String,
@@ -264,6 +367,12 @@ class OperationRepository(
         private const val LOG_TAG = "operations"
 
         private const val SEARCH_PATH = "/api/v1/operations/search"
+
+        /** Where an Operation is raised, and the stem of every path under one. */
+        private const val OPERATIONS_PATH = "/api/v1/operations"
+
+        /** What a create answers with when it worked. */
+        private const val HTTP_CREATED = 201
         private const val QUERY_PARAM = "query"
         private const val STATUS_PARAM = "status"
         private const val START_PARAM = "start"
@@ -342,6 +451,7 @@ private fun OperationDto.toModel(requestedId: String): OperationDetail =
         rawStatus = status?.value,
         description = description,
         payoutPreliminary = payoutPreliminary,
+        version = version,
     )
 
 /**

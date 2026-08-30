@@ -136,6 +136,17 @@ data class MissionFrequency(
 )
 
 /**
+ * One member who manages this Einsatz.
+ *
+ * @property userId who — what a removal addresses.
+ * @property name what to show for them, the server's effective name.
+ */
+data class MissionManager(
+    val userId: String,
+    val name: String,
+)
+
+/**
  * An Einsatz in full — everything the seven detail tabs draw.
  *
  * **An outsider read is a smaller object, not a failed one.** The backend redacts for anonymous and
@@ -158,6 +169,11 @@ data class MissionFrequency(
  * @property orgUnitName the owning unit's name, or `null`
  * @property orgUnitShorthand the owning unit's short form, which the badge draws
  * @property partyLeadName who leads it, member or guest, or `null`
+ * @property managers who manages it besides the lead. The server sends them on the Einsatz itself;
+ *   the app read past them until 2026-08-30, which is why a manager could be added and never seen
+ *   — and therefore never removed.
+ * @property canManageManagers whether the caller may add or remove one. A **narrower** right than
+ *   managing the Einsatz, and the server's own answer rather than anything derived here.
  * @property registeredParticipants how many signed up, as the server counts them
  * @property checkedInParticipants how many of those have checked in
  * @property participants the roster, in server order
@@ -168,6 +184,10 @@ data class MissionFrequency(
  * @property coreVersion the Kern section's own optimistic-lock counter
  * @property scheduleVersion the Zeitplan section's counter
  * @property flagsVersion the flags section's counter
+ * @property calendarLink the external calendar entry, or `null`. The app neither shows nor edits
+ *   it — it is carried **only** so a Kern write can echo it back. That PATCH replaces the whole
+ *   section, so a field the app does not hold is a field the app deletes; this one was being
+ *   cleared on every rename until 2026-08-30.
  * @property canManage whether the caller may act on **other** members' rows — the server's own
  *   `canEdit`, carried through rather than re-derived from a role string. Deriving it here would
  *   reproduce the role hierarchy in the client and get it wrong for exactly the people most
@@ -191,6 +211,8 @@ data class MissionDetail(
     val orgUnitName: String?,
     val orgUnitShorthand: String?,
     val partyLeadName: String?,
+    val managers: List<MissionManager> = emptyList(),
+    val canManageManagers: Boolean = false,
     val registeredParticipants: Int,
     val checkedInParticipants: Int,
     val participants: List<MissionParticipant>,
@@ -198,6 +220,7 @@ data class MissionDetail(
     val steps: List<MissionStep>,
     val objectives: List<MissionObjective>,
     val frequencies: List<MissionFrequency>,
+    val calendarLink: String? = null,
     val canManage: Boolean = false,
     // Three counters, not one. The Einsatz is edited in independent sections and each carries its
     // own, so a manager fixing the briefing does not 409 a colleague moving the start time. They

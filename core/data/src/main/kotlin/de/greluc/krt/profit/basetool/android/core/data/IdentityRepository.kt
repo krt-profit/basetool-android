@@ -89,6 +89,7 @@ data class Identity(
     val bankEmployee: Boolean = false,
     val bankManagement: Boolean = false,
     val permissions: Set<String> = emptySet(),
+    val blueprintOverview: Boolean = false,
 )
 
 /**
@@ -186,6 +187,10 @@ class IdentityRepository(
                                 bankEmployee = capabilities?.canViewBankStaff == true,
                                 bankManagement = capabilities?.canManageBank == true,
                                 permissions = result.value.permissions.orEmpty().toSet(),
+                                // Officer and above, in the caller's oversight scope. Derived
+                                // server-side for the same reason the bank flags are: the
+                                // me-response carries display names, not the codes the gate uses.
+                                blueprintOverview = capabilities?.canSeeBlueprintOverview == true,
                             )
                         cached = identity
                         ApiResult.Success(identity)

@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.OperationDetail
+import de.greluc.krt.profit.basetool.android.core.data.OperationDraft
 import de.greluc.krt.profit.basetool.android.core.data.OperationOverview
 import de.greluc.krt.profit.basetool.android.core.data.OperationPage
 import de.greluc.krt.profit.basetool.android.core.data.OperationPayout
@@ -89,6 +90,14 @@ class OperationDetailViewModelTest {
             confirmations.add(participantKey to paidOut)
             return confirmAnswer
         }
+
+        override suspend fun create(draft: OperationDraft): ApiResult<String> =
+            error("this test never writes")
+
+        override suspend fun update(
+            operationId: String,
+            draft: OperationDraft,
+        ): ApiResult<Unit> = error("this test never writes")
     }
 
     /**

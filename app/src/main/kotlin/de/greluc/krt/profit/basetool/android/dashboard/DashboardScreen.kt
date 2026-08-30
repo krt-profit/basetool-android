@@ -146,7 +146,7 @@ fun DashboardScreen(
                 // The gutter sits on the column rather than on the two lists, so the greeting and
                 // the announcement line up with the cards under them instead of running out to the
                 // rail on one side and the screen edge on the other.
-                modifier = Modifier.fillMaxSize().padding(horizontal = KrtSpacing.md).testTag(DASHBOARD_TAG),
+                modifier = Modifier.fillMaxSize().padding(horizontal = KrtSpacing.s12).testTag(DASHBOARD_TAG),
             ) {
                 Greeting(memberName = memberName, orgUnitName = orgUnitName)
                 state.announcement?.let {
@@ -158,12 +158,12 @@ fun DashboardScreen(
                 }
                 Row(
                     modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
                 ) {
                     LazyColumn(
                         state = rememberRootListState(),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
-                        contentPadding = PaddingValues(vertical = KrtSpacing.md),
+                        contentPadding = PaddingValues(vertical = KrtSpacing.s12),
                     ) {
                         missionsSection(
                             state = state,
@@ -174,7 +174,7 @@ fun DashboardScreen(
                     LazyColumn(
                         state = rememberRootListState(),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
-                        contentPadding = PaddingValues(vertical = KrtSpacing.md),
+                        contentPadding = PaddingValues(vertical = KrtSpacing.s12),
                     ) {
                         quickActionsSection(onQuickAction = onQuickAction)
                         notificationsSection(
@@ -240,7 +240,7 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
     item(key = "quick-title") {
         KrtSectionTitle(
             text = stringResource(R.string.dashboard_quick_actions),
-            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
         )
     }
     item(key = "quick-tiles") {
@@ -250,8 +250,8 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
         // 90 dp per tile, which is why they had been cut to "Einbuchen" and "Angebot" - a shortcut
         // whose label needs its icon to disambiguate it is not much of a shortcut.
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             QuickAction.entries.chunked(2).forEach { pair ->
                 // IntrinsicSize.Min so the pair share the taller tile's height. Without it the
@@ -259,7 +259,7 @@ private fun LazyListScope.quickActionsSection(onQuickAction: (QuickAction) -> Un
                 // different components.
                 Row(
                     modifier = Modifier.height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 ) {
                     pair.forEach { action ->
                         QuickActionTile(
@@ -300,8 +300,8 @@ private fun QuickActionTile(
                 .background(KrtPalette.Gray4)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .clickable(onClick = onClick)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIcon(
@@ -344,7 +344,7 @@ private fun LazyListScope.missionsSection(
         // control belonging to the section. Artboard 1 shows the pattern on the inbox band.
         KrtSectionTitle(
             text = stringResource(R.string.dashboard_missions),
-            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             trailing = {
                 if (state.missions.isNotEmpty()) {
                     SectionAction(
@@ -391,7 +391,7 @@ private fun LazyListScope.notificationsSection(
     item(key = "notifications-title") {
         KrtSectionTitle(
             text = stringResource(R.string.dashboard_notifications),
-            modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             trailing = {
                 if (unread.isNotEmpty()) {
                     SectionAction(
@@ -450,8 +450,8 @@ private fun Greeting(
     // not on the bare background — it is the chapter's first element and the only one that
     // addresses the member. Rendered as plain text it read as a caption above the announcement.
     KrtRailCard(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+        contentPadding = PaddingValues(KrtSpacing.s12),
     ) {
         // Uppercase and orange, which is what artboard 1 draws and what the token artifact's
         // headline entries are annotated with. `headlineSmall` rather than a one-off style: the
@@ -506,11 +506,11 @@ private fun AnnouncementBand(
                 .fillMaxWidth()
                 .clickable { expanded = !expanded }
                 .semantics { contentDescription = action }
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // White and uppercase, as artboard 1 draws it. Orange would put the emphasis on the
@@ -542,7 +542,7 @@ private fun AnnouncementBand(
                 modifier =
                     Modifier
                         .clickable(onClick = onMarkRead)
-                        .padding(vertical = KrtSpacing.sm),
+                        .padding(vertical = KrtSpacing.s8),
             )
         }
         KrtHairlineRule()
@@ -567,7 +567,7 @@ private fun MissionBandRow(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -633,8 +633,8 @@ private fun MissionFactsRow(mission: Mission) {
             }
         }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         meeting?.let { GlyphFact(icon = DesignR.drawable.ic_krt_clock, text = it) }
@@ -652,8 +652,8 @@ private fun MissionFactsRow(mission: Mission) {
 @Composable
 private fun MissionBandFooter(mission: Mission) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { unit ->
@@ -688,7 +688,7 @@ private fun GlyphFact(
     text: String,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIcon(id = icon, contentDescription = null, tint = KrtPalette.TextMuted)
@@ -713,8 +713,8 @@ private fun PreviewLine(
     time: String,
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Text(
             text = text,
@@ -727,7 +727,7 @@ private fun PreviewLine(
             Text(
                 text = time,
                 style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
         }
     }
@@ -757,7 +757,7 @@ private fun MutedLine(text: String) {
         color = KrtPalette.TextMuted,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
     )
 }
 
@@ -776,7 +776,7 @@ private fun SectionAction(
         text = text,
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.clickable(onClick = onClick).padding(KrtSpacing.xs),
+        modifier = Modifier.clickable(onClick = onClick).padding(KrtSpacing.s4),
     )
 }
 

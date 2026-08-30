@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.personalinventory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -47,6 +48,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionCheckbox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
@@ -67,6 +69,38 @@ const val BLUEPRINTS_LIST_TAG: String = "blueprints-list"
 const val BLUEPRINTS_ADD_TAG: String = "blueprints-add"
 
 /**
+ * Everything the selection mode and the file import can do (design ch. 18 sections 2 and 3).
+ *
+ * One object rather than eleven callbacks threaded through the tree: they belong to two features
+ * that arrive together, and a screen signature with eleven more lambdas stops being readable.
+ *
+ * @property onStartSelection a long press opened the mode on a row.
+ * @property onToggleSelected a row was ticked or unticked.
+ * @property onSelectAll every blueprint the member owns was ticked.
+ * @property onCancelSelection the mode was left.
+ * @property onAskDelete the confirmation was opened.
+ * @property onDismissDelete it was closed without deleting.
+ * @property onConfirmDelete the ticked rows are to go.
+ * @property onImportOpen the import sheet was opened.
+ * @property onImportFile a file was picked and read off the device.
+ * @property onImportApply the preview is to be taken over.
+ * @property onImportDismiss the sheet was closed.
+ */
+data class BlueprintBulkActions(
+    val onStartSelection: (String) -> Unit,
+    val onToggleSelected: (String) -> Unit,
+    val onSelectAll: () -> Unit,
+    val onCancelSelection: () -> Unit,
+    val onAskDelete: () -> Unit,
+    val onDismissDelete: () -> Unit,
+    val onConfirmDelete: () -> Unit,
+    val onImportOpen: () -> Unit,
+    val onImportFile: (String, ByteArray?) -> Unit,
+    val onImportApply: () -> Unit,
+    val onImportDismiss: () -> Unit,
+)
+
+/**
  * The Blueprints tab of "Mein Inventar" (design ch. 09 § 4).
  *
  * @param state what to draw.
@@ -78,6 +112,8 @@ const val BLUEPRINTS_ADD_TAG: String = "blueprints-add"
  * @param onAdd the add action was taken.
  * @param onEdit a row was tapped.
  * @param onDelete a row's remove action was taken.
+ * @param onSelect a row was picked for the detail pane.
+ * @param bulk the selection mode and the file import.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +129,7 @@ fun PersonalBlueprintsScreen(
     onEdit: (OwnedBlueprint) -> Unit,
     onDelete: (OwnedBlueprint) -> Unit,
     onSelect: (String) -> Unit,
+    bulk: BlueprintBulkActions,
     modifier: Modifier = Modifier,
 ) {
     val wide = isWideWindow()
@@ -116,22 +153,31 @@ fun PersonalBlueprintsScreen(
             },
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            state.selection?.let { selection ->
+                BlueprintSelectionBar(
+                    selection = selection,
+                    total = state.total,
+                    onSelectAll = bulk.onSelectAll,
+                    onCancel = bulk.onCancelSelection,
+                    onDelete = bulk.onAskDelete,
+                )
+            }
             if (!state.online) {
                 OfflineBand()
             }
             KrtTextField(
                 value = state.query,
                 onValueChange = onQueryChanged,
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                 placeholder = stringResource(R.string.blueprints_search),
             )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     KrtToggle(checked = state.withRefinery, onCheckedChange = onRefineryChanged)
@@ -141,15 +187,23 @@ fun PersonalBlueprintsScreen(
                         color = KrtPalette.TextMuted,
                     )
                 }
-                KrtCtaButton(
-                    text = stringResource(R.string.blueprints_add),
-                    onClick = onAdd,
-                    modifier =
-                        Modifier
-                            .testTag(BLUEPRINTS_ADD_TAG)
-                            .alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
-                    enabled = state.online,
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
+                    KrtGhostButton(
+                        text = stringResource(R.string.blueprints_import_title),
+                        onClick = bulk.onImportOpen,
+                        modifier = Modifier.alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
+                        enabled = state.online,
+                    )
+                    KrtCtaButton(
+                        text = stringResource(R.string.blueprints_add),
+                        onClick = onAdd,
+                        modifier =
+                            Modifier
+                                .testTag(BLUEPRINTS_ADD_TAG)
+                                .alpha(if (state.online) 1f else DISABLED_WRITE_ALPHA),
+                        enabled = state.online,
+                    )
+                }
             }
 
             when (state.phase) {
@@ -172,7 +226,7 @@ fun PersonalBlueprintsScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -181,7 +235,7 @@ fun PersonalBlueprintsScreen(
                             message = stringResource(R.string.blueprints_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -205,7 +259,7 @@ fun PersonalBlueprintsScreen(
                                                 R.string.blueprints_empty_filtered_message
                                             },
                                         ),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else {
@@ -216,12 +270,28 @@ fun PersonalBlueprintsScreen(
                                 onDelete = onDelete,
                                 onSelect = onSelect,
                                 selectable = wide,
+                                bulk = bulk,
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    BlueprintImportSheet(
+        step = state.import,
+        onFile = bulk.onImportFile,
+        onApply = bulk.onImportApply,
+        onDismiss = bulk.onImportDismiss,
+    )
+    state.selection?.takeIf { it.asking }?.let { selection ->
+        BlueprintDeleteConfirm(
+            selection = selection,
+            total = state.total,
+            onConfirm = bulk.onConfirmDelete,
+            onDismiss = bulk.onDismissDelete,
+        )
     }
 }
 
@@ -234,6 +304,7 @@ fun PersonalBlueprintsScreen(
  * @param onDelete a row's remove action was taken.
  * @param onSelect a row was picked for the detail pane; only used when [selectable].
  * @param selectable whether the window is wide enough for a detail pane to select into.
+ * @param bulk the selection mode's actions.
  */
 @Composable
 private fun BlueprintList(
@@ -243,6 +314,7 @@ private fun BlueprintList(
     onDelete: (OwnedBlueprint) -> Unit,
     onSelect: (String) -> Unit,
     selectable: Boolean,
+    bulk: BlueprintBulkActions,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(BLUEPRINTS_LIST_TAG),
@@ -259,6 +331,9 @@ private fun BlueprintList(
                 onSelect = { onSelect(entry.id) },
                 selectable = selectable,
                 selected = entry.id == state.selectedId,
+                picking = state.selection?.ids?.let { entry.id in it },
+                onPick = { bulk.onToggleSelected(entry.id) },
+                onStartPicking = { bulk.onStartSelection(entry.id) },
             )
             KrtHairlineRule()
         }
@@ -291,6 +366,11 @@ private fun BlueprintList(
  * @param onSelect picks this row for the detail pane.
  * @param selectable whether a detail pane exists to select into.
  * @param selected whether this row is the one the pane is showing.
+ * @param picking whether this row is ticked, or `null` when the selection mode is off. The three
+ *   states are one nullable rather than two booleans, because „off" and „on but unticked" have to
+ *   look and behave differently and two flags would let them be four.
+ * @param onPick tick or untick it.
+ * @param onStartPicking a long press opened the selection mode on this row.
  */
 @Composable
 private fun BlueprintRow(
@@ -303,6 +383,9 @@ private fun BlueprintRow(
     onSelect: () -> Unit,
     selectable: Boolean,
     selected: Boolean,
+    picking: Boolean?,
+    onPick: () -> Unit,
+    onStartPicking: () -> Unit,
 ) {
     Row(
         modifier =
@@ -313,8 +396,18 @@ private fun BlueprintRow(
                 // is not lost on the tablet — it moves into the pane, where the row it applies to
                 // is the one on screen. Selecting also stays available offline: reading a recipe
                 // is not a write.
-                .clickable(enabled = selectable || online) {
-                    if (selectable) onSelect() else onEdit()
+                // While the selection mode is on, the whole row is the tick: the design system's
+                // mode (ch. 02 §4) gives the row one meaning at a time, and leaving the editor
+                // reachable underneath is how somebody opens a note they meant to tick.
+                .combinedClickable(
+                    enabled = picking != null || selectable || online,
+                    onLongClick = onStartPicking,
+                ) {
+                    when {
+                        picking != null -> onPick()
+                        selectable -> onSelect()
+                        else -> onEdit()
+                    }
                 }
                 .background(
                     if (selected) {
@@ -326,10 +419,13 @@ private fun BlueprintRow(
                     },
                 )
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The tick is drawn, not swapped in for the content: a row that changes shape when the mode
+        // opens makes the list jump under the finger that opened it.
+        picking?.let { KrtSelectionCheckbox(checked = it) }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = entry.productName,
@@ -424,8 +520,8 @@ private fun RecipePane(
     onEdit: (OwnedBlueprint) -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (entry != null) {
             Row(
@@ -485,8 +581,8 @@ private fun RecipePane(
 @Composable
 private fun IngredientRow(ingredient: BlueprintIngredient) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {

@@ -43,12 +43,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtDashedBorder
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -132,7 +134,7 @@ fun KrtLoadingIndicator(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtSpinner()
@@ -147,24 +149,31 @@ fun KrtLoadingIndicator(
 /**
  * The offline banner, pinned under the top bar while the device has no connection.
  *
- * It states both facts the user needs: that the screen shows cached data, and how old that data is.
+ * It states the one fact the app actually knows: there is no connection, so writing is locked.
  * While it is visible, every action that needs the network renders disabled — the banner is the
  * reason, so the disabled controls never look broken. Mutations are never queued for later: the
  * ledgers behind them are append-only and a replayed write would corrupt them.
  *
+ * There is deliberately **no** „Zuletzt aktualisiert" stamp and no CACHE chip. Both were drawn, and
+ * design §D (round 12) struck them rather than deferring them: this app holds no cache and measures
+ * no load time, so either one would be invented. The second line is a [reason], never a timestamp —
+ * it was called `lastUpdated` until that correction landed, which is exactly the slot a stamp would
+ * have crept back into.
+ *
  * @param title the banner headline; uppercased for display.
- * @param lastUpdated human-readable timestamp of the cached data.
- * @param onRetry invoked when the user asks to reconnect.
  * @param modifier layout modifier.
+ * @param reason one line saying what the missing connection costs, or `null` when the headline
+ *   already says it. Never a timestamp, and never a cache claim.
+ * @param onRetry invoked when the user asks to reconnect.
  * @param retryText label of the retry action.
  */
 @Composable
 fun KrtOfflineBanner(
     title: String,
     modifier: Modifier = Modifier,
-    lastUpdated: String? = null,
+    reason: String? = null,
     onRetry: (() -> Unit)? = null,
-    retryText: String = "Erneut verbinden",
+    retryText: String = stringResource(R.string.krt_reconnect),
 ) {
     Row(
         modifier =
@@ -188,7 +197,7 @@ fun KrtOfflineBanner(
         KrtIcon(
             id = R.drawable.ic_krt_wifi_off,
             contentDescription = null,
-            modifier = Modifier.padding(horizontal = KrtSpacing.md),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             size = 20.dp,
             tint = KrtTheme.colors.warning,
         )
@@ -198,12 +207,9 @@ fun KrtOfflineBanner(
                 style = MaterialTheme.typography.labelMedium,
                 color = KrtTheme.colors.warning,
             )
-            // Both optional, because a screen that shows live data it simply cannot refresh
-            // has neither a stamp to quote nor a retry that would mean anything. Rendering an
-            // empty second line under the title would read as a timestamp that failed to load.
-            lastUpdated?.let { stamp ->
+            reason?.let { line ->
                 Text(
-                    text = stamp,
+                    text = line,
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
                 )
@@ -213,7 +219,7 @@ fun KrtOfflineBanner(
             KrtGhostButton(
                 text = retryText,
                 onClick = retry,
-                modifier = Modifier.padding(KrtSpacing.sm),
+                modifier = Modifier.padding(KrtSpacing.s8),
             )
         }
     }
@@ -269,10 +275,13 @@ fun KrtEmptyState(
         modifier =
             modifier
                 .fillMaxWidth()
-                .border(KrtSpacing.hairline, KrtPalette.Gray3)
-                .padding(vertical = KrtSpacing.xl, horizontal = KrtSpacing.lg),
+                // Dashed, not solid: an empty state marks a place something goes, and a
+                // solid border reads as a filled surface that happens to be blank
+                // (print edition § 3, "Empty = dashed border").
+                .krtDashedBorder(KrtPalette.Gray3, KrtSpacing.hairline)
+                .padding(vertical = KrtSpacing.s24, horizontal = KrtSpacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtIcon(id = iconRes, contentDescription = null, size = 28.dp, tint = KrtPalette.Gray2)
         Text(
@@ -327,7 +336,7 @@ fun KrtTotalTile(
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary),
         )
-        Column(modifier = Modifier.padding(KrtSpacing.md)) {
+        Column(modifier = Modifier.padding(KrtSpacing.s12)) {
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelMedium,
@@ -338,9 +347,9 @@ fun KrtTotalTile(
                 if (unit != null) {
                     Text(
                         text = unit,
-                        modifier = Modifier.padding(start = KrtSpacing.xs, bottom = KrtSpacing.xs),
+                        modifier = Modifier.padding(start = KrtSpacing.s4, bottom = KrtSpacing.s4),
                         style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.Gray2,
+                        color = KrtPalette.TextMuted,
                     )
                 }
             }
@@ -383,15 +392,15 @@ fun KrtFigureTile(
         }
     Row(modifier = modifier.height(IntrinsicSize.Min).background(KrtPalette.Gray4)) {
         Box(modifier = Modifier.width(FIGURE_RAIL).fillMaxHeight().background(rail))
-        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = FIGURE_PAD)) {
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = FIGURE_PAD)) {
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.Gray2,
+                color = KrtPalette.TextMuted,
             )
             Text(
                 text = value,
-                modifier = Modifier.padding(top = KrtSpacing.xs),
+                modifier = Modifier.padding(top = KrtSpacing.s4),
                 style = MaterialTheme.typography.headlineMedium,
                 color = hue,
             )
@@ -451,12 +460,12 @@ fun KrtKpiCard(
         )
         KrtDataValue(
             text = value,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
             style = MaterialTheme.typography.displaySmall,
         )
         if (delta != null || sparkline != null) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
+                modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -539,11 +548,11 @@ private val SPARKLINE_STROKE = 1.5.dp
 @Composable
 private fun FeedbackPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtLoadingIndicator("Lade Einsätze…")
             KrtOfflineBanner(
-                title = "Offline — zeigt gespeicherten Stand",
-                lastUpdated = "Zuletzt aktualisiert 17.08. 14:32",
+                title = "Offline — keine Verbindung",
+                reason = "Schreiben ist gesperrt, bis die Verbindung zurück ist.",
                 onRetry = {},
             )
             KrtEmptyState(

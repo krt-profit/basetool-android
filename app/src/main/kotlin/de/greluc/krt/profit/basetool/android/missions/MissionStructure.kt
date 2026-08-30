@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionManager
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -29,8 +30,16 @@ private const val LOG_TAG = "MissionStructure"
  *   of fields serves both, because only one Einheit can be edited at a time and a second pair would
  *   only be a second thing to keep in sync.
  * @property editingUnitVersion that Einheit's optimistic lock as last read, echoed by the rename.
+ * @property editingUnitOriginalName the name the rename sheet opened on, so „Speichern" can stay
+ *   dimmed until the typed value actually differs from it (design ch. 18 §3, E7).
+ * @property editingUnitHighValue that Einheit's HVU mark as it stands, echoed by the rename — the
+ *   sheet carries one field, and the call carries both.
  * @property crewRolesFor the crew slot whose Funktionen are open for editing, as
  *   `unitId to crewId`, or `null`.
+ * @property crewPickerUnitId the Einheit whose roster picker is open, or `null`. „+ Person
+ *   zuweisen" is one surface that opens a picker (design ch. 06 artboard 14), not a chip
+ *   field over the whole roster — that grows with the roster and is four rows high at
+ *   fourteen names on a 412 dp phone.
  * @property freqName the new frequency's label, as typed.
  * @property freqValue the frequency itself, as typed.
  * @property busy whether a write is running.
@@ -41,11 +50,15 @@ data class MissionStructureDraft(
     val unitHighValue: Boolean = false,
     val editingUnitId: String? = null,
     val editingUnitVersion: Long = 0L,
+    val editingUnitOriginalName: String = "",
+    val editingUnitHighValue: Boolean = false,
     val crewRolesFor: Pair<String, String>? = null,
+    val crewPickerUnitId: String? = null,
     val freqName: String = "",
     val freqValue: String = "",
     val busy: Boolean = false,
     val error: ApiError? = null,
+    val removingManager: MissionManager? = null,
 )
 
 /**
@@ -154,6 +167,22 @@ class MissionStructure(
     }
 
     /**
+     * Opens the roster picker for one Einheit.
+     *
+     * @param unitId which Einheit it will fill.
+     */
+    fun openCrewPicker(unitId: String) {
+        val (draft, _) = read()
+        write(draft.copy(crewPickerUnitId = unitId), null)
+    }
+
+    /** Closes it without assigning anybody. */
+    fun dismissCrewPicker() {
+        val (draft, _) = read()
+        write(draft.copy(crewPickerUnitId = null), null)
+    }
+
+    /**
      * Puts a participant aboard an Einheit.
      *
      * @param unitId which unit.
@@ -164,10 +193,14 @@ class MissionStructure(
         participantId: String,
     ) {
         val (draft, _) = read()
-        // No roles: the CREW catalogue is a second, differently-archetyped list and no drawn control
-        // picks from it yet. The server accepts an empty set, so somebody can be put aboard now and
-        // given their roles when round 10 says what that control looks like.
-        run(draft) { structure.addCrew(missionId, unitId, participantId, emptySet()) }
+        // No roles at assignment: the CREW catalogue is a second, differently-archetyped list, and
+        // the drawn flow puts somebody aboard first and gives them their Funktionen from the crew
+        // row's own toggle chips afterwards (ch. 06 artboard 14). The server accepts an empty set.
+        //
+        // The picker closes with the write: it is a pick, not a multi-select.
+        run(draft.copy(crewPickerUnitId = null)) {
+            structure.addCrew(missionId, unitId, participantId, emptySet())
+        }
     }
 
     /**
@@ -227,6 +260,33 @@ class MissionStructure(
     fun addManager(userId: String) {
         val (draft, _) = read()
         run(draft) { admin.addManager(missionId, userId) }
+    }
+
+    /**
+     * Asks before taking a manager off.
+     *
+     * Removing one withdraws a right and therefore confirms; changing the Einsatzleitung does not,
+     * because it is replaced rather than taken away (design ch. 06 artboard 12).
+     *
+     * @param manager who.
+     */
+    fun askRemoveManager(manager: MissionManager) {
+        val (draft, _) = read()
+        write(draft.copy(removingManager = manager), null)
+    }
+
+    /** Abandons that. */
+    fun dismissRemoveManager() {
+        val (draft, _) = read()
+        write(draft.copy(removingManager = null), null)
+    }
+
+    /** Takes off the manager the member confirmed. */
+    fun confirmRemoveManager() {
+        val (draft, _) = read()
+        val manager = draft.removingManager ?: return
+        write(draft.copy(removingManager = null), null)
+        removeManager(manager.userId)
     }
 
     /**

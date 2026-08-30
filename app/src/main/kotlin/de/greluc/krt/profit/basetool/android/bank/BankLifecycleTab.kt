@@ -102,14 +102,14 @@ fun BankLifecycleTab(
                 iconRes = DesignR.drawable.ic_krt_bank,
                 title = stringResource(R.string.bank_lifecycle_empty_title),
                 message = stringResource(R.string.bank_lifecycle_empty_message),
-                modifier = Modifier.padding(KrtSpacing.lg),
+                modifier = Modifier.padding(KrtSpacing.s16),
             )
             return@PullToRefreshBox
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(BANK_LIFECYCLE_TAG),
-            contentPadding = PaddingValues(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            contentPadding = PaddingValues(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             items(state.accounts, key = { it.id }) { account ->
                 LifecycleAccountRow(
@@ -141,7 +141,7 @@ fun BankLifecycleTab(
                         text = stringResource(R.string.bank_lifecycle_holders_empty),
                         style = MaterialTheme.typography.bodySmall,
                         color = KrtPalette.TextMuted,
-                        modifier = Modifier.padding(KrtSpacing.sm),
+                        modifier = Modifier.padding(KrtSpacing.s8),
                     )
                 }
             }
@@ -171,11 +171,11 @@ private fun LifecycleAccountRow(
     ) {
         Column(
             modifier = Modifier.alpha(if (closed) CLOSED_ALPHA else 1f),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -246,8 +246,8 @@ private fun AccountActions(
     // Drawn for everyone, locked for those without the role. A lock a member can see and tap is
     // what tells them the surface exists and which role opens it; hiding it tells them nothing.
     val lockIcon = DesignR.drawable.ic_krt_lock.takeIf { !management }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtGhostButton(
                 text = stringResource(R.string.bank_lifecycle_rename),
                 onClick = {
@@ -305,8 +305,8 @@ private fun AccountActions(
 @Composable
 private fun HolderSectionHeader() {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -337,10 +337,10 @@ private fun HolderRow(
     actions: BankLifecycleActions,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = { actions.onOpenHolder(holder) }) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth().alpha(if (holder.active) 1f else CLOSED_ALPHA),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

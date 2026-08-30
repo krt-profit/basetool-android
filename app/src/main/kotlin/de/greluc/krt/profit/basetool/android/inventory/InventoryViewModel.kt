@@ -21,7 +21,6 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
-import de.greluc.krt.profit.basetool.android.core.data.MaterialDetailSource
 import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -133,6 +132,7 @@ data class InventoryState(
     val allocation: AllocationSheetState? = null,
     val selection: Set<String> = emptySet(),
     val bulk: BulkMoveState? = null,
+    val checkout: BulkCheckoutState? = null,
 ) {
     /**
      * The entries currently selected, as far as the tree has read them.
@@ -217,6 +217,27 @@ data class BulkMoveState(
 )
 
 /**
+ * The Sammel-Ausbuchen sheet (design ch. 09 artboard 20).
+ *
+ * Thinner than the artboard, and deliberately: `POST /inventory/bulk-checkout` carries **only the
+ * ids**. There is no reason field on it („Verbraucht" / „Verworfen"), no note, and no per-row
+ * source planner — the rows are deleted whole and their earmarks cascade away with them. The
+ * sheet therefore says what will happen and asks once, instead of collecting three inputs the call
+ * cannot send.
+ *
+ * @property saving whether the call is in flight.
+ * @property error what it was refused with, or `null`.
+ * @property done whether it succeeded — the sheet's result step.
+ * @property count how many rows it was asked to book out.
+ */
+data class BulkCheckoutState(
+    val count: Int,
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+    val done: Boolean = false,
+)
+
+/**
  * Drives the Lager tree.
  *
  * **A group's stacks are fetched when it is opened, never before.** The tree's first level is one
@@ -228,7 +249,6 @@ data class BulkMoveState(
  * refresh is how they ask for more.
  *
  * @property source where the Lager comes from
- * @property paneSource the tablet pane's own read, which is a different endpoint.
  * @property connectivity whether the device has a network, which is what decides whether the
  *   booking actions are offered at all
  * @property liveSync the live-sync bridge, or `null` in a test or a preview. The shared Lager is
@@ -238,17 +258,9 @@ data class BulkMoveState(
 class InventoryViewModel(
     private val source: InventorySource,
     connectivity: Connectivity,
-    paneSource: MaterialDetailSource,
     private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(InventoryState())
-
-    /**
-     * The tablet detail pane, which reads a material whole rather than branch by branch.
-     *
-     * A holder of its own: see [MaterialPaneLoader].
-     */
-    val pane = MaterialPaneLoader(paneSource, viewModelScope)
 
     /** What the screen draws. */
     val state: StateFlow<InventoryState> = mutableState.asStateFlow()
@@ -560,7 +572,139 @@ class InventoryViewModel(
         reload(keepRows = true)
     }
 
-    /** Opens the bulk-move sheet over the current selection. */
+    /**
+     * The Sammel-Ausbuchen, as one object rather than four methods.
+     *
+     * Grouped because the view model already carries every function detekt allows, and because the
+     * three steps are one interaction: open the sheet, send it, close it.
+     */
+    val checkoutActions: BulkCheckoutActions = BulkCheckoutActions()
+
+    /**
+     * The three steps of design ch. 09 artboard 20.
+     *
+     * An inner class so it can reach the same state the rest of the view model writes; it owns no
+     * state of its own.
+     */
+    inner class BulkCheckoutActions {
+        /**
+         * Opens the sheet.
+         *
+         * The second action of the same selection bar the bulk rebooking uses — no second entry
+         * point and no second selection pattern, which is what the artboard asks for.
+         */
+        fun request() {
+            val current = mutableState.value
+            if (current.selection.isEmpty()) {
+                return
+            }
+            mutableState.value =
+                current.copy(checkout = BulkCheckoutState(count = current.selection.size))
+        }
+
+        /**
+         * Closes it.
+         *
+         * A sheet abandoned before it ran leaves the selection alone; one closed after the rows are
+         * gone ends the mode, because there is nothing left to act on.
+         */
+        fun close() {
+            val current = mutableState.value
+            val finished = current.checkout?.done == true
+            mutableState.value =
+                current.copy(
+                    checkout = null,
+                    selection = if (finished) emptySet() else current.selection,
+                )
+            if (finished) {
+                reload(keepRows = false)
+            }
+        }
+
+        /**
+         * Books every selected row out.
+         *
+         * **All or nothing.** The endpoint refuses the whole call on a foreign row or an unknown
+         * id, so there is no „ausgebucht / übersprungen" to report the way the bulk rebooking does
+         * — the sheet shows either the done step or the refusal, and the selection survives a
+         * refusal.
+         */
+        fun confirm() {
+            val current = mutableState.value
+            val open = current.checkout ?: return
+            val ids = current.selection.toList()
+            if (ids.isEmpty() || open.saving) {
+                return
+            }
+            mutableState.value = current.copy(checkout = open.copy(saving = true, error = null))
+            viewModelScope.launch {
+                when (val result = source.bulkCheckout(ids)) {
+                    is ApiResult.Success -> {
+                        mutableState.value =
+                            mutableState.value.copy(checkout = open.copy(saving = false, done = true))
+                        // The rows are gone from the shared Lager; every other open Lager has to
+                        // know.
+                        publishLiveSync(
+                            liveSync,
+                            LiveSyncTopic.INVENTORY,
+                            LiveSyncSections.INVENTORY_STOCK,
+                        )
+                    }
+
+                    is ApiResult.Failure -> {
+                        KrtLog.w(LOG_TAG) { "the bulk checkout was refused: ${result.error}" }
+                        mutableState.value =
+                            mutableState.value.copy(
+                                checkout = open.copy(saving = false, error = result.error),
+                            )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Books every selected row out.
+     *
+     * **All or nothing.** The endpoint refuses the whole call on a foreign row or an unknown id, so
+     * there is no „ausgebucht / übersprungen" to report the way the bulk rebooking does — the
+     * sheet shows either the done step or the refusal, and the selection survives a refusal.
+     */
+    fun onBulkCheckoutConfirmed() {
+        val current = mutableState.value
+        val open = current.checkout ?: return
+        val ids = current.selection.toList()
+        if (ids.isEmpty() || open.saving) {
+            return
+        }
+        mutableState.value = current.copy(checkout = open.copy(saving = true, error = null))
+        viewModelScope.launch {
+            when (val result = source.bulkCheckout(ids)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            checkout = open.copy(saving = false, done = true),
+                        )
+                    // The rows are gone from the shared Lager; every other open Lager has to know.
+                    publishLiveSync(
+                        liveSync,
+                        LiveSyncTopic.INVENTORY,
+                        LiveSyncSections.INVENTORY_STOCK,
+                    )
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the bulk checkout was refused: ${result.error}" }
+                    mutableState.value =
+                        mutableState.value.copy(
+                            checkout = open.copy(saving = false, error = result.error),
+                        )
+                }
+            }
+        }
+    }
+
+/** Opens the bulk-move sheet over the current selection. */
     fun onBulkMoveRequested() {
         if (mutableState.value.selection.isEmpty()) {
             return

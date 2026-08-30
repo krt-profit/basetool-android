@@ -16,7 +16,10 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderI
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderItemRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateJobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemStockGroupDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
@@ -61,6 +64,25 @@ enum class JobOrderStatus {
 }
 
 /**
+ * What one item line consumes of one material, as the blueprint derived it.
+ *
+ * `requiredTotal` is the demand of the **whole line**, not of a single unit: the server sends the
+ * line's own figure and the web divides it by the line's count to price a partial run. Keeping the
+ * server's number rather than a per-unit one avoids compounding a rounding error over every unit.
+ *
+ * @property materialId which material — the consumption plan is addressed by it.
+ * @property name what it is called.
+ * @property unit `SCU` or `PIECE`; a piece count is never booked in fractions.
+ * @property requiredTotal how much the whole line needs.
+ */
+data class JobOrderItemRequirement(
+    val materialId: String,
+    val name: String,
+    val unit: String?,
+    val requiredTotal: Double,
+)
+
+/**
  * One item line of an order.
  *
  * An item order asks for finished items and the server derives their materials, so the figures here
@@ -69,22 +91,53 @@ enum class JobOrderStatus {
  *
  * @property id the line's id
  * @property name the item's name
+ * @property gameItemId which finished item this line orders — the edit form's picker is filled from
+ *   it, and the write is addressed by it
  * @property blueprintName which blueprint it is built from, or `null` when the server named none
+ * @property blueprintId that blueprint by id; the write names the variant, and a name cannot
  * @property amount how many were asked for
  * @property manufactured how many have been built
  * @property delivered how many have been handed over
  * @property blueprintStale whether the blueprint has changed since the order was raised, which the
  *   web flags because the derived material demand may no longer match what will be built
+ * @property requirements what one whole line of this item consumes, as the server derived it from
+ *   the blueprint. Carried because the Herstellung has to state a demand per material and cover it
+ *   exactly; without it the booking would be a number typed against nothing
+ * @property version the line's **own** optimistic lock. The Herstellung echoes it, not the order's:
+ *   two members booking production on two different lines of the same Auftrag must not collide
+ * @property parentItemId the line this one is a sub-assembly of, or `null` for a top-level line.
+ *   The server models sub-assemblies as **real ordered lines with a parent**, which is what lets the
+ *   design's Unterbaugruppen-Baum be drawn from the order alone
  */
 data class JobOrderItem(
     val id: String?,
+    val gameItemId: String?,
     val name: String?,
     val blueprintName: String?,
+    val blueprintId: String?,
     val amount: Int,
     val manufactured: Int,
     val delivered: Int,
     val blueprintStale: Boolean,
+    val requirements: List<JobOrderItemRequirement> = emptyList(),
+    val version: Long? = null,
+    val parentItemId: String? = null,
 ) {
+    /** How many of this line are still to be built — the cap on one Herstellung. */
+    val remaining: Int
+        get() = (amount - manufactured).coerceAtLeast(0)
+
+    /**
+     * How many are built and not yet handed over — the cap on one Übergabe.
+     *
+     * **Not `amount - delivered`.** A unit can only be handed over once it has been manufactured
+     * (REQ-ORDERS-025), and `JobOrderItemHandoverService` refuses anything above this with a 400.
+     * The obvious subtraction would offer a count the server rejects, and the member would have no
+     * way to see why.
+     */
+    val deliverable: Int
+        get() = (manufactured - delivered).coerceAtLeast(0)
+
     /**
      * How far along this line is, between 0 and 1, or `null` when nothing was asked for.
      *
@@ -108,6 +161,8 @@ data class JobOrderItem(
  * server's own `openAmount` already accounts for them, and that is what the screen shows instead —
  * the design's "noch offen".
  *
+ * @property materialId which material — the handover's stock picker is addressed by it, so a line
+ *   without one cannot be handed over from the app
  * @property name the material's name
  * @property needed how much the order asks for, as the server rendered it
  * @property inStock how much the responsible unit already holds
@@ -115,6 +170,7 @@ data class JobOrderItem(
  * @property open how much is still missing, as the server computed it
  */
 data class JobOrderMaterial(
+    val materialId: String?,
     val name: String,
     val needed: String?,
     val inStock: String?,
@@ -141,6 +197,55 @@ data class JobOrderMaterial(
 }
 
 /**
+ * One material inside a handover.
+ *
+ * Carried because it is the **only** honest source of „how much of this line has actually changed
+ * hands". The obvious alternative — `amount - openAmount` — measures something else: the server's
+ * `openRemaining` is `required - claimed` (`MaterialClaimService`), so it counts promises, and a
+ * screen that showed it as delivered would overstate every line somebody had merely claimed.
+ *
+ * @property materialId which material, or `null` when the answer redacted it.
+ * @property amount how much this handover carried, as the server rendered it.
+ */
+data class JobOrderHandoverLine(
+    val materialId: String?,
+    val amount: Double,
+)
+
+/**
+ * One line of an item handover: how many of one ordered item changed hands.
+ *
+ * @property itemId which ordered line, or `null` when the answer did not name one.
+ * @property itemName what was handed over.
+ * @property amount how many — a count, because an item order is counted in pieces.
+ */
+data class JobOrderItemHandoverLine(
+    val itemId: String?,
+    val itemName: String,
+    val amount: Int,
+)
+
+/**
+ * One item handover already recorded against an order.
+ *
+ * A **separate** record from the material handover and not a variant of it: the server keeps them
+ * on two endpoints, counts pieces rather than quantities, and moves a different figure.
+ *
+ * @property id the handover's id.
+ * @property recipient who received it, or `null`.
+ * @property executor who handed it over, or `null`.
+ * @property at when, in UTC.
+ * @property lines what it carried.
+ */
+data class JobOrderItemHandover(
+    val id: String,
+    val recipient: String?,
+    val executor: String?,
+    val at: Instant?,
+    val lines: List<JobOrderItemHandoverLine> = emptyList(),
+)
+
+/**
  * One handover already recorded against an order.
  *
  * @property id the handover's id
@@ -153,6 +258,7 @@ data class JobOrderHandover(
     val recipient: String?,
     val executor: String?,
     val at: Instant?,
+    val lines: List<JobOrderHandoverLine> = emptyList(),
 )
 
 /**
@@ -184,11 +290,19 @@ data class JobOrderAssignee(
  * @property priority the queue priority; lower sorts first
  * @property type `MATERIAL` or `ITEM` as the server names it
  * @property requestingOrgUnit who asked for it
+ * @property requestingOrgUnitId the same unit by id — the edit form's customer picker is filled
+ *   from it, and a name cannot select an option
  * @property responsibleOrgUnit who is working on it
+ * @property responsibleOrgUnitId the same unit by id — the Herstellung's book-in preselects it when
+ *   the owner belongs to it, which is a comparison a name cannot make
+ * @property handle the in-game contact for this order — required by every write that rewrites it,
+ *   so an edit form that could not read it could never submit
  * @property comment the requester's note, or `null`
  * @property materials the material lines
  * @property items the item lines, for an order of type `ITEM`
- * @property handovers what has already been handed over
+ * @property handovers what material has already been handed over
+ * @property itemHandovers what finished items have — the item order's own log, which the app was
+ *   leaving unread until 2026-08-29
  * @property assignees who is on it
  * @property createdAt when it was raised, in UTC
  * @property version the order's optimistic lock, echoed by the status write
@@ -203,16 +317,63 @@ data class JobOrder(
     val priority: Int?,
     val type: String?,
     val requestingOrgUnit: String?,
+    val requestingOrgUnitId: String?,
     val responsibleOrgUnit: String?,
+    val responsibleOrgUnitId: String?,
+    val handle: String?,
     val comment: String?,
     val materials: List<JobOrderMaterial>,
     val items: List<JobOrderItem>,
     val handovers: List<JobOrderHandover>,
+    val itemHandovers: List<JobOrderItemHandover> = emptyList(),
     val assignees: List<JobOrderAssignee>,
     val createdAt: Instant?,
     val version: Long?,
     val redacted: Boolean,
 )
+
+/**
+ * How much of one material line has actually changed hands.
+ *
+ * The sum of every handover item naming it — never `amount - openAmount`, which counts claims.
+ *
+ * @receiver the Auftrag.
+ * @param materialId which line.
+ * @return the delivered amount, `0.0` when nothing has.
+ */
+fun JobOrder.krtHandedOver(materialId: String?): Double {
+    if (materialId == null) {
+        return 0.0
+    }
+    return handovers.sumOf { handover ->
+        handover.lines.filter { it.materialId == materialId }.sumOf { it.amount }
+    }
+}
+
+/**
+ * How much of one ordered item the Auftrag already holds as stock.
+ *
+ * The design's availability chip per sub-assembly — „Lager" when the earmark covers what was
+ * ordered, „Fehlt n" otherwise. Both figures are the server's; the app subtracts them only to say
+ * how many are missing, which is a count and not money.
+ *
+ * @property gameItemId which item.
+ * @property name what it is called.
+ * @property ordered how many the line asks for.
+ * @property manufactured how many have been built.
+ * @property allocated how many whole units are earmarked to this Auftrag.
+ */
+data class JobOrderItemStock(
+    val gameItemId: String,
+    val name: String,
+    val ordered: Int,
+    val manufactured: Int,
+    val allocated: Long,
+) {
+    /** How many are still missing from the earmark, or `0` when it is covered. */
+    val missing: Int
+        get() = (ordered - allocated).coerceAtLeast(0L).toInt()
+}
 
 /**
  * One page of the queue.
@@ -255,6 +416,8 @@ data class JobOrderDraftLine(
  * @property handle the contact handle in the game.
  * @property comment free text, or `null`.
  * @property lines the materials wanted; never empty.
+ * @property version the order's optimistic lock when this is an **edit**, `null` when it raises a
+ *   new order. Both writes take the same payload; only the edit has something to collide with.
  */
 data class JobOrderDraft(
     val responsibleOrgUnitId: String,
@@ -262,6 +425,7 @@ data class JobOrderDraft(
     val handle: String,
     val comment: String?,
     val lines: List<JobOrderDraftLine>,
+    val version: Long? = null,
 )
 
 /**
@@ -305,6 +469,7 @@ data class JobOrderItemDraftLine(
  * @property handle the contact handle in the game.
  * @property comment free text, or `null`.
  * @property lines the items wanted; never empty.
+ * @property version the order's optimistic lock on an **edit**, `null` when it raises a new one.
  */
 data class JobOrderItemDraft(
     val responsibleOrgUnitId: String,
@@ -312,6 +477,7 @@ data class JobOrderItemDraft(
     val handle: String,
     val comment: String?,
     val lines: List<JobOrderItemDraftLine>,
+    val version: Long? = null,
 )
 
 /** Raising a new material order, and the picker behind its lines. */
@@ -331,6 +497,43 @@ interface JobOrderCreateSource {
      * @return the new order's id, or the classified failure.
      */
     suspend fun create(draft: JobOrderDraft): ApiResult<String>
+
+    /**
+     * Rewrites a material order in full — a Logistician's edit.
+     *
+     * `PUT /orders/{id}` takes **the same payload as the create**: the write replaces the details
+     * and the whole material list rather than patching either, which is why the form is the create
+     * form pre-filled rather than a second layout.
+     *
+     * @param orderId the Auftrag.
+     * @param draft what it should become, carrying the version it was read at.
+     * @return nothing on success, or the classified failure — `409` when somebody saved first.
+     */
+    suspend fun update(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit>
+
+    /**
+     * The requester's own, narrower edit of a material order.
+     *
+     * `PUT /orders/{id}/requested` (REQ-ORDERS-023). Same payload, different gate: **no**
+     * Logistician role is required — a member of the *requesting* unit may change quantities, add
+     * and remove lines, and edit the comment. The server takes the two unit ids and the handle from
+     * the stored order rather than from the payload, so the form draws those fields locked.
+     *
+     * > **Only while nothing has been delivered.** The freeze is on the **whole order**, not per
+     * > line: one handover anywhere closes this path for everything (`canEditJobOrderAsRequester`),
+     * > and the attempt is a 400.
+     *
+     * @param orderId the Auftrag.
+     * @param draft what it should become, carrying the version it was read at.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun updateAsRequester(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit>
 
     /**
      * Searches the finished items that may be ordered.
@@ -358,6 +561,25 @@ interface JobOrderCreateSource {
      * @return the new order's id, or the classified failure.
      */
     suspend fun createItems(draft: JobOrderItemDraft): ApiResult<String>
+
+    /**
+     * Rewrites an item order's lines.
+     *
+     * `PUT /orders/{id}/items` — the same payload as the item create, replacing the ordered lines
+     * and re-deriving every material from each line's blueprint. A claim whose bucket the new lines
+     * no longer require is withdrawn by the server.
+     *
+     * > **Only while the order has no item handover.** Once anything has been handed over the
+     * > server refuses with a 400: the lines are what the delivery was measured against.
+     *
+     * @param orderId the Auftrag.
+     * @param draft what it should become, carrying the version it was read at.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun updateItems(
+        orderId: String,
+        draft: JobOrderItemDraft,
+    ): ApiResult<Unit>
 }
 
 /**
@@ -397,6 +619,18 @@ interface JobOrderSource {
      *   never a failure, because a colour is not worth an error screen over a list that loaded.
      */
     suspend fun ageThresholds(): JobOrderAgeThresholds
+
+    /**
+     * Reads the game-item stock earmarked to one Auftrag.
+     *
+     * `GET /orders/{id}/item-stock`, grouped per item. Open to anyone who may see the order; the
+     * per-entry owners are redacted for a requesting-side viewer, and this model keeps only the
+     * three counts, which are never redacted.
+     *
+     * @param id the Auftrag.
+     * @return one entry per ordered item, or the classified failure.
+     */
+    suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>>
 
     /**
      * Puts a member on the order, or takes them off it.
@@ -569,22 +803,33 @@ class JobOrderRepository(
             }
         }
 
+    override suspend fun updateItems(
+        orderId: String,
+        draft: JobOrderItemDraft,
+    ): ApiResult<Unit> =
+        reader.putAccepted(
+            "$QUEUE_PATH/$orderId/items",
+            draft.krtToWire(),
+            CreateJobOrderItemRequestDto.serializer(),
+        )
+
+    override suspend fun update(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit> = reader.putAccepted("$QUEUE_PATH/$orderId", draft.krtToWire(), CreateJobOrderDto.serializer())
+
+    override suspend fun updateAsRequester(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit> =
+        reader.putAccepted(
+            "$QUEUE_PATH/$orderId/requested",
+            draft.krtToWire(),
+            CreateJobOrderDto.serializer(),
+        )
+
     override suspend fun create(draft: JobOrderDraft): ApiResult<String> {
-        val dto =
-            CreateJobOrderDto(
-                responsibleOrgUnitId = draft.responsibleOrgUnitId,
-                requestingOrgUnitId = draft.requestingOrgUnitId,
-                handle = draft.handle,
-                comment = draft.comment?.takeIf { it.isNotBlank() },
-                materials =
-                    draft.lines.map {
-                        CreateJobOrderMaterialDto(
-                            materialId = it.materialId,
-                            amount = it.amount,
-                            minQuality = it.minQuality,
-                        )
-                    },
-            )
+        val dto = draft.krtToWire()
         return when (
             val result =
                 reader.post(QUEUE_PATH, dto, CreateJobOrderDto.serializer(), JobOrderDto.serializer())
@@ -730,6 +975,34 @@ class JobOrderRepository(
      * @param id the order's id.
      * @return the order, or the classified failure.
      */
+    override suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>> =
+        when (
+            val result =
+                reader.get(
+                    "$QUEUE_PATH/$id/item-stock",
+                    ListSerializer(JobOrderItemStockGroupDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { group ->
+                        val gameItemId = group.gameItem?.id ?: return@mapNotNull null
+                        JobOrderItemStock(
+                            gameItemId = gameItemId,
+                            name = group.gameItem?.name.orEmpty(),
+                            ordered = group.orderedAmount ?: 0,
+                            manufactured = group.manufacturedAmount ?: 0,
+                            allocated = group.allocatedTotal ?: 0L,
+                        )
+                    },
+                )
+            }
+        }
+
     override suspend fun detail(id: String): ApiResult<JobOrder> =
         when (val result = reader.get(orderPath(id), JobOrderDto.serializer())) {
             is ApiResult.Failure -> {
@@ -953,21 +1226,15 @@ private fun JobOrderDto.toModel(): JobOrder? {
         priority = priority,
         type = type?.value,
         requestingOrgUnit = requestingOrgUnit?.name,
+        requestingOrgUnitId = requestingOrgUnit?.id,
         responsibleOrgUnit = responsibleOrgUnit?.name,
+        responsibleOrgUnitId = responsibleOrgUnit?.id,
+        handle = handle?.trim()?.takeIf { it.isNotEmpty() },
         comment = comment?.trim()?.takeIf { it.isNotEmpty() },
         materials = materials.orEmpty().map { it.toModel() },
         items = items.orEmpty().map { it.toModel() },
-        handovers =
-            handovers.orEmpty().mapNotNull { handover ->
-                handover.id?.let {
-                    JobOrderHandover(
-                        id = it,
-                        recipient = handover.recipientHandle,
-                        executor = handover.executingUser?.effectiveName,
-                        at = handover.handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
-                    )
-                }
-            },
+        handovers = handovers.orEmpty().mapNotNull { it.krtToModel() },
+        itemHandovers = itemHandovers.orEmpty().mapNotNull { it.krtToModel() },
         assignees =
             assignees.orEmpty().mapNotNull { assignee ->
                 // No id, no row: the two writes on this edge address the member by id, and a row
@@ -1002,13 +1269,129 @@ private fun JobOrderDto.toModel(): JobOrder? {
 private fun JobOrderItemDto.toModel(): JobOrderItem =
     JobOrderItem(
         id = id,
+        gameItemId = gameItem?.id,
         name = gameItem?.name,
         blueprintName = blueprint?.outputName ?: blueprint?.scwikiKey,
+        blueprintId = blueprint?.id,
         amount = amount ?: 0,
         manufactured = manufacturedAmount ?: 0,
         delivered = deliveredAmount ?: 0,
         blueprintStale = blueprintStale == true,
+        requirements =
+            materials
+                .orEmpty()
+                .mapNotNull { line ->
+                    val materialId = line.material?.id ?: return@mapNotNull null
+                    JobOrderItemRequirement(
+                        materialId = materialId,
+                        name = line.material?.name.orEmpty(),
+                        unit = line.material?.quantityType,
+                        requiredTotal = line.requiredQuantity ?: 0.0,
+                    )
+                }
+                // A blueprint can list the same ingredient twice, and a resource plus a bridged
+                // non-craftable item can map to the same material. The server merges the demand per
+                // material id; two rows sharing an id here would give the sheet two cards for one
+                // material, and the second could never be reconciled.
+                .groupBy { it.materialId }
+                .map { (_, rows) -> rows.first().copy(requiredTotal = rows.sumOf { it.requiredTotal }) },
+        version = version,
+        parentItemId = parentItemId,
     )
+
+/**
+ * The item order as the create and the edit both take it.
+ *
+ * @receiver what the form holds.
+ * @return the payload.
+ */
+private fun JobOrderItemDraft.krtToWire(): CreateJobOrderItemRequestDto =
+    CreateJobOrderItemRequestDto(
+        responsibleOrgUnitId = responsibleOrgUnitId,
+        requestingOrgUnitId = requestingOrgUnitId,
+        handle = handle,
+        comment = comment?.takeIf { it.isNotBlank() },
+        items =
+            lines.map {
+                CreateJobOrderItemLineDto(
+                    gameItemId = it.gameItemId,
+                    blueprintId = it.blueprintId,
+                    amount = it.amount,
+                )
+            },
+        version = version,
+    )
+
+/**
+ * The order as the create and both edit endpoints all take it.
+ *
+ * One shape for three writes because the server takes one: the update **replaces** the details and
+ * the whole material list rather than patching them, which is why the edit form is the create form
+ * pre-filled.
+ *
+ * @receiver what the form holds.
+ * @return the payload.
+ */
+private fun JobOrderDraft.krtToWire(): CreateJobOrderDto =
+    CreateJobOrderDto(
+        responsibleOrgUnitId = responsibleOrgUnitId,
+        requestingOrgUnitId = requestingOrgUnitId,
+        handle = handle,
+        comment = comment?.takeIf { it.isNotBlank() },
+        materials =
+            lines.map {
+                CreateJobOrderMaterialDto(
+                    materialId = it.materialId,
+                    amount = it.amount,
+                    minQuality = it.minQuality,
+                )
+            },
+        version = version,
+    )
+
+/**
+ * Maps one recorded material handover onto the model.
+ *
+ * @receiver the server's record.
+ * @return it, or `null` for a row without an id — nothing on screen can address one.
+ */
+private fun JobOrderHandoverDto.krtToModel(): JobOrderHandover? {
+    val handoverId = id ?: return null
+    return JobOrderHandover(
+        id = handoverId,
+        recipient = recipientHandle,
+        executor = executingUser?.effectiveName,
+        at = handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
+        lines =
+            items.orEmpty().map { line ->
+                JobOrderHandoverLine(materialId = line.material?.id, amount = line.amount ?: 0.0)
+            },
+    )
+}
+
+/**
+ * Maps one recorded item handover onto the model.
+ *
+ * @receiver the server's record.
+ * @return it, or `null` for a row without an id.
+ */
+private fun JobOrderItemHandoverDto.krtToModel(): JobOrderItemHandover? {
+    val handoverId = id ?: return null
+    return JobOrderItemHandover(
+        id = handoverId,
+        recipient = recipientHandle,
+        executor = executingUser?.effectiveName,
+        at = handoverTime?.let { time -> runCatching { Instant.parse(time) }.getOrNull() },
+        lines =
+            propertyEntries.orEmpty().map { line ->
+                JobOrderItemHandoverLine(
+                    itemId = line.jobOrderItemId,
+                    itemName = line.gameItem?.name.orEmpty(),
+                    amount = line.amount ?: 0,
+                )
+            },
+    )
+}
 
 /**
  * Maps one material line onto the model.
@@ -1017,6 +1400,7 @@ private fun JobOrderItemDto.toModel(): JobOrderItem =
  */
 private fun JobOrderMaterialDto.toModel(): JobOrderMaterial =
     JobOrderMaterial(
+        materialId = material?.id,
         name = material?.name.orEmpty(),
         // Doubles, not decimals — the server declares these quantities as doubles, so the choice
         // of precision is already made upstream and mirroring it is the honest thing to do.

@@ -16,7 +16,7 @@
   <style>body{background:#000}</style>
 </helmet>
 <div style="min-height:100vh;background:#000;padding:40px 24px 80px">
-<div style="max-width:3600px;margin:0 auto">
+<div style="max-width:4600px;margin:0 auto">
   <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
   <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">12</div>
@@ -50,7 +50,7 @@
           <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
             <sc-if value="{{ showAcct }}" hint-placeholder-val="{{ true }}">
               <div style="display:flex;flex-direction:column;gap:12px">
-                <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt Bereich Profit</div><div class="kpi-value" style="font-size:24px">1.245.300 <span style="font-size:12px;color:#646464;font-weight:300">aUEC</span></div></div>
+                <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt Bereich Profit</div><div class="kpi-value" style="font-size:24px">1.245.300 <span style="font-size:12px;color:#8A8A8A;font-weight:300">aUEC</span></div></div>
                 <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="3">
                   <button class="kpi-card" style="all:unset;box-sizing:border-box;cursor:pointer;background:#141414;border:1px solid #282828;padding:12px 14px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s" style-hover="border-color:#E77E23">
                     <div style="display:flex;align-items:center;gap:8px;width:100%"><span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">{{ a.name }}</span></div>
@@ -60,7 +60,7 @@
                     </div>
                   </button>
                 </sc-for>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">CARTEL-Konto ist für alle sichtbar (REQ-BANK-037); weitere Konten nach View-Grant. Karte antippen → Detail.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">CARTEL-Konto ist für alle sichtbar (REQ-BANK-037); weitere Konten nach View-Grant. Karte antippen → Detail.</div>
               </div>
             </sc-if>
             <sc-if value="{{ showReq }}" hint-placeholder-val="{{ false }}">
@@ -69,7 +69,7 @@
                   <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
                     <div style="display:flex;align-items:flex-start;gap:10px">
                       <div style="flex:1;min-width:0">
-                        <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:{{ r.amtColor }};font-variant-numeric:tabular-nums">{{ r.amt }}</span><span class="chip chip--muted" style="font-size:8.5px">{{ r.kind }}</span></div>
+                        <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:{{ r.amtColor }};font-variant-numeric:tabular-nums">{{ r.amt }}</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">{{ r.kind }}</span></div>
                         <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">{{ r.what }}</div>
                         <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">{{ r.who }} · Konto {{ r.acct }}</div>
                       </div>
@@ -83,12 +83,12 @@
                     </sc-if>
                   </div>
                 </sc-for>
-                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Gestaffelte Freigabe-Leiter: ab 100.000 aUEC zwei Freigaben, ab 1.000.000 drei. Eigene Anträge kann man nie selbst freigeben.</div>
+                <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Gestaffelte Freigabe-Leiter: ab 100.000 aUEC zwei Freigaben, ab 1.000.000 drei. Eigene Anträge kann man nie selbst freigeben.</div>
               </div>
             </sc-if>
           </div>
           <sc-if value="{{ showAcct }}" hint-placeholder-val="{{ true }}">
-            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 12px rgba(231,126,35,.07)">
               <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Buchung beantragen</button>
             </div>
           </sc-if>
@@ -121,7 +121,7 @@
           <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
             <div class="hud-box" style="padding:16px">
               <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.5px;text-transform:uppercase">Kontostand</div>
-              <div style="font:900 32px/1.1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;margin-top:6px">84.200 <span style="font:300 14px/1 Lato,sans-serif;color:#646464">aUEC</span></div>
+              <div style="font:900 32px/1.1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;margin-top:6px">84.200 <span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A">aUEC</span></div>
               <div style="display:flex;align-items:baseline;gap:10px;margin-top:4px"><span style="font:700 12px/1 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">+12.400 · 30 Tage</span></div>
               <svg width="100%" height="56" viewBox="0 0 340 56" preserveAspectRatio="none" style="margin-top:10px;display:block">
                 <polyline points="0,46 34,42 68,44 102,30 136,34 170,22 204,26 238,14 272,20 306,10 340,14" fill="none" stroke="#E77E23" stroke-width="1.5"></polyline>
@@ -177,7 +177,7 @@
             </div>
             <div><label style="font-size:13px;margin-bottom:8px">Verwendungszweck</label><input type="text" placeholder="z. B. Auszahlung Operation Rotschild" style="width:100%;height:48px;font-size:14px"></div>
           </div>
-          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
             <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
             <button class="btn btn--cta" style="min-height:52px;flex:1.4"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-save"></use></svg>Antrag einreichen</button>
           </div>
@@ -240,7 +240,7 @@
             <div style="max-width:640px">
               <div class="hud-box" style="padding:16px">
                 <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:1.5px;text-transform:uppercase">Kontostand</div>
-                <div style="font:900 34px/1.1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;margin-top:6px">84.200 <span style="font:300 14px/1 Lato,sans-serif;color:#646464">aUEC</span></div>
+                <div style="font:900 34px/1.1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums;margin-top:6px">84.200 <span style="font:300 14px/1 Lato,sans-serif;color:#8A8A8A">aUEC</span></div>
                 <svg width="100%" height="64" viewBox="0 0 400 64" preserveAspectRatio="none" style="margin-top:12px;display:block">
                   <polyline points="0,52 40,48 80,50 120,34 160,38 200,26 240,30 280,16 320,22 360,12 400,16" fill="none" stroke="#E77E23" stroke-width="1.5"></polyline>
                   <line x1="0" y1="63" x2="400" y2="63" stroke="#282828" stroke-width="1"></line>
@@ -302,18 +302,18 @@
             <button class="tab" style="font-size:11px;min-height:48px;display:inline-flex;align-items:center;gap:6px" aria-label="Grants — gesperrt, Rolle Bank-Management fehlt"><span style="opacity:.45">Grants</span><svg class="krt-icon" style="width:11px;height:11px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg></button>
           </div>
           <div style="flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-            <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt Bereich Profit · offene Konten</div><div class="kpi-value" style="font-size:24px">1.257.400 <span style="font-size:12px;color:#646464;font-weight:300">aUEC</span></div></div>
+            <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt Bereich Profit · offene Konten</div><div class="kpi-value" style="font-size:24px">1.257.400 <span style="font-size:12px;color:#8A8A8A;font-weight:300">aUEC</span></div></div>
             <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.6px;font-variant-numeric:tabular-nums">5 Konten · 1 geschlossen · 3 offene Anträge</div>
               <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
                 <div style="flex:1;min-width:0">
                   <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">CARTEL</div>
-                  <div style="margin-top:4px"><span class="chip chip--muted" style="font-size:8.5px">Für alle sichtbar</span></div>
+                  <div style="margin-top:4px"><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Für alle sichtbar</span></div>
                 </div>
                 <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
                   <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">961.400</div>
                   <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#2EBC3D">+38.200 · 30 T.</div>
                 </div>
-                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
               </button>
               <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
                 <div style="flex:1;min-width:0">
@@ -324,7 +324,7 @@
                   <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">84.200</div>
                   <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#2EBC3D">+12.400 · 30 T.</div>
                 </div>
-                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
               </button>
               <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
                 <div style="flex:1;min-width:0">
@@ -335,7 +335,7 @@
                   <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">199.700</div>
                   <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#F2564B">−4.100 · 30 T.</div>
                 </div>
-                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
               </button>
               <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828" style-hover="border-color:#E77E23">
                 <div style="flex:1;min-width:0">
@@ -346,18 +346,18 @@
                   <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">12.100</div>
                   <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#8A8A8A">±0 · 30 T.</div>
                 </div>
-                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
               </button>
               <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:9px 14px;background:#141414;border:1px solid #282828;opacity:.55" style-hover="border-color:#E77E23">
                 <div style="flex:1;min-width:0">
                   <div style="font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Alt-Konto Vega</div>
-                  <div style="margin-top:4px"><span class="chip chip--muted" style="font-size:8.5px">Geschlossen</span></div>
+                  <div style="margin-top:4px"><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Geschlossen</span></div>
                 </div>
                 <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none">
                   <div style="font:900 16px/1 Lato,sans-serif;color:#FFFFFF">0</div>
                   <div style="font:700 10.5px/1.5 Lato,sans-serif;color:#8A8A8A">geschlossen 02/26</div>
                 </div>
-                <svg class="krt-icon" style="width:16px;height:16px;color:#646464;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
+                <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none"><use href="#krt-icon-chevron-right"></use></svg>
               </button>
           </div>
         </div>
@@ -398,7 +398,7 @@
               <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
                 <div style="display:flex;align-items:flex-start;gap:10px">
                   <div style="flex:1;min-width:0">
-                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−120.000</span><span class="chip chip--muted" style="font-size:8.5px">Auszahlung</span></div>
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−120.000</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Auszahlung</span></div>
                     <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Auszahlung Operation Rotschild (18 Anteile)</div>
                     <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Rhea · Konto Einsatzkasse</div>
                   </div>
@@ -412,7 +412,7 @@
               <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
                 <div style="display:flex;align-items:flex-start;gap:10px">
                   <div style="flex:1;min-width:0">
-                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">+86.400</span><span class="chip chip--muted" style="font-size:8.5px">Einzahlung</span></div>
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#2EBC3D;font-variant-numeric:tabular-nums">+86.400</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Einzahlung</span></div>
                     <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Raffinerie-Ertrag Order #7841</div>
                     <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">GrafRotz (du) · Konto Einsatzkasse</div>
                   </div>
@@ -420,14 +420,14 @@
                 </div>
                 <div style="display:flex;gap:8px;border-top:1px solid #1C1C1C;padding-top:10px;align-items:center">
                   <button class="btn-quiet-danger btn" style="background:transparent;min-height:44px;flex:1;font-size:11px">Ablehnen</button>
-                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.3;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;background:#282828;border:1px solid #282828;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#646464" aria-label="Bestätigen — gesperrt: eigener Antrag"><svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg>Bestätigen</button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1.3;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;background:#282828;border:1px solid #282828;font:700 11px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#8A8A8A" aria-label="Bestätigen — gesperrt: eigener Antrag"><svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A"><use href="#krt-icon-lock"></use></svg>Bestätigen</button>
                 </div>
-                <div style="font:300 10.5px/1.4 Lato,sans-serif;color:#646464;margin-top:-2px">Eigener Antrag — Freigabe gesperrt.</div>
+                <div style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:-2px">Eigener Antrag — Freigabe gesperrt.</div>
               </div>
               <div style="border:1px solid #282828;background:#141414;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
                 <div style="display:flex;align-items:flex-start;gap:10px">
                   <div style="flex:1;min-width:0">
-                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−1.450.000</span><span class="chip chip--muted" style="font-size:8.5px">Auszahlung</span></div>
+                    <div style="display:flex;align-items:center;gap:8px"><span style="font:700 14px/1.2 Lato,sans-serif;color:#F2564B;font-variant-numeric:tabular-nums">−1.450.000</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Auszahlung</span></div>
                     <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2;margin-top:3px">Flottenkauf — Polaris-Anzahlung</div>
                     <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:2px">Dorn · Konto CARTEL</div>
                   </div>
@@ -435,7 +435,7 @@
                 </div>
 
               </div>
-            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">Leiter: ab 100.000 aUEC zwei, ab 1.000.000 drei Freigaben — nie den eigenen Antrag.</div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Leiter: ab 100.000 aUEC zwei, ab 1.000.000 drei Freigaben — nie den eigenen Antrag.</div>
           </div>
         </div>
       </x-import>
@@ -474,7 +474,7 @@
             <div style="border:1px solid #282828;background:#141414">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23">
                 <span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Einsatzkasse</span>
-                <span class="chip chip--success" style="font-size:8.5px">Aktiv</span>
+                <span class="chip chip--success" style="color:#2EBC3D;font-size:8.5px">Aktiv</span>
                 <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">84.200</span>
               </div>
               <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">
@@ -483,29 +483,29 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;background:#141414;border:1px solid #282828">
               <span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#FFFFFF">Rücklage</span>
-              <span class="chip chip--success" style="font-size:8.5px">Aktiv</span>
+              <span class="chip chip--success" style="color:#2EBC3D;font-size:8.5px">Aktiv</span>
               <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">199.700</span>
-              <svg class="krt-icon" style="width:16px;height:16px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg>
+              <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg>
             </div>
             <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;background:#141414;border:1px solid #282828;">
               <span style="flex:1;font:700 13.5px/1.2 Lato,sans-serif;color:#8A8A8A">Alt-Konto Vega</span>
-              <span class="chip chip--muted" style="font-size:8.5px">Geschlossen</span>
+              <span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Geschlossen</span>
               <button class="btn-outline btn" style="background:transparent;min-height:40px;font-size:10.5px">Wieder öffnen</button>
             </div>
             <div style="border:1px solid #282828;background:#141414">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1C1C1C;border-bottom:2px solid #E77E23">
                 <span style="flex:1;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.5px">Halter — Einheit</span>
-                <span class="chip chip--muted" style="font-size:8.5px">nicht kontogebunden</span>
+                <span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">nicht kontogebunden</span>
               </div>
               <div style="padding:6px 14px 10px;display:flex;flex-direction:column;gap:4px">
-                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Rhea</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">118.600 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg></button>
-                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Dorn</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">96.200 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg></button>
-                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Vex</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">41.300 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#646464"><use href="#krt-icon-chevron-right"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Rhea</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">118.600 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Dorn</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">96.200 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg></button>
+                <button style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:44px;font-variant-numeric:tabular-nums;width:100%"><span style="flex:1;font:700 12.5px/1 Lato,sans-serif;color:#FFFFFF">Vex</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">41.300 aUEC</span><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A"><use href="#krt-icon-chevron-right"></use></svg></button>
                 <button class="assoc-add" style="min-height:44px;justify-content:center;font-size:11px">+ Halter</button>
               </div>
             </div>
           </div>
-          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 20px rgba(231,126,35,.12)">
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;box-shadow:0 0 12px rgba(231,126,35,.07)">
             <button class="btn btn--cta" style="min-height:52px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Konto anlegen</button>
           </div>
         </div>
@@ -571,7 +571,7 @@
               </div>
             </div>
             <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Grant hinzufügen</button>
-            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#646464">CARTEL ist für alle sichtbar (REQ-BANK-037) — dort ist das Sehen-Flag inert; Freigeben bleibt vergebbar.</div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">CARTEL ist für alle sichtbar (REQ-BANK-037) — dort ist das Sehen-Flag inert; Freigeben bleibt vergebbar.</div>
           </div>
         </div>
       </x-import>
@@ -595,13 +595,13 @@
             <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
           </div>
           <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
-            <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt verwahrt · Einheits-Ebene</div><div class="kpi-value" style="font-size:24px">118.600 <span style="font-size:12px;color:#646464;font-weight:300">aUEC</span></div></div>
+            <div class="kpi-total" style="padding:12px 16px"><div class="kpi-label">Gesamt verwahrt · Einheits-Ebene</div><div class="kpi-value" style="font-size:24px">118.600 <span style="font-size:12px;color:#8A8A8A;font-weight:300">aUEC</span></div></div>
             <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
               <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
               <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Verwahrung wird auf Einheits-Ebene geführt — es gibt keine Zuordnung zu einzelnen Konten.</div>
             </div>
             <button class="btn-outline btn" style="background:transparent;min-height:50px;width:100%"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-swap"></use></svg>Halter-Umbuchung</button>
-            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464">Halter-Umbuchung verbatim aus dem Web: „Verschiebt Verwahrung zwischen Haltern, ohne ein Konto zu berühren. Der Quell-Halter darf dabei ins Minus gehen."</div>
+            <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A">Halter-Umbuchung verbatim aus dem Web: „Verschiebt Verwahrung zwischen Haltern, ohne ein Konto zu berühren. Der Quell-Halter darf dabei ins Minus gehen."</div>
           </div>
         </div>
       </x-import>
@@ -648,7 +648,7 @@
               <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:980px">
                 <div class="kpi-total" style="padding:10px 14px"><div class="kpi-label" style="font-size:9px">Gesamt · offene Konten</div><div class="kpi-value" style="font-size:20px">1.257.400</div></div>
                 <div class="kpi-total" style="padding:10px 14px;border-left-color:#FFD23F"><div class="kpi-label" style="font-size:9px">Offene Anträge</div><div class="kpi-value" style="font-size:20px">3</div></div>
-                <div class="kpi-total" style="padding:10px 14px;border-left-color:#646464"><div class="kpi-label" style="font-size:9px">Konten</div><div class="kpi-value" style="font-size:20px">5 <span style="font-size:11px;color:#646464;font-weight:300">· 1 geschlossen</span></div></div>
+                <div class="kpi-total" style="padding:10px 14px;border-left-color:#8A8A8A"><div class="kpi-label" style="font-size:9px">Konten</div><div class="kpi-value" style="font-size:20px">5 <span style="font-size:11px;color:#8A8A8A;font-weight:300">· 1 geschlossen</span></div></div>
               </div>
               <div class="card card--flush" style="padding:0;max-width:980px">
                 <div style="display:grid;grid-template-columns:1fr 150px 130px 150px 120px;background:#1C1C1C;border-bottom:2px solid #E77E23">
@@ -668,12 +668,139 @@
                   </div>
                 </sc-for>
               </div>
-              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#646464;max-width:980px">Tablet behält die Tabelle, das Telefon fällt zu den Karten aus Artboard 4 zusammen (Regel 02 §5). Zeile antippen → Staff-Konto-Detail; Overflow je Zeile: Kontoauszug (PDF) · 3-Monats-Export.</div>
+              <div style="font:300 11.5px/1.6 Lato,sans-serif;color:#8A8A8A;max-width:980px">Tablet behält die Tabelle, das Telefon fällt zu den Karten aus Artboard 4 zusammen (Regel 02 §5). Zeile antippen → Staff-Konto-Detail; Overflow je Zeile: Kontoauszug (PDF) · 3-Monats-Export.</div>
             </div>
           </div>
         </div>
       </x-import>
     </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Bank Parität" style="margin-bottom:32px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">Runde 8 · Direktbuchung &amp; KRT-Freigaben<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Die zwei bekannten Deltas des Parität-Programms, jetzt gezeichnet statt offen: die Direktbuchung der Verwaltung (Ein-, Aus-, Umbuchung ohne Antrag) und der Tab KRT-Freigaben (Freigabestufen).</p>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">9 · Direktbuchung — Verwaltung (Ein/Aus/Um)</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Direktbuchung</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Einsatzkasse · BANK_EMPLOYEE</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;background:#E77E23;color:#000">Einzahlung</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#8A8A8A;border-left:1px solid #282828">Auszahlung</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 11.5px/1 Lato,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#8A8A8A;border-left:1px solid #282828">Umbuchung</button>
+            </div>
+            <div><label style="font-size:12px;margin-bottom:4px">Betrag (aUEC)</label><input type="text" value="86.400" style="width:100%;height:52px;font-size:20px;font-weight:700;color:#2EBC3D;text-align:right;padding-right:14px;font-variant-numeric:tabular-nums"></div>
+            <div><label style="font-size:12px;margin-bottom:4px">Halter (wer das Geld hat)</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="Rhea" style="height:46px;font-size:13.5px"></div><div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Pflicht: die Verwahrung wird auf Einheits-Ebene geführt, nicht je Konto.</div></div>
+            <div><label style="font-size:12px;margin-bottom:4px">Verwendungszweck</label><input type="text" value="Raffinerie-Ertrag Auftrag #7841" style="width:100%;height:46px;font-size:13.5px"></div>
+            <div style="display:flex;gap:10px;border-left:4px solid #FFD23F;background:rgba(255,210,63,.12);padding:10px 12px">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#FFD23F;flex:none;margin-top:1px"><use href="#krt-icon-warning"></use></svg>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Direktbuchung ohne Antrag: es gibt keine zweite Freigabe. Korrigiert wird nur über eine Storno-Gegenbuchung.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid #282828;background:#1C1C1C;padding:10px 12px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Stand nach Buchung</span><span style="font:700 14px/1 Lato,sans-serif;color:#FFFFFF">170.600 aUEC</span></div>
+          </div></div>
+          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+            <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+            <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-bank-in"></use></svg>Einzahlung buchen</button>
+          </div>
+          </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Direktbuchung (Delta bestätigt &amp; gezeichnet)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Das Programm hat sie als offenes Delta geführt („Confirming a request IS the booking") — hier die Entscheidung: die Direktbuchung BLEIBT, weil sie den Fall deckt, für den niemand einen Antrag stellt (Bargeld-Übergabe im Spiel, Korrektur einer Fremdbuchung). Sie liegt aber ausschließlich in der Verwaltung, nie in der Mitglieder-Sicht</li>
+          <li>EIN Sheet, drei Modi über das Segment: Einzahlung (Betrag grün) · Auszahlung (rot, zusätzlich Deckungsprüfung) · Umbuchung (zweites Kontofeld). Nicht drei Formulare wie im Web</li>
+          <li>Halter ist Pflicht in allen drei Modi — dieselbe Regel wie beim Bestätigen eines Antrags; ohne Halter wäre der Kontostand ohne Verwahrung</li>
+          <li>Live-Vorschau „Stand nach Buchung" und die Warnung, dass es keine zweite Freigabe gibt — das ist der Unterschied zum Antrag und muss vor dem Tippen stehen</li>
+          <li>Zustände: Auszahlung über dem Stand → CTA validierungs-gedimmt + Zeile am Betrag · Schreiben = CTA-Spinner · 403 (Rolle Bank-Management fehlt) = gesperrt-antippbar schon am Einstieg · Erfolg = Sheet zu, neue Buchung oben, Toast</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · Freigabe-Limits — in den Einstellungen EINES Kontos</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;font:700 16px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Bank</div>
+            <span class="squadron-badge" style="font-size:11px;flex:none;margin-right:12px">PROFIT</span>
+          </div>
+          <div style="flex:none;padding:12px 16px 0">
+            <div style="display:flex;border:1px solid #282828;height:44px">
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#8A8A8A">Mitglied</button>
+              <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
+            </div>
+          </div>
+          <div style="flex:none;margin-top:4px;display:flex">
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#1C1C1C;border-bottom:1px solid #282828;width:100%">
+              <svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A;flex:none"><use href="#krt-icon-bank"></use></svg>
+              <span style="font:300 12px/1.3 Lato,sans-serif;color:#8A8A8A">Konten · <span style="color:#FFFFFF;font-weight:700">Einsatzkasse</span> · Einstellungen</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Bis zu diesen Beträgen kann die jeweilige Stufe Buchungen ohne zusätzliche Freigabe beantragen.</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Stufen</span><span style="flex:1;height:1px;background:#282828"></span></div>
+            <div class="card card--flush" style="padding:0">
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Alle Mitglieder der Org-Einheit</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">25.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Bereichsmitglieder</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">100.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Logistiker</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">500.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Officer</div>
+                  <div style="padding:6px 8px;text-align:right;font:300 12.5px/1 Lato,sans-serif;color:#8A8A8A">kein Limit</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+              </div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Vier Stufen, wie die API: alle Mitglieder der Org-Einheit · Bereichsmitglieder · Logistiker · Officer. „Kein Limit" ist der Normalfall und wird als Wort gezeigt, nicht als leere Zelle oder 0.</div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Einzelne Nutzer</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div class="card card--flush" style="padding:0">
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Rhea</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">250.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit entfernen" title="Limit entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div>
+                </div>
+              </div>
+              <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Limit für Nutzer</button>
+            <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+              <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Bis zu diesem Betrag darf die Stufe ohne zusätzliche Freigabe buchen; darüber braucht es deine Freigabe.</div>
+            </div>
+          </div></div>
+          </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Provenienz — bank.approvalLimit.* (Korrektur 29.08.2026)</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>KORREKTUR der ersten Fassung: das Web führt keine „Freigabestufen ab Betrag → Anzahl Freigaben", sondern <b style="color:#fff">Freigabe-Limits je Stufe</b> — bis zum Limit darf ohne zusätzliche Freigabe gebucht werden, darüber muss der Kontoverantwortliche freigeben. Titel wörtlich „Freigabe-Limits" (bank.approvalLimit.title)</li>
+          <li>ZWEI Listen, beide belegt: Stufen mit „Alle Mitglieder der Org-Einheit" als unterster Zeile und „Einzelne Nutzer" mit „+ Limit für Nutzer". Ein Nutzer-Limit schlägt das Stufen-Limit</li>
+          <li>Aktionen wörtlich „Setzen" und „Entfernen" — kein „Speichern", kein „Löschen"; Feld/Platzhalter „Limit (aUEC)"</li>
+          <li><b style="color:#FFD23F">Korrektur (Runde 12, B7): kein fünfter Tab.</b> Jeder Endpunkt lautet …/bank/accounts/{id}/approval-limit/… — die Werte hängen an den Einstellungen EINES Kontos. Ein Tab hätte erst nach einem Konto fragen müssen: ein Tab, der eigentlich ein Picker ist. Die Limits liegen deshalb in den Einstellungen des Kontos, neben den Sicht-Grants, denen sie gleichen (Konten → Konto → Einstellungen)</li>
+          <li>Zwei kleinere Fehler derselben Zeichnung, beide korrigiert: die API führt <b style="color:#fff">VIER</b> Stufen (die vierte ist area-members → „Bereichsmitglieder"), und der häufigste Zustand — <b style="color:#fff">„kein Limit"</b> — war überhaupt nicht gezeichnet; er steht jetzt als Wort in der Betragsspalte, nicht als leere Zelle oder 0</li>
+          <li>Nur mit Rolle Bank-Management; ohne sie ist die Einstellungs-Zeile am Konto gesperrt-antippbar (Muster Kap. 09), nie versteckt</li>
+          <li>Beide Hinweistexte sind belegt und gehören an verschiedene Stellen: „Bis zu diesen Beträgen kann die jeweilige Stufe Buchungen ohne zusätzliche Freigabe beantragen." über der Liste (.displayHint) und „Bis zu diesem Betrag darf die Stufe ohne zusätzliche Freigabe buchen; darüber braucht es deine Freigabe." am Setzen-Sheet (.hint)</li>
+          <li>Die Antragsseite trägt dieselbe Regel und ist ebenfalls belegt — nachzuziehen in Artboard 3 und 5: Antragsteller-Warnung „Du kannst den Antrag stellen, aber er muss vor der Bearbeitung vom Kontoverantwortlichen freigegeben werden." · Mitarbeiter-Warnung „Dieser Antrag überschreitet das Freigabe-Limit des Antragstellers…" · Pflicht-Häkchen „Freigabe durch Kontoverantwortlichen erfolgt" · Chips „Freigegeben" / „Über Limit" · Aktion „Freigabe erteilen"</li>
+          
+          <li>Zustände: Setzen = Icon-Spinner in der Zeile · Entfernen = Danger-Modal, das das dann geltende Limit nennt · 409 = Modal (Neu laden)</li>
+        </ul>
+      </div>
+    </div>
+
     </div>
   </section>
 

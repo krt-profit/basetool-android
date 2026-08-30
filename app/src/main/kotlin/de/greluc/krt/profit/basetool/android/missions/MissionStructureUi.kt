@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,9 +29,15 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionCrewMember
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionUnit
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtAssocAdd
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -37,6 +45,12 @@ import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
+
+/** Test handle for the „+ Person zuweisen" surface. */
+const val MISSION_CREW_ADD_TAG: String = "mission-crew-add"
+
+/** Test handle for the roster picker it opens. */
+const val MISSION_CREW_PICKER_TAG: String = "mission-crew-picker"
 
 /** Test handle for one Einheit's rename action. */
 const val MISSION_UNIT_EDIT_TAG: String = "mission-unit-edit"
@@ -59,6 +73,8 @@ const val MISSION_FREQ_ADD_TAG: String = "mission-freq-add"
  * @property onRemoveUnit remove an Einheit by id.
  * @property onAddFrequency add the frequency that is typed.
  * @property onRemoveFrequency remove a frequency by id.
+ * @property onConfirmRemoveManager the manager removal was accepted.
+ * @property onDismissRemoveManager it was dismissed.
  * @property onRemoveCrew take somebody off an Einheit — `(unitId, crewId)`.
  */
 data class MissionStructureActions(
@@ -71,11 +87,15 @@ data class MissionStructureActions(
     val onRemoveUnit: (String) -> Unit,
     val onAddFrequency: () -> Unit,
     val onRemoveFrequency: (String) -> Unit,
+    val onConfirmRemoveManager: () -> Unit = {},
+    val onDismissRemoveManager: () -> Unit = {},
     val onRemoveCrew: (String, String) -> Unit,
     val onEditUnit: (MissionUnit) -> Unit,
     val onSaveUnit: (String, Long) -> Unit,
     val onSetCrewRoles: (String, String, Set<String>, Long) -> Unit,
     val onAddCrew: (String, String) -> Unit,
+    val onOpenCrewPicker: (MissionUnit) -> Unit,
+    val onDismissCrewPicker: () -> Unit,
     val crewJobTypes: List<MissionJobType>,
 )
 
@@ -91,53 +111,33 @@ data class MissionStructureActions(
 @Composable
 fun UnitComposer(structure: MissionStructureActions) {
     val gate = missionManagerGate(structure.canManage)
-    val editing = structure.draft.editingUnitId
-    // One set of fields appends and renames — `editingUnitId` decides which, and the button says
-    // so. The save carries the unit's own version, because a rename is a replace and a stale
-    // counter would overwrite a concurrent one silently.
-    val save: () -> Unit = {
-        if (editing == null) {
-            structure.onAddUnit()
-        } else {
-            structure.onSaveUnit(editing, structure.draft.editingUnitVersion)
-        }
-    }
-    val (dim, click) = rememberGated(gate, save, structure.denials)
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    // Appending only. Renaming used to share these fields, with `editingUnitId` deciding which the
+    // button meant — design ch. 18 §3 (E7) moved it into a sheet of its own, so a form that says
+    // „Einheit anlegen" can no longer be the one that renames one.
+    val (dim, click) = rememberGated(gate, structure.onAddUnit, structure.denials)
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtTextField(
             value = structure.draft.unitName,
             onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
             label = stringResource(R.string.mission_struct_unit_name),
             enabled = structure.enabled && gate.allowed,
         )
-        KrtRadioRow(
-            selected = structure.draft.unitHighValue,
-            onSelect = { structure.onChange { it.copy(unitHighValue = !it.unitHighValue) } },
+        // A yes/no is not one-of-N, so it is a square checkbox. The round radio is the design
+        // system's only circular element and stays reserved for a real choice — the payout
+        // preference (ch. 06 artboards 3 and 10).
+        KrtCheckboxRow(
+            checked = structure.draft.unitHighValue,
+            onCheckedChange = { v -> structure.onChange { it.copy(unitHighValue = v) } },
             label = stringResource(R.string.mission_struct_hvu),
             enabled = structure.enabled && gate.allowed,
         )
         KrtGhostButton(
-            text =
-                stringResource(
-                    if (editing == null) {
-                        R.string.mission_struct_add_unit
-                    } else {
-                        R.string.mission_unit_rename_save
-                    },
-                ),
+            text = stringResource(R.string.mission_struct_add_unit),
             onClick = click,
             iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
             modifier = dim.fillMaxWidth().testTag(MISSION_UNIT_ADD_TAG),
             enabled = structure.enabled,
         )
-        if (editing != null) {
-            KrtGhostButton(
-                text = stringResource(R.string.mission_timeline_cancel),
-                onClick = { structure.onChange { MissionStructureDraft() } },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = structure.enabled,
-            )
-        }
     }
 }
 
@@ -170,6 +170,53 @@ fun UnitRowActions(
     )
 }
 
+/** Test handle for the rename sheet. */
+const val MISSION_UNIT_RENAME_TAG: String = "mission-unit-rename"
+
+/**
+ * Renaming an Einheit — design ch. 18 §3 (E7).
+ *
+ * **A sheet with one field**, the current name filled in, and „Speichern" dimmed until it actually
+ * differs. Not an inline field in the row's header: a header that turns into an input has no way to
+ * be cancelled, and the member is left editing something they only meant to read.
+ *
+ * The HVU mark is **not** in here even though the same call carries it. One field is the point, so
+ * the write echoes the mark back as it stands; changing it stays where it is set.
+ *
+ * @param structure the actions and what is typed.
+ */
+@Composable
+fun UnitRenameSheet(structure: MissionStructureActions) {
+    val editing = structure.draft.editingUnitId ?: return
+    val typed = structure.draft.unitName
+    val unchanged = typed.trim() == structure.draft.editingUnitOriginalName.trim()
+    KrtBottomSheet(
+        onDismiss = { structure.onChange { MissionStructureDraft() } },
+        modifier = Modifier.testTag(MISSION_UNIT_RENAME_TAG),
+        title = stringResource(R.string.mission_unit_rename),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        ) {
+            KrtTextField(
+                value = typed,
+                onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
+                label = stringResource(R.string.mission_struct_unit_name),
+                enabled = structure.enabled,
+            )
+            KrtCtaButton(
+                text = stringResource(R.string.mission_unit_rename_save),
+                onClick = { structure.onSaveUnit(editing, structure.draft.editingUnitVersion) },
+                modifier = Modifier.fillMaxWidth(),
+                // Dimmed until the name differs: a save that writes the value it already holds
+                // costs a round trip and a version bump for nothing, and reads as if it failed.
+                enabled = structure.enabled && !unchanged && typed.isNotBlank(),
+            )
+        }
+    }
+}
+
 /**
  * Putting somebody aboard an Einheit — „+ Person zuweisen", which artboard 2 annotates.
  *
@@ -196,22 +243,46 @@ fun CrewAdd(
     if (candidates.isEmpty()) {
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-        Text(
-            text = stringResource(R.string.mission_crew_assign),
-            style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.TextMuted,
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    val (dim, click) = rememberGated(gate, { structure.onOpenCrewPicker(unit) }, structure.denials)
+    KrtAssocAdd(
+        text = stringResource(R.string.mission_crew_assign),
+        onClick = click,
+        modifier = dim.testTag(MISSION_CREW_ADD_TAG),
+        enabled = structure.enabled,
+        locked = !gate.allowed,
+    )
+}
+
+/**
+ * The roster picker „+ Person zuweisen" opens.
+ *
+ * Candidates come from the **roster**, not from a server search: crew is drawn from the people
+ * already signed up to this Einsatz, and they are already in hand. Anyone aboard this unit is
+ * dropped, so the list is what can still be done rather than what exists.
+ *
+ * @param unit which Einheit the picker is filling.
+ * @param roster everybody signed up to the Einsatz.
+ * @param structure the actions.
+ */
+@Composable
+fun CrewPickerSheet(
+    unit: MissionUnit,
+    roster: List<MissionParticipant>,
+    structure: MissionStructureActions,
+) {
+    val aboard = unit.crew.map { it.name }.toSet()
+    val candidates = roster.filterNot { aboard.contains(it.name) }
+    KrtBottomSheet(
+        onDismiss = structure.onDismissCrewPicker,
+        title = stringResource(R.string.mission_crew_assign_title, unit.name),
+        modifier = Modifier.testTag(MISSION_CREW_PICKER_TAG),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             candidates.forEach { participant ->
-                val (dim, click) =
-                    rememberGated(gate, { structure.onAddCrew(unit.id, participant.id) }, structure.denials)
-                KrtFilterChip(
+                KrtSheetOption(
                     text = participant.name,
                     selected = false,
-                    onClick = click,
-                    modifier = dim,
-                    enabled = structure.enabled,
+                    onClick = { structure.onAddCrew(unit.id, participant.id) },
                 )
             }
         }
@@ -227,14 +298,22 @@ fun CrewAdd(
  *
  * The write is a **replace**: tapping a chip sends the whole set with that one added or removed.
  *
+ * Three states, ratified by design ch. 18 §3 (E7): chosen is filled orange with black text,
+ * available is a hairline, and one already held by somebody else in the same Einheit is dimmed
+ * **with their name behind it** — which is what turns „dim" into a reason. It is not locked: two
+ * people may legitimately share a role, and the name is there so the second one is a decision
+ * rather than an accident.
+ *
  * @param unitId which Einheit.
  * @param member the crew slot.
+ * @param crew every slot of that Einheit, so a role taken elsewhere can name its holder.
  * @param structure the actions, the catalogue, and the refusal slot.
  */
 @Composable
 fun CrewRoleSelect(
     unitId: String,
     member: MissionCrewMember,
+    crew: List<MissionCrewMember>,
     structure: MissionStructureActions,
 ) {
     val gate = missionManagerGate(structure.canManage)
@@ -249,33 +328,39 @@ fun CrewRoleSelect(
         )
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Text(
             text = stringResource(R.string.mission_crew_roles),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             structure.crewJobTypes.forEach { job ->
                 val held = member.roleIds.contains(job.id)
                 val next = if (held) member.roleIds - job.id else member.roleIds + job.id
+                val takenBy =
+                    crew.firstOrNull { it.id != member.id && job.id in it.roleIds }?.name
                 val (dim, click) =
                     rememberGated(
                         gate,
                         { structure.onSetCrewRoles(unitId, member.id, next.toSet(), member.version) },
                         structure.denials,
                     )
-                KrtFilterChip(
+                KrtChoiceChip(
                     text = job.name,
                     selected = held,
                     onClick = click,
-                    modifier = dim,
+                    modifier = dim.alpha(if (takenBy == null || held) 1f else TAKEN_ROLE_ALPHA),
                     enabled = structure.enabled,
+                    suffix = takenBy.takeIf { !held },
                 )
             }
         }
     }
 }
+
+/** A role somebody else already holds is dimmed to this, with their name behind it (E7). */
+private const val TAKEN_ROLE_ALPHA = 0.55f
 
 /**
  * The Frequenzen tab's composer.
@@ -286,7 +371,7 @@ fun CrewRoleSelect(
 fun FrequencyComposer(structure: MissionStructureActions) {
     val gate = missionManagerGate(structure.canManage)
     val (dim, click) = rememberGated(gate, structure.onAddFrequency, structure.denials)
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtTextField(
             value = structure.draft.freqName,
             onValueChange = { v -> structure.onChange { it.copy(freqName = v) } },

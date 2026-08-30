@@ -61,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
+import de.greluc.krt.profit.basetool.android.core.data.BankLimitTarget
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
@@ -167,7 +168,7 @@ fun BankAccountsScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
                 return
             }
@@ -177,7 +178,7 @@ fun BankAccountsScreen(
                 message = stringResource(R.string.bank_error_message),
                 actionText = stringResource(R.string.missions_retry),
                 onAction = onRefresh,
-                modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
             )
         }
 
@@ -193,14 +194,14 @@ fun BankAccountsScreen(
                             iconRes = DesignR.drawable.ic_krt_bank,
                             title = stringResource(R.string.bank_accounts_empty_title),
                             message = stringResource(R.string.bank_accounts_empty_message),
-                            modifier = Modifier.padding(KrtSpacing.lg),
+                            modifier = Modifier.padding(KrtSpacing.s16),
                         )
                     }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNTS_TAG),
-                        contentPadding = PaddingValues(KrtSpacing.md),
-                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                        contentPadding = PaddingValues(KrtSpacing.s12),
+                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     ) {
                         item(key = "total") {
                             TotalCard(accounts = state.accounts)
@@ -340,6 +341,7 @@ fun BankAccountScreen(
     onStatement: () -> Unit = {},
     onThreeMonthReport: () -> Unit = {},
     onReportHandled: () -> Unit = {},
+    limitActions: BankLimitActions? = null,
 ) {
     // The Storno is a BANK_EMPLOYEE act, and the server decides that — the app only draws what
     // `/me/capabilities` answered.
@@ -362,7 +364,12 @@ fun BankAccountScreen(
     }
     val account = state.account
     val phase = state.phase
-    AccountSettingsOverlay(state = state, actions = actions, onRefresh = onRefresh)
+    AccountSettingsOverlay(
+        state = state,
+        actions = actions,
+        onRefresh = onRefresh,
+        limitActions = limitActions,
+    )
     when {
         account != null -> {
             PullToRefreshBox(
@@ -379,8 +386,8 @@ fun BankAccountScreen(
                     }
                     item(key = "head") {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                         ) {
                             // The account's name and its org sit in the TOP BAR (design ch. 12
                             // artboard 2), the rule every detail in this app now follows.
@@ -400,7 +407,7 @@ fun BankAccountScreen(
                                     color = KrtPalette.TextMuted,
                                 )
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     Text(
@@ -412,7 +419,7 @@ fun BankAccountScreen(
                                         text = stringResource(R.string.bank_total_unit),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = KrtPalette.TextMuted,
-                                        modifier = Modifier.padding(bottom = KrtSpacing.xs),
+                                        modifier = Modifier.padding(bottom = KrtSpacing.s4),
                                     )
                                 }
                                 account.delta30d?.let { delta ->
@@ -464,7 +471,7 @@ fun BankAccountScreen(
                         KrtSectionTitle(
                             text = stringResource(R.string.bank_transactions),
                             modifier =
-                                Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                                Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                         )
                     }
                     if (state.bookings.isEmpty()) {
@@ -474,7 +481,7 @@ fun BankAccountScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = KrtPalette.TextMuted,
                                 modifier =
-                                    Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                                    Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                             )
                         }
                     } else {
@@ -498,12 +505,12 @@ fun BankAccountScreen(
                                         ),
                                     onClick = onLoadMore,
                                     enabled = !state.loadingMore,
-                                    modifier = Modifier.padding(KrtSpacing.md),
+                                    modifier = Modifier.padding(KrtSpacing.s12),
                                 )
                             } else {
                                 KrtEndOfList(
                                     text = stringResource(R.string.bank_transactions_end),
-                                    modifier = Modifier.padding(KrtSpacing.md),
+                                    modifier = Modifier.padding(KrtSpacing.s12),
                                 )
                             }
                         }
@@ -572,8 +579,8 @@ private fun BookingRow(
     onReverse: (BankBooking) -> Unit = {},
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The direction as a glyph, which artboard 2 draws on every row. The sign and the tint
@@ -735,7 +742,7 @@ private fun BankAccountFailure(
         iconRes = DesignR.drawable.ic_krt_bank,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -791,7 +798,7 @@ fun BankAccountsRoute(
                     scope = chosen
                 }
             },
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
             stretch = true,
             lockedIndices = if (staffAllowed) emptySet() else setOf(STAFF_SCOPE),
         )
@@ -898,6 +905,9 @@ fun BankAccountsRoute(
     }
 }
 
+/** Test handle for the Verwaltung's „Direktbuchung" entry. */
+const val BANK_DIRECT_OPEN_TAG: String = "bank-direct-open"
+
 /**
  * The Verwaltung scope's content.
  *
@@ -973,6 +983,25 @@ private fun BankStaffScope(
                         Modifier
                     },
             ) {
+                // Artboard 9: the direct booking is offered here and nowhere in the member view,
+                // and without Bank-Management it is locked at the entry rather than at the CTA.
+                KrtGhostButton(
+                    text = stringResource(R.string.bank_direct_title),
+                    onClick = {
+                        if (state.management) {
+                            viewModel.directBooking.open()
+                        } else {
+                            managementToast = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f).testTag(BANK_DIRECT_OPEN_TAG),
+                    iconRes =
+                        if (state.management) {
+                            DesignR.drawable.ic_krt_swap
+                        } else {
+                            DesignR.drawable.ic_krt_lock
+                        },
+                )
                 KrtCtaButton(
                     text = stringResource(R.string.bank_lifecycle_create),
                     onClick = {
@@ -992,6 +1021,16 @@ private fun BankStaffScope(
                 )
             }
         }
+    }
+    state.direct?.let { direct ->
+        BankDirectBookingSheet(
+            state = direct,
+            accounts = state.rows.map { it.account },
+            holders = state.holders,
+            onEdit = viewModel.directBooking::edit,
+            onConfirm = viewModel.directBooking::confirm,
+            onDismiss = viewModel.directBooking::close,
+        )
     }
     StaffScopeDialogs(state = state, viewModel = viewModel)
     BankLifecycleDialogs(state = lifecycle, viewModel = lifecycleViewModel)
@@ -1075,7 +1114,7 @@ private fun StaffScopeContent(
                     ),
                 actionText = stringResource(R.string.missions_retry).takeIf { !forbidden },
                 onAction = viewModel::onRefresh,
-                modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
             )
         }
 
@@ -1464,6 +1503,15 @@ fun BankAccountRoute(
                 onSaveTarget = viewModel::onSaveTarget,
                 onToggleRole = viewModel::onToggleRole,
                 onToggleAllMembers = viewModel::onToggleAllMembers,
+                onEditLimit = viewModel.limits::edit,
+                onRemoveLimit = viewModel.limits::remove,
+            ),
+        limitActions =
+            BankLimitActions(
+                onAmount = viewModel.limits::onAmount,
+                onConfirm = viewModel.limits::confirm,
+                onConfirmRemoval = viewModel.limits::confirmRemoval,
+                onDismiss = viewModel.limits::close,
             ),
         modifier = modifier,
     )
@@ -1486,6 +1534,8 @@ data class BankSettingsActions(
     val onSaveTarget: () -> Unit,
     val onToggleRole: (String) -> Unit,
     val onToggleAllMembers: () -> Unit,
+    val onEditLimit: (BankLimitTarget, String, String?) -> Unit = { _, _, _ -> },
+    val onRemoveLimit: (BankLimitTarget, String, String?) -> Unit = { _, _, _ -> },
 )
 
 /**
@@ -1516,8 +1566,8 @@ private fun BankSettingsSheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             if (settings.canSetTarget) {
                 KrtTextField(
@@ -1541,6 +1591,16 @@ private fun BankSettingsSheet(
             if (settings.canConfigureVisibility) {
                 BankVisibilitySection(settings = settings, state = state, actions = actions)
             }
+            // Design ch. 12 artboard 10 makes this a fifth tab of the Verwaltung; it cannot be one,
+            // because every limit endpoint addresses ONE account and the current values ride on
+            // that account's settings. It lives beside the visibility grants instead — same scope,
+            // same owner, same read. Recorded as a deviation.
+            BankApprovalLimitsSection(
+                limits = settings.approvalLimits,
+                busy = state.busyLimit,
+                onEdit = actions.onEditLimit,
+                onRemove = actions.onRemoveLimit,
+            )
             state.error?.let { error ->
                 KrtFieldError(
                     text =
@@ -1586,7 +1646,7 @@ private fun BankVisibilitySection(
     }
     if (settings.allMembersSupported) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtToggle(
@@ -1635,8 +1695,8 @@ private fun ReportActions(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtOutlineButton(
             text = stringResource(R.string.bank_report_statement),
@@ -1670,7 +1730,11 @@ private fun AccountSettingsOverlay(
     state: BankAccountState,
     actions: BankSettingsActions,
     onRefresh: () -> Unit,
+    limitActions: BankLimitActions? = null,
 ) {
+    // Over the settings sheet, and outside its own open-check: opening a limit from one of its
+    // rows must not close what it was opened from.
+    limitActions?.let { ApprovalLimitOverlays(state = state, actions = it) }
     if (!state.settingsOpen) {
         return
     }
@@ -1687,3 +1751,51 @@ private fun AccountSettingsOverlay(
         BankSettingsSheet(settings = settings, state = state, actions = actions)
     }
 }
+
+/**
+ * The two Freigabe-Limit sheets, at the host.
+ *
+ * Outside [AccountSettingsOverlay] because they sit **over** the settings sheet: opening one from
+ * a row must not close what it was opened from.
+ *
+ * @param state the screen.
+ * @param actions setting and removing one limit.
+ */
+@Composable
+private fun ApprovalLimitOverlays(
+    state: BankAccountState,
+    actions: BankLimitActions,
+) {
+    state.limitDraft?.let { draft ->
+        BankLimitSheet(
+            draft = draft,
+            saving = state.saving,
+            onAmount = actions.onAmount,
+            onConfirm = actions.onConfirm,
+            onDismiss = actions.onDismiss,
+        )
+    }
+    state.limitRemoval?.let { draft ->
+        BankLimitRemoveModal(
+            draft = draft,
+            saving = state.saving,
+            onConfirm = actions.onConfirmRemoval,
+            onDismiss = actions.onDismiss,
+        )
+    }
+}
+
+/**
+ * What the two Freigabe-Limit sheets report back.
+ *
+ * @property onAmount the field changed.
+ * @property onConfirm „Setzen".
+ * @property onConfirmRemoval „Entfernen".
+ * @property onDismiss either sheet was closed.
+ */
+data class BankLimitActions(
+    val onAmount: (String) -> Unit,
+    val onConfirm: () -> Unit,
+    val onConfirmRemoval: () -> Unit,
+    val onDismiss: () -> Unit,
+)

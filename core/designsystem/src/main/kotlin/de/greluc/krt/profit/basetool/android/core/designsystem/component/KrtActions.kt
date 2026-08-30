@@ -40,7 +40,7 @@ private val FAB_SIZE = 56.dp
 private val FAB_ICON = 24.dp
 
 /** Radius of the CTA bloom, shared by the FAB and the bottom bar. */
-private val CTA_BLOOM = 20.dp
+private val CTA_BLOOM = KrtSpacing.glowOverlay
 
 /** Opacity of a disabled action — the design system's one disabled treatment. */
 private const val DISABLED_ALPHA = 0.45f
@@ -50,7 +50,7 @@ private const val DISABLED_ALPHA = 0.45f
  *
  * Square, because the design system is square-first and grants its rounded exceptions only to pill
  * badges and genuinely circular controls — a circular FAB would be the most visible contradiction
- * of that rule on the screen. 56 dp, orange fill, black glyph, and the 20 dp CTA bloom.
+ * of that rule on the screen. 56 dp, orange fill, black glyph, and the overlay glow.
  *
  * **One per screen context.** It is the filled-orange action, and the ladder allows exactly one; a
  * screen that already spends its filled CTA elsewhere must not also carry a FAB.
@@ -127,8 +127,8 @@ fun KrtBottomCtaBar(
                 .krtBloom(KrtTheme.colors.glowPrimaryLg, CTA_BLOOM)
                 .background(KrtPalette.Gray4)
                 .krtHairline()
-                .padding(KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.End),
+                .padding(KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
         content = content,
     )

@@ -12,41 +12,84 @@ import androidx.compose.ui.unit.dp
 /**
  * The spacing and metric scale. Nothing in the app may sit off this scale.
  *
- * Values come from `docs/design/android/01 Foundations.dc.html` where 1 CSS pixel equals 1 dp, with
- * one deliberate platform correction: the web design system's 44 px minimum touch target is rounded
- * up to Android's 48 dp ([touchTarget]).
+ * **Nine steps, positional names** — `4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 32`, straight from
+ * `01 Foundations.dc.html` §5 and the token artifact `artifacts/compose/KrtTokens.kt`. A screen
+ * that wants 18 dp has a layout problem, not a special case.
+ *
+ * > **Why the names are numbers.** They were `xs · sm · md · lg · xl` here and `xs · sm · md ·
+ * > lg · xl` in the artifact too — for **different values**. The app's `md` was 12 dp and the
+ * > artifact's was 16, so any measurement carried from one side to the other landed on a value
+ * > nobody had chosen, silently. The scale was ratified on 2026-08-30 with positional names for
+ * > exactly that reason, and the rename moved 933 call sites in one pass.
  */
 @Suppress("MagicNumber")
 object KrtSpacing {
-    /** 4 dp — the smallest step; icon-to-label gaps inside dense chips. */
-    val xs = 4.dp
+    /** 4 dp — field to helper text; icon-to-label inside a dense chip. */
+    val s4 = 4.dp
 
-    /** 8 dp — gap between chips, icon-to-label in buttons. */
-    val sm = 8.dp
+    /** 8 dp — inside a dense row: chip gaps, icon-to-label in buttons. */
+    val s8 = 8.dp
 
-    /** 12 dp — row internal gaps, vertical padding of the Fan Kit band. */
-    val md = 12.dp
+    /** 10 dp — between cards in a list or a stack. */
+    val s10 = 10.dp
 
-    /** 16 dp — the workhorse: screen edge margin and card padding. */
-    val lg = 16.dp
+    /** 12 dp — between sections; a card's vertical padding. */
+    val s12 = 12.dp
 
-    /** 24 dp — gap between sections. */
-    val xl = 24.dp
+    /** 14 dp — a card's horizontal padding, and a list row's. */
+    val s14 = 14.dp
+
+    /** 16 dp — the workhorse: a phone's screen gutter and a modal's padding. */
+    val s16 = 16.dp
+
+    /** 20 dp — a sheet's side margin. */
+    val s20 = 20.dp
+
+    /** 24 dp — a tablet's content gutter, and the Materialbörse's column gutter. */
+    val s24 = 24.dp
 
     /** 32 dp — generous separation, e.g. above a screen's primary action block. */
-    val xxl = 32.dp
+    val s32 = 32.dp
 
-    /** Minimum size of any interactive target (Android rounds the web system's 44 px up). */
-    val touchTarget = 48.dp
+    /**
+     * **Minimum tap area** — 44 dp, for rows, accordion heads and menu entries (ch. 01 §5).
+     *
+     * > Never derive a control's height from this. [controlHeight] is that, and conflating the two
+     * > shrank every input, button, select and segmented control in the app the day ch. 01 lowered
+     * > the floor from 48 to 44. Chapter 02 §1 now states all three sizes together for that reason.
+     */
+    val touchTarget = 44.dp
+
+    /** 48 dp — the floor for a navigation-bar or app-bar icon slot. */
+    val navIconFloor = 48.dp
+
+    /**
+     * 48 dp — the height of a **control**: field, button, icon button, select, segmented control
+     * (design ch. 02 §1, and `KrtDimens.controlHeight` in the token artifact).
+     *
+     * The date/time pair matches it deliberately (§11): a form must not jump when one row of it is
+     * a pair rather than a field.
+     */
+    val controlHeight = 48.dp
 
     /** Minimum height of a dense list row; the whole row is the touch target. */
     val denseRow = 56.dp
 
-    /** Content column cap on tablets — wider text columns hurt readability. */
-    val contentMax = 1200.dp
-
     /** Width of every border in the system; depth comes from hairlines, never from shadows. */
     val hairline = 1.dp
+
+    /**
+     * The focus glow's radius — 6 dp, the smallest of the three (design ch. 01 §1).
+     *
+     * The capped scale is **radius ≤ 12 dp and alpha ≤ 0.10** in three sizes: focus 6 dp/.10 on an
+     * input, emphasis 12 dp/.07 on the bar carrying the one primary action, overlay 12 dp/.10 on a
+     * sheet, a modal or a toast. Nothing in the app glows harder than that, and the 20 dp bloom
+     * this replaced was above the cap on both counts.
+     */
+    val glowFocus = 6.dp
+
+    /** The emphasis and overlay glow radius — 12 dp, the ceiling. */
+    val glowOverlay = 12.dp
 
     /** The orange under-rule below table heads and screen headers. */
     val headingRule = 2.dp

@@ -59,6 +59,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the booking sheet. */
@@ -92,14 +93,17 @@ fun BookingSheet(
         onDismiss = callbacks.onDismiss,
         modifier = Modifier.testTag(BOOKING_SHEET_TAG),
         title = stringResource(state.actionRes()),
+        // Design ch. 18 §3 (E9): the Lager's own sheet is what a tablet has room beside, so there
+        // it is a 560 dp centred dialog rather than a band across the bottom of a 1280 dp screen.
+        centred = isWideWindow(),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             if (!state.online) {
                 OfflineBand()
@@ -146,7 +150,7 @@ fun BookingSheet(
                 // decisions. Quality is the narrow one — it is three digits.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     AmountField(
@@ -192,7 +196,7 @@ fun BookingSheet(
                 )
             }
             ConflictOn(error = state.error, onReload = callbacks.onConflictReload)
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = callbacks.onDismiss,
@@ -278,9 +282,9 @@ private fun AmountField(
     onAmount: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtFieldLabel(
@@ -356,7 +360,7 @@ private fun OrgUnitField(
         return
     }
     var open by rememberSaveable { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtSelectField(
             value =
                 state.orgUnit?.let { unit ->
@@ -409,12 +413,12 @@ private fun unchanged(current: String): String =
 @Composable
 private fun TransferRefusal() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         modifier =
             Modifier
                 .fillMaxWidth()
                 .border(width = 1.dp, color = KrtPalette.DangerText)
-                .padding(KrtSpacing.sm),
+                .padding(KrtSpacing.s8),
     ) {
         Text(
             text = stringResource(R.string.booking_transfer_unchanged),
@@ -440,16 +444,16 @@ private fun MergeStockField(
     state: BookingState,
     onMergeStock: (Boolean) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .testTag(BOOKING_MERGE_TAG)
                     .clickable(enabled = !state.saving) { onMergeStock(!state.mergeStock) }
-                    .padding(vertical = KrtSpacing.xs),
+                    .padding(vertical = KrtSpacing.s4),
         ) {
             KrtToggle(checked = state.mergeStock, enabled = !state.saving)
             Text(
@@ -473,7 +477,7 @@ private fun OutKindField(
     state: BookingState,
     callbacks: BookingCallbacks,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtFieldLabel(text = stringResource(R.string.booking_field_out_kind), enabled = !state.saving)
         KrtSegmentedControl(
             options =
@@ -555,7 +559,7 @@ private fun OutKindField(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable(enabled = !state.saving) { callbacks.onTerminal(terminal) }
-                                .padding(vertical = KrtSpacing.sm),
+                                .padding(vertical = KrtSpacing.s8),
                     )
                 }
                 KrtTextField(
@@ -591,7 +595,7 @@ private fun Picker(
     onChosen: (String) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtCombobox(
             query = query,
             onQueryChange = {
