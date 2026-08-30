@@ -1396,6 +1396,17 @@
     <string name="mission_section_schedule">Zeitplan</string>
     <string name="mission_section_flags">Sichtbarkeit</string>
     <string name="mission_section_people">Personen</string>
+    <string name="mission_lifecycle_start">Starten</string>
+    <string name="mission_lifecycle_complete">Abschließen</string>
+    <plurals name="mission_lifecycle_registered">
+        <item quantity="one">%1$d angemeldet</item>
+        <item quantity="other">%1$d angemeldet</item>
+    </plurals>
+    <string name="mission_lifecycle_start_title">Einsatz starten?</string>
+    <string name="mission_lifecycle_start_irreversible">Zurück auf „Geplant" führt kein Weg in der App.</string>
+    <string name="mission_lifecycle_complete_title">Einsatz abschließen?</string>
+    <string name="mission_lifecycle_complete_body">Der Einsatz wechselt auf „Abgeschlossen". Check-ins und Änderungen am Ablauf sind danach nicht mehr vorgesehen.</string>
+    <string name="mission_lifecycle_complete_irreversible">Zurück auf „Aktiv" führt kein Weg in der App.</string>
     <string name="mission_start_confirm_title">Einsatz jetzt starten?</string>
     <plurals name="mission_start_confirm_body">
         <item quantity="one">Der tatsächliche Start wird auf jetzt gesetzt. Damit kann sich der eine Angemeldete einchecken — vorher weist der Server jeden Check-in ab.</item>

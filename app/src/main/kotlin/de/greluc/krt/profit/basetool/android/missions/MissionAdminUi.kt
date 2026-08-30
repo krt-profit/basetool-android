@@ -52,9 +52,9 @@ private const val MIN_BRIEFING_LINES = 3
  * @property onChange a field changed, naming the section so its head can say „Geändert".
  * @property onToggle a section was folded open or shut.
  * @property onSave one section is to be saved.
- * @property onAskStart „Einsatz läuft jetzt" was pressed — opens the confirmation.
- * @property onStart the confirmation was accepted.
- * @property onDismissStart the confirmation was declined.
+ * @property onAskLifecycle the badge's lifecycle action was pressed — opens the confirmation.
+ * @property onConfirmLifecycle the confirmation was accepted.
+ * @property onDismissLifecycle the confirmation was declined.
  * @property onCorrectStart the started time is to be corrected.
  * @property onCancelCorrectStart that correction was abandoned.
  * @property onKeepMine a conflict is resolved by re-writing the member's own version.
@@ -64,9 +64,9 @@ data class MissionAdminActions(
     val onChange: (MissionSection, (MissionAdminForm) -> MissionAdminForm) -> Unit,
     val onToggle: (MissionSection) -> Unit,
     val onSave: (MissionSection) -> Unit,
-    val onAskStart: () -> Unit,
-    val onStart: () -> Unit,
-    val onDismissStart: () -> Unit,
+    val onAskLifecycle: () -> Unit,
+    val onConfirmLifecycle: () -> Unit,
+    val onDismissLifecycle: () -> Unit,
     val onCorrectStart: () -> Unit,
     val onCancelCorrectStart: () -> Unit,
     val onKeepMine: () -> Unit,
@@ -393,18 +393,10 @@ private fun ActualStart(
             )
         }
 
-        else -> {
-            // The one filled action of this tab. It asks first (artboard 9): the step frees
-            // check-in for everyone, which is consequential — but correctable, so it is a standard
-            // modal rather than a danger one.
-            KrtCtaButton(
-                text = stringResource(R.string.mission_admin_start_now),
-                onClick = actions.onAskStart,
-                iconRes = DesignR.drawable.ic_krt_check,
-                modifier = Modifier.fillMaxWidth().testTag(MISSION_ADMIN_START_TAG),
-                enabled = writable && form.saving == null,
-            )
-        }
+        // No branch for the unstarted Einsatz: starting it is not this form's action any more.
+        // Design ch. 06 (F2) puts the lifecycle on the status badge — „kein Formular, kein
+        // Overflow-Eintrag, keine zweite Stelle". The line above still says check-in is locked,
+        // which is the fact this section is responsible for.
     }
 }
 

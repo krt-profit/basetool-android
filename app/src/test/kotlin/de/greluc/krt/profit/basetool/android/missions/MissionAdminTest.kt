@@ -142,22 +142,9 @@ class MissionAdminTest {
             )
         }
 
-    /**
-     * „Der Einsatz läuft jetzt" writes the Zeitplan section with a timestamp the member never had
-     * to type — and it is what the server needs before it accepts a single check-in.
-     */
-    @Test
-    fun `starting the Einsatz stamps an actual start time`() =
-        runTest(dispatcher) {
-            val subject = admin(this)
-            subject.open()
-
-            subject.startNow()
-            advanceUntilIdle()
-
-            assertEquals(listOf(MissionSection.SCHEDULE to SCHEDULE_VERSION), calls)
-            assertTrue("the form must now read as started", form?.started == true)
-        }
+    // Starting the Einsatz is no longer this holder's action: design ch. 06 (F2) moved the
+    // lifecycle onto the status badge, and the write is a Kern patch carrying the new status
+    // rather than a Zeitplan patch carrying a timestamp. Its test lives with the view model.
 
     /** A closed sheet writes nothing, whichever action is raised against it. */
     @Test
@@ -166,7 +153,6 @@ class MissionAdminTest {
             val subject = admin(this)
 
             subject.save(MissionSection.CORE)
-            subject.startNow()
             advanceUntilIdle()
 
             assertTrue(calls.isEmpty())
@@ -210,6 +196,8 @@ class MissionAdminTest {
             name: String,
             description: String?,
             meetingPoint: String?,
+            calendarLink: String?,
+            status: String?,
             version: Long,
         ): ApiResult<MissionDetail> {
             calls.add(MissionSection.CORE to version)

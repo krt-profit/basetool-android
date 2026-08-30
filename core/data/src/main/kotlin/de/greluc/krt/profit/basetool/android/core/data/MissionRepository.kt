@@ -155,12 +155,24 @@ interface MissionFinanceSource {
  */
 interface MissionAdminSource {
     /**
-     * Rewrites the Kern section: title, briefing, meeting point, status.
+     * Rewrites the Kern section: title, briefing, meeting point, calendar link, status.
+     *
+     * > **This replaces the whole section, it does not merge into it.** The server assigns every
+     * > one of these fields unconditionally, so anything left out is set to `null` — which is how
+     * > the app used to clear a mission's `calendarLink` on every rename, having never mapped the
+     * > field at all. Pass the value as it stands unless you mean to change it.
+     *
+     * `status` is the exception and the only sparse field: `null` leaves the status alone. Setting
+     * it to `ACTIVE` also stamps `actualStartTime` server-side, in the same transaction, and bumps
+     * the **schedule** counter with it — which is what makes „Starten" one call rather than two,
+     * and why the caller must take the returned detail's counters rather than its own.
      *
      * @param missionId the Einsatz.
      * @param name the title; the server requires one.
      * @param description the briefing, or `null` to clear it.
-     * @param meetingPoint the gathering place, or `null`.
+     * @param meetingPoint the gathering place, or `null` to clear it.
+     * @param calendarLink the external calendar entry, or `null` to clear it.
+     * @param status the new lifecycle status, or `null` to leave it untouched.
      * @param version the **Kern** section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
      *   stale, which is a concurrent edit of *this* section and nothing else.
@@ -170,6 +182,8 @@ interface MissionAdminSource {
         name: String,
         description: String?,
         meetingPoint: String?,
+        calendarLink: String?,
+        status: String?,
         version: Long,
     ): ApiResult<MissionDetail>
 
@@ -768,6 +782,8 @@ class MissionRepository(
         name: String,
         description: String?,
         meetingPoint: String?,
+        calendarLink: String?,
+        status: String?,
         version: Long,
     ): ApiResult<MissionDetail> =
         oneMission(
@@ -780,6 +796,8 @@ class MissionRepository(
                     version = version,
                     description = description,
                     meetingPoint = meetingPoint,
+                    calendarLink = calendarLink,
+                    status = status,
                 ),
                 PatchMissionCoreRequest.serializer(),
                 MissionDto.serializer(),
@@ -1272,6 +1290,7 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         plannedEndTime = plannedEndTime?.toInstantOrNull(),
         isInternal = isInternal ?: false,
         meetingPoint = meetingPoint?.takeIf { it.isNotBlank() },
+        calendarLink = calendarLink?.takeIf { it.isNotBlank() },
         operationName = operation?.name,
         orgUnitName = owningSquadron?.name,
         orgUnitShorthand = owningSquadron?.shorthand,

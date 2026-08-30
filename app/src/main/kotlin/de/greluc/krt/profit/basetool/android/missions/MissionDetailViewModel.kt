@@ -23,6 +23,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionPeopleSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
@@ -181,6 +182,9 @@ data class MissionSeams(
  * @property rosterJobTypes the Funktionen the roster's select offers a manager; empty until the
  *   Teilnehmer tab is opened by someone who may assign one, and empty for everyone else by design
  * @property adminForm the open Verwaltung form, or `null` when the tab is not on screen
+ * @property lifecycleAsk the status the member is being asked to confirm, or `null`. Deliberately
+ *   **not** part of [adminForm]: the action lives on the badge, which is on the overview, and the
+ *   form is `null` until the Verwaltung tab is opened.
  * @property structure what a manager is composing on the Einheiten or Frequenzen tab
  * @property timeline what a manager is composing on the Ablauf or Ziele tab
  * @property memberPicker the one member lookup behind the party lead, the managers and
@@ -205,12 +209,27 @@ data class MissionDetailState(
     val joinSheet: JoinSheet? = null,
     val rosterJobTypes: List<MissionJobType> = emptyList(),
     val adminForm: MissionAdminForm? = null,
+    val lifecycleAsk: MissionStatus? = null,
     val structure: MissionStructureDraft = MissionStructureDraft(),
     val timeline: MissionTimelineDraft = MissionTimelineDraft(),
     val memberPicker: MissionMemberPickerState = MissionMemberPickerState(),
     val crewJobTypes: List<MissionJobType> = emptyList(),
     val error: ApiError? = null,
 ) {
+    /**
+     * What the status badge may advance the Einsatz to, or `null` when it is at rest.
+     *
+     * Read by the badge band; the same mapping the confirmation and the write use, so the three
+     * cannot disagree about which step is on offer.
+     */
+    val lifecycleNext: MissionStatus?
+        get() =
+            when (detail?.status) {
+                MissionStatus.PLANNED -> MissionStatus.ACTIVE
+                MissionStatus.ACTIVE -> MissionStatus.COMPLETED
+                else -> null
+            }
+
     /** The caller's own sign-up, or `null` when they are not on this Einsatz. */
     val mySignUp: MissionParticipant?
         get() = me?.let { identity -> detail?.participants?.firstOrNull { it.userId == identity.userId } }
@@ -483,6 +502,71 @@ class MissionDetailViewModel(
             }
         }
     }
+
+    /**
+     * The status badge's lifecycle: ask, confirm, dismiss.
+     *
+     * Its own holder rather than three more methods on the view model — the badge is one surface
+     * with one concern (design ch. 06, F2), and the screen binds it as one object instead of
+     * threading three unrelated-looking callbacks through the tree.
+     */
+    inner class Lifecycle {
+        /**
+         * Asks before advancing the lifecycle.
+         *
+         * Starting is not destructive, so this is a standard modal rather than a danger one — but it
+         * cannot be taken back, which is what the confirmation says.
+         */
+        fun ask() {
+            val current = mutableState.value
+            val next = current.lifecycleNext ?: return
+            mutableState.value = current.copy(lifecycleAsk = next)
+        }
+
+        /** Closes the confirmation without moving anything. */
+        fun dismiss() {
+            mutableState.value = mutableState.value.copy(lifecycleAsk = null)
+        }
+
+        /**
+         * Advances the lifecycle, in one call.
+         *
+         * The status lives in the **Kern** section, and that PATCH replaces the section rather than
+         * merging into it — so every other Kern field is echoed back as it stands. Setting `ACTIVE`
+         * also stamps `actualStartTime` server-side, which is what actually opens check-in; doing it
+         * from here means the badge and the check-in gate can never disagree, which two separate calls
+         * could not promise.
+         */
+        fun confirm() {
+            val current = mutableState.value
+            val detail = current.detail
+            val next = current.lifecycleAsk
+            val mayWrite = current.writable && current.canManage
+            if (detail == null || next == null || !mayWrite) {
+                return
+            }
+            mutableState.value = current.copy(saving = true, error = null, lifecycleAsk = null)
+            viewModelScope.launch {
+                val result =
+                    seams.admin.patchCore(
+                        missionId,
+                        name = detail.name,
+                        description = detail.description,
+                        meetingPoint = detail.meetingPoint,
+                        calendarLink = detail.calendarLink,
+                        status = next.name,
+                        version = detail.coreVersion,
+                    )
+                settle(result)
+                if (result is ApiResult.Success) {
+                    announce(LiveSyncSections.MISSION_OVERVIEW)
+                }
+            }
+        }
+    }
+
+    /** The status badge's lifecycle actions. */
+    val lifecycle: Lifecycle = Lifecycle()
 
     /** The member asked again. Cancels the countdown and starts the ladder over. */
     fun onRetry() {

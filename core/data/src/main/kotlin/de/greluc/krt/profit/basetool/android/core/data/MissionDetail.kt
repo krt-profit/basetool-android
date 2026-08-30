@@ -184,6 +184,10 @@ data class MissionManager(
  * @property coreVersion the Kern section's own optimistic-lock counter
  * @property scheduleVersion the Zeitplan section's counter
  * @property flagsVersion the flags section's counter
+ * @property calendarLink the external calendar entry, or `null`. The app neither shows nor edits
+ *   it — it is carried **only** so a Kern write can echo it back. That PATCH replaces the whole
+ *   section, so a field the app does not hold is a field the app deletes; this one was being
+ *   cleared on every rename until 2026-08-30.
  * @property canManage whether the caller may act on **other** members' rows — the server's own
  *   `canEdit`, carried through rather than re-derived from a role string. Deriving it here would
  *   reproduce the role hierarchy in the client and get it wrong for exactly the people most
@@ -216,6 +220,7 @@ data class MissionDetail(
     val steps: List<MissionStep>,
     val objectives: List<MissionObjective>,
     val frequencies: List<MissionFrequency>,
+    val calendarLink: String? = null,
     val canManage: Boolean = false,
     // Three counters, not one. The Einsatz is edited in independent sections and each carries its
     // own, so a manager fixing the briefing does not 409 a colleague moving the start time. They

@@ -17,48 +17,74 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
-/** Test handle for „Einsatz jetzt starten?". */
+/** Test handle for the badge's lifecycle confirmation. */
 const val MISSION_START_CONFIRM_TAG: String = "mission-start-confirm"
 
 /** Test handle for the per-section conflict modal. */
 const val MISSION_CONFLICT_TAG: String = "mission-section-conflict"
 
 /**
- * „Einsatz jetzt starten?" — the confirmation the drawn start action requires.
+ * The confirmation the badge's lifecycle action asks for (design ch. 06, F2).
  *
- * A **standard** modal, not a danger one (design ch. 06 artboard 9): the step is consequential but
- * correctable, because the start time stays editable afterwards. The text names the consequence in
- * numbers — how many signed-up members can check in — rather than asking „Bist du sicher?".
+ * A **standard** modal, not a danger one: advancing the lifecycle destroys nothing — it simply
+ * cannot be taken back, and the second line says exactly that rather than asking „Bist du sicher?".
+ * The first line names the consequence in numbers: how many signed-up members can check in.
  *
- * @param registered how many are signed up, which is what the consequence is measured in.
- * @param onConfirm start it.
- * @param onDismiss leave it unstarted.
+ * The earlier wording promised the step was „korrigierbar", which conflated two different facts.
+ * The **start time** does stay editable in the Zeitplan; the **status** does not go back. Round 12
+ * corrected that, because a member who reads „correctable" and means „undoable" is misled by it.
+ *
+ * @param next the status being moved to; decides both the wording and the verb on the CTA.
+ * @param registered how many are signed up, which is what starting is measured in.
+ * @param onConfirm advance it.
+ * @param onDismiss leave it where it is.
  */
 @Composable
-fun MissionStartConfirm(
+fun MissionLifecycleConfirm(
+    next: MissionStatus,
     registered: Int,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val starting = next == MissionStatus.ACTIVE
     KrtModal(
-        title = stringResource(R.string.mission_start_confirm_title),
-        confirmText = stringResource(R.string.mission_start_confirm_cta),
+        title =
+            stringResource(
+                if (starting) R.string.mission_lifecycle_start_title else R.string.mission_lifecycle_complete_title,
+            ),
+        confirmText =
+            stringResource(
+                if (starting) R.string.mission_lifecycle_start else R.string.mission_lifecycle_complete,
+            ),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         modifier = Modifier.testTag(MISSION_START_CONFIRM_TAG),
     ) {
         Text(
-            text = pluralStringResource(R.plurals.mission_start_confirm_body, registered, registered),
+            text =
+                if (starting) {
+                    pluralStringResource(R.plurals.mission_start_confirm_body, registered, registered)
+                } else {
+                    stringResource(R.string.mission_lifecycle_complete_body)
+                },
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.Gray1,
         )
         Text(
-            text = stringResource(R.string.mission_start_confirm_reversible),
+            text =
+                stringResource(
+                    if (starting) {
+                        R.string.mission_lifecycle_start_irreversible
+                    } else {
+                        R.string.mission_lifecycle_complete_irreversible
+                    },
+                ),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
         )

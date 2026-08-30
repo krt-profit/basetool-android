@@ -215,6 +215,13 @@ fun MissionDetailScreen(
                         OfflineBand()
                     }
                     MissionDetailHead(detail = detail)
+                    MissionLifecycleBand(
+                        detail = detail,
+                        next = state.lifecycleNext,
+                        enabled = state.writable && !state.saving,
+                        denials = roster.denials,
+                        onAsk = admin.onAskLifecycle,
+                    )
                     MissionTabRow(
                         selected = state.tab,
                         detail = state.detail,
@@ -342,14 +349,15 @@ private fun MissionDetailOverlays(
         false -> ObjectiveEditorSheet(timeline = timeline)
         null -> Unit
     }
+    state.lifecycleAsk?.let { next ->
+        MissionLifecycleConfirm(
+            next = next,
+            registered = state.detail?.registeredParticipants ?: 0,
+            onConfirm = admin.onConfirmLifecycle,
+            onDismiss = admin.onDismissLifecycle,
+        )
+    }
     state.adminForm?.let { form ->
-        if (form.startConfirm) {
-            MissionStartConfirm(
-                registered = state.detail?.registeredParticipants ?: 0,
-                onConfirm = admin.onStart,
-                onDismiss = admin.onDismissStart,
-            )
-        }
         form.conflict?.let { conflict ->
             MissionSectionConflictModal(
                 conflict = conflict,
@@ -1651,9 +1659,9 @@ fun MissionDetailRoute(
                 onChange = viewModel.admin::change,
                 onToggle = viewModel.admin::toggle,
                 onSave = viewModel.admin::save,
-                onAskStart = viewModel.admin::askStart,
-                onStart = viewModel.admin::startNow,
-                onDismissStart = viewModel.admin::dismissStart,
+                onAskLifecycle = viewModel.lifecycle::ask,
+                onConfirmLifecycle = viewModel.lifecycle::confirm,
+                onDismissLifecycle = viewModel.lifecycle::dismiss,
                 onCorrectStart = viewModel.admin::correctStart,
                 onCancelCorrectStart = viewModel.admin::cancelCorrectStart,
                 onKeepMine = viewModel.admin::keepMine,

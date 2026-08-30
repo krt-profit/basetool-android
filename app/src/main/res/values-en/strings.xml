@@ -1375,6 +1375,17 @@
     <string name="mission_section_schedule">Zeitplan</string>
     <string name="mission_section_flags">Sichtbarkeit</string>
     <string name="mission_section_people">Personen</string>
+    <string name="mission_lifecycle_start">Start</string>
+    <string name="mission_lifecycle_complete">Complete</string>
+    <plurals name="mission_lifecycle_registered">
+        <item quantity="one">%1$d signed up</item>
+        <item quantity="other">%1$d signed up</item>
+    </plurals>
+    <string name="mission_lifecycle_start_title">Start the Einsatz?</string>
+    <string name="mission_lifecycle_start_irreversible">There is no way back to „Planned" in the app.</string>
+    <string name="mission_lifecycle_complete_title">Complete the Einsatz?</string>
+    <string name="mission_lifecycle_complete_body">The Einsatz moves to „Completed". Check-ins and changes to the plan are no longer expected after that.</string>
+    <string name="mission_lifecycle_complete_irreversible">There is no way back to „Active" in the app.</string>
     <string name="mission_start_confirm_title">Start the Einsatz now?</string>
     <plurals name="mission_start_confirm_body">
         <item quantity="one">The actual start is set to now. The one signed-up member can then check in — before that the server refuses every check-in.</item>

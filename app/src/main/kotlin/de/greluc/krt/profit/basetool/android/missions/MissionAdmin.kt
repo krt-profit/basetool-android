@@ -107,7 +107,6 @@ data class MissionSectionConflict(
  * @property savedAt the clock time a section's receipt shows, per section.
  * @property saving which section is being written, or `null`.
  * @property conflict the refused save, or `null`.
- * @property startConfirm whether „Einsatz jetzt starten?" is on screen.
  * @property error a refusal that is not a conflict.
  */
 data class MissionAdminForm(
@@ -130,7 +129,6 @@ data class MissionAdminForm(
     val savedAt: Map<MissionSection, String> = emptyMap(),
     val saving: MissionSection? = null,
     val conflict: MissionSectionConflict? = null,
-    val startConfirm: Boolean = false,
     val error: ApiError? = null,
 ) {
     /** Whether the Einsatz has been started, which is what the server needs before any check-in. */
@@ -247,30 +245,6 @@ class MissionAdmin(
             return
         }
         save(section, form, detail)
-    }
-
-    /** Opens „Einsatz jetzt starten?" — the confirmation the drawn action requires. */
-    fun askStart() {
-        val open = read().form ?: return
-        write(open.copy(startConfirm = true))
-    }
-
-    /** Closes it without starting. */
-    fun dismissStart() {
-        val open = read().form ?: return
-        write(open.copy(startConfirm = false))
-    }
-
-    /** Stamps the Einsatz as running now, which is what opens it for check-in. */
-    fun startNow() {
-        val context = read()
-        val form = context.form ?: return
-        val detail = context.detail ?: return
-        save(
-            MissionSection.SCHEDULE,
-            form.copy(actualStart = Instant.now().toString(), startConfirm = false),
-            detail,
-        )
     }
 
     /** Opens the „Startzeit korrigieren" pair, filled from the start as it stands. */
@@ -425,6 +399,11 @@ class MissionAdmin(
                     name = form.name.trim(),
                     description = form.description.blankToNull(),
                     meetingPoint = form.meetingPoint.blankToNull(),
+                    // Echoed, not edited. The Kern PATCH replaces the section, so leaving the link
+                    // out cleared it on every rename - the app does not show the field at all.
+                    calendarLink = detail.calendarLink,
+                    // The status is the badge's business (F2), never this form's.
+                    status = null,
                     version = detail.coreVersion,
                 )
             }
