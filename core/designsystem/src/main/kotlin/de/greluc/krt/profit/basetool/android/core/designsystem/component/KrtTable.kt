@@ -185,7 +185,7 @@ fun KrtTableCell(
         if (unit != null) {
             Text(
                 text = unit,
-                modifier = Modifier.padding(start = KrtSpacing.xs),
+                modifier = Modifier.padding(start = KrtSpacing.s4),
                 style = MaterialTheme.typography.labelMedium,
                 color = KrtPalette.TextMuted,
             )
@@ -232,7 +232,7 @@ fun KrtRecordCard(
                 if (unit != null) {
                     Text(
                         text = unit,
-                        modifier = Modifier.padding(start = KrtSpacing.xs),
+                        modifier = Modifier.padding(start = KrtSpacing.s4),
                         style = MaterialTheme.typography.labelMedium,
                         color = KrtPalette.TextMuted,
                     )
@@ -243,7 +243,7 @@ fun KrtRecordCard(
             KrtKeyValueRow(
                 label = label,
                 value = attributeValue,
-                modifier = Modifier.padding(top = KrtSpacing.xs),
+                modifier = Modifier.padding(top = KrtSpacing.s4),
                 valueColor = KrtPalette.Gray1,
             )
         }
@@ -267,7 +267,7 @@ private fun TablePreview() {
             listOf("Agricium (Pressed)", "Lorville", "901", "96"),
         )
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.lg)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s16)) {
             KrtTable(columns = columns, rowCount = rows.size) { row, column ->
                 KrtTableCell(
                     text = rows[row][column],

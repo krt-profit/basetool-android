@@ -81,14 +81,14 @@ fun RefineryStoreSheet(
         modifier = Modifier.testTag(REFINERY_STORE_FORM_TAG),
     ) {
         LazyColumn(
-            contentPadding = PaddingValues(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            contentPadding = PaddingValues(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             items(lines, key = { it.key }) { line ->
                 StoreLineCard(line = line, actions = actions)
             }
             item(key = "submit") {
-                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                     error?.let {
                         Text(
                             text = stringResource(R.string.refinery_store_failed),
@@ -120,7 +120,7 @@ private fun StoreLineCard(
     actions: RefineryStoreActions,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             Text(
                 text = line.materialName,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),

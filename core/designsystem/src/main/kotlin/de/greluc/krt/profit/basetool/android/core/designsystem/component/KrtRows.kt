@@ -119,8 +119,8 @@ fun KrtListRow(
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (selected) {
@@ -128,7 +128,7 @@ fun KrtListRow(
                 modifier =
                     Modifier
                         .width(SELECTION_BAR)
-                        .size(width = SELECTION_BAR, height = KrtSpacing.xl)
+                        .size(width = SELECTION_BAR, height = KrtSpacing.s24)
                         .background(MaterialTheme.colorScheme.primary),
             )
         }
@@ -229,8 +229,8 @@ fun KrtSettingRow(
                     } else {
                         Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                     },
-                ).padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                ).padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leadingIcon != null) {
@@ -302,9 +302,9 @@ fun KrtEndOfList(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(vertical = KrtSpacing.md),
+        modifier = modifier.fillMaxWidth().padding(vertical = KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         KrtHairlineRule(modifier = Modifier.weight(1f))
         Text(
@@ -340,7 +340,7 @@ fun KrtSwipeAction(
             modifier
                 .width(SWIPE_ACTION_WIDTH)
                 .background(background)
-                .padding(KrtSpacing.sm),
+                .padding(KrtSpacing.s8),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

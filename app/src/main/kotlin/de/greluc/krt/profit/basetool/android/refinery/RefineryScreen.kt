@@ -157,7 +157,7 @@ fun RefineryOrdersScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 KrtEmptyState(
@@ -166,7 +166,7 @@ fun RefineryOrdersScreen(
                     message = stringResource(R.string.refinery_error_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRefresh,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
         }
@@ -189,7 +189,7 @@ fun RefineryOrdersScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = KrtSpacing.md)
+                                    .padding(horizontal = KrtSpacing.s12)
                                     .testTag(REFINERY_CREATE_CTA_TAG),
                             iconRes = DesignR.drawable.ic_krt_plus,
                         )
@@ -200,15 +200,15 @@ fun RefineryOrdersScreen(
                                 iconRes = DesignR.drawable.ic_krt_refinery,
                                 title = stringResource(R.string.refinery_empty_title),
                                 message = stringResource(R.string.refinery_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.lg),
+                                modifier = Modifier.padding(KrtSpacing.s16),
                             )
                         }
                     } else {
                         LazyColumn(
                             state = rememberRootListState(),
                             modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
-                            contentPadding = PaddingValues(KrtSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            contentPadding = PaddingValues(KrtSpacing.s12),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                         ) {
                             items(state.orders, key = { it.id }) { order ->
                                 OrderRow(
@@ -234,12 +234,12 @@ fun RefineryOrdersScreen(
                                             ),
                                         onClick = onLoadMore,
                                         enabled = !state.loadingMore,
-                                        modifier = Modifier.padding(KrtSpacing.md),
+                                        modifier = Modifier.padding(KrtSpacing.s12),
                                     )
                                 } else {
                                     KrtEndOfList(
                                         text = stringResource(R.string.refinery_end_of_list),
-                                        modifier = Modifier.padding(KrtSpacing.md),
+                                        modifier = Modifier.padding(KrtSpacing.s12),
                                     )
                                 }
                             }
@@ -270,9 +270,9 @@ private fun FilterRow(
             Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                 .testTag(REFINERY_FILTERS_TAG),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         RefineryFilter.entries.forEach { filter ->
             KrtFilterChip(
@@ -305,7 +305,7 @@ private fun OrderRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -351,8 +351,8 @@ private fun OrderRow(
 @Composable
 private fun GoodRow(good: RefineryYield) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -396,8 +396,8 @@ private fun CardFooter(
         return
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -552,7 +552,7 @@ fun RefineryOrderDetailScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 KrtEmptyState(
@@ -561,7 +561,7 @@ fun RefineryOrderDetailScreen(
                     message = stringResource(R.string.refinery_error_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRefresh,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
         }
@@ -574,7 +574,7 @@ fun RefineryOrderDetailScreen(
                     iconRes = DesignR.drawable.ic_krt_refinery,
                     title = stringResource(R.string.refinery_error_title),
                     message = stringResource(R.string.refinery_error_message),
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
                 return
             }
@@ -710,7 +710,7 @@ private fun DeleteConfirmation(
         onConfirm = { if (!busy) onConfirm() },
         modifier = Modifier.testTag(REFINERY_DELETE_MODAL_TAG),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             Text(
                 text =
                     pluralStringResource(
@@ -750,8 +750,8 @@ private fun OrderDetailBody(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                .padding(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (!state.online) {
             OfflineBand()
@@ -771,7 +771,7 @@ private fun OrderDetailBody(
         // Artboard 2 puts the four facts in the HUD box, brackets and all — the same container the
         // rest of the app uses for a block of facts that belong together.
         KrtHudBox(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtKeyValueRow(
                     label = stringResource(R.string.refinery_station),
                     value =
@@ -1077,8 +1077,8 @@ fun RefineryOrderDetailRoute(
                 message = stringResource(R.string.refinery_deleted),
                 modifier =
                     Modifier
-                        .padding(horizontal = KrtSpacing.lg)
-                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current)
+                        .padding(horizontal = KrtSpacing.s16)
+                        .padding(bottom = KrtSpacing.s16 + LocalKrtBottomBarInset.current)
                         .testTag(REFINERY_DELETED_TOAST_TAG),
             )
         }

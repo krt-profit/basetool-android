@@ -63,7 +63,7 @@ private val PANEL_BAR = 4.dp
 fun KrtHudBox(
     modifier: Modifier = Modifier,
     contentPadding: androidx.compose.foundation.layout.PaddingValues =
-        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.lg),
+        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s16),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -96,7 +96,7 @@ fun KrtHudBox(
 fun KrtRailCard(
     modifier: Modifier = Modifier,
     contentPadding: androidx.compose.foundation.layout.PaddingValues =
-        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.lg),
+        androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s16),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     KrtCard(modifier = modifier, variant = KrtCardVariant.Flush) {
@@ -104,7 +104,7 @@ fun KrtRailCard(
             Box(
                 modifier =
                     Modifier
-                        .width(KrtSpacing.xs)
+                        .width(KrtSpacing.s4)
                         .fillMaxHeight()
                         .background(MaterialTheme.colorScheme.primary),
             )
@@ -152,7 +152,7 @@ fun KrtCard(
             KrtCardVariant.Inset -> KrtPalette.SurfaceInput
             else -> MaterialTheme.colorScheme.surface
         }
-    val padding = if (variant == KrtCardVariant.Flush) 0.dp else KrtSpacing.lg
+    val padding = if (variant == KrtCardVariant.Flush) 0.dp else KrtSpacing.s16
 
     Column(
         modifier =
@@ -224,7 +224,7 @@ fun KrtPanelHeader(
         )
         Text(
             text = title.krtUppercase(),
-            modifier = Modifier.padding(horizontal = KrtSpacing.md),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             style = MaterialTheme.typography.titleSmall,
             color = KrtPalette.Gray1,
         )
@@ -242,7 +242,7 @@ fun KrtPanelHeader(
         stateChip?.invoke()
         if (busy) {
             CircularProgressIndicator(
-                modifier = Modifier.padding(horizontal = KrtSpacing.lg).size(PANEL_SPINNER),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s16).size(PANEL_SPINNER),
                 color = MaterialTheme.colorScheme.primary,
                 strokeWidth = KrtSpacing.hairline * 2,
             )
@@ -250,7 +250,7 @@ fun KrtPanelHeader(
             KrtIcon(
                 id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
                 contentDescription = null,
-                modifier = Modifier.padding(horizontal = KrtSpacing.lg),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s16),
                 size = 16.dp,
                 tint = KrtPalette.TextMuted,
             )
@@ -281,7 +281,7 @@ fun KrtKeyValueRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
         verticalAlignment = Alignment.Top,
     ) {
         Text(
@@ -310,7 +310,7 @@ private val KEY_COLUMN_WIDTH = 120.dp
 @Composable
 private fun ContainersPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtHudBox {
                 Text(
                     text = "Nächster Einsatz",

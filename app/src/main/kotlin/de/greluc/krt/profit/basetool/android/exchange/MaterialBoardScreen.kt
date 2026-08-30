@@ -178,7 +178,7 @@ fun MaterialBoardScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 KrtEmptyState(
@@ -187,7 +187,7 @@ fun MaterialBoardScreen(
                     message = stringResource(R.string.board_error_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRefresh,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
         }
@@ -209,7 +209,7 @@ fun MaterialBoardScreen(
                             onSideChanged(if (it == 0) BoardSide.OFFERS else BoardSide.REQUESTS)
                         },
                         stretch = true,
-                        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+                        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                     )
                     // Part of the design, not decoration: chapter 10 states it as copy, because the
                     // board deliberately carries no place and no handover and a member must be able to
@@ -220,7 +220,7 @@ fun MaterialBoardScreen(
                         color = KrtPalette.TextMuted,
                         modifier =
                             Modifier
-                                .padding(horizontal = KrtSpacing.md)
+                                .padding(horizontal = KrtSpacing.s12)
                                 .testTag(BOARD_PRIVACY_TAG),
                     )
                     PullToRefreshBox(
@@ -234,7 +234,7 @@ fun MaterialBoardScreen(
                                     iconRes = DesignR.drawable.ic_krt_swap,
                                     title = stringResource(R.string.board_empty_title),
                                     message = stringResource(R.string.board_empty_message),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else if (isWideWindow()) {
@@ -271,7 +271,7 @@ fun MaterialBoardScreen(
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(KrtSpacing.lg)
+                            .padding(KrtSpacing.s16)
                             .padding(bottom = LocalKrtBottomBarInset.current)
                             .testTag(BOARD_CREATE_TAG),
                 )
@@ -299,8 +299,8 @@ private fun BoardColumn(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         items(state.entries, key = { it.id }) { entry ->
             BoardRow(
@@ -343,11 +343,11 @@ private fun BoardGrid(
         columns = GridCells.Fixed(BOARD_WIDE_COLUMNS),
         state = rememberRootGridState(),
         modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
         // 10 dp down the column and a 24 dp gutter across it — design ch. 18 §3 (E9). They differ
         // on purpose: the gutter separates two columns, the other is the rhythm within one.
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.cards),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s10),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s24),
     ) {
         items(state.entries, key = { it.id }) { entry ->
             BoardRow(
@@ -386,12 +386,12 @@ private fun BoardFooter(
                 ),
             onClick = onLoadMore,
             enabled = !state.loadingMore,
-            modifier = Modifier.padding(KrtSpacing.md),
+            modifier = Modifier.padding(KrtSpacing.s12),
         )
     } else {
         KrtEndOfList(
             text = stringResource(R.string.board_end_of_list),
-            modifier = Modifier.padding(KrtSpacing.md),
+            modifier = Modifier.padding(KrtSpacing.s12),
         )
     }
 }
@@ -420,7 +420,7 @@ private fun BoardRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -494,7 +494,7 @@ private fun RowActions(
     onSignalToggled: () -> Unit,
     onWithdraw: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         if (entry.mine) {
             // Design ch. 17 artboard 3 moved both of the member's own actions into one sheet:
             // „Bisher gab es nur «Zurückziehen» und kein Update — beides liegt jetzt hier." So the
@@ -591,7 +591,7 @@ private fun String.relativeToNow(): String {
 @Composable
 private fun BoardAmount(entry: BoardEntry) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.Bottom,
     ) {
         Text(
@@ -721,7 +721,7 @@ fun NewRequestSheet(
         // same stack, and full width each they pushed the CTA off the sheet on a phone.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.Bottom,
         ) {
             KrtTextField(
@@ -1063,7 +1063,7 @@ private fun SheetActions(
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtGhostButton(
             text = stringResource(R.string.personal_inventory_cancel),
             onClick = onDismiss,
@@ -1105,8 +1105,8 @@ private fun StockRow(
                 .clickable(enabled = !stock.alreadyReleased) {
                     onEdit { it.copy(picked = stock, amount = stock.amount) }
                 }
-                .padding(vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

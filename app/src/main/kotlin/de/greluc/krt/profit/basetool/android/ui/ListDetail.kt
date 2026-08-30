@@ -92,7 +92,7 @@ fun KrtListDetail(
                     iconRes = DesignR.drawable.ic_krt_chevron_right,
                     title = stringResource(R.string.list_detail_none_title),
                     message = emptyDetailMessage ?: stringResource(R.string.list_detail_none_message),
-                    modifier = Modifier.padding(KrtSpacing.lg),
+                    modifier = Modifier.padding(KrtSpacing.s16),
                 )
             }
         }
@@ -138,9 +138,9 @@ private fun DetailPane(detail: @Composable () -> Unit) {
 private fun DetailPaneHead(head: ScreenTopBar) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 head.title?.let { title ->

@@ -24,7 +24,7 @@
       <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Compose components in every state. Default cells are live — hover and press them. Pressed/focus cells are forced for redlining. 1 px = 1 dp.</div>
     </div>
   </header>
-  <div style="display:flex;gap:8px;margin:0 0 32px;align-items:flex-start"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Global</span><p style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;margin:0;max-width:100ch">All interactive heights ≥ 48 dp (web system uses 44 px — Android rounds up). Radius 0 everywhere except pills and circular radio/spinner/presence. Ripple: white 8%, bounded, square. Color transitions 200 ms. Disabled = 45% opacity, never a new color.</p></div>
+  <div style="display:flex;gap:8px;margin:0 0 32px;align-items:flex-start"><span style="flex:none;margin-top:2px;border:1px solid #E77E23;color:#E77E23;font:700 10px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px">Global</span><p style="font:300 13px/1.5 Lato,sans-serif;color:#D2D2D2;margin:0;max-width:100ch"><b style="color:#FFD23F">Drei Maße, nicht eines</b> (Korrektur 30.08.2026 — die frühere Zeile „alle interaktiven Höhen ≥ 48 dp" war die alte Regel und wurde als Boden gelesen): <b style="color:#D2D2D2">Steuerelement-Höhe 48 dp</b> (Feld, Button, Select, Segment — daher auch die Höhe im Feld-Steckbrief unten), <b style="color:#D2D2D2">Nav-Icon-Boden 48 dp</b>, <b style="color:#D2D2D2">Mindest-Tippfläche 44 dp</b> für Zeilen, Akkordeon-Köpfe und Menüeinträge — genau das, was die Kapitel dort zeichnen. Der Boden aus Kap. 01 §5 (44 dp) gilt für Tippflächen, nicht für Steuerelement-Höhen; er ist keine Höhen-Angabe. Radius 0 everywhere except pills and circular radio/spinner/presence. Ripple: white 8%, bounded, square. Color transitions 200 ms. Disabled = 45% opacity, never a new color.</p></div>
 
   <section data-screen-label="Buttons ladder" style="margin-bottom:44px">
     <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px">1 · Buttons — the ladder<span style="flex:1;height:1px;background:#282828"></span></h2>
@@ -247,7 +247,7 @@
           </div>
         </div>
         <div><label style="font-size:13px;margin-bottom:6px">Funktion an Bord — chip select</label><select class="chip-select" style="min-height:32px"><option>Pilot</option><option>Turret</option><option>Cargo</option></select></div>
-        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A">Fill #1C1C1C · hairline border · radius 0 · height 48 dp · placeholder italic #646464 · labels neutral #D2D2D2 bold, NEVER orange · errors in #F2564B with warning icon.</div>
+        <div style="font:300 12px/1.6 Lato,sans-serif;color:#8A8A8A">Fill #1C1C1C · hairline border · radius 0 · height 48 dp · placeholder italic #8A8A8A · labels neutral #D2D2D2 bold, NEVER orange. <b style="color:#D2D2D2">Zwei Meldungszeilen unter dem Feld, gleiche Form, verschiedener Ton:</b> Fehler in #F2564B mit Warn-Glyphe (etwas ist ungültig, Absenden gesperrt) und — ratifiziert 30.08.2026 als <span style="color:#8A8A8A">KrtFieldWarning</span> — Warnung in #FFD23F (etwas ist auffällig, aber erlaubt; nichts ist gesperrt). Erster Anwendungsfall: „liegt in der Vergangenheit" am Datumsfeld (§11). Nie beide gleichzeitig — der Fehler verdrängt die Warnung.</div>
       </div>
     </div>
   </section>
@@ -624,7 +624,7 @@
         <div class="card" style="padding:12px 16px">
           <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Feldpaar — KrtDateTimeField</div>
           <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
-            <li>Ein Zeitpunkt sind ZWEI Ziele, nie ein Textfeld: Datum (1,35 fr, mit Kalender-Glyphe, linksbündig) und Zeit (1 fr, mit Uhr-Glyphe, zentriert). Beide 46 dp, tabular, Radius 0 — dieselben Maße wie ein Textfeld, damit ein Formular nicht springt</li>
+            <li>Ein Zeitpunkt sind ZWEI Ziele, nie ein Textfeld: Datum (1,35 fr, mit Kalender-Glyphe, linksbündig) und Zeit (1 fr, mit Uhr-Glyphe, zentriert). Beide <b style="color:#D2D2D2">48 dp</b>, tabular, Radius 0 — dieselben Maße wie ein Textfeld (§1), damit ein Formular nicht springt. Die frühere Angabe 46 dp widersprach dem eigenen Grund und ist korrigiert (30.08.2026)</li>
             <li>Anzeige immer im deutschen Format (TT.MM.JJJJ · HH:MM), Übertragung immer ISO-8601. Ein Mitglied sieht nie einen Zeitstempel</li>
             <li>Leer heißt leer: Platzhalter „Datum wählen" / „--:--" im Muted-Ton, nicht das heutige Datum vorbelegt — sonst speichert man versehentlich einen Zeitpunkt, den niemand gewählt hat</li>
             <li>Berechnete Werte (Dauer, „Endet") stehen als Zeile darunter, nie als drittes Feld</li>
@@ -793,7 +793,7 @@
       <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
         <li>Kein Mitglied tippt je einen Zeitstempel. Jedes Datum und jede Zeit läuft über diese Komponente — Einsatz-Zeitplan (Kap. 06), Raffinerie-Start (Kap. 11), Auftrags-Fälligkeit (Kap. 10), Listen-Filter (Kap. 06)</li>
         <li>Compose: eigenes Composable über KrtModal (<span style="color:#8A8A8A">artifacts/compose/KrtFieldsAndOverlays.kt</span> → KrtDateTimeField ruft es), NICHT Material3 DatePicker/TimePicker — deren Rundungen, Tonal-Flächen und Elevation verletzen drei Systemregeln auf einmal</li>
-        <li>Ein Zeitpunkt in der Vergangenheit wird nicht gesperrt, sondern benannt: gelbe Zeile am Feld („liegt in der Vergangenheit"). Der Server entscheidet</li>
+        <li>Ein Zeitpunkt in der Vergangenheit wird nicht gesperrt, sondern benannt: <span style="color:#8A8A8A">KrtFieldWarning</span> am Feld in #FFD23F („liegt in der Vergangenheit") — die Warn-Variante der Fehlerzeile, ratifiziert in §1. Der Server entscheidet</li>
         <li>Overlay-Glow 12 dp/.10, Scrim 80 % + 4 dp Blur — wie jedes Modal (§7)</li>
       </ul>
     </div>

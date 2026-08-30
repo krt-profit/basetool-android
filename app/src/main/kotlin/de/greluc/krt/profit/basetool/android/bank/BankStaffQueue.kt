@@ -91,14 +91,14 @@ fun BankStaffQueue(
                 iconRes = DesignR.drawable.ic_krt_clipboard_check,
                 title = stringResource(R.string.bank_staff_queue_empty_title),
                 message = stringResource(R.string.bank_staff_queue_empty_message),
-                modifier = Modifier.padding(KrtSpacing.lg),
+                modifier = Modifier.padding(KrtSpacing.s16),
             )
             return@PullToRefreshBox
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(BANK_STAFF_QUEUE_TAG),
-            contentPadding = PaddingValues(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            contentPadding = PaddingValues(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             items(state.queue, key = { it.id }) { request ->
                 BankRequestCard(request = request) {
@@ -117,7 +117,7 @@ fun BankStaffQueue(
                         text = stringResource(R.string.bank_staff_queue_partial),
                         style = MaterialTheme.typography.bodySmall,
                         color = KrtPalette.Warning,
-                        modifier = Modifier.padding(KrtSpacing.sm),
+                        modifier = Modifier.padding(KrtSpacing.s8),
                     )
                 }
             }
@@ -186,8 +186,8 @@ fun BankConfirmSheet(
         modifier = Modifier.testTag(BANK_CONFIRM_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+            modifier = Modifier.padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
         ) {
             Text(
                 text = stringResource(R.string.bank_staff_confirm_hint),
@@ -238,7 +238,7 @@ fun BankConfirmSheet(
             }
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
                 KrtGhostButton(
                     text = stringResource(R.string.bank_request_cancel),
@@ -271,7 +271,7 @@ private fun ApprovalAttestation(
     state: BankConfirmState,
     onAttest: (Boolean) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtCheckboxRow(
             label = stringResource(R.string.bank_staff_confirm_attest),
             checked = state.approvalAttested,

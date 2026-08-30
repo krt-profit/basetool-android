@@ -104,8 +104,8 @@ fun KrtFieldError(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = modifier.padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.Top,
     ) {
         KrtIcon(
@@ -123,11 +123,16 @@ fun KrtFieldError(
 }
 
 /**
- * An inline **warning** with the same glyph as [KrtFieldError], in the warning tint.
+ * An inline **warning** with the same glyph as [KrtFieldError], in the warning tint `#FFD23F`.
  *
- * The difference from an error is the whole point: a warning names something the member may well
- * have meant, and nothing is blocked. Design ch. 02 §11 uses it for a moment already gone — the
- * server, not the field, decides whether a past timestamp is legal.
+ * **Ratified as a component 2026-08-30** (design ch. 02 §1): two message lines under a field, same
+ * shape, different tone. An **error** means something is invalid and submitting is blocked; a
+ * **warning** means something is notable and permitted, and nothing is locked. Its first case is
+ * „liegt in der Vergangenheit" at a date field (§11) — the server, not the field, decides whether a
+ * past timestamp is legal.
+ *
+ * > **Never both at once.** The chapter is explicit: the error displaces the warning. A field that
+ * > shows two lines has told the member to fix something and, underneath, that it is fine.
  *
  * @param text the observation, stated plainly („Liegt in der Vergangenheit").
  * @param modifier layout modifier.
@@ -138,8 +143,8 @@ fun KrtFieldWarning(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = modifier.padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.Top,
     ) {
         KrtIcon(
@@ -232,7 +237,7 @@ fun KrtTextField(
     Column(modifier = modifier) {
         if (label != null) {
             KrtFieldLabel(text = label, enabled = enabled)
-            Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+            Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         }
         Box(
             modifier =
@@ -273,7 +278,7 @@ fun KrtTextField(
                     },
                 )
                 if (trailing != null) {
-                    Box(modifier = Modifier.padding(start = KrtSpacing.sm)) { trailing() }
+                    Box(modifier = Modifier.padding(start = KrtSpacing.s8)) { trailing() }
                 }
             }
         }
@@ -332,8 +337,8 @@ private fun Modifier.krtFieldFrame(
         .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.glowFocus) else Modifier)
         .background(KrtPalette.SurfaceInput)
         .border(KrtSpacing.hairline, border)
-        .defaultMinSize(minHeight = KrtSpacing.field * minLines)
-        .padding(horizontal = KrtSpacing.md, vertical = if (minLines > 1) KrtSpacing.sm else 0.dp)
+        .defaultMinSize(minHeight = KrtSpacing.controlHeight * minLines)
+        .padding(horizontal = KrtSpacing.s12, vertical = if (minLines > 1) KrtSpacing.s8 else 0.dp)
 
 /**
  * How the typed value is rendered.
@@ -440,7 +445,7 @@ fun KrtStepperField(
     Column(modifier = modifier) {
         if (label != null) {
             KrtFieldLabel(text = label, enabled = enabled)
-            Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+            Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             KrtIconButton(
@@ -514,7 +519,7 @@ private val HINT_SIZE = 18.dp
 @Composable
 private fun FieldsPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtTextField(value = "", onValueChange = {}, label = "Schiffsname", placeholder = "z. B. Carrack")
             KrtTextField(value = "Quantainium", onValueChange = {}, label = "Material")
             KrtTextField(

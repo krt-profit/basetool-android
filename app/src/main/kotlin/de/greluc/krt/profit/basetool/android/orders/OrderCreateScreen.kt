@@ -138,8 +138,8 @@ fun OrderCreateScreen(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag(ORDER_CREATE_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (state.mode == OrderFormMode.CREATE) {
             item(key = "kind") {
@@ -243,7 +243,7 @@ private fun KindSwitch(
     kind: OrderKind,
     onKind: (OrderKind) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         SectionTitle(text = stringResource(R.string.order_create_kind))
         KrtSegmentedControl(
             options =
@@ -301,7 +301,7 @@ private fun ItemLineCard(
     onRemove: () -> Unit,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             ItemField(
                 shown = line.query,
                 selectedValue = line.gameItemId,
@@ -433,7 +433,7 @@ private fun WhoBlock(
     state: OrderCreateState,
     actions: OrderCreateActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         UnitField(
             label = stringResource(R.string.order_create_responsible),
             units = state.responsibleOptions,
@@ -514,7 +514,7 @@ private fun LineCard(
     delivered: Double = 0.0,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             MaterialField(
                 shown = line.query,
                 selectedValue = line.materialId,
@@ -540,7 +540,7 @@ private fun LineCard(
                     color = KrtPalette.TextMuted,
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtTextField(
                     value = line.amount,
                     onValueChange = onAmount,
@@ -688,7 +688,7 @@ private fun SubmitBlock(
     state: OrderCreateState,
     onSubmit: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         state.error?.let {
             Text(
                 text = stringResource(R.string.order_create_failed),

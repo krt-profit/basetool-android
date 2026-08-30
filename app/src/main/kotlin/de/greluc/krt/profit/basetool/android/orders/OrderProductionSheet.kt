@@ -117,7 +117,7 @@ fun OrderProductionSheet(actions: OrderProductionActions) {
         title = stringResource(R.string.order_production_title),
         modifier = Modifier.testTag(ORDER_PRODUCTION_SHEET_TAG),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             Muted(
                 text =
                     stringResource(
@@ -186,7 +186,7 @@ private fun Projection(draft: ProductionDraft) {
     val projected = draft.projected ?: return
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Muted(text = stringResource(R.string.order_production_after), modifier = Modifier.weight(1f))
@@ -219,10 +219,10 @@ private fun MaterialCard(
 ) {
     val units = draft.units ?: 0
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -274,7 +274,7 @@ private fun MaterialRows(
             material.rows.forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Muted(text = row.krtSourceLabel(), modifier = Modifier.weight(1f))

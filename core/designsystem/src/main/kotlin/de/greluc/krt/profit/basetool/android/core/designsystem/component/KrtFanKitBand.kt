@@ -105,7 +105,7 @@ fun KrtFanKitBand(modifier: Modifier = Modifier) {
                     .background(KrtPalette.Gray3),
         )
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s12),
             horizontalArrangement = Arrangement.spacedBy(LOGO_GAP),
             // Top-aligned, not centred: with the 2(g) paragraph the text column runs several
             // lines, and a vertically centred logo would float in the middle of it.
@@ -146,7 +146,7 @@ fun KrtFanKitBand(modifier: Modifier = Modifier) {
 @Composable
 private fun FanKitBandPhonePreview() {
     de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme {
-        Box(modifier = Modifier.background(KrtPalette.Black).padding(horizontal = KrtSpacing.lg)) {
+        Box(modifier = Modifier.background(KrtPalette.Black).padding(horizontal = KrtSpacing.s16)) {
             KrtFanKitBand()
         }
     }

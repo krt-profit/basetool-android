@@ -38,15 +38,19 @@ Package them as `core/designsystem` and depend on it from every feature module.
 4. **Depth is hairlines and corner brackets, not shadow.** Every container is elevation `0.dp`.
 5. **Glow is capped.** radius ≤ 12 dp, alpha ≤ 0.10, three sizes only (focus / emphasis /
    overlay), never two blooms on one screen. `KrtGlow.krtGlow` refuses anything larger.
-6. **44 dp minimum tap target**, including icon-only row actions. Icon-only buttons always carry
-   a label (content description **and** tooltip).
+6. **Three sizes, not one** — the mistake that cost a real defect: `controlHeight` **48 dp**
+   (field, button, select, segment), `navIconFloor` **48 dp**, and `touchTarget` **44 dp** as the
+   *minimum tap area* for rows, accordion heads and menu entries. Never derive a control's height
+   from `touchTarget`. Icon-only buttons always carry a label (content description **and** tooltip).
 7. **No native dialogs.** No `AlertDialog` defaults, no `Snackbar`, no system toast. Use
    `KrtBottomSheet`, `KrtModal`, `KrtToast`.
 8. **Permissions are drawn, never hidden.** See below — this is the rule most likely to be got
    wrong, and it has already been got wrong once in this app.
-9. **Numbers are tabular and signed by kind.** `KrtAmount` handles the sign, the colour and the
+9. **One spacing scale, nine steps** — `KrtSpacing.s4 … s32` (4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 ·
+   32), which is ch. 01 §5 verbatim. No `.dp` literal in feature code.
+10. **Numbers are tabular and signed by kind.** `KrtAmount` handles the sign, the colour and the
    em-dash-for-missing rule. A German keyboard sends a comma: parse with `krtToDoubleOrNull()`.
-10. **Every surface has four states.** Loading (skeletons in the list shape, spinner only after
+11. **Every surface has four states.** Loading (skeletons in the list shape, spinner only after
     300 ms), empty (one sentence), filtered-empty (different sentence + reset), error (Kap. 14).
     Offline disables writes with a reason line — never a queue.
 

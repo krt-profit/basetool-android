@@ -110,7 +110,7 @@ fun ListSegmentBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.md)
+                .padding(start = KrtSpacing.s12, end = KrtSpacing.s12, top = KrtSpacing.s12)
                 .testTag(LIST_SEGMENT_TAG),
     )
 }
@@ -166,7 +166,7 @@ fun OperationsScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = KrtSpacing.md)
+                        .padding(horizontal = KrtSpacing.s12)
                         .testTag(OPERATION_CREATE_CTA_TAG),
                 iconRes = DesignR.drawable.ic_krt_plus,
             )
@@ -200,7 +200,7 @@ fun OperationsScreen(
                         message = stringResource(R.string.retry_busy_message, retryIn),
                         retryLabel = stringResource(R.string.retry_now),
                         onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 } else {
                     KrtEmptyState(
@@ -209,7 +209,7 @@ fun OperationsScreen(
                         message = stringResource(R.string.operations_error_message),
                         actionText = stringResource(R.string.missions_retry),
                         onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 }
             }
@@ -259,8 +259,8 @@ private fun OperationsFilterBar(
     onResetFilters: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
             // The typed value, not the debounced one — see REQ-APP-MIS-004.
@@ -272,8 +272,8 @@ private fun OperationsFilterBar(
         // FlowRow, not Row -- see MissionsScreen: a Row breaks the last chip's label mid-word
         // at font scale 1.3x.
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             FILTERABLE_OPERATION_STATUSES.forEach { status ->
                 val selected = status in state.query.statuses
@@ -325,7 +325,7 @@ private fun OperationsList(
             item(key = "group-running") {
                 KrtSectionTitle(
                     text = stringResource(R.string.operations_group_running),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                 )
             }
             items(running, key = { it.id }) { operation ->
@@ -336,7 +336,7 @@ private fun OperationsList(
             item(key = "group-finished") {
                 KrtSectionTitle(
                     text = stringResource(R.string.operations_group_finished),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                 )
             }
             items(finished, key = { it.id }) { operation ->
@@ -355,12 +355,12 @@ private fun OperationsList(
                         ),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.operations_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -383,7 +383,7 @@ private fun OperationRow(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -428,7 +428,7 @@ private fun OperationsEmpty(
             ),
         actionText = if (narrowed) stringResource(R.string.missions_filter_reset) else null,
         onAction = if (narrowed) onResetFilters else null,
-        modifier = Modifier.padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.s16),
     )
 }
 

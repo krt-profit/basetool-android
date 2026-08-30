@@ -76,7 +76,7 @@ fun KrtTopBar(
                 Modifier
                     .fillMaxWidth()
                     .height(TOP_BAR_HEIGHT)
-                    .padding(start = if (onBack == null) KrtSpacing.lg else KrtSpacing.xs),
+                    .padding(start = if (onBack == null) KrtSpacing.s16 else KrtSpacing.s4),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onBack != null) {
@@ -87,7 +87,7 @@ fun KrtTopBar(
                     style = KrtButtonStyles.chrome,
                 )
             }
-            Column(modifier = Modifier.weight(1f).padding(end = KrtSpacing.sm)) {
+            Column(modifier = Modifier.weight(1f).padding(end = KrtSpacing.s8)) {
                 Text(
                     text = if (subject) title else title.krtUppercase(),
                     style =
@@ -105,7 +105,7 @@ fun KrtTopBar(
             orgBadge?.invoke()
             if (notificationCount != null && onNotificationsClick != null) {
                 Box(
-                    modifier = Modifier.padding(end = KrtSpacing.xs),
+                    modifier = Modifier.padding(end = KrtSpacing.s4),
                     contentAlignment = Alignment.TopEnd,
                 ) {
                     KrtIconButton(
@@ -117,7 +117,7 @@ fun KrtTopBar(
                     if (notificationCount > 0) {
                         KrtCountBadge(
                             count = notificationCount,
-                            modifier = Modifier.padding(top = KrtSpacing.xs, end = KrtSpacing.xs),
+                            modifier = Modifier.padding(top = KrtSpacing.s4, end = KrtSpacing.s4),
                         )
                     }
                 }
@@ -165,7 +165,7 @@ fun KrtSelectionTopBar(
                 .fillMaxWidth()
                 .background(KrtPalette.SurfaceInput)
                 .height(SELECTION_BAR_HEIGHT)
-                .padding(start = KrtSpacing.xs, end = KrtSpacing.lg),
+                .padding(start = KrtSpacing.s4, end = KrtSpacing.s16),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIconButton(

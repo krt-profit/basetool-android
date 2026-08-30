@@ -82,8 +82,8 @@ fun ProfitScreen(
     LazyColumn(
         state = rememberRootListState(),
         modifier = modifier.fillMaxSize().testTag(PROFIT_TABLE_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         item(key = "ship") { ShipPicker(state = state, actions = actions) }
         item(key = "systems") { SystemChips(state = state, actions = actions) }
@@ -137,7 +137,7 @@ private fun SystemChips(
     if (state.systems.size <= 1) {
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Text(
             text = stringResource(R.string.materials_profit_systems),
             style = MaterialTheme.typography.labelMedium,
@@ -145,7 +145,7 @@ private fun SystemChips(
         )
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             state.systems.forEach { system ->
@@ -188,7 +188,7 @@ private fun ProfitBody(
 ) {
     when {
         state.error != null -> {
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtFieldError(text = stringResource(R.string.materials_profit_error))
                 KrtGhostButton(
                     text = stringResource(R.string.missions_retry),

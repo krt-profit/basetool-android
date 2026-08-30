@@ -186,12 +186,12 @@ private fun KrtOptionRow(
         Box(
             modifier =
                 Modifier
-                    .size(width = SELECTED_OPTION_BAR, height = KrtSpacing.xl)
+                    .size(width = SELECTED_OPTION_BAR, height = KrtSpacing.s24)
                     .background(if (selected && !active) MaterialTheme.colorScheme.primary else Color.Transparent),
         )
         Text(
             text = highlight(label, query),
-            modifier = Modifier.padding(horizontal = KrtSpacing.md),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             style = MaterialTheme.typography.bodyMedium,
             color = foreground,
         )
@@ -292,7 +292,7 @@ fun KrtCombobox(
                 if (notice != null) {
                     Text(
                         text = notice,
-                        modifier = Modifier.padding(KrtSpacing.md),
+                        modifier = Modifier.padding(KrtSpacing.s12),
                         style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
                         color = KrtPalette.TextMuted,
                     )
@@ -334,7 +334,7 @@ fun KrtSelectField(
     Column(modifier = modifier) {
         if (label != null) {
             KrtFieldLabel(text = label, enabled = enabled)
-            Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+            Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         }
         Row(
             modifier =
@@ -345,9 +345,9 @@ fun KrtSelectField(
                         KrtSpacing.hairline,
                         if (expanded) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
                     )
-                    .defaultMinSize(minHeight = KrtSpacing.field)
+                    .defaultMinSize(minHeight = KrtSpacing.controlHeight)
                     .clickable(enabled = enabled, role = Role.DropdownList) { onExpandedChange(!expanded) }
-                    .padding(horizontal = KrtSpacing.md),
+                    .padding(horizontal = KrtSpacing.s12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -466,7 +466,7 @@ fun KrtCheckboxRow(
                     role = Role.Checkbox,
                     onValueChange = onCheckedChange,
                 ),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -522,7 +522,7 @@ fun KrtRadioRow(
                     role = Role.RadioButton,
                     onClick = onSelect,
                 ),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -606,10 +606,10 @@ fun KrtChipSelect(
             modifier
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
-                .defaultMinSize(minHeight = KrtSpacing.xl)
+                .defaultMinSize(minHeight = KrtSpacing.s24)
                 .clickable(enabled = enabled, role = Role.DropdownList, onClick = onClick)
-                .padding(horizontal = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -759,7 +759,7 @@ fun KrtSegmentedControl(
     Row(
         modifier =
             modifier
-                .height(KrtSpacing.field)
+                .height(KrtSpacing.controlHeight)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -770,14 +770,14 @@ fun KrtSegmentedControl(
                     modifier =
                         Modifier
                             .width(KrtSpacing.hairline)
-                            .height(KrtSpacing.field)
+                            .height(KrtSpacing.controlHeight)
                             .background(KrtPalette.Gray3),
                 )
             }
             Box(
                 modifier =
                     (if (stretch) Modifier.weight(1f) else Modifier.width(SEGMENT_WIDTH))
-                        .height(KrtSpacing.field)
+                        .height(KrtSpacing.controlHeight)
                         .background(if (active) activeColor else Color.Transparent)
                         .selectable(
                             selected = active,
@@ -794,7 +794,7 @@ fun KrtSegmentedControl(
                         else -> KrtPalette.Gray3
                     }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // The icon is decoration: the label beside it already says what the segment
@@ -835,7 +835,7 @@ private val SEGMENT_ICON_SIZE = 16.dp
 @Composable
 private fun PickersPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtCombobox(
                 query = "quan",
                 onQueryChange = {},
@@ -864,7 +864,7 @@ private fun PickersPreview() {
             KrtRadioRow(selected = false, onSelect = {}, label = "Org-Kasse")
             KrtChipSelect(value = "Pilot", onClick = {})
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KrtToggle(checked = true)

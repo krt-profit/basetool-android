@@ -84,11 +84,11 @@ fun BankHolderScreen(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag(BANK_HOLDER_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         item(key = "total") {
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtTotalTile(
                     label = stringResource(R.string.bank_holder_total_label),
                     value = formatAmount(state.holder?.totalHeld.orEmpty()),
@@ -116,7 +116,7 @@ fun BankHolderScreen(
                     iconRes = DesignR.drawable.ic_krt_bank,
                     title = stringResource(R.string.bank_holder_empty_title),
                     message = stringResource(R.string.bank_holder_empty_message),
-                    modifier = Modifier.padding(KrtSpacing.lg),
+                    modifier = Modifier.padding(KrtSpacing.s16),
                 )
             }
         }
@@ -139,7 +139,7 @@ fun BankHolderScreen(
 @Composable
 private fun HolderBookingRow(booking: BankHolderBooking) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -205,7 +205,7 @@ private fun PostingPager(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtOutlineButton(
             text = stringResource(R.string.bank_holder_prev),
@@ -226,7 +226,7 @@ private fun PostingPager(
                 ),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
-            modifier = Modifier.padding(horizontal = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s8),
         )
         KrtOutlineButton(
             text = stringResource(R.string.bank_holder_next),

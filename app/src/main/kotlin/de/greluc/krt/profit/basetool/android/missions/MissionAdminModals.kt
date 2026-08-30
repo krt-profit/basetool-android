@@ -149,7 +149,7 @@ private fun Version(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         KrtSectionTitle(text = stringResource(titleRes))
         Text(

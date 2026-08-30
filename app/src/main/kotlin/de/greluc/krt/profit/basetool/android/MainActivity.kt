@@ -563,7 +563,7 @@ class MainActivity : AppCompatActivity() {
                         // over a dropped connection, and the member has no way to tell that is what
                         // happened: the login screen carries no explanation at all.
                         Box(
-                            Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            Modifier.fillMaxSize().padding(KrtSpacing.s16),
                             contentAlignment = Alignment.Center,
                         ) {
                             KrtEmptyState(

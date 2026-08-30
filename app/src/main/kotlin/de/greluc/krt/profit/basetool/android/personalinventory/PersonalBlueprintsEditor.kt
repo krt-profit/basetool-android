@@ -77,8 +77,8 @@ fun BlueprintAddSheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtTextField(
                 value = editor.query,
@@ -202,8 +202,8 @@ private fun ProductRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(enabled = enabled) { onChosen(product) }
-                .padding(vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // A box, not a radio: artboard 5 makes the row a checkbox, because picking several is the
@@ -245,8 +245,8 @@ fun BlueprintNoteSheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
                 text = editor.entry.productName,
@@ -286,7 +286,7 @@ private fun SheetActions(
     onDismiss: () -> Unit,
     saveText: String? = null,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtGhostButton(
             text = stringResource(R.string.personal_inventory_cancel),
             onClick = onDismiss,

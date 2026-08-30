@@ -12,69 +12,65 @@ import androidx.compose.ui.unit.dp
 /**
  * The spacing and metric scale. Nothing in the app may sit off this scale.
  *
- * Values come from `docs/design/android/01 Foundations.dc.html` §5 (the scale strip) and §8 (the
- * binding margin table), where 1 CSS pixel equals 1 dp.
+ * **Nine steps, positional names** — `4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 32`, straight from
+ * `01 Foundations.dc.html` §5 and the token artifact `artifacts/compose/KrtTokens.kt`. A screen
+ * that wants 18 dp has a layout problem, not a special case.
  *
- * > **Why the token names do not read xs 6 · sm 10 · md 16 · lg 20 · xl 24.** §8's Compose line
- * > names that scale, and the chapter's **own** scale strip in §5 lists `4 · 8 · 12 · 16 · 24 · 32`
- * > — which is what the artboards are drawn against and what these tokens have always carried. The
- * > margin table needs 4, 8, 10, 12, 14, 16, 20 and 24; renaming the five existing steps to the
- * > prose scale would move every one of ~830 call sites onto a value no artboard uses, and would
- * > still leave 4, 8, 12 and 14 without a token. So the drawn scale wins and the three steps the
- * > table needs and this object lacked — [cards], [inset], [sheet] — were added instead. The prose
- * > line is on the next design gap list.
+ * > **Why the names are numbers.** They were `xs · sm · md · lg · xl` here and `xs · sm · md ·
+ * > lg · xl` in the artifact too — for **different values**. The app's `md` was 12 dp and the
+ * > artifact's was 16, so any measurement carried from one side to the other landed on a value
+ * > nobody had chosen, silently. The scale was ratified on 2026-08-30 with positional names for
+ * > exactly that reason, and the rename moved 933 call sites in one pass.
  */
 @Suppress("MagicNumber")
 object KrtSpacing {
-    /** 4 dp — the smallest step; icon-to-label gaps inside dense chips. */
-    val xs = 4.dp
+    /** 4 dp — field to helper text; icon-to-label inside a dense chip. */
+    val s4 = 4.dp
 
-    /** 8 dp — gap between chips, icon-to-label in buttons, a list row's vertical padding. */
-    val sm = 8.dp
+    /** 8 dp — inside a dense row: chip gaps, icon-to-label in buttons. */
+    val s8 = 8.dp
 
-    /** 10 dp — between cards in a list or a stack (design ch. 01 §8). */
-    val cards = 10.dp
+    /** 10 dp — between cards in a list or a stack. */
+    val s10 = 10.dp
 
-    /** 14 dp — horizontal padding inside a card and inside a list row (ch. 01 §8). */
-    val inset = 14.dp
+    /** 12 dp — between sections; a card's vertical padding. */
+    val s12 = 12.dp
 
-    /** 20 dp — a sheet's side margin, and a tablet's list column (ch. 01 §8). */
-    val sheet = 20.dp
+    /** 14 dp — a card's horizontal padding, and a list row's. */
+    val s14 = 14.dp
 
-    /** 12 dp — row internal gaps, vertical padding of the Fan Kit band. */
-    val md = 12.dp
+    /** 16 dp — the workhorse: a phone's screen gutter and a modal's padding. */
+    val s16 = 16.dp
 
-    /** 16 dp — the workhorse: screen edge margin and card padding. */
-    val lg = 16.dp
+    /** 20 dp — a sheet's side margin. */
+    val s20 = 20.dp
 
-    /** 24 dp — gap between sections. */
-    val xl = 24.dp
+    /** 24 dp — a tablet's content gutter, and the Materialbörse's column gutter. */
+    val s24 = 24.dp
 
     /** 32 dp — generous separation, e.g. above a screen's primary action block. */
-    val xxl = 32.dp
+    val s32 = 32.dp
 
     /**
-     * Minimum size of any interactive target — 44 dp (design ch. 01 §5).
+     * **Minimum tap area** — 44 dp, for rows, accordion heads and menu entries (ch. 01 §5).
      *
-     * The navigation bar and the app bar use [navTarget] instead, which is Android's own 48 dp:
-     * those two are hit while walking, and the chapter names them as the exception.
+     * > Never derive a control's height from this. [controlHeight] is that, and conflating the two
+     * > shrank every input, button, select and segmented control in the app the day ch. 01 lowered
+     * > the floor from 48 to 44. Chapter 02 §1 now states all three sizes together for that reason.
      */
     val touchTarget = 44.dp
 
-    /** 48 dp — the floor for a navigation-bar or app-bar icon. */
-    val navTarget = 48.dp
+    /** 48 dp — the floor for a navigation-bar or app-bar icon slot. */
+    val navIconFloor = 48.dp
 
     /**
-     * 48 dp — the height of a **control**: a button, an icon button, an input, a select, a
-     * segmented control (design ch. 02 §1 „Höhe 48 dp", „48×48 dp target").
+     * 48 dp — the height of a **control**: field, button, icon button, select, segmented control
+     * (design ch. 02 §1, and `KrtDimens.controlHeight` in the token artifact).
      *
-     * Deliberately its own token rather than [touchTarget]. A control's height and the minimum
-     * tap area are two different rules that happened to share a number until ch. 01 §5 moved the
-     * floor to 44 dp — at which point every field, button and select silently shrank with it.
-     * Rows, accordion heads and menu entries keep [touchTarget]: for those the floor **is** the
-     * rule, and the chapter draws them at 44.
+     * The date/time pair matches it deliberately (§11): a form must not jump when one row of it is
+     * a pair rather than a field.
      */
-    val field = 48.dp
+    val controlHeight = 48.dp
 
     /** Minimum height of a dense list row; the whole row is the touch target. */
     val denseRow = 56.dp

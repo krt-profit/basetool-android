@@ -58,10 +58,10 @@ fun KrtRetryCountdown(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.xl)
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s24)
                 .testTag("krt-retry-countdown"),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         Box(contentAlignment = Alignment.Center) {
             KrtSpinner()

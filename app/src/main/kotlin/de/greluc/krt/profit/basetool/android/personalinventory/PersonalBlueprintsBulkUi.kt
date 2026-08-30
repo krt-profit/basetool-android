@@ -74,9 +74,9 @@ internal fun BlueprintSelectionBar(
             Modifier
                 .fillMaxWidth()
                 .background(KrtPalette.SurfaceInput)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                 .testTag(BLUEPRINT_SELECTION_BAR_TAG),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -182,8 +182,8 @@ internal fun BlueprintImportSheet(
         title = stringResource(R.string.blueprints_import_title),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             when (step) {
                 is BlueprintImportStep.Closed -> {}
@@ -271,7 +271,9 @@ private fun ImportPreview(
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.TextMuted,
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+    // Four figures, not three (design ch. 18 §2, B2): „Zu klären" is not the same fact as
+    // „Unbekannt" — the server DID find candidates for those rows and simply cannot choose.
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
         CountBox(
             label = stringResource(R.string.blueprints_import_new),
             value = preview.importable.size,
@@ -283,29 +285,43 @@ private fun ImportPreview(
             tint = KrtPalette.TextMuted,
         )
         CountBox(
-            label = stringResource(R.string.blueprints_import_unknown),
-            value = preview.unresolved.size,
+            label = stringResource(R.string.blueprints_import_unclear),
+            value = preview.unclear.size,
             tint = KrtTheme.colors.warning,
+        )
+        CountBox(
+            label = stringResource(R.string.blueprints_import_unknown),
+            value = preview.unknown.size,
+            tint = KrtPalette.TextMuted,
         )
     }
     NameList(
         label = stringResource(R.string.blueprints_import_new),
         names = preview.importable.map { it.productName ?: it.externalName },
     )
-    if (preview.unresolved.isNotEmpty()) {
+    if (preview.unclear.isNotEmpty()) {
+        NameList(
+            label = stringResource(R.string.blueprints_import_unclear),
+            names = preview.unclear.map { it.externalName },
+        )
+        // Its own block, in the warning tint: these rows are importable in principle and are being
+        // left behind, which is a different thing from a name nothing matched.
+        Text(
+            text = stringResource(R.string.blueprints_import_unclear_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtTheme.colors.warning,
+        )
+    }
+    if (preview.unknown.isNotEmpty()) {
         NameList(
             label = stringResource(R.string.blueprints_import_unknown),
-            names = preview.unresolved.map { it.externalName },
+            names = preview.unknown.map { it.externalName },
         )
         Text(
             text = stringResource(R.string.blueprints_import_unknown_note),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
         )
-        // The server can also answer SUGGESTED: candidates found, nothing resolved. Picking between
-        // them is a control the artboard does not draw and this app does not have, so those rows
-        // are counted with the unknown ones and the member is told where they can be resolved.
-        KrtHint(explanation = stringResource(R.string.blueprints_import_suggested_hint))
     }
     KrtCtaButton(
         text =

@@ -134,7 +134,7 @@ fun KrtLoadingIndicator(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtSpinner()
@@ -197,7 +197,7 @@ fun KrtOfflineBanner(
         KrtIcon(
             id = R.drawable.ic_krt_wifi_off,
             contentDescription = null,
-            modifier = Modifier.padding(horizontal = KrtSpacing.md),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             size = 20.dp,
             tint = KrtTheme.colors.warning,
         )
@@ -219,7 +219,7 @@ fun KrtOfflineBanner(
             KrtGhostButton(
                 text = retryText,
                 onClick = retry,
-                modifier = Modifier.padding(KrtSpacing.sm),
+                modifier = Modifier.padding(KrtSpacing.s8),
             )
         }
     }
@@ -279,9 +279,9 @@ fun KrtEmptyState(
                 // solid border reads as a filled surface that happens to be blank
                 // (print edition § 3, "Empty = dashed border").
                 .krtDashedBorder(KrtPalette.Gray3, KrtSpacing.hairline)
-                .padding(vertical = KrtSpacing.xl, horizontal = KrtSpacing.lg),
+                .padding(vertical = KrtSpacing.s24, horizontal = KrtSpacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtIcon(id = iconRes, contentDescription = null, size = 28.dp, tint = KrtPalette.Gray2)
         Text(
@@ -336,7 +336,7 @@ fun KrtTotalTile(
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary),
         )
-        Column(modifier = Modifier.padding(KrtSpacing.md)) {
+        Column(modifier = Modifier.padding(KrtSpacing.s12)) {
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelMedium,
@@ -347,7 +347,7 @@ fun KrtTotalTile(
                 if (unit != null) {
                     Text(
                         text = unit,
-                        modifier = Modifier.padding(start = KrtSpacing.xs, bottom = KrtSpacing.xs),
+                        modifier = Modifier.padding(start = KrtSpacing.s4, bottom = KrtSpacing.s4),
                         style = MaterialTheme.typography.bodySmall,
                         color = KrtPalette.TextMuted,
                     )
@@ -392,7 +392,7 @@ fun KrtFigureTile(
         }
     Row(modifier = modifier.height(IntrinsicSize.Min).background(KrtPalette.Gray4)) {
         Box(modifier = Modifier.width(FIGURE_RAIL).fillMaxHeight().background(rail))
-        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = FIGURE_PAD)) {
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = FIGURE_PAD)) {
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -400,7 +400,7 @@ fun KrtFigureTile(
             )
             Text(
                 text = value,
-                modifier = Modifier.padding(top = KrtSpacing.xs),
+                modifier = Modifier.padding(top = KrtSpacing.s4),
                 style = MaterialTheme.typography.headlineMedium,
                 color = hue,
             )
@@ -460,12 +460,12 @@ fun KrtKpiCard(
         )
         KrtDataValue(
             text = value,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
             style = MaterialTheme.typography.displaySmall,
         )
         if (delta != null || sparkline != null) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
+                modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -548,7 +548,7 @@ private val SPARKLINE_STROKE = 1.5.dp
 @Composable
 private fun FeedbackPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtLoadingIndicator("Lade Einsätze…")
             KrtOfflineBanner(
                 title = "Offline — keine Verbindung",

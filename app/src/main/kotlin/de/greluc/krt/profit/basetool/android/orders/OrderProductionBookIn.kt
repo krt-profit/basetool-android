@@ -52,7 +52,7 @@ fun ProductionBookInSection(
     val bookIn = draft.bookIn
     KrtSectionTitle(text = stringResource(R.string.order_production_bookin))
     KrtHint(explanation = stringResource(R.string.order_production_bookin_hint))
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         Picker(
             label = stringResource(R.string.order_production_location),
             query = bookIn.locationQuery,

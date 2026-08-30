@@ -151,7 +151,7 @@ fun MissionsScreen(
                         message = stringResource(R.string.retry_busy_message, retryIn),
                         retryLabel = stringResource(R.string.retry_now),
                         onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 } else {
                     KrtEmptyState(
@@ -160,7 +160,7 @@ fun MissionsScreen(
                         message = stringResource(R.string.missions_error_message),
                         actionText = stringResource(R.string.missions_retry),
                         onAction = onRefresh,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 }
             }
@@ -215,8 +215,8 @@ private fun MissionsFilterBar(
     zone: ZoneId,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
             // The typed value, not the debounced one. Binding a controlled field to the
@@ -231,8 +231,8 @@ private fun MissionsFilterBar(
         // breaks character by character („ABGEB ROCHE N"). Wrapping by chip keeps every filter
         // readable and reachable, which horizontal scrolling would not.
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             FILTERABLE_STATUSES.forEach { status ->
                 val selected = status in state.query.statuses
@@ -248,8 +248,8 @@ private fun MissionsFilterBar(
             }
         }
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             KrtFilterChip(
                 text =
@@ -373,14 +373,14 @@ private fun MissionsList(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MISSIONS_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         sections.forEach { section ->
             item(key = "day-${section.day}") {
                 KrtSectionTitle(
                     text = section.day.label(),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                 )
             }
             items(section.missions, key = { it.id }) { mission ->
@@ -399,12 +399,12 @@ private fun MissionsList(
                         ),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.missions_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -429,7 +429,7 @@ private fun MissionRow(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -442,7 +442,7 @@ private fun MissionRow(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -490,7 +490,7 @@ private fun MissionsEmpty(
             ),
         actionText = if (narrowed) stringResource(R.string.missions_filter_reset) else null,
         onAction = if (narrowed) onResetFilters else null,
-        modifier = Modifier.padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.s16),
     )
 }
 

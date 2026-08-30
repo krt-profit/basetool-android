@@ -128,7 +128,7 @@ private fun DetailFailure(
             message = stringResource(R.string.retry_busy_message, retryIn),
             retryLabel = stringResource(R.string.retry_now),
             onRetry = onRetryNow,
-            modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
     } else {
         KrtEmptyState(
@@ -137,7 +137,7 @@ private fun DetailFailure(
             message = stringResource(R.string.materials_detail_missing_message),
             actionText = stringResource(R.string.missions_retry),
             onAction = onRefresh,
-            modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
     }
 }
@@ -169,8 +169,8 @@ private fun DetailBody(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MATERIAL_PRICES_TAG),
-        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         if (!state.online) {
             item(key = "offline") { OfflineBand() }
@@ -215,10 +215,10 @@ private fun BestPrices(state: MaterialDetailState) {
     if (sell == null && buy == null) {
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             sell?.let {
                 KrtFigureTile(
@@ -239,7 +239,7 @@ private fun BestPrices(state: MaterialDetailState) {
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             // The place goes under the figure, never inside the tile: the tile draws one number,
             // and a terminal name in it would read as part of that number.

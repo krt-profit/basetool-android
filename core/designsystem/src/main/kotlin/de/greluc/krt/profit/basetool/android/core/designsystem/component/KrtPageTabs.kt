@@ -100,7 +100,7 @@ private fun PageTab(
     ) {
         Row(
             modifier = Modifier.padding(horizontal = TAB_PADDING_H, vertical = TAB_PADDING_V),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

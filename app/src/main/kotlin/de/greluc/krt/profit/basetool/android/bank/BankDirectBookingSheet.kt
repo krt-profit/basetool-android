@@ -90,8 +90,8 @@ fun BankDirectBookingSheet(
         modifier = Modifier.testTag(BANK_DIRECT_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtSegmentedControl(
                 options =

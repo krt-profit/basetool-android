@@ -89,7 +89,7 @@ fun OrderHandoverSheet(actions: OrderHandoverActions) {
         title = stringResource(R.string.order_handover_title),
         modifier = Modifier.testTag(ORDER_HANDOVER_SHEET_TAG),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             Text(
                 text =
                     stringResource(
@@ -152,7 +152,7 @@ private fun Projection(draft: OrderHandoverDraft) {
     val projected = draft.projected ?: return
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

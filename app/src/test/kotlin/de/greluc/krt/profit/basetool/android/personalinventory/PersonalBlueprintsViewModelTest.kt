@@ -273,6 +273,40 @@ class PersonalBlueprintsViewModelTest {
             assertEquals(listOf("Ballistic Gatling"), source.appliedEntries?.map { it.externalName })
         }
 
+    /**
+     * The preview splits four ways, not three.
+     *
+     * „Zu klären" is not „Unbekannt": the server found candidates for those rows and simply could
+     * not choose. Counting them together would tell a member their file had two unreadable names
+     * when it has one unreadable name and one the web portal can finish (design ch. 18 §2, B2).
+     */
+    @Test
+    fun `the preview separates unclear rows from unknown ones`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            source.previewAnswer =
+                ApiResult.Success(
+                    BlueprintImportPreview(
+                        listOf(
+                            importEntry("Ballistic Gatling", BlueprintImportStatus.MATCHED, "bg"),
+                            importEntry("Panzerplatte S2", BlueprintImportStatus.ALREADY_OWNED, "pp"),
+                            importEntry("Prototype XR-9", BlueprintImportStatus.UNMATCHED, null),
+                            importEntry("Salvage Rig", BlueprintImportStatus.SUGGESTED, null),
+                        ),
+                    ),
+                )
+            val subject = viewModel(source)
+            subject.import.open()
+            subject.import.onFile("export.json", ByteArray(1))
+            advanceUntilIdle()
+
+            val preview = (subject.state.value.import as BlueprintImportStep.Preview).preview
+            assertEquals(listOf("Ballistic Gatling"), preview.importable.map { it.externalName })
+            assertEquals(1, preview.alreadyOwned)
+            assertEquals(listOf("Salvage Rig"), preview.unclear.map { it.externalName })
+            assertEquals(listOf("Prototype XR-9"), preview.unknown.map { it.externalName })
+        }
+
     /** A file the device cannot read is a state, not a crash — and not an HTTP one either. */
     @Test
     fun `an unreadable file is reported`() =

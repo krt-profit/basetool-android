@@ -53,11 +53,11 @@ fun MoreScreen(
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberRootScrollState())
-                .padding(vertical = KrtSpacing.md),
+                .padding(vertical = KrtSpacing.s12),
     ) {
         KrtSectionTitle(
             text = stringResource(R.string.more_section_secondary),
-            modifier = Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
         )
         MORE_DESTINATIONS.forEach { destination ->
             // Every entry is drawn; whether the caller may open it is the server's answer, and an

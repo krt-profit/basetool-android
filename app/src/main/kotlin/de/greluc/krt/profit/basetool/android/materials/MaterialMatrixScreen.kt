@@ -94,8 +94,8 @@ private fun MatrixFilters(
     actions: MatrixActions,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
             value = state.query,
@@ -118,7 +118,7 @@ private fun MatrixFilters(
         if (state.systems.size > 1) {
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KrtFilterChip(
@@ -164,7 +164,7 @@ private fun MatrixBody(
         LazyColumn(
             state = rememberRootListState(),
             modifier = Modifier.fillMaxSize().testTag(MATERIAL_MATRIX_TAG),
-            contentPadding = PaddingValues(bottom = KrtSpacing.lg),
+            contentPadding = PaddingValues(bottom = KrtSpacing.s16),
         ) {
             items(rows, key = { it.materialId }) { row ->
                 MatrixBodyRow(row = row, columns = columns, mode = state.mode, scroll = horizontal)
@@ -176,7 +176,7 @@ private fun MatrixBody(
                         text = stringResource(R.string.materials_matrix_loading),
                         style = MaterialTheme.typography.bodySmall,
                         color = KrtPalette.TextMuted,
-                        modifier = Modifier.padding(KrtSpacing.md),
+                        modifier = Modifier.padding(KrtSpacing.s12),
                     )
                 }
             }
@@ -205,7 +205,7 @@ private fun MatrixEmpty(
             message = stringResource(R.string.materials_matrix_error_message),
             actionText = stringResource(R.string.missions_retry),
             onAction = actions.onRetry,
-            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
         return
     }
@@ -213,7 +213,7 @@ private fun MatrixEmpty(
         iconRes = DesignR.drawable.ic_krt_list,
         title = stringResource(R.string.materials_matrix_empty_title),
         message = stringResource(R.string.materials_empty_message),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -271,7 +271,7 @@ private fun MatrixBodyRow(
             color = KrtPalette.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(MATERIAL_COLUMN).padding(horizontal = KrtSpacing.sm),
+            modifier = Modifier.width(MATERIAL_COLUMN).padding(horizontal = KrtSpacing.s8),
         )
         Row(modifier = Modifier.horizontalScroll(scroll)) {
             columns.forEach { column ->
@@ -289,7 +289,7 @@ private fun MatrixBodyRow(
                             else -> KrtPalette.White
                         },
                     textAlign = TextAlign.End,
-                    modifier = Modifier.width(TERMINAL_COLUMN).padding(horizontal = KrtSpacing.sm),
+                    modifier = Modifier.width(TERMINAL_COLUMN).padding(horizontal = KrtSpacing.s8),
                 )
             }
         }
@@ -316,7 +316,7 @@ private fun HeaderCell(
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         textAlign = align,
-        modifier = Modifier.width(width).padding(horizontal = KrtSpacing.sm),
+        modifier = Modifier.width(width).padding(horizontal = KrtSpacing.s8),
     )
 }
 

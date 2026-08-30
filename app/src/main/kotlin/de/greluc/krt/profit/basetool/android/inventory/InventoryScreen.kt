@@ -189,7 +189,7 @@ fun InventoryScreen(
             if (!state.online) {
                 OfflineBand()
             }
-            Row(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12)) {
                 KrtFilterChip(
                     text = stringResource(R.string.inventory_with_stock_only),
                     selected = state.withStockOnly,
@@ -217,7 +217,7 @@ fun InventoryScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -226,7 +226,7 @@ fun InventoryScreen(
                             message = stringResource(R.string.inventory_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -282,7 +282,7 @@ fun InventoryScreen(
                 modifier =
                     Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(KrtSpacing.lg)
+                        .padding(KrtSpacing.s16)
                         .padding(bottom = LocalKrtBottomBarInset.current)
                         .testTag(INVENTORY_BOOK_TAG),
             )
@@ -385,12 +385,12 @@ private fun InventoryTree(
                         ),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.inventory_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -513,8 +513,8 @@ private fun GroupRow(
                 // it is what separates a group from the stacks underneath it in a long tree. The
                 // orange rail beside it is that artboard's `border-left: 4px solid #E77E23`.
                 .background(KrtPalette.SurfaceInput)
-                .padding(end = KrtSpacing.md, top = KrtSpacing.sm, bottom = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(end = KrtSpacing.s12, top = KrtSpacing.s8, bottom = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(width = GROUP_RAIL, color = MaterialTheme.colorScheme.primary)
@@ -679,11 +679,11 @@ private fun EntryRow(
                 .then(if (selected) Modifier.background(KrtPalette.SurfaceInput) else Modifier)
                 .padding(
                     start = ENTRY_INSET,
-                    end = KrtSpacing.md,
-                    top = KrtSpacing.xs,
-                    bottom = KrtSpacing.xs,
+                    end = KrtSpacing.s12,
+                    top = KrtSpacing.s4,
+                    bottom = KrtSpacing.s4,
                 ),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(
@@ -697,7 +697,7 @@ private fun EntryRow(
             // the same material in different hangars read as duplicates of each other.
             entry.locationName?.takeIf { it.isNotBlank() }?.let { place ->
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     KrtIcon(
@@ -874,8 +874,8 @@ private fun StackRow(
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .background(KrtPalette.Gray4)
-                .padding(start = STACK_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(start = STACK_INSET, end = KrtSpacing.s12, top = KrtSpacing.s4, bottom = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(width = STACK_RAIL, color = KrtPalette.Gray3)
@@ -978,8 +978,8 @@ private fun HolderRow(
             Modifier
                 .fillMaxWidth()
                 .background(KrtPalette.Gray4)
-                .padding(start = HOLDER_INSET, end = KrtSpacing.md, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(start = HOLDER_INSET, end = KrtSpacing.s12, top = KrtSpacing.s4, bottom = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(width = STACK_RAIL, color = KrtPalette.Gray2)
@@ -1019,7 +1019,7 @@ private fun Amount(
     value: String?,
     unit: String?,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs), verticalAlignment = Alignment.Bottom) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4), verticalAlignment = Alignment.Bottom) {
         Text(
             text = formatAmount(value.orEmpty()),
             style = MaterialTheme.typography.bodyMedium,
@@ -1063,9 +1063,9 @@ private fun StackNote(text: String) {
         modifier =
             Modifier.padding(
                 start = STACK_INSET,
-                end = KrtSpacing.md,
-                top = KrtSpacing.xs,
-                bottom = KrtSpacing.xs,
+                end = KrtSpacing.s12,
+                top = KrtSpacing.s4,
+                bottom = KrtSpacing.s4,
             ),
     )
 }
@@ -1091,7 +1091,7 @@ private fun InventoryEmpty(filtered: Boolean) {
                     R.string.inventory_empty_message
                 },
             ),
-        modifier = Modifier.padding(KrtSpacing.lg),
+        modifier = Modifier.padding(KrtSpacing.s16),
     )
 }
 
@@ -1148,8 +1148,8 @@ fun InventoryRoute(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             KrtBottomCtaBar {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // The artboard splits the count in two: the figure heavy and white, the word
@@ -1324,8 +1324,8 @@ private fun BulkCheckoutSheet(
         modifier = Modifier.testTag(INVENTORY_CHECKOUT_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             if (checkout.done) {
                 Text(
@@ -1355,7 +1355,7 @@ private fun BulkCheckoutSheet(
             entries.forEach { entry ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -1429,8 +1429,8 @@ private fun BulkMoveSheet(
         modifier = Modifier.testTag(INVENTORY_BULK_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             if (bulk.result != null) {
                 // No "n entries will be moved" over a batch that already ran — the tiles below say
@@ -1467,7 +1467,7 @@ private fun BulkMoveSheet(
             // re-picking twelve rows to retry punishes the member for the server's answer
             // (artboard 10).
             bulk.error?.let { KrtFieldError(text = stringResource(R.string.inventory_bulk_move_refused)) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = onDismiss,
@@ -1503,7 +1503,7 @@ private fun BulkMoveOutcome(
     place: String?,
     onFinished: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
         KrtFigureTile(
             label = stringResource(R.string.inventory_bulk_move_rebooked),
             value = result.rebooked.toString(),

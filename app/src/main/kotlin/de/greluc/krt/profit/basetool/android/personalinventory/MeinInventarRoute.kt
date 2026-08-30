@@ -74,7 +74,7 @@ fun MeinInventarRoute(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                    .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                     .testTag(MEIN_INVENTAR_SEGMENT_TAG),
             stretch = true,
         )

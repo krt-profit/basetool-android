@@ -153,7 +153,7 @@ fun OperationDetailScreen(
                         message = stringResource(R.string.retry_busy_message, retryIn),
                         retryLabel = stringResource(R.string.retry_now),
                         onRetry = onRetryNow,
-                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                     )
                 } else {
                     OperationDetailFailure(error = phase.error)
@@ -228,7 +228,7 @@ private fun OperationDetailHead(
             },
         subtitle = {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KrtStatusBadge(text = detail.statusLabel(), tone = detail.status.tone())
@@ -244,8 +244,8 @@ private fun OperationDetailHead(
     // invented from an absent field would put a caveat on a figure that may well be final.
     if (detail.payoutPreliminary == true) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Text(
                 text = stringResource(R.string.operation_detail_preliminary),
@@ -304,7 +304,7 @@ private fun OperationDetailBody(
         item(key = "missions-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_missions_title),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             )
         }
         if (overview.rollup.missions.isEmpty()) {
@@ -325,7 +325,7 @@ private fun OperationDetailBody(
                     text = stringResource(R.string.operation_detail_missions_truncated),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.Warning,
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                 )
             }
         }
@@ -334,7 +334,7 @@ private fun OperationDetailBody(
         item(key = "rollup-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_rollup),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             )
         }
         item(key = "rollup") {
@@ -343,7 +343,7 @@ private fun OperationDetailBody(
         item(key = "payouts-title") {
             KrtSectionTitle(
                 text = stringResource(R.string.operation_detail_payouts_title),
-                modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
             )
         }
         if (overview.payouts.rows.isEmpty()) {
@@ -376,7 +376,7 @@ private fun MyShareBand(
     // The band the artboard leads with: a HUD box behind an orange rail, saying in one line what
     // the member is owed and whether it has been paid. It was a muted caption and a plain number,
     // which on a screen of other people's money did not read as the member's own row.
-    Box(modifier = Modifier.padding(KrtSpacing.md)) {
+    Box(modifier = Modifier.padding(KrtSpacing.s12)) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             Box(
                 modifier =
@@ -388,12 +388,12 @@ private fun MyShareBand(
             KrtHudBox(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     ) {
                         Text(
                             text = stringResource(R.string.operation_detail_my_share).uppercase(),
@@ -460,7 +460,7 @@ private fun MyShareSubline(
  */
 @Composable
 private fun RollupBlock(overview: OperationOverview) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12)) {
         KrtKeyValueRow(
             label = stringResource(R.string.operation_detail_rollup_net),
             value = formatAmount(overview.rollup.total.orEmpty()),
@@ -512,8 +512,8 @@ private fun MissionResultRow(
             Modifier
                 .fillMaxWidth()
                 .then(if (id != null) Modifier.clickable { onOpenMission(id) } else Modifier)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -591,13 +591,13 @@ private fun PayoutRow(
     onTogglePaidOut: (OperationPayout) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
             Text(
                 text = row.participantName,
@@ -748,7 +748,7 @@ private fun EmptyLine(text: String) {
         text = text,
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.TextMuted,
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
     )
 }
 
@@ -796,7 +796,7 @@ private fun OperationDetailFailure(error: ApiError) {
         iconRes = DesignR.drawable.ic_krt_clipboard_check,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 

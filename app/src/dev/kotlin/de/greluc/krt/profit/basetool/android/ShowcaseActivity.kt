@@ -142,13 +142,13 @@ private fun ComponentGallery() {
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
-                .padding(KrtSpacing.lg),
+                .padding(KrtSpacing.s16),
         verticalArrangement = Arrangement.spacedBy(SECTION_GAP),
     ) {
         KrtHeading("Komponenten")
 
         KrtSectionTitle("Buttons")
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtCtaButton("Anmelden", {}, iconRes = R.drawable.ic_krt_login)
             KrtSuccessButton("Check-In", {}, iconRes = R.drawable.ic_krt_check)
             KrtOutlineButton("Crew zuweisen", {}, iconRes = R.drawable.ic_krt_users)
@@ -180,11 +180,11 @@ private fun ComponentGallery() {
         }
 
         KrtSectionTitle("Status")
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtOrgBadge("Bereich Profit")
             KrtOrgBadge("TITAN", kind = KrtOrgBadgeKind.Foreign)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             KrtChip("Auftrag", tone = KrtChipTone.Primary)
             KrtChip("Ausgezahlt", tone = KrtChipTone.Success)
             KrtChip("Überbucht", tone = KrtChipTone.Danger)
@@ -244,7 +244,7 @@ private fun ComponentGallery() {
             errorText = "Menge muss größer als 0 sein.",
         )
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -285,7 +285,7 @@ private fun ComponentGallery() {
         KrtChipSelect(value = "Pilot", onClick = {})
 
         KrtSectionTitle("Overlays")
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtCtaButton("Modal", { modal = KrtModalTone.Standard })
             KrtQuietDangerButton("Danger", { modal = KrtModalTone.Danger })
         }

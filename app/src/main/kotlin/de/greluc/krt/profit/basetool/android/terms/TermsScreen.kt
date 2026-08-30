@@ -189,7 +189,7 @@ private fun TermsDocumentColumn(
         modifier =
             modifier
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s24, vertical = KrtSpacing.s16),
     ) {
         Text(
             text = document.intro,
@@ -197,10 +197,10 @@ private fun TermsDocumentColumn(
             color = KrtPalette.Gray1,
         )
         document.sections.forEach { section ->
-            Spacer(Modifier.height(KrtSpacing.lg))
+            Spacer(Modifier.height(KrtSpacing.s16))
             SectionBlock(section)
         }
-        Spacer(Modifier.height(KrtSpacing.lg))
+        Spacer(Modifier.height(KrtSpacing.s16))
         Text(
             text = document.lastUpdated,
             style = MaterialTheme.typography.labelSmall,
@@ -237,14 +237,14 @@ private fun Header(document: TermsDocument) {
             Modifier
                 .fillMaxWidth()
                 .background(KrtPalette.Gray4)
-                .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s24, vertical = KrtSpacing.s16),
     ) {
         Text(
             text = stringResource(R.string.terms_eyebrow).krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = KrtPalette.TextMuted,
         )
-        Spacer(Modifier.height(KrtSpacing.xs))
+        Spacer(Modifier.height(KrtSpacing.s4))
         // The document's own title, uppercased for display only: the server sends it in sentence
         // case and the chapter renders it as a heading, the same way the top bar treats a title.
         Text(
@@ -252,7 +252,7 @@ private fun Header(document: TermsDocument) {
             style = MaterialTheme.typography.titleLarge,
             color = KrtPalette.Orange,
         )
-        Spacer(Modifier.height(KrtSpacing.xs))
+        Spacer(Modifier.height(KrtSpacing.s4))
         Text(
             text = stringResource(R.string.terms_version, document.version),
             style = MaterialTheme.typography.labelSmall,
@@ -275,7 +275,7 @@ private fun SectionBlock(section: TermsSection) {
         color = KrtPalette.Gray1,
     )
     section.clauses.forEach { clause ->
-        Spacer(Modifier.height(KrtSpacing.xs))
+        Spacer(Modifier.height(KrtSpacing.s4))
         ClauseBlock(clause)
     }
 }
@@ -297,7 +297,7 @@ private fun ClauseBlock(clause: TermsClause) {
             text = BULLET + bullet,
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.TextMuted,
-            modifier = Modifier.padding(start = BULLET_INDENT, top = KrtSpacing.xs),
+            modifier = Modifier.padding(start = BULLET_INDENT, top = KrtSpacing.s4),
         )
     }
 }
@@ -328,7 +328,7 @@ private fun ActionBar(
             modifier
                 .fillMaxWidth()
                 .background(KrtPalette.Gray4)
-                .padding(horizontal = KrtSpacing.xl, vertical = KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s24, vertical = KrtSpacing.s16),
     ) {
         KrtCheckboxRow(
             checked = checked,
@@ -337,14 +337,14 @@ private fun ActionBar(
             enabled = !accepting,
         )
         errorRes?.let { message ->
-            Spacer(Modifier.height(KrtSpacing.sm))
+            Spacer(Modifier.height(KrtSpacing.s8))
             Text(
                 text = stringResource(message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.DangerText,
             )
         }
-        Spacer(Modifier.height(KrtSpacing.md))
+        Spacer(Modifier.height(KrtSpacing.s12))
         KrtCtaButton(
             text = stringResource(R.string.terms_accept),
             onClick = onAccept,
@@ -355,7 +355,7 @@ private fun ActionBar(
             iconRes = DesignR.drawable.ic_krt_clipboard_check,
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(Modifier.height(KrtSpacing.xs))
+        Spacer(Modifier.height(KrtSpacing.s4))
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             KrtGhostButton(
                 text = stringResource(R.string.terms_decline),

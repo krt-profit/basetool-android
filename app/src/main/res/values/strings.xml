@@ -724,6 +724,7 @@
         <item quantity="other">%1$d Aufträge</item>
     </plurals>
     <string name="orders_demand_open">%1$s %2$s offen</string>
+    <string name="orders_demand_progress">%1$s %2$s zugesagt · %3$s %4$s übergeben</string>
     <string name="orders_demand_share">%1$s %2$s</string>
     <string name="orders_demand_filter_all">Alle</string>
     <string name="orders_demand_filter_uncovered">Ungedeckt</string>
@@ -894,7 +895,8 @@
     <string name="blueprints_import_owned">Vorhanden</string>
     <string name="blueprints_import_unknown">Unbekannt</string>
     <string name="blueprints_import_unknown_note">Unbekannte Zeilen werden übersprungen, nicht abgelehnt — der Import läuft trotzdem.</string>
-    <string name="blueprints_import_suggested_hint">Zeilen, zu denen der Server nur Vorschläge findet, zählen hier als unbekannt: die Auswahl zwischen Vorschlägen gibt es nur im Webportal.</string>
+    <string name="blueprints_import_unclear">Zu klären</string>
+    <string name="blueprints_import_unclear_note">Für diese Zeilen hat der Server Kandidaten gefunden, aber keinen eindeutig zugeordnet. Sie werden nicht übernommen — die Zuordnung geschieht im Web-Portal.</string>
     <plurals name="blueprints_import_apply">
         <item quantity="one">%1$d übernehmen</item>
         <item quantity="other">%1$d übernehmen</item>

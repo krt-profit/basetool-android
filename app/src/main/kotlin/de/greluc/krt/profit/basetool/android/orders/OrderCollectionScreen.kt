@@ -96,8 +96,8 @@ fun OrderCollectionScreen(
     LazyColumn(
         state = rememberRootListState(),
         modifier = modifier.fillMaxSize().testTag(ORDER_COLLECTION_TAG),
-        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         item(key = "rows-title") {
             KrtSectionTitle(
@@ -148,10 +148,10 @@ private fun CollectionRow(
     actions: CollectionActions,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -190,7 +190,7 @@ private fun CollectionRow(
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Muted(
@@ -223,8 +223,8 @@ private fun UnbackedRow(
     actions: CollectionActions,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

@@ -288,7 +288,7 @@ fun MissionDetailScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         MissionDetailFailure(error = phase.error)
@@ -465,7 +465,7 @@ private fun SignUpBar(
     val mine = state.mySignUp
     Column(modifier = Modifier.fillMaxWidth()) {
         state.error?.let { error ->
-            Box(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+            Box(modifier = Modifier.padding(horizontal = KrtSpacing.s12)) {
                 SignUpError(error = error)
             }
         }
@@ -477,7 +477,7 @@ private fun SignUpBar(
                 text = stringResource(R.string.mission_detail_check_in_not_yet),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
-                modifier = Modifier.padding(horizontal = KrtSpacing.md),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             )
         }
         // The payout preference is a standing SETTING, not an action, and it used to sit in the
@@ -589,10 +589,10 @@ private fun PayoutPreference(
             Modifier
                 .fillMaxWidth()
                 .background(KrtPalette.Gray4)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                 .testTag(MISSION_PAYOUT_TAG)
                 .writeAlpha(state.writable),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Text(
             text = stringResource(R.string.mission_detail_payout_label),
@@ -601,7 +601,7 @@ private fun PayoutPreference(
         )
         // Wrapping, not a fixed row: „Auszahlung an mich" and „An die Organisation spenden" are
         // long enough together that a narrow phone would otherwise clip the second label.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtRadioRow(
                 selected = mine.donating != true,
                 onSelect = { if (mine.donating == true) actions.onTogglePayoutPreference() },
@@ -739,8 +739,8 @@ private fun MissionTabContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MISSION_DETAIL_CONTENT_TAG),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         when (state.tab) {
             MissionTab.OVERVIEW -> overviewTab(detail)
@@ -802,10 +802,10 @@ private fun ParticipantRow(
     isMine: Boolean,
     roster: MissionRosterActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -873,7 +873,7 @@ private fun ParticipantManagerActions(
         rememberGated(gate, { roster.onPayout(participant.id) }, roster.denials)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtGhostButton(
@@ -932,8 +932,8 @@ private fun ParticipantFunctionSelect(
     // Funktionen do not fit one phone line, and a horizontal scroller would hide the ones past the
     // edge behind a gesture nothing announces.
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         roster.jobTypes.forEach { jobType ->
             val (dim, click) =
@@ -970,10 +970,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
         return
     }
     items(detail.units, key = { it.id }) { unit ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -1000,7 +1000,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
             UnitRowActions(unit = unit, structure = structure)
             CrewAdd(unit = unit, roster = detail.participants, structure = structure)
             unit.crew.forEach { member ->
-                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                     Text(
                         text = member.name,
                         style = MaterialTheme.typography.bodySmall,
@@ -1042,10 +1042,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
         return
     }
     items(detail.steps, key = { it.id }) { step ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -1093,10 +1093,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
         return
     }
     items(detail.objectives, key = { it.id }) { objective ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -1163,8 +1163,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
                             )
                         }
                     }
-                    .padding(vertical = KrtSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    .padding(vertical = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -1242,7 +1242,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(
     actions: MissionFinanceActions,
 ) {
     item {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             KrtKeyValueRow(
                 label = stringResource(R.string.mission_detail_finance_income),
                 value = formatSignedAmount(finances.incomeSum.orEmpty(), income = true),
@@ -1315,7 +1315,7 @@ private fun FinanceEntryRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -1383,8 +1383,8 @@ private fun FinanceEntrySheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtFieldLabel(text = stringResource(R.string.mission_detail_finance_type))
             KrtSegmentedControl(
@@ -1431,7 +1431,7 @@ private fun FinanceEntrySheet(
                 enabled = !state.saving,
             )
             state.error?.let { error -> SignUpError(error = error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = actions.onDismiss,
@@ -1460,7 +1460,7 @@ private fun EmptyTab(messageRes: Int) {
         text = stringResource(messageRes),
         style = MaterialTheme.typography.bodyMedium,
         color = KrtPalette.TextMuted,
-        modifier = Modifier.padding(vertical = KrtSpacing.md),
+        modifier = Modifier.padding(vertical = KrtSpacing.s12),
     )
 }
 
@@ -1493,7 +1493,7 @@ private fun MissionDetailFailure(error: ApiError) {
         iconRes = DesignR.drawable.ic_krt_target,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -1754,8 +1754,8 @@ private fun MissionJoinSheet(
         modifier = Modifier.testTag(MISSION_JOIN_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
                 text = subject,
@@ -1782,8 +1782,8 @@ private fun MissionJoinSheet(
                 // FlowRow: five Funktionen do not fit one phone line, and a horizontal scroller
                 // would hide the ones past the edge behind a gesture nothing announces.
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                    verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 ) {
                     sheet.jobTypes.forEach { jobType ->
                         KrtFilterChip(

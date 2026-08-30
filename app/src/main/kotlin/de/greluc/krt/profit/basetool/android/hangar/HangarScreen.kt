@@ -156,7 +156,7 @@ fun HangarScreen(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = KrtSpacing.md, end = KrtSpacing.md, top = KrtSpacing.md)
+                        .padding(start = KrtSpacing.s12, end = KrtSpacing.s12, top = KrtSpacing.s12)
                         .testTag(HANGAR_SEGMENT_TAG),
             )
             KrtTextField(
@@ -164,7 +164,7 @@ fun HangarScreen(
                 value = state.searchText,
                 onValueChange = onSearchChanged,
                 placeholder = stringResource(R.string.hangar_search_placeholder),
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md).testTag(HANGAR_SEARCH_TAG),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12).testTag(HANGAR_SEARCH_TAG),
             )
 
             when (state.phase) {
@@ -187,7 +187,7 @@ fun HangarScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -196,7 +196,7 @@ fun HangarScreen(
                             message = stringResource(R.string.hangar_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -231,7 +231,7 @@ fun HangarScreen(
                 modifier =
                     Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(KrtSpacing.lg)
+                        .padding(KrtSpacing.s16)
                         .padding(bottom = LocalKrtBottomBarInset.current)
                         .testTag(HANGAR_ADD_TAG),
             )
@@ -255,7 +255,7 @@ private fun ShipCardActions(
     // "LÖSCHEN" is the widest, loudest thing on a card whose subject is a ship, and it made the
     // destructive action the most prominent one on every row.
     Row(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs, Alignment.End),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
     ) {
@@ -301,8 +301,8 @@ private fun HangarBody(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(HANGAR_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         if (state.segment == HangarSegment.MINE && wide) {
             // Design ch. 08: the tablet gets the web app's full table, the phone the cards.
@@ -336,7 +336,7 @@ private fun HangarBody(
             item(key = "org-note") {
                 Text(
                     text = stringResource(R.string.hangar_org_note),
-                    modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
                 )
@@ -348,12 +348,12 @@ private fun HangarBody(
                     text = state.countLabel(),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.hangar_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -474,7 +474,7 @@ private fun ShipCard(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.Top,
         ) {
             ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
@@ -571,7 +571,7 @@ private fun ShipCardBody(ship: Ship) {
             overflow = TextOverflow.Ellipsis,
         )
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Insurance first, then fitted — the artboard's order, and the useful one: the policy
@@ -593,7 +593,7 @@ private fun ShipCardBody(ship: Ship) {
             )
             ship.locationName?.takeIf { it.isNotBlank() }?.let { place ->
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Design ch. 08: "Ort with map-pin". A bare place name beside two chips reads
@@ -637,8 +637,8 @@ private fun Ship.headline(): String = name?.let { "$typeName „$it\"" } ?: type
 @Composable
 private fun ShipTypeFigures(types: List<ShipTypeSummary>) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtFigureTile(
             label = stringResource(R.string.hangar_figure_ships),
@@ -691,7 +691,7 @@ private fun ShipTypeTable(
             0 -> {
                 Row(
                     modifier = Modifier.weight(columns[0].weight),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ManufacturerMark(type.manufacturerAbbreviation, type.manufacturerName)
@@ -716,7 +716,7 @@ private fun ShipTypeTable(
                     modifier =
                         Modifier
                             .weight(columns[2].weight)
-                            .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                            .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
                     textAlign = TextAlign.End,
                     style = MaterialTheme.typography.bodyMedium,
                     color = KrtTheme.colors.successText,
@@ -756,7 +756,7 @@ private fun HangarEmpty(
         iconRes = DesignR.drawable.ic_krt_ship,
         title = stringResource(title),
         message = stringResource(message),
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -894,8 +894,8 @@ fun HangarRoute(
                 message = pluralStringResource(R.plurals.hangar_bulk_home_location_done, affected, affected),
                 modifier =
                     Modifier
-                        .padding(horizontal = KrtSpacing.lg)
-                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+                        .padding(horizontal = KrtSpacing.s16)
+                        .padding(bottom = KrtSpacing.s16 + LocalKrtBottomBarInset.current),
             )
         }
     }
@@ -912,8 +912,8 @@ fun HangarRoute(
                 message = pluralStringResource(R.plurals.hangar_clear_done, emptied, emptied),
                 modifier =
                     Modifier
-                        .padding(horizontal = KrtSpacing.lg)
-                        .padding(bottom = KrtSpacing.lg + LocalKrtBottomBarInset.current),
+                        .padding(horizontal = KrtSpacing.s16)
+                        .padding(bottom = KrtSpacing.s16 + LocalKrtBottomBarInset.current),
             )
         }
     }
@@ -999,8 +999,8 @@ private fun BulkHomeLocationSheet(
         modifier = Modifier.testTag(HANGAR_BULK_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtSelectField(
                 value = bulk.place?.name ?: stringResource(R.string.hangar_location_none),
@@ -1026,7 +1026,7 @@ private fun BulkHomeLocationSheet(
             bulk.error?.let {
                 KrtFieldError(text = stringResource(R.string.hangar_bulk_home_location_refused))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = onDismiss,

@@ -50,7 +50,7 @@ fun KrtTabRow(titles: List<String>, counts: List<Int?> , selected: Int, onSelect
                 Row(
                     Modifier.weight(1f).clickableTab { if (locked) onLocked(i) else onSelect(i) },
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 ) {
                     Text(
                         title.uppercase(),
@@ -89,7 +89,7 @@ fun KrtSegment(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
                     modifier = if (locked) Modifier.alpha(0.45f) else Modifier,
                 )
                 if (locked) {
-                    Spacer(Modifier.width(KrtSpacing.xs))
+                    Spacer(Modifier.width(KrtSpacing.s4))
                     Icon(painterResource(R.drawable.ic_krt_lock), contentDescription = null, tint = KrtPalette.TextMuted, modifier = Modifier.size(12.dp))
                 }
             }
@@ -221,7 +221,7 @@ fun krtFormat(value: Long): String = java.text.NumberFormat.getIntegerInstance(j
  */
 @Composable
 fun KrtEmptyState(text: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
-    Column(modifier.fillMaxWidth().padding(KrtSpacing.md), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(modifier.fillMaxWidth().padding(KrtSpacing.s12), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         Text(text, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.TextMuted)
         action?.invoke()
     }

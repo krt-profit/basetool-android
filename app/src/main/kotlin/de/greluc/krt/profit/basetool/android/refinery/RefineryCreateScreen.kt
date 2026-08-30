@@ -103,8 +103,8 @@ fun RefineryCreateScreen(
     val lockReason = stringResource(R.string.refinery_edit_locked_stored)
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag(REFINERY_CREATE_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (locked) {
             // Artboard 6 is explicit that the info block comes BEFORE the fields it explains: a
@@ -118,7 +118,7 @@ fun RefineryCreateScreen(
             }
         }
         item(key = "where") {
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 PickerField(
                     label = stringResource(R.string.refinery_create_location),
                     options = state.refineries.map { KrtOption(value = it.first, label = it.second) },
@@ -195,7 +195,7 @@ fun RefineryCreateScreen(
             MoneyBlock(state = state, draft = draft, onDraftChanged = actions.onDraftChanged)
         }
         item(key = "cta") {
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 state.error?.let {
                     Text(
                         text = stringResource(R.string.refinery_create_failed),
@@ -247,7 +247,7 @@ private fun GoodCard(
     lockReason: String = "",
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             // A picker, not free text: the wire wants a material id, and a typed name carries
             // none — every line would be dropped and the form could never be sent.
             MaterialField(
@@ -329,7 +329,7 @@ private fun TimingBlock(
     draft: RefineryOrderDraft,
     onDraftChanged: (RefineryOrderDraft) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         Text(
             text = stringResource(R.string.refinery_create_timing),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
@@ -344,7 +344,7 @@ private fun TimingBlock(
             // A run is entered after it was started, so the past is the normal case here.
             warnPast = false,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             NumberField(
                 label = stringResource(R.string.refinery_create_hours),
                 value = draft.durationHours,
@@ -386,7 +386,7 @@ private fun MoneyBlock(
     // Starts closed: the design says all three fields are usually zero, and a block that is usually
     // empty should not be the first thing between a member and the CTA.
     var open by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         KrtOutlineButton(
             text =
                 if (open) {

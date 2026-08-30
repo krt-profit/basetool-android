@@ -703,6 +703,7 @@
         <item quantity="other">%1$d Aufträge</item>
     </plurals>
     <string name="orders_demand_open">%1$s %2$s open</string>
+    <string name="orders_demand_progress">%1$s %2$s claimed · %3$s %4$s handed over</string>
     <string name="orders_demand_share">%1$s %2$s</string>
     <string name="orders_demand_filter_all">All</string>
     <string name="orders_demand_filter_uncovered">Uncovered</string>
@@ -873,7 +874,8 @@
     <string name="blueprints_import_owned">Owned</string>
     <string name="blueprints_import_unknown">Unknown</string>
     <string name="blueprints_import_unknown_note">Unknown lines are skipped, not refused — the import runs anyway.</string>
-    <string name="blueprints_import_suggested_hint">Lines the server only finds suggestions for count as unknown here: choosing between suggestions exists only in the web portal.</string>
+    <string name="blueprints_import_unclear">To resolve</string>
+    <string name="blueprints_import_unclear_note">The server found candidates for these lines but could not match one. They are not taken over — the matching happens in the web portal.</string>
     <plurals name="blueprints_import_apply">
         <item quantity="one">Take over %1$d</item>
         <item quantity="other">Take over %1$d</item>

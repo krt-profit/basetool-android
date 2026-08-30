@@ -253,7 +253,7 @@ fun KrtButton(
                 )
                 .background(container)
                 .then(if (borderColor != null) Modifier.border(KrtSpacing.hairline, borderColor) else Modifier)
-                .defaultMinSize(minHeight = KrtSpacing.field)
+                .defaultMinSize(minHeight = KrtSpacing.controlHeight)
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(
                     interactionSource = interactionSource,
@@ -263,7 +263,7 @@ fun KrtButton(
                     onClick = onClick,
                 )
                 .padding(horizontal = BUTTON_HORIZONTAL_PADDING),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CompositionLocalProvider(LocalContentColor provides content) {
@@ -405,8 +405,8 @@ fun KrtIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     style: KrtButtonStyle = KrtButtonStyles.ghost,
-    width: Dp = KrtSpacing.field,
-    height: Dp = KrtSpacing.field,
+    width: Dp = KrtSpacing.controlHeight,
+    height: Dp = KrtSpacing.controlHeight,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -446,7 +446,7 @@ fun KrtIconButton(
 private fun ButtonLadderPreview() {
     KrtPreviewSurface {
         androidx.compose.foundation.layout.Column(
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtCtaButton("Anmelden", {}, iconRes = R.drawable.ic_krt_login)
             KrtSuccessButton("Check-In", {}, iconRes = R.drawable.ic_krt_check)
@@ -493,7 +493,7 @@ fun KrtAssocAdd(
     Row(
         modifier =
             modifier
-                .defaultMinSize(minHeight = KrtSpacing.field)
+                .defaultMinSize(minHeight = KrtSpacing.controlHeight)
                 .krtDashedBorder(border)
                 .clickable(
                     interactionSource = interactionSource,
@@ -502,8 +502,8 @@ fun KrtAssocAdd(
                     role = Role.Button,
                     onClick = onClick,
                 )
-                .padding(horizontal = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIcon(

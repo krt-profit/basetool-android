@@ -111,7 +111,7 @@ fun KrtOrgBadge(
                 .then(
                     if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier,
                 )
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
     ) {
         Text(
             text = text.krtUppercase(),
@@ -190,7 +190,7 @@ fun KrtChip(
             modifier
                 .background(fill)
                 .border(KrtSpacing.hairline, borderColor)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
     ) {
         Text(
             text = if (tone == KrtChipTone.Data) text else text.krtUppercase(),
@@ -250,7 +250,7 @@ fun KrtFilterChip(
             modifier =
                 Modifier
                     .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-                    .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                    .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
             style = MaterialTheme.typography.labelMedium,
             color = hue,
             // A chip's label is one word or one short phrase and is atomic: it either fits or the
@@ -265,7 +265,7 @@ fun KrtFilterChip(
                 modifier =
                     Modifier
                         .clickable(enabled = enabled, role = Role.Button, onClick = onClear)
-                        .padding(end = KrtSpacing.sm, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
+                        .padding(end = KrtSpacing.s8, top = KrtSpacing.s4, bottom = KrtSpacing.s4),
             ) {
                 KrtIcon(
                     id = R.drawable.ic_krt_close,
@@ -316,9 +316,9 @@ fun KrtChoiceChip(
                 .background(if (selected) hue else KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, if (selected) hue else KrtPalette.Gray3)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs)
+                .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4)
                 .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Text(
             text = text.krtUppercase(),
@@ -360,7 +360,7 @@ fun KrtDepartmentTag(
             modifier
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, color)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
+                .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
     ) {
         Text(
             text = text.krtUppercase(),
@@ -428,7 +428,7 @@ fun KrtStatusPill(
     val color = tone.color()
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(STATUS_DOT).background(color))
@@ -461,25 +461,25 @@ fun KrtStatusBadge(
         modifier =
             modifier
                 .background(color.copy(alpha = CHIP_TINT_ALPHA))
-                .defaultMinSize(minHeight = KrtSpacing.xl),
+                .defaultMinSize(minHeight = KrtSpacing.s24),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(width = STATUS_BADGE_EDGE, height = KrtSpacing.xl)
+                    .size(width = STATUS_BADGE_EDGE, height = KrtSpacing.s24)
                     .background(color),
         )
         Box(
             modifier =
                 Modifier
-                    .padding(start = KrtSpacing.sm)
+                    .padding(start = KrtSpacing.s8)
                     .size(10.dp)
                     .background(color),
         )
         Text(
             text = text.krtUppercase(),
-            modifier = Modifier.padding(horizontal = KrtSpacing.sm),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s8),
             style = MaterialTheme.typography.labelMedium,
             color = color,
         )
@@ -525,7 +525,7 @@ fun KrtPresenceIndicator(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -574,7 +574,7 @@ fun KrtUpdateAvailablePill(
                 .border(KrtSpacing.hairline, MaterialTheme.colorScheme.primary)
                 .defaultMinSize(minHeight = KrtSpacing.touchTarget)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s16),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -589,13 +589,13 @@ fun KrtUpdateAvailablePill(
 @Composable
 private fun StatusPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtOrgBadge("Bereich Profit")
                 KrtOrgBadge("TITAN", kind = KrtOrgBadgeKind.Foreign)
                 KrtOrgBadge("Alle Einheiten", kind = KrtOrgBadgeKind.Muted)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 KrtChip("Auftrag", tone = KrtChipTone.Primary)
                 KrtChip("Ausgezahlt", tone = KrtChipTone.Success)
                 KrtChip("Überbucht", tone = KrtChipTone.Danger)

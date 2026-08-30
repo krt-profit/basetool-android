@@ -78,7 +78,7 @@ internal fun LazyListScope.claimsTab(
         return
     }
     items(state.buckets, key = { it.materialId + "-" + it.quality.name }) { bucket ->
-        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs)) {
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4)) {
             ClaimBucketRow(bucket = bucket, state = state, actions = actions)
         }
     }
@@ -105,10 +105,10 @@ private fun ClaimBucketRow(
     actions: ClaimActions,
 ) {
     val mine = state.defaultUnit?.let { bucket.claimOf(it.id) }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -131,7 +131,7 @@ private fun ClaimBucketRow(
         if (bucket.claims.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 bucket.claims.forEach { claim ->
@@ -186,7 +186,7 @@ fun OrderClaimSheet(actions: ClaimActions) {
         onDismiss = actions.onDismiss,
         title = stringResource(R.string.order_claims_sheet_title, draft.materialName),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             Body(
                 text =
                     stringResource(

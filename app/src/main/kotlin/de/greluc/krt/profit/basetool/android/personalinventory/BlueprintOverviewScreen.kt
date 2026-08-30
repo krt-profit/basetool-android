@@ -85,12 +85,12 @@ fun BlueprintOverviewScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(KrtSpacing.md)
+                    .padding(KrtSpacing.s12)
                     .testTag(BLUEPRINT_OVERVIEW_SEARCH_TAG),
         )
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             KrtFilterChip(
                 text = stringResource(R.string.blueprint_overview_filter_all),
@@ -118,7 +118,7 @@ fun BlueprintOverviewScreen(
                     message = stringResource(R.string.blueprint_overview_failed_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRetry,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
 
@@ -152,14 +152,14 @@ private fun OverviewList(
             iconRes = DesignR.drawable.ic_krt_blueprint,
             title = stringResource(R.string.blueprint_overview_empty_title),
             message = stringResource(R.string.blueprint_overview_empty_message),
-            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(BLUEPRINT_OVERVIEW_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         item(key = "count") {
             Text(
@@ -214,7 +214,7 @@ private fun OverviewCard(
     owners: OwnersState?,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             Text(
                 text = entry.productName,
                 style = MaterialTheme.typography.bodyMedium,
@@ -265,10 +265,10 @@ private fun OwnerChips(owners: List<BlueprintOwner>) {
         )
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
         owners.forEach { owner ->
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
                 KrtChip(text = owner.name, tone = KrtChipTone.Primary)
                 if (!owner.orgUnitMember) {

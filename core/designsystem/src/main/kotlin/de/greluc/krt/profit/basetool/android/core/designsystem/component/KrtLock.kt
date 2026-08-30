@@ -180,7 +180,7 @@ fun KrtLockToast(
                 .background(KrtPalette.Gray4)
                 .border(KrtSpacing.hairline, KrtTheme.colors.warning)
                 .krtCornerBrackets(color = KrtTheme.colors.warning)
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
     ) {
         KrtIcon(
             id = R.drawable.ic_krt_lock,

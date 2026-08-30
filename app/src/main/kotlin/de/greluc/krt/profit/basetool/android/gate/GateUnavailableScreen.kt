@@ -95,7 +95,7 @@ fun GateUnavailableScreen(
                 Modifier
                     .widthIn(max = COLUMN_MAX_WIDTH)
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.xl),
+                    .padding(horizontal = KrtSpacing.s24),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -105,21 +105,21 @@ fun GateUnavailableScreen(
                 size = STATUS_ICON,
                 tint = KrtPalette.TextMuted,
             )
-            Spacer(Modifier.height(KrtSpacing.md))
+            Spacer(Modifier.height(KrtSpacing.s12))
             Text(
                 text = stringResource(if (offline) R.string.gate_offline_title else R.string.gate_error_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = KrtPalette.White,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(KrtSpacing.md))
+            Spacer(Modifier.height(KrtSpacing.s12))
             Text(
                 text = stringResource(if (offline) R.string.gate_offline_body else R.string.gate_error_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.Gray1,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(KrtSpacing.sm))
+            Spacer(Modifier.height(KrtSpacing.s8))
             Text(
                 // The countdown lives INSIDE the sentence that explains the wait, as the chapter
                 // draws it. Split across two lines, the number reads as a fact about the app and
@@ -134,7 +134,7 @@ fun GateUnavailableScreen(
                 textAlign = TextAlign.Center,
             )
             accountName?.let { name ->
-                Spacer(Modifier.height(KrtSpacing.sm))
+                Spacer(Modifier.height(KrtSpacing.s8))
                 Text(
                     text = stringResource(R.string.gate_signed_in_as, name),
                     style = MaterialTheme.typography.labelMedium,
@@ -143,7 +143,7 @@ fun GateUnavailableScreen(
                 )
             }
             if (escalate) {
-                Spacer(Modifier.height(KrtSpacing.md))
+                Spacer(Modifier.height(KrtSpacing.s12))
                 Text(
                     // One line after the third failed attempt, and nothing else changes — no red,
                     // no error face. The state is still waiting, not blame (design ch. 14).
@@ -153,7 +153,7 @@ fun GateUnavailableScreen(
                     textAlign = TextAlign.Center,
                 )
             }
-            Spacer(Modifier.height(KrtSpacing.xl))
+            Spacer(Modifier.height(KrtSpacing.s24))
             KrtOutlineButton(
                 text =
                     stringResource(
@@ -169,7 +169,7 @@ fun GateUnavailableScreen(
                 enabled = !attempting,
             )
             if (attempting) {
-                Spacer(Modifier.height(KrtSpacing.sm))
+                Spacer(Modifier.height(KrtSpacing.s8))
                 Text(
                     text = stringResource(R.string.gate_attempt_note),
                     style = MaterialTheme.typography.labelSmall,
@@ -177,7 +177,7 @@ fun GateUnavailableScreen(
                     textAlign = TextAlign.Center,
                 )
             }
-            Spacer(Modifier.height(KrtSpacing.md))
+            Spacer(Modifier.height(KrtSpacing.s12))
             KrtQuietDangerButton(
                 text = stringResource(R.string.logout),
                 onClick = onLogout,

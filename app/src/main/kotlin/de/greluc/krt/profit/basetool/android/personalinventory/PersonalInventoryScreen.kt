@@ -114,8 +114,8 @@ fun PersonalInventoryScreen(
                 OfflineBand()
             }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KrtTextField(
@@ -145,7 +145,7 @@ fun PersonalInventoryScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -154,7 +154,7 @@ fun PersonalInventoryScreen(
                             message = stringResource(R.string.personal_inventory_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -178,7 +178,7 @@ fun PersonalInventoryScreen(
                                                 R.string.personal_inventory_empty_filtered_message
                                             },
                                         ),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else {
@@ -213,7 +213,7 @@ fun PersonalInventoryScreen(
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(KrtSpacing.lg)
+                    .padding(KrtSpacing.s16)
                     .padding(bottom = LocalKrtBottomBarInset.current)
                     .testTag(PERSONAL_INVENTORY_CREATE_TAG),
         )
@@ -254,15 +254,15 @@ private fun BoxScope.SelectionActionBar(
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         KrtBottomCtaBar {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val result = state.bulkResult
                 if (result == null) {
                     Row(
                         modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -441,7 +441,7 @@ private fun ItemRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (selected) {
@@ -467,7 +467,7 @@ private fun ItemRow(
             // beside it. A bare "24" leaves a member to guess whether it is pieces or SCU, and on
             // an item list it is always pieces — which is exactly why saying so costs nothing.
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(

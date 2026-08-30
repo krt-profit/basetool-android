@@ -76,7 +76,7 @@ internal fun LazyListScope.positionsTab(
     // branch, because on its own it reads as a second thing that was ordered.
     val topLevel = if (tree.isEmpty()) order.items else tree.map { it.line }
     items(topLevel, key = { "item-" + (it.id ?: it.name.orEmpty()) }) { line ->
-        Column(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+        Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12)) {
             ItemLine(
                 item = line,
                 // A line the server sent without an id or a version cannot be addressed by the
@@ -121,7 +121,7 @@ internal fun LazyListScope.positionsTab(
         }
     } else {
         items(order.materials, key = { it.name }) { material ->
-            Column(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
+            Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12)) {
                 MaterialLine(material = material)
             }
         }
@@ -152,8 +152,8 @@ private fun SubAssemblies(
         return
     }
     Column(
-        modifier = Modifier.padding(start = KrtSpacing.md, top = KrtSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = Modifier.padding(start = KrtSpacing.s12, top = KrtSpacing.s4),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         KrtSectionTitle(
             text = stringResource(R.string.order_detail_subassemblies),
@@ -182,12 +182,12 @@ private fun SubAssembly(
     stock: JobOrderItemStock?,
 ) {
     Column(
-        modifier = Modifier.padding(start = KrtSpacing.md),
+        modifier = Modifier.padding(start = KrtSpacing.s12),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -369,8 +369,8 @@ internal fun OrderFactsBar(order: JobOrder) {
                 .fillMaxWidth()
                 .background(KrtPalette.SurfaceInput)
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         facts.forEach { (label, value) ->
@@ -413,7 +413,7 @@ internal fun RedactionNotice(order: JobOrder) {
         text = stringResource(R.string.orders_redacted),
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.Warning,
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
     )
 }
 
@@ -427,7 +427,7 @@ internal fun RedactionNotice(order: JobOrder) {
  */
 @Composable
 private fun CommentCard(comment: String) {
-    KrtRailCard(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md)) {
+    KrtRailCard(modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12)) {
         Text(
             text = stringResource(R.string.order_detail_comment).uppercase(),
             style = MaterialTheme.typography.labelMedium,
@@ -437,7 +437,7 @@ private fun CommentCard(comment: String) {
             text = comment,
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.Gray1,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
         )
     }
 }

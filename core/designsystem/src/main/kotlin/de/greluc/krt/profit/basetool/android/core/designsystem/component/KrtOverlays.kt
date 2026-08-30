@@ -135,7 +135,7 @@ fun KrtModal(
                 modifier =
                     modifier
                         .widthIn(max = MODAL_MAX_WIDTH)
-                        .padding(KrtSpacing.lg)
+                        .padding(KrtSpacing.s16)
                         .krtBloom(bloom, MODAL_BLOOM)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(KrtSpacing.hairline, KrtPalette.Gray3)
@@ -149,12 +149,12 @@ fun KrtModal(
                             .background(accent),
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = KrtSpacing.lg),
+                    modifier = Modifier.fillMaxWidth().padding(start = KrtSpacing.s16),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = title.krtUppercase(),
-                        modifier = Modifier.weight(1f).padding(vertical = KrtSpacing.md),
+                        modifier = Modifier.weight(1f).padding(vertical = KrtSpacing.s12),
                         style = MaterialTheme.typography.titleLarge,
                         color = KrtPalette.White,
                     )
@@ -165,12 +165,12 @@ fun KrtModal(
                     )
                 }
                 Column(
-                    modifier = Modifier.padding(horizontal = KrtSpacing.lg),
+                    modifier = Modifier.padding(horizontal = KrtSpacing.s16),
                     content = content,
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.End),
+                    modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.End),
                 ) {
                     KrtGhostButton(text = cancelText, onClick = onDismiss)
                     if (tone == KrtModalTone.Danger) {
@@ -233,7 +233,7 @@ fun KrtToast(
                 .background(KrtPalette.Black.copy(alpha = TOAST_FILL_ALPHA))
                 .border(KrtSpacing.hairline, accent)
                 .krtCornerBrackets(color = accent)
-                .padding(KrtSpacing.lg),
+                .padding(KrtSpacing.s16),
     ) {
         Text(
             text = title.krtUppercase(),
@@ -242,7 +242,7 @@ fun KrtToast(
         )
         Text(
             text = message,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.Gray1,
         )
@@ -250,7 +250,7 @@ fun KrtToast(
             KrtGhostButton(
                 text = actionLabel,
                 onClick = onAction,
-                modifier = Modifier.padding(top = KrtSpacing.sm),
+                modifier = Modifier.padding(top = KrtSpacing.s8),
             )
         }
     }
@@ -317,7 +317,7 @@ fun KrtBottomSheet(
                 Box(
                     modifier =
                         Modifier
-                            .padding(top = KrtSpacing.sm, bottom = KrtSpacing.xs)
+                            .padding(top = KrtSpacing.s8, bottom = KrtSpacing.s4)
                             .size(width = DRAG_HANDLE_WIDTH, height = DRAG_HANDLE_HEIGHT)
                             .clip(PillShape)
                             .background(KrtPalette.Gray2),
@@ -337,7 +337,7 @@ fun KrtBottomSheet(
                 Text(
                     text = title.krtUppercase(),
                     modifier =
-                        Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                        Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
                     style = MaterialTheme.typography.labelLarge,
                     color = KrtPalette.White,
                 )
@@ -393,7 +393,7 @@ private fun KrtCentredSheet(
                 if (title != null) {
                     Text(
                         text = title.krtUppercase(),
-                        modifier = Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                        modifier = Modifier.padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
                         style = MaterialTheme.typography.labelLarge,
                         color = KrtPalette.White,
                     )
@@ -441,7 +441,7 @@ fun KrtSheetOption(
                 .fillMaxWidth()
                 .background(background)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -465,7 +465,7 @@ fun KrtSheetOption(
 @Composable
 private fun ToastPreview() {
     KrtPreviewSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
             KrtToast(title = "Gespeichert", message = "Schiff erfolgreich hinzugefügt.")
             KrtToast(
                 title = "Fehler 409",

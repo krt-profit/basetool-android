@@ -72,12 +72,11 @@ private val BAR_HEIGHT = 6.dp
  * a bar answers at a glance what a number has to be compared to. Rights are the order list's: a
  * member without Logistiker reads it, they are not locked out of it.
  *
- * > **„Im Lager frei" is drawn and not built.** The artboard puts a free-stock line under each
- * > amount, and `MaterialDemandRowDto` carries no stock field at all — required, booked, claimed
- * > and outstanding, and nothing about the Lager. Joining `/inventory/aggregated` would need an
- * > unbounded page-walk **and** would still show the *total* rather than the free amount, because
- * > that read carries no claims either. A number labelled „frei" that is not free is worse than no
- * > number, so the line is on the design gap list as a backend ask instead.
+ * The second line says **what is promised and what is handed over**. It was drawn as „im Lager
+ * frei: n" until 2026-08-30, and that line is struck (ch. 18 §1, B1): `MaterialDemandRowDto`
+ * carries no stock field, and joining `/inventory/aggregated` would report the *total* rather than
+ * the free amount because that read knows nothing about claims. Backend ask **G7** would bring it
+ * back; until then the row says the two figures it actually has.
  *
  * @param state what to draw.
  * @param onFilterChanged a chip was tapped.
@@ -114,7 +113,7 @@ fun MaterialDemandScreen(
                     message = stringResource(R.string.orders_demand_failed_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRetry,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
 
@@ -137,8 +136,8 @@ private fun FilterChips(
     onFilterChanged: (MaterialDemandFilter) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         MaterialDemandFilter.entries.forEach { filter ->
             KrtFilterChip(
@@ -180,7 +179,7 @@ private fun LeadLine(state: MaterialDemandState) {
                     state.uncoveredCount,
                 ),
             ),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.TextMuted,
     )
@@ -203,13 +202,13 @@ private fun DemandList(
             iconRes = DesignR.drawable.ic_krt_crate,
             title = stringResource(R.string.orders_demand_empty_title),
             message = stringResource(R.string.orders_demand_empty_message),
-            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(MATERIAL_DEMAND_LIST_TAG),
-        contentPadding = PaddingValues(vertical = KrtSpacing.sm),
+        contentPadding = PaddingValues(vertical = KrtSpacing.s8),
     ) {
         groups.forEach { group ->
             item(key = "head-${group.orgUnitId ?: "none"}") { GroupHead(group = group) }
@@ -232,8 +231,8 @@ private fun DemandList(
 @Composable
 private fun GroupHead(group: MaterialDemandGroup) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         group.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
@@ -263,7 +262,7 @@ private fun DemandRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button, onClick = onToggle)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8)
                 .testTag(MATERIAL_DEMAND_ROW_TAG),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -287,11 +286,26 @@ private fun DemandRow(
             )
         }
         CoverageBar(coverage = row.coverage, uncovered = row.uncovered)
-        Text(
-            text = pluralStringResource(R.plurals.orders_demand_orders, row.orders.size, row.orders.size),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
+            Text(
+                text =
+                    stringResource(
+                        R.string.orders_demand_progress,
+                        formatAmount(formatTypedAmount(row.claimed)),
+                        row.unit,
+                        formatAmount(formatTypedAmount(row.booked)),
+                        row.unit,
+                    ),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            Text(
+                text = pluralStringResource(R.plurals.orders_demand_orders, row.orders.size, row.orders.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
         if (expanded) {
             row.orders.forEach { share -> ShareRow(share = share, unit = row.unit) }
         }
@@ -314,7 +328,7 @@ private fun CoverageBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = KrtSpacing.xs)
+                .padding(vertical = KrtSpacing.s4)
                 .height(BAR_HEIGHT)
                 .background(KrtPalette.Gray3),
     ) {
@@ -340,8 +354,8 @@ private fun ShareRow(
     unit: String,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

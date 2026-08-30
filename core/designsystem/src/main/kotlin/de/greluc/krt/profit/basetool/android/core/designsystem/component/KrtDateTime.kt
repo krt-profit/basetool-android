@@ -108,16 +108,6 @@ private const val RANGE_TINT_ALPHA = 0.16f
 private const val DISABLED_PAIR_ALPHA = 0.38f
 
 /**
- * The neighbouring month's days, `#464646` — design ch. 02 §11.
- *
- * Held here rather than in `KrtPalette`: the foundations palette carries four greys and this is a
- * fifth, named by one artboard for one purpose. It is on the design gap list; until the palette
- * answers, the value lives at the only place that uses it rather than being approximated by Gray2
- * (too bright — a neighbour would read as selectable content) or Gray3 (too dark to read at all).
- */
-private val NEIGHBOUR_MONTH = Color(0xFF464646)
-
-/**
  * Reads a date the member sees back into a date the code can use.
  *
  * @receiver the display value, `TT.MM.JJJJ`, or anything half-typed.
@@ -188,8 +178,8 @@ fun KrtDateTimeField(
 
     Column(modifier = modifier.fillMaxWidth()) {
         KrtFieldLabel(text = label, enabled = enabled)
-        Box(modifier = Modifier.padding(top = KrtSpacing.xs))
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Box(modifier = Modifier.padding(top = KrtSpacing.s4))
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             ValueBox(
                 weight = DATE_WEIGHT,
                 icon = R.drawable.ic_krt_calendar,
@@ -213,6 +203,8 @@ fun KrtDateTimeField(
                 onClick = { picking = Picking.TIME },
             )
         }
+        // The error would displace it, but this pair raises none of its own: it cannot be typed
+        // into, so there is nothing here to be invalid (design ch. 02 §1 — never both lines).
         if (warnPast && isPast(pickedDate, pickedTime, now)) {
             KrtFieldWarning(text = stringResource(R.string.krt_in_the_past))
         }
@@ -295,7 +287,7 @@ fun KrtDateField(
 
     Column(modifier = modifier.fillMaxWidth()) {
         KrtFieldLabel(text = label, enabled = enabled)
-        Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+        Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         Row {
             ValueBox(
                 weight = 1f,
@@ -470,8 +462,8 @@ fun KrtTimePickerModal(
         modifier = modifier,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.lg),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md, Alignment.CenterHorizontally),
+            modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s16),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             StepperColumn(
@@ -496,8 +488,8 @@ fun KrtTimePickerModal(
             )
         }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s12),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             KrtFilterChip(
                 text = stringResource(R.string.krt_full_hour),
@@ -648,13 +640,13 @@ private fun RowScope.ValueBox(
                 .alpha(if (enabled) 1f else DISABLED_PAIR_ALPHA)
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
-                .height(KrtSpacing.field)
+                .height(KrtSpacing.controlHeight)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.md)
+                .padding(horizontal = KrtSpacing.s12)
                 .testTag(tag)
                 .semantics { contentDescription = description },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtIcon(
             id = icon,
@@ -693,7 +685,7 @@ private fun MonthHeader(
     onNext: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIconButton(
@@ -803,7 +795,7 @@ private fun DayCell(
     val ink =
         when {
             tone == DayTone.SELECTED -> KrtPalette.Black
-            outside -> NEIGHBOUR_MONTH
+            outside -> KrtPalette.Gray2Dim
             else -> KrtPalette.Gray1
         }
     Box(
@@ -841,8 +833,8 @@ private fun DayShortcuts(
     onPick: (LocalDate) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtFilterChip(
             text = stringResource(R.string.krt_today),
@@ -874,8 +866,8 @@ private fun RangeShortcuts(
     onPick: (DateRange) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
         KrtFilterChip(
@@ -913,8 +905,8 @@ private fun RangeHead(
     onEdit: (Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         RangeEnd(
             label = stringResource(R.string.krt_range_from),
@@ -948,7 +940,7 @@ private fun RowScope.RangeEnd(
 ) {
     Column(modifier = Modifier.weight(1f)) {
         KrtFieldLabel(text = label)
-        Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+        Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         Box(
             modifier =
                 Modifier
@@ -958,9 +950,9 @@ private fun RowScope.RangeEnd(
                         KrtSpacing.hairline,
                         if (active) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
                     )
-                    .height(KrtSpacing.field)
+                    .height(KrtSpacing.controlHeight)
                     .clickable(role = Role.Button, onClick = onClick)
-                    .padding(horizontal = KrtSpacing.md),
+                    .padding(horizontal = KrtSpacing.s12),
             contentAlignment = Alignment.CenterStart,
         ) {
             Text(
@@ -994,7 +986,7 @@ private fun StepperColumn(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         KrtFieldLabel(text = label)
-        Box(modifier = Modifier.padding(top = KrtSpacing.xs))
+        Box(modifier = Modifier.padding(top = KrtSpacing.s4))
         StepperArrow(
             icon = R.drawable.ic_krt_chevron_up,
             label = upLabel,
@@ -1004,7 +996,7 @@ private fun StepperColumn(
             modifier =
                 Modifier
                     .width(STEPPER_VALUE)
-                    .height(KrtSpacing.field)
+                    .height(KrtSpacing.controlHeight)
                     .background(KrtPalette.SurfaceInput)
                     .border(KrtSpacing.hairline, MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center,

@@ -78,7 +78,7 @@ fun BankApprovalLimitsSection(
         return
     }
     Column(
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         modifier = Modifier.fillMaxWidth().testTag(BANK_LIMITS_TAG),
     ) {
         KrtSectionTitle(text = stringResource(R.string.bank_limits_title))
@@ -183,8 +183,8 @@ private fun LimitRow(
     val writing = busy == target
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -200,7 +200,7 @@ private fun LimitRow(
             )
         }
         if (limits.canEdit) {
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.bank_limits_set),
                     onClick = { onEdit(target, label, amount) },
@@ -261,8 +261,8 @@ fun BankLimitSheet(
         modifier = Modifier.testTag(BANK_LIMIT_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             KrtTextField(
                 value = draft.amount,

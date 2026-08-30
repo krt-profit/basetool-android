@@ -186,7 +186,7 @@ private fun MaterialsFailure(
             message = stringResource(R.string.retry_busy_message, retryIn),
             retryLabel = stringResource(R.string.retry_now),
             onRetry = actions.onRetryNow,
-            modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
     } else {
         KrtEmptyState(
@@ -195,7 +195,7 @@ private fun MaterialsFailure(
             message = stringResource(R.string.materials_error_message),
             actionText = stringResource(R.string.missions_retry),
             onAction = actions.onRefresh,
-            modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
     }
 }
@@ -215,8 +215,8 @@ private fun MaterialFilters(
     actions: MaterialsActions,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtTextField(
             value = state.query,
@@ -224,7 +224,7 @@ private fun MaterialFilters(
             modifier = Modifier.fillMaxWidth().testTag(MATERIALS_SEARCH_TAG),
             placeholder = stringResource(R.string.materials_search_placeholder),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtTextField(
                 value = state.minBuy,
                 onValueChange = actions.onMinBuy,
@@ -244,7 +244,7 @@ private fun MaterialFilters(
         }
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtFilterChip(
@@ -301,7 +301,7 @@ private fun MaterialRows(
                 iconRes = DesignR.drawable.ic_krt_list,
                 title = stringResource(R.string.materials_empty_title),
                 message = stringResource(R.string.materials_empty_message),
-                modifier = Modifier.padding(KrtSpacing.lg),
+                modifier = Modifier.padding(KrtSpacing.s16),
             )
         }
         return
@@ -309,7 +309,7 @@ private fun MaterialRows(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MATERIALS_LIST_TAG),
-        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.xs),
+        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.s4),
     ) {
         items(rows, key = { it.id }) { row ->
             MaterialRow(row = row, onClick = { onOpen(row.id) })
@@ -336,9 +336,9 @@ private fun MaterialRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = KrtSpacing.sm)
+                .padding(vertical = KrtSpacing.s8)
                 .clickable(onClick = onClick),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {

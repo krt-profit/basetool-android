@@ -127,8 +127,8 @@ fun KrtBottomCtaBar(
                 .krtBloom(KrtTheme.colors.glowPrimaryLg, CTA_BLOOM)
                 .background(KrtPalette.Gray4)
                 .krtHairline()
-                .padding(KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm, Alignment.End),
+                .padding(KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
         content = content,
     )

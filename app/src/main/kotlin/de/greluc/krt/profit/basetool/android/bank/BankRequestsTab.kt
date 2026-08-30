@@ -91,14 +91,14 @@ fun BankRequestsTab(
                 iconRes = DesignR.drawable.ic_krt_bank,
                 title = stringResource(R.string.bank_requests_empty_title),
                 message = stringResource(R.string.bank_requests_empty_message),
-                modifier = Modifier.padding(KrtSpacing.lg),
+                modifier = Modifier.padding(KrtSpacing.s16),
             )
             return@PullToRefreshBox
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(BANK_REQUESTS_TAG),
-            contentPadding = PaddingValues(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            contentPadding = PaddingValues(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             items(state.rows, key = { it.request.id }) { row ->
                 BankRequestCard(request = row.request) {
@@ -131,7 +131,7 @@ internal fun BankRequestCard(
     actions: @Composable RowScope.() -> Unit,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             RequestHeader(request = request)
             request.note?.let { note ->
                 Text(text = note, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.Gray1)
@@ -155,7 +155,7 @@ internal fun BankRequestCard(
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 content = actions,
             )
         }
@@ -171,7 +171,7 @@ internal fun BankRequestCard(
 private fun RequestHeader(request: BankBookingRequest) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

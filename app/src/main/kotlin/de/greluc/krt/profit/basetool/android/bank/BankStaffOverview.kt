@@ -93,14 +93,14 @@ fun BankStaffOverview(
                             R.string.bank_staff_empty_message_no_grant
                         },
                     ),
-                modifier = Modifier.padding(KrtSpacing.lg),
+                modifier = Modifier.padding(KrtSpacing.s16),
             )
             return@PullToRefreshBox
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(BANK_STAFF_OVERVIEW_TAG),
-            contentPadding = PaddingValues(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            contentPadding = PaddingValues(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             // The aggregate strip is management's alone (REQ-BANK-010); the server sends none
             // to anyone else, and inventing zeroes for it would assert an empty bank.
@@ -129,7 +129,7 @@ private fun StaffKpiBand(
     state: BankStaffState,
     totals: BankStaffTotals,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         // The same tile the member list uses, which is the component the design intends for "this
         // figure is the sum of the screen" — orange leading bar, muted uppercase label, tabular
         // value.
@@ -143,7 +143,7 @@ private fun StaffKpiBand(
             text = state.countsLine(totals),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
-            modifier = Modifier.padding(horizontal = KrtSpacing.xs).testTag(BANK_STAFF_COUNTS_TAG),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s4).testTag(BANK_STAFF_COUNTS_TAG),
         )
     }
 }
@@ -203,12 +203,12 @@ private fun StaffAccountRow(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth().alpha(if (closed) CLOSED_ROW_ALPHA else 1f),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             ) {
                 Text(
                     text = row.account.name,
@@ -265,7 +265,7 @@ private fun StaffAccountChips(
     closed: Boolean,
     management: Boolean,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         if (closed) {
             KrtChip(text = stringResource(R.string.bank_staff_chip_closed), tone = KrtChipTone.Muted)
             return@Row

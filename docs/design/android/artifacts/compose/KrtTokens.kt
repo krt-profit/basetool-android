@@ -71,20 +71,30 @@ object KrtPalette {
 }
 
 /* ───────────────────────────── SPACING & SIZES ───────────────────────── */
+/**
+ * The ONE spacing scale — ch. 01 §5, nine steps, nothing off-scale. Names are positional so the
+ * value stays readable at the call site; a screen that wants 18.dp has a layout problem.
+ */
 object KrtSpacing {
-    val xxs = 2.dp
-    val xs = 6.dp
-    val sm = 10.dp
-    val md = 16.dp   // screen gutter on phone
-    val lg = 20.dp   // sheet gutter
-    val xl = 24.dp   // tablet content gutter
-    val xxl = 32.dp
+    val s4 = 4.dp     // field to helper text
+    val s8 = 8.dp     // inside a dense row
+    val s10 = 10.dp   // between cards in a list
+    val s12 = 12.dp   // between sections; card padding (vertical)
+    val s14 = 14.dp   // card padding (horizontal)
+    val s16 = 16.dp   // screen gutter on phone; modal padding
+    val s20 = 20.dp   // sheet gutter
+    val s24 = 24.dp   // tablet content gutter
+    val s32 = 32.dp
 }
 
 object KrtDimens {
-    val touchTarget = 44.dp        // nothing interactive is smaller — incl. icon-only row actions
+    val touchTarget = 44.dp        // MINIMUM TAP AREA for rows, accordion heads, menu entries.
+                                   // NOT a control height — see controlHeight (48.dp). Deriving a
+                                   // field’s height from this token shrank every input once (ch. 02 §1).
     val ctaHeight = 52.dp          // bottom-anchored primary CTA
-    val fieldHeight = 46.dp        // text fields, selects, comboboxes
+    val controlHeight = 48.dp      // FIELD / BUTTON / SELECT / SEGMENT — one control height (ch. 02 §1)
+    val fieldHeight = 48.dp        // alias of controlHeight; the date/time pair matches it (ch. 02 §11)
+    val navIconFloor = 48.dp       // bottom-nav and rail icon slots
     val iconButton = 44.dp         // icon-only row action (square)
     val iconButtonSmall = 40.dp    // same inside a dense card head
     val icon = 18.dp

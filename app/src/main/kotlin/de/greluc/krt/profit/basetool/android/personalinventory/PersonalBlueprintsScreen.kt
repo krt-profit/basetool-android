@@ -168,16 +168,16 @@ fun PersonalBlueprintsScreen(
             KrtTextField(
                 value = state.query,
                 onValueChange = onQueryChanged,
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                 placeholder = stringResource(R.string.blueprints_search),
             )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     KrtToggle(checked = state.withRefinery, onCheckedChange = onRefineryChanged)
@@ -187,7 +187,7 @@ fun PersonalBlueprintsScreen(
                         color = KrtPalette.TextMuted,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                     KrtGhostButton(
                         text = stringResource(R.string.blueprints_import_title),
                         onClick = bulk.onImportOpen,
@@ -226,7 +226,7 @@ fun PersonalBlueprintsScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -235,7 +235,7 @@ fun PersonalBlueprintsScreen(
                             message = stringResource(R.string.blueprints_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -259,7 +259,7 @@ fun PersonalBlueprintsScreen(
                                                 R.string.blueprints_empty_filtered_message
                                             },
                                         ),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else {
@@ -419,8 +419,8 @@ private fun BlueprintRow(
                     },
                 )
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The tick is drawn, not swapped in for the content: a row that changes shape when the mode
@@ -520,8 +520,8 @@ private fun RecipePane(
     onEdit: (OwnedBlueprint) -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (entry != null) {
             Row(
@@ -581,8 +581,8 @@ private fun RecipePane(
 @Composable
 private fun IngredientRow(ingredient: BlueprintIngredient) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {

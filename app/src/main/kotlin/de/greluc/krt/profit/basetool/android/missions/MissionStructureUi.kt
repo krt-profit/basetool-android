@@ -115,7 +115,7 @@ fun UnitComposer(structure: MissionStructureActions) {
     // button meant — design ch. 18 §3 (E7) moved it into a sheet of its own, so a form that says
     // „Einheit anlegen" can no longer be the one that renames one.
     val (dim, click) = rememberGated(gate, structure.onAddUnit, structure.denials)
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtTextField(
             value = structure.draft.unitName,
             onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
@@ -196,8 +196,8 @@ fun UnitRenameSheet(structure: MissionStructureActions) {
         title = stringResource(R.string.mission_unit_rename),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             KrtTextField(
                 value = typed,
@@ -328,13 +328,13 @@ fun CrewRoleSelect(
         )
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Text(
             text = stringResource(R.string.mission_crew_roles),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             structure.crewJobTypes.forEach { job ->
                 val held = member.roleIds.contains(job.id)
                 val next = if (held) member.roleIds - job.id else member.roleIds + job.id
@@ -371,7 +371,7 @@ private const val TAKEN_ROLE_ALPHA = 0.55f
 fun FrequencyComposer(structure: MissionStructureActions) {
     val gate = missionManagerGate(structure.canManage)
     val (dim, click) = rememberGated(gate, structure.onAddFrequency, structure.denials)
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         KrtTextField(
             value = structure.draft.freqName,
             onValueChange = { v -> structure.onChange { it.copy(freqName = v) } },

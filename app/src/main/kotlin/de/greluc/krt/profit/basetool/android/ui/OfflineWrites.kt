@@ -42,6 +42,6 @@ fun OfflineBand() {
     KrtOfflineBanner(
         title = stringResource(R.string.offline_banner_title),
         reason = stringResource(R.string.offline_writes_disabled),
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
     )
 }

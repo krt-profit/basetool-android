@@ -85,8 +85,8 @@ fun BankGrantSheet(
         modifier = Modifier.testTag(BANK_GRANT_SHEET_TAG),
     ) {
         Column(
-            modifier = Modifier.padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             Text(
                 text = stringResource(R.string.bank_grants_add_account, accountName),

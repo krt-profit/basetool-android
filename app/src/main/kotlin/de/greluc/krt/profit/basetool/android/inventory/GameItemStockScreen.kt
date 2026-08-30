@@ -87,7 +87,7 @@ fun GameItemStockScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(KrtSpacing.md)
+                    .padding(KrtSpacing.s12)
                     .testTag(GAME_ITEM_SEARCH_TAG),
         )
         if (state.kinds.isNotEmpty()) {
@@ -96,8 +96,8 @@ fun GameItemStockScreen(
                     Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = KrtSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                        .padding(horizontal = KrtSpacing.s12),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
                 KrtFilterChip(
                     text = stringResource(R.string.game_items_filter_all),
@@ -130,7 +130,7 @@ fun GameItemStockScreen(
                     message = stringResource(R.string.game_items_failed_message),
                     actionText = stringResource(R.string.missions_retry),
                     onAction = onRetry,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             }
 
@@ -165,14 +165,14 @@ private fun StockList(
                         R.string.game_items_empty_filtered
                     },
                 ),
-            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
         )
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(GAME_ITEM_LIST_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         item(key = "count") {
             // „27 Items · 412 Stück" — of what is shown, which after a filter is the honest figure.
@@ -215,7 +215,7 @@ private fun StockRow(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onToggle) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -235,7 +235,7 @@ private fun StockRow(
                 )
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
@@ -252,7 +252,7 @@ private fun StockRow(
         }
         if (expanded && item.locations.isNotEmpty()) {
             KrtHairlineRule()
-            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 item.locations.forEach { place ->
                     Text(
                         text = place,

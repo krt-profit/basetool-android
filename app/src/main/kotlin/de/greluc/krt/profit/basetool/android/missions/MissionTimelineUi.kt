@@ -135,7 +135,7 @@ fun TimelineListActions(
     val (addDim, add) = rememberGated(gate, { timeline.onCompose(true) }, timeline.denials)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtGhostButton(
@@ -255,7 +255,7 @@ private fun RowActions(
     var open by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (firstIcon != null && firstLabelRes != null) {
@@ -414,7 +414,7 @@ fun StepEditorSheet(timeline: MissionTimelineActions) {
         title =
             stringResource(if (editing) R.string.mission_step_editing else R.string.mission_step_new),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtTextField(
                 value = timeline.draft.stepTitle,
                 onValueChange = { v -> timeline.onChange { it.copy(stepTitle = v) } },
@@ -457,7 +457,7 @@ fun ObjectiveEditorSheet(timeline: MissionTimelineActions) {
                 if (editing) R.string.mission_objective_editing else R.string.mission_objective_new,
             ),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
             KrtTextField(
                 value = timeline.draft.objectiveTitle,
                 onValueChange = { v -> timeline.onChange { it.copy(objectiveTitle = v) } },
@@ -467,7 +467,7 @@ fun ObjectiveEditorSheet(timeline: MissionTimelineActions) {
             // Chips rather than free text: the server's enum has exactly three values, and a field
             // that accepts a fourth would only ever produce a 400 the member cannot act on. German
             // labels, never the wire constant (artboard 13).
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 MissionObjectiveKind.entries.forEach { kind ->
                     KrtFilterChip(
                         text = stringResource(kind.labelRes()),

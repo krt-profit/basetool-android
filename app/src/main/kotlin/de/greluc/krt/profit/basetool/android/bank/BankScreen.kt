@@ -168,7 +168,7 @@ fun BankAccountsScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
                 return
             }
@@ -178,7 +178,7 @@ fun BankAccountsScreen(
                 message = stringResource(R.string.bank_error_message),
                 actionText = stringResource(R.string.missions_retry),
                 onAction = onRefresh,
-                modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
             )
         }
 
@@ -194,14 +194,14 @@ fun BankAccountsScreen(
                             iconRes = DesignR.drawable.ic_krt_bank,
                             title = stringResource(R.string.bank_accounts_empty_title),
                             message = stringResource(R.string.bank_accounts_empty_message),
-                            modifier = Modifier.padding(KrtSpacing.lg),
+                            modifier = Modifier.padding(KrtSpacing.s16),
                         )
                     }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize().testTag(BANK_ACCOUNTS_TAG),
-                        contentPadding = PaddingValues(KrtSpacing.md),
-                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                        contentPadding = PaddingValues(KrtSpacing.s12),
+                        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     ) {
                         item(key = "total") {
                             TotalCard(accounts = state.accounts)
@@ -386,8 +386,8 @@ fun BankAccountScreen(
                     }
                     item(key = "head") {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                         ) {
                             // The account's name and its org sit in the TOP BAR (design ch. 12
                             // artboard 2), the rule every detail in this app now follows.
@@ -407,7 +407,7 @@ fun BankAccountScreen(
                                     color = KrtPalette.TextMuted,
                                 )
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     Text(
@@ -419,7 +419,7 @@ fun BankAccountScreen(
                                         text = stringResource(R.string.bank_total_unit),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = KrtPalette.TextMuted,
-                                        modifier = Modifier.padding(bottom = KrtSpacing.xs),
+                                        modifier = Modifier.padding(bottom = KrtSpacing.s4),
                                     )
                                 }
                                 account.delta30d?.let { delta ->
@@ -471,7 +471,7 @@ fun BankAccountScreen(
                         KrtSectionTitle(
                             text = stringResource(R.string.bank_transactions),
                             modifier =
-                                Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                                Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                         )
                     }
                     if (state.bookings.isEmpty()) {
@@ -481,7 +481,7 @@ fun BankAccountScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = KrtPalette.TextMuted,
                                 modifier =
-                                    Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
+                                    Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
                             )
                         }
                     } else {
@@ -505,12 +505,12 @@ fun BankAccountScreen(
                                         ),
                                     onClick = onLoadMore,
                                     enabled = !state.loadingMore,
-                                    modifier = Modifier.padding(KrtSpacing.md),
+                                    modifier = Modifier.padding(KrtSpacing.s12),
                                 )
                             } else {
                                 KrtEndOfList(
                                     text = stringResource(R.string.bank_transactions_end),
-                                    modifier = Modifier.padding(KrtSpacing.md),
+                                    modifier = Modifier.padding(KrtSpacing.s12),
                                 )
                             }
                         }
@@ -579,8 +579,8 @@ private fun BookingRow(
     onReverse: (BankBooking) -> Unit = {},
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The direction as a glyph, which artboard 2 draws on every row. The sign and the tint
@@ -742,7 +742,7 @@ private fun BankAccountFailure(
         iconRes = DesignR.drawable.ic_krt_bank,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -798,7 +798,7 @@ fun BankAccountsRoute(
                     scope = chosen
                 }
             },
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
             stretch = true,
             lockedIndices = if (staffAllowed) emptySet() else setOf(STAFF_SCOPE),
         )
@@ -1114,7 +1114,7 @@ private fun StaffScopeContent(
                     ),
                 actionText = stringResource(R.string.missions_retry).takeIf { !forbidden },
                 onAction = viewModel::onRefresh,
-                modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+                modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
             )
         }
 
@@ -1566,8 +1566,8 @@ private fun BankSettingsSheet(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                    .padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             if (settings.canSetTarget) {
                 KrtTextField(
@@ -1646,7 +1646,7 @@ private fun BankVisibilitySection(
     }
     if (settings.allMembersSupported) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtToggle(
@@ -1695,8 +1695,8 @@ private fun ReportActions(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         KrtOutlineButton(
             text = stringResource(R.string.bank_report_statement),

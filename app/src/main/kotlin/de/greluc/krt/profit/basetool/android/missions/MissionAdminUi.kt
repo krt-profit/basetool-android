@@ -104,10 +104,10 @@ fun LazyListScope.adminTab(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.lg)
+                    .padding(horizontal = KrtSpacing.s16)
                     .testTag(MISSION_ADMIN_SHEET_TAG),
             // 10 dp between the cards and a 16 dp screen margin — design ch. 18 §3 (E4).
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.cards),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s10),
         ) {
             Hint(text = stringResource(R.string.mission_admin_section_hint))
             AdminSection(MissionSection.CORE, form, actions) { CoreFields(form, form.writes(writable, it), actions) }
@@ -154,8 +154,8 @@ private fun AdminSection(
         )
         if (open) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-                verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
                 body(section)
             }

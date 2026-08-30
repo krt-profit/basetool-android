@@ -476,17 +476,27 @@ data class BlueprintImportPreview(
     val alreadyOwned: Int get() = entries.count { it.status == BlueprintImportStatus.ALREADY_OWNED }
 
     /**
-     * The lines nothing can be done with here.
+     * The lines the server found **candidates** for and resolved none of — „Zu klären".
      *
-     * `UNMATCHED` because the server found nothing, and `SUGGESTED` because it found candidates but
-     * resolved none — and picking between them is a control this app does not have. Both are
-     * **skipped, not refused**: the import runs anyway, which is why they are counted and named
-     * rather than turned into an error.
+     * Its own figure since design ch. 18 §2 (B2, ratified 2026-08-30), because it is not the same
+     * fact as „unbekannt": the server did find something, it just cannot choose. The app does not
+     * choose either — auto-accepting the top suggestion would write a decision nobody made — so
+     * these are skipped and the member is pointed at the web portal.
      */
-    val unresolved: List<BlueprintImportEntry>
+    val unclear: List<BlueprintImportEntry>
+        get() = entries.filter { it.status == BlueprintImportStatus.SUGGESTED }
+
+    /**
+     * The lines the server found **nothing** for.
+     *
+     * Skipped, not refused: the import runs anyway, which is why they are counted and named rather
+     * than turned into an error.
+     */
+    val unknown: List<BlueprintImportEntry>
         get() =
             entries.filter {
-                it.productKey == null && it.status != BlueprintImportStatus.ALREADY_OWNED
+                it.productKey == null &&
+                    it.status !in setOf(BlueprintImportStatus.SUGGESTED, BlueprintImportStatus.ALREADY_OWNED)
             }
 }
 

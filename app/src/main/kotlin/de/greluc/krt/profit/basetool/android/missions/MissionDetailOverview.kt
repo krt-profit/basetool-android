@@ -102,8 +102,8 @@ internal fun MissionLifecycleBand(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -117,7 +117,7 @@ internal fun MissionLifecycleBand(
                     ),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
-                modifier = Modifier.padding(top = KrtSpacing.xs),
+                modifier = Modifier.padding(top = KrtSpacing.s4),
             )
         }
         KrtOutlineButton(
@@ -158,7 +158,7 @@ internal fun MissionDetailHead(detail: MissionDetail) {
             title = detail.name,
             subtitle = {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp),
                 ) {
@@ -197,8 +197,8 @@ internal fun MissionDetailHead(detail: MissionDetail) {
                         .fillMaxWidth()
                         .background(KrtPalette.SurfaceInput)
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+                        .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 facts.forEach { (label, value) -> FactCell(label = label, value = value) }
@@ -283,12 +283,12 @@ private fun AttendanceBox(detail: MissionDetail) {
     KrtHudBox(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s16),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Text(
@@ -366,7 +366,7 @@ private fun AttendanceMeter(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = KrtSpacing.xs)
+                .padding(top = KrtSpacing.s4)
                 .height(METER_HEIGHT)
                 .background(KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3),
@@ -433,25 +433,25 @@ private fun BriefingCard(detail: MissionDetail) {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.md),
+                    .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s12),
         )
         KrtHairlineRule()
         rows.forEachIndexed { index, (label, value) ->
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = BRIEF_ROW_PADDING),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
             ) {
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
                     color = KrtPalette.TextMuted,
-                    modifier = Modifier.padding(start = KrtSpacing.lg).width(BRIEF_LABEL_WIDTH),
+                    modifier = Modifier.padding(start = KrtSpacing.s16).width(BRIEF_LABEL_WIDTH),
                 )
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyMedium,
                     color = KrtPalette.White,
-                    modifier = Modifier.weight(1f).padding(end = KrtSpacing.lg),
+                    modifier = Modifier.weight(1f).padding(end = KrtSpacing.s16),
                 )
             }
             if (index != rows.lastIndex) {

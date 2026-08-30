@@ -136,7 +136,7 @@ fun KrtDangerButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
 
 @Composable
 private fun KrtButtonContent(text: String, iconRes: Int?, loading: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         when {
             loading -> CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = LocalContentColor.current)
             iconRes != null -> Icon(painterResource(iconRes), contentDescription = null, modifier = Modifier.size(KrtDimens.iconSmall))
@@ -189,7 +189,7 @@ private fun Modifier.alpha(value: Float) = this.then(androidx.compose.ui.draw.al
 @Composable
 fun KrtCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        modifier = modifier.background(KrtPalette.Gray4).border(KrtDimens.hairline, KrtPalette.Gray3).padding(KrtSpacing.md),
+        modifier = modifier.background(KrtPalette.Gray4).border(KrtDimens.hairline, KrtPalette.Gray3).padding(KrtSpacing.s12),
         content = content,
     )
 }
@@ -222,7 +222,7 @@ fun KrtHudBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() ->
                 drawLine(KrtPalette.Primary, Offset(size.width, size.height), Offset(size.width - arm, size.height), w, StrokeCap.Square)
                 drawLine(KrtPalette.Primary, Offset(size.width, size.height), Offset(size.width, size.height - arm), w, StrokeCap.Square)
             }
-            .padding(horizontal = KrtSpacing.md, vertical = 14.dp),
+            .padding(horizontal = KrtSpacing.s12, vertical = 14.dp),
         content = content,
     )
 }
@@ -264,7 +264,7 @@ fun KrtSquadronBadge(text: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.background(KrtPalette.Primary.copy(alpha = 0.16f), RoundedCornerShape(999.dp))
             .border(KrtDimens.hairline, KrtPalette.Primary, RoundedCornerShape(999.dp))
-            .padding(horizontal = KrtSpacing.sm, vertical = 4.dp),
+            .padding(horizontal = KrtSpacing.s8, vertical = 4.dp),
     ) { Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = KrtPalette.Primary) }
 }
 
@@ -273,7 +273,7 @@ fun KrtSquadronBadge(text: String, modifier: Modifier = Modifier) {
 /** Muted uppercase label above a group, with the hairline rule under it. */
 @Composable
 fun KrtSectionTitle(text: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null) {
-    Row(modifier = modifier.fillMaxWidth().padding(bottom = KrtSpacing.xs), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+    Row(modifier = modifier.fillMaxWidth().padding(bottom = KrtSpacing.s4), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
         Text(text.uppercase(), style = MaterialTheme.typography.labelMedium, color = KrtPalette.Primary)
         Box(Modifier.weight(1f).height(KrtDimens.hairline).background(KrtPalette.Gray3))
         trailing?.invoke()
@@ -305,9 +305,9 @@ fun KrtPanelHeader(
             color = KrtPalette.Gray4,
             modifier = Modifier.fillMaxWidth().heightIn(min = KrtDimens.tabHeight).semantics { },
         ) {
-            Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+            Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
                 Box(Modifier.width(KrtDimens.activeBar).height(18.dp).background(KrtPalette.Primary))
-                Spacer(Modifier.width(KrtSpacing.xs))
+                Spacer(Modifier.width(KrtSpacing.s4))
                 Text(title.uppercase(), style = MaterialTheme.typography.titleSmall, color = KrtPalette.White)
                 if (count != null) KrtChip(count.toString(), KrtChipTone.MUTED)
                 Spacer(Modifier.weight(1f))

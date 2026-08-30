@@ -109,7 +109,7 @@ data class MissionMemberActions(
 fun MemberSection(members: MissionMemberActions) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         PartyLeadRow(members = members)
         ManagerRow(members = members)
@@ -136,7 +136,7 @@ private fun PartyLeadRow(members: MissionMemberActions) {
     val (dim, click) = rememberGated(gate, { members.onOpen(MissionMemberTarget.PARTY_LEAD) }, members.denials)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -173,7 +173,7 @@ private fun ManagerRow(members: MissionMemberActions) {
     val (dim, click) = rememberGated(gate, { members.onOpen(MissionMemberTarget.MANAGER) }, members.denials)
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Text(
             text = stringResource(R.string.mission_member_manager_label),
@@ -190,7 +190,7 @@ private fun ManagerRow(members: MissionMemberActions) {
         members.managers.forEach { manager ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KrtChip(text = manager.name, tone = KrtChipTone.Data)

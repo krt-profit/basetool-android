@@ -99,7 +99,7 @@ fun BankGrantsTab(
                 iconRes = DesignR.drawable.ic_krt_users,
                 title = stringResource(R.string.bank_grants_no_accounts_title),
                 message = stringResource(R.string.bank_grants_no_accounts_message),
-                modifier = Modifier.padding(KrtSpacing.lg),
+                modifier = Modifier.padding(KrtSpacing.s16),
             )
             return@Column
         }
@@ -110,8 +110,8 @@ fun BankGrantsTab(
                 Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(KrtSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    .padding(KrtSpacing.s12),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             accounts.forEach { account ->
                 KrtFilterChip(
@@ -128,14 +128,14 @@ fun BankGrantsTab(
                 text = stringResource(R.string.bank_grants_pick_account),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
-                modifier = Modifier.padding(horizontal = KrtSpacing.md),
+                modifier = Modifier.padding(horizontal = KrtSpacing.s12),
             )
             return@Column
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(BANK_GRANTS_TAG),
-            contentPadding = PaddingValues(KrtSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            contentPadding = PaddingValues(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             state.error?.let { error ->
                 item(key = "error") {
@@ -207,7 +207,7 @@ private fun GrantCard(
     actions: BankGrantsActions,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
             Text(
                 text = grant.handle,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),

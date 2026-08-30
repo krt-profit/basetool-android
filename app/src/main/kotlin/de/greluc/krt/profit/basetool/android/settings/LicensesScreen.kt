@@ -149,7 +149,7 @@ fun LicensesScreen(
                     KrtToast(
                         title = stringResource(R.string.licenses_url_copied_title),
                         message = stringResource(R.string.licenses_url_copied_message),
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(KrtSpacing.lg),
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(KrtSpacing.s16),
                     )
                 }
             }
@@ -174,13 +174,13 @@ private fun LicensesLoading(modifier: Modifier = Modifier) {
         visible = true
     }
     Column(
-        modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         if (visible) {
             KrtSpinner()
-            Spacer(Modifier.height(KrtSpacing.md))
+            Spacer(Modifier.height(KrtSpacing.s12))
             Text(
                 text = stringResource(R.string.licenses_loading).krtUppercase(),
                 style = MaterialTheme.typography.labelMedium,
@@ -206,7 +206,7 @@ private fun LicensesFailed(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -219,21 +219,21 @@ private fun LicensesFailed(
             size = FAILURE_ICON,
             tint = KrtPalette.DangerText,
         )
-        Spacer(Modifier.height(KrtSpacing.md))
+        Spacer(Modifier.height(KrtSpacing.s12))
         Text(
             text = stringResource(R.string.licenses_error_title).krtUppercase(),
             style = MaterialTheme.typography.titleLarge,
             color = KrtPalette.White,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(KrtSpacing.sm))
+        Spacer(Modifier.height(KrtSpacing.s8))
         Text(
             text = stringResource(R.string.licenses_error_message),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(KrtSpacing.lg))
+        Spacer(Modifier.height(KrtSpacing.s16))
         KrtOutlineButton(
             text = stringResource(R.string.licenses_retry),
             onClick = onRetry,
@@ -269,16 +269,16 @@ private fun LicensesList(
                 // Two columns would break the sticky headers and the scan order, and a register
                 // stretched to 1200 dp puts a 30-character coordinate alone on a very wide line.
                 .then(if (isWideWindow()) Modifier.widthIn(max = TABLET_COLUMN) else Modifier),
-        contentPadding = PaddingValues(bottom = KrtSpacing.xl),
+        contentPadding = PaddingValues(bottom = KrtSpacing.s24),
     ) {
         item(key = "intro") {
-            Column(modifier = Modifier.padding(KrtSpacing.lg)) {
+            Column(modifier = Modifier.padding(KrtSpacing.s16)) {
                 Text(
                     text = stringResource(R.string.licenses_intro),
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
                 )
-                Spacer(Modifier.height(KrtSpacing.sm))
+                Spacer(Modifier.height(KrtSpacing.s8))
                 Text(
                     text =
                         stringResource(
@@ -315,7 +315,7 @@ private fun LicensesList(
                         Modifier
                             .fillMaxWidth()
                             .background(KrtPalette.SurfaceInput)
-                            .padding(KrtSpacing.lg),
+                            .padding(KrtSpacing.s16),
                 )
             }
         }
@@ -348,7 +348,7 @@ private fun LicensesList(
                         Modifier
                             .fillMaxWidth()
                             .heightIn(min = ROW_MIN_HEIGHT)
-                            .padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                            .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
                 )
             }
         }
@@ -393,8 +393,8 @@ private fun LicenseHeader(
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(KrtPalette.SurfaceInput)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             KrtIcon(
@@ -414,7 +414,7 @@ private fun LicenseHeader(
                     Modifier
                         .weight(1f)
                         .clickable(onClick = onToggle)
-                        .padding(vertical = KrtSpacing.xs),
+                        .padding(vertical = KrtSpacing.s4),
             ) {
                 Text(
                     // Uppercase, as artboard 1 draws it and as the design system words every
@@ -435,13 +435,13 @@ private fun LicenseHeader(
                 )
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
                         .heightIn(min = KrtSpacing.touchTarget)
                         .clickable(onClick = onAction)
-                        .padding(start = KrtSpacing.sm),
+                        .padding(start = KrtSpacing.s8),
             ) {
                 Text(
                     text =

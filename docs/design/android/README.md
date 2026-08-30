@@ -83,6 +83,44 @@ artboard anywhere.
   only one with a data-integrity edge, because today a direct API call can still rewrite a booked
   refinery run's goods.
 
+## Round 13 — nine internal contradictions, resolved (30.08.2026)
+
+Building chapter 18 surfaced nine items, six of them places where the spec contradicted itself.
+Each is now settled at ONE place, and the value the app already uses is the one that survived
+wherever the app was right:
+
+* **A1/A2 — sizes.** Ch. 02 §1's old framing line („all interactive heights ≥ 48 dp") read as a
+  floor and cost a real defect: the field frame derived its **height** from the touch token, so
+  lowering the floor to 44 shrank every input. Now three tokens, stated once: `controlHeight` 48 dp,
+  `navIconFloor` 48 dp, `touchTarget` **44 dp as a minimum tap area only**. §11's date/time pair is
+  48 dp — matching the field was its own stated intent.
+* **A3 — one spacing scale.** §8 named a second, narrower scale (`xs 6 · sm 10 · md 16 · lg 20 ·
+  xl 24`) that covered neither the artboards nor its own margin table. §5's strip is the source and
+  now carries the three steps the table needed: **4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 32**,
+  mirrored verbatim in `KrtSpacing.s4 … s32`. Renaming would have moved ~830 call sites onto values
+  no artboard uses.
+* **A4/A5 — ch. 18's own text.** E4's section rhythm applies to the **Verwaltung** tab's four
+  (Kern · Zeitplan · Sichtbarkeit · Personen); Ziele and Ablauf belong to the Ablauf tab. E5 counted
+  five row actions where there are **six** — the tick was missed, and it stays **visible outside**
+  the overflow because it is the checklist row's primary action.
+* **A6 — `KrtFieldWarning` ratified.** The system had no warning-toned inline field message; §11
+  needed one. Same shape as the error line, #FFD23F, and the distinction is written down: error
+  blocks, warning does not, never both at once.
+* **B1 — „im Lager frei" struck.** `MaterialDemandRowDto` carries no stock field; joining
+  `/inventory/aggregated` would need an unbounded page-walk and still report the *total*, because
+  that read knows nothing about claims. The row now shows **claimed / handed over** (both in the
+  DTO). Backend ask **G7** (`freeStock`) brings the line back.
+* **B2 — a fourth figure.** The import preview answers **five** statuses; `SUGGESTED` rows carry
+  `productKey = null` and need a human pick. Ratified: the app does **not** take them, counts them
+  as „Zu klären" and says the pick happens in the web portal. Auto-accepting a top suggestion would
+  write a choice nobody made; dropping them silently loses importable rows.
+* **C1 — `ic_krt_plus` for „duplizieren"** (ratified). The in-house set has no duplicate glyph and
+  the system forbids inventing one in application code; plus is the true statement — duplicating
+  appends a row — and the overflow shows the label beside it.
+* **`#464646`** is now a **ratified fifth grey with exactly one call site**: a neighbouring month's
+  day in the date grid. Tappable, but must not read as the active month; #646464 is too close and
+  #282828 looks disabled.
+
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the

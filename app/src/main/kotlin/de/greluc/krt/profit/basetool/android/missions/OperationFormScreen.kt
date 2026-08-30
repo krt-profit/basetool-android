@@ -70,8 +70,8 @@ fun OperationFormScreen(
     )
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag(OPERATION_FORM_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        contentPadding = PaddingValues(KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
     ) {
         if (state.loading) {
             item(key = "loading") { KrtSpinner() }

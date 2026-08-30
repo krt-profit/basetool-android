@@ -47,6 +47,16 @@ object KrtPalette {
     /** Hairline borders and the pressed-row fill. */
     val Gray3 = Color(0xFF282828)
 
+    /**
+     * The fifth grey — `#464646`, ratified 2026-08-30 for **one** case.
+     *
+     * A neighbouring month's day in the date grid (design ch. 02 §11, ch. 01 §1). Those days are
+     * tappable and must not read like the active month: [Gray2] is too close and [Gray3] would look
+     * disabled. There is no second call site, and the chapter says a second one means somebody has
+     * meant one of the other four.
+     */
+    val Gray2Dim = Color(0xFF464646)
+
     /** Standard surface: cards, app bars, tables, sheets. */
     val Gray4 = Color(0xFF141414)
 

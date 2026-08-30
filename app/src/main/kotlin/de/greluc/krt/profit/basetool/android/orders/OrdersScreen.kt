@@ -192,9 +192,9 @@ fun OrdersScreen(
             // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
             // breaks character by character („ABG ESC HLO SSE N").
             FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-                verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
                 FILTERABLE_STATUSES.forEach { status ->
                     val selected = status in state.statuses
@@ -230,7 +230,7 @@ fun OrdersScreen(
                             message = stringResource(R.string.retry_busy_message, retryIn),
                             retryLabel = stringResource(R.string.retry_now),
                             onRetry = onRetryNow,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     } else {
                         KrtEmptyState(
@@ -239,7 +239,7 @@ fun OrdersScreen(
                             message = stringResource(R.string.orders_error_message),
                             actionText = stringResource(R.string.missions_retry),
                             onAction = onRefresh,
-                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                            modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                         )
                     }
                 }
@@ -256,7 +256,7 @@ fun OrdersScreen(
                                     iconRes = DesignR.drawable.ic_krt_clipboard_list,
                                     title = stringResource(R.string.orders_empty_title),
                                     message = stringResource(R.string.orders_empty_message),
-                                    modifier = Modifier.padding(KrtSpacing.lg),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
                             }
                         } else {
@@ -278,7 +278,7 @@ fun OrdersScreen(
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(KrtSpacing.lg)
+                    .padding(KrtSpacing.s16)
                     .padding(bottom = LocalKrtBottomBarInset.current)
                     .testTag(ORDERS_CREATE_TAG),
         )
@@ -312,7 +312,7 @@ private fun PriorityControls(
 ) {
     val atFront = (state.order?.priority ?: 1) <= 1
     Row(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtGhostButton(
@@ -372,8 +372,8 @@ private fun OrdersList(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(ORDERS_LIST_TAG),
-        contentPadding = PaddingValues(horizontal = KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        contentPadding = PaddingValues(horizontal = KrtSpacing.s12),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         items(state.orders, key = { it.id }) { order ->
             OrderCard(
@@ -396,12 +396,12 @@ private fun OrdersList(
                         ),
                     onClick = onLoadMore,
                     enabled = !state.loadingMore,
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             } else {
                 KrtEndOfList(
                     text = stringResource(R.string.orders_end_of_list),
-                    modifier = Modifier.padding(KrtSpacing.md),
+                    modifier = Modifier.padding(KrtSpacing.s12),
                 )
             }
         }
@@ -430,16 +430,16 @@ private fun OrderCard(
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
             verticalAlignment = Alignment.Top,
         ) {
             PriorityBlock(priority = order.priority)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -450,7 +450,7 @@ private fun OrderCard(
                     order.kindLabel()?.let { KrtChip(text = it, tone = order.kindTone()) }
                 }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
@@ -544,7 +544,7 @@ private fun PriorityBlock(priority: Int?) {
 @Composable
 private fun PartiesRow(order: JobOrder) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -591,8 +591,8 @@ private fun MaterialsDisclosure(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onToggle)
-                .padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                .padding(vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtIcon(
@@ -640,12 +640,12 @@ private fun orgBadgeKind(unit: String?): KrtOrgBadgeKind =
 @Composable
 internal fun MaterialLine(material: JobOrderMaterial) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Text(
                 text = material.name,
@@ -764,12 +764,12 @@ internal fun ItemLine(
     handOver: ItemProduceGate? = null,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Text(
                 text = item.name ?: stringResource(R.string.order_detail_item_unnamed),
@@ -995,7 +995,7 @@ fun OrderDetailScreen(
                     message = stringResource(R.string.retry_busy_message, retryIn),
                     retryLabel = stringResource(R.string.retry_now),
                     onRetry = onRetryNow,
-                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
+                    modifier = Modifier.fillMaxSize().padding(KrtSpacing.s16),
                 )
             } else {
                 OrderDetailFailure(error = phase.error, modifier = modifier)
@@ -1156,8 +1156,8 @@ private fun OrderDetailBody(
         }
         item(key = "head") {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
-                verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             ) {
                 // The order's number and status live in the TOP BAR (design ch. 10 artboard 2),
                 // the same rule the Einsatz detail follows. The parties move to the facts bar.
@@ -1165,7 +1165,7 @@ private fun OrderDetailBody(
                     title = stringResource(R.string.orders_number, order.displayId),
                     subtitle = {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(top = 2.dp),
                         ) {
@@ -1181,7 +1181,7 @@ private fun OrderDetailBody(
                     },
                 )
                 state.error?.let { error -> WriteError(error = error) }
-                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                     KrtCtaButton(
                         text =
                             stringResource(
@@ -1284,8 +1284,8 @@ internal fun AssigneeRow(
     onEditNote: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -1337,8 +1337,8 @@ private fun NoteSheet(
         title = stringResource(R.string.order_detail_note),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
             // Whose note this is, on the sheet itself: the API only ever lets a member write their
             // own, and the sheet is reached from a list of everybody's (design ch. 10 artboard 5).
@@ -1374,7 +1374,7 @@ private fun NoteSheet(
             // The conflict is drawn above as its own block, so it does not also arrive as a bare
             // error line saying the same thing twice.
             state.error?.takeIf { state.rejectedNote == null }?.let { error -> WriteError(error = error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
                 KrtGhostButton(
                     text = stringResource(R.string.personal_inventory_cancel),
                     onClick = actions.onDismissNote,
@@ -1431,7 +1431,7 @@ internal fun Body(text: String) {
         text = text,
         style = MaterialTheme.typography.bodySmall,
         color = KrtPalette.TextMuted,
-        modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.xs),
+        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
     )
 }
 
@@ -1466,7 +1466,7 @@ private fun OrderDetailFailure(
         iconRes = DesignR.drawable.ic_krt_clipboard_list,
         title = stringResource(titleRes),
         message = stringResource(messageRes),
-        modifier = modifier.fillMaxSize().padding(KrtSpacing.lg),
+        modifier = modifier.fillMaxSize().padding(KrtSpacing.s16),
     )
 }
 
@@ -1664,7 +1664,7 @@ private fun NoteConflict(
             text = stringResource(R.string.order_detail_note_conflict_rejected),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
         )
         Text(
             text = refused,
@@ -1674,7 +1674,7 @@ private fun NoteConflict(
         KrtGhostButton(
             text = stringResource(R.string.order_detail_note_conflict_reapply),
             onClick = actions.onReapplyRejectedNote,
-            modifier = Modifier.padding(top = KrtSpacing.xs),
+            modifier = Modifier.padding(top = KrtSpacing.s4),
         )
     }
 }

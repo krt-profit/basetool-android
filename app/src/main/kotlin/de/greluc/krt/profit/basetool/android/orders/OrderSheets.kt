@@ -60,8 +60,8 @@ internal fun StatusSheet(
         title = stringResource(R.string.order_detail_change_status),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             state.order?.let { order ->
                 Text(
@@ -168,8 +168,8 @@ private fun StatusOption(
                 .fillMaxWidth()
                 .clickable(enabled = enabled && !isCurrent, onClick = onSelect)
                 .background(if (isChosen) KrtPalette.SurfaceInput else Color.Transparent)
-                .padding(KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                .padding(KrtSpacing.s8),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(STATUS_SWATCH).background(status.swatch()))
