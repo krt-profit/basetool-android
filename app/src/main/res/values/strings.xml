@@ -879,6 +879,57 @@
     <string name="blueprints_recipe_scu">%1$.2f SCU</string>
     <string name="blueprints_edit">Bearbeiten</string>
     <string name="blueprints_search">Blueprint suchen</string>
+    <!-- Blueprint-Import und Auswahlmodus — design ch. 18 §§2–3. -->
+    <string name="blueprints_import_title">Blueprints importieren</string>
+    <string name="blueprints_import_intro">Datei aus dem Extractor oder Export.</string>
+    <string name="blueprints_import_privacy">JSON aus dem Blueprint-Export. Die Datei bleibt auf dem Gerät, bis du die Vorschau bestätigst.</string>
+    <string name="blueprints_import_pick">Aus Dateien wählen</string>
+    <string name="blueprints_import_reading">Datei wird gelesen …</string>
+    <string name="blueprints_import_read">%1$s · %2$s</string>
+    <plurals name="blueprints_import_lines">
+        <item quantity="one">%1$d Zeile gelesen</item>
+        <item quantity="other">%1$d Zeilen gelesen</item>
+    </plurals>
+    <string name="blueprints_import_new">Neu</string>
+    <string name="blueprints_import_owned">Vorhanden</string>
+    <string name="blueprints_import_unknown">Unbekannt</string>
+    <string name="blueprints_import_unknown_note">Unbekannte Zeilen werden übersprungen, nicht abgelehnt — der Import läuft trotzdem.</string>
+    <string name="blueprints_import_suggested_hint">Zeilen, zu denen der Server nur Vorschläge findet, zählen hier als unbekannt: die Auswahl zwischen Vorschlägen gibt es nur im Webportal.</string>
+    <plurals name="blueprints_import_apply">
+        <item quantity="one">%1$d übernehmen</item>
+        <item quantity="other">%1$d übernehmen</item>
+    </plurals>
+    <plurals name="blueprints_import_writing">
+        <item quantity="one">%1$d wird übernommen …</item>
+        <item quantity="other">%1$d werden übernommen …</item>
+    </plurals>
+    <string name="blueprints_import_close">Schließen</string>
+    <string name="blueprints_import_failed">Die Datei konnte nicht gelesen werden. Prüfe, ob es der JSON-Export ist.</string>
+    <plurals name="blueprints_import_done">
+        <item quantity="one">%1$d Blueprint übernommen.</item>
+        <item quantity="other">%1$d Blueprints übernommen.</item>
+    </plurals>
+    <plurals name="blueprints_import_more">
+        <item quantity="one">+ %1$d weiterer</item>
+        <item quantity="other">+ %1$d weitere</item>
+    </plurals>
+    <plurals name="blueprints_selected">
+        <item quantity="one">%1$d von %2$d gewählt</item>
+        <item quantity="other">%1$d von %2$d gewählt</item>
+    </plurals>
+    <plurals name="blueprints_selected_all">
+        <item quantity="one">Alle %1$d gewählt</item>
+        <item quantity="other">Alle %1$d gewählt</item>
+    </plurals>
+    <string name="blueprints_select_all">Alles wählen</string>
+    <string name="blueprints_selection_cancel">Aufheben</string>
+    <string name="blueprints_selection_delete">Löschen</string>
+    <string name="blueprints_delete_title">Blueprints löschen?</string>
+    <plurals name="blueprints_delete_body">
+        <item quantity="one">%1$d Blueprint wird gelöscht.</item>
+        <item quantity="other">%1$d Blueprints werden gelöscht.</item>
+    </plurals>
+    <string name="blueprints_delete_consequence">Die Blueprints verschwinden aus deiner Liste; die Verfügbarkeitsübersicht der Einheit zeigt dich danach nicht mehr als Besitzer. Es gibt kein Zurück.</string>
     <string name="blueprints_add">Hinzufügen</string>
     <string name="blueprints_remove">Entfernen</string>
     <string name="blueprints_with_refinery">Mit Raffinerie</string>

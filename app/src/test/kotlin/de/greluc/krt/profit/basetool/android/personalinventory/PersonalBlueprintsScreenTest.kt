@@ -124,6 +124,20 @@ class PersonalBlueprintsScreenTest {
                     onEdit = { edited.add(it) },
                     onDelete = { deleted.add(it) },
                     onSelect = {},
+                    bulk =
+                        BlueprintBulkActions(
+                            onStartSelection = {},
+                            onToggleSelected = {},
+                            onSelectAll = {},
+                            onCancelSelection = {},
+                            onAskDelete = {},
+                            onDismissDelete = {},
+                            onConfirmDelete = {},
+                            onImportOpen = {},
+                            onImportFile = { _, _ -> },
+                            onImportApply = {},
+                            onImportDismiss = {},
+                        ),
                 )
             }
         }

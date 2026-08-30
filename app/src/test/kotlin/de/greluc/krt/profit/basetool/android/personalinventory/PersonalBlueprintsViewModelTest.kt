@@ -8,6 +8,11 @@
 package de.greluc.krt.profit.basetool.android.personalinventory
 
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintBatchResult
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportEntry
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportPreview
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportResult
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportSource
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportStatus
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintOverviewPage
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintOwner
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
@@ -69,7 +74,8 @@ class PersonalBlueprintsViewModelTest {
     private class FakeSource(
         var craftabilityAnswer: ApiResult<Map<String, Craftability>> =
             ApiResult.Success(mapOf("b1" to craftability())),
-    ) : PersonalBlueprintSource {
+    ) : PersonalBlueprintSource,
+        BlueprintImportSource {
         val added = mutableListOf<Pair<String, String?>>()
         val notes = mutableListOf<Triple<String, Long, String?>>()
         val removed = mutableListOf<String>()
@@ -137,6 +143,28 @@ class PersonalBlueprintsViewModelTest {
             ApiResult.Success(BlueprintRecipe(productName = "", variantCount = 1, ingredients = emptyList()))
         var recipeCalls = mutableListOf<String>()
 
+        var removeAllCalls = 0
+        var appliedEntries: List<BlueprintImportEntry>? = null
+        var previewAnswer: ApiResult<BlueprintImportPreview> =
+            ApiResult.Success(BlueprintImportPreview(emptyList()))
+
+        override suspend fun removeAll(): ApiResult<Int> {
+            removeAllCalls++
+            return ApiResult.Success(1)
+        }
+
+        override suspend fun importPreview(
+            fileName: String,
+            bytes: ByteArray,
+        ): ApiResult<BlueprintImportPreview> = previewAnswer
+
+        override suspend fun importApply(
+            entries: List<BlueprintImportEntry>,
+        ): ApiResult<BlueprintImportResult> {
+            appliedEntries = entries
+            return ApiResult.Success(BlueprintImportResult(added = entries.size, skipped = 0, alreadyOwned = 0))
+        }
+
         override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> {
             recipeCalls.add(id)
             return recipeAnswer
@@ -153,10 +181,133 @@ class PersonalBlueprintsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // ------------------------------------------------- selection mode and import (ch. 18 §§2-3)
+
+    /**
+     * „Alles wählen" goes through the one call that means everything.
+     *
+     * The endpoint takes neither ids nor a body, so it is all or nothing — and the flag is what
+     * separates „the member asked for all of them" from „every row that happens to be loaded".
+     */
+    @Test
+    fun `select all deletes through the one atomic call`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.selection.start("b1")
+            subject.selection.selectAll()
+            subject.selection.confirm()
+            advanceUntilIdle()
+
+            assertEquals(1, source.removeAllCalls)
+            assertTrue(source.removed.isEmpty())
+        }
+
+    /** A partial selection is looped, because there is no delete-by-ids. */
+    @Test
+    fun `a partial selection is deleted row by row`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.selection.start("b1")
+            subject.selection.confirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf("b1"), source.removed)
+            assertEquals(0, source.removeAllCalls)
+        }
+
+    /** Unticking anything drops the all-flag: the atomic call must never run on a narrower ask. */
+    @Test
+    fun `unticking a row leaves the atomic call behind`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.selection.start("b1")
+            subject.selection.selectAll()
+            subject.selection.toggle("b1")
+
+            assertEquals(false, subject.state.value.selection?.everything)
+        }
+
+    /**
+     * The import applies only what resolved.
+     *
+     * An unresolved row carries no product key, so it is skipped rather than refused — which is
+     * what keeps a file with two unknown names from failing outright.
+     */
+    @Test
+    fun `only resolved rows are applied`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            source.previewAnswer =
+                ApiResult.Success(
+                    BlueprintImportPreview(
+                        listOf(
+                            importEntry("Ballistic Gatling", BlueprintImportStatus.MATCHED, "bg"),
+                            importEntry("Panzerplatte S2", BlueprintImportStatus.ALREADY_OWNED, "pp"),
+                            importEntry("Prototype XR-9", BlueprintImportStatus.UNMATCHED, null),
+                            importEntry("Salvage Rig", BlueprintImportStatus.SUGGESTED, null),
+                        ),
+                    ),
+                )
+            val subject = viewModel(source)
+            subject.loadOnce()
+            advanceUntilIdle()
+
+            subject.import.open()
+            subject.import.onFile("export.json", ByteArray(1))
+            advanceUntilIdle()
+            subject.import.apply()
+            advanceUntilIdle()
+
+            assertEquals(listOf("Ballistic Gatling"), source.appliedEntries?.map { it.externalName })
+        }
+
+    /** A file the device cannot read is a state, not a crash — and not an HTTP one either. */
+    @Test
+    fun `an unreadable file is reported`() =
+        runTest(dispatcher) {
+            val subject = viewModel(FakeSource())
+            subject.import.open()
+            subject.import.onFile("export.json", null)
+
+            assertTrue(subject.state.value.import is BlueprintImportStep.Failed)
+        }
+
+    /**
+     * One line of an import preview.
+     *
+     * @param name the external name.
+     * @param status how it resolved.
+     * @param key the resolved product key, or `null`.
+     * @return the entry.
+     */
+    private fun importEntry(
+        name: String,
+        status: BlueprintImportStatus,
+        key: String?,
+    ) = BlueprintImportEntry(
+        externalName = name,
+        status = status,
+        productKey = key,
+        productName = key,
+        acquiredAt = null,
+    )
+
     private fun viewModel(
-        source: PersonalBlueprintSource,
+        source: FakeSource,
         connectivity: Connectivity = FakeConnectivity(),
-    ) = PersonalBlueprintsViewModel(source, connectivity)
+    ) = PersonalBlueprintsViewModel(source, source, connectivity)
 
     @Test
     fun `the list and its craftability arrive together`() =

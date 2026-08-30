@@ -86,6 +86,8 @@ class BlueprintOverviewTest {
         override suspend fun products(query: String): ApiResult<List<BlueprintProduct>> =
             error("the overview searches no catalogue")
 
+        override suspend fun removeAll(): ApiResult<Int> = error("not part of this test")
+
         override suspend fun recipe(id: String): ApiResult<BlueprintRecipe> = error("no recipes here")
 
         override suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult> =

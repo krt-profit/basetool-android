@@ -776,7 +776,11 @@ class MainActivity : AppCompatActivity() {
                     PersonalInventoryViewModel(container.personalInventory, container.connectivity)
                 }
                 initializer {
-                    PersonalBlueprintsViewModel(container.personalBlueprints, container.connectivity)
+                    PersonalBlueprintsViewModel(
+                        container.personalBlueprints,
+                        container.personalBlueprints,
+                        container.connectivity,
+                    )
                 }
                 initializer {
                     DashboardViewModel(

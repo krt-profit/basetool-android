@@ -9,7 +9,9 @@ package de.greluc.krt.profit.basetool.android.personalinventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintBatchResult
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintImportSource
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
@@ -26,6 +28,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+/** Log subsystem. A blueprint's owner is member data and never reaches the log. */
+private const val LOG_TAG = "personal-blueprints"
 
 /** How far the blueprint list has got. */
 sealed interface BlueprintsPhase {
@@ -157,6 +162,8 @@ data class BlueprintsState(
     val lastFailure: ApiError? = null,
     val selectedId: String? = null,
     val recipe: RecipeState = RecipeState.Idle,
+    val selection: BlueprintSelection? = null,
+    val import: BlueprintImportStep = BlueprintImportStep.Closed,
 )
 
 /**
@@ -204,6 +211,7 @@ sealed interface RecipeState {
  */
 class PersonalBlueprintsViewModel(
     private val repository: PersonalBlueprintSource,
+    private val imports: BlueprintImportSource,
     connectivity: Connectivity,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BlueprintsState())
@@ -223,6 +231,223 @@ class PersonalBlueprintsViewModel(
             onCountdown = { left -> mutableState.value = mutableState.value.copy(retryIn = left) },
             onRetry = { reload(keepRows = false) },
         )
+
+    /**
+     * The list's selection mode and the deletes it makes possible.
+     *
+     * Its own holder because it is one concern with one entry point (a long press) and one exit,
+     * and because the view model is at detekt's function cap without it.
+     */
+    inner class Selection {
+        /**
+         * A long press opened the mode on one row.
+         *
+         * @param id the row that was held.
+         */
+        fun start(id: String) {
+            if (mutableState.value.selection != null) {
+                return
+            }
+            mutableState.value = mutableState.value.copy(selection = BlueprintSelection(ids = setOf(id)))
+        }
+
+        /**
+         * A row was ticked or unticked.
+         *
+         * Unticking anything drops [BlueprintSelection.everything]: the one-call delete removes
+         * every blueprint the member owns, so it may only run while the member has actually asked
+         * for all of them.
+         *
+         * @param id the row.
+         */
+        fun toggle(id: String) {
+            val open = mutableState.value.selection ?: return
+            val next = if (id in open.ids) open.ids - id else open.ids + id
+            mutableState.value =
+                mutableState.value.copy(
+                    selection = open.copy(ids = next, everything = false),
+                )
+        }
+
+        /**
+         * „Alles wählen" — every row the member owns, not merely every row loaded.
+         *
+         * The list is paged, so ticking what is on screen would delete less than it promised. The
+         * flag says „all", the delete then uses the endpoint that means all, and the modal names
+         * the total rather than the loaded count.
+         */
+        fun selectAll() {
+            val open = mutableState.value.selection ?: return
+            val loaded = mutableState.value.items.map { it.id }.toSet()
+            mutableState.value =
+                mutableState.value.copy(selection = open.copy(ids = loaded, everything = true))
+        }
+
+        /** Leaves the mode without deleting anything. */
+        fun cancel() {
+            mutableState.value = mutableState.value.copy(selection = null)
+        }
+
+        /**
+         * Opens or closes the danger modal.
+         *
+         * @param asking whether it is on screen.
+         */
+        fun ask(asking: Boolean) {
+            val open = mutableState.value.selection ?: return
+            mutableState.value = mutableState.value.copy(selection = open.copy(asking = asking))
+        }
+
+        /**
+         * Deletes what is ticked.
+         *
+         * **Everything** goes through the one call that means everything; a partial selection is
+         * looped row by row, because the endpoint takes no ids. A loop can half-succeed, so what
+         * came back is counted and the rows that refused stay ticked — the same shape „Mein
+         * Inventar" uses, and the reason backend ask G6 exists.
+         */
+        fun confirm() {
+            val open = mutableState.value.selection ?: return
+            if (open.deleting || open.ids.isEmpty()) {
+                return
+            }
+            mutableState.value =
+                mutableState.value.copy(selection = open.copy(deleting = true, asking = false))
+            viewModelScope.launch {
+                val refused = if (open.everything) deleteEverything() else deleteEach(open.ids)
+                mutableState.value =
+                    mutableState.value.copy(
+                        selection =
+                            if (refused.isEmpty()) {
+                                null
+                            } else {
+                                open.copy(ids = refused, deleting = false, everything = false)
+                            },
+                    )
+                reload(keepRows = false)
+            }
+        }
+    }
+
+    /** The list's selection mode. */
+    val selection: Selection = Selection()
+
+    /**
+     * Deletes the lot in one call.
+     *
+     * @return the ids that refused, which for an atomic call is either none or all of them.
+     */
+    private suspend fun deleteEverything(): Set<String> =
+        when (val result = repository.removeAll()) {
+            is ApiResult.Success -> {
+                emptySet()
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "the blueprints could not be deleted: ${result.error}" }
+                mutableState.value.selection?.ids.orEmpty()
+            }
+        }
+
+    /**
+     * Deletes row by row, because the endpoint takes no ids.
+     *
+     * The outcomes are collected first and counted afterwards rather than tallied inside the loop:
+     * a counter mutated in a lambda is invisible to static analysis, and this is the shape that
+     * survived that review once already.
+     *
+     * @param ids what to delete.
+     * @return the ids that refused.
+     */
+    private suspend fun deleteEach(ids: Set<String>): Set<String> {
+        val outcomes = ids.map { id -> id to repository.remove(id) }
+        val refused = outcomes.filter { it.second is ApiResult.Failure }.map { it.first }.toSet()
+        if (refused.isNotEmpty()) {
+            KrtLog.w(LOG_TAG) { "${refused.size} of ${ids.size} blueprints refused deletion" }
+        }
+        return refused
+    }
+
+    /**
+     * The two-step file import.
+     *
+     * The steps are two calls on purpose: `preview` reads and answers, `apply` writes. Nothing
+     * between them touches the server, so the member can back out of a file they picked by mistake.
+     */
+    inner class Import {
+        /** Opens the sheet, waiting for a file. */
+        fun open() {
+            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Waiting)
+        }
+
+        /** Closes it, whatever step it was on. Nothing is written by closing. */
+        fun dismiss() {
+            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Closed)
+        }
+
+        /**
+         * A file was picked and read off the device.
+         *
+         * @param fileName what it is called; the server logs it.
+         * @param bytes its content, or `null` when the device could not read it — which is not an
+         *   HTTP state, so it gets plain German rather than the fiction canon.
+         */
+        fun onFile(
+            fileName: String,
+            bytes: ByteArray?,
+        ) {
+            if (bytes == null) {
+                mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Failed(null))
+                return
+            }
+            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Reading(fileName))
+            viewModelScope.launch {
+                mutableState.value =
+                    mutableState.value.copy(
+                        import =
+                            when (val result = imports.importPreview(fileName, bytes)) {
+                                is ApiResult.Success -> {
+                                    BlueprintImportStep.Preview(fileName, result.value)
+                                }
+
+                                is ApiResult.Failure -> {
+                                    KrtLog.w(LOG_TAG) { "the import file could not be read: ${result.error}" }
+                                    BlueprintImportStep.Failed(result.error)
+                                }
+                            },
+                    )
+            }
+        }
+
+        /** Takes over what the preview resolved — the only step that writes. */
+        fun apply() {
+            val step = mutableState.value.import as? BlueprintImportStep.Preview ?: return
+            val entries = step.preview.importable
+            if (entries.isEmpty()) {
+                dismiss()
+                return
+            }
+            mutableState.value = mutableState.value.copy(import = BlueprintImportStep.Writing(entries.size))
+            viewModelScope.launch {
+                when (val result = imports.importApply(entries)) {
+                    is ApiResult.Success -> {
+                        mutableState.value =
+                            mutableState.value.copy(import = BlueprintImportStep.Done(result.value))
+                        reload(keepRows = false)
+                    }
+
+                    is ApiResult.Failure -> {
+                        KrtLog.w(LOG_TAG) { "the import could not be applied: ${result.error}" }
+                        mutableState.value =
+                            mutableState.value.copy(import = BlueprintImportStep.Failed(result.error))
+                    }
+                }
+            }
+        }
+    }
+
+    /** The two-step file import. */
+    val import: Import = Import()
 
     /** The member asked again. Cancels the countdown and starts the ladder over. */
     fun onRetry() {

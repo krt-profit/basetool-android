@@ -109,6 +109,20 @@ fun MeinInventarRoute(
                 onEdit = blueprints::onEdit,
                 onDelete = blueprints::onDeleteRequested,
                 onSelect = blueprints::onSelect,
+                bulk =
+                    BlueprintBulkActions(
+                        onStartSelection = blueprints.selection::start,
+                        onToggleSelected = blueprints.selection::toggle,
+                        onSelectAll = blueprints.selection::selectAll,
+                        onCancelSelection = blueprints.selection::cancel,
+                        onAskDelete = { blueprints.selection.ask(true) },
+                        onDismissDelete = { blueprints.selection.ask(false) },
+                        onConfirmDelete = blueprints.selection::confirm,
+                        onImportOpen = blueprints.import::open,
+                        onImportFile = blueprints.import::onFile,
+                        onImportApply = blueprints.import::apply,
+                        onImportDismiss = blueprints.import::dismiss,
+                    ),
             )
         }
     }

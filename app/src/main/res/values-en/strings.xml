@@ -858,6 +858,57 @@
     <string name="blueprints_recipe_scu">%1$.2f SCU</string>
     <string name="blueprints_edit">Edit</string>
     <string name="blueprints_search">Search blueprint</string>
+    <!-- Blueprint import and selection mode — design ch. 18 §§2–3. -->
+    <string name="blueprints_import_title">Import blueprints</string>
+    <string name="blueprints_import_intro">A file from the extractor or the export.</string>
+    <string name="blueprints_import_privacy">JSON from the blueprint export. The file stays on the device until you confirm the preview.</string>
+    <string name="blueprints_import_pick">Pick from files</string>
+    <string name="blueprints_import_reading">Reading the file …</string>
+    <string name="blueprints_import_read">%1$s · %2$s</string>
+    <plurals name="blueprints_import_lines">
+        <item quantity="one">%1$d line read</item>
+        <item quantity="other">%1$d lines read</item>
+    </plurals>
+    <string name="blueprints_import_new">New</string>
+    <string name="blueprints_import_owned">Owned</string>
+    <string name="blueprints_import_unknown">Unknown</string>
+    <string name="blueprints_import_unknown_note">Unknown lines are skipped, not refused — the import runs anyway.</string>
+    <string name="blueprints_import_suggested_hint">Lines the server only finds suggestions for count as unknown here: choosing between suggestions exists only in the web portal.</string>
+    <plurals name="blueprints_import_apply">
+        <item quantity="one">Take over %1$d</item>
+        <item quantity="other">Take over %1$d</item>
+    </plurals>
+    <plurals name="blueprints_import_writing">
+        <item quantity="one">Taking over %1$d …</item>
+        <item quantity="other">Taking over %1$d …</item>
+    </plurals>
+    <string name="blueprints_import_close">Close</string>
+    <string name="blueprints_import_failed">The file could not be read. Check that it is the JSON export.</string>
+    <plurals name="blueprints_import_done">
+        <item quantity="one">%1$d blueprint taken over.</item>
+        <item quantity="other">%1$d blueprints taken over.</item>
+    </plurals>
+    <plurals name="blueprints_import_more">
+        <item quantity="one">+ %1$d more</item>
+        <item quantity="other">+ %1$d more</item>
+    </plurals>
+    <plurals name="blueprints_selected">
+        <item quantity="one">%1$d of %2$d selected</item>
+        <item quantity="other">%1$d of %2$d selected</item>
+    </plurals>
+    <plurals name="blueprints_selected_all">
+        <item quantity="one">All %1$d selected</item>
+        <item quantity="other">All %1$d selected</item>
+    </plurals>
+    <string name="blueprints_select_all">Select all</string>
+    <string name="blueprints_selection_cancel">Cancel</string>
+    <string name="blueprints_selection_delete">Delete</string>
+    <string name="blueprints_delete_title">Delete blueprints?</string>
+    <plurals name="blueprints_delete_body">
+        <item quantity="one">%1$d blueprint will be deleted.</item>
+        <item quantity="other">%1$d blueprints will be deleted.</item>
+    </plurals>
+    <string name="blueprints_delete_consequence">The blueprints disappear from your list; your unit’s availability view will no longer show you as an owner. There is no way back.</string>
     <string name="blueprints_add">Add</string>
     <string name="blueprints_remove">Remove</string>
     <string name="blueprints_with_refinery">With refinery</string>
