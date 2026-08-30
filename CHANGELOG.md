@@ -15,6 +15,11 @@
   „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
   Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
 
+- **Neue Materialsammelübersicht im Auftrag.** Zeigt, welche Lagereinträge diesem Auftrag zugeordnet
+  sind, mit Besitzer, Standort, Menge und Lieferstatus; der Lieferstatus lässt sich umstellen und
+  eine Zuordnung lösen — nachgefragt wird nur, wenn tatsächlich eine Menge daran hängt. Besitzer
+  und Standort ändert man weiterhin im Lager, weil das im Hintergrund eine Umbuchung ist.
+
 - **Aufträge lassen sich jetzt in der App bearbeiten.** Logistiker ändern das ganze Formular,
   Antragsteller Mengen und Kommentar — die übrigen Felder stehen dort gesperrt mit dem Grund statt
   zu fehlen. Eine Position kann nicht unter die bereits übergebene Menge fallen; das Formular sagt,

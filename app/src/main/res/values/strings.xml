@@ -1562,4 +1562,17 @@
     <string name="order_edit_item_only_web">Item-Positionen werden weiterhin im Web bearbeitet.</string>
     <string name="order_detail_actions">Weitere Aktionen</string>
     <string name="order_edit_item_only_web_detail">Blueprint-Varianten und der Unterbaugruppen-Baum fehlen der App noch.</string>
+    <!-- Auftrag: Materialsammelübersicht (design ch. 10 artboard 16) -->
+    <string name="order_collection_title">Materialsammelübersicht</string>
+    <string name="order_collection_entries">Lagereinträge</string>
+    <string name="order_collection_unbacked">Verknüpfte Materialien (ohne Bestand)</string>
+    <string name="order_collection_empty">Keine Lagereinträge für diesen Auftrag vorhanden.</string>
+    <string name="order_collection_amount">%1$s von %2$s im Bestand</string>
+    <string name="order_collection_delivered">Geliefert</string>
+    <string name="order_collection_delivered_label">Lieferstatus</string>
+    <string name="order_collection_unlink">Lösen</string>
+    <string name="order_collection_unlink_title">Verknüpfung lösen?</string>
+    <string name="order_collection_unlink_body">Die Zuordnung von %1$s %2$s (%3$s) zu diesem Auftrag wird entfernt. Der Lagerbestand selbst bleibt unverändert.</string>
+    <string name="order_collection_transfer_note">Besitzer und Standort ändert man im Lager: das ist im Hintergrund eine Umbuchung, keine Feldänderung.</string>
+    <string name="order_collection_open">Materialsammelübersicht</string>
 </resources>

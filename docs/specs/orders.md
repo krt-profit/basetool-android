@@ -698,3 +698,50 @@ neither pre-fill its pickers nor pass its own submit gate.
 - [ ] An item order's entry is drawn with the reason it cannot be used
 
 **Enforced by:** `OrderEditTest`.
+
+## REQ-APP-ORDERS-023 — Die Materialsammelübersicht: which stock is promised to this Auftrag
+
+**Status:** implemented · **Since:** 2026-08-29
+
+`GET /api/v1/orders/{id}/material-collection` — the stock rows linked to one Auftrag, reachable
+from its overflow. Design ch. 10 artboard 16.
+
+> [!important] It belongs to the **Auftrag**, not to the material reference
+> `material.collection.back` reads „Zurück zum Auftrag". Design chapter 16's first draft filed this
+> page under Materialien and corrected itself; the app follows the correction.
+
+The read is open to anyone who may see the order, and the **owners are redacted** for a
+requesting-side viewer (`canSeeJobOrderInventoryOwners`) — which is why the owner is left out of the
+row rather than drawn as an empty field.
+
+**Two writes, both gated `LOGISTICIAN | OFFICER | ADMIN` plus edit scope:**
+
+- **Lieferstatus** — `PATCH /inventory/{id}/delivered`, echoing the **row's own** version, so a
+  concurrent stock change is a 409 rather than a silent overwrite.
+- **Verknüpfung lösen** — `DELETE /orders/{id}/inventory/{entryId}/unlink` for a stock row, and
+  `DELETE /orders/{id}/materials/{materialId}` for a required material nothing covers.
+
+**Only a link with an amount behind it asks first.** The unlink removes the earmark and leaves the
+stock alone, so a row that promised nothing has nothing to warn about — and asking anyway teaches
+members to click through confirmations. The confirmation names both halves: what goes (the
+assignment) and what stays (the stock).
+
+**The second section is derived**, because the server has no endpoint for it: „Verknüpfte
+Materialien (ohne Bestand)" is the order's required materials minus the materials the linked rows
+cover.
+
+> [!warning] Besitzer and Standort are **not** editable here, deliberately
+> The web's two inline selects post to `/inventory/{id}/transfer`, which is a proxy onto the
+> backend's **book-out** — that is moving stock, not editing a field. The app offers exactly that in
+> the Lager's own book-out sheet, where the amount and the earmark reductions are visible before
+> anything moves. A silent inline picker would move stock without showing what moves. The screen
+> says where to do it; the artboard's „DREI Felder sind INLINE änderbar" is on the design gap list.
+
+**Acceptance**
+
+- [ ] A required material no linked row covers appears in the second section
+- [ ] A row with an earmark asks before unlinking and names the amount; one without does not ask
+- [ ] The delivered flag echoes the row's own version
+- [ ] Every write re-reads the page, because each moves a figure the server computes
+
+**Enforced by:** `OrderCollectionTest`.

@@ -40,6 +40,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialCatalogRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialCollectionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
@@ -252,6 +253,16 @@ class AuthContainer(
      */
     val orderClaims: MaterialClaimRepository by lazy {
         MaterialClaimRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The stock rows linked to one Auftrag, and the three writes on them.
+     *
+     * Its own repository because it spans two endpoint families — the order's collection read and
+     * the inventory row's own delivered flag.
+     */
+    val orderCollection: MaterialCollectionRepository by lazy {
+        MaterialCollectionRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

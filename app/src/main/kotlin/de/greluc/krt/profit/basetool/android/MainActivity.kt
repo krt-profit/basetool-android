@@ -79,6 +79,7 @@ import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailSources
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
@@ -427,6 +428,13 @@ class MainActivity : AppCompatActivity() {
                                     },
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
+                                    },
+                                    orderCollection = { collectionId ->
+                                        OrderCollectionViewModel(
+                                            container.orderCollection,
+                                            container.orders,
+                                            collectionId,
+                                        )
                                     },
                                     orderEdit = { editedId ->
                                         OrderCreateViewModel(

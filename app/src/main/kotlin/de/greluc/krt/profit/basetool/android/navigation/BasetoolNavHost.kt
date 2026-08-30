@@ -72,6 +72,8 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsPhase
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionRoute
+import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
@@ -167,6 +169,7 @@ fun BasetoolNavHost(
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
+    orderCollection: (String) -> OrderCollectionViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -253,6 +256,7 @@ fun BasetoolNavHost(
                             refineryCreate = refineryCreate,
                             orderCreate = orderCreate,
                             orderEdit = orderEdit,
+                            orderCollection = orderCollection,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -604,6 +608,9 @@ private fun listDetailDestination(
                             OrderDetailRoute(
                                 viewModel = detailModel,
                                 onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                                onOpenCollection = {
+                                    navController.navigate(orderCollectionRoute(it))
+                                },
                             )
                         }
                     },
@@ -676,6 +683,7 @@ private data class MaterialBindings(
  * @param backStackEntry carries the id where there is one.
  * @param refineryOrder builds a view model for one Raffinerie order.
  * @param material the three Handel view models.
+ * @param orderCollection builds the view model for one Auftrag's linked stock rows.
  */
 @Composable
 private fun SimplePushedDestination(
@@ -683,8 +691,16 @@ private fun SimplePushedDestination(
     backStackEntry: NavBackStackEntry,
     refineryOrder: (String) -> RefineryDetailViewModel,
     material: MaterialBindings,
+    orderCollection: (String) -> OrderCollectionViewModel,
 ) {
     when (destination) {
+        KrtDestination.OrderCollection -> {
+            val collectionOrderId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
+            OrderCollectionRoute(
+                viewModel = remember(collectionOrderId) { orderCollection(collectionOrderId) },
+            )
+        }
+
         KrtDestination.MaterialMatrix -> {
             MaterialMatrixRoute(viewModel = remember { material.matrix() })
         }
@@ -745,6 +761,7 @@ private fun PushedDestination(
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
+    orderCollection: (String) -> OrderCollectionViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -796,6 +813,7 @@ private fun PushedDestination(
             OrderDetailRoute(
                 viewModel = viewModel,
                 onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                onOpenCollection = { navController.navigate(orderCollectionRoute(it)) },
             )
         }
 
@@ -803,12 +821,14 @@ private fun PushedDestination(
         KrtDestination.MaterialDetail,
         KrtDestination.MaterialMatrix,
         KrtDestination.MaterialProfit,
+        KrtDestination.OrderCollection,
         -> {
             SimplePushedDestination(
                 destination = destination,
                 backStackEntry = backStackEntry,
                 refineryOrder = refineryOrder,
                 material = material,
+                orderCollection = orderCollection,
             )
         }
 

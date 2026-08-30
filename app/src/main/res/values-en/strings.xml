@@ -1541,4 +1541,17 @@
     <string name="order_edit_item_only_web">Item lines are still edited on the web.</string>
     <string name="order_detail_actions">More actions</string>
     <string name="order_edit_item_only_web_detail">Blueprint variants and the sub-assembly tree are not in the app yet.</string>
+    <!-- Auftrag: the linked stock overview (design ch. 10 artboard 16) -->
+    <string name="order_collection_title">Materialsammelübersicht</string>
+    <string name="order_collection_entries">Stock entries</string>
+    <string name="order_collection_unbacked">Linked materials (no stock)</string>
+    <string name="order_collection_empty">No stock entries linked to this Auftrag.</string>
+    <string name="order_collection_amount">%1$s of %2$s in stock</string>
+    <string name="order_collection_delivered">Delivered</string>
+    <string name="order_collection_delivered_label">Delivery status</string>
+    <string name="order_collection_unlink">Unlink</string>
+    <string name="order_collection_unlink_title">Remove the link?</string>
+    <string name="order_collection_unlink_body">The assignment of %1$s %2$s (%3$s) to this Auftrag is removed. The stock itself stays untouched.</string>
+    <string name="order_collection_transfer_note">Owner and location are changed in the Lager: behind the scenes that is a stock transfer, not a field edit.</string>
+    <string name="order_collection_open">Materialsammelübersicht</string>
 </resources>

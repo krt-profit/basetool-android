@@ -170,6 +170,18 @@ enum class KrtDestination(
      */
     OrderEdit("order-edit/{orderId}", R.string.order_edit_title, DesignR.drawable.ic_krt_edit),
 
+    /**
+     * The stock rows linked to one Auftrag, pushed from its detail's overflow.
+     *
+     * It belongs to the **Auftrag** and not to the material reference — `material.collection.back`
+     * reads „Zurück zum Auftrag", and design chapter 16 corrected itself about that.
+     */
+    OrderCollection(
+        "order-collection/{orderId}",
+        R.string.order_collection_title,
+        DesignR.drawable.ic_krt_crate,
+    ),
+
     /** The form for a new material order, pushed from the Aufträge queue. */
     OrderCreate(
         "order-create",
@@ -277,6 +289,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // opened from „Handel".
         KrtDestination.MaterialDetail to KrtDestination.Materials,
         KrtDestination.OrderEdit to KrtDestination.Orders,
+        KrtDestination.OrderCollection to KrtDestination.Orders,
         KrtDestination.MaterialMatrix to KrtDestination.Materials,
         KrtDestination.MaterialProfit to KrtDestination.Materials,
         // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
@@ -321,6 +334,14 @@ const val MATERIAL_ID_ARG: String = "materialId"
  * @return the concrete route.
  */
 fun orderEditRoute(orderId: String): String = "order-edit/" + orderId
+
+/**
+ * The route that opens one Auftrag's linked stock rows.
+ *
+ * @param orderId the Auftrag.
+ * @return the concrete route.
+ */
+fun orderCollectionRoute(orderId: String): String = "order-collection/" + orderId
 
 /**
  * The route that opens one Operation.

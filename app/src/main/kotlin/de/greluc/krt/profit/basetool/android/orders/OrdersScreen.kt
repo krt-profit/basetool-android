@@ -1026,6 +1026,8 @@ data class OrderDetailActions(
     val onRecordItemHandover: (JobOrderItem) -> Unit,
     /** Opens „Auftrag bearbeiten" (design ch. 10 artboards 10 and 11). */
     val onEditOrder: () -> Unit,
+    /** Opens the Materialsammelübersicht (design ch. 10 artboard 16). */
+    val onOpenCollection: () -> Unit,
     /** Applies the marked status, asking first when the target cannot be taken back. */
     val onApplyStatus: () -> Unit,
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
@@ -1057,6 +1059,7 @@ private fun OrderOverflow(
     val label = stringResource(R.string.order_detail_actions)
     val edit = stringResource(R.string.order_edit_open)
     val itemsOnWeb = stringResource(R.string.order_edit_item_only_web)
+    val collection = stringResource(R.string.order_collection_open)
     val gate =
         Gate(
             allowed = state.editMode != null && state.editableKind,
@@ -1090,6 +1093,15 @@ private fun OrderOverflow(
                         ) {
                             open = false
                             click()
+                        },
+                        // Not gated: the collection is a READ for anyone who may see the order.
+                        // Only its own writes are gated, and the screen draws those.
+                        KrtMenuItem(
+                            label = collection,
+                            iconRes = DesignR.drawable.ic_krt_crate,
+                        ) {
+                            open = false
+                            actions.onOpenCollection()
                         },
                     ),
             )
@@ -1467,12 +1479,14 @@ fun OrdersRoute(
  * @param viewModel drives the screen.
  * @param modifier layout modifier.
  * @param onEditOrder open the edit form for this order.
+ * @param onOpenCollection open this order's linked stock rows.
  */
 @Composable
 fun OrderDetailRoute(
     viewModel: OrderDetailViewModel,
     modifier: Modifier = Modifier,
     onEditOrder: (String) -> Unit = {},
+    onOpenCollection: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     OrderDetailScreen(
@@ -1551,6 +1565,7 @@ fun OrderDetailRoute(
                 },
                 onRecordItemHandover = viewModel.itemHandover::open,
                 onEditOrder = { onEditOrder(state.orderId) },
+                onOpenCollection = { onOpenCollection(state.orderId) },
                 onRecordProduction = { line ->
                     viewModel.production.open(
                         orderId = state.orderId,

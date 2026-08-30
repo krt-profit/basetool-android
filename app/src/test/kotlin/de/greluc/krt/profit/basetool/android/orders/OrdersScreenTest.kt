@@ -318,6 +318,7 @@ class OrdersScreenTest {
         onRecordProduction = { produced.add(it.id.orEmpty()) },
         onRecordItemHandover = { handedOver.add(it.id.orEmpty()) },
         onEditOrder = {},
+        onOpenCollection = {},
     )
 
     /**
