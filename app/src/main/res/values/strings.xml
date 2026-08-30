@@ -1635,4 +1635,27 @@
         <item quantity="one">%1$d Blueprint übernehmen</item>
         <item quantity="other">%1$d Blueprints übernehmen</item>
     </plurals>
+    <!-- Blueprint-Verfügbarkeit (Design Kap. 17, Artboard 6) -->
+    <string name="blueprint_overview_title">Blueprint-Verfügbarkeit</string>
+    <string name="blueprint_overview_search">Nach Blueprint suchen …</string>
+    <string name="blueprint_overview_filter_all">Alle</string>
+    <string name="blueprint_overview_filter_unrecorded">Nicht erfasst</string>
+    <string name="blueprint_overview_filter_partial">„Nicht erfasst" filtert die bereits geladenen Zeilen — weiterscrollen lädt mehr.</string>
+    <string name="blueprint_overview_owners">Verfügbar bei</string>
+    <string name="blueprint_overview_owners_loading">Besitzer werden geladen …</string>
+    <string name="blueprint_overview_owners_none">Keine Besitzer in deiner Orgeinheit.</string>
+    <string name="blueprint_overview_owners_failed">Besitzer konnten nicht geladen werden.</string>
+    <string name="blueprint_overview_owner_foreign">kein Einheitsmitglied</string>
+    <string name="blueprint_overview_owner_foreign_hint">Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit.</string>
+    <string name="blueprint_overview_failed_title">Signal Lost — Übersicht nicht erreichbar</string>
+    <string name="blueprint_overview_failed_message">Die Blueprint-Verfügbarkeit konnte nicht geladen werden.</string>
+    <string name="blueprint_overview_empty_title">Kein Blueprint passt</string>
+    <string name="blueprint_overview_empty_message">Andere Suche oder anderer Filter.</string>
+    <string name="blueprint_overview_loading_more">Weitere werden geladen …</string>
+    <string name="blueprint_overview_locked">Dafür brauchst du die Rolle Officer.</string>
+    <string name="blueprint_overview_locked_detail">Vergeben durch die Administration.</string>
+    <plurals name="blueprint_overview_count">
+        <item quantity="one">%1$d Blueprint</item>
+        <item quantity="other">%1$d Blueprints</item>
+    </plurals>
 </resources>

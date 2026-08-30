@@ -9,8 +9,10 @@ package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintCraftabilityDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintOverviewOwnerDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintProductDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintRequirementIngredientDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBlueprintOverviewEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponsePersonalBlueprintResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBatchCreateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBatchResult
@@ -115,6 +117,33 @@ data class Craftability(
 }
 
 /**
+ * One overview page as the screen holds it.
+ *
+ * A row without a product key is dropped: the key is how its owners are asked for, so a row
+ * without one is a card that can never fill in its own second line.
+ *
+ * @receiver what the server sent.
+ * @param page which page was asked for; the response does not always echo it.
+ * @return the page.
+ */
+private fun PageResponseBlueprintOverviewEntryDto.toModel(page: Int): BlueprintOverviewPage =
+    BlueprintOverviewPage(
+        entries =
+            content.orEmpty().mapNotNull { row ->
+                row.productKey?.takeIf { it.isNotBlank() }?.let {
+                    BlueprintOverviewEntry(
+                        productKey = it,
+                        productName = row.productName.orEmpty(),
+                        ownerCount = row.ownerCount ?: 0L,
+                    )
+                }
+            },
+        page = this.page ?: page,
+        totalPages = totalPages ?: 1,
+        totalElements = totalElements ?: 0L,
+    )
+
+/**
  * One product the member could add.
  *
  * @property productKey what a create sends
@@ -132,6 +161,55 @@ data class BlueprintProduct(
     val manufacturer: String?,
     val owned: Boolean,
     val variantCount: Int = 0,
+)
+
+/**
+ * One row of the org-wide blueprint overview.
+ *
+ * @property productKey the catalogue key, which is also how its owners are asked for.
+ * @property productName what it is called.
+ * @property ownerCount how many members in the caller's oversight scope hold it. `0` is a real
+ *   answer — „nicht erfasst" — and not a missing one.
+ */
+data class BlueprintOverviewEntry(
+    val productKey: String,
+    val productName: String,
+    val ownerCount: Long,
+) {
+    /** Whether nobody in scope holds it. */
+    val unrecorded: Boolean get() = ownerCount <= 0
+}
+
+/**
+ * One page of that overview.
+ *
+ * @property entries the rows.
+ * @property page the zero-based page index.
+ * @property totalPages how many pages exist.
+ * @property totalElements how many blueprints the search matches.
+ */
+data class BlueprintOverviewPage(
+    val entries: List<BlueprintOverviewEntry>,
+    val page: Int,
+    val totalPages: Int,
+    val totalElements: Long,
+) {
+    /** Whether another page exists after this one. */
+    val hasMore: Boolean get() = page + 1 < totalPages
+}
+
+/**
+ * One member who holds a blueprint.
+ *
+ * @property name their display name, as the server rendered it.
+ * @property orgUnitMember whether they belong to the org unit the caller is looking at. `false`
+ *   means the row is visible through the **global blueprint sharing** rather than through the
+ *   unit, which the screen says in so many words — otherwise a stranger's name in a unit list
+ *   reads as a bug.
+ */
+data class BlueprintOwner(
+    val name: String,
+    val orgUnitMember: Boolean,
 )
 
 /**
@@ -235,6 +313,35 @@ interface PersonalBlueprintSource {
      * @return what it did, or the classified failure.
      */
     suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult>
+
+    /**
+     * Reads one page of the org-wide blueprint overview.
+     *
+     * Officer and above, in the caller's oversight scope — the server decides, and the app asks
+     * `GET /me/capabilities` (`canSeeBlueprintOverview`) before offering the screen at all.
+     *
+     * @param query a blueprint-name fragment, or blank for everything.
+     * @param page the zero-based page index.
+     * @param pageSize how many rows to ask for.
+     * @return the page, or the classified failure.
+     */
+    suspend fun overview(
+        query: String = "",
+        page: Int = 0,
+        pageSize: Int = PersonalBlueprintRepository.DEFAULT_PAGE_SIZE,
+    ): ApiResult<BlueprintOverviewPage>
+
+    /**
+     * Reads who holds one blueprint.
+     *
+     * A **separate** call per row, as the web does it: the overview page carries counts only, and
+     * one row's failure must not take the list with it (design ch. 17 artboard 6 draws all three
+     * states — loading, empty, failed — per row).
+     *
+     * @param productKey which blueprint.
+     * @return its owners, or the classified failure.
+     */
+    suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>>
 
     /**
      * Reads the recipe of one owned blueprint — its ingredients and their required quality.
@@ -382,6 +489,54 @@ class PersonalBlueprintRepository(
             }
         }
 
+    override suspend fun overview(
+        query: String,
+        page: Int,
+        pageSize: Int,
+    ): ApiResult<BlueprintOverviewPage> {
+        val params =
+            listOfNotNull(
+                query.trim().takeIf { it.isNotEmpty() }?.let { SEARCH_PARAM to it },
+                PAGE_PARAM to page.toString(),
+                SIZE_PARAM to pageSize.toString(),
+            )
+        return when (
+            val result =
+                reader.get(
+                    OVERVIEW_PATH,
+                    params,
+                    PageResponseBlueprintOverviewEntryDto.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
+        }
+    }
+
+    override suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>> =
+        when (
+            val result =
+                reader.get(
+                    OWNERS_PATH,
+                    listOf(PRODUCT_KEY_PARAM to productKey),
+                    ListSerializer(BlueprintOverviewOwnerDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { row ->
+                        row.ownerName?.takeIf { it.isNotBlank() }?.let {
+                            BlueprintOwner(name = it, orgUnitMember = row.orgUnitMember == true)
+                        }
+                    },
+                )
+            }
+        }
+
     override suspend fun products(query: String): ApiResult<List<BlueprintProduct>> {
         val params = listOf(QUERY_PARAM to query.trim(), LIMIT_PARAM to PRODUCT_LIMIT.toString())
         return when (
@@ -408,6 +563,10 @@ class PersonalBlueprintRepository(
         private const val LOG_TAG = "personal-blueprints"
         private const val PATH = "/api/v1/personal-blueprints"
         private const val BATCH_PATH = "/api/v1/personal-blueprints/batch"
+        private const val OVERVIEW_PATH = "/api/v1/personal-blueprints/overview"
+        private const val OWNERS_PATH = "/api/v1/personal-blueprints/overview/owners"
+        private const val SEARCH_PARAM = "search"
+        private const val PRODUCT_KEY_PARAM = "productKey"
         private const val CRAFTABILITY_PATH = "/api/v1/personal-blueprints/craftability"
         private const val PRODUCTS_PATH = "/api/v1/blueprints/products/search"
         private const val QUERY_PARAM = "q"

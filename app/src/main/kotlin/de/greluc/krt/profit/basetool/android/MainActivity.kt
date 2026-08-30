@@ -77,6 +77,7 @@ import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
+import de.greluc.krt.profit.basetool.android.navigation.BlueprintOverviewBindings
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
@@ -87,6 +88,7 @@ import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderFormMode
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
+import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
@@ -431,6 +433,20 @@ class MainActivity : AppCompatActivity() {
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
                                     },
+                                    blueprints =
+                                        BlueprintOverviewBindings(
+                                            // `null` before the first /me lands reads as "not
+                                            // allowed", which locks the row rather than opening a
+                                            // screen the server would refuse. It unlocks on the
+                                            // next composition once the identity is known.
+                                            allowed =
+                                                container.identity.known?.blueprintOverview == true,
+                                            build = {
+                                                BlueprintOverviewViewModel(
+                                                    container.personalBlueprints,
+                                                )
+                                            },
+                                        ),
                                     operationForm = { editedOperation ->
                                         OperationFormViewModel(container.operations, editedOperation)
                                     },

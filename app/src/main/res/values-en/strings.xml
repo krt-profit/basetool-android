@@ -1614,4 +1614,27 @@
         <item quantity="one">Take over %1$d blueprint</item>
         <item quantity="other">Take over %1$d blueprints</item>
     </plurals>
+    <!-- Blueprint availability (design ch. 17, artboard 6) -->
+    <string name="blueprint_overview_title">Blueprint availability</string>
+    <string name="blueprint_overview_search">Search for a blueprint …</string>
+    <string name="blueprint_overview_filter_all">All</string>
+    <string name="blueprint_overview_filter_unrecorded">Not recorded</string>
+    <string name="blueprint_overview_filter_partial">"Not recorded" filters the rows loaded so far — scroll on to load more.</string>
+    <string name="blueprint_overview_owners">Available from</string>
+    <string name="blueprint_overview_owners_loading">Loading owners …</string>
+    <string name="blueprint_overview_owners_none">No owners in your org unit.</string>
+    <string name="blueprint_overview_owners_failed">Owners could not be loaded.</string>
+    <string name="blueprint_overview_owner_foreign">not a unit member</string>
+    <string name="blueprint_overview_owner_foreign_hint">Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit.</string>
+    <string name="blueprint_overview_failed_title">Signal Lost — overview unreachable</string>
+    <string name="blueprint_overview_failed_message">Blueprint availability could not be loaded.</string>
+    <string name="blueprint_overview_empty_title">No blueprint matches</string>
+    <string name="blueprint_overview_empty_message">Try another search or another filter.</string>
+    <string name="blueprint_overview_loading_more">Loading more …</string>
+    <string name="blueprint_overview_locked">You need the Officer role for this.</string>
+    <string name="blueprint_overview_locked_detail">Granted by the administration.</string>
+    <plurals name="blueprint_overview_count">
+        <item quantity="one">%1$d blueprint</item>
+        <item quantity="other">%1$d blueprints</item>
+    </plurals>
 </resources>

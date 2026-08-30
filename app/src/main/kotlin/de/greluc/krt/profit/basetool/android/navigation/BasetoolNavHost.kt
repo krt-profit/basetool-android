@@ -82,6 +82,8 @@ import de.greluc.krt.profit.basetool.android.orders.OrderDetailRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrdersRoute
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
+import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewRoute
+import de.greluc.krt.profit.basetool.android.personalinventory.BlueprintOverviewViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.MeinInventarRoute
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
@@ -173,6 +175,7 @@ fun BasetoolNavHost(
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
+    blueprints: BlueprintOverviewBindings,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -261,6 +264,7 @@ fun BasetoolNavHost(
                             orderEdit = orderEdit,
                             orderCollection = orderCollection,
                             operationForm = operationForm,
+                            blueprints = blueprints,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -753,6 +757,8 @@ private fun SimplePushedDestination(
  * @param bankStaff answers whether the caller may move custody.
  * @param orderDetail builds a view model for one order.
  * @param material the Handel area's three pushed view models.
+ * @param blueprints the org-wide blueprint availability: whether it may be opened, and how to
+ *   build it.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -777,6 +783,7 @@ private fun PushedDestination(
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
+    blueprints: BlueprintOverviewBindings,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -857,7 +864,10 @@ private fun PushedDestination(
         }
 
         KrtDestination.More -> {
-            MoreScreen(onOpen = onOpenDestination)
+            MoreScreen(
+                onOpen = onOpenDestination,
+                blueprintOverview = blueprints.allowed,
+            )
         }
 
         KrtDestination.Settings -> {
@@ -891,12 +901,16 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.Licenses -> {
-            LicensesScreen(onOpenUrl = settings.onOpenUrl)
-        }
-
-        KrtDestination.FleetImport -> {
-            FleetImportRoute(viewModel = fleetImport)
+        KrtDestination.BlueprintOverview,
+        KrtDestination.Licenses,
+        KrtDestination.FleetImport,
+        -> {
+            LeafDestination(
+                destination = destination,
+                blueprints = blueprints,
+                fleetImport = fleetImport,
+                onOpenUrl = settings.onOpenUrl,
+            )
         }
 
         KrtDestination.NotFound -> {
@@ -919,6 +933,21 @@ private fun PushedDestination(
         }
     }
 }
+
+/**
+ * The org-wide blueprint availability, as the shell hands it over.
+ *
+ * Two values rather than two parameters, because they travel together through four signatures and
+ * the host already carries every argument detekt allows.
+ *
+ * @property allowed whether the caller may open it — `canSeeBlueprintOverview` from
+ *   `/me/capabilities`. `false` draws the „Mehr" row locked with its reason rather than hiding it.
+ * @property build builds the view model, on first navigation.
+ */
+data class BlueprintOverviewBindings(
+    val allowed: Boolean,
+    val build: () -> BlueprintOverviewViewModel,
+)
 
 /**
  * Everything the Einstellungen screen needs from outside the navigation graph.
@@ -1035,6 +1064,39 @@ private fun CreateFormDestination(
                 navController = navController,
                 build = { refineryCreate(edited) },
             )
+        }
+    }
+}
+
+/**
+ * The three destinations that are one composable each and carry no argument of their own.
+ *
+ * Grouped for the reason the two bank details and the create forms are: the host's `when` stays
+ * under detekt's complexity ceiling without any branch being suppressed away.
+ *
+ * @param destination which of the three.
+ * @param blueprints the org-wide blueprint availability.
+ * @param fleetImport the Fleetview import.
+ * @param onOpenUrl opens a licence's URL.
+ */
+@Composable
+private fun LeafDestination(
+    destination: KrtDestination,
+    blueprints: BlueprintOverviewBindings,
+    fleetImport: FleetImportViewModel,
+    onOpenUrl: (String) -> Boolean,
+) {
+    when (destination) {
+        KrtDestination.BlueprintOverview -> {
+            BlueprintOverviewRoute(viewModel = remember { blueprints.build() })
+        }
+
+        KrtDestination.FleetImport -> {
+            FleetImportRoute(viewModel = fleetImport)
+        }
+
+        else -> {
+            LicensesScreen(onOpenUrl = onOpenUrl)
         }
     }
 }

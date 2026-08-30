@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Neue Ansicht „Blueprint-Verfügbarkeit" unter „Mehr".** Zeigt org-weit, wer welchen Blueprint
+  hat — Besitzer werden je Zeile nachgeladen, Mitglieder anderer Einheiten sind als solche
+  gekennzeichnet. Ohne die Rolle Officer steht der Eintrag gesperrt da und nennt die Rolle. Der
+  Filter „Nicht erfasst" gilt für die geladenen Zeilen und sagt das.
+
 - **Mehrere Blueprints auf einmal übernehmen.** Dieselbe Suche, jetzt mit Kästchen; der Knopf
   nennt die Anzahl und das Blatt sagt danach, was passiert ist — „2 übernommen · 1 bereits
   vorhanden". Bereits vorhandene Blueprints tauchen in der Liste nicht mehr auf; eine Zeile im Blatt

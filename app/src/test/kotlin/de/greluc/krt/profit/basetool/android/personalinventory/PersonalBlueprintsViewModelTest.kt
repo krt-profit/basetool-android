@@ -8,6 +8,8 @@
 package de.greluc.krt.profit.basetool.android.personalinventory
 
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintBatchResult
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintOverviewPage
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintOwner
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
@@ -121,6 +123,15 @@ class PersonalBlueprintsViewModelTest {
             batches.add(productKeys)
             return batchAnswer
         }
+
+        override suspend fun overview(
+            query: String,
+            page: Int,
+            pageSize: Int,
+        ): ApiResult<BlueprintOverviewPage> = error("this test does not read the overview")
+
+        override suspend fun owners(productKey: String): ApiResult<List<BlueprintOwner>> =
+            error("this test does not read owners")
 
         var recipeAnswer: ApiResult<BlueprintRecipe> =
             ApiResult.Success(BlueprintRecipe(productName = "", variantCount = 1, ingredients = emptyList()))

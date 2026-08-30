@@ -155,6 +155,19 @@ enum class KrtDestination(
     /** One holder's custody, pushed from the holder register in the Konten tab. */
     BankHolder("bank-holder/{holderId}", R.string.bank_title, DesignR.drawable.ic_krt_users),
 
+    /**
+     * The org-wide blueprint availability, reached from „Mehr".
+     *
+     * A screen of its own rather than a third tab of „Mein Inventar" (design ch. 17 artboard 6):
+     * the data is org-wide and the screen has its own role, and org-wide rows in a personal list
+     * would be the wrong place twice over.
+     */
+    BlueprintOverview(
+        "blueprint-overview",
+        R.string.blueprint_overview_title,
+        DesignR.drawable.ic_krt_blueprint,
+    ),
+
     /** The form for a new refinery order, pushed from the Raffinerie list. */
     RefineryCreate(
         "refinery-create",
@@ -289,6 +302,7 @@ val MORE_DESTINATIONS =
         KrtDestination.Exchange,
         KrtDestination.Refinery,
         KrtDestination.PersonalInventory,
+        KrtDestination.BlueprintOverview,
         KrtDestination.Bank,
         KrtDestination.Materials,
         KrtDestination.Settings,

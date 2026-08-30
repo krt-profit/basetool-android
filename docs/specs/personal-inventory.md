@@ -296,6 +296,50 @@ actually added.
 **Code:** `PersonalBlueprintRepository.addAll`, `BlueprintBatchResult`,
 `BlueprintEditor.Adding.chosen` / `.noteApplies` / `.offered`, `BlueprintAddSheet`
 
+---
+
+### REQ-APP-PI-014 — „Blueprint-Verfügbarkeit" is a screen of its own, with a role
+
+Design ch. 17 artboard 6, reached from „Mehr". **Not** a third tab of „Mein Inventar": the data is
+org-wide and the screen has its own role, and org-wide rows in a personal list would be the wrong
+place twice over.
+
+Two columns, as the web page has: the blueprint, and **„Verfügbar bei"**. The chapter's own
+correction is explicit that there is **no buildability chip** here — the question this screen asks
+is *who has it*, not *can it be built*; buildability lives on the member's own blueprint. Drawn as
+cards rather than table rows, because the owner list wraps.
+
+**The role gate is drawn, never hidden** (app ADR-0011). The „Mehr" row is always there; without
+`canSeeBlueprintOverview` (`GET /me/capabilities` — officer and above, in the caller's oversight
+scope) it is locked-tappable and the toast names the role. Before the first `/me` lands the flag
+reads as `false`, which locks the row rather than opening a screen the server would refuse.
+
+**Owners load per row**, and all three of the artboard's per-row states are real: „Besitzer werden
+geladen …", „Keine Besitzer in deiner Orgeinheit.", „Besitzer konnten nicht geladen werden." The
+overview page carries counts only, so a second call per row is unavoidable — and one row's failure
+must not take the list with it. A row is asked once, when its card appears.
+
+An owner outside the unit gets the muted chip „kein Einheitsmitglied" and the artboard's sentence,
+quoted verbatim in **both** locales because it explains a server rule rather than describing the
+UI: „Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewählten Einheit."
+
+> [!warning] „Nicht erfasst" has no wire filter
+> `GET /personal-blueprints/overview` takes a search term and paging — nothing else. The chip
+> therefore narrows **the rows loaded so far**, and while the server has more pages the list says
+> so in a line of its own rather than letting a short result read as a complete answer (ADR-0104).
+> A server-side `ownerCount = 0` filter is the fix, and is on the gap list.
+
+**Acceptance**
+
+- [x] One row's failed owner read stays that row's (`BlueprintOverviewTest`).
+- [x] A row is asked for its owners once (`BlueprintOverviewTest`).
+- [x] The „Nicht erfasst" chip reports that it is partial while more pages exist
+  (`BlueprintOverviewTest`).
+- [ ] Observed on a device, with and without the role.
+
+**Code:** `PersonalBlueprintRepository.overview` / `.owners`, `Identity.blueprintOverview`,
+`BlueprintOverviewViewModel`, `BlueprintOverviewScreen`, `MoreScreen`
+
 ## Known gaps
 
 - **The blueprint file import** (`/personal-blueprints/import/*`) and the „alle löschen" bulk
