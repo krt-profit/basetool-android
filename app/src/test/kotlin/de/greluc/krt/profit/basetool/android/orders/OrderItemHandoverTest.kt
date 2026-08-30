@@ -66,8 +66,10 @@ class OrderItemHandoverTest {
         delivered: Int = DELIVERED,
     ) = JobOrderItem(
         id = "i1",
+        gameItemId = "g1",
         name = "Ballistic Gatling",
         blueprintName = null,
+        blueprintId = "b1",
         amount = ORDERED,
         manufactured = built,
         delivered = delivered,

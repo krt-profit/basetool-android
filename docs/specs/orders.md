@@ -745,3 +745,53 @@ cover.
 - [ ] Every write re-reads the page, because each moves a figure the server computes
 
 **Enforced by:** `OrderCollectionTest`.
+
+## REQ-APP-ORDERS-024 — Item-Positionen: the sub-assembly tree, and editing them
+
+**Status:** implemented · **Since:** 2026-08-29
+
+Design ch. 10 artboard 12 — the last of chapter 10.
+
+### The tree
+
+> [!important] A sub-assembly is a **real ordered line with a parent**, not a recipe
+> `JobOrderItemDto.parentItemId` is how the server models it, which is what lets the tree be drawn
+> from the order alone rather than from a blueprint read. The app had been dropping that field.
+
+**Display only, and two levels.** Assembly → its materials, and no further — deeper does not fit a
+phone, and a branch whose child has children says so („Die Rezeptur geht tiefer …") rather than
+truncating in silence. Indented with a rail and no chevrons: the tree does not fold, it shows.
+
+**The availability chip** per sub-assembly comes from `GET /orders/{id}/item-stock` — „Lager" when
+the earmark covers what was ordered, „Fehlt n" otherwise. The same two words the craftability chip
+uses in Mein Inventar, so one reading carries across. The read only happens for an item order: a
+material order has no game-item stock, and asking would be a round trip for an always-empty answer.
+
+The quantities are the **server's own line totals**, already scaled to each line's count; the app
+renders them and multiplies nothing.
+
+### The edit
+
+`PUT /orders/{id}/items`, reusing the item form of the create with its blueprint-variant picker —
+which **is** the „blueprint variant counting" parity point. The line's own variant is pre-filled, so
+the picker offers alternatives without the member re-picking the item first.
+
+> [!danger] Only a Logistician, and only before the first handover
+> The requester's own item path (`/{id}/items/requested`) is **not** built, so a requester form on
+> an item order writes nothing rather than sending the wrong shape. And the server refuses the write
+> once anything has been handed over — the lines are what the delivery was measured against. The
+> overflow entry is drawn with that reason rather than hidden.
+
+Also added on the way: `JobOrderItem` now carries `gameItemId`, `blueprintId` and `parentItemId`.
+All three are on the DTO and none was mapped; without the first two the edit could not pre-fill a
+single line, and without the third there was no tree.
+
+**Acceptance**
+
+- [ ] A sub-assembly appears inside its parent's branch, never as a second ordered row
+- [ ] A branch deeper than two levels says so
+- [ ] The availability chip reads „Lager" only when the earmark covers what was ordered
+- [ ] The edit pre-fills each line's item and its variant, and echoes the order's version
+- [ ] An item order with a handover offers the edit entry with the reason it cannot be used
+
+**Enforced by:** `OrderEditTest`, `OrdersScreenTest`.

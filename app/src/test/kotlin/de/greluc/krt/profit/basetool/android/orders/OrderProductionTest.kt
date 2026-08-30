@@ -113,8 +113,10 @@ class OrderProductionTest {
     private fun line() =
         JobOrderItem(
             id = "i1",
+            gameItemId = "g1",
             name = "Ballistic Gatling",
             blueprintName = "Gatling — Standard",
+            blueprintId = "b1",
             amount = LINE_AMOUNT,
             manufactured = BUILT,
             delivered = 0,

@@ -226,6 +226,7 @@ data class OrderCreateState(
                         amount = requireNotNull(it.amount.trim().toIntOrNull()),
                     )
                 },
+            version = version,
         )
     }
 
@@ -320,22 +321,49 @@ private fun OrderCreateState.krtWrite(
         }
     }
     val id = orderId
-    val draft = toDraft()?.takeIf { kind == OrderKind.MATERIAL }
-    return if (id == null || draft == null) {
+    val write = if (id == null) null else krtRewrite(source, id)
+    return if (id == null || write == null) {
         null
     } else {
         suspend {
-            val result =
-                if (mode == OrderFormMode.EDIT) {
-                    source.update(id, draft)
-                } else {
-                    source.updateAsRequester(id, draft)
-                }
             // The screen goes to the order it wrote — for an edit, the one it came from.
-            when (result) {
+            when (val result = write()) {
                 is ApiResult.Success -> ApiResult.Success(id)
                 is ApiResult.Failure -> result
             }
+        }
+    }
+}
+
+/**
+ * The rewrite behind an edit form — one of three endpoints, chosen by the mode and the kind.
+ *
+ * Its own function because the create's branch and the edit's are two different questions, and one
+ * `when` holding both was past the complexity the codebase allows.
+ *
+ * > **An item order's edit is a Logistician's alone.** `PUT /{id}/items` is the only item edit the
+ * > app makes; the requester's own item path (`/{id}/items/requested`) is not built, so a requester
+ * > form on an item order writes nothing rather than sending the wrong shape.
+ *
+ * @receiver the form.
+ * @param source where the writes go.
+ * @param id the order being rewritten.
+ * @return the call, or `null` when the form cannot be sent.
+ */
+private fun OrderCreateState.krtRewrite(
+    source: JobOrderCreateSource,
+    id: String,
+): (suspend () -> ApiResult<Unit>)? {
+    if (kind == OrderKind.ITEM) {
+        return toItemDraft()
+            ?.takeIf { mode == OrderFormMode.EDIT }
+            ?.let { draft -> suspend { source.updateItems(id, draft) } }
+    }
+    return toDraft()?.let { draft ->
+        if (mode == OrderFormMode.EDIT) {
+            suspend { source.update(id, draft) }
+        } else {
+            suspend { source.updateAsRequester(id, draft) }
         }
     }
 }
@@ -354,6 +382,22 @@ private fun OrderCreateState.krtPrefilled(order: JobOrder): OrderCreateState =
         handle = order.handle.orEmpty(),
         comment = order.comment.orEmpty(),
         kind = if (order.items.isNotEmpty()) OrderKind.ITEM else OrderKind.MATERIAL,
+        itemLines =
+            order.items
+                .filter { it.parentItemId == null && it.gameItemId != null && it.blueprintId != null }
+                .map { line ->
+                    OrderItemLineDraft(
+                        gameItemId = line.gameItemId,
+                        query = line.name.orEmpty(),
+                        // The variant this line was ordered with. Its alternatives are read on
+                        // prefill, so the picker can offer them without the member re-picking the
+                        // item first — that is the „blueprint variant counting" parity point.
+                        blueprintId = line.blueprintId,
+                        blueprints = listOfNotNull(line.blueprintId?.let { it to line.blueprintName.orEmpty() }),
+                        amount = line.amount.toString(),
+                    )
+                }
+                .ifEmpty { listOf(OrderItemLineDraft()) },
         lines =
             order.materials
                 .filter { it.materialId != null }

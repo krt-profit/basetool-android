@@ -271,8 +271,10 @@ class OrdersScreenTest {
     private fun itemLine(manufactured: Int = 0) =
         JobOrderItem(
             id = "i1",
+            gameItemId = "g1",
             name = "Ballistic Gatling",
             blueprintName = "Gatling — Standard",
+            blueprintId = "b1",
             amount = ITEM_AMOUNT,
             manufactured = manufactured,
             delivered = 0,

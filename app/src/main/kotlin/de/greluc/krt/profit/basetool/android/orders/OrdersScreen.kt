@@ -1219,8 +1219,13 @@ private fun OrderDetailBody(
                     order = order,
                     allowed = state.productionAllowed,
                     denials = denials,
-                    onProduce = actions.onRecordProduction,
-                    onHandOver = actions.onRecordItemHandover,
+                    items =
+                        ItemLineBindings(
+                            onProduce = actions.onRecordProduction,
+                            onHandOver = actions.onRecordItemHandover,
+                            tree = state.itemTree,
+                            itemStock = state.itemStock,
+                        ),
                 )
             }
 

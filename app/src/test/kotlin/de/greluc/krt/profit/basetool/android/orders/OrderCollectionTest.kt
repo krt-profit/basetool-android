@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
@@ -240,6 +241,9 @@ class OrderCollectionTest {
         override suspend fun detail(id: String): ApiResult<JobOrder> = ApiResult.Success(order())
 
         override suspend fun ageThresholds(): JobOrderAgeThresholds = error("not this screen")
+
+        override suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>> =
+            ApiResult.Success(emptyList())
 
         override suspend fun setAssigned(
             id: String,

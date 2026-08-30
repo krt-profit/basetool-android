@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderDraft
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandover
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverLine
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemDraft
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderPage
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
@@ -245,6 +246,11 @@ class OrderEditTest {
         override suspend fun createItems(draft: JobOrderItemDraft): ApiResult<String> =
             error("not an item create")
 
+        override suspend fun updateItems(
+            orderId: String,
+            draft: JobOrderItemDraft,
+        ): ApiResult<Unit> = error("the item edit has its own case")
+
         override suspend fun queue(
             statuses: Set<JobOrderStatus>,
             page: Int,
@@ -254,6 +260,9 @@ class OrderEditTest {
         override suspend fun detail(id: String): ApiResult<JobOrder> = ApiResult.Success(order)
 
         override suspend fun ageThresholds(): JobOrderAgeThresholds = error("the edit reads no thresholds")
+
+        override suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>> =
+            ApiResult.Success(emptyList())
 
         override suspend fun setAssigned(
             id: String,

@@ -19,6 +19,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemStockGroupDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderMaterialDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobOrderDto
@@ -90,7 +91,10 @@ data class JobOrderItemRequirement(
  *
  * @property id the line's id
  * @property name the item's name
+ * @property gameItemId which finished item this line orders — the edit form's picker is filled from
+ *   it, and the write is addressed by it
  * @property blueprintName which blueprint it is built from, or `null` when the server named none
+ * @property blueprintId that blueprint by id; the write names the variant, and a name cannot
  * @property amount how many were asked for
  * @property manufactured how many have been built
  * @property delivered how many have been handed over
@@ -101,17 +105,23 @@ data class JobOrderItemRequirement(
  *   exactly; without it the booking would be a number typed against nothing
  * @property version the line's **own** optimistic lock. The Herstellung echoes it, not the order's:
  *   two members booking production on two different lines of the same Auftrag must not collide
+ * @property parentItemId the line this one is a sub-assembly of, or `null` for a top-level line.
+ *   The server models sub-assemblies as **real ordered lines with a parent**, which is what lets the
+ *   design's Unterbaugruppen-Baum be drawn from the order alone
  */
 data class JobOrderItem(
     val id: String?,
+    val gameItemId: String?,
     val name: String?,
     val blueprintName: String?,
+    val blueprintId: String?,
     val amount: Int,
     val manufactured: Int,
     val delivered: Int,
     val blueprintStale: Boolean,
     val requirements: List<JobOrderItemRequirement> = emptyList(),
     val version: Long? = null,
+    val parentItemId: String? = null,
 ) {
     /** How many of this line are still to be built — the cap on one Herstellung. */
     val remaining: Int
@@ -341,6 +351,31 @@ fun JobOrder.krtHandedOver(materialId: String?): Double {
 }
 
 /**
+ * How much of one ordered item the Auftrag already holds as stock.
+ *
+ * The design's availability chip per sub-assembly — „Lager" when the earmark covers what was
+ * ordered, „Fehlt n" otherwise. Both figures are the server's; the app subtracts them only to say
+ * how many are missing, which is a count and not money.
+ *
+ * @property gameItemId which item.
+ * @property name what it is called.
+ * @property ordered how many the line asks for.
+ * @property manufactured how many have been built.
+ * @property allocated how many whole units are earmarked to this Auftrag.
+ */
+data class JobOrderItemStock(
+    val gameItemId: String,
+    val name: String,
+    val ordered: Int,
+    val manufactured: Int,
+    val allocated: Long,
+) {
+    /** How many are still missing from the earmark, or `0` when it is covered. */
+    val missing: Int
+        get() = (ordered - allocated).coerceAtLeast(0L).toInt()
+}
+
+/**
  * One page of the queue.
  *
  * @property orders the rows on this page
@@ -434,6 +469,7 @@ data class JobOrderItemDraftLine(
  * @property handle the contact handle in the game.
  * @property comment free text, or `null`.
  * @property lines the items wanted; never empty.
+ * @property version the order's optimistic lock on an **edit**, `null` when it raises a new one.
  */
 data class JobOrderItemDraft(
     val responsibleOrgUnitId: String,
@@ -441,6 +477,7 @@ data class JobOrderItemDraft(
     val handle: String,
     val comment: String?,
     val lines: List<JobOrderItemDraftLine>,
+    val version: Long? = null,
 )
 
 /** Raising a new material order, and the picker behind its lines. */
@@ -524,6 +561,25 @@ interface JobOrderCreateSource {
      * @return the new order's id, or the classified failure.
      */
     suspend fun createItems(draft: JobOrderItemDraft): ApiResult<String>
+
+    /**
+     * Rewrites an item order's lines.
+     *
+     * `PUT /orders/{id}/items` — the same payload as the item create, replacing the ordered lines
+     * and re-deriving every material from each line's blueprint. A claim whose bucket the new lines
+     * no longer require is withdrawn by the server.
+     *
+     * > **Only while the order has no item handover.** Once anything has been handed over the
+     * > server refuses with a 400: the lines are what the delivery was measured against.
+     *
+     * @param orderId the Auftrag.
+     * @param draft what it should become, carrying the version it was read at.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun updateItems(
+        orderId: String,
+        draft: JobOrderItemDraft,
+    ): ApiResult<Unit>
 }
 
 /**
@@ -563,6 +619,18 @@ interface JobOrderSource {
      *   never a failure, because a colour is not worth an error screen over a list that loaded.
      */
     suspend fun ageThresholds(): JobOrderAgeThresholds
+
+    /**
+     * Reads the game-item stock earmarked to one Auftrag.
+     *
+     * `GET /orders/{id}/item-stock`, grouped per item. Open to anyone who may see the order; the
+     * per-entry owners are redacted for a requesting-side viewer, and this model keeps only the
+     * three counts, which are never redacted.
+     *
+     * @param id the Auftrag.
+     * @return one entry per ordered item, or the classified failure.
+     */
+    suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>>
 
     /**
      * Puts a member on the order, or takes them off it.
@@ -735,6 +803,16 @@ class JobOrderRepository(
             }
         }
 
+    override suspend fun updateItems(
+        orderId: String,
+        draft: JobOrderItemDraft,
+    ): ApiResult<Unit> =
+        reader.putAccepted(
+            "$QUEUE_PATH/$orderId/items",
+            draft.krtToWire(),
+            CreateJobOrderItemRequestDto.serializer(),
+        )
+
     override suspend fun update(
         orderId: String,
         draft: JobOrderDraft,
@@ -897,6 +975,34 @@ class JobOrderRepository(
      * @param id the order's id.
      * @return the order, or the classified failure.
      */
+    override suspend fun itemStock(id: String): ApiResult<List<JobOrderItemStock>> =
+        when (
+            val result =
+                reader.get(
+                    "$QUEUE_PATH/$id/item-stock",
+                    ListSerializer(JobOrderItemStockGroupDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    result.value.mapNotNull { group ->
+                        val gameItemId = group.gameItem?.id ?: return@mapNotNull null
+                        JobOrderItemStock(
+                            gameItemId = gameItemId,
+                            name = group.gameItem?.name.orEmpty(),
+                            ordered = group.orderedAmount ?: 0,
+                            manufactured = group.manufacturedAmount ?: 0,
+                            allocated = group.allocatedTotal ?: 0L,
+                        )
+                    },
+                )
+            }
+        }
+
     override suspend fun detail(id: String): ApiResult<JobOrder> =
         when (val result = reader.get(orderPath(id), JobOrderDto.serializer())) {
             is ApiResult.Failure -> {
@@ -1163,8 +1269,10 @@ private fun JobOrderDto.toModel(): JobOrder? {
 private fun JobOrderItemDto.toModel(): JobOrderItem =
     JobOrderItem(
         id = id,
+        gameItemId = gameItem?.id,
         name = gameItem?.name,
         blueprintName = blueprint?.outputName ?: blueprint?.scwikiKey,
+        blueprintId = blueprint?.id,
         amount = amount ?: 0,
         manufactured = manufacturedAmount ?: 0,
         delivered = deliveredAmount ?: 0,
@@ -1187,6 +1295,30 @@ private fun JobOrderItemDto.toModel(): JobOrderItem =
                 // material, and the second could never be reconciled.
                 .groupBy { it.materialId }
                 .map { (_, rows) -> rows.first().copy(requiredTotal = rows.sumOf { it.requiredTotal }) },
+        version = version,
+        parentItemId = parentItemId,
+    )
+
+/**
+ * The item order as the create and the edit both take it.
+ *
+ * @receiver what the form holds.
+ * @return the payload.
+ */
+private fun JobOrderItemDraft.krtToWire(): CreateJobOrderItemRequestDto =
+    CreateJobOrderItemRequestDto(
+        responsibleOrgUnitId = responsibleOrgUnitId,
+        requestingOrgUnitId = requestingOrgUnitId,
+        handle = handle,
+        comment = comment?.takeIf { it.isNotBlank() },
+        items =
+            lines.map {
+                CreateJobOrderItemLineDto(
+                    gameItemId = it.gameItemId,
+                    blueprintId = it.blueprintId,
+                    amount = it.amount,
+                )
+            },
         version = version,
     )
 

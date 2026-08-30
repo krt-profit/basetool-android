@@ -1559,9 +1559,7 @@
     <string name="order_edit_delivered_floor">Bereits übergeben: %1$s. Weniger lässt der Server nicht zu.</string>
     <string name="order_edit_below_delivered">Weniger als bereits übergeben (%1$s) lässt der Server nicht zu.</string>
     <string name="order_edit_open">Auftrag bearbeiten</string>
-    <string name="order_edit_item_only_web">Item-Positionen werden weiterhin im Web bearbeitet.</string>
     <string name="order_detail_actions">Weitere Aktionen</string>
-    <string name="order_edit_item_only_web_detail">Blueprint-Varianten und der Unterbaugruppen-Baum fehlen der App noch.</string>
     <!-- Auftrag: Materialsammelübersicht (design ch. 10 artboard 16) -->
     <string name="order_collection_title">Materialsammelübersicht</string>
     <string name="order_collection_entries">Lagereinträge</string>
@@ -1575,4 +1573,11 @@
     <string name="order_collection_unlink_body">Die Zuordnung von %1$s %2$s (%3$s) zu diesem Auftrag wird entfernt. Der Lagerbestand selbst bleibt unverändert.</string>
     <string name="order_collection_transfer_note">Besitzer und Standort ändert man im Lager: das ist im Hintergrund eine Umbuchung, keine Feldänderung.</string>
     <string name="order_collection_open">Materialsammelübersicht</string>
+    <string name="order_detail_subassemblies">Unterbaugruppen</string>
+    <string name="order_detail_subassembly_material">%1$s %2$s %3$s</string>
+    <string name="order_detail_subassembly_deeper">Die Rezeptur geht tiefer — die volle Tiefe zeigt das Web.</string>
+    <string name="order_detail_in_stock">Lager</string>
+    <string name="order_detail_missing">Fehlt %1$d</string>
+    <string name="order_edit_item_only_web">Item-Positionen ändert nur ein Logistiker, und nur solange nichts übergeben wurde.</string>
+    <string name="order_edit_item_only_web_detail">Nach der ersten Übergabe sind die Positionen festgeschrieben.</string>
 </resources>

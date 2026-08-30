@@ -15,6 +15,11 @@
   „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
   Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
 
+- **Item-Aufträge zeigen ihre Unterbaugruppen und lassen sich bearbeiten.** Unter jeder Position
+  steht, aus welchen Baugruppen sie besteht und was jede davon braucht — mit einem Chip, ob der
+  Auftrag sie schon im Lager hat. Die Positionen selbst ändert ein Logistiker im gewohnten Formular,
+  samt Blueprint-Variante, solange noch nichts übergeben wurde.
+
 - **Neue Materialsammelübersicht im Auftrag.** Zeigt, welche Lagereinträge diesem Auftrag zugeordnet
   sind, mit Besitzer, Standort, Menge und Lieferstatus; der Lieferstatus lässt sich umstellen und
   eine Zuordnung lösen — nachgefragt wird nur, wenn tatsächlich eine Menge daran hängt. Besitzer

@@ -17,6 +17,8 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAgeThresholds
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderAssignee
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderHandoverSource
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
@@ -342,6 +344,13 @@ data class OrderDetailState(
      */
     val myUnitIds: Set<String> = emptySet(),
     /**
+     * The game-item stock earmarked to this Auftrag, keyed by item id.
+     *
+     * Its own read (`/orders/{id}/item-stock`), because the order aggregate carries no stock. It
+     * fills the availability chip on each sub-assembly — „Lager" or „Fehlt n".
+     */
+    val itemStock: Map<String, JobOrderItemStock> = emptyMap(),
+    /**
      * Whether this order's responsible unit is a Spezialkommando.
      *
      * Resolved by id against the active org units, because `SquadronReferenceDto` carries no kind.
@@ -408,12 +417,42 @@ data class OrderDetailState(
     /**
      * Whether editing is offered at all on this order.
      *
-     * An **item** order is not: `PUT /orders/{id}/items` takes a different payload and needs the
-     * blueprint-variant picker and the sub-assembly tree of design artboard 12, which is its own
-     * screen and still web-only. The control is drawn with that reason rather than hidden.
+     * An **item** order is editable too since 2026-08-29 (`PUT /orders/{id}/items`) — but only by a
+     * Logistician: the requester's own item path (`/{id}/items/requested`) is not built. And the
+     * server refuses the write once anything has been handed over, because the lines are what the
+     * delivery was measured against, so the control is drawn with that reason rather than hidden.
      */
     val editableKind: Boolean
-        get() = order?.items.isNullOrEmpty()
+        get() {
+            val current = order ?: return true
+            return current.items.isEmpty() ||
+                (me?.logistician == true && current.krtUndelivered())
+        }
+
+    /**
+     * The order's item lines as a two-level tree.
+     *
+     * The server models a sub-assembly as a **real ordered line with a parent**, so the tree is the
+     * order's own lines grouped by `parentItemId` rather than a recipe read. Design ch. 10 artboard
+     * 12 limits it to two levels on purpose — deeper does not fit a phone — and the app follows
+     * that: a line whose own child has children is drawn with the depth note rather than nested
+     * further.
+     */
+    val itemTree: List<ItemBranch>
+        get() {
+            val lines = order?.items.orEmpty()
+            val byParent = lines.filter { it.parentItemId != null }.groupBy { it.parentItemId }
+            return lines
+                .filter { it.parentItemId == null }
+                .map { parent ->
+                    val children = byParent[parent.id].orEmpty()
+                    ItemBranch(
+                        line = parent,
+                        children = children,
+                        deeper = children.any { child -> byParent[child.id].orEmpty().isNotEmpty() },
+                    )
+                }
+        }
 
     /**
      * The tabs this order actually has.
@@ -453,6 +492,20 @@ data class OrderDetailState(
     val priorityChangeable: Boolean
         get() = me?.logistician == true && order?.priority != null
 }
+
+/**
+ * One top-level ordered item and the sub-assemblies under it.
+ *
+ * @property line the item that was ordered.
+ * @property children its sub-assemblies — ordered lines of their own, with this one as parent.
+ * @property deeper whether the recipe goes further than the two levels this screen draws, which the
+ *   card says out loud rather than silently truncating.
+ */
+data class ItemBranch(
+    val line: JobOrderItem,
+    val children: List<JobOrderItem>,
+    val deeper: Boolean,
+)
 
 /**
  * Everything one order's screen reads and writes through.
@@ -619,6 +672,25 @@ class OrderDetailViewModel(
         readMyUnits()
         reload(keepContent = false)
         claims.load(orderId)
+    }
+
+    /**
+     * Reads the item stock earmarked to this Auftrag.
+     *
+     * Only for an item order: a material order has no game-item stock, and asking would be a round
+     * trip for an answer that is always empty.
+     */
+    private fun readItemStock() {
+        if (mutableState.value.order?.items.isNullOrEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            val result = source.itemStock(orderId)
+            if (result is ApiResult.Success) {
+                mutableState.value =
+                    mutableState.value.copy(itemStock = result.value.associateBy { it.gameItemId })
+            }
+        }
     }
 
     /**
@@ -994,6 +1066,7 @@ class OrderDetailViewModel(
                             refreshing = false,
                         )
                     retry.onSuccess()
+                    readItemStock()
                     // Only now: the responsible unit's id arrives with the order, so the kind
                     // lookup has nothing to match against before this point.
                     resolveResponsibleKind()

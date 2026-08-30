@@ -33,10 +33,14 @@ import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrder
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
+import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemStock
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRailCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -59,13 +63,19 @@ internal fun LazyListScope.positionsTab(
     order: JobOrder,
     allowed: Boolean,
     denials: DenialState,
-    onProduce: (JobOrderItem) -> Unit,
-    onHandOver: (JobOrderItem) -> Unit,
+    items: ItemLineBindings,
 ) {
+    val onProduce = items.onProduce
+    val onHandOver = items.onHandOver
+    val tree = items.tree
+    val itemStock = items.itemStock
     order.comment?.let { comment ->
         item(key = "comment") { CommentCard(comment = comment) }
     }
-    items(order.items, key = { "item-" + (it.id ?: it.name.orEmpty()) }) { line ->
+    // Only the top-level lines get a row of their own; a sub-assembly is drawn inside its parent's
+    // branch, because on its own it reads as a second thing that was ordered.
+    val topLevel = if (tree.isEmpty()) order.items else tree.map { it.line }
+    items(topLevel, key = { "item-" + (it.id ?: it.name.orEmpty()) }) { line ->
         Column(modifier = Modifier.padding(horizontal = KrtSpacing.md)) {
             ItemLine(
                 item = line,
@@ -95,6 +105,9 @@ internal fun LazyListScope.positionsTab(
                         null
                     },
             )
+            tree.firstOrNull { it.line.id == line.id }?.let { branch ->
+                SubAssemblies(branch = branch, itemStock = itemStock)
+            }
         }
     }
     if (order.materials.isEmpty()) {
@@ -114,6 +127,121 @@ internal fun LazyListScope.positionsTab(
         }
     }
 }
+
+/**
+ * The sub-assemblies of one ordered item, and what each of them needs.
+ *
+ * **Display only** — design ch. 10 artboard 12: „Der Baum ist Anzeige … nichts darin wird hier
+ * bestellt." It is drawn from the order's own lines, because the server models a sub-assembly as a
+ * real ordered line with a parent rather than as part of a recipe.
+ *
+ * **Two levels, on purpose.** Assembly → its materials, and no further: a deeper tree does not fit
+ * a phone, and the card says so rather than truncating in silence.
+ *
+ * Indentation and a rail rather than chevrons: the tree does not fold, it shows.
+ *
+ * @param branch the item and its sub-assemblies.
+ * @param itemStock the earmarked stock per item, for the availability chip.
+ */
+@Composable
+private fun SubAssemblies(
+    branch: ItemBranch,
+    itemStock: Map<String, JobOrderItemStock>,
+) {
+    if (branch.children.isEmpty()) {
+        return
+    }
+    Column(
+        modifier = Modifier.padding(start = KrtSpacing.md, top = KrtSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        KrtSectionTitle(
+            text = stringResource(R.string.order_detail_subassemblies),
+            trailing = { Body(text = branch.children.size.toString()) },
+        )
+        branch.children.forEach { child ->
+            SubAssembly(child = child, stock = itemStock[child.id])
+        }
+        if (branch.deeper) {
+            // The recipe goes further than this screen draws, and saying so is the difference
+            // between a limit and a wrong answer.
+            KrtHint(explanation = stringResource(R.string.order_detail_subassembly_deeper))
+        }
+    }
+}
+
+/**
+ * One sub-assembly: how many, whether the Auftrag already holds them, and what each needs.
+ *
+ * @param child the sub-assembly line.
+ * @param stock what is earmarked of it, or `null` when the stock read has not landed.
+ */
+@Composable
+private fun SubAssembly(
+    child: JobOrderItem,
+    stock: JobOrderItemStock?,
+) {
+    Column(
+        modifier = Modifier.padding(start = KrtSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = child.name ?: stringResource(R.string.order_detail_item_unnamed),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.White,
+                modifier = Modifier.weight(1f),
+            )
+            Body(text = child.amount.toString())
+            stock?.let { AvailabilityChip(stock = it) }
+        }
+        // The quantities are the line's own totals, already scaled to its count by the server —
+        // the app renders them and multiplies nothing.
+        child.requirements.forEach { requirement ->
+            Body(
+                text =
+                    stringResource(
+                        R.string.order_detail_subassembly_material,
+                        requirement.name,
+                        requirement.requiredTotal.krtTrimmed(),
+                        requirement.unit.orEmpty(),
+                    ),
+            )
+        }
+    }
+}
+
+/**
+ * Whether the Auftrag already holds this sub-assembly.
+ *
+ * The same two words the craftability chip uses in Mein Inventar, so one reading carries across.
+ *
+ * @param stock what is earmarked of it.
+ */
+@Composable
+private fun AvailabilityChip(stock: JobOrderItemStock) {
+    if (stock.missing <= 0) {
+        KrtChip(text = stringResource(R.string.order_detail_in_stock), tone = KrtChipTone.Success)
+        return
+    }
+    KrtChip(
+        text = stringResource(R.string.order_detail_missing, stock.missing),
+        tone = KrtChipTone.Warning,
+    )
+}
+
+/**
+ * A quantity without a trailing `.0`.
+ *
+ * @receiver the quantity.
+ * @return the plain decimal.
+ */
+private fun Double.krtTrimmed(): String =
+    java.math.BigDecimal(this.toString()).stripTrailingZeros().toPlainString()
 
 /**
  * Zuständig: who has taken the order on, and their own notes.
