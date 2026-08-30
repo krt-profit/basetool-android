@@ -33,6 +33,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFiel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionCheckbox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -40,6 +41,9 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 
 /** Test handle for the add sheet's save action. */
 const val BLUEPRINTS_SAVE_TAG: String = "blueprints-save"
+
+/** Between the names of the products a member has ticked. */
+private const val CHOSEN_SEPARATOR = " · "
 
 /** Below this many characters a catalogue search would return most of the catalogue. */
 private const val MIN_PRODUCT_QUERY = 2
@@ -82,52 +86,100 @@ fun BlueprintAddSheet(
                 label = stringResource(R.string.blueprints_product_search),
                 enabled = !editor.saving,
             )
-            editor.chosen?.let { chosen ->
+            if (editor.chosen.isNotEmpty()) {
                 Text(
-                    text = chosen.label(),
+                    text = editor.chosen.joinToString(CHOSEN_SEPARATOR) { it.label() },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            if (!editor.searching && editor.query.trim().length < MIN_PRODUCT_QUERY && editor.chosen == null) {
-                Muted(stringResource(R.string.blueprints_product_hint))
-            } else if (!editor.searching &&
-                editor.query.trim().length >= MIN_PRODUCT_QUERY &&
-                editor.results.isEmpty()
-            ) {
-                Muted(stringResource(R.string.blueprints_product_none))
-            }
-            if (editor.results.isNotEmpty()) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    editor.results.forEach { product ->
-                        ProductRow(product = product, enabled = !editor.saving, onChosen = onChosen)
-                    }
-                    if (editor.capped) {
-                        Muted(
-                            pluralStringResource(
-                                R.plurals.blueprints_product_capped,
-                                editor.results.size,
-                                editor.results.size,
-                            ),
-                        )
-                    }
-                }
-            }
+            ProductResults(editor = editor, onChosen = onChosen)
             KrtTextField(
                 value = editor.note,
                 onValueChange = onNote,
                 label = stringResource(R.string.personal_inventory_field_note),
-                enabled = !editor.saving,
+                enabled = !editor.saving && editor.noteApplies,
             )
+            if (!editor.noteApplies) {
+                Muted(stringResource(R.string.blueprints_note_single_only))
+            }
+            editor.outcome?.let { outcome ->
+                Muted(
+                    pluralStringResource(
+                        R.plurals.blueprints_batch_result,
+                        outcome.added,
+                        outcome.added,
+                        outcome.alreadyOwned,
+                    ),
+                )
+            }
             editor.error?.let { SheetError(it) }
             SheetActions(
                 saveEnabled = editor.submittable && !editor.saving,
                 dismissEnabled = !editor.saving,
                 onSave = onSave,
                 onDismiss = onDismiss,
+                // The CTA names the count, as the artboard draws it; with one picked it stays the
+                // sheet's ordinary „Speichern".
+                saveText =
+                    if (editor.count > 1) {
+                        pluralStringResource(
+                            R.plurals.blueprints_take_over,
+                            editor.count,
+                            editor.count,
+                        )
+                    } else {
+                        null
+                    },
             )
         }
     }
+}
+
+/**
+ * The catalogue half of the add sheet: the hint, the hits, the cap and the notice line.
+ *
+ * Its own composable because the sheet grew past detekt's complexity ceiling once the rows became
+ * checkboxes — and because these four are one thought: what the search found, and what it did not.
+ *
+ * @param editor what the sheet holds.
+ * @param onChosen a row was ticked or unticked.
+ */
+@Composable
+private fun ProductResults(
+    editor: BlueprintEditor.Adding,
+    onChosen: (BlueprintProduct) -> Unit,
+) {
+    val typed = editor.query.trim().length
+    if (!editor.searching && typed < MIN_PRODUCT_QUERY && editor.chosen.isEmpty()) {
+        Muted(stringResource(R.string.blueprints_product_hint))
+    } else if (!editor.searching && typed >= MIN_PRODUCT_QUERY && editor.offered.isEmpty()) {
+        Muted(stringResource(R.string.blueprints_product_none))
+    }
+    if (editor.offered.isNotEmpty()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            editor.offered.forEach { product ->
+                ProductRow(
+                    product = product,
+                    enabled = !editor.saving,
+                    onChosen = onChosen,
+                    picked = editor.chosen.any { it.productKey == product.productKey },
+                )
+            }
+            if (editor.capped) {
+                Muted(
+                    pluralStringResource(
+                        R.plurals.blueprints_product_capped,
+                        editor.offered.size,
+                        editor.offered.size,
+                    ),
+                )
+            }
+        }
+    }
+    // Why a hit can be missing: the web does not offer what the member already owns, and design
+    // ch. 17 artboard 5 wants that said rather than left to be read as a broken search.
+    Muted(stringResource(R.string.blueprints_product_owned_hidden))
 }
 
 /**
@@ -136,33 +188,35 @@ fun BlueprintAddSheet(
  * @param product the row.
  * @param enabled whether the sheet accepts input.
  * @param onChosen picks it.
+ * @param picked whether it is already ticked — a second tap takes it back off.
  */
 @Composable
 private fun ProductRow(
     product: BlueprintProduct,
     enabled: Boolean,
     onChosen: (BlueprintProduct) -> Unit,
+    picked: Boolean = false,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(enabled = enabled && !product.owned) { onChosen(product) }
+                .clickable(enabled = enabled) { onChosen(product) }
                 .padding(vertical = KrtSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // A box, not a radio: artboard 5 makes the row a checkbox, because picking several is the
+        // normal case as soon as more than one hit fits.
+        KrtSelectionCheckbox(checked = picked)
         Text(
             text = product.label(),
             style = MaterialTheme.typography.bodyMedium,
-            color = if (product.owned) KrtPalette.TextMuted else KrtPalette.White,
+            color = KrtPalette.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        if (product.owned) {
-            Muted(stringResource(R.string.blueprints_product_owned))
-        }
     }
 }
 
@@ -230,6 +284,7 @@ private fun SheetActions(
     dismissEnabled: Boolean,
     onSave: () -> Unit,
     onDismiss: () -> Unit,
+    saveText: String? = null,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
         KrtGhostButton(
@@ -238,7 +293,7 @@ private fun SheetActions(
             enabled = dismissEnabled,
         )
         KrtCtaButton(
-            text = stringResource(R.string.personal_inventory_save),
+            text = saveText ?: stringResource(R.string.personal_inventory_save),
             onClick = onSave,
             modifier = Modifier.testTag(BLUEPRINTS_SAVE_TAG),
             enabled = saveEnabled,

@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Mehrere Blueprints auf einmal übernehmen.** Dieselbe Suche, jetzt mit Kästchen; der Knopf
+  nennt die Anzahl und das Blatt sagt danach, was passiert ist — „2 übernommen · 1 bereits
+  vorhanden". Bereits vorhandene Blueprints tauchen in der Liste nicht mehr auf; eine Zeile im Blatt
+  sagt warum. Eine Notiz geht nur bei einem einzelnen Blueprint mit.
+
 - **Die Materialbörse kennt jetzt Items — und eigene Einträge lassen sich bearbeiten.** Angebot und
   Gesuch haben oben einen Umschalter „Material / Item"; die Item-Seite sucht das Produkt im Katalog
   und hängt an keiner Lagerzeile. Ein Tipp auf die eigene Zeile öffnet ein Blatt mit Menge,

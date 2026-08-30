@@ -1624,4 +1624,15 @@
         <item quantity="one">%1$d Mitglied hat „Ich kann liefern" gesagt. Zurückziehen nimmt den Eintrag vom Brett; rückgängig machen lässt sich das nicht.</item>
         <item quantity="other">%1$d Mitglieder haben „Ich kann liefern" gesagt. Zurückziehen nimmt den Eintrag vom Brett; rückgängig machen lässt sich das nicht.</item>
     </plurals>
+    <!-- Mehrfach-Übernahme von Blueprints (Design Kap. 17, Artboard 5) -->
+    <string name="blueprints_product_owned_hidden">Bereits vorhandene Blueprints werden nicht angeboten.</string>
+    <string name="blueprints_note_single_only">Eine Notiz geht nur bei einem einzelnen Blueprint mit — mehrere werden ohne übernommen.</string>
+    <plurals name="blueprints_batch_result">
+        <item quantity="one">%1$d übernommen · %2$d bereits vorhanden</item>
+        <item quantity="other">%1$d übernommen · %2$d bereits vorhanden</item>
+    </plurals>
+    <plurals name="blueprints_take_over">
+        <item quantity="one">%1$d Blueprint übernehmen</item>
+        <item quantity="other">%1$d Blueprints übernehmen</item>
+    </plurals>
 </resources>

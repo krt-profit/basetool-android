@@ -12,6 +12,8 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintCrafta
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintProductDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintRequirementIngredientDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponsePersonalBlueprintResponse
+import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBatchCreateRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintBatchResult
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintCreateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintRecipeResponse
 import de.greluc.krt.profit.basetool.android.core.contract.model.PersonalBlueprintResponse
@@ -133,6 +135,27 @@ data class BlueprintProduct(
 )
 
 /**
+ * What a batch add did.
+ *
+ * The server answers with three counts rather than with rows, and the sheet reports them verbatim:
+ * design ch. 17 artboard 5 draws „2 übernommen · 1 bereits vorhanden", and inventing a total from
+ * the number sent would hide exactly the case the line exists for.
+ *
+ * @property added how many were taken over.
+ * @property alreadyOwned how many the member already had.
+ * @property unresolved how many keys the catalogue could not resolve — normally zero, because the
+ *   keys come from its own search, and worth showing when it is not.
+ */
+data class BlueprintBatchResult(
+    val added: Int,
+    val alreadyOwned: Int,
+    val unresolved: Int,
+) {
+    /** Whether anything at all was taken over. */
+    val anyAdded: Boolean get() = added > 0
+}
+
+/**
  * The member's own blueprints, as a seam.
  */
 interface PersonalBlueprintSource {
@@ -201,6 +224,17 @@ interface PersonalBlueprintSource {
      * @return the matches, capped by the server.
      */
     suspend fun products(query: String): ApiResult<List<BlueprintProduct>>
+
+    /**
+     * Takes over several products at once.
+     *
+     * `POST /personal-blueprints/batch`, which carries **only** the keys — no note, no acquisition
+     * date. A single add keeps [add], which does carry both.
+     *
+     * @param productKeys which products; the server skips the ones already owned.
+     * @return what it did, or the classified failure.
+     */
+    suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult>
 
     /**
      * Reads the recipe of one owned blueprint — its ingredients and their required quality.
@@ -323,6 +357,31 @@ class PersonalBlueprintRepository(
             is ApiResult.Success -> ApiResult.Success(result.value.toModel())
         }
 
+    override suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult> =
+        when (
+            val result =
+                reader.post(
+                    path = BATCH_PATH,
+                    body = PersonalBlueprintBatchCreateRequest(productKeys = productKeys),
+                    bodySerializer = PersonalBlueprintBatchCreateRequest.serializer(),
+                    deserializer = PersonalBlueprintBatchResult.serializer(),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    BlueprintBatchResult(
+                        added = result.value.added ?: 0,
+                        alreadyOwned = result.value.skippedAlreadyOwned ?: 0,
+                        unresolved = result.value.skippedUnresolved ?: 0,
+                    ),
+                )
+            }
+        }
+
     override suspend fun products(query: String): ApiResult<List<BlueprintProduct>> {
         val params = listOf(QUERY_PARAM to query.trim(), LIMIT_PARAM to PRODUCT_LIMIT.toString())
         return when (
@@ -348,6 +407,7 @@ class PersonalBlueprintRepository(
 
         private const val LOG_TAG = "personal-blueprints"
         private const val PATH = "/api/v1/personal-blueprints"
+        private const val BATCH_PATH = "/api/v1/personal-blueprints/batch"
         private const val CRAFTABILITY_PATH = "/api/v1/personal-blueprints/craftability"
         private const val PRODUCTS_PATH = "/api/v1/blueprints/products/search"
         private const val QUERY_PARAM = "q"

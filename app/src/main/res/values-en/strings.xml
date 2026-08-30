@@ -1603,4 +1603,15 @@
         <item quantity="one">%1$d member said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
         <item quantity="other">%1$d members said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
     </plurals>
+    <!-- Taking over several blueprints at once (design ch. 17, artboard 5) -->
+    <string name="blueprints_product_owned_hidden">Blueprints you already have are not offered.</string>
+    <string name="blueprints_note_single_only">A note only travels with a single blueprint — several are taken over without one.</string>
+    <plurals name="blueprints_batch_result">
+        <item quantity="one">%1$d taken over · %2$d already there</item>
+        <item quantity="other">%1$d taken over · %2$d already there</item>
+    </plurals>
+    <plurals name="blueprints_take_over">
+        <item quantity="one">Take over %1$d blueprint</item>
+        <item quantity="other">Take over %1$d blueprints</item>
+    </plurals>
 </resources>

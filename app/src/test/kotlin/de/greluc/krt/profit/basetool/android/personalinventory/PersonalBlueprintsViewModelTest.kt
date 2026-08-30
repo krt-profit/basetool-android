@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.personalinventory
 
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintBatchResult
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
@@ -112,6 +113,15 @@ class PersonalBlueprintsViewModelTest {
             return ApiResult.Success(products)
         }
 
+        val batches = mutableListOf<List<String>>()
+        var batchAnswer: ApiResult<BlueprintBatchResult> =
+            ApiResult.Success(BlueprintBatchResult(added = 1, alreadyOwned = 0, unresolved = 0))
+
+        override suspend fun addAll(productKeys: List<String>): ApiResult<BlueprintBatchResult> {
+            batches.add(productKeys)
+            return batchAnswer
+        }
+
         var recipeAnswer: ApiResult<BlueprintRecipe> =
             ApiResult.Success(BlueprintRecipe(productName = "", variantCount = 1, ingredients = emptyList()))
         var recipeCalls = mutableListOf<String>()
@@ -182,15 +192,61 @@ class PersonalBlueprintsViewModelTest {
         }
 
     @Test
-    fun `a product the member already owns cannot be submitted`() =
+    fun `a product the member already owns is not offered`() =
         runTest(dispatcher) {
-            // The server would refuse the create, and a picker that offers it sets up a failure.
+            // Design ch. 17 artboard 5, which is the web's behaviour: what the member already has
+            // does not appear in the list at all, and the sheet's notice line says so. This
+            // replaces the earlier rule, which listed it greyed out with „hast du schon" beside it
+            // — the server would refuse the create either way.
+            val owned = BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true)
+            val free = BlueprintProduct("drake.cutlass", "Cutlass Black", "Drake", owned = false)
+            val source = FakeSource()
+            source.products = listOf(owned, free)
+            val model = viewModel(source)
+            model.onAdd()
+            model.onProductQueryChanged("orn")
+            advanceUntilIdle()
+
+            val adding = model.state.value.editor as BlueprintEditor.Adding
+            assertEquals(listOf(free), adding.offered)
+        }
+
+    @Test
+    fun `several products go through the batch, and the sheet stays open to say what happened`() =
+        runTest(dispatcher) {
+            val source = FakeSource()
+            source.batchAnswer =
+                ApiResult.Success(BlueprintBatchResult(added = 2, alreadyOwned = 1, unresolved = 0))
+            val model = viewModel(source)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onAdd()
+            model.onProductChosen(BlueprintProduct("a", "A", null, owned = false))
+            model.onProductChosen(BlueprintProduct("b", "B", null, owned = false))
+            model.onProductChosen(BlueprintProduct("c", "C", null, owned = false))
+            model.onSave()
+            advanceUntilIdle()
+
+            assertEquals(listOf(listOf("a", "b", "c")), source.batches)
+            // The single create carries the note and is a different call; it must not have run.
+            assertEquals(emptyList<Pair<String, String?>>(), source.added)
+            val adding = model.state.value.editor as BlueprintEditor.Adding
+            assertEquals(2, adding.outcome?.added)
+            assertEquals(1, adding.outcome?.alreadyOwned)
+        }
+
+    @Test
+    fun `a second tap takes a product back off the list`() =
+        runTest(dispatcher) {
             val model = viewModel(FakeSource())
             model.onAdd()
+            val one = BlueprintProduct("a", "A", null, owned = false)
 
-            model.onProductChosen(BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true))
-
-            assertEquals(false, (model.state.value.editor as BlueprintEditor.Adding).submittable)
+            model.onProductChosen(one)
+            assertEquals(1, (model.state.value.editor as BlueprintEditor.Adding).count)
+            model.onProductChosen(one)
+            assertEquals(0, (model.state.value.editor as BlueprintEditor.Adding).count)
         }
 
     @Test

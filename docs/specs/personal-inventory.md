@@ -245,26 +245,62 @@ value is how that happens.
 
 ### REQ-APP-PI-012 — The catalogue picker will not offer what the member already owns
 
-A product with `ownedByCurrentUser` is listed — greyed, labelled "Hast du schon" — and **cannot be
-picked**.
+A product with `ownedByCurrentUser` is **not listed at all**, and the sheet carries a notice line
+saying so — design ch. 17 artboard 5, which follows the web („Bereits vorhandene werden nicht
+angeboten"; „die Notice-Zeile sagt das, damit ein fehlender Treffer nicht als Suchfehler gelesen
+wird").
 
-Hiding it would answer the member's actual question ("do I have this one?") with silence and send
-them looking. Offering it would set up a create the server refuses.
+> **Amended 2026-08-30.** The first version listed an owned product greyed out and labelled „Hast
+> du schon", on the reasoning that hiding it answers the member's real question with silence. The
+> design spec's chapter 17 settled it the other way and gave the notice line as the answer to that
+> objection. Recorded rather than quietly rewritten, so the earlier reasoning stays readable.
 
 **Acceptance**
 
-- [x] An owned product cannot be submitted (`PersonalBlueprintsViewModelTest`), and the picker says
-  why (`PersonalBlueprintsScreenTest`).
+- [x] An owned product is not offered (`PersonalBlueprintsViewModelTest`), and the sheet says why
+  (`PersonalBlueprintsScreenTest`).
 - [x] A product row without a key never reaches the picker (`PersonalBlueprintRepositoryTest`).
 - [x] The search is capped, debounced, and needs two characters, like the place picker
   (`PersonalBlueprintsViewModelTest`).
 - [x] **Observed on a device (2026-08-23):** added "9-Series Longsword Cannon", changed its note,
   removed it again — `201`, `200`, `204`.
 
+---
+
+### REQ-APP-PI-013 — Several blueprints at once, and the result line that says what happened
+
+Design ch. 17 artboard 5: the **same** search sheet with checkboxes, no second entry point and no
+„bulk mode" — picking several is the normal case as soon as more than one hit fits. A second tap
+takes a row back off. The CTA names the count („3 Blueprints übernehmen") and is validation-dimmed
+without a selection — dimmed, not locked: nothing here is forbidden, it is unfinished.
+
+**One picked keeps the single create.** `POST /personal-blueprints/batch` carries **only**
+`productKeys` — no note, no `acquiredAt`. So one product goes through `POST /personal-blueprints`,
+which carries the note, and several go through the batch; with several picked the note field is
+drawn locked with that reason rather than removed, because a note silently dropped is worse than a
+note that says it does not apply.
+
+**The sheet stays open on a batch and reports what the server did** — „2 übernommen · 1 bereits
+vorhanden", from `PersonalBlueprintBatchResult`. Closing on a partial result would hide the skipped
+ones, which is the one thing that line exists to say. The list is only re-read when something was
+actually added.
+
+**Acceptance**
+
+- [x] Several products go through the batch and never the single create
+  (`PersonalBlueprintsViewModelTest`).
+- [x] The sheet stays open and carries the two counts (`PersonalBlueprintsViewModelTest`).
+- [x] A second tap takes a product back off (`PersonalBlueprintsViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `PersonalBlueprintRepository.addAll`, `BlueprintBatchResult`,
+`BlueprintEditor.Adding.chosen` / `.noteApplies` / `.offered`, `BlueprintAddSheet`
+
 ## Known gaps
 
-- **The blueprint file import** (`/personal-blueprints/import/*`) and the bulk delete. Phase 4,
-  with the other file flows.
+- **The blueprint file import** (`/personal-blueprints/import/*`) and the „alle löschen" bulk
+  delete (`DELETE /personal-blueprints`). Phase 4, with the other file flows. The **multi-add**
+  that once sat here landed 2026-08-30 as `REQ-APP-PI-013`.
 - **`acquiredAt`.** The API accepts it on create and update; the app offers no field for it and
   deliberately never sends it, so a save cannot rewrite a value the member cannot see.
 - **Sorting.** The list arrives in the server's default order; the web app offers no sort either.

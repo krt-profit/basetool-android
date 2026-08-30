@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.personalinventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintBatchResult
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BlueprintRecipe
 import de.greluc.krt.profit.basetool.android.core.data.Craftability
@@ -71,13 +72,37 @@ sealed interface BlueprintEditor {
         val results: List<BlueprintProduct> = emptyList(),
         val searching: Boolean = false,
         val capped: Boolean = false,
-        val chosen: BlueprintProduct? = null,
+        val chosen: List<BlueprintProduct> = emptyList(),
         val note: String = "",
         val saving: Boolean = false,
         val error: ApiError? = null,
+        val outcome: BlueprintBatchResult? = null,
     ) : BlueprintEditor {
         /** Whether there is something to send. */
-        val submittable: Boolean get() = chosen != null && !chosen.owned
+        val submittable: Boolean get() = chosen.isNotEmpty()
+
+        /** How many are picked — the CTA names it („3 Blueprints übernehmen"). */
+        val count: Int get() = chosen.size
+
+        /**
+         * Whether the note field applies.
+         *
+         * `POST /personal-blueprints/batch` carries **only** the keys, so a note typed against
+         * several products would be silently dropped. With one picked the single create is used
+         * and the note goes with it; with several the field is drawn locked with that reason
+         * rather than removed.
+         */
+        val noteApplies: Boolean get() = chosen.size <= 1
+
+        /**
+         * The catalogue rows this sheet offers.
+         *
+         * What the member already owns is **not offered** — design ch. 17 artboard 5, which is the
+         * web's behaviour, and the sheet's notice line says so, so a missing hit does not read as
+         * a broken search. This reverses the earlier choice to list an owned product greyed out
+         * with „hast du schon" beside it.
+         */
+        val offered: List<BlueprintProduct> get() = results.filterNot { it.owned }
     }
 
     /**
@@ -376,7 +401,21 @@ class PersonalBlueprintsViewModel(
      * @param product the catalogue row.
      */
     fun onProductChosen(product: BlueprintProduct) {
-        update<BlueprintEditor.Adding> { it.copy(chosen = product, error = null) }
+        update<BlueprintEditor.Adding> { adding ->
+            val already = adding.chosen.any { it.productKey == product.productKey }
+            adding.copy(
+                // A second tap takes it back off: the row is a checkbox, and a checkbox that only
+                // ever ticks is a trap on a list the member is still narrowing down.
+                chosen =
+                    if (already) {
+                        adding.chosen.filterNot { it.productKey == product.productKey }
+                    } else {
+                        adding.chosen + product
+                    },
+                error = null,
+                outcome = null,
+            )
+        }
     }
 
     /**
@@ -412,19 +451,80 @@ class PersonalBlueprintsViewModel(
      * @param editor the open add sheet.
      */
     private fun add(editor: BlueprintEditor.Adding) {
-        val product = editor.chosen ?: return
+        val picked = editor.chosen
+        if (picked.isEmpty()) {
+            return
+        }
         mutableState.value = mutableState.value.copy(editor = editor.copy(saving = true, error = null))
         viewModelScope.launch {
-            when (val result = repository.add(product.productKey, editor.note.trim().takeIf { it.isNotEmpty() })) {
-                is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Closed)
+            // One product keeps the single create, because that is the call that carries the note.
+            // Several go through the batch, which carries none.
+            val single = picked.singleOrNull()
+            if (single != null) {
+                addOne(editor, single)
+            } else {
+                addMany(editor, picked)
+            }
+        }
+    }
+
+    /**
+     * Adds one product, with its note.
+     *
+     * @param editor the open sheet.
+     * @param product the single picked product.
+     */
+    private suspend fun addOne(
+        editor: BlueprintEditor.Adding,
+        product: BlueprintProduct,
+    ) {
+        val note = editor.note.trim().takeIf { it.isNotEmpty() }
+        when (val result = repository.add(product.productKey, note)) {
+            is ApiResult.Success -> {
+                mutableState.value = mutableState.value.copy(editor = BlueprintEditor.Closed)
+                reload(keepRows = true)
+            }
+
+            is ApiResult.Failure -> {
+                mutableState.value =
+                    mutableState.value.copy(editor = editor.copy(saving = false, error = result.error))
+            }
+        }
+    }
+
+    /**
+     * Adds several products at once.
+     *
+     * The sheet **stays open** on success and shows what the server did — „2 übernommen · 1
+     * bereits vorhanden", design ch. 17 artboard 5. Closing on a partial result would hide the
+     * skipped ones, which is the one thing the line exists to say.
+     *
+     * @param editor the open sheet.
+     * @param picked the chosen products.
+     */
+    private suspend fun addMany(
+        editor: BlueprintEditor.Adding,
+        picked: List<BlueprintProduct>,
+    ) {
+        when (val result = repository.addAll(picked.map { it.productKey })) {
+            is ApiResult.Success -> {
+                mutableState.value =
+                    mutableState.value.copy(
+                        editor =
+                            editor.copy(
+                                saving = false,
+                                chosen = emptyList(),
+                                outcome = result.value,
+                            ),
+                    )
+                if (result.value.anyAdded) {
                     reload(keepRows = true)
                 }
+            }
 
-                is ApiResult.Failure -> {
-                    mutableState.value =
-                        mutableState.value.copy(editor = editor.copy(saving = false, error = result.error))
-                }
+            is ApiResult.Failure -> {
+                mutableState.value =
+                    mutableState.value.copy(editor = editor.copy(saving = false, error = result.error))
             }
         }
     }

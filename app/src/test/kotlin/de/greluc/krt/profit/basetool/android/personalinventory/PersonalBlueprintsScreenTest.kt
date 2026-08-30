@@ -242,7 +242,7 @@ class PersonalBlueprintsScreenTest {
     }
 
     @Test
-    fun `the add sheet will not submit a product the member already owns`() {
+    fun `the add sheet does not offer a product the member already owns`() {
         val owned = BlueprintProduct("anvil.hornet", "F7A Hornet", "Anvil", owned = true)
         compose.setContent {
             KrtTheme {
@@ -257,7 +257,10 @@ class PersonalBlueprintsScreenTest {
             }
         }
 
-        compose.onNodeWithText("Hast du schon").assertIsDisplayed()
+        // Not in the list at all (design ch. 17 artboard 5), and the notice line says why — so a
+        // missing hit does not read as a broken search.
+        compose.onNodeWithText("F7A Hornet", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Bereits vorhandene", substring = true).assertIsDisplayed()
         compose.onNodeWithTag(BLUEPRINTS_SAVE_TAG).assertIsNotEnabled()
     }
 
