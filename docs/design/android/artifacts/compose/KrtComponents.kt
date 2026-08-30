@@ -202,7 +202,8 @@ fun KrtFlushCard(modifier: Modifier = Modifier, content: @Composable ColumnScope
 
 /**
  * The signature container: hairline box with TWO diagonal orange corner brackets
- * (top-left, bottom-right), 14 dp arms, 2 dp stroke, translucent #141414 at 50 %.
+ * (top-left, bottom-right), 10 dp arms, 2 dp stroke, translucent #141414 at 50 %. The MODAL
+ * frame uses 13 dp arms with the same 2 dp stroke — two values, both from the stylesheet.
  * Use for emphasis blocks (hero numbers, attendance, KPI, state messages) — not for every card.
  */
 @Composable
@@ -212,7 +213,7 @@ fun KrtHudBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() ->
             .background(KrtPalette.Gray4.copy(alpha = 0.5f))
             .border(KrtDimens.hairline, KrtPalette.Gray3)
             .drawBehind {
-                val arm = 14.dp.toPx()
+                val arm = 10.dp.toPx()   // .hud-box; the modal frame draws 13.dp
                 val w = 2.dp.toPx()
                 // top-left
                 drawLine(KrtPalette.Primary, Offset(0f, 0f), Offset(arm, 0f), w, StrokeCap.Square)

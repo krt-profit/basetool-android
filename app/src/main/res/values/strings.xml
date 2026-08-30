@@ -816,8 +816,8 @@
     <string name="personal_inventory_delete_title">Eintrag löschen</string>
     <string name="personal_inventory_delete_body">„%1$s“ wird gelöscht. Das lässt sich nicht rückgängig machen.</string>
     <string name="personal_inventory_visible_only_to_you">Nur für dich sichtbar.</string>
-    <string name="offline_banner_title">Offline</string>
-    <string name="offline_writes_disabled">Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.</string>
+    <string name="offline_banner_title">Offline — keine Verbindung</string>
+    <string name="offline_writes_disabled">Schreiben ist gesperrt, bis die Verbindung zurück ist.</string>
     <string name="value_absent">—</string>
     <string name="conflict_title">Konflikt festgestellt</string>
     <string name="conflict_body">Jemand anderes hat diesen Eintrag inzwischen geändert. Deine Eingabe bleibt stehen — lade neu und speichere erneut.</string>
@@ -1751,4 +1751,11 @@
     <string name="mission_member_no_managers">Noch keine Manager.</string>
     <string name="mission_member_remove_manager_title">Manager entfernen?</string>
     <string name="mission_member_remove_manager_body">%1$s verwaltet diesen Einsatz danach nicht mehr.</string>
+    <string name="bank_limits_tier_officer">Officer</string>
+    <string name="bank_limits_tier_logistician">Logistiker</string>
+    <string name="board_field_item_help">Der Ort der Übergabe und — falls nötig — die Variante gehören in die Anmerkung: der Vertrag hat für beides kein Feld.</string>
+    <plurals name="board_item_variants">
+        <item quantity="one">%1$d Variante</item>
+        <item quantity="other">%1$d Varianten</item>
+    </plurals>
 </resources>

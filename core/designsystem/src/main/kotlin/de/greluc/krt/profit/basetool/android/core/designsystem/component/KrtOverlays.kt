@@ -57,14 +57,19 @@ private val MODAL_TOP_EDGE = 3.dp
 /** Bracket leg length on a modal — longer than on a container, the modal is the loudest surface. */
 private val MODAL_BRACKET = 13.dp
 
-/** Bracket stroke width on a modal. */
-private val MODAL_BRACKET_STROKE = 3.dp
+/**
+ * Bracket stroke width on a modal.
+ *
+ * The same 2 dp the HUD box uses. Only the **arm** differs (13 dp against 10) — two values, both
+ * straight from the stylesheet, deliberately not unified (design ch. 01 §1, corrected 2026-08-30).
+ */
+private val MODAL_BRACKET_STROKE = 2.dp
 
 /** Maximum width of a modal on any form factor. */
 private val MODAL_MAX_WIDTH = 440.dp
 
 /** Reach of the bloom around a modal or toast. */
-private val MODAL_BLOOM = 20.dp
+private val MODAL_BLOOM = KrtSpacing.glowOverlay
 
 /**
  * Whether a modal asks for a routine confirmation or for a destructive one.
@@ -85,7 +90,8 @@ enum class KrtModalTone {
  *
  * The app never uses platform dialogs: their rounded corners, tonal surface and system typography
  * contradict the design system, and Android's own alert never looks like this product. The frame is
- * the loudest surface in the app — accent top edge, 13 dp brackets, 20 dp bloom — because a modal
+ * the loudest surface in the app — accent top edge, 13 dp brackets, the overlay glow — because a
+ * modal
  * interrupts, and an interruption must be unmistakable.
  *
  * Exactly one filled CTA, placed right, with a ghost cancel to its left; back and the scrim both

@@ -296,8 +296,11 @@ fun BasetoolApp(
                     LocalScreenTopBar provides screenBar,
                     LocalCaller provides who,
                 ) {
+                    // No content cap. Design ch. 01 §5 struck the 1200 dp one as a web rule: a
+                    // tablet surface picks one of §8's three answers instead, and each of those
+                    // decides its own widths.
                     BasetoolNavHost(
-                        modifier = Modifier.widthIn(max = KrtSpacing.contentMax).fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         navController = navController,
                         rootScroll = rootScroll,
                         onOpenDestination = { navController.navigateToTopLevel(it.route) },

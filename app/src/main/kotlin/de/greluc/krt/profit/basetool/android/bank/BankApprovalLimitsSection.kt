@@ -92,7 +92,7 @@ fun BankApprovalLimitsSection(
         // tier, the higher it sits, and everyone is the floor everything else is measured against.
         limits.availableRoleCodes.forEach { code ->
             LimitRow(
-                label = code,
+                label = code.tierLabel(),
                 amount = limits.roleLimits[code],
                 target = BankLimitTarget.Role(code),
                 limits = limits,
@@ -139,6 +139,24 @@ fun BankApprovalLimitsSection(
         }
     }
 }
+
+/**
+ * What a role code is called on the limits list.
+ *
+ * Design ch. 12 ab. 10 names the four tiers in German; the wire sends role codes. An unknown code
+ * is shown as it came rather than swallowed — a tier nobody can name is still a tier somebody set
+ * a limit on.
+ *
+ * @receiver the server's role code.
+ * @return the label.
+ */
+@Composable
+private fun String.tierLabel(): String =
+    when (this) {
+        "OFFICER" -> stringResource(R.string.bank_limits_tier_officer)
+        "LOGISTICIAN" -> stringResource(R.string.bank_limits_tier_logistician)
+        else -> this
+    }
 
 /**
  * One tier or one member, with what applies to them.

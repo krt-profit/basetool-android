@@ -412,7 +412,7 @@ class MissionDetailScreenTest {
     fun `offline the Einsatz says so and offers no write`() {
         robot.show(readyForMe().copy(online = false))
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(MISSION_SIGN_UP_TAG).assertIsNotEnabled()
     }

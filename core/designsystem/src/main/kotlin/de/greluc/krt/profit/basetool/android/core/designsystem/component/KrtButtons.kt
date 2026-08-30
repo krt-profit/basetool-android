@@ -245,7 +245,7 @@ fun KrtButton(
                     if (style.bloom &&
                         enabled
                     ) {
-                        Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.xs)
+                        Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.glowFocus)
                     } else {
                         Modifier
                     },

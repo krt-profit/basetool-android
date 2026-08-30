@@ -281,8 +281,10 @@ Everything is coded in **`artifacts/Theme.kt`** — drop-in `darkColorScheme`, `
   orange indicator (never the M3 pill); per-destination back stacks; predictive back;
   back on a root → Übersicht; deep links per ch. 03 table (cold start synthesizes Übersicht)
 - Motion: 200 ms color/fade only, no bounce/parallax, honor reduced motion
-- Touch ≥48 dp; dense rows ~56 dp; pull-to-refresh on every list (orange ring spinner)
-- Overlays: KRT modal (3 dp orange top edge, 13 dp brackets, ONE filled CTA right, ghost
+- Touch target floor 44 dp (nav / app-bar icons 48 dp); list rows min 44 dp, dense rows 56–64 dp by
+  content; pull-to-refresh on every list (orange ring spinner)
+- Overlays: KRT modal (3 dp orange top edge, 13 dp brackets; the HUD box uses 10 dp — two values,
+  both straight from the stylesheet, Overlay glow 12 dp/.10, ONE filled CTA right, ghost
   cancel; danger variant names the consequence) — never native dialogs; bottom sheets
   shape 0 with 3 dp orange edge; toasts with corner brackets; undo toast 5 s for swipes
 - Offline: cached banner + „Cache" chips; write actions disable at 45% — never queue

@@ -386,7 +386,7 @@ class InventoryScreenTest {
             readyWithStack(entries = EntriesPhase.Ready(listOf(entry()))).copy(online = false),
         )
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(INVENTORY_BOOK_TAG).assertIsNotEnabled()
         compose.onNodeWithText("Buchen", ignoreCase = true).assertIsNotEnabled()

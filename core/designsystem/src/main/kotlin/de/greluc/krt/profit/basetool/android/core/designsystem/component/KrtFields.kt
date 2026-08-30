@@ -294,7 +294,7 @@ private fun Modifier.krtFieldFrame(
     this
         .fillMaxWidth()
         .alpha(if (enabled) 1f else DISABLED_FIELD_ALPHA)
-        .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.xs) else Modifier)
+        .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.glowFocus) else Modifier)
         .background(KrtPalette.SurfaceInput)
         .border(KrtSpacing.hairline, border)
         .defaultMinSize(minHeight = KrtSpacing.touchTarget * minLines)

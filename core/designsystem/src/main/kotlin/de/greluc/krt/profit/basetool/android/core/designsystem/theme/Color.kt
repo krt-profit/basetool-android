@@ -170,9 +170,11 @@ val KrtColorScheme =
  * @property deptMarinekorps Bereichsfarbe, semantic use only.
  * @property deptProfit Bereichsfarbe, semantic use only.
  * @property deptSearchRescue Bereichsfarbe, semantic use only.
- * @property glowPrimary the 5 dp focus bloom at 30 % opacity — the only glow on inputs.
- * @property glowPrimaryLg the 20 dp bloom at 20 % opacity for modals, sheets and CTA press.
- * @property glowDangerLg the 20 dp bloom of the danger modal variant.
+ * @property glowPrimary the **focus** glow — 6 dp at 10 %. The only glow on an input.
+ * @property glowPrimaryLg the **overlay** glow — 12 dp at 10 %, for sheets, modals and toasts.
+ * @property glowEmphasis the **emphasis** glow — 12 dp at 7 %, for the bar carrying the one
+ *   primary action. Quieter than the overlay on purpose: an anchored CTA is not a surface.
+ * @property glowDangerLg the danger modal's overlay glow, same 12 dp at 10 %.
  */
 @Immutable
 @Suppress("MagicNumber")
@@ -193,9 +195,12 @@ data class KrtExtendedColors(
     val deptMarinekorps: Color = KrtPalette.DeptMarinekorps,
     val deptProfit: Color = KrtPalette.DeptProfit,
     val deptSearchRescue: Color = KrtPalette.DeptSearchRescue,
-    val glowPrimary: Color = Color(0x4DE77E23),
-    val glowPrimaryLg: Color = Color(0x33E77E23),
-    val glowDangerLg: Color = Color(0x33A3000A),
+    // The capped scale of design ch. 01 §1: radius ≤ 12 dp AND alpha ≤ 0.10, in three sizes.
+    // 0x1A is 26/255 ≈ 10 %, 0x12 is 18/255 ≈ 7 %.
+    val glowPrimary: Color = Color(0x1AE77E23),
+    val glowPrimaryLg: Color = Color(0x1AE77E23),
+    val glowEmphasis: Color = Color(0x12E77E23),
+    val glowDangerLg: Color = Color(0x1AA3000A),
 )
 
 /**

@@ -229,7 +229,7 @@ class PersonalBlueprintsScreenTest {
             BlueprintsState(items = listOf(entry()), total = 1, phase = BlueprintsPhase.Ready, online = false),
         )
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(BLUEPRINTS_ADD_TAG).assertIsNotEnabled()
     }

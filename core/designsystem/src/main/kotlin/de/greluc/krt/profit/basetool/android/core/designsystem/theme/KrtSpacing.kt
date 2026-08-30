@@ -12,17 +12,34 @@ import androidx.compose.ui.unit.dp
 /**
  * The spacing and metric scale. Nothing in the app may sit off this scale.
  *
- * Values come from `docs/design/android/01 Foundations.dc.html` where 1 CSS pixel equals 1 dp, with
- * one deliberate platform correction: the web design system's 44 px minimum touch target is rounded
- * up to Android's 48 dp ([touchTarget]).
+ * Values come from `docs/design/android/01 Foundations.dc.html` §5 (the scale strip) and §8 (the
+ * binding margin table), where 1 CSS pixel equals 1 dp.
+ *
+ * > **Why the token names do not read xs 6 · sm 10 · md 16 · lg 20 · xl 24.** §8's Compose line
+ * > names that scale, and the chapter's **own** scale strip in §5 lists `4 · 8 · 12 · 16 · 24 · 32`
+ * > — which is what the artboards are drawn against and what these tokens have always carried. The
+ * > margin table needs 4, 8, 10, 12, 14, 16, 20 and 24; renaming the five existing steps to the
+ * > prose scale would move every one of ~830 call sites onto a value no artboard uses, and would
+ * > still leave 4, 8, 12 and 14 without a token. So the drawn scale wins and the three steps the
+ * > table needs and this object lacked — [cards], [inset], [sheet] — were added instead. The prose
+ * > line is on the next design gap list.
  */
 @Suppress("MagicNumber")
 object KrtSpacing {
     /** 4 dp — the smallest step; icon-to-label gaps inside dense chips. */
     val xs = 4.dp
 
-    /** 8 dp — gap between chips, icon-to-label in buttons. */
+    /** 8 dp — gap between chips, icon-to-label in buttons, a list row's vertical padding. */
     val sm = 8.dp
+
+    /** 10 dp — between cards in a list or a stack (design ch. 01 §8). */
+    val cards = 10.dp
+
+    /** 14 dp — horizontal padding inside a card and inside a list row (ch. 01 §8). */
+    val inset = 14.dp
+
+    /** 20 dp — a sheet's side margin, and a tablet's list column (ch. 01 §8). */
+    val sheet = 20.dp
 
     /** 12 dp — row internal gaps, vertical padding of the Fan Kit band. */
     val md = 12.dp
@@ -36,17 +53,35 @@ object KrtSpacing {
     /** 32 dp — generous separation, e.g. above a screen's primary action block. */
     val xxl = 32.dp
 
-    /** Minimum size of any interactive target (Android rounds the web system's 44 px up). */
-    val touchTarget = 48.dp
+    /**
+     * Minimum size of any interactive target — 44 dp (design ch. 01 §5).
+     *
+     * The navigation bar and the app bar use [navTarget] instead, which is Android's own 48 dp:
+     * those two are hit while walking, and the chapter names them as the exception.
+     */
+    val touchTarget = 44.dp
+
+    /** 48 dp — the floor for a navigation-bar or app-bar icon. */
+    val navTarget = 48.dp
 
     /** Minimum height of a dense list row; the whole row is the touch target. */
     val denseRow = 56.dp
 
-    /** Content column cap on tablets — wider text columns hurt readability. */
-    val contentMax = 1200.dp
-
     /** Width of every border in the system; depth comes from hairlines, never from shadows. */
     val hairline = 1.dp
+
+    /**
+     * The focus glow's radius — 6 dp, the smallest of the three (design ch. 01 §1).
+     *
+     * The capped scale is **radius ≤ 12 dp and alpha ≤ 0.10** in three sizes: focus 6 dp/.10 on an
+     * input, emphasis 12 dp/.07 on the bar carrying the one primary action, overlay 12 dp/.10 on a
+     * sheet, a modal or a toast. Nothing in the app glows harder than that, and the 20 dp bloom
+     * this replaced was above the cap on both counts.
+     */
+    val glowFocus = 6.dp
+
+    /** The emphasis and overlay glow radius — 12 dp, the ceiling. */
+    val glowOverlay = 12.dp
 
     /** The orange under-rule below table heads and screen headers. */
     val headingRule = 2.dp

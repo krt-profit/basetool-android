@@ -610,7 +610,7 @@ class OrdersScreenTest {
     fun `offline the detail says so and offers no write`() {
         showDetail(ready().copy(online = false))
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(ORDER_ASSIGN_TAG).assertIsNotEnabled()
     }

@@ -228,7 +228,7 @@ class BookingSheetTest {
             ),
         )
 
-        compose.onNodeWithText("Kein Netz — Ändern ist gesperrt, bis die Verbindung zurück ist.")
+        compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
         compose.onNodeWithTag(BOOKING_SAVE_TAG).assertIsNotEnabled()
     }

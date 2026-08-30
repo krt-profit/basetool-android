@@ -795,8 +795,8 @@
     <string name="personal_inventory_delete_title">Delete entry</string>
     <string name="personal_inventory_delete_body">“%1$s” will be deleted. This cannot be undone.</string>
     <string name="personal_inventory_visible_only_to_you">Visible only to you.</string>
-    <string name="offline_banner_title">Offline</string>
-    <string name="offline_writes_disabled">No network — editing is disabled until the connection is back.</string>
+    <string name="offline_banner_title">Offline — no connection</string>
+    <string name="offline_writes_disabled">Writing is disabled until the connection is back.</string>
     <string name="value_absent">—</string>
     <string name="conflict_title">Conflict detected</string>
     <string name="conflict_body">Someone else changed this entry in the meantime. What you typed is still here — reload and save again.</string>
@@ -1730,4 +1730,11 @@
     <string name="mission_member_no_managers">No managers yet.</string>
     <string name="mission_member_remove_manager_title">Remove the manager?</string>
     <string name="mission_member_remove_manager_body">%1$s will no longer manage this Einsatz.</string>
+    <string name="bank_limits_tier_officer">Officer</string>
+    <string name="bank_limits_tier_logistician">Logistiker</string>
+    <string name="board_field_item_help">Where the handover happens — and the variant, when it matters — belong in the remark: the contract has no field for either.</string>
+    <plurals name="board_item_variants">
+        <item quantity="one">%1$d variant</item>
+        <item quantity="other">%1$d variants</item>
+    </plurals>
 </resources>

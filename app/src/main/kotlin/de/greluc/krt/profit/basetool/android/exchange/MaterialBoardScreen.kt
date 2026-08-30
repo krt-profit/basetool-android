@@ -895,13 +895,21 @@ private fun ProductField(
         // The catalogue's own products, the caller's blueprints first: „Vorschläge zeigen erst
         // deinen Bestand" (artboard 1). The manufacturer rides along because two products can
         // share a name across makers.
+        // The variant count rides in the label, because the artboard's variant *select* has no wire
+        // field: a product key already identifies the product. Naming the count is what lets a
+        // member put the variant in the remark, which the help text below says in so many words.
         options =
             products.map { product ->
                 KrtOption(
                     value = product.productKey,
                     label =
-                        listOfNotNull(product.name, product.manufacturer)
-                            .joinToString(SEPARATOR),
+                        listOfNotNull(
+                            product.name,
+                            product.manufacturer,
+                            product.variantCount
+                                .takeIf { it > 1 }
+                                ?.let { variantLabel(it) },
+                        ).joinToString(SEPARATOR),
                 )
             },
         onSelect = { option ->
@@ -915,7 +923,25 @@ private fun ProductField(
         placeholder = stringResource(R.string.board_field_item_hint),
         selectedValue = selectedKey,
     )
+    // Ch. 17 ab. 1: „Der Ort der Übergabe und — falls nötig — die Variante gehören hierher: der
+    // Vertrag hat für beides kein Feld." A remark that stands in for missing structure has to be
+    // explained, or it reads as a free-text box nobody fills.
+    Text(
+        text = stringResource(R.string.board_field_item_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.TextMuted,
+    )
 }
+
+/**
+ * „n Varianten" for a product that has more than one.
+ *
+ * @param count how many.
+ * @return the label.
+ */
+@Composable
+private fun variantLabel(count: Int): String =
+    pluralStringResource(R.plurals.board_item_variants, count, count)
 
 /**
  * „Eintrag bearbeiten" — design ch. 17 artboard 3.
