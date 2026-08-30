@@ -62,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.gate.UpdateGateViewModel
 import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.lock.AppLockGate
 import de.greluc.krt.profit.basetool.android.lock.AppLockViewModel
@@ -433,6 +434,7 @@ class MainActivity : AppCompatActivity() {
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
                                     },
+                                    gameItems = { GameItemStockViewModel(container.inventory) },
                                     blueprints =
                                         BlueprintOverviewBindings(
                                             // `null` before the first /me lands reads as "not

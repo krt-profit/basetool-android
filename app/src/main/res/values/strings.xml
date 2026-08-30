@@ -1670,4 +1670,43 @@
         <item quantity="one">%1$d gelöscht · %2$d übersprungen</item>
         <item quantity="other">%1$d gelöscht · %2$d übersprungen</item>
     </plurals>
+    <!-- Sammel-Ausbuchen (Design Kap. 09, Artboard 20) -->
+    <string name="inventory_bulk_checkout">Sammel-Ausbuchen</string>
+    <string name="inventory_bulk_checkout_hint">Ausbuchen ist append-only: die Zeilen verschwinden aus dem Bestand, das Protokoll bleibt. Es werden immer ganze Zeilen ausgebucht — für Teilmengen das Einzel-Ausbuchen nehmen.</string>
+    <string name="inventory_bulk_checkout_full">vollständig</string>
+    <string name="inventory_bulk_checkout_failed">Ausbuchen abgelehnt — es wurde nichts ausgebucht.</string>
+    <plurals name="inventory_bulk_checkout_cta">
+        <item quantity="one">%1$d Eintrag ausbuchen</item>
+        <item quantity="other">%1$d Einträge ausbuchen</item>
+    </plurals>
+    <plurals name="inventory_bulk_checkout_done">
+        <item quantity="one">%1$d Eintrag ausgebucht.</item>
+        <item quantity="other">%1$d Einträge ausgebucht.</item>
+    </plurals>
+    <!-- Game-Item-Bestand (Design Kap. 09, Artboard 21) -->
+    <string name="game_items_title">Game-Items</string>
+    <string name="game_items_search">Item suchen …</string>
+    <string name="game_items_filter_all">Alle</string>
+    <string name="game_items_unit">Stück</string>
+    <string name="game_items_failed_title">Signal Lost — Bestand nicht erreichbar</string>
+    <string name="game_items_failed_message">Der Game-Item-Bestand konnte nicht geladen werden.</string>
+    <string name="game_items_empty_title">Keine Game-Items</string>
+    <string name="game_items_empty_message">Keine Game-Items in Bereich Profit.</string>
+    <string name="game_items_empty_filtered">Kein Item passt zum Filter.</string>
+    <plurals name="game_items_count">
+        <item quantity="one">%1$d Item</item>
+        <item quantity="other">%1$d Items</item>
+    </plurals>
+    <plurals name="game_items_pieces">
+        <item quantity="one">%1$d Stück</item>
+        <item quantity="other">%1$d Stück</item>
+    </plurals>
+    <plurals name="game_items_holders">
+        <item quantity="one">%1$d Halter</item>
+        <item quantity="other">%1$d Halter</item>
+    </plurals>
+    <plurals name="game_items_places">
+        <item quantity="one">%1$d Ort</item>
+        <item quantity="other">%1$d Orte</item>
+    </plurals>
 </resources>

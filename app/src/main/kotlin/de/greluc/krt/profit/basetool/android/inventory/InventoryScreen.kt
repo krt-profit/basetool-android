@@ -1457,6 +1457,23 @@ fun InventoryRoute(
                         )
                     val (bulkDim, bulkClick) =
                         rememberGated(bulkGate, viewModel::onBulkMoveRequested, denials)
+                    // The same gate: the endpoint refuses a foreign row and takes the whole call
+                    // down with it, so a selection that spans someone else's stock cannot be
+                    // booked out either.
+                    val (outDim, outClick) =
+                        rememberGated(bulkGate, viewModel.checkoutActions::request, denials)
+                    KrtGhostButton(
+                        text = stringResource(R.string.inventory_bulk_checkout),
+                        onClick = outClick,
+                        iconRes =
+                            if (bulkGate.allowed) {
+                                DesignR.drawable.ic_krt_upload
+                            } else {
+                                DesignR.drawable.ic_krt_lock
+                            },
+                        enabled = state.online,
+                        modifier = outDim.testTag(INVENTORY_CHECKOUT_TAG),
+                    )
                     KrtCtaButton(
                         text = stringResource(R.string.inventory_bulk_move),
                         onClick = bulkClick,
@@ -1478,6 +1495,16 @@ fun InventoryRoute(
     // artboards 12 and 14). It was inlined here until the Einsatz roster needed the same thing —
     // two copies of one artboard drift, so it moved into GatedAction beside the gate it belongs to.
     DenialToast(state = denials)
+
+    state.checkout?.let { checkout ->
+        BulkCheckoutSheet(
+            checkout = checkout,
+            entries = state.selectedEntries(),
+            onConfirm = viewModel.checkoutActions::confirm,
+            onDismiss = viewModel.checkoutActions::close,
+            onFinished = viewModel.checkoutActions::close,
+        )
+    }
 
     state.bulk?.let { bulk ->
         BulkMoveSheet(
@@ -1533,6 +1560,108 @@ private const val QUALITY_MAX = 1_000.0
 
 /** Width of the orange inset bar on a selected row (design ch. 02 §4). */
 private val SELECT_RAIL = 3.dp
+
+/**
+ * „Sammel-Ausbuchen" — design ch. 09 artboard 20.
+ *
+ * **Whole rows only**, which is what the endpoint does: every listed row is deleted in full and its
+ * earmarks cascade away with it. A member who needs a part of a stack uses the single book-out,
+ * which is the call that carries an amount.
+ *
+ * > **Three things the artboard draws that `POST /inventory/bulk-checkout` cannot carry.**
+ * > It takes the ids and nothing else — no „Grund" („Verbraucht" / „Verworfen"), no note, and no
+ * > per-row Herkunft planner. And it is **all or nothing**: a foreign row or an unknown id refuses
+ * > the whole call, so there is no „ausgebucht / übersprungen" outcome to draw the way the bulk
+ * > rebooking beside it has one. All on the design gap list.
+ *
+ * @param checkout what the sheet holds.
+ * @param entries the rows it is about, so the member can see what they picked.
+ * @param onConfirm the CTA.
+ * @param onDismiss the sheet was closed before it ran.
+ * @param onFinished the result step was acknowledged.
+ */
+@Composable
+private fun BulkCheckoutSheet(
+    checkout: BulkCheckoutState,
+    entries: List<InventoryEntry>,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    onFinished: () -> Unit,
+) {
+    KrtBottomSheet(
+        onDismiss = if (checkout.done) onFinished else onDismiss,
+        title = stringResource(R.string.inventory_bulk_checkout),
+        modifier = Modifier.testTag(INVENTORY_CHECKOUT_SHEET_TAG),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
+        ) {
+            if (checkout.done) {
+                Text(
+                    text =
+                        pluralStringResource(
+                            R.plurals.inventory_bulk_checkout_done,
+                            checkout.count,
+                            checkout.count,
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtPalette.White,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.inventory_bulk_move_close),
+                    onClick = onFinished,
+                    modifier = Modifier.fillMaxWidth().testTag(INVENTORY_CHECKOUT_CLOSE_TAG),
+                )
+                return@KrtBottomSheet
+            }
+            // The artboard's own sentence, and the reason this is not a delete: the rows leave the
+            // stock, the audit log keeps the event.
+            Text(
+                text = stringResource(R.string.inventory_bulk_checkout_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            entries.forEach { entry ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = entry.materialName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = KrtPalette.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    // „vollständig" per row, because the endpoint knows no partial amount and a
+                    // member who expected one has to be told before the CTA, not after.
+                    KrtChip(text = stringResource(R.string.inventory_bulk_checkout_full))
+                }
+            }
+            checkout.error?.let {
+                Text(
+                    text = stringResource(R.string.inventory_bulk_checkout_failed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.DangerText,
+                )
+            }
+            KrtCtaButton(
+                text =
+                    pluralStringResource(
+                        R.plurals.inventory_bulk_checkout_cta,
+                        checkout.count,
+                        checkout.count,
+                    ),
+                onClick = onConfirm,
+                enabled = !checkout.saving,
+                modifier = Modifier.fillMaxWidth().testTag(INVENTORY_CHECKOUT_CONFIRM_TAG),
+            )
+        }
+    }
+}
 
 /**
  * „Umbuchen" over a selection.
@@ -1689,3 +1818,15 @@ private val SELECTION_COUNT_GAP = 10.dp
 
 /** Test handle for the result step's closing button. */
 const val INVENTORY_BULK_CLOSE_TAG = "inventory-bulk-close"
+
+/** Test handle for the selection bar's Ausbuchen action. */
+const val INVENTORY_CHECKOUT_TAG = "inventory-bulk-checkout"
+
+/** Test handle for its sheet. */
+const val INVENTORY_CHECKOUT_SHEET_TAG = "inventory-bulk-checkout-sheet"
+
+/** Test handle for its CTA. */
+const val INVENTORY_CHECKOUT_CONFIRM_TAG = "inventory-bulk-checkout-confirm"
+
+/** Test handle for the result step's close. */
+const val INVENTORY_CHECKOUT_CLOSE_TAG = "inventory-bulk-checkout-close"

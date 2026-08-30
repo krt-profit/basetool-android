@@ -1649,4 +1649,43 @@
         <item quantity="one">%1$d deleted · %2$d skipped</item>
         <item quantity="other">%1$d deleted · %2$d skipped</item>
     </plurals>
+    <!-- Bulk checkout (design ch. 09, artboard 20) -->
+    <string name="inventory_bulk_checkout">Bulk checkout</string>
+    <string name="inventory_bulk_checkout_hint">Checking out is append-only: the rows leave the stock, the log stays. Whole rows only — use the single checkout for partial amounts.</string>
+    <string name="inventory_bulk_checkout_full">in full</string>
+    <string name="inventory_bulk_checkout_failed">Checkout refused — nothing was booked out.</string>
+    <plurals name="inventory_bulk_checkout_cta">
+        <item quantity="one">Check out %1$d entry</item>
+        <item quantity="other">Check out %1$d entries</item>
+    </plurals>
+    <plurals name="inventory_bulk_checkout_done">
+        <item quantity="one">%1$d entry checked out.</item>
+        <item quantity="other">%1$d entries checked out.</item>
+    </plurals>
+    <!-- Game item stock (design ch. 09, artboard 21) -->
+    <string name="game_items_title">Game items</string>
+    <string name="game_items_search">Search for an item …</string>
+    <string name="game_items_filter_all">All</string>
+    <string name="game_items_unit">pieces</string>
+    <string name="game_items_failed_title">Signal Lost — stock unreachable</string>
+    <string name="game_items_failed_message">The game item stock could not be loaded.</string>
+    <string name="game_items_empty_title">No game items</string>
+    <string name="game_items_empty_message">Keine Game-Items in Bereich Profit.</string>
+    <string name="game_items_empty_filtered">No item matches the filter.</string>
+    <plurals name="game_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="game_items_pieces">
+        <item quantity="one">%1$d piece</item>
+        <item quantity="other">%1$d pieces</item>
+    </plurals>
+    <plurals name="game_items_holders">
+        <item quantity="one">%1$d holder</item>
+        <item quantity="other">%1$d holders</item>
+    </plurals>
+    <plurals name="game_items_places">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
 </resources>

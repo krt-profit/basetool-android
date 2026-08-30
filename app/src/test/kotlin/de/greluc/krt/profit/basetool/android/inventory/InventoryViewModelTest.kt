@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.GameItemStock
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
 import de.greluc.krt.profit.basetool.android.core.data.InventoryPage
@@ -168,6 +169,18 @@ class InventoryViewModelTest {
             locationId: String,
         ): ApiResult<BulkRebookResult> =
             bulkAnswer ?: ApiResult.Success(BulkRebookResult(entryIds.size, 0))
+
+        val checkedOut = mutableListOf<List<String>>()
+        var checkoutAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun bulkCheckout(entryIds: List<String>): ApiResult<Unit> {
+            checkedOut.add(entryIds)
+            return checkoutAnswer
+        }
+
+        var gameItemAnswer: ApiResult<List<GameItemStock>> = ApiResult.Success(emptyList())
+
+        override suspend fun gameItemStock(): ApiResult<List<GameItemStock>> = gameItemAnswer
 
         override suspend fun setAllocation(
             entryId: String,
@@ -545,6 +558,50 @@ class InventoryViewModelTest {
 
             assertEquals(ApiError.Forbidden(), model.state.value.bulk?.error)
             assertNull("nothing was written, so there is no result", model.state.value.bulk?.result)
+            assertEquals(picked, model.state.value.selection)
+        }
+
+    @Test
+    fun `a bulk checkout sends every selected row and ends the selection`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+            model.onToggleBranch("m1", null)
+            val picked = model.state.value.selection
+            assertTrue(picked.isNotEmpty())
+
+            model.checkoutActions.request()
+            assertEquals(picked.size, model.state.value.checkout?.count)
+            model.checkoutActions.confirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf(picked.toList()), source.checkedOut)
+            // The result is a step in the sheet, not a toast on the way out — the same shape the
+            // bulk rebooking has.
+            assertEquals(true, model.state.value.checkout?.done)
+
+            model.checkoutActions.close()
+            advanceUntilIdle()
+            assertTrue(model.state.value.selection.isEmpty())
+            assertEquals(null, model.state.value.checkout)
+        }
+
+    @Test
+    fun `a refused bulk checkout keeps the selection`() =
+        runTest(dispatcher) {
+            source.entryAnswers.add(ApiResult.Success(listOf(entry("e1"), entry("e2"))))
+            val model = openedStackModel()
+            model.onToggleBranch("m1", null)
+            val picked = model.state.value.selection
+            source.checkoutAnswer = ApiResult.Failure(ApiError.Forbidden())
+
+            model.checkoutActions.request()
+            model.checkoutActions.confirm()
+            advanceUntilIdle()
+
+            // All or nothing: nothing was booked out, so nothing may look as though it had been.
+            assertEquals(false, model.state.value.checkout?.done)
+            assertTrue(model.state.value.checkout?.error is ApiError.Forbidden)
             assertEquals(picked, model.state.value.selection)
         }
 

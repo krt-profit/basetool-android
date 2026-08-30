@@ -50,6 +50,8 @@ import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingHost
 import de.greluc.krt.profit.basetool.android.inventory.BookingMode
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockRoute
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryRoute
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialDetailRoute
@@ -176,6 +178,7 @@ fun BasetoolNavHost(
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -265,6 +268,7 @@ fun BasetoolNavHost(
                             orderCollection = orderCollection,
                             operationForm = operationForm,
                             blueprints = blueprints,
+                            gameItems = gameItems,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -759,6 +763,7 @@ private fun SimplePushedDestination(
  * @param material the Handel area's three pushed view models.
  * @param blueprints the org-wide blueprint availability: whether it may be opened, and how to
  *   build it.
+ * @param gameItems builds the game-item stock's view model.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -784,6 +789,7 @@ private fun PushedDestination(
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -902,6 +908,7 @@ private fun PushedDestination(
         }
 
         KrtDestination.BlueprintOverview,
+        KrtDestination.GameItems,
         KrtDestination.Licenses,
         KrtDestination.FleetImport,
         -> {
@@ -910,6 +917,7 @@ private fun PushedDestination(
                 blueprints = blueprints,
                 fleetImport = fleetImport,
                 onOpenUrl = settings.onOpenUrl,
+                gameItems = gameItems,
             )
         }
 
@@ -1078,17 +1086,23 @@ private fun CreateFormDestination(
  * @param blueprints the org-wide blueprint availability.
  * @param fleetImport the Fleetview import.
  * @param onOpenUrl opens a licence's URL.
+ * @param gameItems builds the game-item stock's view model.
  */
 @Composable
 private fun LeafDestination(
     destination: KrtDestination,
     blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
     fleetImport: FleetImportViewModel,
     onOpenUrl: (String) -> Boolean,
 ) {
     when (destination) {
         KrtDestination.BlueprintOverview -> {
             BlueprintOverviewRoute(viewModel = remember { blueprints.build() })
+        }
+
+        KrtDestination.GameItems -> {
+            GameItemStockRoute(viewModel = remember { gameItems() })
         }
 
         KrtDestination.FleetImport -> {

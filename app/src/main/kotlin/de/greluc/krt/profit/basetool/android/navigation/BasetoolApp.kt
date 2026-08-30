@@ -62,6 +62,7 @@ import de.greluc.krt.profit.basetool.android.exchange.MaterialBoardViewModel
 import de.greluc.krt.profit.basetool.android.hangar.FleetImportViewModel
 import de.greluc.krt.profit.basetool.android.hangar.HangarViewModel
 import de.greluc.krt.profit.basetool.android.inventory.BookingViewModel
+import de.greluc.krt.profit.basetool.android.inventory.GameItemStockViewModel
 import de.greluc.krt.profit.basetool.android.inventory.InventoryViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialDetailViewModel
 import de.greluc.krt.profit.basetool.android.materials.MaterialMatrixViewModel
@@ -163,6 +164,7 @@ fun BasetoolApp(
     orderCollection: (String) -> OrderCollectionViewModel,
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
+    gameItems: () -> GameItemStockViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -341,6 +343,7 @@ fun BasetoolApp(
                         orderCollection = orderCollection,
                         operationForm = operationForm,
                         blueprints = blueprints,
+                        gameItems = gameItems,
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,

@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Sammel-Ausbuchen im Lager.** Zweite Aktion in derselben Auswahlleiste wie das Umbuchen. Es
+  werden immer ganze Zeilen ausgebucht — für Teilmengen bleibt das Einzel-Ausbuchen — und entweder
+  geht alles oder nichts; eine abgelehnte Aktion lässt die Auswahl stehen.
+
+- **Neue Ansicht „Game-Items" unter „Mehr".** Zeigt den Bestand nach Item statt nach Material: wie
+  viele Stück, bei wie vielen Haltern und an welchen Orten. Suche und Kategorien filtern die
+  vollständige Liste; eine Zeile klappt ihre Orte an Ort und Stelle auf.
+
 - **Mehrere Einträge in „Mein Inventar" auf einmal löschen.** Langer Druck wählt, weitere Zeilen mit
   einem Tipp; unten stehen „Alles wählen", „Aufheben" und „Löschen". Gefragt wird nach, die Anzahl
   steht dabei, und danach sagt die Leiste, wie viele gelöscht und wie viele übersprungen wurden —

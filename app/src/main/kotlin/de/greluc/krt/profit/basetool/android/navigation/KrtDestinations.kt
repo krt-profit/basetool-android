@@ -156,6 +156,18 @@ enum class KrtDestination(
     BankHolder("bank-holder/{holderId}", R.string.bank_title, DesignR.drawable.ic_krt_users),
 
     /**
+     * The org unit's game-item stock, reached from „Mehr".
+     *
+     * A surface of its own because the Lager tree groups by material, where an item counted in
+     * pieces disappears between SCU figures (design ch. 09 artboard 21).
+     */
+    GameItems(
+        "game-items",
+        R.string.game_items_title,
+        DesignR.drawable.ic_krt_crate,
+    ),
+
+    /**
      * The org-wide blueprint availability, reached from „Mehr".
      *
      * A screen of its own rather than a third tab of „Mein Inventar" (design ch. 17 artboard 6):
@@ -302,6 +314,7 @@ val MORE_DESTINATIONS =
         KrtDestination.Exchange,
         KrtDestination.Refinery,
         KrtDestination.PersonalInventory,
+        KrtDestination.GameItems,
         KrtDestination.BlueprintOverview,
         KrtDestination.Bank,
         KrtDestination.Materials,

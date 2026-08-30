@@ -565,3 +565,75 @@ toggling a group shut and open again neither re-reads nor blanks what is being r
 **Code:** `inventory/MaterialPaneLoader.kt`, `inventory/InventoryScreen.kt` (`MaterialPaneBody`,
 `MaterialTable`), `core/data/InventoryRepository.kt` (`MaterialDetailSource`, `MaterialEntryPage`)
 
+---
+
+### REQ-APP-INV-019 — Sammel-Ausbuchen: whole rows, all or nothing, and three fields the call cannot carry
+
+Design ch. 09 artboard 20. The **second action of the same selection bar** the bulk rebooking uses
+— no second entry point and no second selection pattern. The same own-row gate applies, drawn as a
+lock: the endpoint refuses a foreign row and takes the whole call down with it.
+
+**Whole rows only**, which is what the endpoint does: each listed row is deleted in full and its
+earmarks cascade away. Every row carries the „vollständig" chip **before** the CTA, because a
+member expecting a partial amount has to learn that here and not afterwards; partial amounts are
+the single book-out, which is the call that takes an amount.
+
+**Append-only in the sense the artboard means it:** the rows leave the stock and
+`INVENTORY_BULK_CHECKED_OUT` stays in the audit log.
+
+> [!warning] Three drawn fields with no wire field, and one outcome that cannot exist
+> `POST /api/v1/inventory/bulk-checkout` carries **only `itemIds`**. There is no „Grund"
+> („Verbraucht" / „Verworfen"), no note, and no per-row Herkunft planner — the earmarks cascade
+> away with the row rather than being sourced. And the call is **atomic**: a foreign row or an
+> unknown id refuses everything, so the artboard's „ausgebucht / übersprungen" result — borrowed
+> from the bulk *rebooking*, which really does report one — cannot exist here. The sheet shows the
+> done step or the refusal, and a refusal keeps the selection. All on the design gap list.
+>
+> The reason and the source planner **do** exist — on `POST /inventory/{id}/book-out`, which is the
+> rich call. A per-row loop over it would honour the artboard fully and was rejected: it would
+> half-succeed, which is worse than a refusal that changed nothing.
+
+**Acceptance**
+
+- [x] A bulk checkout sends every selected row and ends the selection (`InventoryViewModelTest`).
+- [x] A refused one keeps the selection and does not claim success (`InventoryViewModelTest`).
+- [x] The action wears the same own-row lock as the bulk rebooking (`InventoryScreen`).
+- [ ] Observed on a device.
+
+**Code:** `InventoryRepository.bulkCheckout`, `InventoryViewModel.BulkCheckoutActions`,
+`InventoryScreen.BulkCheckoutSheet`
+
+---
+
+### REQ-APP-INV-020 — „Game-Items" is a surface of its own, and its rows open in place
+
+Design ch. 09 artboard 21, reached from „Mehr". The Lager tree groups by **material**, where an
+item counted in pieces disappears between SCU figures; the question here is „how many do we have
+and where", with pieces as the unit throughout. Read-only, and no price column — game items have
+no UEX price.
+
+**One read, and therefore an honest filter.** `GET /inventory/all/grouped?catalog=ITEM` answers
+with every item and its stacks, each stack carrying its holder and its place — which is where
+„N Halter · M Orte" comes from, counted rather than asked for. Because the whole list arrives at
+once, the search and the category chips filter a **complete** list: there is no page behind them
+and so nothing to declare (ADR-0104 is satisfied by the read).
+
+**The chips are built from the data.** `kind` is free text on the wire, so a hardcoded
+„Waffen / Medizin / Bauteile" would quietly hide whatever the catalogue grows next.
+
+> [!warning] The artboard's jump into the Lager tree is not reachable
+> It asks for a row to open the item in the tree on its path. The app's tree is **material-only**
+> — `InventoryRepository`'s three tree reads send no `catalog` parameter — so there is nowhere to
+> jump to. A row therefore opens **in place** and lists the places that came with it: the same
+> information, one tap earlier. Teaching the tree `catalog=ITEM` is the real fix and is on the gap
+> list.
+
+**Acceptance**
+
+- [x] The category chips come from the data (`GameItemStockTest`).
+- [x] The search and the category narrow together, over a complete list (`GameItemStockTest`).
+- [x] The total counts what is shown (`GameItemStockTest`).
+- [ ] Observed on a device.
+
+**Code:** `InventoryRepository.gameItemStock`, `GameItemStock`, `GameItemStockViewModel`,
+`GameItemStockScreen`
