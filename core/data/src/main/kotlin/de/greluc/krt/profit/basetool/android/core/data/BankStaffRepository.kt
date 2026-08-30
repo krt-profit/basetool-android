@@ -17,11 +17,14 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankDepositRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankGrantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderTransferRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankTransactionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankTransferRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankWithdrawalRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.ConfirmBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CreateBankAccountRequest
@@ -163,6 +166,63 @@ class BankStaffRepository(
                 deserializer = BankBookingRequestDto.serializer(),
             ),
         )
+
+    override suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit> {
+        val figure = parseTypedDecimal(booking.amount)
+        val target = booking.destinationAccountId
+        val targetHolder = booking.destinationHolderId
+        // A transfer needs both halves of its target; refusing here keeps the message at the field
+        // rather than fetching a 400 to say the same thing.
+        val transferReady =
+            booking.kind != DirectBookingKind.TRANSFER || (target != null && targetHolder != null)
+        if (figure == null || !transferReady) {
+            return ApiResult.Failure(ApiError.Validation())
+        }
+        val amount = KrtDecimal(figure)
+        val note = booking.note?.takeIf { it.isNotBlank() }
+        return when (booking.kind) {
+            DirectBookingKind.DEPOSIT -> {
+                reader.postAccepted(
+                    DEPOSITS_PATH,
+                    BankDepositRequest(
+                        accountId = booking.accountId,
+                        amount = amount,
+                        holderId = booking.holderId,
+                        note = note,
+                    ),
+                    BankDepositRequest.serializer(),
+                )
+            }
+
+            DirectBookingKind.WITHDRAWAL -> {
+                reader.postAccepted(
+                    WITHDRAWALS_PATH,
+                    BankWithdrawalRequest(
+                        accountId = booking.accountId,
+                        amount = amount,
+                        holderId = booking.holderId,
+                        note = note,
+                    ),
+                    BankWithdrawalRequest.serializer(),
+                )
+            }
+
+            DirectBookingKind.TRANSFER -> {
+                reader.postAccepted(
+                    TRANSFERS_PATH,
+                    BankTransferRequest(
+                        sourceAccountId = booking.accountId,
+                        sourceHolderId = booking.holderId,
+                        destinationAccountId = target.orEmpty(),
+                        destinationHolderId = targetHolder.orEmpty(),
+                        amount = amount,
+                        note = note,
+                    ),
+                    BankTransferRequest.serializer(),
+                )
+            }
+        }
+    }
 
     override suspend fun rejectRequest(
         id: String,
@@ -523,6 +583,15 @@ class BankStaffRepository(
 
         /** The staff request queue. */
         const val STAFF_REQUESTS_PATH = "/api/v1/bank/requests"
+
+        /** The Verwaltung's three direct bookings (design ch. 12 artboard 9). */
+        private const val DEPOSITS_PATH = "/api/v1/bank/deposits"
+
+        /** Its counterpart. */
+        private const val WITHDRAWALS_PATH = "/api/v1/bank/withdrawals"
+
+        /** And the move between two of the unit's accounts. */
+        private const val TRANSFERS_PATH = "/api/v1/bank/transfers"
 
         /** The per-account grants matrix. */
         const val STAFF_GRANTS_PATH = "/api/v1/bank/grants"

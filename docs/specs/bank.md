@@ -667,3 +667,43 @@ it „Transaktionen".
 
 **Code:** `bank/BankScreen.kt` (`BookingDirection`, `BookingRow`)
 
+---
+
+### REQ-APP-BANK-016 — The Verwaltung's direct booking: one sheet, three modes, and no second approval
+
+Design ch. 12 artboard 9, and the resolution of the parity programme's longest-standing bank delta.
+The programme had it open as *„Confirming a request IS the booking"*; the design side decided the
+direct booking **stays**, because it covers the case nobody files a request for — cash handed over
+in-game, or a correction of somebody else's booking. It lives **only** in the Verwaltung and never
+in the member view.
+
+**One sheet, three modes** over a segment, not the web's three forms: `POST /bank/deposits`,
+`/bank/withdrawals` and `/bank/transfers` differ in one field each, and a member choosing between
+three screens would have to know which they wanted before seeing any of them.
+
+**The holder is required in all three** — the server requires it too. Custody is kept per **org
+unit**, not per account, so a balance without a holder is money nobody is accountable for. It is
+the same rule the request confirmation already carries.
+
+**„Stand nach Buchung" and the no-second-approval warning stand above the CTA**, because they are
+what distinguishes this from a request and have to be read before typing, not after. A withdrawal
+over the balance is **validation-dimmed with a line at the field**, not locked: nothing here is
+forbidden, the figure is simply larger than the account holds — a distinction the design draws
+deliberately.
+
+**The entry is locked, not hidden.** Without `canManageBank` the Verwaltung's „Direktbuchung"
+button is tappable and answers with the role, as artboard 9 asks („403 … gesperrt-antippbar schon
+am Einstieg") and as the Grants tab beside it already does.
+
+**Acceptance**
+
+- [x] A deposit sends its mode, account, holder and amount, and the sheet closes
+  (`BankStaffViewModelTest`).
+- [x] A withdrawal over the balance cannot be sent, and becomes sendable when it fits
+  (`BankStaffViewModelTest`).
+- [x] Without a holder nothing is sent, in any mode (`BankStaffViewModelTest`).
+- [x] A transfer needs both halves of its target (`BankStaffViewModelTest`).
+- [ ] Observed on a device, with and without Bank-Management.
+
+**Code:** `BankStaffRepository.bookDirectly`, `DirectBooking`, `DirectBookingState`,
+`BankStaffViewModel.DirectBookingActions`, `BankDirectBookingSheet`

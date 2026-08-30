@@ -898,6 +898,9 @@ fun BankAccountsRoute(
     }
 }
 
+/** Test handle for the Verwaltung's „Direktbuchung" entry. */
+const val BANK_DIRECT_OPEN_TAG: String = "bank-direct-open"
+
 /**
  * The Verwaltung scope's content.
  *
@@ -973,6 +976,25 @@ private fun BankStaffScope(
                         Modifier
                     },
             ) {
+                // Artboard 9: the direct booking is offered here and nowhere in the member view,
+                // and without Bank-Management it is locked at the entry rather than at the CTA.
+                KrtGhostButton(
+                    text = stringResource(R.string.bank_direct_title),
+                    onClick = {
+                        if (state.management) {
+                            viewModel.directBooking.open()
+                        } else {
+                            managementToast = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f).testTag(BANK_DIRECT_OPEN_TAG),
+                    iconRes =
+                        if (state.management) {
+                            DesignR.drawable.ic_krt_swap
+                        } else {
+                            DesignR.drawable.ic_krt_lock
+                        },
+                )
                 KrtCtaButton(
                     text = stringResource(R.string.bank_lifecycle_create),
                     onClick = {
@@ -992,6 +1014,16 @@ private fun BankStaffScope(
                 )
             }
         }
+    }
+    state.direct?.let { direct ->
+        BankDirectBookingSheet(
+            state = direct,
+            accounts = state.rows.map { it.account },
+            holders = state.holders,
+            onEdit = viewModel.directBooking::edit,
+            onConfirm = viewModel.directBooking::confirm,
+            onDismiss = viewModel.directBooking::close,
+        )
     }
     StaffScopeDialogs(state = state, viewModel = viewModel)
     BankLifecycleDialogs(state = lifecycle, viewModel = lifecycleViewModel)

@@ -18,8 +18,11 @@ import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffSource
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffTotals
+import de.greluc.krt.profit.basetool.android.core.data.DirectBooking
+import de.greluc.krt.profit.basetool.android.core.data.DirectBookingKind
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.parseTypedDecimal
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.ui.observeLiveSync
@@ -98,6 +101,76 @@ data class BankRejectState(
 }
 
 /**
+ * „Direktbuchung" — design ch. 12 artboard 9.
+ *
+ * One sheet with three modes rather than the web's three forms. The Verwaltung books **without a
+ * request**, which is the case nobody files one for: cash handed over in-game, or a correction of
+ * somebody else's booking. There is no second approval, and the sheet says so before the member
+ * types — a wrong direct booking is corrected with a reversal, not edited.
+ *
+ * @property kind which of the three modes.
+ * @property accountId the account it books onto, or the source for a transfer.
+ * @property amount as typed.
+ * @property holderId who holds the money afterwards. Required in **all three** modes, the same
+ *   rule the request confirmation carries: custody is kept per org unit, so a balance without a
+ *   holder is money nobody is accountable for.
+ * @property note the Verwendungszweck.
+ * @property destinationAccountId the receiving account, for a transfer.
+ * @property destinationHolderId who holds it there, for a transfer.
+ * @property saving whether the write is in flight.
+ * @property error what it was refused with.
+ */
+data class DirectBookingState(
+    val kind: DirectBookingKind = DirectBookingKind.DEPOSIT,
+    val accountId: String? = null,
+    val amount: String = "",
+    val holderId: String? = null,
+    val note: String = "",
+    val destinationAccountId: String? = null,
+    val destinationHolderId: String? = null,
+    val saving: Boolean = false,
+    val error: ApiError? = null,
+) {
+    /** The amount as a figure, or `null` when what was typed is not one. */
+    val figure: java.math.BigDecimal? get() = parseTypedDecimal(amount)
+
+    /**
+     * Whether the CTA may be pressed.
+     *
+     * A withdrawal over the balance is **validation-dimmed**, not locked: nothing is forbidden
+     * here, the figure is simply wrong, and the design draws that difference deliberately. The
+     * bound itself is applied by the screen, which is where the balance is.
+     */
+    fun submittable(balance: java.math.BigDecimal?): Boolean {
+        val typed = figure
+        val positive = typed != null && typed > java.math.BigDecimal.ZERO
+        val addressed = accountId != null && holderId != null
+        val targeted =
+            kind != DirectBookingKind.TRANSFER ||
+                (destinationAccountId != null && destinationHolderId != null)
+        val covered =
+            kind != DirectBookingKind.WITHDRAWAL ||
+                balance == null ||
+                typed == null ||
+                typed <= balance
+        return positive && addressed && targeted && covered && !saving
+    }
+
+    /**
+     * What the source account stands at afterwards — the artboard's live preview.
+     *
+     * @param balance what it stands at now, or `null` when the screen does not know.
+     * @return the figure after this booking, or `null` when either half is missing.
+     */
+    fun preview(balance: java.math.BigDecimal?): java.math.BigDecimal? =
+        figure?.let { typed ->
+            balance?.let { current ->
+                if (kind == DirectBookingKind.DEPOSIT) current + typed else current - typed
+            }
+        }
+}
+
+/**
  * The Verwaltung scope's Übersicht tab.
  *
  * @property rows every account of the unit.
@@ -131,6 +204,7 @@ data class BankStaffState(
     val confirming: BankConfirmState? = null,
     val rejecting: BankRejectState? = null,
     val busyId: String? = null,
+    val direct: DirectBookingState? = null,
 )
 
 /**
@@ -155,6 +229,91 @@ class BankStaffViewModel(
 
     /** What the tab draws. */
     val state: StateFlow<BankStaffState> = mutableState.asStateFlow()
+
+    /**
+     * The Verwaltung's direct booking, as one object rather than six methods.
+     *
+     * Grouped the way the Lager's Sammel-Ausbuchen is, and for the same reason: one interaction,
+     * and a view model that already carries its share of functions.
+     */
+    val directBooking: DirectBookingActions = DirectBookingActions()
+
+    /**
+     * Opening, editing and sending a direct booking (design ch. 12 artboard 9).
+     *
+     * An inner class so it reaches the same state the rest of the view model writes.
+     */
+    inner class DirectBookingActions {
+        /**
+         * Opens the sheet on one account.
+         *
+         * @param accountId which account it books onto, or `null` to let the sheet ask.
+         */
+        fun open(accountId: String? = null) {
+            mutableState.value =
+                mutableState.value.copy(direct = DirectBookingState(accountId = accountId))
+        }
+
+        /** Closes it. */
+        fun close() {
+            mutableState.value = mutableState.value.copy(direct = null)
+        }
+
+        /**
+         * Changes what the sheet holds.
+         *
+         * @param edit what to change.
+         */
+        fun edit(edit: (DirectBookingState) -> DirectBookingState) {
+            val open = mutableState.value.direct ?: return
+            mutableState.value = mutableState.value.copy(direct = edit(open).copy(error = null))
+        }
+
+        /**
+         * Sends it.
+         *
+         * The queue and the dashboard are re-read afterwards rather than patched: a direct booking
+         * moves a balance, and the totals band above it would otherwise keep the old figure.
+         *
+         * @param balance the source account's balance, for the coverage check.
+         */
+        fun confirm(balance: java.math.BigDecimal?) {
+            val open = mutableState.value.direct ?: return
+            val account = open.accountId
+            val holder = open.holderId
+            if (account == null || holder == null || !open.submittable(balance)) {
+                return
+            }
+            mutableState.value =
+                mutableState.value.copy(direct = open.copy(saving = true, error = null))
+            viewModelScope.launch {
+                val booking =
+                    DirectBooking(
+                        kind = open.kind,
+                        accountId = account,
+                        amount = open.amount,
+                        holderId = holder,
+                        note = open.note,
+                        destinationAccountId = open.destinationAccountId,
+                        destinationHolderId = open.destinationHolderId,
+                    )
+                when (val result = source.bookDirectly(booking)) {
+                    is ApiResult.Success -> {
+                        mutableState.value = mutableState.value.copy(direct = null)
+                        reload(keepContent = true)
+                    }
+
+                    is ApiResult.Failure -> {
+                        KrtLog.w(LOG_TAG) { "the direct booking was refused: ${result.error}" }
+                        mutableState.value =
+                            mutableState.value.copy(
+                                direct = open.copy(saving = false, error = result.error),
+                            )
+                    }
+                }
+            }
+        }
+    }
 
     private var loadedOnce = false
 

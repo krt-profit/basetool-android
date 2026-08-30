@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Direktbuchung in der Bank-Verwaltung.** Ein Blatt mit drei Modi — Einzahlung, Auszahlung,
+  Umbuchung — samt Halter, Verwendungszweck und Vorschau „Stand nach Buchung". Ohne Antrag heisst
+  ohne zweite Freigabe; das steht über dem Knopf. Ohne die Rolle Bank-Management ist der Einstieg
+  gesperrt und nennt die Rolle.
+
 - **Sammel-Ausbuchen im Lager.** Zweite Aktion in derselben Auswahlleiste wie das Umbuchen. Es
   werden immer ganze Zeilen ausgebucht — für Teilmengen bleibt das Einzel-Ausbuchen — und entweder
   geht alles oder nichts; eine abgelehnte Aktion lässt die Auswahl stehen.

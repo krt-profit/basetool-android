@@ -1033,6 +1033,45 @@ interface BankGrantSource {
     suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>>
 }
 
+/** Which of the three direct bookings the Verwaltung is making. */
+enum class DirectBookingKind {
+    /** Money comes in. */
+    DEPOSIT,
+
+    /** Money goes out; the amount is checked against the balance before the CTA. */
+    WITHDRAWAL,
+
+    /** Money moves between two accounts of the unit. */
+    TRANSFER,
+}
+
+/**
+ * A booking the Verwaltung makes **without a request** (design ch. 12 artboard 9).
+ *
+ * It exists for the case nobody files a request for — cash handed over in-game, a correction of
+ * somebody else's booking — and it lives only in the Verwaltung. There is **no second approval**:
+ * a wrong direct booking is corrected with a reversal, not edited.
+ *
+ * @property kind which of the three.
+ * @property accountId the account it lands on; the **source** account for a transfer.
+ * @property amount how much, as typed.
+ * @property holderId who physically holds the money. Required in all three modes, and by the
+ *   server — custody is kept per org unit, not per account, so a balance without a holder would
+ *   be money nobody is accountable for.
+ * @property note the Verwendungszweck.
+ * @property destinationAccountId the receiving account, for a transfer.
+ * @property destinationHolderId who holds it afterwards, for a transfer.
+ */
+data class DirectBooking(
+    val kind: DirectBookingKind,
+    val accountId: String,
+    val amount: String,
+    val holderId: String,
+    val note: String? = null,
+    val destinationAccountId: String? = null,
+    val destinationHolderId: String? = null,
+)
+
 /**
  * The bank-staff surface — design chapter 12, artboards 4 to 8.
  *
@@ -1080,6 +1119,19 @@ interface BankStaffSource {
      *   decided it first, or when an over-limit request was confirmed without the attestation.
      */
     suspend fun confirmRequest(confirmation: BankConfirmation): ApiResult<BankBookingRequest>
+
+    /**
+     * Books directly, without a request (`REQ-APP-BANK-*`).
+     *
+     * Three endpoints behind one call: `POST /bank/deposits`, `/bank/withdrawals` and
+     * `/bank/transfers`. They agree on the fields that matter here and differ only in which
+     * account the amount leaves — which is the same distinction the sheet's segment draws.
+     *
+     * @param booking what to book.
+     * @return nothing on success, or the classified failure. `403` is ordinary: direct booking
+     *   needs the bank-management grant, which `/users/me` reports as `canManageBank`.
+     */
+    suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit>
 
     /**
      * Refuses a pending request. No money moves.

@@ -1709,4 +1709,23 @@
         <item quantity="one">%1$d Ort</item>
         <item quantity="other">%1$d Orte</item>
     </plurals>
+    <!-- Direktbuchung der Verwaltung (Design Kap. 12, Artboard 9) -->
+    <string name="bank_direct_title">Direktbuchung</string>
+    <string name="bank_direct_deposit">Einzahlung</string>
+    <string name="bank_direct_withdrawal">Auszahlung</string>
+    <string name="bank_direct_transfer">Umbuchung</string>
+    <string name="bank_direct_account">Konto</string>
+    <string name="bank_direct_amount">Betrag (aUEC)</string>
+    <string name="bank_direct_holder">Halter (wer das Geld hat)</string>
+    <string name="bank_direct_holder_hint">Pflicht: die Verwahrung wird auf Einheits-Ebene geführt, nicht je Konto.</string>
+    <string name="bank_direct_target_account">Zielkonto</string>
+    <string name="bank_direct_target_holder">Halter am Zielkonto</string>
+    <string name="bank_direct_note">Verwendungszweck</string>
+    <string name="bank_direct_no_approval">Direktbuchung ohne Antrag: es gibt keine zweite Freigabe. Korrigiert wird nur über eine Storno-Gegenbuchung.</string>
+    <string name="bank_direct_preview">Stand nach Buchung: %1$s aUEC</string>
+    <string name="bank_direct_over_balance">Der Betrag übersteigt den Kontostand.</string>
+    <string name="bank_direct_failed">Buchung abgelehnt — es wurde nichts gebucht.</string>
+    <string name="bank_direct_book_deposit">Einzahlung buchen</string>
+    <string name="bank_direct_book_withdrawal">Auszahlung buchen</string>
+    <string name="bank_direct_book_transfer">Umbuchung buchen</string>
 </resources>
