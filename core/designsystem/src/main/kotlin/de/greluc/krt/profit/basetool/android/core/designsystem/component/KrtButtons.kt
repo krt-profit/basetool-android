@@ -42,6 +42,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtBloom
@@ -391,6 +392,9 @@ fun KrtQuietDangerButton(
  * @param modifier layout modifier.
  * @param enabled whether the button reacts to input.
  * @param style ladder rung; ghost by default, quiet danger for destructive row actions.
+ * @param width how wide it is. The default is square; the reorder pair of design ch. 18 §3 (E5/E8)
+ *   is drawn narrower, at 40 × 44, so that a move pair plus an overflow still fits a 411 dp row.
+ * @param height how tall it is; never below the 44 dp touch floor.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -401,6 +405,8 @@ fun KrtIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     style: KrtButtonStyle = KrtButtonStyles.ghost,
+    width: Dp = KrtSpacing.field,
+    height: Dp = KrtSpacing.field,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -417,7 +423,7 @@ fun KrtIconButton(
             modifier =
                 modifier
                     .alpha(if (enabled) 1f else DISABLED_ALPHA)
-                    .size(KrtSpacing.field)
+                    .size(width = width, height = height)
                     .background(container)
                     .then(if (borderColor != null) Modifier.border(KrtSpacing.hairline, borderColor) else Modifier)
                     .clickable(

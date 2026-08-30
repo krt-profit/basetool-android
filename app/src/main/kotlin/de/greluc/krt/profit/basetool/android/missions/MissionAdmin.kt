@@ -136,6 +136,23 @@ data class MissionAdminForm(
         get() = actualStart.isNotBlank()
 
     /**
+     * Whether **this** section's fields may be edited right now.
+     *
+     * A write locks only the section that is writing. Locking the whole tab froze the Ziele while
+     * the Zeitplan saved, which is exactly what design ch. 18 §3 (E4) rules out: the sections carry
+     * independent version counters and are saved independently, so they have to be editable
+     * independently too.
+     *
+     * @param writable whether a write may run at all — online, and the screen not otherwise busy.
+     * @param section the section being drawn.
+     * @return whether its fields accept input.
+     */
+    fun writes(
+        writable: Boolean,
+        section: MissionSection,
+    ): Boolean = writable && (saving == null || saving == section)
+
+    /**
      * That section's head state.
      *
      * @param section which one.

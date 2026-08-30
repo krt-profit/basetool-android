@@ -282,6 +282,64 @@ fun KrtFilterChip(
 private val CHIP_CLEAR_GLYPH = 12.dp
 
 /**
+ * A **choice** chip: hairline while it is on offer, filled orange with black text once it is taken.
+ *
+ * Its own component rather than a fill option on [KrtFilterChip], because design ch. 18 §3 (E6)
+ * ratified the two as deliberately different and they are: a filter narrows a list and must not
+ * claim the weight of a primary action, while a choice **is** the value — „Funktion an Bord", a
+ * crew role. A chip that looks like a value and behaves like a switch is the worse mistake of the
+ * two, so the difference is drawn rather than configured.
+ *
+ * Filled orange carries black text, which is the system's rule for every filled orange surface.
+ *
+ * @param text the option's name; uppercased for display like every other chip.
+ * @param selected whether this option is the chosen one.
+ * @param onClick invoked on tap.
+ * @param modifier layout modifier.
+ * @param enabled whether the chip responds; a disabled chip dims rather than disappearing.
+ * @param suffix what stands behind the name in the muted tint — the holder of a role already
+ *   taken, which is what makes „vergeben" readable instead of merely dim.
+ */
+@Composable
+fun KrtChoiceChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    suffix: String? = null,
+) {
+    val hue = MaterialTheme.colorScheme.primary
+    Row(
+        modifier =
+            modifier
+                .background(if (selected) hue else KrtPalette.SurfaceInput)
+                .border(KrtSpacing.hairline, if (selected) hue else KrtPalette.Gray3)
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs)
+                .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+    ) {
+        Text(
+            text = text.krtUppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) KrtPalette.Black else KrtPalette.Gray1,
+            maxLines = 1,
+            softWrap = false,
+        )
+        suffix?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) KrtPalette.Black else KrtPalette.TextMuted,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
+    }
+}
+
+/**
  * A department tag in its frozen Bereichsfarbe.
  *
  * Only ever used where that department actually applies. The colour values are fixed by the

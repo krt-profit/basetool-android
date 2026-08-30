@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionUnit
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtAssocAdd
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
@@ -270,14 +272,22 @@ fun CrewPickerSheet(
  *
  * The write is a **replace**: tapping a chip sends the whole set with that one added or removed.
  *
+ * Three states, ratified by design ch. 18 §3 (E7): chosen is filled orange with black text,
+ * available is a hairline, and one already held by somebody else in the same Einheit is dimmed
+ * **with their name behind it** — which is what turns „dim" into a reason. It is not locked: two
+ * people may legitimately share a role, and the name is there so the second one is a decision
+ * rather than an accident.
+ *
  * @param unitId which Einheit.
  * @param member the crew slot.
+ * @param crew every slot of that Einheit, so a role taken elsewhere can name its holder.
  * @param structure the actions, the catalogue, and the refusal slot.
  */
 @Composable
 fun CrewRoleSelect(
     unitId: String,
     member: MissionCrewMember,
+    crew: List<MissionCrewMember>,
     structure: MissionStructureActions,
 ) {
     val gate = missionManagerGate(structure.canManage)
@@ -302,23 +312,29 @@ fun CrewRoleSelect(
             structure.crewJobTypes.forEach { job ->
                 val held = member.roleIds.contains(job.id)
                 val next = if (held) member.roleIds - job.id else member.roleIds + job.id
+                val takenBy =
+                    crew.firstOrNull { it.id != member.id && job.id in it.roleIds }?.name
                 val (dim, click) =
                     rememberGated(
                         gate,
                         { structure.onSetCrewRoles(unitId, member.id, next.toSet(), member.version) },
                         structure.denials,
                     )
-                KrtFilterChip(
+                KrtChoiceChip(
                     text = job.name,
                     selected = held,
                     onClick = click,
-                    modifier = dim,
+                    modifier = dim.alpha(if (takenBy == null || held) 1f else TAKEN_ROLE_ALPHA),
                     enabled = structure.enabled,
+                    suffix = takenBy.takeIf { !held },
                 )
             }
         }
     }
 }
+
+/** A role somebody else already holds is dimmed to this, with their name behind it (E7). */
+private const val TAKEN_ROLE_ALPHA = 0.55f
 
 /**
  * The Frequenzen tab's composer.

@@ -66,6 +66,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
@@ -936,7 +937,9 @@ private fun ParticipantFunctionSelect(
         roster.jobTypes.forEach { jobType ->
             val (dim, click) =
                 rememberGated(gate, { roster.onFunction(participant.id, jobType) }, roster.denials)
-            KrtFilterChip(
+            // A choice, not a filter: design ch. 18 §3 (E6) keeps the two chips deliberately
+            // different, and this one IS the value rather than a way of narrowing a list.
+            KrtChoiceChip(
                 text = jobType.name,
                 selected = participant.plannedJobTypeId == jobType.id,
                 onClick = click,
@@ -1005,7 +1008,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
                     // The roles are the picker now rather than a joined string: for a manager the
                     // chips ARE the reading of them, selected meaning held. For everybody else they
                     // render locked, which reads the same and says why on a tap.
-                    CrewRoleSelect(unitId = unit.id, member = member, structure = structure)
+                    CrewRoleSelect(
+                        unitId = unit.id,
+                        member = member,
+                        crew = unit.crew,
+                        structure = structure,
+                    )
                     StructureRemove(
                         label = stringResource(R.string.mission_struct_remove_crew),
                         structure = structure,
@@ -1056,6 +1064,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
                 step = MissionStepEdit(id = step.id, title = step.title, meta = step.meta),
                 done = step.done,
                 timeline = timeline,
+                position =
+                    RowPosition(
+                        first = step.id == detail.steps.first().id,
+                        last = step.id == detail.steps.last().id,
+                    ),
             )
         }
     }
@@ -1105,6 +1118,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
                         kind = objective.kind.toObjectiveKind(),
                     ),
                 timeline = timeline,
+                position =
+                    RowPosition(
+                        first = objective.id == detail.objectives.first().id,
+                        last = objective.id == detail.objectives.last().id,
+                    ),
             )
         }
     }
@@ -1624,7 +1642,6 @@ fun MissionDetailRoute(
                 canManage = state.canManage,
                 enabled = state.writable && !state.timeline.busy,
                 draft = state.timeline,
-                sorting = state.timeline.sorting,
                 denials = denials,
                 onChange = viewModel.timeline::change,
                 onCompose = viewModel.timeline::compose,
@@ -1633,11 +1650,12 @@ fun MissionDetailRoute(
                 onToggleStep = viewModel.timeline::toggleStep,
                 onRemoveStep = viewModel.timeline::removeStep,
                 onMoveStep = viewModel.timeline::moveStep,
+                onDuplicateStep = viewModel.timeline::duplicateStep,
                 onSaveObjective = viewModel.timeline::saveObjective,
                 onEditObjective = viewModel.timeline::editObjective,
                 onRemoveObjective = viewModel.timeline::removeObjective,
                 onMoveObjective = viewModel.timeline::moveObjective,
-                onToggleSorting = viewModel.timeline::toggleSorting,
+                onDuplicateObjective = viewModel.timeline::duplicateObjective,
                 onCancel = viewModel.timeline::cancel,
             ),
         members =

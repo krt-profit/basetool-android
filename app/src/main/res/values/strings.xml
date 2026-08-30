@@ -1432,6 +1432,8 @@
     <string name="mission_objective_kind_primary">Primär</string>
     <string name="mission_objective_kind_secondary">Sekundär</string>
     <string name="mission_objective_kind_non_goal">Kein Ziel</string>
+    <string name="mission_timeline_duplicate">Duplizieren</string>
+    <string name="mission_timeline_more">Weitere Aktionen</string>
     <string name="mission_timeline_edit">Bearbeiten</string>
     <string name="mission_timeline_remove">Entfernen</string>
     <string name="mission_timeline_cancel">Abbrechen</string>

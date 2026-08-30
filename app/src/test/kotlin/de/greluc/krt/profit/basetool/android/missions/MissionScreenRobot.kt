@@ -148,7 +148,6 @@ internal class MissionScreenRobot(
         canManage = canManage,
         enabled = true,
         draft = MissionTimelineDraft(),
-        sorting = false,
         denials = rememberDenialState(),
         onChange = {},
         onCompose = { taps.add("compose:$it") },
@@ -157,11 +156,12 @@ internal class MissionScreenRobot(
         onToggleStep = { id, done -> taps.add("toggle-step:$id:$done") },
         onRemoveStep = { taps.add("remove-step:$it") },
         onMoveStep = { id, up -> taps.add("move-step:$id:$up") },
+        onDuplicateStep = { taps.add("duplicate-step") },
         onSaveObjective = { taps.add("save-objective") },
         onEditObjective = { taps.add("edit-objective:${'$'}{it.id}") },
         onRemoveObjective = { taps.add("remove-objective:$it") },
         onMoveObjective = { id, up -> taps.add("move-objective:$id:$up") },
-        onToggleSorting = { taps.add("toggle-sorting") },
+        onDuplicateObjective = { taps.add("duplicate-objective") },
         onCancel = {},
     )
 

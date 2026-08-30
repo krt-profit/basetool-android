@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.missions
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -15,10 +16,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.MissionObjectiveKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
@@ -26,6 +32,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -55,15 +63,20 @@ const val MISSION_SORT_TAG: String = "mission-timeline-sort"
  * One record for both tabs: they share a draft, a gate and a refusal slot, and splitting them would
  * only mean threading two nearly identical objects through the same screen.
  *
- * **Composition ratified 2026-08-29** (design ch. 06 artboard 13): three 44 dp icon buttons per
- * row — tick · edit · remove — instead of the three rows of German-labelled buttons this shipped
- * with; and the editor as a **sheet**, because an open form under a list somebody is sorting
- * competes with it for the same surface.
+ * **Composition ratified 2026-08-29** (design ch. 06 artboard 13) and **again on 2026-08-30**
+ * (ch. 18 §3, E5/E8). The row shipped with three rows of German-labelled buttons, then with three
+ * icon buttons and a separate reorder *mode*. Five actions do not fit a 411 dp row, so it now
+ * carries the two move buttons **visibly** — dimmed at the first and last row, which is validation
+ * and not a lock — and a `⋮` for the rest: Bearbeiten · Duplizieren · Löschen.
+ *
+ * The reorder mode is gone with it. Drag and drop in a scrolling list without a grip is unreliable
+ * on a phone, and the system asks for a tap alternative beside every drag anyway — so the pair of
+ * arrows **is** the mechanism rather than a fallback behind a toggle. Swipe stays out: the inbox
+ * has it bound to delete, and a second vocabulary for the same gesture is worse than none.
  *
  * @property canManage whether the caller may write at all; the server's own verdict.
  * @property enabled whether a write may run right now — online, and nothing already in flight.
  * @property draft what is typed.
- * @property sorting whether the reorder mode is on — the click fallback for the drag handle.
  * @property denials where a refused tap is announced.
  * @property onChange a field changed.
  * @property onCompose open the editor for a new row.
@@ -72,18 +85,18 @@ const val MISSION_SORT_TAG: String = "mission-timeline-sort"
  * @property onToggleStep tick a step off, or back on.
  * @property onRemoveStep drop a step.
  * @property onMoveStep move a step one place; `true` is towards the start.
+ * @property onDuplicateStep append a copy of a step, which is what „Duplizieren" writes.
  * @property onSaveObjective append or rewrite the composed Ziel.
  * @property onEditObjective load a Ziel into the editor.
  * @property onRemoveObjective drop a Ziel.
  * @property onMoveObjective move a Ziel one place; `true` is towards the start.
- * @property onToggleSorting turn the reorder mode on or off.
+ * @property onDuplicateObjective append a copy of a Ziel.
  * @property onCancel close the editor without saving.
  */
 data class MissionTimelineActions(
     val canManage: Boolean,
     val enabled: Boolean,
     val draft: MissionTimelineDraft,
-    val sorting: Boolean,
     val denials: DenialState,
     val onChange: ((MissionTimelineDraft) -> MissionTimelineDraft) -> Unit,
     val onCompose: (Boolean) -> Unit,
@@ -92,21 +105,21 @@ data class MissionTimelineActions(
     val onToggleStep: (String, Boolean) -> Unit,
     val onRemoveStep: (String) -> Unit,
     val onMoveStep: (String, Boolean) -> Unit,
+    val onDuplicateStep: (MissionStepEdit) -> Unit,
     val onSaveObjective: () -> Unit,
     val onEditObjective: (MissionObjectiveEdit) -> Unit,
     val onRemoveObjective: (String) -> Unit,
     val onMoveObjective: (String, Boolean) -> Unit,
-    val onToggleSorting: () -> Unit,
+    val onDuplicateObjective: (MissionObjectiveEdit) -> Unit,
     val onCancel: () -> Unit,
 )
 
 /**
- * The two actions above an ordered list: add a row, and turn reordering on.
+ * The one action at the foot of an ordered list: add a row.
  *
- * Design ch. 06 artboard 13 puts „Sortieren" and „+ Schritt" at the foot of the list rather than an
- * always-open form above it. The sort toggle is the **click fallback** the design system requires
- * beside any drag: „Reihenfolge ändern: Griff halten und ziehen." is the gesture, and this is the
- * way that works without one.
+ * „Sortieren" used to sit beside it as the click fallback for a drag handle. Design ch. 18 §3 (E8)
+ * ratified the two per-row arrows as the mechanism instead, so there is no mode left to toggle and
+ * no hint to explain one.
  *
  * @param addLabelRes what the add action says.
  * @param addTag its test handle.
@@ -119,7 +132,6 @@ fun TimelineListActions(
     timeline: MissionTimelineActions,
 ) {
     val gate = missionTimelineGate(timeline.canManage)
-    val (sortDim, sort) = rememberGated(gate, timeline.onToggleSorting, timeline.denials)
     val (addDim, add) = rememberGated(gate, { timeline.onCompose(true) }, timeline.denials)
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -127,25 +139,11 @@ fun TimelineListActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrtGhostButton(
-            text = stringResource(R.string.mission_timeline_sort),
-            onClick = sort,
-            iconRes = if (gate.allowed) DesignR.drawable.ic_krt_grip else DesignR.drawable.ic_krt_lock,
-            modifier = sortDim.weight(1f).testTag(MISSION_SORT_TAG),
-            enabled = timeline.enabled,
-        )
-        KrtGhostButton(
             text = stringResource(addLabelRes),
             onClick = add,
             iconRes = if (gate.allowed) DesignR.drawable.ic_krt_plus else DesignR.drawable.ic_krt_lock,
-            modifier = addDim.weight(1f).testTag(addTag),
+            modifier = addDim.fillMaxWidth().testTag(addTag),
             enabled = timeline.enabled,
-        )
-    }
-    if (timeline.sorting) {
-        Text(
-            text = stringResource(R.string.mission_timeline_sort_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
         )
     }
 }
@@ -170,13 +168,16 @@ fun StepRowActions(
     step: MissionStepEdit,
     done: Boolean,
     timeline: MissionTimelineActions,
+    position: RowPosition,
 ) {
     RowActions(
         timeline = timeline,
+        position = position,
         firstIcon = if (done) DesignR.drawable.ic_krt_reset else DesignR.drawable.ic_krt_check,
         firstLabelRes = if (done) R.string.mission_step_untick else R.string.mission_step_tick,
         onFirst = { timeline.onToggleStep(step.id, !done) },
         onEdit = { timeline.onEditStep(step) },
+        onDuplicate = { timeline.onDuplicateStep(step) },
         onRemove = { timeline.onRemoveStep(step.id) },
         onMove = { up -> timeline.onMoveStep(step.id, up) },
     )
@@ -194,45 +195,64 @@ fun StepRowActions(
 fun ObjectiveRowActions(
     objective: MissionObjectiveEdit,
     timeline: MissionTimelineActions,
+    position: RowPosition,
 ) {
     RowActions(
         timeline = timeline,
+        position = position,
         firstIcon = null,
         firstLabelRes = null,
         onFirst = {},
         onEdit = { timeline.onEditObjective(objective) },
+        onDuplicate = { timeline.onDuplicateObjective(objective) },
         onRemove = { timeline.onRemoveObjective(objective.id) },
         onMove = { up -> timeline.onMoveObjective(objective.id, up) },
     )
 }
 
 /**
- * The shared icon-button row behind both list kinds.
+ * Where a row sits in its list, which is all the move buttons need to know.
  *
- * The move pair appears **only** in reorder mode: the design draws the order as a drag handle with
- * a click fallback, and two permanent arrows on every row is the chrome this whole correction was
- * about.
+ * @property first whether it is the first row, so „nach oben" has nowhere to go.
+ * @property last whether it is the last.
+ */
+data class RowPosition(
+    val first: Boolean,
+    val last: Boolean,
+)
+
+/**
+ * The shared action row behind both list kinds — design ch. 18 §3 (E5/E8).
+ *
+ * Two visible move buttons and one `⋮`. The arrows are **dimmed at the ends of the list**, which is
+ * validation rather than a lock: nothing is being refused, there is simply nowhere to move to, so
+ * they carry no lock glyph and raise no refusal.
  *
  * @param timeline the actions, for the gate and the refusal slot.
+ * @param position where the row sits, which decides whether each arrow has anywhere to go.
  * @param firstIcon the row's own primary action, or `null` when it has none.
  * @param firstLabelRes that action's label — mandatory whenever [firstIcon] is present, because an
  *   icon button without a name is unusable to a screen reader and unlabelled on long press.
  * @param onFirst runs it.
  * @param onEdit loads the row into the editor.
+ * @param onDuplicate appends a copy of it.
  * @param onRemove drops the row.
  * @param onMove moves it one place; `true` is towards the start.
  */
 @Composable
 private fun RowActions(
     timeline: MissionTimelineActions,
+    position: RowPosition,
     firstIcon: Int?,
     firstLabelRes: Int?,
     onFirst: () -> Unit,
     onEdit: () -> Unit,
+    onDuplicate: () -> Unit,
     onRemove: () -> Unit,
     onMove: (Boolean) -> Unit,
 ) {
     val gate = missionTimelineGate(timeline.canManage)
+    var open by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
@@ -241,24 +261,113 @@ private fun RowActions(
         if (firstIcon != null && firstLabelRes != null) {
             GatedIcon(firstIcon, firstLabelRes, gate, timeline, onFirst)
         }
-        GatedIcon(DesignR.drawable.ic_krt_edit, R.string.mission_timeline_edit, gate, timeline, onEdit)
-        GatedIcon(DesignR.drawable.ic_krt_trash, R.string.mission_timeline_remove, gate, timeline, onRemove)
-        if (timeline.sorting) {
-            GatedIcon(
-                DesignR.drawable.ic_krt_chevron_up,
-                R.string.mission_timeline_up,
-                gate,
-                timeline,
-            ) { onMove(true) }
-            GatedIcon(
-                DesignR.drawable.ic_krt_chevron_down,
-                R.string.mission_timeline_down,
-                gate,
-                timeline,
-            ) { onMove(false) }
-        }
+        MoveIcon(
+            iconRes = DesignR.drawable.ic_krt_chevron_up,
+            labelRes = R.string.mission_timeline_up,
+            gate = gate,
+            timeline = timeline,
+            possible = !position.first,
+        ) { onMove(true) }
+        MoveIcon(
+            iconRes = DesignR.drawable.ic_krt_chevron_down,
+            labelRes = R.string.mission_timeline_down,
+            gate = gate,
+            timeline = timeline,
+            possible = !position.last,
+        ) { onMove(false) }
+        Box(modifier = Modifier.weight(1f))
+        KrtOverflowMenu(
+            contentDescription = stringResource(R.string.mission_timeline_more),
+            expanded = open,
+            onExpandedChange = { open = it },
+            items =
+                listOf(
+                    menuItem(R.string.mission_timeline_edit, DesignR.drawable.ic_krt_edit, gate) {
+                        open = false
+                        onEdit()
+                    },
+                    menuItem(R.string.mission_timeline_duplicate, DesignR.drawable.ic_krt_plus, gate) {
+                        open = false
+                        onDuplicate()
+                    },
+                    menuItem(
+                        R.string.mission_timeline_remove,
+                        DesignR.drawable.ic_krt_trash,
+                        gate,
+                        danger = true,
+                    ) {
+                        open = false
+                        onRemove()
+                    },
+                ),
+        )
     }
 }
+
+/**
+ * One entry of the row's overflow, locked rather than hidden when the caller may not use it.
+ *
+ * @param labelRes what it says.
+ * @param iconRes its glyph.
+ * @param gate whether the caller may act.
+ * @param danger whether it is the destructive one.
+ * @param onClick what it does.
+ * @return the menu entry.
+ */
+@Composable
+private fun menuItem(
+    labelRes: Int,
+    iconRes: Int,
+    gate: Gate,
+    danger: Boolean = false,
+    onClick: () -> Unit,
+): KrtMenuItem =
+    KrtMenuItem(
+        label = stringResource(labelRes),
+        iconRes = iconRes,
+        danger = danger,
+        reason = gate.reason.takeIf { !gate.allowed },
+        locked = !gate.allowed,
+        onClick = onClick,
+    )
+
+/**
+ * One move button: narrower than a square icon button, and dimmed where it has nowhere to go.
+ *
+ * A row at the end of its list is not being **refused** anything, so the arrow neither wears the
+ * lock nor raises a refusal — it is simply inactive. That is the difference between validation and
+ * a permission, and drawing them the same way is what makes a lock stop meaning anything.
+ *
+ * @param iconRes the chevron.
+ * @param labelRes its name.
+ * @param gate whether the caller may reorder at all.
+ * @param timeline the actions, for the refusal slot and the in-flight state.
+ * @param possible whether there is anywhere to move to.
+ * @param onClick moves it.
+ */
+@Composable
+private fun MoveIcon(
+    iconRes: Int,
+    labelRes: Int,
+    gate: Gate,
+    timeline: MissionTimelineActions,
+    possible: Boolean,
+    onClick: () -> Unit,
+) {
+    val (dim, click) = rememberGated(gate, onClick, timeline.denials)
+    KrtIconButton(
+        iconRes = if (gate.allowed) iconRes else DesignR.drawable.ic_krt_lock,
+        label = stringResource(labelRes),
+        onClick = click,
+        modifier = dim,
+        enabled = timeline.enabled && possible,
+        width = MOVE_BUTTON_WIDTH,
+        height = KrtSpacing.touchTarget,
+    )
+}
+
+/** The reorder pair is 40 dp wide against the 44 dp floor, so the pair plus a `⋮` fits a phone row. */
+private val MOVE_BUTTON_WIDTH = 40.dp
 
 /**
  * One icon button, dimmed and locked when the caller may not use it.

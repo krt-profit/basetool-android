@@ -106,12 +106,6 @@ class MissionTimeline(
         )
     }
 
-    /** Turns the reorder mode on or off — the click fallback for the drag handle. */
-    fun toggleSorting() {
-        val (draft, _) = read()
-        write(draft.copy(sorting = !draft.sorting), null)
-    }
-
     /**
      * Loads one step into the editor sheet so it can be rewritten.
      *
@@ -197,6 +191,23 @@ class MissionTimeline(
     }
 
     /**
+     * Appends a copy of one step — „Duplizieren" of the row's overflow (design ch. 18 §3, E5).
+     *
+     * A copy, not a link: the server has no duplicate call, so this is the ordinary append with the
+     * same title and meta. It lands at the end of the list, where an append lands, rather than
+     * beside its original — there is no insert-at-position on the wire either.
+     *
+     * @param step the row to copy.
+     */
+    fun duplicateStep(step: MissionStepEdit) {
+        val (draft, detail) = read()
+        if (detail == null) {
+            return
+        }
+        run(draft) { source.addStep(missionId, detail, step.title, step.meta) }
+    }
+
+    /**
      * Moves one step one place up or down.
      *
      * > **Buttons, not a drag.** The reorder endpoint wants the whole id list in its new order, and
@@ -221,6 +232,19 @@ class MissionTimeline(
         }
         val order = detail.steps.map { it.id }.moved(stepId, up) ?: return
         run(draft) { source.reorderSteps(missionId, detail, order) }
+    }
+
+    /**
+     * Appends a copy of one Ziel, the same way [duplicateStep] copies a step.
+     *
+     * @param objective the row to copy.
+     */
+    fun duplicateObjective(objective: MissionObjectiveEdit) {
+        val (draft, detail) = read()
+        if (detail == null) {
+            return
+        }
+        run(draft) { source.addObjective(missionId, detail, objective.title, objective.kind) }
     }
 
     /**

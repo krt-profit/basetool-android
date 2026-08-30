@@ -74,6 +74,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFiel
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
@@ -287,14 +288,19 @@ fun OrdersScreen(
 /**
  * Moving the order in the queue — a Logistician's write.
  *
- * **Three buttons, not a drag.** The web reorders by dragging a row, which needs the whole queue on
- * screen and a pointer that can hold one row while the rest scrolls. Neither is true on a phone,
- * and the design has drawn no equivalent (design round 8 §4 asks for one). What a Logistician
- * actually decides is „this one sooner" or „this one later", and the endpoint takes an absolute
- * position, so the buttons express the intent and compute the position.
+ * **Buttons, not a drag.** The web reorders by dragging a row, which needs the whole queue on
+ * screen and a pointer that can hold one row while the rest scrolls. Neither is true on a phone.
+ * What a Logistician actually decides is „this one sooner" or „this one later", and the endpoint
+ * takes an absolute position, so the buttons express the intent and compute the position.
  *
- * „An den Anfang" has no counterpart: the back of the queue is a page count away, and a control
- * that guessed at its length would drop the order somewhere nobody asked for.
+ * Design ch. 18 §3 (E5/E8) ratified that for the Ablauf and said the queue takes **the same two
+ * buttons at the same size**, so the stepwise pair is now the 40 × 44 icon pair, dimmed at the
+ * front of the queue where „nach vorn" has nowhere to go — validation, not a lock.
+ *
+ * „An den Anfang" stays beside them as a labelled button: it is a jump rather than a step, the
+ * ratified pair does not cover it, and it has no counterpart at the other end because the back of
+ * the queue is a page count away and a control that guessed at its length would drop the order
+ * somewhere nobody asked for.
  *
  * @param state what the detail holds.
  * @param actions what it reports back.
@@ -305,7 +311,10 @@ private fun PriorityControls(
     actions: OrderDetailActions,
 ) {
     val atFront = (state.order?.priority ?: 1) <= 1
-    Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         KrtGhostButton(
             text = stringResource(R.string.order_detail_priority_front),
             onClick = { actions.onRaisePriority(true) },
@@ -315,26 +324,35 @@ private fun PriorityControls(
                     .alpha(if (state.writable && !atFront) 1f else DISABLED_WRITE_ALPHA),
             enabled = state.writable && !atFront,
         )
-        KrtGhostButton(
-            text = stringResource(R.string.order_detail_priority_up),
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_chevron_up,
+            label = stringResource(R.string.order_detail_priority_up),
             onClick = { actions.onRaisePriority(false) },
             modifier =
                 Modifier
                     .testTag(ORDER_PRIORITY_UP_TAG)
                     .alpha(if (state.writable && !atFront) 1f else DISABLED_WRITE_ALPHA),
             enabled = state.writable && !atFront,
+            width = QUEUE_MOVE_WIDTH,
+            height = KrtSpacing.touchTarget,
         )
-        KrtGhostButton(
-            text = stringResource(R.string.order_detail_priority_down),
+        KrtIconButton(
+            iconRes = DesignR.drawable.ic_krt_chevron_down,
+            label = stringResource(R.string.order_detail_priority_down),
             onClick = actions.onLowerPriority,
             modifier =
                 Modifier
                     .testTag(ORDER_PRIORITY_DOWN_TAG)
                     .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
             enabled = state.writable,
+            width = QUEUE_MOVE_WIDTH,
+            height = KrtSpacing.touchTarget,
         )
     }
 }
+
+/** The queue's move pair takes the Ablauf's ratified 40 dp width (design ch. 18 §3). */
+private val QUEUE_MOVE_WIDTH = 40.dp
 
 /**
  * The paginated queue.

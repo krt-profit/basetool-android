@@ -1411,6 +1411,8 @@
     <string name="mission_objective_kind_primary">Primary</string>
     <string name="mission_objective_kind_secondary">Secondary</string>
     <string name="mission_objective_kind_non_goal">Non-goal</string>
+    <string name="mission_timeline_duplicate">Duplicate</string>
+    <string name="mission_timeline_more">More actions</string>
     <string name="mission_timeline_edit">Edit</string>
     <string name="mission_timeline_remove">Remove</string>
     <string name="mission_timeline_cancel">Cancel</string>

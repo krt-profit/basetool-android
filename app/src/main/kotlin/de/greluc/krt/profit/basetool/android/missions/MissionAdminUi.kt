@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,6 +20,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
@@ -98,13 +101,20 @@ fun LazyListScope.adminTab(
 ) {
     item {
         Column(
-            modifier = Modifier.fillMaxWidth().testTag(MISSION_ADMIN_SHEET_TAG),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = KrtSpacing.lg)
+                    .testTag(MISSION_ADMIN_SHEET_TAG),
+            // 10 dp between the cards and a 16 dp screen margin — design ch. 18 §3 (E4).
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.cards),
         ) {
             Hint(text = stringResource(R.string.mission_admin_section_hint))
-            AdminSection(MissionSection.CORE, form, actions) { CoreFields(form, writable, actions) }
-            AdminSection(MissionSection.SCHEDULE, form, actions) { ScheduleFields(form, writable, actions) }
-            AdminSection(MissionSection.FLAGS, form, actions) { FlagsFields(form, writable, actions) }
+            AdminSection(MissionSection.CORE, form, actions) { CoreFields(form, form.writes(writable, it), actions) }
+            AdminSection(MissionSection.SCHEDULE, form, actions) {
+                ScheduleFields(form, form.writes(writable, it), actions)
+            }
+            AdminSection(MissionSection.FLAGS, form, actions) { FlagsFields(form, form.writes(writable, it), actions) }
             AdminSection(MissionSection.PEOPLE, form, actions) {
                 Hint(text = stringResource(R.string.mission_member_hint))
                 MemberSection(members = members)
@@ -115,34 +125,39 @@ fun LazyListScope.adminTab(
 }
 
 /**
- * One folded section: its head, its state chip, and its body when open.
+ * One folded section: a **card** with a panel header, its state chip, and its body when open.
+ *
+ * A card rather than a HUD box or a bare stack (design ch. 18 §3, E4). The HUD box stays reserved
+ * for emphasis blocks — four of them side by side emphasise nothing.
  *
  * @param section which one.
  * @param form the form, for the fold and the state.
  * @param actions what the tab can do.
- * @param body what the section holds.
+ * @param body what the section holds; it is handed **this** section, so it can lock its own fields
+ *   without waiting on a write somewhere else in the tab.
  */
 @Composable
 private fun AdminSection(
     section: MissionSection,
     form: MissionAdminForm,
     actions: MissionAdminActions,
-    body: @Composable () -> Unit,
+    body: @Composable (MissionSection) -> Unit,
 ) {
     val open = form.expanded.contains(section)
-    Column(modifier = Modifier.fillMaxWidth()) {
+    KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Flush) {
         KrtPanelHeader(
             title = stringResource(section.titleRes()),
             expanded = open,
             onToggle = { actions.onToggle(section) },
             stateChip = { SectionStateChip(section, form) },
+            busy = form.saving == section,
         )
         if (open) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.lg),
                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
             ) {
-                body()
+                body(section)
             }
         }
     }

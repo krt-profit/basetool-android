@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -189,6 +191,10 @@ fun KrtCard(
  * @param onToggle invoked when the header is tapped.
  * @param modifier layout modifier.
  * @param count optional item count rendered next to the title.
+ * @param stateChip what the head says about itself while it is folded.
+ * @param busy whether **this** section is writing. The spinner takes the chevron's place rather
+ *   than appearing as a screen overlay or a global bar: a section that is saving has to say so at
+ *   itself, or a Zeitplan write looks like it froze the Ziele too (design ch. 18 §3, E4).
  */
 @Composable
 fun KrtPanelHeader(
@@ -198,6 +204,7 @@ fun KrtPanelHeader(
     modifier: Modifier = Modifier,
     count: Int? = null,
     stateChip: (@Composable () -> Unit)? = null,
+    busy: Boolean = false,
 ) {
     Row(
         modifier =
@@ -233,15 +240,26 @@ fun KrtPanelHeader(
         // started, saved, changed or in conflict, so nothing needed for a decision is hidden
         // (design ch. 02 §10, ch. 06 artboard 7).
         stateChip?.invoke()
-        KrtIcon(
-            id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
-            contentDescription = null,
-            modifier = Modifier.padding(horizontal = KrtSpacing.lg),
-            size = 16.dp,
-            tint = KrtPalette.TextMuted,
-        )
+        if (busy) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(horizontal = KrtSpacing.lg).size(PANEL_SPINNER),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = KrtSpacing.hairline * 2,
+            )
+        } else {
+            KrtIcon(
+                id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
+                contentDescription = null,
+                modifier = Modifier.padding(horizontal = KrtSpacing.lg),
+                size = 16.dp,
+                tint = KrtPalette.TextMuted,
+            )
+        }
     }
 }
+
+/** The spinner that replaces a saving section's chevron — the chevron's own size. */
+private val PANEL_SPINNER = 16.dp
 
 /**
  * One label/value pair of a key-value list.
