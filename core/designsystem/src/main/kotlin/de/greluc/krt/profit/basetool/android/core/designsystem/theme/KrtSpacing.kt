@@ -64,6 +64,18 @@ object KrtSpacing {
     /** 48 dp — the floor for a navigation-bar or app-bar icon. */
     val navTarget = 48.dp
 
+    /**
+     * 48 dp — the height of a **control**: a button, an icon button, an input, a select, a
+     * segmented control (design ch. 02 §1 „Höhe 48 dp", „48×48 dp target").
+     *
+     * Deliberately its own token rather than [touchTarget]. A control's height and the minimum
+     * tap area are two different rules that happened to share a number until ch. 01 §5 moved the
+     * floor to 44 dp — at which point every field, button and select silently shrank with it.
+     * Rows, accordion heads and menu entries keep [touchTarget]: for those the floor **is** the
+     * rule, and the chapter draws them at 44.
+     */
+    val field = 48.dp
+
     /** Minimum height of a dense list row; the whole row is the touch target. */
     val denseRow = 56.dp
 

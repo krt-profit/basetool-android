@@ -41,7 +41,7 @@ fun OfflineBand() {
     // The same goes for the CACHE chip the artboard puts on the row beneath.
     KrtOfflineBanner(
         title = stringResource(R.string.offline_banner_title),
-        lastUpdated = stringResource(R.string.offline_writes_disabled),
+        reason = stringResource(R.string.offline_writes_disabled),
         modifier = Modifier.padding(horizontal = KrtSpacing.md, vertical = KrtSpacing.sm),
     )
 }

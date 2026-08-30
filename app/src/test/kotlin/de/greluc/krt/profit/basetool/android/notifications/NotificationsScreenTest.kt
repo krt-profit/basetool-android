@@ -42,7 +42,7 @@ class NotificationsScreenTest {
     private fun notification(
         id: String,
         type: String = "JOB_ORDER_CREATED",
-        params: Map<String, String> = mapOf("displayId" to "A-1042", "orgUnit" to "Staffel 1"),
+        params: Map<String, String> = mapOf("displayId" to "1042", "orgUnit" to "Staffel 1"),
         read: Boolean = false,
         entityType: String? = "JOB_ORDER",
     ) = Notification(
@@ -98,7 +98,7 @@ class NotificationsScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Neuer Auftrag #A-1042 für Staffel 1").assertIsDisplayed()
+        compose.onNodeWithText("Neuer Auftrag #1042 für Staffel 1").assertIsDisplayed()
         compose.onNodeWithTag(NOTIFICATIONS_LIST_TAG).assertIsDisplayed()
     }
 
@@ -106,7 +106,7 @@ class NotificationsScreenTest {
     fun `a renamed parameter degrades to the generic wording instead of showing braces`() {
         show(
             NotificationsState(
-                notifications = listOf(notification("n1", params = mapOf("orderId" to "A-1042"))),
+                notifications = listOf(notification("n1", params = mapOf("orderId" to "1042"))),
                 total = 1,
                 phase = NotificationsPhase.Ready,
             ),

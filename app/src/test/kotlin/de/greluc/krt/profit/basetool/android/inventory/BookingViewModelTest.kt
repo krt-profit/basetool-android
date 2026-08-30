@@ -415,7 +415,7 @@ class BookingViewModelTest {
     private fun allocation(
         id: String,
         amount: String,
-    ) = InventoryAllocation(targetId = id, label = "#A-$id", subtitle = null, amount = amount)
+    ) = InventoryAllocation(targetId = id, label = "#$id", subtitle = null, amount = amount)
 
     private fun entry(
         personal: Boolean = false,

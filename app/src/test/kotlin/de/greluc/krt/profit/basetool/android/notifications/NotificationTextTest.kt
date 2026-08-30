@@ -43,12 +43,12 @@ class NotificationTextTest {
     fun `named placeholders are filled from the server's map`() {
         val sentence =
             notificationSentence(
-                notification = notification(params = mapOf("displayId" to "A-1042", "orgUnit" to "Staffel 1")),
+                notification = notification(params = mapOf("displayId" to "1042", "orgUnit" to "Staffel 1")),
                 template = ORDER_TEMPLATE,
                 generic = GENERIC,
             )
 
-        assertEquals("Neuer Auftrag #A-1042 für Staffel 1", sentence)
+        assertEquals("Neuer Auftrag #1042 für Staffel 1", sentence)
     }
 
     @Test
@@ -58,7 +58,7 @@ class NotificationTextTest {
         // exists, not what is in it, so this is the client's own defence.
         val sentence =
             notificationSentence(
-                notification = notification(params = mapOf("orderId" to "A-1042", "orgUnit" to "Staffel 1")),
+                notification = notification(params = mapOf("orderId" to "1042", "orgUnit" to "Staffel 1")),
                 template = ORDER_TEMPLATE,
                 generic = GENERIC,
             )
@@ -117,9 +117,9 @@ class NotificationTextTest {
     @Test
     fun `two placeholders in a row are both filled`() {
         assertEquals(
-            "A-1042/Staffel 1",
+            "1042/Staffel 1",
             notificationSentence(
-                notification(params = mapOf("displayId" to "A-1042", "orgUnit" to "Staffel 1")),
+                notification(params = mapOf("displayId" to "1042", "orgUnit" to "Staffel 1")),
                 "{displayId}/{orgUnit}",
                 GENERIC,
             ),

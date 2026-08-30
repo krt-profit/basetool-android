@@ -36,6 +36,7 @@ import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDraft
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateTimeField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
@@ -334,22 +335,15 @@ private fun TimingBlock(
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
             color = KrtPalette.White,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
-            KrtTextField(
-                value = draft.startedDate,
-                onValueChange = { onDraftChanged(draft.copy(startedDate = it)) },
-                modifier = Modifier.weight(1f),
-                label = stringResource(R.string.refinery_create_started_date),
-                placeholder = stringResource(R.string.refinery_create_started_date_hint),
-            )
-            KrtTextField(
-                value = draft.startedTime,
-                onValueChange = { onDraftChanged(draft.copy(startedTime = it)) },
-                modifier = Modifier.weight(1f),
-                label = stringResource(R.string.refinery_create_started_time),
-                placeholder = stringResource(R.string.refinery_create_started_time_hint),
-            )
-        }
+        KrtDateTimeField(
+            label = stringResource(R.string.refinery_create_started),
+            date = draft.startedDate,
+            time = draft.startedTime,
+            onDate = { onDraftChanged(draft.copy(startedDate = it)) },
+            onTime = { onDraftChanged(draft.copy(startedTime = it)) },
+            // A run is entered after it was started, so the past is the normal case here.
+            warnPast = false,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
             NumberField(
                 label = stringResource(R.string.refinery_create_hours),

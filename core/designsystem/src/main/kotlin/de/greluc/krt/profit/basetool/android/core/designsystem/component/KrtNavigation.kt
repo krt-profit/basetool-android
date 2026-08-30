@@ -170,7 +170,7 @@ private fun KrtNavItemContent(
     Column(
         modifier =
             modifier
-                .defaultMinSize(minHeight = KrtSpacing.touchTarget)
+                .defaultMinSize(minHeight = KrtSpacing.navTarget)
                 .clickable(role = Role.Tab, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs, Alignment.CenterVertically),

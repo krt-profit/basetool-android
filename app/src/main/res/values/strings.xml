@@ -168,6 +168,11 @@
     <string name="missions_filter_status_all">Status: Alle</string>
     <string name="missions_filter_past">Vergangene aus</string>
     <string name="missions_filter_past_on">Vergangene an</string>
+    <string name="missions_filter_range">Zeitraum</string>
+    <string name="missions_filter_range_from">ab %1$s</string>
+    <string name="missions_filter_range_until">bis %1$s</string>
+    <string name="missions_filter_range_both">%1$s – %2$s</string>
+    <string name="missions_filter_range_clear">Zeitraum entfernen</string>
     <string name="missions_filter_reset">Filter zurücksetzen</string>
     <string name="missions_status_planned">Geplant</string>
     <string name="missions_status_active">Aktiv</string>
@@ -1137,10 +1142,7 @@
     <string name="refinery_create_add_good">+ Ware</string>
     <string name="refinery_create_remove_good">Ware entfernen</string>
     <string name="refinery_create_timing">Timing</string>
-    <string name="refinery_create_started_date">Gestartet — Datum</string>
-    <string name="refinery_create_started_date_hint">TT.MM.JJJJ</string>
-    <string name="refinery_create_started_time">Zeit</string>
-    <string name="refinery_create_started_time_hint">SS:MM</string>
+    <string name="refinery_create_started">Gestartet</string>
     <string name="refinery_create_hours">Stunden</string>
     <string name="refinery_create_minutes">Minuten</string>
     <string name="refinery_create_ends">Endet %1$s</string>
@@ -1408,8 +1410,6 @@
     <string name="mission_conflict_others_unaffected">Die übrigen Abschnitte sind nicht betroffen.</string>
     <string name="mission_conflict_reload">Neu laden</string>
     <string name="mission_conflict_keep_mine">Meine Fassung übernehmen</string>
-    <string name="krt_date_hint">TT.MM.JJJJ</string>
-    <string name="krt_time_hint">HH:MM</string>
     <string name="krt_empty_value">—</string>
     <string name="mission_timeline_sort">Sortieren</string>
     <string name="mission_timeline_sort_hint">Reihenfolge ändern: Pfeile je Zeile.</string>

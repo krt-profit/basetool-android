@@ -85,6 +85,7 @@ class MissionsScreenTest {
                     onSearchChanged = {},
                     onStatusToggled = { statuses.add(it) },
                     onIncludePastChanged = {},
+                    onRangeChanged = { _, _ -> },
                     onResetFilters = {},
                     onRefresh = {},
                     onRetryNow = {},

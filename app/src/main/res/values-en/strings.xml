@@ -147,6 +147,11 @@
     <string name="missions_filter_status_all">Status: all</string>
     <string name="missions_filter_past">Past hidden</string>
     <string name="missions_filter_past_on">Past shown</string>
+    <string name="missions_filter_range">Period</string>
+    <string name="missions_filter_range_from">from %1$s</string>
+    <string name="missions_filter_range_until">until %1$s</string>
+    <string name="missions_filter_range_both">%1$s – %2$s</string>
+    <string name="missions_filter_range_clear">Remove period</string>
     <string name="missions_filter_reset">Reset filters</string>
     <string name="missions_status_planned">Planned</string>
     <string name="missions_status_active">Active</string>
@@ -1116,10 +1121,7 @@
     <string name="refinery_create_add_good">+ Good</string>
     <string name="refinery_create_remove_good">Remove good</string>
     <string name="refinery_create_timing">Timing</string>
-    <string name="refinery_create_started_date">Started — date</string>
-    <string name="refinery_create_started_date_hint">DD.MM.YYYY</string>
-    <string name="refinery_create_started_time">Time</string>
-    <string name="refinery_create_started_time_hint">HH:MM</string>
+    <string name="refinery_create_started">Started</string>
     <string name="refinery_create_hours">Hours</string>
     <string name="refinery_create_minutes">Minutes</string>
     <string name="refinery_create_ends">Ends %1$s</string>
@@ -1387,8 +1389,6 @@
     <string name="mission_conflict_others_unaffected">The other sections are unaffected.</string>
     <string name="mission_conflict_reload">Reload</string>
     <string name="mission_conflict_keep_mine">Keep my version</string>
-    <string name="krt_date_hint">DD.MM.YYYY</string>
-    <string name="krt_time_hint">HH:MM</string>
     <string name="krt_empty_value">—</string>
     <string name="mission_timeline_sort">Sort</string>
     <string name="mission_timeline_sort_hint">Change the order: arrows on each row.</string>

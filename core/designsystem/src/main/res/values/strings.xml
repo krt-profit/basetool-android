@@ -33,4 +33,49 @@
       caller happened to override and no locale could.
     -->
     <string name="krt_cancel">Abbrechen</string>
+
+    <!--
+      Design ch. 02 §11 — the date and time picker. The copy lives with the component rather than
+      with each caller: four screens open the same modals, and a picker whose chips read differently
+      per screen is four pickers.
+    -->
+    <string name="krt_date_placeholder">Datum wählen</string>
+    <string name="krt_time_placeholder">--:--</string>
+    <string name="krt_date_pick_title">Datum wählen</string>
+    <string name="krt_time_pick_title">Zeit wählen</string>
+    <string name="krt_range_pick_title">Zeitraum wählen</string>
+    <string name="krt_apply">Übernehmen</string>
+    <string name="krt_filter_action">Filtern</string>
+    <string name="krt_today">Heute</string>
+    <string name="krt_tomorrow">Morgen</string>
+    <string name="krt_next_friday">Nächster Freitag</string>
+    <string name="krt_this_week">Diese Woche</string>
+    <string name="krt_next_seven_days">Nächste 7 Tage</string>
+    <string name="krt_this_month">Dieser Monat</string>
+    <string name="krt_hour">Stunde</string>
+    <string name="krt_minute">Minute</string>
+    <string name="krt_full_hour">:00</string>
+    <string name="krt_half_hour">:30</string>
+    <string name="krt_now">Jetzt</string>
+    <string name="krt_range_from">Von</string>
+    <string name="krt_range_until">Bis</string>
+    <!-- Named, never blocked: the server decides whether a past timestamp is legal. -->
+    <string name="krt_in_the_past">Liegt in der Vergangenheit</string>
+    <string name="krt_previous_month">Voriger Monat</string>
+    <string name="krt_following_month">Nächster Monat</string>
+    <string name="krt_hour_up">Stunde vor</string>
+    <string name="krt_hour_down">Stunde zurück</string>
+    <string name="krt_minute_up">Minute vor</string>
+    <string name="krt_minute_down">Minute zurück</string>
+    <string name="krt_pick_date_for">Datum für %1$s wählen</string>
+    <string name="krt_pick_time_for">Zeit für %1$s wählen</string>
+
+    <!--
+      Spoken labels of the shared stepper and of every modal's close glyph. These stood in the code
+      as German literals, which no locale could reach and no reviewer could see.
+    -->
+    <string name="krt_less">Weniger</string>
+    <string name="krt_more">Mehr</string>
+    <string name="krt_close">Schließen</string>
+    <string name="krt_reconnect">Erneut verbinden</string>
 </resources>

@@ -252,7 +252,7 @@ fun KrtButton(
                 )
                 .background(container)
                 .then(if (borderColor != null) Modifier.border(KrtSpacing.hairline, borderColor) else Modifier)
-                .defaultMinSize(minHeight = KrtSpacing.touchTarget)
+                .defaultMinSize(minHeight = KrtSpacing.field)
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(
                     interactionSource = interactionSource,
@@ -417,7 +417,7 @@ fun KrtIconButton(
             modifier =
                 modifier
                     .alpha(if (enabled) 1f else DISABLED_ALPHA)
-                    .size(KrtSpacing.touchTarget)
+                    .size(KrtSpacing.field)
                     .background(container)
                     .then(if (borderColor != null) Modifier.border(KrtSpacing.hairline, borderColor) else Modifier)
                     .clickable(
@@ -487,7 +487,7 @@ fun KrtAssocAdd(
     Row(
         modifier =
             modifier
-                .defaultMinSize(minHeight = KrtSpacing.touchTarget)
+                .defaultMinSize(minHeight = KrtSpacing.field)
                 .krtDashedBorder(border)
                 .clickable(
                     interactionSource = interactionSource,

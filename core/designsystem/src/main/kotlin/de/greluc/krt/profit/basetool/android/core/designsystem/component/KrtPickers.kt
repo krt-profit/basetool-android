@@ -345,7 +345,7 @@ fun KrtSelectField(
                         KrtSpacing.hairline,
                         if (expanded) MaterialTheme.colorScheme.primary else KrtPalette.Gray3,
                     )
-                    .defaultMinSize(minHeight = KrtSpacing.touchTarget)
+                    .defaultMinSize(minHeight = KrtSpacing.field)
                     .clickable(enabled = enabled, role = Role.DropdownList) { onExpandedChange(!expanded) }
                     .padding(horizontal = KrtSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
@@ -759,7 +759,7 @@ fun KrtSegmentedControl(
     Row(
         modifier =
             modifier
-                .height(KrtSpacing.touchTarget)
+                .height(KrtSpacing.field)
                 .border(KrtSpacing.hairline, KrtPalette.Gray3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -770,14 +770,14 @@ fun KrtSegmentedControl(
                     modifier =
                         Modifier
                             .width(KrtSpacing.hairline)
-                            .height(KrtSpacing.touchTarget)
+                            .height(KrtSpacing.field)
                             .background(KrtPalette.Gray3),
                 )
             }
             Box(
                 modifier =
                     (if (stretch) Modifier.weight(1f) else Modifier.width(SEGMENT_WIDTH))
-                        .height(KrtSpacing.touchTarget)
+                        .height(KrtSpacing.field)
                         .background(if (active) activeColor else Color.Transparent)
                         .selectable(
                             selected = active,

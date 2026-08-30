@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -210,12 +211,19 @@ fun KrtChip(
  * orange chip would claim the visual weight of a primary action, and a row of filters is not a row
  * of calls to action.
  *
+ * A chip that carries a **value** rather than a yes/no can also be cleared: pass [onClear] and the
+ * chip grows an ✕ that removes the filter, while a tap on the label still opens whatever set it.
+ * Design ch. 02 §11 d asks for exactly that for the date range („Zeitraum ✕") so the picker itself
+ * does not need a reset button.
+ *
  * @param text the filter's label; uppercased for display like every other chip.
  * @param selected whether this filter is currently applied.
  * @param onClick invoked on tap.
  * @param modifier layout modifier.
  * @param enabled whether the chip responds; a disabled chip dims rather than disappearing, so the
  *   row does not reflow while a load is in flight.
+ * @param onClear removes the filter this chip carries, or `null` for a chip that only toggles.
+ * @param clearLabel what a screen reader calls the ✕; required whenever [onClear] is given.
  */
 @Composable
 fun KrtFilterChip(
@@ -224,20 +232,25 @@ fun KrtFilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    onClear: (() -> Unit)? = null,
+    clearLabel: String? = null,
 ) {
     val hue = if (selected) MaterialTheme.colorScheme.primary else KrtPalette.TextMuted
     val borderColor = if (selected) hue else KrtPalette.Gray3
-    Box(
+    Row(
         modifier =
             modifier
                 .background(if (selected) hue.copy(alpha = CHIP_TINT_ALPHA) else KrtPalette.SurfaceInput)
                 .border(KrtSpacing.hairline, borderColor)
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-                .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs)
                 .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text.krtUppercase(),
+            modifier =
+                Modifier
+                    .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                    .padding(horizontal = KrtSpacing.sm, vertical = KrtSpacing.xs),
             style = MaterialTheme.typography.labelMedium,
             color = hue,
             // A chip's label is one word or one short phrase and is atomic: it either fits or the
@@ -247,8 +260,26 @@ fun KrtFilterChip(
             maxLines = 1,
             softWrap = false,
         )
+        if (onClear != null) {
+            Box(
+                modifier =
+                    Modifier
+                        .clickable(enabled = enabled, role = Role.Button, onClick = onClear)
+                        .padding(end = KrtSpacing.sm, top = KrtSpacing.xs, bottom = KrtSpacing.xs),
+            ) {
+                KrtIcon(
+                    id = R.drawable.ic_krt_close,
+                    contentDescription = clearLabel,
+                    size = CHIP_CLEAR_GLYPH,
+                    tint = hue,
+                )
+            }
+        }
     }
 }
+
+/** The ✕ of a clearable filter chip, sized to the chip's own label rather than to a row icon. */
+private val CHIP_CLEAR_GLYPH = 12.dp
 
 /**
  * A department tag in its frozen Bereichsfarbe.

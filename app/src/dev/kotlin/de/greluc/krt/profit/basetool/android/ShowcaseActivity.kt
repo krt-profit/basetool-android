@@ -294,8 +294,8 @@ private fun ComponentGallery() {
         KrtSectionTitle("System")
         KrtLoadingIndicator("Lade Einsätze…")
         KrtOfflineBanner(
-            title = "Offline — zeigt gespeicherten Stand",
-            lastUpdated = "Zuletzt aktualisiert 17.08. 14:32",
+            title = "Offline — keine Verbindung",
+            reason = "Schreiben ist gesperrt, bis die Verbindung zurück ist.",
             onRetry = {},
         )
         KrtEmptyState(

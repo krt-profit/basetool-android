@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
@@ -117,6 +118,40 @@ fun KrtFieldError(
             text = text,
             style = MaterialTheme.typography.bodySmall,
             color = KrtTheme.colors.dangerText,
+        )
+    }
+}
+
+/**
+ * An inline **warning** with the same glyph as [KrtFieldError], in the warning tint.
+ *
+ * The difference from an error is the whole point: a warning names something the member may well
+ * have meant, and nothing is blocked. Design ch. 02 §11 uses it for a moment already gone — the
+ * server, not the field, decides whether a past timestamp is legal.
+ *
+ * @param text the observation, stated plainly („Liegt in der Vergangenheit").
+ * @param modifier layout modifier.
+ */
+@Composable
+fun KrtFieldWarning(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.padding(top = KrtSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+        verticalAlignment = Alignment.Top,
+    ) {
+        KrtIcon(
+            id = R.drawable.ic_krt_warning,
+            contentDescription = null,
+            size = 14.dp,
+            tint = KrtTheme.colors.warning,
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtTheme.colors.warning,
         )
     }
 }
@@ -297,7 +332,7 @@ private fun Modifier.krtFieldFrame(
         .then(if (glow) Modifier.krtBloom(KrtTheme.colors.glowPrimary, KrtSpacing.glowFocus) else Modifier)
         .background(KrtPalette.SurfaceInput)
         .border(KrtSpacing.hairline, border)
-        .defaultMinSize(minHeight = KrtSpacing.touchTarget * minLines)
+        .defaultMinSize(minHeight = KrtSpacing.field * minLines)
         .padding(horizontal = KrtSpacing.md, vertical = if (minLines > 1) KrtSpacing.sm else 0.dp)
 
 /**
@@ -410,7 +445,7 @@ fun KrtStepperField(
         Row(verticalAlignment = Alignment.CenterVertically) {
             KrtIconButton(
                 iconRes = R.drawable.ic_krt_minus,
-                label = "Weniger",
+                label = stringResource(R.string.krt_less),
                 onClick = onDecrement,
                 enabled = enabled,
             )
@@ -426,70 +461,9 @@ fun KrtStepperField(
             )
             KrtIconButton(
                 iconRes = R.drawable.ic_krt_plus,
-                label = "Mehr",
+                label = stringResource(R.string.krt_more),
                 onClick = onIncrement,
                 enabled = enabled,
-            )
-        }
-    }
-}
-
-/**
- * One point in time as a **date and a time**, never as free text.
- *
- * Design ch. 06 artboard 8 and ch. 11 artboard 5 draw every timestamp this way — the web's own
- * `.datetime-split-inputs`. The wire value is built from the pair; the member never types an ISO
- * string, which is what made the Einsatz's schedule read as paperwork.
- *
- * Weights are 1.35 fr for the date and 1 fr for the time, per the artboard, and both halves are
- * centred with tabular figures so a column of them lines up.
- *
- * @param label what the pair means, drawn once above both halves.
- * @param date the date half, as typed (`TT.MM.JJJJ`).
- * @param time the time half, as typed (`HH:MM`).
- * @param onDate the date changed.
- * @param onTime the time changed.
- * @param modifier layout modifier.
- * @param enabled whether either half accepts input.
- * @param datePlaceholder the date's own hint; the shared label names the pair, so each half still
- *   needs to say what shape it wants.
- * @param timePlaceholder the time's own hint.
- */
-@Composable
-fun KrtDateTimeField(
-    label: String,
-    date: String,
-    time: String,
-    onDate: (String) -> Unit,
-    onTime: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    datePlaceholder: String? = null,
-    timePlaceholder: String? = null,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        KrtFieldLabel(text = label, enabled = enabled)
-        Box(modifier = Modifier.padding(top = KrtSpacing.xs))
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
-            KrtTextField(
-                value = date,
-                onValueChange = onDate,
-                modifier = Modifier.weight(DATE_WEIGHT),
-                placeholder = datePlaceholder,
-                enabled = enabled,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textAlign = TextAlign.Center,
-                tabularFigures = true,
-            )
-            KrtTextField(
-                value = time,
-                onValueChange = onTime,
-                modifier = Modifier.weight(1f),
-                placeholder = timePlaceholder,
-                enabled = enabled,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textAlign = TextAlign.Center,
-                tabularFigures = true,
             )
         }
     }

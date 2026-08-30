@@ -61,7 +61,7 @@ class DashboardScreenTest {
         Notification(
             id = id,
             type = "JOB_ORDER_CREATED",
-            params = mapOf("displayId" to "A-1042", "orgUnit" to "Staffel 1"),
+            params = mapOf("displayId" to "1042", "orgUnit" to "Staffel 1"),
             entityType = "JOB_ORDER",
             entityId = "j1",
             read = false,
@@ -171,7 +171,7 @@ class DashboardScreenTest {
     fun `the unread preview words a notification exactly as the inbox does`() {
         show(DashboardState(phase = DashboardPhase.Ready), unread = listOf(notification("n1")))
 
-        compose.onNodeWithText("Neuer Auftrag #A-1042 für Staffel 1").assertIsDisplayed()
+        compose.onNodeWithText("Neuer Auftrag #1042 für Staffel 1").assertIsDisplayed()
     }
 
     @Test

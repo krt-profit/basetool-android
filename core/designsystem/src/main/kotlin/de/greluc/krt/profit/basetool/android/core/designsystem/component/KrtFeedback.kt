@@ -43,6 +43,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -148,24 +149,31 @@ fun KrtLoadingIndicator(
 /**
  * The offline banner, pinned under the top bar while the device has no connection.
  *
- * It states both facts the user needs: that the screen shows cached data, and how old that data is.
+ * It states the one fact the app actually knows: there is no connection, so writing is locked.
  * While it is visible, every action that needs the network renders disabled — the banner is the
  * reason, so the disabled controls never look broken. Mutations are never queued for later: the
  * ledgers behind them are append-only and a replayed write would corrupt them.
  *
+ * There is deliberately **no** „Zuletzt aktualisiert" stamp and no CACHE chip. Both were drawn, and
+ * design §D (round 12) struck them rather than deferring them: this app holds no cache and measures
+ * no load time, so either one would be invented. The second line is a [reason], never a timestamp —
+ * it was called `lastUpdated` until that correction landed, which is exactly the slot a stamp would
+ * have crept back into.
+ *
  * @param title the banner headline; uppercased for display.
- * @param lastUpdated human-readable timestamp of the cached data.
- * @param onRetry invoked when the user asks to reconnect.
  * @param modifier layout modifier.
+ * @param reason one line saying what the missing connection costs, or `null` when the headline
+ *   already says it. Never a timestamp, and never a cache claim.
+ * @param onRetry invoked when the user asks to reconnect.
  * @param retryText label of the retry action.
  */
 @Composable
 fun KrtOfflineBanner(
     title: String,
     modifier: Modifier = Modifier,
-    lastUpdated: String? = null,
+    reason: String? = null,
     onRetry: (() -> Unit)? = null,
-    retryText: String = "Erneut verbinden",
+    retryText: String = stringResource(R.string.krt_reconnect),
 ) {
     Row(
         modifier =
@@ -199,12 +207,9 @@ fun KrtOfflineBanner(
                 style = MaterialTheme.typography.labelMedium,
                 color = KrtTheme.colors.warning,
             )
-            // Both optional, because a screen that shows live data it simply cannot refresh
-            // has neither a stamp to quote nor a retry that would mean anything. Rendering an
-            // empty second line under the title would read as a timestamp that failed to load.
-            lastUpdated?.let { stamp ->
+            reason?.let { line ->
                 Text(
-                    text = stamp,
+                    text = line,
                     style = MaterialTheme.typography.bodySmall,
                     color = KrtPalette.TextMuted,
                 )
@@ -546,8 +551,8 @@ private fun FeedbackPreview() {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.md)) {
             KrtLoadingIndicator("Lade Einsätze…")
             KrtOfflineBanner(
-                title = "Offline — zeigt gespeicherten Stand",
-                lastUpdated = "Zuletzt aktualisiert 17.08. 14:32",
+                title = "Offline — keine Verbindung",
+                reason = "Schreiben ist gesperrt, bis die Verbindung zurück ist.",
                 onRetry = {},
             )
             KrtEmptyState(

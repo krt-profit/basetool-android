@@ -876,7 +876,7 @@ class InventoryRepository(
                         reference.id?.let { id ->
                             AllocationTarget(
                                 id = id,
-                                label = reference.displayId?.let { "#A-$it" } ?: id,
+                                label = reference.displayId?.let { "#$it" } ?: id,
                                 subtitle = reference.handle?.takeIf { it.isNotBlank() },
                             )
                         }
@@ -1288,7 +1288,7 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
                 allocation.jobOrderId?.let { target ->
                     InventoryAllocation(
                         targetId = target,
-                        label = allocation.jobOrderDisplayId?.let { "#A-$it" } ?: target,
+                        label = allocation.jobOrderDisplayId?.let { "#$it" } ?: target,
                         subtitle = null,
                         amount = allocation.amount?.toPlainString() ?: "0",
                     )

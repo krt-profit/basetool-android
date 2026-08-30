@@ -159,7 +159,7 @@ fun KrtModal(
                     )
                     KrtIconButton(
                         iconRes = R.drawable.ic_krt_close,
-                        label = "Schließen",
+                        label = stringResource(R.string.krt_close),
                         onClick = onDismiss,
                     )
                 }

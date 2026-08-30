@@ -332,8 +332,6 @@ private fun ScheduleTime(
         onDate = onDate,
         onTime = onTime,
         enabled = writable,
-        datePlaceholder = stringResource(R.string.krt_date_hint),
-        timePlaceholder = stringResource(R.string.krt_time_hint),
     )
 }
 
@@ -374,8 +372,9 @@ private fun ActualStart(
                 onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(correctStartDate = v) } },
                 onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(correctStartClock = v) } },
                 enabled = writable,
-                datePlaceholder = stringResource(R.string.krt_date_hint),
-                timePlaceholder = stringResource(R.string.krt_time_hint),
+                // A corrected actual start records something that already happened, so „liegt in
+                // der Vergangenheit" would fire on every legitimate correction.
+                warnPast = false,
             )
             KrtGhostButton(
                 text = stringResource(R.string.mission_timeline_cancel),

@@ -41,7 +41,7 @@ class HerkunftPlanTest {
     private fun tag(
         id: String,
         amount: String,
-    ) = InventoryAllocation(targetId = id, label = "#A-$id", subtitle = null, amount = amount)
+    ) = InventoryAllocation(targetId = id, label = "#$id", subtitle = null, amount = amount)
 
     private val twoTags = listOf(tag("a", "200"), tag("b", "120"))
 
