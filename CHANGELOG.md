@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Operationen lassen sich in der App anlegen und bearbeiten.** Über der Filterleiste der
+  Operationen-Liste und im „⋮" der Detailansicht; Name, Beschreibung und Status, ein Formular für
+  beides. Beginn, Ende und die Zuordnung von Einsätzen fehlen bewusst — die Schnittstelle kennt
+  keine solchen Felder, ein Einsatz wird über den Einsatz selbst zugeordnet; das Formular sagt das.
+
 - **„Handel" bekommt zwei weitere Ansichten im Überlaufmenü.** Die **Preis-Übersicht** zeigt die
   Matrix Material × Terminal — die Materialspalte bleibt stehen, die Terminals scrollen darunter,
   der beste Preis je Zeile ist getont, umschaltbar zwischen Verkauf und Einkauf. Die

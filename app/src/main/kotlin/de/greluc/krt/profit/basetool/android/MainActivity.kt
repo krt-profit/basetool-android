@@ -74,6 +74,7 @@ import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionSeams
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.navigation.BasetoolApp
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
@@ -428,6 +429,9 @@ class MainActivity : AppCompatActivity() {
                                     },
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
+                                    },
+                                    operationForm = { editedOperation ->
+                                        OperationFormViewModel(container.operations, editedOperation)
                                     },
                                     orderCollection = { collectionId ->
                                         OrderCollectionViewModel(

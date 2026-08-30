@@ -66,6 +66,8 @@ import de.greluc.krt.profit.basetool.android.missions.MissionsRoute
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationFormRoute
+import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsRoute
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsPhase
@@ -170,6 +172,7 @@ fun BasetoolNavHost(
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -257,6 +260,7 @@ fun BasetoolNavHost(
                             orderCreate = orderCreate,
                             orderEdit = orderEdit,
                             orderCollection = orderCollection,
+                            operationForm = operationForm,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -762,6 +766,7 @@ private fun PushedDestination(
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -782,6 +787,7 @@ private fun PushedDestination(
             OperationDetailRoute(
                 viewModel = viewModel,
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
+                onEdit = { navController.navigate(operationEditRoute(operationId)) },
             )
         }
 
@@ -795,7 +801,12 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.RefineryCreate, KrtDestination.OrderCreate, KrtDestination.OrderEdit -> {
+        KrtDestination.RefineryCreate,
+        KrtDestination.OrderCreate,
+        KrtDestination.OrderEdit,
+        KrtDestination.OperationCreate,
+        KrtDestination.OperationEdit,
+        -> {
             CreateFormDestination(
                 destination = destination,
                 backStackEntry = backStackEntry,
@@ -803,6 +814,7 @@ private fun PushedDestination(
                 refineryCreate = refineryCreate,
                 orderCreate = orderCreate,
                 orderEdit = orderEdit,
+                operationForm = operationForm,
             )
         }
 
@@ -952,7 +964,7 @@ data class SettingsBindings(
 )
 
 /**
- * The two create forms, behind one branch.
+ * The create and edit forms, behind one branch.
  *
  * Grouped the way the two bank details are: each form is its own composable below, and the host's
  * `when` stays under detekt's complexity limit without any branch being suppressed away.
@@ -960,9 +972,13 @@ data class SettingsBindings(
  * @param destination which of the two forms.
  * @param navController where to go afterwards.
  * @param refineryCreate builds the Raffinerie form's view model.
+ * @param backStackEntry carries the edited id, where there is one.
  * @param orderCreate builds the Auftrag form's view model.
+ * @param orderEdit builds it for an existing Auftrag.
+ * @param operationForm builds the Operation form's view model, editing when given an id.
  */
 @Composable
+@Suppress("LongParameterList")
 private fun CreateFormDestination(
     destination: KrtDestination,
     backStackEntry: NavBackStackEntry,
@@ -970,8 +986,21 @@ private fun CreateFormDestination(
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
 ) {
     when (destination) {
+        KrtDestination.OperationCreate, KrtDestination.OperationEdit -> {
+            // One screen for both, so the id decides which write happens rather than which layout.
+            val edited =
+                backStackEntry.arguments?.getString(OPERATION_ID_ARG).takeIf {
+                    destination == KrtDestination.OperationEdit
+                }
+            OperationFormDestination(
+                navController = navController,
+                build = { operationForm(edited) },
+            )
+        }
+
         KrtDestination.OrderCreate -> {
             OrderCreateDestination(navController = navController, build = orderCreate)
         }
@@ -987,6 +1016,31 @@ private fun CreateFormDestination(
             RefineryCreateDestination(navController = navController, build = refineryCreate)
         }
     }
+}
+
+/**
+ * The Operation form as a pushed destination.
+ *
+ * Same shape as the order form's: the form's job ends when the Operation exists or has changed, and
+ * the member wants to look at the Operation rather than at a form they are finished with.
+ *
+ * @param navController where to go afterwards.
+ * @param build builds the view model.
+ */
+@Composable
+private fun OperationFormDestination(
+    navController: NavHostController,
+    build: () -> OperationFormViewModel,
+) {
+    val viewModel = remember { build() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.saved) {
+        state.saved?.let {
+            navController.popBackStack()
+            navController.navigate(operationDetailRoute(it))
+        }
+    }
+    OperationFormRoute(viewModel = viewModel)
 }
 
 /**

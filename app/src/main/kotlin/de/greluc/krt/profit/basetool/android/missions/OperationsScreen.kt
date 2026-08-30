@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndO
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -59,6 +60,9 @@ const val OPERATIONS_SEARCH_TAG: String = "operations-search"
 
 /** Test handle for the Einsätze/Operationen segment. */
 const val LIST_SEGMENT_TAG: String = "list-segment"
+
+/** Test handle for the „Operation anlegen" action. */
+const val OPERATION_CREATE_CTA_TAG: String = "operation-create-cta"
 
 /**
  * Which half of the Einsätze/Operationen switch is showing.
@@ -131,6 +135,7 @@ fun ListSegmentBar(
  * @param onOpenOperation a row was tapped.
  * @param onOpenMissions the Einsätze half of the segment was tapped.
  * @param modifier layout modifier.
+ * @param onCreate raise a new Operation, or `null` where the screen cannot navigate.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,12 +150,27 @@ fun OperationsScreen(
     onOpenOperation: (String) -> Unit,
     onOpenMissions: () -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         ListSegmentBar(
             selected = ListSegment.OPERATIONS,
             onSelect = { onOpenMissions() },
         )
+        // Above the list rather than floating over it, the same choice the Raffinerie list makes:
+        // an Operation is set up deliberately, so the action belongs where the member already is.
+        onCreate?.let {
+            KrtOutlineButton(
+                text = stringResource(R.string.operation_form_title),
+                onClick = it,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = KrtSpacing.md)
+                        .testTag(OPERATION_CREATE_CTA_TAG),
+                iconRes = DesignR.drawable.ic_krt_plus,
+            )
+        }
         OperationsFilterBar(
             state = state,
             onSearchChanged = onSearchChanged,
@@ -480,6 +500,7 @@ internal fun OperationStatus.tone(): KrtStatusTone =
  * @param onOpenOperation a row was tapped.
  * @param onOpenMissions the Einsätze half of the segment was tapped.
  * @param modifier layout modifier.
+ * @param onCreate raise a new Operation, or `null` where the screen cannot navigate.
  */
 @Composable
 fun OperationsRoute(
@@ -487,6 +508,7 @@ fun OperationsRoute(
     onOpenOperation: (String) -> Unit,
     onOpenMissions: () -> Unit,
     modifier: Modifier = Modifier,
+    onCreate: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     OperationsScreen(
@@ -500,5 +522,6 @@ fun OperationsRoute(
         onOpenOperation = onOpenOperation,
         onOpenMissions = onOpenMissions,
         modifier = modifier,
+        onCreate = onCreate,
     )
 }

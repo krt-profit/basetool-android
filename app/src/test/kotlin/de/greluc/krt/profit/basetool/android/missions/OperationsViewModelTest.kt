@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.missions
 
 import de.greluc.krt.profit.basetool.android.core.data.Operation
+import de.greluc.krt.profit.basetool.android.core.data.OperationDraft
 import de.greluc.krt.profit.basetool.android.core.data.OperationOverview
 import de.greluc.krt.profit.basetool.android.core.data.OperationPage
 import de.greluc.krt.profit.basetool.android.core.data.OperationQuery
@@ -77,6 +78,14 @@ class OperationsViewModelTest {
             participantKey: String,
             paidOut: Boolean,
         ): ApiResult<Unit> = error("this fake confirms nothing")
+
+        override suspend fun create(draft: OperationDraft): ApiResult<String> =
+            error("this test never writes")
+
+        override suspend fun update(
+            operationId: String,
+            draft: OperationDraft,
+        ): ApiResult<Unit> = error("this test never writes")
     }
 
     private fun operation(

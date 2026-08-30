@@ -5,8 +5,8 @@
 > **Related:** [`missions.md`](missions.md) (`REQ-APP-MIS-*`), [`api-contract.md`](api-contract.md)
 
 The Operationen list — the second half of the Einsätze screen's segment — and the Operation
-detail. Everything here is **read-only**: the design's manager payout toggles are mutations and
-belong to Phase 3, which is why this screen shows the payout *state* and no action.
+detail, together with the one form that writes them (`REQ-APP-OPS-014`). The payout confirmation
+(`REQ-APP-OPS-013`) is the detail's only other mutation.
 
 ---
 
@@ -314,3 +314,45 @@ and a control that can only 400 is not a control.
   officer.
 
 **Code:** `OperationRepository.setPaidOut`, `OperationDetailViewModel.onTogglePaidOut`
+
+---
+
+### REQ-APP-OPS-014 — One form raises and rewrites an Operation, and says where the missing halves live
+
+Design ch. 06 artboards 15 („Operation anlegen") and 16 („Operation bearbeiten") draw two screens.
+The app has **one**: `POST /api/v1/operations` and `PUT /api/v1/operations/{id}` take the same three
+fields — name, description, status — so a second layout would be a second place to keep in step
+without a second thing to say.
+
+It is reached from the Operationen list (a full-width action above the filter bar) and from the
+detail's `⋮`. Both are **drawn for everyone**, per ADR-0011: whether the caller is a
+Missions-Manager is the server's answer, and an action that is simply absent teaches nobody what to
+ask for. A refusal comes back as the form's `403`.
+
+**The status segment is shown on the create too**, not only on the edit: the status is required by
+both writes, so a create that hid it would be sending a value nobody chose.
+
+**The version is echoed on the edit.** The form reads the Operation first — `GET
+/api/v1/operations/{id}` — and sends back the `version` it came with, so a concurrent edit is a
+`409` rather than a silent overwrite. An empty description is sent as **absent**, not as an empty
+string: the server stores what it is sent, and a blank line reads as a deliberate blanking.
+
+> **Two artboard fields that no DTO carries — flagged, not invented.**
+> „Beginn" and „Ende (geplant)" (artboard 15) do not exist on `OperationCreateDto` or
+> `OperationUpdateDto`. An Operation has **no times of its own**; they live on its Einsätze.
+> „Einsätze zuordnen" is not a field either: a mission joins an Operation through **its own** core
+> section (`PATCH /api/v1/missions/{id}/core` with `operationId`), which needs that mission's name
+> and core version — data an Operation form does not hold. Rather than drawing controls that reach
+> nothing, the form carries two `KrtHint` lines saying where the assignment happens. Both are on the
+> design gap list handed to the owner.
+
+**Acceptance**
+
+- [x] A blank name cannot be sent, and pressing the CTA anyway writes nothing (`OperationFormTest`).
+- [x] The create trims and drops an empty description (`OperationFormTest`).
+- [x] The edit prefills from the server and echoes the version (`OperationFormTest`).
+- [x] A refusal keeps what was typed (`OperationFormTest`).
+- [ ] Observed on a device.
+
+**Code:** `OperationRepository.create` / `.update`, `OperationFormViewModel`, `OperationFormScreen`,
+`OperationsScreen` (the list's action), `OperationDetailScreen` (the `⋮`)

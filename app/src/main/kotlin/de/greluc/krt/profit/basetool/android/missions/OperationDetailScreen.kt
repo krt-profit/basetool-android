@@ -61,8 +61,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
@@ -77,6 +79,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the scrolling content of the Operation detail. */
 const val OPERATION_DETAIL_CONTENT_TAG: String = "operation-detail-content"
+
+/** Test handle for the „⋮" that opens „Operation bearbeiten". */
+const val OPERATION_EDIT_MENU_TAG: String = "operation-edit-menu"
 
 /** Test handle for a payout row's confirmation. */
 const val OPERATION_PAID_OUT_TAG: String = "operation-paid-out"
@@ -107,6 +112,7 @@ fun OperationDetailScreen(
     onOpenMission: (String) -> Unit,
     onTogglePaidOut: (OperationPayout) -> Unit,
     modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null,
 ) {
     val overview = state.overview
     // Bound so the smart cast survives the branch; `state.phase` is a property read.
@@ -114,7 +120,11 @@ fun OperationDetailScreen(
     Column(modifier = modifier.fillMaxSize()) {
         when {
             overview != null -> {
-                OperationDetailHead(detail = overview.detail, overview = overview)
+                OperationDetailHead(
+                    detail = overview.detail,
+                    overview = overview,
+                    onEdit = onEdit,
+                )
                 PullToRefreshBox(
                     isRefreshing = state.refreshing,
                     onRefresh = onRefresh,
@@ -165,11 +175,13 @@ fun OperationDetailScreen(
  *
  * @param detail the Operation.
  * @param overview everything loaded with it, which is where the counts come from.
+ * @param onEdit opens the edit form, or `null` where the screen cannot navigate.
  */
 @Composable
 private fun OperationDetailHead(
     detail: OperationDetail,
     overview: OperationOverview,
+    onEdit: (() -> Unit)?,
 ) {
     // Artboard 06.5 puts the Operation's own name in the TOP BAR with its status and counts under
     // it, the way every other detail in this app now reads. The bar used to say "OPERATION" - the
@@ -185,8 +197,35 @@ private fun OperationDetailHead(
                 overview.payouts.participants,
                 overview.payouts.participants,
             )
+    // Drawn for everyone rather than hidden from those who may not write: whether the caller is a
+    // Missions-Manager is the server's answer, and an action that is simply absent teaches nobody
+    // what to ask for (ADR-0011). A refusal comes back as the form's 403.
+    val editLabel = stringResource(R.string.operation_form_edit_title)
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
     ProvideScreenTopBar(
         title = detail.name,
+        actions =
+            onEdit?.let { edit ->
+                {
+                    KrtOverflowMenu(
+                        contentDescription = editLabel,
+                        expanded = menuOpen,
+                        onExpandedChange = { menuOpen = it },
+                        modifier = Modifier.testTag(OPERATION_EDIT_MENU_TAG),
+                        items =
+                            listOf(
+                                KrtMenuItem(
+                                    label = editLabel,
+                                    iconRes = DesignR.drawable.ic_krt_edit,
+                                    onClick = {
+                                        menuOpen = false
+                                        edit()
+                                    },
+                                ),
+                            ),
+                    )
+                }
+            },
         subtitle = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
@@ -658,7 +697,12 @@ private fun PayoutCheckbox(
             cancelText = stringResource(R.string.personal_inventory_cancel),
         ) {
             Text(
-                text = stringResource(R.string.operation_detail_payout_undo_body, row.participantName),
+                text =
+                    stringResource(
+                        R.string.operation_detail_payout_undo_body,
+                        row.participantName,
+                        row.payout.orEmpty(),
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KrtPalette.Gray1,
             )
@@ -768,6 +812,7 @@ fun OperationDetailRoute(
     viewModel: OperationDetailViewModel,
     onOpenMission: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     OperationDetailScreen(
@@ -777,6 +822,7 @@ fun OperationDetailRoute(
         onOpenMission = onOpenMission,
         onTogglePaidOut = viewModel::onTogglePaidOut,
         modifier = modifier,
+        onEdit = onEdit,
     )
 }
 

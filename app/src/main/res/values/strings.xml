@@ -312,7 +312,7 @@
     <string name="operation_detail_payout_route_member">Auszahlung</string>
     <string name="operation_detail_payout_route_org">Org-Kasse (Verzicht)</string>
     <string name="operation_detail_payout_undo_title">Auszahlung zurücknehmen?</string>
-    <string name="operation_detail_payout_undo_body">%1$s wurde als ausgezahlt geführt. Die Zeile steht danach wieder offen.</string>
+    <string name="operation_detail_payout_undo_body">%1$s gilt danach wieder als offen — %2$s. Die Buchung in der Kartellbank wird davon nicht berührt; sie muss dort getrennt korrigiert werden.</string>
     <string name="operation_detail_description">Beschreibung</string>
     <string name="operation_detail_error_forbidden_title">Access Denied</string>
     <string name="operation_detail_error_forbidden_message">Diese Operation ist für dich nicht einsehbar.</string>
@@ -1580,4 +1580,17 @@
     <string name="order_detail_missing">Fehlt %1$d</string>
     <string name="order_edit_item_only_web">Item-Positionen ändert nur ein Logistiker, und nur solange nichts übergeben wurde.</string>
     <string name="order_edit_item_only_web_detail">Nach der ersten Übergabe sind die Positionen festgeschrieben.</string>
+    <!-- Operation anlegen / bearbeiten (design ch. 06, artboards 15 + 16) -->
+    <string name="operation_form_title">Operation anlegen</string>
+    <string name="operation_form_edit_title">Operation bearbeiten</string>
+    <string name="operation_form_name">Name</string>
+    <string name="operation_form_description">Beschreibung</string>
+    <string name="operation_form_create">Operation anlegen</string>
+    <string name="operation_form_save">Speichern</string>
+    <string name="operation_form_status_hint">„Abgeschlossen“ friert die Anteile ein — die Auszahlungen bleiben bedienbar.</string>
+    <string name="operation_form_missions_hint">Einsätze werden im Einsatz selbst zugeordnet: dort gehört das Feld hin, weil die Zuordnung am Einsatz hängt und dessen Stand mitschreibt.</string>
+    <string name="operation_form_open">Operation bearbeiten</string>
+    <string name="operation_status_planned">Geplant</string>
+    <string name="operation_status_active">Läuft</string>
+    <string name="operation_status_completed">Abgeschlossen</string>
 </resources>

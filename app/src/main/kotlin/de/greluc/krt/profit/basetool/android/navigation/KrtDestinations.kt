@@ -182,6 +182,20 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_crate,
     ),
 
+    /** The form for a new Operation, pushed from the Operationen list. */
+    OperationCreate(
+        "operation-create",
+        R.string.operation_form_title,
+        DesignR.drawable.ic_krt_clipboard_check,
+    ),
+
+    /** The same form, rewriting one Operation; pushed from its detail. */
+    OperationEdit(
+        "operation-edit/{operationId}",
+        R.string.operation_form_edit_title,
+        DesignR.drawable.ic_krt_edit,
+    ),
+
     /** The form for a new material order, pushed from the Aufträge queue. */
     OrderCreate(
         "order-create",
@@ -290,6 +304,8 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         KrtDestination.MaterialDetail to KrtDestination.Materials,
         KrtDestination.OrderEdit to KrtDestination.Orders,
         KrtDestination.OrderCollection to KrtDestination.Orders,
+        KrtDestination.OperationCreate to KrtDestination.Operations,
+        KrtDestination.OperationEdit to KrtDestination.Operations,
         KrtDestination.MaterialMatrix to KrtDestination.Materials,
         KrtDestination.MaterialProfit to KrtDestination.Materials,
         // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
@@ -342,6 +358,14 @@ fun orderEditRoute(orderId: String): String = "order-edit/" + orderId
  * @return the concrete route.
  */
 fun orderCollectionRoute(orderId: String): String = "order-collection/" + orderId
+
+/**
+ * The route that opens the edit form for one Operation.
+ *
+ * @param operationId which Operation.
+ * @return the concrete route.
+ */
+fun operationEditRoute(operationId: String): String = "operation-edit/" + operationId
 
 /**
  * The route that opens one Operation.

@@ -15,6 +15,8 @@ package de.greluc.krt.profit.basetool.android.core.data
  * @property status where it stands
  * @property rawStatus the untranslated server value, for [OperationStatus.UNKNOWN]
  * @property description the free text, or `null`
+ * @property version the optimistic lock the edit echoes; without it a rewrite could only
+ *   overwrite blindly
  * @property payoutPreliminary whether the payout figures may still rebalance because some Einsatz
  *   of this Operation has no actual end time yet; `null` when the server did not compute it, which
  *   the screen treats as "do not claim either way" rather than as "final"
@@ -26,6 +28,7 @@ data class OperationDetail(
     val rawStatus: String?,
     val description: String?,
     val payoutPreliminary: Boolean?,
+    val version: Long? = null,
 )
 
 /**

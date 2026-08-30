@@ -291,7 +291,7 @@
     <string name="operation_detail_payout_route_member">Payout</string>
     <string name="operation_detail_payout_route_org">Org treasury (waived)</string>
     <string name="operation_detail_payout_undo_title">Take the payout back?</string>
-    <string name="operation_detail_payout_undo_body">%1$s is recorded as paid out. The row goes back to open.</string>
+    <string name="operation_detail_payout_undo_body">%1$s counts as open again — %2$s. The booking in the Kartellbank is untouched by this; it has to be corrected there separately.</string>
     <string name="operation_detail_description">Description</string>
     <string name="operation_detail_error_forbidden_title">Access Denied</string>
     <string name="operation_detail_error_forbidden_message">This Operation is not visible to you.</string>
@@ -1559,4 +1559,17 @@
     <string name="order_detail_missing">Missing %1$d</string>
     <string name="order_edit_item_only_web">Only a Logistician edits item lines, and only while nothing has been handed over.</string>
     <string name="order_edit_item_only_web_detail">Once anything has been handed over the lines are fixed.</string>
+    <!-- Creating and editing an Operation (design ch. 06, artboards 15 + 16) -->
+    <string name="operation_form_title">New Operation</string>
+    <string name="operation_form_edit_title">Edit the Operation</string>
+    <string name="operation_form_name">Name</string>
+    <string name="operation_form_description">Description</string>
+    <string name="operation_form_create">Create the Operation</string>
+    <string name="operation_form_save">Save</string>
+    <string name="operation_form_status_hint">“Completed” freezes the shares — the payouts stay usable.</string>
+    <string name="operation_form_missions_hint">Einsätze are assigned on the Einsatz itself: the field belongs there, because the assignment hangs off the Einsatz and writes its state along with it.</string>
+    <string name="operation_form_open">Edit the Operation</string>
+    <string name="operation_status_planned">Planned</string>
+    <string name="operation_status_active">Running</string>
+    <string name="operation_status_completed">Completed</string>
 </resources>

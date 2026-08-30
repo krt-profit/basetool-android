@@ -70,6 +70,7 @@ import de.greluc.krt.profit.basetool.android.materials.ProfitViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionDetailViewModel
 import de.greluc.krt.profit.basetool.android.missions.MissionsViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationDetailViewModel
+import de.greluc.krt.profit.basetool.android.missions.OperationFormViewModel
 import de.greluc.krt.profit.basetool.android.missions.OperationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
@@ -160,6 +161,7 @@ fun BasetoolApp(
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
+    operationForm: (String?) -> OperationFormViewModel,
     inventory: InventoryViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
@@ -336,6 +338,7 @@ fun BasetoolApp(
                         orderCreate = orderCreate,
                         orderEdit = orderEdit,
                         orderCollection = orderCollection,
+                        operationForm = operationForm,
                         inventory = inventory,
                         personalInventory = personalInventory,
                         personalBlueprints = personalBlueprints,
