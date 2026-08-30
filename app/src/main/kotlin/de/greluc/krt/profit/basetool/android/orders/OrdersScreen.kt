@@ -896,6 +896,7 @@ private fun JobOrder.statusTone(): KrtStatusTone =
  * @param state what to draw.
  * @param handover the Übergabe sheet's own state and callbacks.
  * @param itemHandover the item Übergabe sheet's own state and callbacks.
+ * @param claims the Zusagen tab's own state and callbacks.
  * @param production the Herstellung sheet's own state and callbacks.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member asked for the failed first load again.
@@ -909,6 +910,7 @@ fun OrderDetailScreen(
     handover: OrderHandoverActions,
     itemHandover: OrderItemHandoverActions,
     production: OrderProductionActions,
+    claims: ClaimActions,
     onRefresh: () -> Unit,
     onRetryNow: () -> Unit,
     actions: OrderDetailActions,
@@ -928,6 +930,7 @@ fun OrderDetailScreen(
                     state = state,
                     order = order,
                     actions = actions,
+                    claims = claims,
                     denials = denials,
                 )
                 // At the screen, never inside the list: a LazyColumn recycles its rows, and a
@@ -951,6 +954,7 @@ fun OrderDetailScreen(
             OrderHandoverSheet(actions = handover)
             OrderItemHandoverSheet(actions = itemHandover)
             OrderProductionSheet(actions = production)
+            OrderClaimSheet(actions = claims)
         }
 
         phase is OrderDetailPhase.Failed -> {
@@ -1029,6 +1033,7 @@ data class OrderDetailActions(
  * @param state what to draw.
  * @param order the order.
  * @param actions what the screen reports back.
+ * @param claims the Zusagen tab's own state and callbacks.
  * @param denials the screen's single refusal slot, for the controls a caller may not use.
  */
 @Composable
@@ -1036,6 +1041,7 @@ private fun OrderDetailBody(
     state: OrderDetailState,
     order: JobOrder,
     actions: OrderDetailActions,
+    claims: ClaimActions,
     denials: DenialState,
 ) {
     LazyColumn(
@@ -1112,13 +1118,16 @@ private fun OrderDetailBody(
         item(key = "facts") { OrderFactsBar(order = order) }
         item(key = "redaction") { RedactionNotice(order = order) }
         item(key = "tabs") {
+            // Not `OrderTab.entries`: Zusagen exist only on a Spezialkommando order, so the tab
+            // set is the order's own rather than the enum's.
+            val tabs = state.tabs
             KrtPageTabs(
                 tabs =
-                    OrderTab.entries.map { tab ->
+                    tabs.map { tab ->
                         KrtPageTab(label = stringResource(tab.labelRes), count = tab.countIn(order))
                     },
-                selectedIndex = OrderTab.entries.indexOf(state.tab),
-                onSelect = { actions.onTabSelected(OrderTab.entries[it]) },
+                selectedIndex = tabs.indexOf(state.tab).coerceAtLeast(0),
+                onSelect = { actions.onTabSelected(tabs[it]) },
             )
         }
         when (state.tab) {
@@ -1134,6 +1143,10 @@ private fun OrderDetailBody(
 
             OrderTab.ASSIGNEES -> {
                 assigneesTab(order = order, state = state, actions = actions)
+            }
+
+            OrderTab.CLAIMS -> {
+                claimsTab(state = state.claims, actions = claims)
             }
 
             OrderTab.HANDOVERS -> {
@@ -1404,6 +1417,15 @@ fun OrderDetailRoute(
                 onChange = viewModel.itemHandover::change,
                 onSubmit = { viewModel.itemHandover.submit(state.orderId) },
                 onDismiss = viewModel.itemHandover::dismiss,
+            ),
+        claims =
+            ClaimActions(
+                draft = state.claims.draft,
+                onOpen = viewModel.claims::open,
+                onChange = viewModel.claims::change,
+                onSubmit = { viewModel.claims.submit(state.orderId) },
+                onWithdraw = { viewModel.claims.withdraw(state.orderId) },
+                onDismiss = viewModel.claims::dismiss,
             ),
         production =
             OrderProductionActions(

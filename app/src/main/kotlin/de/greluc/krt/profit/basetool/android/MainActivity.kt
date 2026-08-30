@@ -397,6 +397,8 @@ class MainActivity : AppCompatActivity() {
                                                 orders = container.orders,
                                                 work = container.orderWork,
                                                 bookIn = container.inventory,
+                                                claims = container.orderClaims,
+                                                orgUnits = container.orgUnits,
                                                 identity = container.identity,
                                                 liveSync = container.liveSync,
                                             ),

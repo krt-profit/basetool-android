@@ -1512,4 +1512,22 @@
         <item quantity="one">%1$s · %2$d piece · %3$s</item>
         <item quantity="other">%1$s · %2$d pieces · %3$s</item>
     </plurals>
+    <!-- Auftrag: claims (design ch. 10 artboard 13) -->
+    <string name="order_tab_claims">Zusagen</string>
+    <string name="order_claims_progress">%1$s / %2$s claimed</string>
+    <string name="order_claims_open">Still open: %1$s</string>
+    <string name="order_claims_chip">%1$s: %2$s</string>
+    <string name="order_claims_add">Make a claim</string>
+    <string name="order_claims_change">Change the claim</string>
+    <string name="order_claims_empty">This Auftrag has no material lines.</string>
+    <string name="order_claims_error">The claims could not be loaded.</string>
+    <string name="order_claims_no_unit">A Staffel makes the claim. You belong to no profit-eligible Staffel.</string>
+    <string name="order_claims_sheet_title">Claim — %1$s</string>
+    <string name="order_claims_sheet_open">Open: %1$s of %2$s</string>
+    <string name="order_claims_amount">%1$s claims</string>
+    <string name="order_claims_intent_hint">A claim is an intention, not a booking — delivery happens through the handover.</string>
+    <string name="order_claims_cta">Claim</string>
+    <string name="order_claims_withdraw">Withdraw</string>
+    <string name="order_claims_overclaim">The server refuses more than is still open. The sum across Staffeln may not exceed what is needed.</string>
+    <string name="order_claims_not_allowed">You need the Logistician role for that.</string>
 </resources>

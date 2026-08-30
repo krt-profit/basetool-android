@@ -23,6 +23,9 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimSource
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitKind
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -328,6 +331,16 @@ data class OrderDetailState(
     val production: ProductionDraft? = null,
     /** Which page of the Auftrag is showing (design ch. 10 artboard 2). */
     val tab: OrderTab = OrderTab.POSITIONS,
+    /** The Zusagen — their own read, because they are not part of the order aggregate. */
+    val claims: ClaimsState = ClaimsState(),
+    /**
+     * Whether this order's responsible unit is a Spezialkommando.
+     *
+     * Resolved by id against the active org units, because `SquadronReferenceDto` carries no kind.
+     * `null` while that read is still out — which is not the same as „no", and is why the Zusagen
+     * tab appears once the answer arrives rather than being guessed from the unit's name.
+     */
+    val responsibleIsSpecialCommand: Boolean? = null,
     val statusPickerOpen: Boolean = false,
     /**
      * The status the member has picked but not yet applied.
@@ -356,6 +369,16 @@ data class OrderDetailState(
      */
     val writable: Boolean
         get() = online && !saving && me != null
+
+    /**
+     * The tabs this order actually has.
+     *
+     * Zusagen exist only on a Spezialkommando order — the server refuses a claim on anything else
+     * — so offering the tab elsewhere would offer a surface whose every action is a 400.
+     */
+    val tabs: List<OrderTab>
+        get() =
+            OrderTab.entries.filter { it != OrderTab.CLAIMS || responsibleIsSpecialCommand == true }
 
     /** Whether the status control belongs on this screen. */
     val statusChangeable: Boolean
@@ -396,6 +419,9 @@ data class OrderDetailState(
  * @property orders where the order comes from.
  * @property work the two writes that record work on it — the Übergabe and the Herstellung.
  * @property bookIn where produced stock may land.
+ * @property claims the Zusagen on this order.
+ * @property orgUnits the caller's own Staffeln, and every active unit — the first says who may
+ *   pledge, the second says whether this order's responsible unit is a Spezialkommando.
  * @property identity who the caller is — which decides whose row on this order is theirs, and
  *   whether the status control is offered at all.
  * @property liveSync a peer's change on the same order, or `null` where none is wired.
@@ -404,6 +430,8 @@ data class OrderDetailSources(
     val orders: JobOrderSource,
     val work: JobOrderWorkSource,
     val bookIn: BookInOptions,
+    val claims: MaterialClaimSource,
+    val orgUnits: OrgUnitSource,
     val identity: IdentitySource,
     val liveSync: LiveSyncSource? = null,
 )
@@ -422,6 +450,7 @@ class OrderDetailViewModel(
 ) : ViewModel() {
     private val source = sources.orders
     private val identity = sources.identity
+    private val orgUnits = sources.orgUnits
     private val liveSync = sources.liveSync
 
     private val mutableState = MutableStateFlow(OrderDetailState(orderId = orderId))
@@ -445,6 +474,21 @@ class OrderDetailViewModel(
             // the order's status and possibly the whole order into „completed", and none of that is
             // in the answer.
             onRecorded = { reload(keepContent = true) },
+        )
+
+    /**
+     * The Zusagen — which Staffel has signed up to deliver what.
+     *
+     * Their own holder and their own read: they live on `/orders/{id}/claims` rather than in the
+     * order aggregate, and a pledge moves figures the server computes.
+     */
+    val claims =
+        OrderClaims(
+            source = sources.claims,
+            orgUnits = sources.orgUnits,
+            scope = viewModelScope,
+            read = { mutableState.value.claims },
+            write = { claims -> mutableState.value = mutableState.value.copy(claims = claims) },
         )
 
     /**
@@ -517,6 +561,35 @@ class OrderDetailViewModel(
     fun load() {
         readIdentity()
         reload(keepContent = false)
+        claims.load(orderId)
+    }
+
+    /**
+     * Works out whether this order's responsible unit is a Spezialkommando.
+     *
+     * `SquadronReferenceDto` carries no kind, so the id is matched against the active org units —
+     * the same list the order form's customer picker is built from. Guessing from the unit's name
+     * („SK …") was the alternative and is a naming convention, not a fact.
+     *
+     * A failure leaves the answer `null`, which keeps the Zusagen tab hidden rather than offering a
+     * surface whose every action would be a 400.
+     */
+    private fun resolveResponsibleKind() {
+        if (mutableState.value.responsibleIsSpecialCommand != null) {
+            return
+        }
+        viewModelScope.launch {
+            val responsibleId = mutableState.value.order?.responsibleOrgUnitId ?: return@launch
+            val result = orgUnits.activeAllKinds()
+            if (result is ApiResult.Success) {
+                mutableState.value =
+                    mutableState.value.copy(
+                        responsibleIsSpecialCommand =
+                            result.value.firstOrNull { it.id == responsibleId }?.kind ==
+                                OrgUnitKind.SPECIAL_COMMAND,
+                    )
+            }
+        }
     }
 
     /**
@@ -846,6 +919,9 @@ class OrderDetailViewModel(
                             refreshing = false,
                         )
                     retry.onSuccess()
+                    // Only now: the responsible unit's id arrives with the order, so the kind
+                    // lookup has nothing to match against before this point.
+                    resolveResponsibleKind()
                 }
 
                 is ApiResult.Failure -> {

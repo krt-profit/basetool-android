@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkRepository
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialCatalogRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
@@ -241,6 +242,16 @@ class AuthContainer(
      */
     val materialCatalog: MaterialCatalogRepository by lazy {
         MaterialCatalogRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * Zusagen — a Staffel signing up to deliver part of a Spezialkommando order.
+     *
+     * Its own repository rather than more methods on [orders]: the claims live on their own path
+     * under an order and are read by a screen the order aggregate knows nothing about.
+     */
+    val orderClaims: MaterialClaimRepository by lazy {
+        MaterialClaimRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**

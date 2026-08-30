@@ -15,6 +15,11 @@
   „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
   Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
 
+- **Zusagen: neuer Tab im Auftrag.** Bei Aufträgen eines Spezialkommandos sieht man je Material,
+  welche Staffel wie viel zugesagt hat und was noch offen ist, und kann für die eigene Staffel
+  zusagen, die Zusage ändern oder sie zurückziehen. Eine Zusage ist eine Absicht, keine Buchung —
+  geliefert wird weiterhin über die Übergabe.
+
 - **Item-Aufträge lassen sich jetzt übergeben — und der Übergaben-Tab zeigt sie endlich an.** Je
   Position wird eingetragen, wie viele Stück an wen gegangen sind; die Obergrenze ist, was
   hergestellt und noch nicht übergeben wurde. Bisher blieb das Item-Übergabeprotokoll ungelesen, so

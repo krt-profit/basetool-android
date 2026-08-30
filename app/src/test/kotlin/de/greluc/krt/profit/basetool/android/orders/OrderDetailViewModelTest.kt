@@ -10,6 +10,8 @@ package de.greluc.krt.profit.basetool.android.orders
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderHandoverDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHandoverDto
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
+import de.greluc.krt.profit.basetool.android.core.data.ClaimBucket
+import de.greluc.krt.profit.basetool.android.core.data.ClaimQuality
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
@@ -21,8 +23,11 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderWorkSource
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
+import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimSource
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -45,6 +50,34 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+
+/** The Zusagen, which this class does not exercise. */
+private object NoClaimSource : MaterialClaimSource {
+    override suspend fun buckets(orderId: String): ApiResult<List<ClaimBucket>> =
+        ApiResult.Success(emptyList())
+
+    override suspend fun upsert(
+        orderId: String,
+        materialId: String,
+        quality: ClaimQuality,
+        orgUnitId: String,
+        amount: Double,
+    ): ApiResult<Unit> = error("the Zusagen have their own test")
+
+    override suspend fun withdraw(
+        orderId: String,
+        claimId: String,
+    ): ApiResult<Unit> = error("the Zusagen have their own test")
+}
+
+/** The caller's units — never asked here. */
+private object NoOrgUnits : OrgUnitSource {
+    override suspend fun memberships(): ApiResult<List<OrgUnit>> = ApiResult.Success(emptyList())
+
+    override suspend fun activeAllKinds(): ApiResult<List<OrgUnit>> = ApiResult.Success(emptyList())
+
+    override suspend fun serverDefault(): ApiResult<String?> = ApiResult.Success(null)
+}
 
 /** Where produced stock could land — never asked here. */
 private object NoBookInOptions : BookInOptions {
@@ -240,6 +273,8 @@ class OrderDetailViewModelTest {
             orders = source,
             work = NoWorkSource,
             bookIn = NoBookInOptions,
+            claims = NoClaimSource,
+            orgUnits = NoOrgUnits,
             identity = FakeIdentity(identity),
         ),
         connectivity,

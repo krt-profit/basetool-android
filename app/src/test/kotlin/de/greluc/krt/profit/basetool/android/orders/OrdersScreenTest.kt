@@ -159,6 +159,15 @@ class OrdersScreenTest {
                             onSubmit = {},
                             onDismiss = {},
                         ),
+                    claims =
+                        ClaimActions(
+                            draft = null,
+                            onOpen = { _, _ -> },
+                            onChange = {},
+                            onSubmit = {},
+                            onWithdraw = {},
+                            onDismiss = {},
+                        ),
                     production =
                         OrderProductionActions(
                             draft = null,

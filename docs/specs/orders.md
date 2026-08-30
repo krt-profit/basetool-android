@@ -597,3 +597,50 @@ carries no action at all — that is a fact about the line, not a permission.
 - [ ] A line with nothing deliverable offers no action, locked or otherwise
 
 **Enforced by:** `OrderItemHandoverTest`, `OrdersScreenTest`.
+
+## REQ-APP-ORDERS-021 — Zusagen: a Staffel signing up to deliver
+
+**Status:** implemented · **Since:** 2026-08-29
+
+A fourth tab on the order detail, and the members' half of the Auftrag workflow that had no app
+surface at all. `GET/POST /api/v1/orders/{id}/claims` and `DELETE .../claims/{claimId}`.
+
+**A claim is an intention, never a booking.** Nothing moves in the Lager; delivery is the
+Übergabe. That is why withdrawing one asks nothing first — it is undone by pledging again — and it
+is the same fact that makes the server's `openRemaining` (`required − claimed`) a count of
+**promises**, which REQ-APP-ORDERS-018 must never read as deliveries.
+
+> [!important] Only on a **Spezialkommando** order
+> `MaterialClaimService.assertClaimable` refuses a claim whose responsible unit is not an SK, and
+> freezes claims once the order is `COMPLETED` or `REJECTED`. The tab is therefore **not** offered
+> on a Staffel's own order. `SquadronReferenceDto` carries no kind, so the responsible unit's id is
+> matched against `/org-units` (all kinds) rather than guessed from a name beginning „SK".
+
+**A claim belongs to a Staffel, not to a member.** The wire keys it on
+`(bucket, claimingOrgUnit)`, so setting and changing are one upsert and an existing pledge opens
+filled in. The picker offers exactly what the server accepts — the caller's own memberships,
+filtered to **profit-eligible squadrons**: a Spezialkommando places orders and never claims against
+one, and a squadron nobody marked profit-eligible is outside the order workflow. A caller with no
+such membership is told that plainly, which is a fact about their memberships rather than a missing
+grant.
+
+**A bucket is `(material, quality)`, not a material.** The same material at „gut" and at „egal" are
+two separate demands and a claim names which it covers.
+
+> [!warning] Design ch. 10 artboard 13 says „Überzusage ist erlaubt" — it is not
+> `MaterialClaimService` takes a row lock on the order and refuses any pledge whose sum across
+> Staffeln exceeds what the bucket needs (REQ-ORDERS-024, ADR-0092). The refusal is rendered as
+> exactly that rather than as „ungültige Eingabe". On the design gap list.
+
+The buckets are **re-read** after every write: a pledge moves `claimed` and `openRemaining`, and
+both are the server's arithmetic.
+
+**Acceptance**
+
+- [ ] The tab appears only once the responsible unit is known to be a Spezialkommando
+- [ ] The unit picker offers only profit-eligible squadrons the caller belongs to
+- [ ] An existing pledge opens with its amount and offers a withdrawal; a first one does neither
+- [ ] A comma is a decimal point
+- [ ] A refusal keeps the sheet and its amount, and names the overclaim rule
+
+**Enforced by:** `OrderClaimsTest`.

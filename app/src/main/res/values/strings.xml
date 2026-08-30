@@ -1533,4 +1533,22 @@
         <item quantity="one">%1$s · %2$d Stück · %3$s</item>
         <item quantity="other">%1$s · %2$d Stück · %3$s</item>
     </plurals>
+    <!-- Auftrag: Zusagen (design ch. 10 artboard 13) -->
+    <string name="order_tab_claims">Zusagen</string>
+    <string name="order_claims_progress">%1$s / %2$s zugesagt</string>
+    <string name="order_claims_open">Noch offen: %1$s</string>
+    <string name="order_claims_chip">%1$s: %2$s</string>
+    <string name="order_claims_add">Zusage geben</string>
+    <string name="order_claims_change">Zusage ändern</string>
+    <string name="order_claims_empty">Dieser Auftrag hat keine Materialpositionen.</string>
+    <string name="order_claims_error">Die Zusagen konnten nicht geladen werden.</string>
+    <string name="order_claims_no_unit">Zusagen gibt eine Staffel ab. Du gehörst keiner profit-berechtigten Staffel an.</string>
+    <string name="order_claims_sheet_title">Zusage — %1$s</string>
+    <string name="order_claims_sheet_open">Offen: %1$s von %2$s</string>
+    <string name="order_claims_amount">Zusage von %1$s</string>
+    <string name="order_claims_intent_hint">Eine Zusage ist eine Absicht, keine Buchung — geliefert wird über die Übergabe.</string>
+    <string name="order_claims_cta">Zusagen</string>
+    <string name="order_claims_withdraw">Zurückziehen</string>
+    <string name="order_claims_overclaim">Mehr als noch offen ist lässt der Server nicht zu. Die Summe aller Staffeln darf den Bedarf nicht übersteigen.</string>
+    <string name="order_claims_not_allowed">Dafür brauchst du die Rolle Logistiker.</string>
 </resources>
