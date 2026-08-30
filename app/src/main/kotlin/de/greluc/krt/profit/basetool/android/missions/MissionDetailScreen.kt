@@ -336,6 +336,7 @@ private fun MissionDetailOverlays(
     timeline: MissionTimelineActions,
 ) {
     MemberPickerSheet(members = members)
+    UnitRenameSheet(structure = structure)
     state.structure.crewPickerUnitId?.let { unitId ->
         state.detail?.units?.firstOrNull { it.id == unitId }?.let { unit ->
             CrewPickerSheet(
@@ -1615,21 +1616,28 @@ fun MissionDetailRoute(
                 onDismissRemoveManager = viewModel.structure::dismissRemoveManager,
                 onRemoveCrew = viewModel.structure::removeCrew,
                 onEditUnit = { unit ->
-                    // The rename reuses the composer at the top of the tab, filled from the unit —
-                    // including its version, because the write is a replace and a guessed counter
-                    // would overwrite a concurrent rename instead of colliding with it.
+                    // Opens the rename sheet, filled from the unit — including its version, because
+                    // the write is a replace and a guessed counter would overwrite a concurrent
+                    // rename instead of colliding with it, and including its HVU mark, which the
+                    // one-field sheet does not show but the call still carries.
                     viewModel.structure.change {
                         it.copy(
                             unitName = unit.name,
-                            unitHighValue = unit.highValue,
                             editingUnitId = unit.id,
                             editingUnitVersion = unit.version,
+                            editingUnitOriginalName = unit.name,
+                            editingUnitHighValue = unit.highValue,
                         )
                     }
                 },
                 onSaveUnit = { unitId, version ->
                     val draft = state.structure
-                    viewModel.structure.updateUnit(unitId, draft.unitName, draft.unitHighValue, version)
+                    viewModel.structure.updateUnit(
+                        unitId,
+                        draft.unitName,
+                        draft.editingUnitHighValue,
+                        version,
+                    )
                 },
                 onSetCrewRoles = viewModel.structure::setCrewRoles,
                 onAddCrew = viewModel.structure::addCrew,

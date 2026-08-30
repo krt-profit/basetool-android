@@ -21,7 +21,6 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
-import de.greluc.krt.profit.basetool.android.core.data.MaterialDetailSource
 import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -250,7 +249,6 @@ data class BulkCheckoutState(
  * refresh is how they ask for more.
  *
  * @property source where the Lager comes from
- * @property paneSource the tablet pane's own read, which is a different endpoint.
  * @property connectivity whether the device has a network, which is what decides whether the
  *   booking actions are offered at all
  * @property liveSync the live-sync bridge, or `null` in a test or a preview. The shared Lager is
@@ -260,17 +258,9 @@ data class BulkCheckoutState(
 class InventoryViewModel(
     private val source: InventorySource,
     connectivity: Connectivity,
-    paneSource: MaterialDetailSource,
     private val liveSync: LiveSyncSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(InventoryState())
-
-    /**
-     * The tablet detail pane, which reads a material whole rather than branch by branch.
-     *
-     * A holder of its own: see [MaterialPaneLoader].
-     */
-    val pane = MaterialPaneLoader(paneSource, viewModelScope)
 
     /** What the screen draws. */
     val state: StateFlow<InventoryState> = mutableState.asStateFlow()

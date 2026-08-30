@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtAsso
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
@@ -109,18 +111,10 @@ data class MissionStructureActions(
 @Composable
 fun UnitComposer(structure: MissionStructureActions) {
     val gate = missionManagerGate(structure.canManage)
-    val editing = structure.draft.editingUnitId
-    // One set of fields appends and renames — `editingUnitId` decides which, and the button says
-    // so. The save carries the unit's own version, because a rename is a replace and a stale
-    // counter would overwrite a concurrent one silently.
-    val save: () -> Unit = {
-        if (editing == null) {
-            structure.onAddUnit()
-        } else {
-            structure.onSaveUnit(editing, structure.draft.editingUnitVersion)
-        }
-    }
-    val (dim, click) = rememberGated(gate, save, structure.denials)
+    // Appending only. Renaming used to share these fields, with `editingUnitId` deciding which the
+    // button meant — design ch. 18 §3 (E7) moved it into a sheet of its own, so a form that says
+    // „Einheit anlegen" can no longer be the one that renames one.
+    val (dim, click) = rememberGated(gate, structure.onAddUnit, structure.denials)
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
         KrtTextField(
             value = structure.draft.unitName,
@@ -138,27 +132,12 @@ fun UnitComposer(structure: MissionStructureActions) {
             enabled = structure.enabled && gate.allowed,
         )
         KrtGhostButton(
-            text =
-                stringResource(
-                    if (editing == null) {
-                        R.string.mission_struct_add_unit
-                    } else {
-                        R.string.mission_unit_rename_save
-                    },
-                ),
+            text = stringResource(R.string.mission_struct_add_unit),
             onClick = click,
             iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
             modifier = dim.fillMaxWidth().testTag(MISSION_UNIT_ADD_TAG),
             enabled = structure.enabled,
         )
-        if (editing != null) {
-            KrtGhostButton(
-                text = stringResource(R.string.mission_timeline_cancel),
-                onClick = { structure.onChange { MissionStructureDraft() } },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = structure.enabled,
-            )
-        }
     }
 }
 
@@ -189,6 +168,53 @@ fun UnitRowActions(
         structure = structure,
         onRemove = { structure.onRemoveUnit(unit.id) },
     )
+}
+
+/** Test handle for the rename sheet. */
+const val MISSION_UNIT_RENAME_TAG: String = "mission-unit-rename"
+
+/**
+ * Renaming an Einheit — design ch. 18 §3 (E7).
+ *
+ * **A sheet with one field**, the current name filled in, and „Speichern" dimmed until it actually
+ * differs. Not an inline field in the row's header: a header that turns into an input has no way to
+ * be cancelled, and the member is left editing something they only meant to read.
+ *
+ * The HVU mark is **not** in here even though the same call carries it. One field is the point, so
+ * the write echoes the mark back as it stands; changing it stays where it is set.
+ *
+ * @param structure the actions and what is typed.
+ */
+@Composable
+fun UnitRenameSheet(structure: MissionStructureActions) {
+    val editing = structure.draft.editingUnitId ?: return
+    val typed = structure.draft.unitName
+    val unchanged = typed.trim() == structure.draft.editingUnitOriginalName.trim()
+    KrtBottomSheet(
+        onDismiss = { structure.onChange { MissionStructureDraft() } },
+        modifier = Modifier.testTag(MISSION_UNIT_RENAME_TAG),
+        title = stringResource(R.string.mission_unit_rename),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        ) {
+            KrtTextField(
+                value = typed,
+                onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
+                label = stringResource(R.string.mission_struct_unit_name),
+                enabled = structure.enabled,
+            )
+            KrtCtaButton(
+                text = stringResource(R.string.mission_unit_rename_save),
+                onClick = { structure.onSaveUnit(editing, structure.draft.editingUnitVersion) },
+                modifier = Modifier.fillMaxWidth(),
+                // Dimmed until the name differs: a save that writes the value it already holds
+                // costs a round trip and a version bump for nothing, and reads as if it failed.
+                enabled = structure.enabled && !unchanged && typed.isNotBlank(),
+            )
+        }
+    }
 }
 
 /**

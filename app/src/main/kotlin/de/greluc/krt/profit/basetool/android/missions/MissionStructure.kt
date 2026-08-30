@@ -30,6 +30,10 @@ private const val LOG_TAG = "MissionStructure"
  *   of fields serves both, because only one Einheit can be edited at a time and a second pair would
  *   only be a second thing to keep in sync.
  * @property editingUnitVersion that Einheit's optimistic lock as last read, echoed by the rename.
+ * @property editingUnitOriginalName the name the rename sheet opened on, so „Speichern" can stay
+ *   dimmed until the typed value actually differs from it (design ch. 18 §3, E7).
+ * @property editingUnitHighValue that Einheit's HVU mark as it stands, echoed by the rename — the
+ *   sheet carries one field, and the call carries both.
  * @property crewRolesFor the crew slot whose Funktionen are open for editing, as
  *   `unitId to crewId`, or `null`.
  * @property crewPickerUnitId the Einheit whose roster picker is open, or `null`. „+ Person
@@ -46,6 +50,8 @@ data class MissionStructureDraft(
     val unitHighValue: Boolean = false,
     val editingUnitId: String? = null,
     val editingUnitVersion: Long = 0L,
+    val editingUnitOriginalName: String = "",
+    val editingUnitHighValue: Boolean = false,
     val crewRolesFor: Pair<String, String>? = null,
     val crewPickerUnitId: String? = null,
     val freqName: String = "",

@@ -93,11 +93,9 @@ import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
-import de.greluc.krt.profit.basetool.android.ui.KrtListDetail
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isLogistician
-import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
@@ -114,21 +112,6 @@ private val GROUP_RAIL = 4.dp
 
 /** Width of the grey rail that marks a stack beneath it. */
 private val STACK_RAIL = 2.dp
-
-/** Test handle for the tablet pane's table. */
-const val INVENTORY_PANE_TAG: String = "inventory-pane"
-
-/** The pane table's column shares, left to right. */
-private const val MATERIAL_COL_HOLDER = 1.4f
-
-/** The place column's share. */
-private const val MATERIAL_COL_LOCATION = 1.6f
-
-/** The quality column's share. */
-private const val MATERIAL_COL_QUALITY = 0.6f
-
-/** The amount column's share. */
-private const val MATERIAL_COL_AMOUNT = 1f
 
 /**
  * The leaf row's darkening, straight from the artboard's `.tree-row--leaf`:
@@ -176,7 +159,6 @@ private val RAIL_HEIGHT = 44.dp
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param modifier layout modifier.
- * @param onSelectMaterial a material was tapped and the tablet pane is to show it.
  * @param pane what the tablet pane is showing, or `null` while nothing is selected.
  * @param paneActions what the tablet pane reports back.
  */
@@ -201,9 +183,6 @@ fun InventoryScreen(
     // Defaulted, and after the modifier because Android Lint requires that one to come first among
     // the optional parameters. The pane exists only on a tablet, and a test that draws the tree is
     // not asking about it; the route always passes all three.
-    onSelectMaterial: (InventoryGroup) -> Unit = {},
-    pane: MaterialPane? = null,
-    paneActions: MaterialPaneActions = MaterialPaneActions(onPage = {}, onRetry = {}),
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -265,28 +244,25 @@ fun InventoryScreen(
                                 )
                             }
                         } else {
-                            KrtListDetail(
-                                detail =
-                                    pane?.let { shown ->
-                                        { MaterialPaneBody(pane = shown, actions = paneActions) }
-                                    },
-                                emptyDetailMessage = stringResource(R.string.inventory_pane_none),
-                            ) {
-                                InventoryTree(
-                                    state = state,
-                                    onToggleGroup = onToggleGroup,
-                                    onToggleStack = onToggleStack,
-                                    onToggleBranch = onToggleBranch,
-                                    onBookOut = onBookOut,
-                                    onAllocate = onAllocate,
-                                    selection = selection,
-                                    onToggleSelected = onToggleSelected,
-                                    denials = denials,
-                                    online = state.online,
-                                    onLoadMore = onLoadMore,
-                                    onSelectMaterial = onSelectMaterial,
-                                )
-                            }
+                            // No detail pane, at any width — design ch. 18 §3 (E9) settles the
+                            // Lager on „rail + table": the tree IS the detail depth, and a fourth
+                            // level to its right would tell the same indentation twice. What
+                            // appears beside the tree on a tablet is the booking sheet, nothing
+                            // else. The pane and its `/inventory/material/{id}` read are gone
+                            // rather than hidden behind a flag.
+                            InventoryTree(
+                                state = state,
+                                onToggleGroup = onToggleGroup,
+                                onToggleStack = onToggleStack,
+                                onToggleBranch = onToggleBranch,
+                                onBookOut = onBookOut,
+                                onAllocate = onAllocate,
+                                selection = selection,
+                                onToggleSelected = onToggleSelected,
+                                denials = denials,
+                                online = state.online,
+                                onLoadMore = onLoadMore,
+                            )
                         }
                     }
                 }
@@ -342,10 +318,7 @@ private fun InventoryTree(
     denials: DenialState,
     online: Boolean,
     onLoadMore: () -> Unit,
-    onSelectMaterial: (InventoryGroup) -> Unit,
 ) {
-    // Only where there is a pane to fill. On a phone this would read a page nothing draws.
-    val selects = isWideWindow()
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(INVENTORY_TREE_TAG),
@@ -374,15 +347,7 @@ private fun InventoryTree(
                     // One gesture does both on a tablet: opening a material and reading its full
                     // table beside the tree are the same intent, and a second affordance on the row
                     // would be a control whose only job is to say "and also over there".
-                    onClick =
-                        materialId?.let {
-                            {
-                                onToggleGroup(it)
-                                if (selects) {
-                                    onSelectMaterial(group)
-                                }
-                            }
-                        },
+                    onClick = materialId?.let { { onToggleGroup(it) } },
                     onLongClick = materialId?.let { { onToggleBranch(it, null) } },
                     selected = picked,
                     // Only while the group is open does „n/m" mean anything: a collapsed group's
@@ -513,231 +478,6 @@ private fun LazyListScope.openedGroup(
                 }
             }
         }
-    }
-}
-
-/**
- * What the tablet pane reports back.
- *
- * @property onPage another page of the material's entries was asked for.
- * @property onRetry the failed read is to be tried again.
- */
-data class MaterialPaneActions(
-    val onPage: (Int) -> Unit,
-    val onRetry: () -> Unit,
-)
-
-/**
- * The Lager's detail pane: every entry of one material, flat.
- *
- * The tree and the table answer different questions and that is why the pane earns its place beside
- * the tree rather than repeating it. The tree groups by holder and shows only what is opened; the
- * table shows **every** entry of one material at once, across all holders and places, which is what
- * a thousand dp of width is for. It is the web's `/inventory/material/{id}` page, columns and all
- * (design round 9 §4).
- *
- * Read-only. A booking is still made from the tree, where the row's own actions live.
- *
- * @param pane which material, and where its read stands.
- * @param actions what the pane reports back.
- */
-@Composable
-private fun MaterialPaneBody(
-    pane: MaterialPane,
-    actions: MaterialPaneActions,
-) {
-    ProvideScreenTopBar(title = pane.name)
-    when (val phase = pane.phase) {
-        is MaterialPanePhase.Loading -> {
-            KrtLoadingIndicator(
-                text = pane.name,
-                modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-            )
-        }
-
-        is MaterialPanePhase.Failed -> {
-            KrtEmptyState(
-                iconRes = DesignR.drawable.ic_krt_crate,
-                title = stringResource(R.string.inventory_pane_failed_title),
-                message = stringResource(R.string.inventory_pane_failed_message),
-                actionText = stringResource(R.string.missions_retry),
-                onAction = actions.onRetry,
-                modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-            )
-        }
-
-        is MaterialPanePhase.Ready -> {
-            MaterialTable(pane = pane, page = phase.page, actions = actions)
-        }
-    }
-}
-
-/**
- * The pane's table, and the pager under it.
- *
- * @param pane which material.
- * @param page the entries and where they sit in the whole.
- * @param actions what the pane reports back.
- */
-@Composable
-private fun MaterialTable(
-    pane: MaterialPane,
-    page: MaterialEntryPage,
-    actions: MaterialPaneActions,
-) {
-    if (page.entries.isEmpty()) {
-        KrtEmptyState(
-            iconRes = DesignR.drawable.ic_krt_crate,
-            title = stringResource(R.string.inventory_pane_empty_title),
-            message = stringResource(R.string.inventory_pane_empty_message),
-            modifier = Modifier.fillMaxSize().padding(KrtSpacing.lg),
-        )
-        return
-    }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag(INVENTORY_PANE_TAG),
-        contentPadding = PaddingValues(KrtSpacing.md),
-    ) {
-        item(key = "head") { MaterialTableHead() }
-        items(page.entries, key = { it.id }) { entry ->
-            MaterialTableRow(entry = entry, unit = pane.unit)
-            KrtHairlineRule()
-        }
-        item(key = "pager") {
-            // ADR-0104: a pane that shows one page of many says how many, rather than letting the
-            // member read the last row as the last entry.
-            MaterialPager(page = page, onPage = actions.onPage)
-        }
-    }
-}
-
-/**
- * The table's column headings.
- */
-@Composable
-private fun MaterialTableHead() {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-    ) {
-        listOf(
-            R.string.inventory_pane_col_holder to MATERIAL_COL_HOLDER,
-            R.string.inventory_pane_col_location to MATERIAL_COL_LOCATION,
-            R.string.inventory_pane_col_quality to MATERIAL_COL_QUALITY,
-            R.string.inventory_pane_col_amount to MATERIAL_COL_AMOUNT,
-        ).forEach { (res, weight) ->
-            Text(
-                text = stringResource(res).krtUppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = KrtPalette.TextMuted,
-                modifier = Modifier.weight(weight),
-            )
-        }
-    }
-    KrtHairlineRule()
-}
-
-/**
- * One entry of the material, as a table row.
- *
- * @param entry the row.
- * @param unit the material's unit.
- */
-@Composable
-private fun MaterialTableRow(
-    entry: InventoryEntry,
-    unit: String?,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        MaterialCell(text = entry.holder, weight = MATERIAL_COL_HOLDER, bright = true)
-        MaterialCell(text = entry.locationName, weight = MATERIAL_COL_LOCATION)
-        MaterialCell(text = entry.quality, weight = MATERIAL_COL_QUALITY)
-        Row(modifier = Modifier.weight(MATERIAL_COL_AMOUNT)) {
-            Amount(value = entry.amount, unit = unit)
-        }
-    }
-}
-
-/**
- * One cell, with the dash a missing value gets.
- *
- * @param text what it says, or `null`.
- * @param weight its share of the row.
- * @param bright whether it carries the row's weight.
- */
-@Composable
-private fun RowScope.MaterialCell(
-    text: String?,
-    weight: Float,
-    bright: Boolean = false,
-) {
-    Text(
-        // A dash, not an empty cell: an empty cell in a table reads as a rendering fault rather
-        // than as a value the server did not state.
-        text = text?.takeIf { it.isNotBlank() } ?: "—",
-        style = MaterialTheme.typography.bodySmall,
-        color = if (bright) KrtPalette.White else KrtPalette.TextMuted,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(weight),
-    )
-}
-
-/**
- * How far through the material's entries the pane is, and the way on.
- *
- * @param page where this page sits in the whole.
- * @param onPage another page was asked for.
- */
-@Composable
-private fun MaterialPager(
-    page: MaterialEntryPage,
-    onPage: (Int) -> Unit,
-) {
-    if (page.totalPages <= 1) {
-        KrtEndOfList(
-            text =
-                pluralStringResource(
-                    R.plurals.inventory_pane_all,
-                    page.totalElements.toInt(),
-                    page.totalElements,
-                ),
-        )
-        return
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        KrtGhostButton(
-            text = stringResource(R.string.inventory_pane_previous),
-            onClick = { onPage(page.page - 1) },
-            enabled = page.page > 0,
-        )
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.inventory_pane_page,
-                    page.totalElements.toInt(),
-                    page.page + 1,
-                    page.totalPages,
-                    page.totalElements,
-                ),
-            style = MaterialTheme.typography.labelSmall,
-            color = KrtPalette.TextMuted,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-        )
-        KrtGhostButton(
-            text = stringResource(R.string.inventory_pane_next),
-            onClick = { onPage(page.page + 1) },
-            enabled = page.page + 1 < page.totalPages,
-        )
     }
 }
 
@@ -1369,7 +1109,6 @@ fun InventoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val pane by viewModel.pane.state.collectAsStateWithLifecycle()
     // One refusal at a time, at the foot of the screen — the design settled the open question of
     // round 3 on the bracket toast in the warning tint (design ch. 09, artboards 12 and 14).
     val denials = rememberDenialState()
@@ -1400,15 +1139,6 @@ fun InventoryRoute(
         onRefresh = viewModel::onRefresh,
         onRetryNow = viewModel::onRetry,
         onLoadMore = viewModel::onLoadMore,
-        onSelectMaterial = { group ->
-            group.materialId?.let { viewModel.pane.select(it, group.name, group.unit) }
-        },
-        pane = pane,
-        paneActions =
-            MaterialPaneActions(
-                onPage = viewModel.pane::page,
-                onRetry = viewModel.pane::retry,
-            ),
         modifier = modifier,
     )
 

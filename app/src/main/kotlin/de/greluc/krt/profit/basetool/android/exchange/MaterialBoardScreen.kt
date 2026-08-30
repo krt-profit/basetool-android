@@ -123,9 +123,10 @@ const val BOARD_PRIVACY_TAG: String = "board-privacy"
 /**
  * How many card columns a tablet's board shows.
  *
- * Two, not a width-driven count: three at 1280 dp would put a card below the width its own row of
- * name, figures and chips needs, and the drawing that would settle a wider count does not exist yet
- * (design round 9 §5).
+ * Two, and **two at every width** — ratified by design ch. 18 §3 (E9): offers left, requests right,
+ * 480 dp each with a 24 dp gutter, and past 1600 dp the columns grow rather than a third appearing.
+ * A third at 1280 dp would put a card below the width its own row of name, figures and chips needs,
+ * which is narrower than the phone's.
  */
 private const val BOARD_WIDE_COLUMNS = 2
 
@@ -343,8 +344,10 @@ private fun BoardGrid(
         state = rememberRootGridState(),
         modifier = Modifier.fillMaxSize().testTag(BOARD_LIST_TAG),
         contentPadding = PaddingValues(KrtSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+        // 10 dp down the column and a 24 dp gutter across it — design ch. 18 §3 (E9). They differ
+        // on purpose: the gutter separates two columns, the other is the rhythm within one.
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.cards),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xl),
     ) {
         items(state.entries, key = { it.id }) { entry ->
             BoardRow(

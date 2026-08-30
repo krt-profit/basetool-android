@@ -767,7 +767,6 @@ class MainActivity : AppCompatActivity() {
                     InventoryViewModel(
                         container.inventory,
                         container.connectivity,
-                        container.inventory,
                         container.liveSync,
                     )
                 }
