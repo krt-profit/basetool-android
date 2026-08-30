@@ -69,6 +69,8 @@ const val MISSION_FREQ_ADD_TAG: String = "mission-freq-add"
  * @property onRemoveUnit remove an Einheit by id.
  * @property onAddFrequency add the frequency that is typed.
  * @property onRemoveFrequency remove a frequency by id.
+ * @property onConfirmRemoveManager the manager removal was accepted.
+ * @property onDismissRemoveManager it was dismissed.
  * @property onRemoveCrew take somebody off an Einheit — `(unitId, crewId)`.
  */
 data class MissionStructureActions(
@@ -81,6 +83,8 @@ data class MissionStructureActions(
     val onRemoveUnit: (String) -> Unit,
     val onAddFrequency: () -> Unit,
     val onRemoveFrequency: (String) -> Unit,
+    val onConfirmRemoveManager: () -> Unit = {},
+    val onDismissRemoveManager: () -> Unit = {},
     val onRemoveCrew: (String, String) -> Unit,
     val onEditUnit: (MissionUnit) -> Unit,
     val onSaveUnit: (String, Long) -> Unit,

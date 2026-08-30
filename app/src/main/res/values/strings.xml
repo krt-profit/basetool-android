@@ -1743,4 +1743,12 @@
     <string name="bank_limits_remove_title">Limit entfernen?</string>
     <string name="bank_limits_remove_body">Für %1$s gilt danach das Limit von %2$s aUEC.</string>
     <string name="bank_limits_remove_body_none">Für %1$s gilt danach kein Limit — jede Buchung braucht dann deine Freigabe.</string>
+    <!-- Verwaltung → Personen (Design Kap. 06, Artboard 12) -->
+    <string name="mission_member_party_lead_label">Einsatzleitung</string>
+    <string name="mission_member_manager_label">Manager</string>
+    <string name="mission_member_change">Ändern</string>
+    <string name="mission_member_none">nicht gesetzt</string>
+    <string name="mission_member_no_managers">Noch keine Manager.</string>
+    <string name="mission_member_remove_manager_title">Manager entfernen?</string>
+    <string name="mission_member_remove_manager_body">%1$s verwaltet diesen Einsatz danach nicht mehr.</string>
 </resources>

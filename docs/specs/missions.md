@@ -945,3 +945,43 @@ field over the whole roster, which grows with it and is four rows high at fourte
 - [ ] The crew picker lists only roster members not already aboard that Einheit.
 
 **Enforced by:** `MissionManagerScreenTest`.
+
+---
+
+### REQ-APP-MIS-032 — Personen: every row shows its current value before its action
+
+Design ch. 06 artboard 12, whose composition **ratified** this section and corrected what stood
+here. The previous shape — three ghost buttons with noun labels — is named in the artboard as the
+thing to fix: it said neither who the Einsatzleitung was, nor that pressing one would be a
+*change*.
+
+Three things, three shapes:
+
+- **Einsatzleitung** is exactly one person → a value row with the name, then „Ändern". Changing it
+  does **not** confirm: the lead is replaced, not withdrawn.
+- **Manager** is a set → removable **data**-toned chips and a dashed „+ Manager" (`.assoc-add`).
+  Removing one **does** confirm and names the person, because it withdraws a right.
+- **Teilnehmer hinzufügen** is a pure action → full width, with nothing to show first.
+
+One picker still serves all three writes.
+
+> [!bug] The app was reading past `managers` — fixed 2026-08-30
+> `MissionDto` carries `managers` (a set of user references) and `canManageManagers`, and the app's
+> model mapped **neither**. So a manager could be added and never seen, and `removeManager` — which
+> existed in the repository and the view model — had no entry point anywhere in the UI and was
+> dead code. The parity table recorded this as „add, remove ✅ (no list of the current ones)"; the
+> honest reading is that removal was **not** reachable at all. Both fields are mapped now.
+
+**Acceptance**
+
+- [x] The lead's name stands in the row, and „nicht gesetzt" when there is none
+  (`MissionPeopleSectionTest`).
+- [x] The managers are listed, and their absence is said (`MissionPeopleSectionTest`).
+- [x] A chip's ✕ reports which manager it belongs to (`MissionPeopleSectionTest`).
+- [x] Removing one asks first and names the person (`MissionDetailScreen`,
+  `MissionStructure.askRemoveManager`).
+- [ ] Observed on a device.
+
+**Code:** `MissionManager`, `MissionDetail.managers` / `.canManageManagers`,
+`MissionMemberActions`, `MemberSection`, `MissionStructure.askRemoveManager` /
+`.confirmRemoveManager`

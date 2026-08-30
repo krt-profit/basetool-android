@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Die Verwaltung eines Einsatzes zeigt jetzt, wer Einsatzleitung und wer Manager ist.** Vorher
+  standen dort nur drei Knöpfe; die Manager waren nirgends zu sehen und liessen sich deshalb auch
+  nicht entfernen. Jede Zeile nennt zuerst den aktuellen Stand, dann die Aktion — und das
+  Entfernen eines Managers fragt nach und nennt die Person.
+
 - **Freigabe-Limits je Konto.** In den Kontoeinstellungen steht jetzt, bis zu welchem Betrag welche
   Stufe — und welches Mitglied — ohne zusätzliche Freigabe buchen darf. Setzen und Entfernen; beim
   Entfernen sagt die Rückfrage, welches Limit danach gilt.

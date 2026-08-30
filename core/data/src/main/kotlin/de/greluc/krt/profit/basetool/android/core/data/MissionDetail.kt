@@ -136,6 +136,17 @@ data class MissionFrequency(
 )
 
 /**
+ * One member who manages this Einsatz.
+ *
+ * @property userId who — what a removal addresses.
+ * @property name what to show for them, the server's effective name.
+ */
+data class MissionManager(
+    val userId: String,
+    val name: String,
+)
+
+/**
  * An Einsatz in full — everything the seven detail tabs draw.
  *
  * **An outsider read is a smaller object, not a failed one.** The backend redacts for anonymous and
@@ -158,6 +169,11 @@ data class MissionFrequency(
  * @property orgUnitName the owning unit's name, or `null`
  * @property orgUnitShorthand the owning unit's short form, which the badge draws
  * @property partyLeadName who leads it, member or guest, or `null`
+ * @property managers who manages it besides the lead. The server sends them on the Einsatz itself;
+ *   the app read past them until 2026-08-30, which is why a manager could be added and never seen
+ *   — and therefore never removed.
+ * @property canManageManagers whether the caller may add or remove one. A **narrower** right than
+ *   managing the Einsatz, and the server's own answer rather than anything derived here.
  * @property registeredParticipants how many signed up, as the server counts them
  * @property checkedInParticipants how many of those have checked in
  * @property participants the roster, in server order
@@ -191,6 +207,8 @@ data class MissionDetail(
     val orgUnitName: String?,
     val orgUnitShorthand: String?,
     val partyLeadName: String?,
+    val managers: List<MissionManager> = emptyList(),
+    val canManageManagers: Boolean = false,
     val registeredParticipants: Int,
     val checkedInParticipants: Int,
     val participants: List<MissionParticipant>,

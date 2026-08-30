@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
+import de.greluc.krt.profit.basetool.android.core.data.MissionManager
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -51,6 +52,7 @@ data class MissionStructureDraft(
     val freqValue: String = "",
     val busy: Boolean = false,
     val error: ApiError? = null,
+    val removingManager: MissionManager? = null,
 )
 
 /**
@@ -252,6 +254,33 @@ class MissionStructure(
     fun addManager(userId: String) {
         val (draft, _) = read()
         run(draft) { admin.addManager(missionId, userId) }
+    }
+
+    /**
+     * Asks before taking a manager off.
+     *
+     * Removing one withdraws a right and therefore confirms; changing the Einsatzleitung does not,
+     * because it is replaced rather than taken away (design ch. 06 artboard 12).
+     *
+     * @param manager who.
+     */
+    fun askRemoveManager(manager: MissionManager) {
+        val (draft, _) = read()
+        write(draft.copy(removingManager = manager), null)
+    }
+
+    /** Abandons that. */
+    fun dismissRemoveManager() {
+        val (draft, _) = read()
+        write(draft.copy(removingManager = null), null)
+    }
+
+    /** Takes off the manager the member confirmed. */
+    fun confirmRemoveManager() {
+        val (draft, _) = read()
+        val manager = draft.removingManager ?: return
+        write(draft.copy(removingManager = null), null)
+        removeManager(manager.userId)
     }
 
     /**

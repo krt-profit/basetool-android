@@ -35,6 +35,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateCrewReque
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateUnitRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.UserReferenceDto
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -1211,6 +1212,43 @@ private fun String.toInstantOrNull(): Instant? =
     runCatching { Instant.parse(this) }.getOrNull()
 
 /**
+ * The Einsatz's radio plan.
+ *
+ * Lifted out of [toModel] rather than nested in it: the mapper had grown past detekt's length
+ * limit, and a frequency without an id is a row nothing can address, so it is dropped here.
+ *
+ * @receiver what the server sent.
+ * @return the frequencies, in the server's order.
+ */
+private fun MissionDto.frequencyModels(): List<MissionFrequency> =
+    frequencies.orEmpty().mapNotNull { frequency ->
+        frequency.id?.let {
+            MissionFrequency(
+                id = it,
+                type = frequency.frequencyType?.name,
+                value = frequency.name.orEmpty(),
+            )
+        }
+    }
+
+/**
+ * One manager as the Verwaltung tab holds them.
+ *
+ * A row without an id is dropped: the id is what a removal addresses, so a chip without one is a
+ * name nobody can act on.
+ *
+ * @receiver what the server sent.
+ * @return the manager, or `null` when it carries no id.
+ */
+private fun UserReferenceDto.toManager(): MissionManager? =
+    id?.let {
+        MissionManager(
+            userId = it,
+            name = effectiveName ?: displayName ?: username.orEmpty(),
+        )
+    }
+
+/**
  * Maps the full wire DTO onto the detail model.
  *
  * @param requestedId the id that was asked for, used when the server omits its own. A detail read
@@ -1238,6 +1276,8 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         orgUnitName = owningSquadron?.name,
         orgUnitShorthand = owningSquadron?.shorthand,
         partyLeadName = partyLeadUser?.effectiveName ?: partyLeadUser?.displayName ?: partyLeadGuestName,
+        managers = managers.orEmpty().mapNotNull { it.toManager() },
+        canManageManagers = canManageManagers == true,
         registeredParticipants = registeredParticipants ?: 0,
         checkedInParticipants = checkedInParticipants ?: 0,
         participants = participants.orEmpty().mapNotNull { it.toModel() },
@@ -1261,15 +1301,7 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
                     kind = objective.kind?.value,
                 )
             },
-        frequencies =
-            frequencies.orEmpty().mapNotNull { frequency ->
-                val frequencyId = frequency.id ?: return@mapNotNull null
-                MissionFrequency(
-                    id = frequencyId,
-                    type = frequency.frequencyType?.name,
-                    value = frequency.name.orEmpty(),
-                )
-            },
+        frequencies = frequencyModels(),
         // The server's own verdict, not a role check repeated here. An absent field means "no",
         // so a server that predates the flag locks the manager actions instead of offering writes
         // it would refuse.

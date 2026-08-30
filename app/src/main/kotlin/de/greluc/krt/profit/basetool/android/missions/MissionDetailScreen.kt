@@ -76,6 +76,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHair
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
@@ -183,6 +185,24 @@ fun MissionDetailScreen(
     // a refused save under a scrolled form.
     ConflictOn(error = state.error, onReload = onRefresh)
     state.joinSheet?.let { ConflictOn(error = it.error, onReload = onRefresh) }
+    // Taking a manager off withdraws a right, so it asks first and names the person — the artboard's
+    // own distinction from changing the Einsatzleitung, which is replaced rather than taken away.
+    state.structure.removingManager?.let { manager ->
+        KrtModal(
+            title = stringResource(R.string.mission_member_remove_manager_title),
+            confirmText = stringResource(R.string.mission_struct_remove_manager),
+            onConfirm = structure.onConfirmRemoveManager,
+            onDismiss = structure.onDismissRemoveManager,
+            tone = KrtModalTone.Danger,
+            modifier = Modifier.testTag(MISSION_MANAGER_REMOVE_MODAL_TAG),
+        ) {
+            Text(
+                text = stringResource(R.string.mission_member_remove_manager_body, manager.name),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+        }
+    }
     // Boxed so the refusal can overlay the content. The toast belongs to the SCREEN and not to the
     // route above it: this is the composable that draws the locked controls, so it is the one that
     // has to be able to explain them — and a screen test that can reach the lock can then reach the
@@ -1565,6 +1585,8 @@ fun MissionDetailRoute(
                 onRemoveUnit = viewModel.structure::removeUnit,
                 onAddFrequency = viewModel.structure::addFrequency,
                 onRemoveFrequency = viewModel.structure::removeFrequency,
+                onConfirmRemoveManager = viewModel.structure::confirmRemoveManager,
+                onDismissRemoveManager = viewModel.structure::dismissRemoveManager,
                 onRemoveCrew = viewModel.structure::removeCrew,
                 onEditUnit = { unit ->
                     // The rename reuses the composer at the top of the tab, filled from the unit —
@@ -1620,6 +1642,9 @@ fun MissionDetailRoute(
                 onQuery = viewModel.memberPicker::query,
                 onPick = viewModel.memberPicker::pick,
                 onDismiss = viewModel.memberPicker::dismiss,
+                partyLeadName = state.detail?.partyLeadName,
+                managers = state.detail?.managers.orEmpty(),
+                onRemoveManager = viewModel.structure::askRemoveManager,
             ),
         admin =
             MissionAdminActions(
