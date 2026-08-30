@@ -707,3 +707,47 @@ am Einstieg") and as the Grants tab beside it already does.
 
 **Code:** `BankStaffRepository.bookDirectly`, `DirectBooking`, `DirectBookingState`,
 `BankStaffViewModel.DirectBookingActions`, `BankDirectBookingSheet`
+
+---
+
+### REQ-APP-BANK-017 — Freigabe-Limits live on the account, not in a fifth tab
+
+Design ch. 12 artboard 10, and the second of the parity programme's two bank deltas. **Limits per
+tier**, which the chapter's own correction settles: up to the limit a booking may be requested
+without a further approval, above it the account's owner must release it. A **user** limit beats
+the tier limit.
+
+Four dimensions, four endpoints under `…/bank/accounts/{id}/approval-limit/`: `all-members`,
+`area-members`, `role/{roleCode}`, `user/{userId}`. `PUT {limit}` sets, `DELETE` removes, and both
+answer with the account's settings — so the write is also the re-read.
+
+**The read is free.** `BankApprovalLimitsDto` rides on the account's settings response, which the
+app already fetches for the balance target and the visibility grants.
+
+**The actions are the artboard's words: „Setzen" and „Entfernen"** — not „Speichern", which would
+promise a form, and not „Löschen", which would promise a deletion. Removing asks first and the
+confirmation **names the limit that then applies**, because removing one is not the same as setting
+it to zero; removing „Alle Mitglieder" leaves none at all, and the modal says so in words rather
+than naming a figure.
+
+**`area-members` is drawn when the server says it exists.** The artboard shows three tiers; the API
+has a fourth, and the flag `areaMembersSupported` decides — a hardcoded three would hide a limit
+somebody had set.
+
+> [!warning] Not a fifth tab of the Verwaltung
+> The artboard makes it one, beside Grants, with a horizontally scrolling tab bar. It cannot be:
+> every endpoint addresses **one account** and the values ride on that account's settings, so the
+> tab would have to make the member pick an account before it could show anything — a tab that is
+> really a picker. The section therefore sits **in the account's own settings sheet**, next to the
+> visibility grants it resembles: same scope, same owner, same read, and reached the same way. On
+> the design gap list.
+
+**Acceptance**
+
+- [x] Setting a limit sends the dimension it was opened on (`BankViewModelTest`).
+- [x] An unreadable amount is not sent (`BankViewModelTest`).
+- [x] Removing asks first, names the fallback, and then sends the dimension (`BankViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `BankApprovalLimits`, `BankLimitTarget`, `BankRepository.setApprovalLimit` /
+`.clearApprovalLimit`, `BankAccountViewModel.ApprovalLimitActions`, `BankApprovalLimitsSection`

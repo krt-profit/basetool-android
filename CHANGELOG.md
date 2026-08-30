@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Freigabe-Limits je Konto.** In den Kontoeinstellungen steht jetzt, bis zu welchem Betrag welche
+  Stufe — und welches Mitglied — ohne zusätzliche Freigabe buchen darf. Setzen und Entfernen; beim
+  Entfernen sagt die Rückfrage, welches Limit danach gilt.
+
 - **Direktbuchung in der Bank-Verwaltung.** Ein Blatt mit drei Modi — Einzahlung, Auszahlung,
   Umbuchung — samt Halter, Verwendungszweck und Vorschau „Stand nach Buchung". Ohne Antrag heisst
   ohne zweite Freigabe; das steht über dem Knopf. Ohne die Rolle Bank-Management ist der Einstieg

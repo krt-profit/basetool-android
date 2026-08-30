@@ -61,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
+import de.greluc.krt.profit.basetool.android.core.data.BankLimitTarget
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
@@ -340,6 +341,7 @@ fun BankAccountScreen(
     onStatement: () -> Unit = {},
     onThreeMonthReport: () -> Unit = {},
     onReportHandled: () -> Unit = {},
+    limitActions: BankLimitActions? = null,
 ) {
     // The Storno is a BANK_EMPLOYEE act, and the server decides that — the app only draws what
     // `/me/capabilities` answered.
@@ -362,7 +364,12 @@ fun BankAccountScreen(
     }
     val account = state.account
     val phase = state.phase
-    AccountSettingsOverlay(state = state, actions = actions, onRefresh = onRefresh)
+    AccountSettingsOverlay(
+        state = state,
+        actions = actions,
+        onRefresh = onRefresh,
+        limitActions = limitActions,
+    )
     when {
         account != null -> {
             PullToRefreshBox(
@@ -1496,6 +1503,15 @@ fun BankAccountRoute(
                 onSaveTarget = viewModel::onSaveTarget,
                 onToggleRole = viewModel::onToggleRole,
                 onToggleAllMembers = viewModel::onToggleAllMembers,
+                onEditLimit = viewModel.limits::edit,
+                onRemoveLimit = viewModel.limits::remove,
+            ),
+        limitActions =
+            BankLimitActions(
+                onAmount = viewModel.limits::onAmount,
+                onConfirm = viewModel.limits::confirm,
+                onConfirmRemoval = viewModel.limits::confirmRemoval,
+                onDismiss = viewModel.limits::close,
             ),
         modifier = modifier,
     )
@@ -1518,6 +1534,8 @@ data class BankSettingsActions(
     val onSaveTarget: () -> Unit,
     val onToggleRole: (String) -> Unit,
     val onToggleAllMembers: () -> Unit,
+    val onEditLimit: (BankLimitTarget, String, String?) -> Unit = { _, _, _ -> },
+    val onRemoveLimit: (BankLimitTarget, String, String?) -> Unit = { _, _, _ -> },
 )
 
 /**
@@ -1573,6 +1591,16 @@ private fun BankSettingsSheet(
             if (settings.canConfigureVisibility) {
                 BankVisibilitySection(settings = settings, state = state, actions = actions)
             }
+            // Design ch. 12 artboard 10 makes this a fifth tab of the Verwaltung; it cannot be one,
+            // because every limit endpoint addresses ONE account and the current values ride on
+            // that account's settings. It lives beside the visibility grants instead — same scope,
+            // same owner, same read. Recorded as a deviation.
+            BankApprovalLimitsSection(
+                limits = settings.approvalLimits,
+                busy = state.busyLimit,
+                onEdit = actions.onEditLimit,
+                onRemove = actions.onRemoveLimit,
+            )
             state.error?.let { error ->
                 KrtFieldError(
                     text =
@@ -1702,7 +1730,11 @@ private fun AccountSettingsOverlay(
     state: BankAccountState,
     actions: BankSettingsActions,
     onRefresh: () -> Unit,
+    limitActions: BankLimitActions? = null,
 ) {
+    // Over the settings sheet, and outside its own open-check: opening a limit from one of its
+    // rows must not close what it was opened from.
+    limitActions?.let { ApprovalLimitOverlays(state = state, actions = it) }
     if (!state.settingsOpen) {
         return
     }
@@ -1719,3 +1751,51 @@ private fun AccountSettingsOverlay(
         BankSettingsSheet(settings = settings, state = state, actions = actions)
     }
 }
+
+/**
+ * The two Freigabe-Limit sheets, at the host.
+ *
+ * Outside [AccountSettingsOverlay] because they sit **over** the settings sheet: opening one from
+ * a row must not close what it was opened from.
+ *
+ * @param state the screen.
+ * @param actions setting and removing one limit.
+ */
+@Composable
+private fun ApprovalLimitOverlays(
+    state: BankAccountState,
+    actions: BankLimitActions,
+) {
+    state.limitDraft?.let { draft ->
+        BankLimitSheet(
+            draft = draft,
+            saving = state.saving,
+            onAmount = actions.onAmount,
+            onConfirm = actions.onConfirm,
+            onDismiss = actions.onDismiss,
+        )
+    }
+    state.limitRemoval?.let { draft ->
+        BankLimitRemoveModal(
+            draft = draft,
+            saving = state.saving,
+            onConfirm = actions.onConfirmRemoval,
+            onDismiss = actions.onDismiss,
+        )
+    }
+}
+
+/**
+ * What the two Freigabe-Limit sheets report back.
+ *
+ * @property onAmount the field changed.
+ * @property onConfirm „Setzen".
+ * @property onConfirmRemoval „Entfernen".
+ * @property onDismiss either sheet was closed.
+ */
+data class BankLimitActions(
+    val onAmount: (String) -> Unit,
+    val onConfirm: () -> Unit,
+    val onConfirmRemoval: () -> Unit,
+    val onDismiss: () -> Unit,
+)

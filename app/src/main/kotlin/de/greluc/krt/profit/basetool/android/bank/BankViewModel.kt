@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingPage
+import de.greluc.krt.profit.basetool.android.core.data.BankLimitTarget
 import de.greluc.krt.profit.basetool.android.core.data.BankReportSource
 import de.greluc.krt.profit.basetool.android.core.data.BankRepository
 import de.greluc.krt.profit.basetool.android.core.data.BankReversalSource
@@ -23,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccountSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.parseTypedDecimal
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -80,6 +82,23 @@ data class BankAccountsState(
 )
 
 /**
+ * One Freigabe-Limit being set or removed (design ch. 12 artboard 10).
+ *
+ * @property target which limit — everyone, the Bereich, a role, or one member.
+ * @property label what to call it on screen; the server's role code and the member's display name
+ *   both arrive as text and neither is translated here.
+ * @property amount what was typed.
+ * @property fallback the limit that applies once this one is gone, already formatted. The removal
+ *   confirmation names it, because removing a limit is not the same as setting it to zero.
+ */
+data class BankLimitDraft(
+    val target: BankLimitTarget,
+    val label: String,
+    val amount: String = "",
+    val fallback: String? = null,
+)
+
+/**
  * One account with its ledger.
  *
  * @property accountId which account, known before anything has loaded
@@ -116,6 +135,9 @@ data class BankAccountState(
     val downloading: Boolean = false,
     val reversal: BankBooking? = null,
     val reversalNote: String = "",
+    val limitDraft: BankLimitDraft? = null,
+    val limitRemoval: BankLimitDraft? = null,
+    val busyLimit: BankLimitTarget? = null,
 ) {
     /** Whether a settings write may be sent at all. */
     val writable: Boolean
@@ -290,6 +312,95 @@ class BankAccountViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<BankAccountState> = mutableState.asStateFlow()
+
+    /**
+     * The account's Freigabe-Limits, as one object rather than five methods.
+     *
+     * Grouped the way the Lager's Sammel-Ausbuchen and the bank's direct booking are: one
+     * interaction, and a view model that already carries its share of functions.
+     */
+    val limits: ApprovalLimitActions = ApprovalLimitActions()
+
+    /**
+     * Setting and removing one Freigabe-Limit.
+     *
+     * An inner class so it reaches the same state the rest of the view model writes.
+     */
+    inner class ApprovalLimitActions {
+        /**
+         * Opens the „Setzen" sheet on one limit.
+         *
+         * @param target which limit.
+         * @param label what to call it.
+         * @param current what it stands at, prefilled so an adjustment is an edit rather than a
+         *   retype.
+         */
+        fun edit(
+            target: BankLimitTarget,
+            label: String,
+            current: String?,
+        ) {
+            mutableState.value =
+                mutableState.value.copy(
+                    limitDraft = BankLimitDraft(target = target, label = label, amount = current.orEmpty()),
+                )
+        }
+
+        /**
+         * The amount changed.
+         *
+         * @param amount what was typed.
+         */
+        fun onAmount(amount: String) {
+            val open = mutableState.value.limitDraft ?: return
+            mutableState.value = mutableState.value.copy(limitDraft = open.copy(amount = amount))
+        }
+
+        /** Closes whichever of the two sheets is open. */
+        fun close() {
+            mutableState.value = mutableState.value.copy(limitDraft = null, limitRemoval = null)
+        }
+
+        /** Sends „Setzen". */
+        fun confirm() {
+            val current = mutableState.value
+            val draft = current.limitDraft ?: return
+            if (parseTypedDecimal(draft.amount) == null || !current.writable) {
+                return
+            }
+            mutableState.value = current.copy(limitDraft = null, busyLimit = draft.target)
+            write { source.setApprovalLimit(accountId, draft.target, draft.amount) }
+        }
+
+        /**
+         * Asks before „Entfernen".
+         *
+         * @param target which limit.
+         * @param label what to call it.
+         * @param fallback what applies once it is gone.
+         */
+        fun remove(
+            target: BankLimitTarget,
+            label: String,
+            fallback: String?,
+        ) {
+            mutableState.value =
+                mutableState.value.copy(
+                    limitRemoval = BankLimitDraft(target = target, label = label, fallback = fallback),
+                )
+        }
+
+        /** Sends „Entfernen". */
+        fun confirmRemoval() {
+            val current = mutableState.value
+            val draft = current.limitRemoval ?: return
+            if (!current.writable) {
+                return
+            }
+            mutableState.value = current.copy(limitRemoval = null, busyLimit = draft.target)
+            write { source.clearApprovalLimit(accountId, draft.target) }
+        }
+    }
 
     /** Loads the account and its first ledger page. */
     fun load() {

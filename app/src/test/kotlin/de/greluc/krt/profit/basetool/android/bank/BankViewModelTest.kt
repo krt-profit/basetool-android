@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSettings
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBooking
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingPage
+import de.greluc.krt.profit.basetool.android.core.data.BankLimitTarget
 import de.greluc.krt.profit.basetool.android.core.data.BankSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -122,6 +123,26 @@ class BankViewModelTest {
             granted: Boolean,
         ): ApiResult<BankAccountSettings> {
             allMembers.add(granted)
+            return writeAnswer ?: settings(id)
+        }
+
+        val limitsSet = mutableListOf<Pair<BankLimitTarget, String>>()
+        val limitsCleared = mutableListOf<BankLimitTarget>()
+
+        override suspend fun setApprovalLimit(
+            id: String,
+            target: BankLimitTarget,
+            limit: String,
+        ): ApiResult<BankAccountSettings> {
+            limitsSet.add(target to limit)
+            return writeAnswer ?: settings(id)
+        }
+
+        override suspend fun clearApprovalLimit(
+            id: String,
+            target: BankLimitTarget,
+        ): ApiResult<BankAccountSettings> {
+            limitsCleared.add(target)
             return writeAnswer ?: settings(id)
         }
     }
@@ -357,6 +378,62 @@ class BankViewModelTest {
         availableRoleCodes = listOf("OFFICER", "LOGISTICIAN"),
         grantedRoleCodes = granted,
     )
+
+    @Test
+    fun `setting a limit sends the dimension it was opened on`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            model.limits.edit(BankLimitTarget.Role("OFFICER"), "OFFICER", null)
+            model.limits.onAmount("500000")
+            model.limits.confirm()
+            advanceUntilIdle()
+
+            assertEquals(listOf(BankLimitTarget.Role("OFFICER") to "500000"), source.limitsSet)
+            // The sheet closes on send; the settings come back from the write itself.
+            assertNull(model.state.value.limitDraft)
+        }
+
+    @Test
+    fun `an unreadable limit is not sent`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            model.limits.edit(BankLimitTarget.AllMembers, "Alle", null)
+            model.limits.onAmount("")
+            model.limits.confirm()
+            advanceUntilIdle()
+
+            assertTrue(source.limitsSet.isEmpty())
+        }
+
+    @Test
+    fun `removing a limit asks first and then sends the dimension`() =
+        runTest(dispatcher) {
+            val source = accountSource()
+            source.settingsAnswers.add(ApiResult.Success(settings()))
+            val model = BankAccountViewModel(source, AlwaysOnline, "a1")
+            model.load()
+            advanceUntilIdle()
+
+            model.limits.remove(BankLimitTarget.User("u1"), "Rhea", "25000")
+            // Asked, not done: the confirmation names the limit that applies afterwards, because
+            // removing one is not the same as setting it to zero.
+            assertTrue(source.limitsCleared.isEmpty())
+            assertEquals("25000", model.state.value.limitRemoval?.fallback)
+
+            model.limits.confirmRemoval()
+            advanceUntilIdle()
+            assertEquals(listOf(BankLimitTarget.User("u1")), source.limitsCleared)
+        }
 
     @Test
     fun `the settings editor opens on a target the field can hold`() =

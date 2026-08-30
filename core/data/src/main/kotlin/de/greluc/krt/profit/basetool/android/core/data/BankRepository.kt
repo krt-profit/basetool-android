@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountLifecycleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankApprovalLimitsDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
@@ -33,6 +34,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseBan
 import de.greluc.krt.profit.basetool.android.core.contract.model.RegisterBankHolderRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RejectBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.RenameBankAccountRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.SetBankApprovalLimitRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankGrantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateBankHolderRequest
@@ -296,6 +298,82 @@ data class BankBookingPage(
 }
 
 /**
+ * One member with a limit of their own.
+ *
+ * @property userId who.
+ * @property displayName what to show for them.
+ * @property limit how much they may book without a further approval, as the server rendered it.
+ */
+data class BankApprovalLimitUser(
+    val userId: String,
+    val displayName: String,
+    val limit: String,
+)
+
+/**
+ * The account's Freigabe-Limits (design ch. 12 artboard 10).
+ *
+ * **Limits per tier, not „approval steps by amount".** Up to the limit a booking may be requested
+ * without a further approval; above it the account's owner has to release it. A **user** limit
+ * beats the tier limit.
+ *
+ * @property canEdit whether the caller may change them.
+ * @property configurable whether this account has them at all.
+ * @property allMembersSupported whether „Alle Mitglieder der Org-Einheit" applies here.
+ * @property areaMembersSupported whether the Bereich tier applies here — a dimension the artboard
+ *   does not draw and the server does support, so it is shown when the server says it exists.
+ * @property allMembersLimit the limit for everyone, or `null` when none is set.
+ * @property areaMembersLimit the same for the Bereich.
+ * @property roleLimits the limit per role code, in the server's own map.
+ * @property availableRoleCodes the roles a limit may be set for.
+ * @property userLimits the individual limits.
+ */
+data class BankApprovalLimits(
+    val canEdit: Boolean = false,
+    val configurable: Boolean = false,
+    val allMembersSupported: Boolean = false,
+    val areaMembersSupported: Boolean = false,
+    val allMembersLimit: String? = null,
+    val areaMembersLimit: String? = null,
+    val roleLimits: Map<String, String> = emptyMap(),
+    val availableRoleCodes: List<String> = emptyList(),
+    val userLimits: List<BankApprovalLimitUser> = emptyList(),
+)
+
+/**
+ * Which limit a write addresses.
+ *
+ * Four dimensions, four endpoints under `…/approval-limit/`, and one shape: `PUT {limit}` sets,
+ * `DELETE` removes. The artboard's words for the two actions are „Setzen" and „Entfernen" — not
+ * „Speichern" and „Löschen", which would promise a form and a deletion respectively.
+ */
+sealed interface BankLimitTarget {
+    /** Everyone in the org unit — the artboard's bottom row of the tier list. */
+    data object AllMembers : BankLimitTarget
+
+    /** Everyone in the Bereich. */
+    data object AreaMembers : BankLimitTarget
+
+    /**
+     * One role.
+     *
+     * @property roleCode which role.
+     */
+    data class Role(
+        val roleCode: String,
+    ) : BankLimitTarget
+
+    /**
+     * One member.
+     *
+     * @property userId who.
+     */
+    data class User(
+        val userId: String,
+    ) : BankLimitTarget
+}
+
+/**
  * What the holder of an account may change about it, and what it currently says.
  *
  * **The two `can*` flags come from the server, not from a role the app worked out.** Which member
@@ -327,6 +405,7 @@ data class BankAccountSettings(
     val allMembersGranted: Boolean,
     val availableRoleCodes: List<String>,
     val grantedRoleCodes: List<String>,
+    val approvalLimits: BankApprovalLimits = BankApprovalLimits(),
 )
 
 /**
@@ -384,6 +463,36 @@ interface BankSource {
         id: String,
         roleCode: String,
         granted: Boolean,
+    ): ApiResult<BankAccountSettings>
+
+    /**
+     * Sets one Freigabe-Limit (design ch. 12 artboard 10).
+     *
+     * @param id the account.
+     * @param target which limit — everyone, the Bereich, one role, or one member.
+     * @param limit how much, as typed.
+     * @return the account's settings as they now stand, or the classified failure. `409` when
+     *   somebody changed them first.
+     */
+    suspend fun setApprovalLimit(
+        id: String,
+        target: BankLimitTarget,
+        limit: String,
+    ): ApiResult<BankAccountSettings>
+
+    /**
+     * Removes one.
+     *
+     * The tier below it then applies, which the confirmation names — removing a limit is not the
+     * same as setting it to zero, and a member has to be told which one takes over.
+     *
+     * @param id the account.
+     * @param target which limit.
+     * @return the account's settings as they now stand, or the classified failure.
+     */
+    suspend fun clearApprovalLimit(
+        id: String,
+        target: BankLimitTarget,
     ): ApiResult<BankAccountSettings>
 
     /**
@@ -1241,6 +1350,30 @@ class BankRepository(
             ),
         )
 
+    override suspend fun setApprovalLimit(
+        id: String,
+        target: BankLimitTarget,
+        limit: String,
+    ): ApiResult<BankAccountSettings> {
+        val figure = parseTypedDecimal(limit) ?: return ApiResult.Failure(ApiError.Validation())
+        return mapped(
+            reader.put(
+                path = limitPath(id, target),
+                body = SetBankApprovalLimitRequest(limit = KrtDecimal(figure)),
+                bodySerializer = SetBankApprovalLimitRequest.serializer(),
+                deserializer = OrgUnitBankAccountSettingsDto.serializer(),
+            ),
+        )
+    }
+
+    override suspend fun clearApprovalLimit(
+        id: String,
+        target: BankLimitTarget,
+    ): ApiResult<BankAccountSettings> =
+        mapped(
+            reader.delete(limitPath(id, target), OrgUnitBankAccountSettingsDto.serializer()),
+        )
+
     override suspend fun setRoleVisibility(
         id: String,
         roleCode: String,
@@ -1460,6 +1593,27 @@ class BankRepository(
         private fun accountPath(id: String) = "/api/v1/org-units/bank/accounts/$id"
 
         /**
+         * One limit's path.
+         *
+         * @param id the account.
+         * @param target which limit.
+         * @return the path.
+         */
+        private fun limitPath(
+            id: String,
+            target: BankLimitTarget,
+        ): String {
+            val leaf =
+                when (target) {
+                    BankLimitTarget.AllMembers -> "all-members"
+                    BankLimitTarget.AreaMembers -> "area-members"
+                    is BankLimitTarget.Role -> "role/${target.roleCode}"
+                    is BankLimitTarget.User -> "user/${target.userId}"
+                }
+            return "${accountPath(id)}/approval-limit/$leaf"
+        }
+
+        /**
          * One account's ledger path.
          *
          * @param id the account's id.
@@ -1644,4 +1798,37 @@ private fun OrgUnitBankAccountSettingsDto.toModel(): BankAccountSettings =
         allMembersGranted = allMembersGranted == true,
         availableRoleCodes = availableRoleCodes.orEmpty(),
         grantedRoleCodes = grantedRoleCodes.orEmpty(),
+        approvalLimits =
+            approvalLimits?.toModel(canConfigureApprovalLimits == true) ?: BankApprovalLimits(),
+    )
+
+/**
+ * The account's Freigabe-Limits as the sheet holds them.
+ *
+ * @receiver what the server sent.
+ * @param canEdit whether the caller may change them; the flag sits on the settings, not on the
+ *   limits themselves.
+ * @return the limits.
+ */
+private fun BankApprovalLimitsDto.toModel(canEdit: Boolean): BankApprovalLimits =
+    BankApprovalLimits(
+        canEdit = canEdit,
+        configurable = configurable == true,
+        allMembersSupported = allMembersSupported == true,
+        areaMembersSupported = areaMembersSupported == true,
+        allMembersLimit = allMembersLimit?.toString(),
+        areaMembersLimit = areaMembersLimit?.toString(),
+        roleLimits =
+            roleLimits.orEmpty().map { (code, limit) -> code to limit.toString() }.toMap(),
+        availableRoleCodes = availableRoleCodes.orEmpty(),
+        userLimits =
+            userLimits.orEmpty().mapNotNull { row ->
+                row.userId?.let {
+                    BankApprovalLimitUser(
+                        userId = it,
+                        displayName = row.displayName.orEmpty(),
+                        limit = row.limitAmount?.toString().orEmpty(),
+                    )
+                }
+            },
     )

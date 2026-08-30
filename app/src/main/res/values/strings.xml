@@ -1728,4 +1728,19 @@
     <string name="bank_direct_book_deposit">Einzahlung buchen</string>
     <string name="bank_direct_book_withdrawal">Auszahlung buchen</string>
     <string name="bank_direct_book_transfer">Umbuchung buchen</string>
+    <!-- Freigabe-Limits (Design Kap. 12, Artboard 10) -->
+    <string name="bank_limits_title">Freigabe-Limits</string>
+    <string name="bank_limits_display_hint">Bis zu diesen Beträgen kann die jeweilige Stufe Buchungen ohne zusätzliche Freigabe beantragen.</string>
+    <string name="bank_limits_tiers">Stufen</string>
+    <string name="bank_limits_users">Einzelne Nutzer</string>
+    <string name="bank_limits_all_members">Alle Mitglieder der Org-Einheit</string>
+    <string name="bank_limits_area_members">Alle Mitglieder des Bereichs</string>
+    <string name="bank_limits_none">kein Limit</string>
+    <string name="bank_limits_field">Limit (aUEC)</string>
+    <string name="bank_limits_set">Setzen</string>
+    <string name="bank_limits_set_hint">Bis zu diesem Betrag darf die Stufe ohne zusätzliche Freigabe buchen; darüber braucht es deine Freigabe.</string>
+    <string name="bank_limits_remove">Entfernen</string>
+    <string name="bank_limits_remove_title">Limit entfernen?</string>
+    <string name="bank_limits_remove_body">Für %1$s gilt danach das Limit von %2$s aUEC.</string>
+    <string name="bank_limits_remove_body_none">Für %1$s gilt danach kein Limit — jede Buchung braucht dann deine Freigabe.</string>
 </resources>
