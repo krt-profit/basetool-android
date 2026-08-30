@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/krt-components.css">
+  <script src="_ds/das-kartell-profit-basetool-design-syste-8bfdd1eb-3740-4314-a9d3-efd1d2e20996/_ds_bundle.js"></script>
+  <script src="assets/krt-icons-mobile.js"></script>
+  <style>body{background:#000}</style>
+</helmet>
+<div style="min-height:100vh;background:#000;padding:40px 24px 80px">
+<div style="max-width:2200px;margin:0 auto">
+  <a href="00 Index.dc.html" style="display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-arrow-left"></use></svg>Index</a>
+  <header style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #E77E23;padding:16px 0 20px;margin-bottom:32px;max-width:1200px">
+    <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">18</div>
+    <div style="flex:1">
+      <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Abweichungs-Register — Runde 12</h1>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Was der Code-Abgleich vom 30.08.2026 offen ließ: drei Web-Flächen ohne Artboard (§E1–E3), sechs ungeratifizierte Kompositionen (§E4–E9) und die Antworten auf §C, §D, §G, §H. Die Korrekturen der Abschnitte §A und §B stehen in ihren eigenen Kapiteln — jeweils gelb als „Korrektur (Runde 12)" markiert.</div>
+    </div>
+  </header>
+    <div class="card" style="padding:14px 16px;max-width:1200px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Wo die Korrekturen stehen</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#fff">§A (11 · gezeichnet ohne Feld)</b> → Kap. 06 Artboard 15 (A1, A2) · Kap. 09 Artboard 20 (A3) · Kap. 17 Artboards 1–2 (A4, A5, A6) · Kap. 16 Artboards 1, 4 (A7, A8) · Kap. 10 Artboards 14–16 (A9, A10, A11)</li>
+        <li><b style="color:#fff">§B (9 · falsch benannte Regel)</b> → Kap. 10 Artboard 13 (B1) · Kap. 11 Artboards 6–7 (B2, B3) · Kap. 09 Artboards 20–21 (B4, B8) · Kap. 17 Artboard 3 (B5, B6) · Kap. 12 Artboard 10 (B7) · alle Kapitel (B9: displayId ist ein Integer, „#A-1042" → „#1042")</li>
+        <li><b style="color:#fff">§F (2 · fehlende Komponente)</b> → Kap. 02 §11 Datum-/Zeit-Wähler (F1, schaltet auch C7 frei) · Kap. 06 „Einsatz starten am Badge" (F2)</li>
+        <li><b style="color:#fff">§E10, §E11</b> → Kap. 01: Rand- und Abstands-Skala, drei Tablet-Antworten</li>
+      </ul>
+    </div>
+
+  <section data-screen-label="E1 Materialbedarf" style="margin-bottom:36px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">1 · Auftragsübergreifender Materialbedarf (E1)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Was alle offenen Aufträge zusammen noch brauchen — die Planungsansicht, die im Web als <code style="color:#8A8A8A">orders-material-demand.html</code> lebt und in keinem Kapitel ein Artboard hatte.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">1 · Materialbedarf über alle offenen Aufträge</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Materialbedarf</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Bereich Profit · 7 offene Aufträge</div></div>
+          </div>
+          <div style="flex:none;padding:12px 16px 0;display:flex;gap:6px;overflow-x:auto">
+            <span class="chip chip--primary" style="font-size:10px;flex:none">Alle</span>
+            <span class="chip" style="font-size:10px;flex:none">Ungedeckt</span>
+            <span class="chip" style="font-size:10px;flex:none">Nach Menge</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:10px">
+            <div style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;font-variant-numeric:tabular-nums">12 Materialien · 4 ungedeckt</div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+              <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Laranite</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#F2564B">620 SCU offen</span></div>
+              <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:29%;background:#E77E23"></span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">im Lager frei: 180 SCU</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">3 Aufträge</span></div>
+            </div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+              <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Quantainium</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#2EBC3D">240 SCU offen</span></div>
+              <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:100%;background:#2EBC3D"></span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">im Lager frei: 442 SCU</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">3 Aufträge</span></div>
+            </div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+              <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Bexalit</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFD23F">80 SCU offen</span></div>
+              <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:50%;background:#E77E23"></span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">im Lager frei: 40 SCU</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">3 Aufträge</span></div>
+            </div>
+            <div style="border:1px solid #282828;background:#141414;padding:10px 12px">
+              <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Gehäuse</span><span style="font:700 12.5px/1 Lato,sans-serif;color:#FFD23F">18 Stück offen</span></div>
+              <div style="height:4px;background:#282828;margin-top:8px"><span style="display:block;height:4px;width:66%;background:#E77E23"></span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">im Lager frei: 12 Stück</span><span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">3 Aufträge</span></div>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Zeile antippen → die Aufträge, die dieses Material fordern (Kap. 10). „Offen" ist Bedarf minus bereits übergeben, über alle Aufträge summiert.</div>
+          </div></div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">E1 — orders-material-demand, jetzt gezeichnet</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Die Planungsansicht: was alle offenen Aufträge zusammen noch brauchen, je Material. Einstieg über den Overflow der Auftragsliste, nicht als eigener Nav-Eintrag — sie wird vor einem Einsatz gelesen, nicht täglich</li>
+          <li>Zeile = Material · offene Menge (Farbe nach Deckung) · Balken · freier Lagerbestand · Zahl der fordernden Aufträge. Die Frage der Fläche ist „reicht es", also steht die Deckung im Balken und nicht in einer Prozentzahl</li>
+          <li>Drei Chips: Alle · Ungedeckt (der Arbeitsmodus) · Nach Menge. Kein Suchfeld — zwölf Zeilen brauchen keins</li>
+          <li>Zustände: leer = „Kein offener Materialbedarf." · Laden = 4 Zeilen-Skeletons · Fehler nach Kap. 14. Rechte wie die Auftragsliste; ohne Logistiker ist die Fläche lesend, nicht gesperrt</li>
+        </ul>
+      </div>
+    </div>
+
+    </div>
+  </section>
+
+
+  <section data-screen-label="E2 E3 Blueprints" style="margin-bottom:36px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">2 · Blueprint-Datei-Import und Sammel-Löschen (E2 · E3)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Zwei Flächen der persönlichen Blueprints: der zweistufige Datei-Import und die Löschaktion, die bisher überhaupt keinen Einstieg hatte.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2 · Blueprint-Import — Datei wählen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Blueprints importieren</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Datei aus dem Extractor oder Export</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:10px">
+            <div style="border:1px dashed #E77E23;background:rgba(231,126,35,.05);padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+              <svg class="krt-icon" style="width:28px;height:28px;color:#E77E23"><use href="#krt-icon-upload"></use></svg>
+              <div style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Datei wählen</div>
+              <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A;max-width:32ch">JSON aus dem Blueprint-Export. Die Datei bleibt auf dem Gerät, bis du die Vorschau bestätigst.</div>
+              <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px;margin-top:2px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-upload"></use></svg>Aus Dateien wählen</button>
+            </div>
+            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Zwei Schritte: Vorschau zeigt, was erkannt wurde — übernommen wird erst danach.</div>
+          </div></div>
+        </div>
+      </x-import>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">2b · Vorschau — was erkannt wurde</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Blueprints importieren</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Vorschau · 14 Zeilen gelesen</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:8px">
+              <div class="kpi-total" style="padding:10px 12px;flex:1"><div class="kpi-label" style="font-size:9px">Neu</div><div class="kpi-value" style="font-size:19px">9</div></div>
+              <div class="kpi-total" style="padding:10px 12px;flex:1;border-left-color:#646464"><div class="kpi-label" style="font-size:9px">Vorhanden</div><div class="kpi-value" style="font-size:19px">3</div></div>
+              <div class="kpi-total" style="padding:10px 12px;flex:1;border-left-color:#A3000A"><div class="kpi-label" style="font-size:9px">Unbekannt</div><div class="kpi-value" style="font-size:19px">2</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Neu</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">9</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#141414;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#2EBC3D;flex:none"><use href="#krt-icon-check"></use></svg><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling — Verstärkt</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#141414;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#2EBC3D;flex:none"><use href="#krt-icon-check"></use></svg><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Panzerplatte S2</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:#141414;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#2EBC3D;flex:none"><use href="#krt-icon-check"></use></svg><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Quantum-Drive M</span></div>
+            <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">+ 6 weitere</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Unbekannt</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:rgba(163,0,10,.10);border:1px solid #A3000A"><svg class="krt-icon" style="width:15px;height:15px;color:#F2564B;flex:none"><use href="#krt-icon-close"></use></svg><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Prototype XR-9</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;background:rgba(163,0,10,.10);border:1px solid #A3000A"><svg class="krt-icon" style="width:15px;height:15px;color:#F2564B;flex:none"><use href="#krt-icon-close"></use></svg><span style="flex:1;font:300 12.5px/1.3 Lato,sans-serif;color:#D2D2D2">Salvage Rig (custom)</span></div>
+            <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Unbekannte Zeilen werden übersprungen, nicht abgelehnt — der Import läuft trotzdem.</div>
+          </div></div>
+          <div style="flex:none;background:#141414;border-top:1px solid #E77E23;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+            <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+            <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>9 übernehmen</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">E2 — /personal-blueprints/import/{preview,apply}</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Zwei Aufrufe, zwei Schritte, und der zweite ist der einzige, der schreibt: <b style="color:#fff">preview</b> liest die Datei und beantwortet drei Zahlen (neu · vorhanden · unbekannt), <b style="color:#fff">apply</b> übernimmt. Ein einstufiger Import wäre eine Massenschreibung ohne Vorschau</li>
+          <li>Der CTA nennt die Zahl, die er schreibt („9 übernehmen") — nicht „Importieren". Vorhandene erscheinen als Zahl, nicht als Liste: sie sind kein Ergebnis</li>
+          <li>Unbekannte Zeilen sind kein Fehler und blockieren nichts; sie stehen benannt da, damit niemand die Datei für kaputt hält</li>
+          <li>Zustände: Lesen = Spinner mit „Datei wird gelesen…" · Datei unlesbar = Kap.-14-Bild, deutsche Klartext-Copy (kein Fiction-Canon, es ist kein HTTP-Zustand) · Schreiben = CTA-Spinner · Erfolg = zurück in die Liste + Toast „9 Blueprints übernommen."</li>
+        </ul>
+      </div>
+    </div>
+    <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">3 · Blueprints — Auswahlmodus &amp; alle löschen</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+        <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Meine Blueprints</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">3 von 41 gewählt</div></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Eigene Blueprints</span><button class="btn-ghost btn" style="background:transparent;min-height:40px;font-size:10.5px;flex:none">Alles wählen</button></div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:inset 3px 0 0 #E77E23;">
+              <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+              <span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling — Standard</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:inset 3px 0 0 #E77E23;">
+              <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+              <span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Ballistic Gatling — Verstärkt</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;background:#1C1C1C;border:1px solid #E77E23;box-shadow:inset 3px 0 0 #E77E23;">
+              <span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span>
+              <span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Gehäuse</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;background:#141414;border:1px solid #282828;">
+              <span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none"></span>
+              <span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Lauf-Set</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;background:#141414;border:1px solid #282828;">
+              <span style="width:22px;height:22px;border:1px solid #646464;background:transparent;display:flex;align-items:center;justify-content:center;flex:none"></span>
+              <span style="flex:1;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Panzerplatte S2</span>
+            </div>
+          </div></div>
+          <div style="flex:none;background:#141414;border-top:1px solid #E77E23;padding:10px 16px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+            <div style="flex:none;font:700 12px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">3<div style="font:300 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">gewählt</div></div>
+            <button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:1;font-size:11px">Aufheben</button>
+            <button class="btn" style="min-height:48px;flex:1.2;font-size:11px;background:#A3000A;border:1px solid #A3000A;color:#FFFFFF"><svg class="krt-icon" style="width:15px;height:15px"><use href="#krt-icon-trash"></use></svg>Löschen</button>
+          </div>
+        </div>
+      </x-import>
+      <div class="card" style="padding:12px 16px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">E3 — DELETE /personal-blueprints bekommt einen Einstieg</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Die Aktion hatte keinen: Kap. 17 Artboard 4 schließt einen Menüpunkt für die ITEMS aus, und die Blueprint-Liste hatte gar keinen Auswahlmodus. Sie bekommt denselben wie Lager und Inventar (Kap. 02 §4) — langer Druck, oranger Balken, Haken, untere Leiste</li>
+          <li>„Alles löschen" ist damit „Alles wählen" + Löschen und kein Menüpunkt: 41 Zeilen löschen darf nur, wer die 41 Zeilen gesehen hat</li>
+          <li>Das Danger-Modal nennt die Anzahl und die Folge („die Blueprints verschwinden aus deiner Liste; die Verfügbarkeitsübersicht der Einheit zeigt dich danach nicht mehr als Besitzer"). Kein Undo — es gibt nichts zum Wiederherstellen</li>
+          <li>Backend-Anfrage <b style="color:#fff">G6</b>: für Inventar-Zeilen fehlt ein echtes Bulk-Delete; die App schleift heute DELETE /personal-inventory/{id} und meldet „x gelöscht · y übersprungen", weil eine Schleife halb gelingt</li>
+        </ul>
+      </div>
+    </div>
+
+    </div>
+  </section>
+
+
+  <section data-screen-label="E4-E9 Ratifizierung" style="margin-bottom:36px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">3 · Ungeratifizierte Kompositionen — jetzt entschieden (E4–E9)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Sechs Flächen, die aus gezeichneten Teilen gebaut wurden, weil ein fehlendes Artboard kein Grund zum Anhalten ist (Eigentümer-Regel 29.08.2026). Keine erfand eine Komponente, eine Farbe oder ein Token — erfunden wurde die KOMPOSITION. Hier ist sie entschieden.</p>    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">E4 · Verwaltungs-Reiter — Abschnittsrhythmus</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#fff">Entscheidung: KrtCard, nicht HUD-Box und nicht nackt.</b> Vier gefaltete Abschnitte in einer Spalte, je Abschnitt eine Karte mit Panel-Header (Kap. 02 §10); 10 dp zwischen den Karten, 16 dp Screen-Rand. Die HUD-Box bleibt Betonungs-Blöcken vorbehalten — vier davon nebeneinander heben nichts mehr hervor</li>
+        <li><b style="color:#fff">Wer schreibt, sagt es an sich selbst:</b> der speichernde Abschnitt zeigt den Spinner in SEINEM Panel-Header (rechts, an der Stelle des Chevrons) und sperrt nur seine eigenen Felder. Kein Screen-Overlay, keine globale Leiste — sonst friert eine Zeitplan-Änderung die Ziele mit ein</li>
+        <li>Reihenfolge fest: Kern · Zeitplan · Ziele · Ablauf. Kern startet offen, die anderen drei zu</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">E5 + E8 · Ablauf-Editor — Zeilenaktionen und Reihenfolge</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#fff">Entscheidung: Overflow je Zeile, kein Swipe und kein Langdruck.</b> Fünf Aktionen passen nicht in eine 411-dp-Zeile, also trägt die Zeile zwei sichtbare Icon-Buttons (↑ ↓ zum Verschieben) und ein ⋮ für den Rest (Bearbeiten · Duplizieren · Löschen). Swipe ist im Posteingang mit Löschen belegt und würde hier ein zweites Vokabular einführen</li>
+        <li><b style="color:#fff">Reihenfolge bleibt zwei Buttons</b> (ratifiziert, E8): Drag&amp;Drop in einer scrollenden Liste ohne Griff-Fläche ist auf dem Telefon unzuverlässig, und das System verlangt ohnehin immer einen Tipp-Ersatz neben Drag (DS: Assign-Board). ↑/↓ sind 40×44 dp, an der ersten bzw. letzten Zeile gedimmt-inaktiv (Validierung, kein Schloss)</li>
+        <li>Gleiches gilt für die Auftrags-Warteschlange (Runde 8 §4): dieselben zwei Buttons, dieselben Maße</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">E6 + E7 · Ziele-Editor, Einheit umbenennen, Crew-Rollen</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#fff">E6 — Lese-Chip und Wahl-Chip sind absichtlich verschieden</b> und bleiben es: der Lese-Chip ist ein Daten-Chip (weiß auf Chip, nicht antippbar), der Wahl-Chip ein Auswahl-Chip (Hairline → gefüllt orange mit schwarzem Text). Ein Chip, der aussieht wie ein Wert und sich verhält wie ein Schalter, ist der schlimmere Fehler</li>
+        <li><b style="color:#fff">E7 — Umbenennen ist ein Sheet mit einem Feld</b> (aktueller Name vorbelegt, „Speichern" gedimmt bis er sich unterscheidet), kein Inline-Feld in der Kopfzeile: eine Kopfzeile, die zum Eingabefeld wird, hat keinen Abbruch</li>
+        <li><b style="color:#fff">E7 — Crew-Rollen</b> nutzen KrtChipSelect wie „Funktion an Bord" (Kap. 06): gewählt = gefüllt orange, verfügbar = Hairline, vergeben = gedimmt mit dem Namen dahinter</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">E9 · Tablet-Flächen — Lager-Detail und Materialbörse</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#fff">Lager (Runde 9 §4): Antwort 2 — Rail + Tabelle,</b> kein Detail-Pane. Der Lagerbaum IST die Detailtiefe; eine vierte Ebene rechts würde die Einrückung doppelt erzählen. Was rechts erscheint, ist nur das Buchen-Sheet — auf dem Tablet als 560-dp-Dialog, zentriert</li>
+        <li><b style="color:#fff">Materialbörse: zwei Kartenspalten, nicht drei.</b> Angebote links, Gesuche rechts, je 480 dp, 24 dp Rinne; eine dritte Spalte macht die Karten schmaler als die Telefon-Fassung. Ab 1600 dp wachsen die Spalten, nicht ihre Zahl</li>
+        <li>Beides folgt der Tablet-Regel aus Kap. 01 (E11): jede Fläche wählt EINE der drei Antworten</li>
+      </ul>
+    </div>
+
+    </div>
+
+  </section>
+
+
+  <section data-screen-label="Register" style="margin-bottom:36px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">4 · Register — bestätigt, ratifiziert, angefragt<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Die Abschnitte C, D, G und H der Runde 12 brauchen keine Zeichnung, sondern eine Antwort. Hier steht sie, damit sie eine Regeneration übersteht.</p>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">§C · Gezeichnet und bewusst nicht gebaut — alle acht BESTÄTIGT</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#fff">C1 Materialbedarf-Reiter</b> — bleibt gestrichen: die auftragsübergreifende Fläche (Abschnitt 1 dieses Kapitels) beantwortet die Frage besser als ein Reiter im Detail, und aggregatedMaterials bleibt bis dahin unabgebildet</li>
+        <li><b style="color:#fff">C2 Verlauf-Reiter</b> — bestätigt, kein Aktivitätsprotokoll auf der API. Backend-Anfrage, nicht Zeichnung</li>
+        <li><b style="color:#fff">C3 Status-Gating</b> — bestätigt: ohne transitions[] wäre jede Regel geraten, und Raten ist genau das, was das Kapitel verbietet. Der Server lehnt ab, die App sagt es</li>
+        <li><b style="color:#fff">C4 Notiz im Lager-Eintrag</b> · <b style="color:#fff">C5 „Einsatz erstellen"-FAB</b> · <b style="color:#fff">C6 Schiff-Picker im Anmelden-Sheet</b> · <b style="color:#fff">C8 Hersteller-Combobox</b> — alle vier bestätigt; C5 ist eine fehlende Funktion, kein fehlender Knopf, und gehört als solche ins Backlog</li>
+        <li><b style="color:#fff">C7 Datumsbereich-Filter</b> — nicht mehr blockiert: der Wähler steht jetzt in Kap. 02 §11. Bauen</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">§D · Bewusst anders gebaut — ratifiziert</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li>Alle zwölf werden <b style="color:#fff">ratifiziert</b>; die Zeichnung folgt der App, nicht umgekehrt. D1 und D3 in den Kapiteln nachgezogen (Kap. 06 Artboard 15, Kap. 08), D7 in Kap. 11 notiert</li>
+        <li><b style="color:#fff">D4 wird zur Regel, nicht zum Einzelfall:</b> ein Reiter darf keine Navigations-Beschriftung wiederverwenden (ADR-0018). Gilt für jede künftige Reiter-Leiste</li>
+        <li><b style="color:#fff">D8, D9, D10, D11</b> sind ADRs bzw. beschlossene Entscheidungen — die Kapitel tragen sie bereits</li>
+        <li><b style="color:#fff">Offline-Banner:</b> „Zuletzt aktualisiert" und der CACHE-Chip sind <b style="color:#F2564B">gestrichen</b>, nicht verschoben. Die App hält keinen Cache und misst keine Ladezeit; beides wäre erfunden. Kap. 14 zeigt das Banner ohne Zeitstempel</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">§G · Sechs Anfragen an das Backend — Priorität in dieser Reihenfolge</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li><b style="color:#F2564B">G3 zuerst</b> (Raffinerie PUT/DELETE lehnen COMPLETED ab): die einzige mit Datenintegritäts-Kante — heute kann ein direkter API-Aufruf die Waren einer gebuchten Charge umschreiben. Bis dahin ist die App die einzige Instanz, die die Regel hält (B2, B3)</li>
+        <li><b style="color:#fff">G4</b> (Lagerbaum lernt catalog=ITEM) — schaltet B8 frei und lässt Items überhaupt im Baum leben</li>
+        <li><b style="color:#fff">G1</b> (bulk-checkout bekommt reason + note) · <b style="color:#fff">G2</b> (Gesuch bekommt eine Frist) — beide bringen ein gezeichnetes Feld zurück, statt es zu streichen</li>
+        <li><b style="color:#fff">G5</b> (ownerCount = 0 als Filter) · <b style="color:#fff">G6</b> (echtes Bulk-Delete für persönliche Zeilen) — beide machen aus einer Schleife eine Abfrage</li>
+        <li>Zwei weitere schließen §C statt §A: Aktivitätsprotokoll am Auftrag (C2) und transitions[] auf JobOrderDto (C3)</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding:14px 16px;width:600px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">§H · Geschlossen — nicht erneut aufwerfen</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+        <li>12.1 Anträge-Reiter und 12.3 Buchungsantrag — <b style="color:#2EBC3D">gebaut</b>, Mitglieder-Fluss und Staff-Queue</li>
+        <li>12.2 Verwahrungs-Chip, Org-Zeile, Sparkline — <b style="color:#2EBC3D">durch Eigentümer-Entscheidung 25.08.2026 geschlossen</b>; ein Konto hat keine Verwahrer (holder_id in V181 entfernt). Die Karte trägt Name, Stand, Delta, Sparkline</li>
+        <li>14.2 fünf Benachrichtigungskanäle — <b style="color:#2EBC3D">gebaut</b></li>
+        <li>Runde 11 §11e „nichts listet die aktuellen Manager" — <b style="color:#2EBC3D">beantwortet durch Kap. 06 Artboard 12</b>; beim Bauen kam heraus, warum: MissionDto.managers und canManageManagers waren nicht abgebildet, removeManager war toter Code (REQ-APP-MIS-032)</li>
+      </ul>
+    </div>
+
+    </div>
+  </section>
+  <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px;max-width:1200px">
+    <a href="17 Boerse - Inventar.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 17 Börse &amp; Mein Inventar</a>
+    <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">00 Index →</a>
+  </footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

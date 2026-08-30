@@ -722,7 +722,7 @@
       </div>
     </div>
     <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
-      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · Freigabe-Limits — je Stufe und Nutzer (Tab)</div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">10 · Freigabe-Limits — in den Einstellungen EINES Kontos</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
@@ -736,47 +736,47 @@
               <button style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;font:700 12px/1 Lato,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#E77E23;color:#000;border-left:1px solid #282828">Verwaltung</button>
             </div>
           </div>
-          <div class="tab-nav" style="padding:0 8px;flex:none;margin-top:4px;overflow-x:auto">
-            <button class="tab" style="font-size:11px;min-height:48px;flex:none">Übersicht</button>
-            <button class="tab" style="font-size:11px;min-height:48px;flex:none">Anträge<span class="tab-count">3</span></button>
-            <button class="tab" style="font-size:11px;min-height:48px;flex:none">Konten</button>
-            <button class="tab" style="font-size:11px;min-height:48px;flex:none">Grants</button>
-            <button class="tab active" style="font-size:11px;min-height:48px;flex:none">Limits</button>
+          <div style="flex:none;margin-top:4px;display:flex">
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#1C1C1C;border-bottom:1px solid #282828;width:100%">
+              <svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A;flex:none"><use href="#krt-icon-bank"></use></svg>
+              <span style="font:300 12px/1.3 Lato,sans-serif;color:#8A8A8A">Konten · <span style="color:#FFFFFF;font-weight:700">Einsatzkasse</span> · Einstellungen</span>
+            </div>
           </div>
           <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
             <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Bis zu diesen Beträgen kann die jeweilige Stufe Buchungen ohne zusätzliche Freigabe beantragen.</div>
             <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Stufen</span><span style="flex:1;height:1px;background:#282828"></span></div>
             <div class="card card--flush" style="padding:0">
-              <div style="display:grid;grid-template-columns:1fr 112px 56px;background:#1C1C1C;border-bottom:2px solid #E77E23">
-                <div style="padding:9px 14px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.05em">Stufe</div>
-                <div style="padding:9px 8px;font:700 10px/1.3 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;text-align:right">Limit (aUEC)</div>
-                <div></div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Alle Mitglieder der Org-Einheit</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">25.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Bereichsmitglieder</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">100.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Logistiker</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">500.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Officer</div>
+                  <div style="padding:6px 8px;text-align:right;font:300 12.5px/1 Lato,sans-serif;color:#8A8A8A">kein Limit</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+                </div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
-                <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Alle Mitglieder der Org-Einheit</div>
-                <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">25.000</div>
-                <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Vier Stufen, wie die API: alle Mitglieder der Org-Einheit · Bereichsmitglieder · Logistiker · Officer. „Kein Limit" ist der Normalfall und wird als Wort gezeigt, nicht als leere Zelle oder 0.</div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Einzelne Nutzer</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div class="card card--flush" style="padding:0">
+                <div style="display:grid;grid-template-columns:1fr 112px 56px;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
+                  <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Rhea</div>
+                  <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">250.000</div>
+                  <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit entfernen" title="Limit entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div>
+                </div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
-                <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Logistiker</div>
-                <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">100.000</div>
-                <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 112px 56px;border-bottom:1px solid #1C1C1C;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
-                <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Officer</div>
-                <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">500.000</div>
-                <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit setzen" title="Limit setzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button></div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Einzelne Nutzer</span><span style="flex:1;height:1px;background:#282828"></span></div>
-            <div class="card card--flush" style="padding:0">
-              <div style="display:grid;grid-template-columns:1fr 112px 56px;min-height:56px;align-items:center;font-variant-numeric:tabular-nums">
-                <div style="padding:6px 14px;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF">Rhea</div>
-                <div style="padding:6px 8px;text-align:right;font:700 14px/1 Lato,sans-serif;color:#FFFFFF">250.000</div>
-                <div style="display:flex;justify-content:center"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Limit entfernen" title="Limit entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div>
-              </div>
-            </div>
-            <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Limit für Nutzer</button>
+              <button class="assoc-add" style="min-height:46px;justify-content:center;font-size:11px">+ Limit für Nutzer</button>
             <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
               <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
               <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Bis zu diesem Betrag darf die Stufe ohne zusätzliche Freigabe buchen; darüber braucht es deine Freigabe.</div>
@@ -790,7 +790,9 @@
           <li>KORREKTUR der ersten Fassung: das Web führt keine „Freigabestufen ab Betrag → Anzahl Freigaben", sondern <b style="color:#fff">Freigabe-Limits je Stufe</b> — bis zum Limit darf ohne zusätzliche Freigabe gebucht werden, darüber muss der Kontoverantwortliche freigeben. Titel wörtlich „Freigabe-Limits" (bank.approvalLimit.title)</li>
           <li>ZWEI Listen, beide belegt: Stufen mit „Alle Mitglieder der Org-Einheit" als unterster Zeile und „Einzelne Nutzer" mit „+ Limit für Nutzer". Ein Nutzer-Limit schlägt das Stufen-Limit</li>
           <li>Aktionen wörtlich „Setzen" und „Entfernen" — kein „Speichern", kein „Löschen"; Feld/Platzhalter „Limit (aUEC)"</li>
-          <li>Fünfter Tab der Verwaltung, nur mit Rolle Bank-Management — ohne sie gesperrt-antippbar wie Grants (Artboard 4); die Tab-Leiste scrollt dadurch horizontal</li>
+          <li><b style="color:#FFD23F">Korrektur (Runde 12, B7): kein fünfter Tab.</b> Jeder Endpunkt lautet …/bank/accounts/{id}/approval-limit/… — die Werte hängen an den Einstellungen EINES Kontos. Ein Tab hätte erst nach einem Konto fragen müssen: ein Tab, der eigentlich ein Picker ist. Die Limits liegen deshalb in den Einstellungen des Kontos, neben den Sicht-Grants, denen sie gleichen (Konten → Konto → Einstellungen)</li>
+          <li>Zwei kleinere Fehler derselben Zeichnung, beide korrigiert: die API führt <b style="color:#fff">VIER</b> Stufen (die vierte ist area-members → „Bereichsmitglieder"), und der häufigste Zustand — <b style="color:#fff">„kein Limit"</b> — war überhaupt nicht gezeichnet; er steht jetzt als Wort in der Betragsspalte, nicht als leere Zelle oder 0</li>
+          <li>Nur mit Rolle Bank-Management; ohne sie ist die Einstellungs-Zeile am Konto gesperrt-antippbar (Muster Kap. 09), nie versteckt</li>
           <li>Beide Hinweistexte sind belegt und gehören an verschiedene Stellen: „Bis zu diesen Beträgen kann die jeweilige Stufe Buchungen ohne zusätzliche Freigabe beantragen." über der Liste (.displayHint) und „Bis zu diesem Betrag darf die Stufe ohne zusätzliche Freigabe buchen; darüber braucht es deine Freigabe." am Setzen-Sheet (.hint)</li>
           <li>Die Antragsseite trägt dieselbe Regel und ist ebenfalls belegt — nachzuziehen in Artboard 3 und 5: Antragsteller-Warnung „Du kannst den Antrag stellen, aber er muss vor der Bearbeitung vom Kontoverantwortlichen freigegeben werden." · Mitarbeiter-Warnung „Dieser Antrag überschreitet das Freigabe-Limit des Antragstellers…" · Pflicht-Häkchen „Freigabe durch Kontoverantwortlichen erfolgt" · Chips „Freigegeben" / „Über Limit" · Aktion „Freigabe erteilen"</li>
           

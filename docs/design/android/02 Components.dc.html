@@ -453,7 +453,7 @@
           <div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Zu</div>
           <div style="border:1px solid #282828;background:#141414">
             <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-variant-numeric:tabular-nums">
-              <span style="flex:1;font:700 12.5px/1.2 Lato,sans-serif;color:#FFFFFF">#A-1042</span>
+              <span style="flex:1;font:700 12.5px/1.2 Lato,sans-serif;color:#FFFFFF">#1042</span>
               <span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Material</span>
               <span class="status-pill status-in_progress" style="font-size:8.5px">In Bearbeitung</span>
             </div>
@@ -463,7 +463,7 @@
           <div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Auf</div>
           <div style="border:1px solid #282828;background:#141414">
             <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;font-variant-numeric:tabular-nums">
-              <span style="flex:1;font:700 12.5px/1.2 Lato,sans-serif;color:#FFFFFF">#A-1042</span>
+              <span style="flex:1;font:700 12.5px/1.2 Lato,sans-serif;color:#FFFFFF">#1042</span>
               <span class="chip chip--muted" style="color:#8A8A8A;font-size:8.5px">Material</span>
               <span class="status-pill status-in_progress" style="font-size:8.5px">In Bearbeitung</span>
             </div>
@@ -529,7 +529,7 @@
             <div style="display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 11px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Herkunft der Menge</span><span style="font:300 12px/1 Lato,sans-serif;color:#D2D2D2">Vom Rest</span><svg class="krt-icon" style="width:14px;height:14px;color:#8A8A8A;transform:rotate(180deg)"><use href="#krt-icon-chevron-down"></use></svg></div>
             <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span style="font:700 10.5px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.5px">Aus Aufträgen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--success" style="color:#2EBC3D;font-size:8.5px">Gedeckt</span></div>
-              <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:7px 10px;min-height:46px"><div style="flex:1;min-width:0"><div style="font:700 11px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#A-1042 Laranite</div><div style="font:300 10px/1.3 Lato,sans-serif;color:#8A8A8A">zugeordnet 200 SCU</div></div><input type="text" value="150" style="width:66px;height:38px;text-align:center;font-size:14px;font-weight:700;color:#fff;flex:none;font-variant-numeric:tabular-nums"></div>
+              <div style="display:flex;align-items:center;gap:10px;border:1px solid #E77E23;background:rgba(231,126,35,.08);padding:7px 10px;min-height:46px"><div style="flex:1;min-width:0"><div style="font:700 11px/1.3 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">#1042 Laranite</div><div style="font:300 10px/1.3 Lato,sans-serif;color:#8A8A8A">zugeordnet 200 SCU</div></div><input type="text" value="150" style="width:66px;height:38px;text-align:center;font-size:14px;font-weight:700;color:#fff;flex:none;font-variant-numeric:tabular-nums"></div>
               <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Vom Rest</span><span style="font:700 12px/1 Lato,sans-serif;color:#FFFFFF">50 SCU</span><span style="font:300 10.5px/1 Lato,sans-serif;color:#8A8A8A">(frei: 122)</span></div>
             </div>
           </div>
@@ -572,6 +572,229 @@
         <li>Chevron rechts, 44 dp Tippziel über die ganze Kopfbreite, <code style="color:#8A8A8A">aria-expanded</code> gesetzt; Rotation 0° → 90° bei chevron-right, 0° → 180° bei chevron-down. Keine Höhen-Animation über 200 ms</li>
         <li>Aufklappen lädt nach, wo der Server es verlangt (Lagerbaum, Lizenzgruppen, Besitzerlisten): Ladezeile IM offenen Bereich, Fehler lässt den Bereich OFFEN und sagt es — nie stilles Zuklappen</li>
         <li>Zustand je Screen in <code style="color:#8A8A8A">rememberSaveable</code>; Auswahl und Formulareingaben überleben das Einklappen (Kap. 09: „Einklappen ist Ansicht, nicht Auswahl")</li>
+      </ul>
+    </div>
+  </section>
+
+  <section data-screen-label="Datum-Zeit-Wähler" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">11 · Datum- und Zeit-Wähler — neue Komponente (F1)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:110ch">Das System hatte keinen Wähler, und das hat zwei Dinge gekostet: der Zeitplan eines Einsatzes tippt heute vier ISO-8601-Zeitstempel als Text — die unansehnlichste Fläche der App — und der Datumsbereich-Filter der Einsatzliste war überhaupt nicht baubar. Beides ist eine Komponente, kein Zusammensetzen aus gezeichneten Teilen, also steht sie hier. Gebaut aus dem, was das System schon hat: Modal-Rahmen, Hairlines, 44-dp-Ziele, Radius 0, ein Orange für die Auswahl.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1300px">
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">a · Feldpaar im Ruhezustand — was ein Formular zeigt</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Einsatz — Zeitplan</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Vier Zeitpunkte, zwei Felder je Zeitpunkt</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:16px"><div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <label style="font-size:12px;margin-bottom:4px">Teamspeak</label>
+                <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-calendar"></use></svg><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">01.09.2026</span></button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-clock"></use></svg><span style="flex:1;text-align:center;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">18:00</span></button>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px;margin-bottom:4px">Serverjoin</label>
+                <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-calendar"></use></svg><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">02.09.2026</span></button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-clock"></use></svg><span style="flex:1;text-align:center;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">19:30</span></button>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px;margin-bottom:4px">Beginn</label>
+                <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-calendar"></use></svg><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">03.09.2026</span></button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-clock"></use></svg><span style="flex:1;text-align:center;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">20:00</span></button>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px;margin-bottom:4px">Ende</label>
+                <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-calendar"></use></svg><span style="flex:1;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">04.09.2026</span></button>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#1C1C1C;border:1px solid #282828"><svg class="krt-icon" style="width:15px;height:15px;color:#8A8A8A;flex:none"><use href="#krt-icon-clock"></use></svg><span style="flex:1;text-align:center;font:300 13.5px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">21:30</span></button>
+                </div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;border-top:1px solid #282828;padding-top:12px;font-variant-numeric:tabular-nums"><span style="flex:1;font:300 11.5px/1.4 Lato,sans-serif;color:#8A8A8A">Dauer (berechnet)</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">3 Std. 30 Min.</span></div>
+            </div></div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Feldpaar — KrtDateTimeField</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Ein Zeitpunkt sind ZWEI Ziele, nie ein Textfeld: Datum (1,35 fr, mit Kalender-Glyphe, linksbündig) und Zeit (1 fr, mit Uhr-Glyphe, zentriert). Beide 46 dp, tabular, Radius 0 — dieselben Maße wie ein Textfeld, damit ein Formular nicht springt</li>
+            <li>Anzeige immer im deutschen Format (TT.MM.JJJJ · HH:MM), Übertragung immer ISO-8601. Ein Mitglied sieht nie einen Zeitstempel</li>
+            <li>Leer heißt leer: Platzhalter „Datum wählen" / „--:--" im Muted-Ton, nicht das heutige Datum vorbelegt — sonst speichert man versehentlich einen Zeitpunkt, den niemand gewählt hat</li>
+            <li>Berechnete Werte (Dauer, „Endet") stehen als Zeile darunter, nie als drittes Feld</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">b · Datum wählen</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px">
+              <div style="width:100%;background:#141414;border:1px solid #282828;box-shadow:0 0 12px rgba(231,126,35,.10)">
+                <div style="height:3px;background:#E77E23"></div>
+                <div style="padding:14px 16px 0"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.7px">Datum wählen</div></div>
+                <div style="display:flex;align-items:center;gap:4px;padding:10px 8px 6px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Vorheriger Monat"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-chevron-left"></use></svg></button>
+                  <div style="flex:1;text-align:center;font:700 13px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">September 2026</div>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Nächster Monat"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-chevron-right"></use></svg></button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;border-bottom:2px solid #E77E23">
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Mo</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Di</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Mi</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Do</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Fr</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Sa</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">So</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:4px 8px 10px">
+<div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">29</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">30</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">31</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">1</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">2</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:#E77E23;font:700 13px/1 Lato,sans-serif;color:#000;font-variant-numeric:tabular-nums">3</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">4</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">5</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">6</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">7</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">8</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">9</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">10</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">11</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">12</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">13</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">14</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">15</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">16</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">17</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">18</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">19</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">20</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">21</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">22</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">23</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">24</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">25</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">26</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">27</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">28</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">29</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">30</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">1</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">2</div>
+                </div>
+                <div style="display:flex;gap:6px;padding:0 16px 12px">
+                  <span class="chip chip--primary" style="font-size:10px">Heute</span>
+                  <span class="chip" style="font-size:10px">Morgen</span>
+                  <span class="chip" style="font-size:10px">Nächster Freitag</span>
+                </div>
+                <div style="display:flex;gap:10px;padding:14px 16px 16px;border-top:1px solid #282828">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:48px;flex:1.3">Übernehmen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Datum — Monatsraster</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Sieben Spalten, 44-dp-Zellen, Woche beginnt Montag. Auswahl = orange Füllung mit SCHWARZEM Text (Regel: gefülltes Orange trägt Schwarz); Nachbarmonate in #464646, antippbar und blättern weiter</li>
+            <li>Kein Monats-/Jahres-Dropdown: Chevrons blättern, drei Kurzbefehl-Chips („Heute", „Morgen", „Nächster Freitag") deckten in der Praxis das meiste ab. Kein Jahreswechsel-Karussell</li>
+            <li>Heute trägt einen Hairline-Rahmen, keine Füllung — sonst konkurrieren zwei Oranges</li>
+            <li>Kein Material-DatePicker: dessen Rundungen, Tonal-Flächen und Elevation widersprechen dem System an drei Stellen. Compose: eigenes Composable über KrtModal + Grid</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">c · Zeit wählen</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px">
+              <div style="width:100%;background:#141414;border:1px solid #282828;box-shadow:0 0 12px rgba(231,126,35,.10)">
+                <div style="height:3px;background:#E77E23"></div>
+                <div style="padding:14px 16px 0"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.7px">Zeit wählen</div></div>
+                <div style="display:flex;gap:14px;padding:14px 16px 8px;align-items:flex-start">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Stunde</div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Stunde +"><svg class="krt-icon" style="width:16px;height:16px;transform:rotate(-90deg)"><use href="#krt-icon-chevron-right"></use></svg></button>
+                    <div style="width:100%;height:56px;display:flex;align-items:center;justify-content:center;background:#1C1C1C;border:1px solid #E77E23;font:900 24px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">19</div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Stunde −"><svg class="krt-icon" style="width:16px;height:16px;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg></button>
+                  </div>
+                  <div style="font:900 24px/1 Lato,sans-serif;color:#8A8A8A;padding-top:74px">:</div>
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Minute</div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Minute +"><svg class="krt-icon" style="width:16px;height:16px;transform:rotate(-90deg)"><use href="#krt-icon-chevron-right"></use></svg></button>
+                    <div style="width:100%;height:56px;display:flex;align-items:center;justify-content:center;background:#1C1C1C;border:1px solid #E77E23;font:900 24px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">30</div>
+                    <button style="all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Minute −"><svg class="krt-icon" style="width:16px;height:16px;transform:rotate(90deg)"><use href="#krt-icon-chevron-right"></use></svg></button>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;padding:6px 16px 14px">
+                  <span class="chip" style="font-size:10px">:00</span>
+                  <span class="chip chip--primary" style="font-size:10px">:30</span>
+                  <span class="chip" style="font-size:10px">Jetzt</span>
+                </div>
+                <div style="display:flex;gap:10px;padding:14px 16px 16px;border-top:1px solid #282828">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:48px;flex:1.3">Übernehmen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Zeit — Stepper, kein Rad</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Zwei Stepper statt eines Scroll-Rads: ein Rad hat keinen Hairline-Rahmen, keine feste Höhe und kein sicheres Tippziel — im HUD-Vokabular gibt es dafür keine Form. Pfeil-Buttons 44 dp, Wert 56 dp mit orangem Rahmen</li>
+            <li>24-Stunden-Format, immer zweistellig, tabular. Minuten springen in 5er-Schritten; Halten beschleunigt</li>
+            <li>Drei Chips für den Alltag: „:00", „:30", „Jetzt" — Einsätze beginnen fast nie um 19:23</li>
+            <li>Der Wert ist auch direkt eintippbar (Feld fokussieren) — der Stepper ist die schnelle, nicht die einzige Eingabe</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">d · Bereich wählen — Filter der Einsatzliste (C7)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:180px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px">
+              <div style="width:100%;background:#141414;border:1px solid #282828;box-shadow:0 0 12px rgba(231,126,35,.10)">
+                <div style="height:3px;background:#E77E23"></div>
+                <div style="padding:14px 16px 0"><div style="font:700 13px/1.2 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.7px">Zeitraum wählen</div></div>
+                <div style="display:flex;gap:8px;padding:12px 16px 10px">
+                  <div style="flex:1;border:1px solid #E77E23;background:#1C1C1C;padding:7px 10px"><div style="font:700 9.5px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.5px">Von</div><div style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF;margin-top:3px;font-variant-numeric:tabular-nums">05.09.2026</div></div>
+                  <div style="flex:1;border:1px solid #282828;background:#1C1C1C;padding:7px 10px"><div style="font:700 9.5px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Bis</div><div style="font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF;margin-top:3px;font-variant-numeric:tabular-nums">12.09.2026</div></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;padding:10px 8px 6px">
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Vorheriger Monat"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-chevron-left"></use></svg></button>
+                  <div style="flex:1;text-align:center;font:700 13px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">September 2026</div>
+                  <button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Nächster Monat"><svg class="krt-icon" style="width:18px;height:18px"><use href="#krt-icon-chevron-right"></use></svg></button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;border-bottom:2px solid #E77E23">
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Mo</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Di</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Mi</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Do</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Fr</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">Sa</div>
+                  <div style="height:28px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.4px">So</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:4px 8px 10px">
+<div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">29</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">30</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">31</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">1</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">2</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">3</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">4</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:#E77E23;font:700 13px/1 Lato,sans-serif;color:#000;font-variant-numeric:tabular-nums">5</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16);font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">6</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16);font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">7</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16);font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">8</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16);font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">9</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16);font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">10</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:rgba(231,126,35,.16);font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">11</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:#E77E23;font:700 13px/1 Lato,sans-serif;color:#000;font-variant-numeric:tabular-nums">12</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">13</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">14</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">15</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">16</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">17</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">18</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">19</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">20</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">21</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">22</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">23</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">24</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">25</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">26</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">27</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">28</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">29</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">30</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">1</div><div style="height:44px;display:flex;align-items:center;justify-content:center;background:transparent;font:300 13px/1 Lato,sans-serif;color:#464646;font-variant-numeric:tabular-nums">2</div>
+                </div>
+                <div style="display:flex;gap:6px;padding:0 16px 12px">
+                  <span class="chip" style="font-size:10px">Diese Woche</span>
+                  <span class="chip chip--primary" style="font-size:10px">Nächste 7 Tage</span>
+                  <span class="chip" style="font-size:10px">Dieser Monat</span>
+                </div>
+                <div style="display:flex;gap:10px;padding:14px 16px 16px;border-top:1px solid #282828">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px;flex:1">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:48px;flex:1.3">Filtern</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Bereich — schaltet C7 frei</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Zwei Kopf-Felder (Von / Bis), das aktive trägt den orangen Rahmen; ein Tipp im Raster setzt es und schaltet auf das andere. Zwischentage in 16-%-Orange, die Enden gefüllt</li>
+            <li>Damit ist der Datumsbereich-Filter der Einsatzliste baubar (§C7): MissionQuery führt from/until und das Repository sendet sie schon — es fehlte nur der Wähler</li>
+            <li>Nur ein Ende gewählt = offener Bereich, der Chip in der Filterleiste sagt „ab 05.09." bzw. „bis 12.09."</li>
+            <li>Zurücksetzen ist der Filter-Chip selbst („Zeitraum ×"), kein vierter Button im Wähler</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+    <div class="card" style="padding:12px 16px;max-width:1300px;margin-top:16px">
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Verbindlich für jede Zeitangabe der App</div>
+      <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+        <li>Kein Mitglied tippt je einen Zeitstempel. Jedes Datum und jede Zeit läuft über diese Komponente — Einsatz-Zeitplan (Kap. 06), Raffinerie-Start (Kap. 11), Auftrags-Fälligkeit (Kap. 10), Listen-Filter (Kap. 06)</li>
+        <li>Compose: eigenes Composable über KrtModal (<span style="color:#8A8A8A">artifacts/compose/KrtFieldsAndOverlays.kt</span> → KrtDateTimeField ruft es), NICHT Material3 DatePicker/TimePicker — deren Rundungen, Tonal-Flächen und Elevation verletzen drei Systemregeln auf einmal</li>
+        <li>Ein Zeitpunkt in der Vergangenheit wird nicht gesperrt, sondern benannt: gelbe Zeile am Feld („liegt in der Vergangenheit"). Der Server entscheidet</li>
+        <li>Overlay-Glow 12 dp/.10, Scrim 80 % + 4 dp Blur — wie jedes Modal (§7)</li>
       </ul>
     </div>
   </section>

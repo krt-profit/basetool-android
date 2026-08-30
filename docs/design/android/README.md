@@ -45,6 +45,44 @@ block as a comment. The web repo should take the same values.
    what is behind it — never to suggest elevation. On Android none of them are ported: Compose
    popovers sit on hairline borders with no shadow at all.
 
+## Round 12 — the deviation register, worked through (30.08.2026)
+
+The app was verified artboard-by-artboard against the running code; the register it produced is
+answered in full. **Chapter 18 „Abweichungs-Register" is the map** — it says for every item where
+its correction lives, and it carries the answers to §C/§D/§G/§H plus the three surfaces that had no
+artboard anywhere.
+
+* **§A (11 · drawn, no wire field)** — dropped or redrawn around what the endpoint really takes:
+  Operation has no time fields and no Einsatz picker (ch. 06 ab. 15); `bulk-checkout` carries
+  `itemIds` and nothing else (ch. 09 ab. 20); the item offer has `productKey/quantity/remark` only
+  and the item request carries **`minQuality`**, which no artboard drew — ab. 2 is redrawn around
+  it (ch. 17); the material row's subtitle is the **category** (ch. 16); „Herstellung" now draws a
+  **per-material plan plus the Einlagerung the endpoint requires**, and loses the variant and
+  handover fields that do not exist (ch. 10 ab. 15).
+* **§B (9 · the stated rule was wrong)** — corrected at the artboard, each marked „Korrektur
+  (Runde 12)" in yellow: over-pledging is **refused**, not allowed (B1); the refinery's
+  post-storage lock and delete refusal are **the app's rules, not the server's** (B2/B3 → G3);
+  `bulk-checkout` is **atomic**, there is no partial outcome (B4); the exchange **amount is
+  editable** and there is **no undo** after withdrawing (B5/B6); approval limits live in **one
+  account's settings**, not a fifth tab, with **four** tiers and a „kein Limit" state (B7); the
+  Lager tree is **material-only** so a game-item row opens in place (B8 → G4); `displayId` is a
+  plain integer — „#A-1042" is now „#1042" everywhere (B9).
+* **§C (8)** — all confirmed. C7 is no longer blocked: the picker now exists (F1).
+* **§D (12)** — all ratified; the drawing follows the app. D1 and D3 pulled through into ch. 06 and
+  ch. 08, D7 noted in ch. 11. The offline banner's timestamp and CACHE chip are **struck**, not
+  deferred — the app holds no cache and measures no load time.
+* **§E** — E1–E3 drawn in ch. 18 (cross-order material demand, the two-step blueprint file import,
+  and a selection mode so „alle löschen" has an entry point at all); E4–E9 ratified there with the
+  composition decided; **E10/E11 answered as rules in ch. 01** (one spacing scale, three tablet
+  answers — every full-screen surface picks one of the three).
+* **§F** — both drawn: **F1 the date/time picker** as a new component (ch. 02 §11: field pair,
+  date grid, time steppers, range variant) with the rule that no member ever types a timestamp;
+  **F2 starting an Einsatz from the status badge**, outline not filled, because „Anmelden" keeps
+  the one filled orange (ch. 06).
+* **§G** — the six backend asks are recorded in ch. 18 in priority order, **G3 first**: it is the
+  only one with a data-integrity edge, because today a direct API call can still rewrite a booked
+  refinery run's goods.
+
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the

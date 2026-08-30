@@ -210,6 +210,84 @@ val PillShape = RoundedCornerShape(percent = 50) // badges only</pre>
     </div>
   </section>
 
+  <section data-screen-label="Raster und Tablet" style="margin-bottom:44px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">Ränder, Abstände, Tablet-Antwort — die fehlenden Regeln (E10 · E11)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 16px;max-width:110ch">Dieses Kapitel nannte keine Rand-Regel, also hat jeder der elf Screens für sich entschieden — und zwei Screens hatten für die Tablet-Breite gar keine Antwort. Beides ist hier einmal entschieden, statt elfmal.</p>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
+      <div class="card" style="padding:14px 16px;width:520px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Ränder &amp; Abstände (E10) — verbindlich</div>
+        <div class="card card--flush" style="padding:0">
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Screen-Rand, Telefon</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">16 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">links/rechts; senkrecht 14 dp oben, 16 dp unten</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Sheet-Rand</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">20 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">links/rechts; Griff 8 dp über dem Titel</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Modal-Rand</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">16 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">gleich für Kopf, Körper, Fuß</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Tablet-Inhalt</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">24 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">in der Detail-Spalte; Listenspalte 20 dp</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Zwischen Karten</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">10 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">Listen und gestapelte Blöcke</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Zwischen Abschnitten</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">12 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">Abschnittstitel zählt zum folgenden Block</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">In der Karte</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">12 / 14 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">senkrecht / waagerecht</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Zeilen-Innenrand</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">8 / 14 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">Listenzeile, min. 44 dp hoch</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">Feld zu Hilfetext</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">4 dp</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">Hilfetext gehört zum Feld, nicht zum Abstand</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr 92px 1.3fr;gap:8px;padding:8px 12px;border-bottom:1px solid #1C1C1C;align-items:baseline">
+            <span style="font:700 11.5px/1.3 Lato,sans-serif;color:#FFFFFF">CTA-Leiste</span>
+            <span style="font:700 12px/1.3 Lato,sans-serif;color:#E77E23;text-align:right;font-variant-numeric:tabular-nums">12 dp oben, 16 dp unten</span>
+            <span style="font:300 10.5px/1.4 Lato,sans-serif;color:#8A8A8A">plus Systemleiste</span>
+          </div>
+        </div>
+        <ul style="margin:10px 0 0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li>Nur diese Werte. Ein Screen, der 18 dp braucht, hat ein Layout-Problem, keinen Sonderfall</li>
+          <li>Karten und Tabellen ziehen sich NICHT über den Screen-Rand hinaus — volle Breite gibt es nur für Bilder und die CTA-Leiste</li>
+          <li>Compose: <span style="color:#8A8A8A">KrtSpacing</span> (xs 6 · sm 10 · md 16 · lg 20 · xl 24) trägt genau diese Skala; kein <span style="color:#8A8A8A">.dp</span>-Literal im Feature-Code</li>
+        </ul>
+      </div>
+      <div class="card" style="padding:14px 16px;width:520px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Tablet-Antwort (E11) — jede Fläche hat genau eine</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">1 · Liste-Detail</b> (Standard für jede Liste mit Detail): Rail 88 dp · Listenspalte 480 dp · Detail füllt den Rest. Auswahl bleibt sichtbar, Zurück-Pfeil entfällt. Kap. 06, 10, 12, 16</li>
+          <li><b style="color:#fff">2 · Rail + Tabelle</b> (für Flächen, deren Inhalt Spalten hat): Tabelle behält ihre Spalten, das Telefon fällt zu Key-Value-Karten zusammen (Regel 02 §5). Kap. 08, 09, 12-Verwaltung</li>
+          <li><b style="color:#fff">3 · Zentrierte Spalte 400 dp</b> (für alles VOR der App und für Vollbild-Zustände): kein Rail, kein Chrome, schwarz. Kap. 04, 14</li>
+          <li><b style="color:#D2D2D2">Die Regel:</b> jede Vollbild-Fläche wählt EINE dieser drei — es gibt keine vierte und keine „gestreckte Telefon-Ansicht". Wo ein Kapitel nichts sagt, gilt 1 für Listen, 3 für Zustände</li>
+          <li>Sheets und Modale wachsen nicht mit: Sheet max. 560 dp breit, zentriert; Modal max. 360 dp — auf dem Tablet dieselben Maße wie auf dem Telefon</li>
+          <li>Ein Rail-Eintrag ersetzt den Weg über „Mehr", sobald die Fläche einen eigenen Eintrag hat (Kap. 16: „Handel")</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <footer style="display:flex;justify-content:space-between;border-top:1px solid #282828;padding-top:16px">
     <a href="00 Index.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A8A8A;text-decoration:none" style-hover="color:#E77E23">← 00 Index</a>
     <a href="02 Components.dc.html" style="font:700 12px/1 Lato,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#E77E23;text-decoration:none">02 Component sheet →</a>

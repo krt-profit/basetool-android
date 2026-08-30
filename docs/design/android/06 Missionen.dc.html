@@ -1285,39 +1285,43 @@
     <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Drei offene Punkte des Parität-Programms (Priorität 4). Anlegen und Bearbeiten sind Missions-Manager-und-höher, also in Reichweite; das Löschen bleibt Admin und damit Web.</p>
     <div style="display:flex;gap:28px;align-items:flex-start">
     <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
-      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">15 · Operation anlegen</div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">15 · Operation anlegen — vier Felder, das ist der Vertrag</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
-          <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
-            <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
-            <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Operation anlegen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Bereich Profit</div></div>
-          </div>
-          <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
-            <div><label style="font-size:12px;margin-bottom:4px">Name</label><input type="text" value="Operation Rotschild" style="width:100%;height:46px;font-size:13.5px"></div>
-            <div><label style="font-size:12px;margin-bottom:4px">Beschreibung</label><textarea style="width:100%;min-height:80px;font-size:13.5px;resize:none">Drei Einsätze, gemeinsame Kasse, Anteile nach Teilnahme.</textarea></div>
-            <div><label style="font-size:12px;margin-bottom:4px">Beginn</label><div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px"><input type="text" value="01.09.2026" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"><input type="text" value="19:00" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"></div></div>
-            <div><label style="font-size:12px;margin-bottom:4px">Ende (geplant)</label><div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px"><input type="text" value="03.09.2026" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"><input type="text" value="23:00" style="width:100%;height:44px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums"></div></div>
-            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Einsätze zuordnen</span><span style="flex:1;height:1px;background:#282828"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9px">2</span></div>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <div style="display:flex;align-items:center;gap:10px;min-height:52px;background:#1C1C1C;border:1px solid #E77E23;padding:6px 12px"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Vertikaler Abbau — Lyria</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">29.08. · Geplant</div></div></div>
-              <div style="display:flex;align-items:center;gap:10px;min-height:52px;background:#1C1C1C;border:1px solid #E77E23;padding:6px 12px"><span style="width:22px;height:22px;border:1px solid #E77E23;background:#E77E23;display:flex;align-items:center;justify-content:center;flex:none"><svg class="krt-icon" style="width:14px;height:14px;color:#000"><use href="#krt-icon-check"></use></svg></span><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Eskorte HUR-L2</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">30.08. · Geplant</div></div></div>
-              <div style="display:flex;align-items:center;gap:10px;min-height:52px;background:#141414;border:1px solid #282828;padding:6px 12px"><span style="width:22px;height:22px;border:1px solid #646464;flex:none"></span><div style="flex:1;min-width:0"><div style="font:700 12.5px/1.3 Lato,sans-serif;color:#FFFFFF">Raffinerie-Lauf ARC-L1</div><div style="font:300 10.5px/1.3 Lato,sans-serif;color:#8A8A8A">31.08. · Geplant</div></div></div>
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-close"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Operation anlegen</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">Bereich Profit · OperationCreateDto</div></div>
             </div>
-            <div style="font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Nur Einsätze der eigenen Einheit ohne bestehende Operation — ein Einsatz gehört zu höchstens einer.</div>
-          </div></div>
-          <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
-            <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
-            <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Operation anlegen</button>
-          </div>
-          </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
+              <div><label style="font-size:12px;margin-bottom:4px">Name</label><input type="text" value="Operation Rotschild" style="width:100%;height:46px;font-size:13.5px"></div>
+              <div><label style="font-size:12px;margin-bottom:4px">Beschreibung</label><textarea style="width:100%;min-height:80px;font-size:13.5px;resize:none">Drei Einsätze, gemeinsame Kasse, Anteile nach Teilnahme.</textarea></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div><label style="font-size:12px;margin-bottom:4px">Status</label><select style="width:100%;height:46px;font-size:13.5px"><option>Läuft</option><option>Abgeschlossen</option></select></div>
+                <div><label style="font-size:12px;margin-bottom:4px">Einheit</label><select style="width:100%;height:46px;font-size:13.5px"><option>Bereich Profit</option></select></div>
+              </div>
+              <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+                <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2"><b style="color:#fff">Zeiten:</b> Eine Operation hat keine eigenen — Beginn und Ende ergeben sich aus ihren Einsätzen, das Roll-up rechnet sie zusammen.</div>
+              </div>
+              <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
+                <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
+                <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2"><b style="color:#fff">Einsätze zuordnen:</b> geschieht am EINSATZ, in seinem Kern-Abschnitt (Kap. 06 Artboard 11) — dort trägt das Feld „Operation".</div>
+              </div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Vier Felder, sonst nichts: das ist der ganze Vertrag. Nach dem Anlegen führt der CTA direkt in die neue Operation, damit der erste Einsatz sofort zugeordnet werden kann.</div>
+            </div></div>
+            <div style="flex:none;background:#141414;border-top:1px solid #282828;padding:12px 16px 16px;display:flex;gap:10px;box-shadow:0 0 12px rgba(231,126,35,.07)">
+              <button class="btn-ghost btn" style="background:transparent;min-height:52px;flex:1">Abbrechen</button>
+              <button class="btn btn--cta" style="min-height:52px;flex:1.5"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Operation anlegen</button>
+            </div>
+        </div>
       </x-import>
       <div class="card" style="padding:12px 16px">
-        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Operation anlegen</div>
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Korrektur (Runde 12, A1 + A2) — Operation anlegen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
-          <li>Einstieg: FAB in der Operationen-Liste (Segment „Operationen", Artboard 1). Ohne Rolle Missions-Manager gesperrt-antippbar</li>
-          <li>Die Einsatz-Zuordnung ist eine Auswahlliste im Formular, keine zweite Ebene: eine Operation ohne Einsätze ist eine leere Kasse, und die Zuordnung ist die eigentliche Arbeit</li>
-          <li>Beginn/Ende als Datum-Zeit-Paare (Muster Artboard 8); Ende darf leer bleiben (offene Operation) — dann entfällt die Dauer-Anzeige statt „0 Std."</li>
-          <li>Zustände: kein zuordenbarer Einsatz → Abschnitt zeigt „Kein freier Einsatz in dieser Einheit." und das Anlegen bleibt möglich · Schreiben = CTA-Spinner · 403 = Canon-Copy, Formular bleibt offen</li>
+          <li><b style="color:#FFD23F">Zwei gezeichnete Blöcke haben kein Feld:</b> „Beginn"/„Ende (geplant)" — OperationCreateDto/UpdateDto führen NAME, BESCHREIBUNG, STATUS und EINHEIT, kein Zeitfeld irgendeiner Art; die Zeiten leben an den Einsätzen. Und „Einsätze zuordnen" ist auch keines: ein Einsatz tritt über SEINEN eigenen Kern-Abschnitt bei (PATCH /missions/{id}/core mit operationId), der Name und den Core-Version-Zähler dieses Einsatzes braucht — ein Picker hier müsste vorher jeden Kandidaten vollständig lesen</li>
+          <li>Statt der Felder steht je ein KrtHint, der den Ort nennt. Ein Formular, das ein Feld weglässt, wird als Bug gemeldet; eines, das den Weg nennt, wird verstanden (Muster wie Kap. 10 Artboard 11)</li>
+          <li>Der CTA führt in die neue Operation, nicht zurück in die Liste — die Zuordnung des ersten Einsatzes ist der nächste Schritt und liegt woanders</li>
+          <li><b style="color:#D2D2D2">Ratifiziert (D1):</b> Die Operationen-Zeile zeigt weder „2 Einsätze · 18 Teilnehmer" noch einen Auszahlungs-Chip — das Listen-DTO führt beides nicht, und die Bulk-Endpunkte geben die Aggregat-Abfragen bewusst nicht aus (Eigentümer 22.08.2026)</li>
         </ul>
       </div>
     </div>
@@ -1408,6 +1412,86 @@
         </ul>
       </div>
     </div>
+
+    </div>
+  </section>
+
+  <section data-screen-label="Einsatz starten" style="margin-bottom:32px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">Runde 12 · Einsatz starten — am Badge, nicht im Formular (F2)<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Bisher liegt „Starten" als CTA in einem Formular. Angeschaut wird aber das Status-Badge — „Geplant" ist das Erste, was eine Einsatzleitung auf dem Screen sieht. Der Lebenszyklus gehört deshalb dorthin, wo er steht.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start">
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">a · Badge trägt die Aktion (Geplant → Aktiv)</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Vertikaler Abbau — Lyria</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">01.09.2026 · 19:00 · Bereich Profit</div></div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;border:1px solid #355DDC;background:rgba(53,93,220,.12);padding:12px 14px">
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 13px/1.2 Lato,sans-serif;color:#6C93EF;text-transform:uppercase;letter-spacing:.7px">Geplant</div>
+                  <div style="font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A;margin-top:3px">Beginn in 42 Min. · 12 angemeldet</div>
+                </div>
+                <button class="btn-outline btn" style="background:transparent;min-height:44px;flex:none;font-size:11px"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-login"></use></svg>Starten</button>
+              </div>
+              <div style="font:300 11px/1.5 Lato,sans-serif;color:#8A8A8A">Die Aktion steht IM Badge — dieselbe Fläche, die den Zustand nennt, führt ihn weiter.</div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Mission auf einen Blick</span><span style="flex:1;height:1px;background:#282828"></span></div>
+              <div class="card card--flush" style="padding:0">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Ziel</span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">Quantainium-Abbau, 3 Prospector</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Teamspeak</span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">19:00</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Serverjoin</span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">19:15</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Treffpunkt</span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">ARC-L1 Wide Forest</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Dauer</span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">3 Std. 30 Min.</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;border-bottom:1px solid #1C1C1C;font-variant-numeric:tabular-nums"><span style="font:700 10.5px/1.4 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px">Einsatzleiter</span><span style="font:300 12.5px/1.4 Lato,sans-serif;color:#FFFFFF">GrafRotz</span></div>
+              </div>
+              <button class="btn btn--cta" style="min-height:52px;width:100%;margin-top:4px"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-check"></use></svg>Anmelden</button>
+            </div></div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Entscheidung (F2) — der Lebenszyklus wohnt am Badge</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Das Status-Badge ist die EINE Fläche für den Lebenszyklus: es nennt den Zustand, die Restzeit und trägt die Aktion, die ihn weiterführt („Starten" bei Geplant, „Abschließen" bei Aktiv). Kein Formular, kein Overflow-Eintrag, keine zweite Stelle</li>
+            <li>Die Aktion ist ein <b style="color:#fff">Outline</b>-Button, nicht orange gefüllt: das gefüllte Orange bleibt beim „Anmelden" — der einen Primäraktion des Screens für alle anderen (Regel 02 §1). Zwei gefüllte Oranges auf einem Screen wären genau der Fehler, den die Aktions-Hierarchie behoben hat</li>
+            <li>Ohne Rolle Missions-Manager: Button gezeichnet-gesperrt mit Schloss, antippbar, Toast nennt die Rolle (Kap. 09-Muster) — nie versteckt</li>
+            <li>Damit ist Runde 10 §10c ganz beantwortet: das Verb war geklärt, die Fläche nicht</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">b · Bestätigung — Start ist sichtbar für alle</div>
+        <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
+          <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 4px;background:#141414;border-bottom:2px solid #E77E23;flex:none">
+              <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
+              <div style="flex:1;min-width:0"><div style="font:700 15px/1.2 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.8px">Vertikaler Abbau — Lyria</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A;margin-top:1px">01.09.2026 · 19:00</div></div>
+            </div>
+            <div style="flex:1;filter:brightness(.4);padding:16px"><div class="hud-box" style="height:150px"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px">
+              <div class="krt-modal" style="max-width:360px;width:100%">
+                <div class="krt-modal-head"><h2>Einsatz starten?</h2></div>
+                <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Der Einsatz wechselt auf <b style="color:#E77E23">Aktiv</b>. Ab dann können sich die <b style="color:#fff">12 Angemeldeten</b> einchecken, und der Zustand ist für alle sichtbar.</p><p style="margin:10px 0 0;font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Zurück auf „Geplant" führt kein Weg in der App.</p></div>
+                <div class="krt-modal-foot">
+                  <button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
+                  <button class="btn btn--cta" style="min-height:48px">Starten</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div class="card" style="padding:12px 16px">
+          <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Bestätigung</div>
+          <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+            <li>Rückfrage JA, aber kein Danger-Modal: Starten zerstört nichts, es ist nur nicht zurücknehmbar. Normaler Modal-Rahmen, orange CTA, und der zweite Satz nennt genau das</li>
+            <li>Der Text nennt die Folge in Zahlen („die 12 Angemeldeten können einchecken") — nicht „Sind Sie sicher?"</li>
+            <li>Schreiben: CTA-Spinner, Badge bleibt stehen; Erfolg = Badge wechselt in place auf Aktiv + Toast. Kein Screen-Wechsel</li>
+          </ul>
+        </div>
+      </div>
 
     </div>
   </section>

@@ -377,7 +377,7 @@
           <div style="flex:1;overflow:auto;padding:14px 16px 16px"><div style="display:flex;flex-direction:column;gap:12px">
             <div style="display:flex;gap:10px;border-left:4px solid #3B82F6;background:rgba(59,130,246,.12);padding:10px 12px">
               <svg class="krt-icon" style="width:16px;height:16px;color:#6C93EF;flex:none;margin-top:1px"><use href="#krt-icon-info"></use></svg>
-              <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Solange nicht eingelagert ist, sind alle Angaben änderbar — danach nur noch Geld und Verknüpfung.</div>
+              <div style="font:300 12px/1.5 Lato,sans-serif;color:#D2D2D2">Solange nicht eingelagert ist, sind alle Angaben änderbar — danach nur noch Geld und Verknüpfung. Diese Grenze zieht die App, nicht der Server (G3).</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px"><span style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.6px">Kern</span><span style="flex:1;height:1px;background:#282828"></span></div>
             <div><label style="font-size:12px;margin-bottom:4px">Raffinerie</label><div class="krt-combobox"><input class="krt-combobox__input" type="text" value="ARC-L1 Wide Forest" style="height:46px;font-size:13.5px"></div></div>
@@ -404,7 +404,7 @@
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Auftrag bearbeiten</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>Einstieg: Overflow im Auftrag-Detail (Artboard 2) → „Bearbeiten". Dasselbe Formular wie das Anlegen (Artboards 4–5), vorbefüllt — kein zweites Layout</li>
-          <li>Nach dem Einlagern sperrt der Server Kern und Waren: der Info-Block sagt das VORHER, die betroffenen Felder rendern dann gezeichnet-gesperrt mit Schloss statt zu verschwinden</li>
+          <li><b style="color:#FFD23F">Korrektur (Runde 12, B2):</b> Der SERVER sperrt nichts — RefineryOrderService.updateRefineryOrder hat keinen Status-Guard und leert die Waren eines COMPLETED-Auftrags widerspruchslos. Die Sperre nach dem Einlagern ist eine REGEL DER APP: Kern und Waren rendern gezeichnet-gesperrt mit Schloss, der Info-Block sagt es vorher. Die App ist damit das Einzige, was sie durchsetzt — Backend-Anfrage G3 (Datenintegrität: ein direkter API-Aufruf kann eine gebuchte Charge weiterhin umschreiben)</li>
           <li>Waren-Zeilen werden über Icon-Aktionen bearbeitet/entfernt (Zeilen-Editor wie beim Anlegen) — keine sechs Felder nebeneinander auf 412 dp</li>
           <li>Zustände: Laden = Feld-Skeletons · Schreiben = CTA-Spinner · 409 = Modal (Neu laden / Meine Fassung) · 403 = Canon-Copy</li>
         </ul>
@@ -429,7 +429,7 @@
           <div style="position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:24px">
             <div class="krt-modal krt-modal--danger" style="max-width:360px;width:100%">
               <div class="krt-modal-head"><h2>Raffinerieauftrag löschen?</h2></div>
-              <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Auftrag <b style="color:#fff">#7841</b> und seine <b style="color:#F2564B">2 Warenzeilen</b> werden gelöscht. Der Ertrag ist noch nicht eingelagert und geht damit verloren.</p><p style="margin:10px 0 0;font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Nicht rückholbar. Ein bereits eingelagerter Auftrag lässt sich nicht löschen — dort korrigiert man die Lagerzeilen.</p></div>
+              <div class="krt-modal-body"><p style="margin:0;font:300 13.5px/1.6 Lato,sans-serif;color:#D2D2D2">Auftrag <b style="color:#fff">#7841</b> und seine <b style="color:#F2564B">2 Warenzeilen</b> werden gelöscht. Der Ertrag ist noch nicht eingelagert und geht damit verloren.</p><p style="margin:10px 0 0;font:300 12px/1.5 Lato,sans-serif;color:#8A8A8A">Nicht rückholbar. Auf einer gebuchten Charge zeichnet die App „Löschen" gesperrt mit Grund — der Server setzt dort nur CANCELED und lässt die entstandenen Lagerzeilen stehen (G3).</p></div>
               <div class="krt-modal-foot"><button class="btn-ghost btn" style="background:transparent;min-height:48px">Abbrechen</button>
                 <button class="btn" style="min-height:48px;background:#A3000A;border:1px solid #A3000A;color:#FFFFFF">Löschen</button></div>
             </div>
@@ -440,6 +440,8 @@
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — Löschen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
           <li>Danger-Modal, KEINE Tipp-Hürde: die Hürde bleibt Wipe-Grade-Aktionen vorbehalten (Kap. 02 §7), und ein Raffinerieauftrag ist eine Zeile, kein Bestand</li>
+            <li><b style="color:#FFD23F">Korrektur (Runde 12, B3):</b> „Ein eingelagerter Auftrag lässt sich nicht löschen" ist KEINE Server-Regel — DELETE setzt CANCELED in jedem Zustand, die Lagerzeilen bleiben. Die App zeichnet „Löschen" auf einer gebuchten Charge gesperrt mit Grund; client-seitig, siehe G3</li>
+            <li><b style="color:#D2D2D2">Ratifiziert (D7):</b> Der Erfolgs-Toast („Auftrag gelöscht.") steht 2 s auf dem DETAIL und navigiert dann — nicht auf der Liste; sonst müsste eine Nachricht über zwei ViewModels wandern</li>
           <li>Der Text nennt, was verloren geht (Warenzeilen + nicht eingelagerter Ertrag) und was NICHT gilt (eingelagert = nicht löschbar) — beide Sätze verhindern je einen falschen Schluss</li>
           <li>Ohne Rolle bzw. fremder Auftrag: Menüpunkt gesperrt-antippbar, Toast nennt die Regel („nur der eigene Auftrag")</li>
           <li>Erfolg: zurück zur Liste, Zeile weg, Toast „Auftrag gelöscht." — kein Undo (der Server hat nichts zum Wiederherstellen)</li>
