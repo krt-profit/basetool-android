@@ -708,6 +708,31 @@
     <string name="orders_materials_count">(%1$d)</string>
     <string name="orders_kind_material">Material</string>
     <string name="orders_kind_item">Item</string>
+    <!-- Materialbedarf — design ch. 18 §1. Reached from the Auftragsliste's overflow. -->
+    <string name="orders_demand_title">Materialbedarf</string>
+    <string name="orders_demand_lead">%1$s · %2$s</string>
+    <plurals name="orders_demand_uncovered">
+        <item quantity="one">%1$d ungedeckt</item>
+        <item quantity="other">%1$d ungedeckt</item>
+    </plurals>
+    <plurals name="orders_demand_materials">
+        <item quantity="one">%1$d Material</item>
+        <item quantity="other">%1$d Materialien</item>
+    </plurals>
+    <plurals name="orders_demand_orders">
+        <item quantity="one">%1$d Auftrag</item>
+        <item quantity="other">%1$d Aufträge</item>
+    </plurals>
+    <string name="orders_demand_open">%1$s %2$s offen</string>
+    <string name="orders_demand_share">%1$s %2$s</string>
+    <string name="orders_demand_filter_all">Alle</string>
+    <string name="orders_demand_filter_uncovered">Ungedeckt</string>
+    <string name="orders_demand_filter_by_amount">Nach Menge</string>
+    <string name="orders_demand_group_unassigned">Ohne Einheit</string>
+    <string name="orders_demand_empty_title">Kein offener Materialbedarf</string>
+    <string name="orders_demand_empty_message">Alle offenen Aufträge sind gedeckt.</string>
+    <string name="orders_demand_failed_title">Signal Lost — Materialbedarf</string>
+    <string name="orders_demand_failed_message">Der Bedarf konnte nicht gelesen werden.</string>
     <string name="orders_number">#%1$s</string>
     <string name="orders_priority">Prio %1$d</string>
     <string name="orders_for">Für %1$s</string>

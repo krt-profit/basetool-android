@@ -76,6 +76,8 @@ import de.greluc.krt.profit.basetool.android.notifications.NotificationsPhase
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsRoute
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.notificationDestination
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandRoute
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCollectionRoute
 import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateRoute
@@ -179,6 +181,7 @@ fun BasetoolNavHost(
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
     gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -269,6 +272,7 @@ fun BasetoolNavHost(
                             operationForm = operationForm,
                             blueprints = blueprints,
                             gameItems = gameItems,
+                            materialDemand = materialDemand,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -633,6 +637,7 @@ private fun listDetailDestination(
                         if (wide) selected = it else navController.navigate(orderDetailRoute(it))
                     },
                     onCreate = { navController.navigate(KrtDestination.OrderCreate.route) },
+                    onOpenDemand = { navController.navigate(KrtDestination.MaterialDemand.route) },
                 )
             }
         }
@@ -764,6 +769,7 @@ private fun SimplePushedDestination(
  * @param blueprints the org-wide blueprint availability: whether it may be opened, and how to
  *   build it.
  * @param gameItems builds the game-item stock's view model.
+ * @param materialDemand builds the cross-order material demand's view model.
  * @param onOpenDestination invoked from the "Mehr" list.
  * @param onLogout ends the session.
  * @param settings what the Einstellungen screen needs from the activity.
@@ -790,6 +796,7 @@ private fun PushedDestination(
     operationForm: (String?) -> OperationFormViewModel,
     blueprints: BlueprintOverviewBindings,
     gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -918,6 +925,7 @@ private fun PushedDestination(
                 fleetImport = fleetImport,
                 onOpenUrl = settings.onOpenUrl,
                 gameItems = gameItems,
+                materialDemand = materialDemand,
             )
         }
 
@@ -1087,12 +1095,14 @@ private fun CreateFormDestination(
  * @param fleetImport the Fleetview import.
  * @param onOpenUrl opens a licence's URL.
  * @param gameItems builds the game-item stock's view model.
+ * @param materialDemand builds the cross-order material demand's view model.
  */
 @Composable
 private fun LeafDestination(
     destination: KrtDestination,
     blueprints: BlueprintOverviewBindings,
     gameItems: () -> GameItemStockViewModel,
+    materialDemand: () -> MaterialDemandViewModel,
     fleetImport: FleetImportViewModel,
     onOpenUrl: (String) -> Boolean,
 ) {
@@ -1103,6 +1113,10 @@ private fun LeafDestination(
 
         KrtDestination.GameItems -> {
             GameItemStockRoute(viewModel = remember { gameItems() })
+        }
+
+        KrtDestination.MaterialDemand -> {
+            MaterialDemandRoute(viewModel = remember { materialDemand() })
         }
 
         KrtDestination.FleetImport -> {

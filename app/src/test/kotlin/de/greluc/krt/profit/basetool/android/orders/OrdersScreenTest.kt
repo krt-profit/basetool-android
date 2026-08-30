@@ -125,6 +125,7 @@ class OrdersScreenTest {
                     onLoadMore = {},
                     onOpenOrder = { opened.add(it) },
                     onCreate = {},
+                    onOpenDemand = {},
                 )
             }
         }

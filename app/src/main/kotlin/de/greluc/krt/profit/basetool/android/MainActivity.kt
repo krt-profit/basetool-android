@@ -82,6 +82,7 @@ import de.greluc.krt.profit.basetool.android.navigation.BlueprintOverviewBinding
 import de.greluc.krt.profit.basetool.android.navigation.SettingsBindings
 import de.greluc.krt.profit.basetool.android.notifications.NotificationsViewModel
 import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPermissionOnce
+import de.greluc.krt.profit.basetool.android.orders.MaterialDemandViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCollectionViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailSources
@@ -435,6 +436,7 @@ class MainActivity : AppCompatActivity() {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
                                     },
                                     gameItems = { GameItemStockViewModel(container.inventory) },
+                                    materialDemand = { MaterialDemandViewModel(container.materialDemand) },
                                     blueprints =
                                         BlueprintOverviewBindings(
                                             // `null` before the first /me lands reads as "not

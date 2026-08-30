@@ -156,6 +156,18 @@ enum class KrtDestination(
     BankHolder("bank-holder/{holderId}", R.string.bank_title, DesignR.drawable.ic_krt_users),
 
     /**
+     * What every open Auftrag together still needs, pushed from the Auftragsliste's overflow.
+     *
+     * Not a navigation entry: it is a planning view, read before an Einsatz rather than daily
+     * (design ch. 18 §1).
+     */
+    MaterialDemand(
+        "material-demand",
+        R.string.orders_demand_title,
+        DesignR.drawable.ic_krt_crate,
+    ),
+
+    /**
      * The org unit's game-item stock, reached from „Mehr".
      *
      * A surface of its own because the Lager tree groups by material, where an item counted in

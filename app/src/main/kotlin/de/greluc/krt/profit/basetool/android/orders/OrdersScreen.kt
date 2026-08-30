@@ -37,6 +37,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -164,10 +165,10 @@ internal val STATUS_CHOICES =
  * @param onToggleMaterials a row's material list was opened or closed.
  * @param onRefresh pull-to-refresh.
  * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
- * @param onRetryNow the member pressed the manual retry of the chapter-14 countdown.
  * @param onLoadMore the load-more control was tapped.
  * @param onOpenOrder a row was tapped.
  * @param onCreate the „+" was tapped; opens the create form.
+ * @param onOpenDemand the overflow's „Materialbedarf" was tapped.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,8 +182,10 @@ fun OrdersScreen(
     onLoadMore: () -> Unit,
     onOpenOrder: (String) -> Unit,
     onCreate: () -> Unit,
+    onOpenDemand: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    OrdersOverflow(onOpenDemand = onOpenDemand)
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
@@ -1455,6 +1458,7 @@ private fun OrderDetailFailure(
  * @param viewModel drives the queue.
  * @param onOpenOrder a row was tapped.
  * @param onCreate the „+" was tapped.
+ * @param onOpenDemand the overflow's „Materialbedarf" was tapped.
  * @param modifier layout modifier.
  */
 @Composable
@@ -1462,6 +1466,7 @@ fun OrdersRoute(
     viewModel: OrdersViewModel,
     onOpenOrder: (String) -> Unit,
     onCreate: () -> Unit,
+    onOpenDemand: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -1474,6 +1479,7 @@ fun OrdersRoute(
         onLoadMore = viewModel::onLoadMore,
         onOpenOrder = onOpenOrder,
         onCreate = onCreate,
+        onOpenDemand = onOpenDemand,
         modifier = modifier,
     )
 }

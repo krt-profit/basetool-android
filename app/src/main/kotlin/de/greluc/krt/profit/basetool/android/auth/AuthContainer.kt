@@ -41,6 +41,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialCatalogRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialClaimRepository
 import de.greluc.krt.profit.basetool.android.core.data.MaterialCollectionRepository
+import de.greluc.krt.profit.basetool.android.core.data.MaterialDemandRepository
 import de.greluc.krt.profit.basetool.android.core.data.MemberPreferencesRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionRepository
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureRepository
@@ -451,6 +452,16 @@ class AuthContainer(
      */
     val inventory: InventoryRepository by lazy {
         InventoryRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
+    }
+
+    /**
+     * The cross-order material demand.
+     *
+     * Its own repository rather than a method on the Auftrag one: it reads a different endpoint,
+     * answers the whole picture in one call, and is the only reader of it (design ch. 18 §1).
+     */
+    val materialDemand: MaterialDemandRepository by lazy {
+        MaterialDemandRepository(httpClient = apiClient, baseUrl = BuildConfig.API_BASE_URL)
     }
 
     /**
