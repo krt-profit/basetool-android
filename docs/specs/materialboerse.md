@@ -177,24 +177,97 @@ re-reading the half nobody is looking at would cost a request for a list that is
 
 ---
 
-### REQ-APP-MARKET-009 — Two things the app reads but does not create
+### REQ-APP-MARKET-009 — ~~Two things the app reads but does not create~~ — both landed 2026-08-30
 
-**Item offers and item requests.** `POST /item-offers` and `/material-requests/item` address an item
-by a `productKey` from the P4K catalogue, which the app has no picker for. Both halves render item
-rows the web created; creating one is a phase-5 question together with the catalogue browse it
-needs.
+> **Superseded.** This requirement recorded the item half and the own-row editor as deliberate
+> gaps: the item writes address a product by a `productKey` the app had no picker for, and the
+> editor was a third sheet with its own optimistic-lock path. `GET /blueprints/products/search`
+> supplies the picker, so both were built as design ch. 17 artboards 1–3 draw them. See
+> `REQ-APP-MARKET-012` and `REQ-APP-MARKET-013`. Kept rather than deleted, dated, so the earlier
+> decision and its reversal both stay readable.
 
-**Bearbeiten on an own row.** Chapter 10 pairs Zurückziehen with Bearbeiten. The edit endpoints
-carry a `version` and change an amount or a remark — a small editor, but a third sheet with its own
-optimistic-lock path, and the withdraw-and-repost it substitutes for costs a member two taps. It is
-recorded here rather than left as a silent gap in the chapter.
+---
+
+### REQ-APP-MARKET-012 — Material and item are one sheet with a switch
+
+Design ch. 17's first decision, and the Auftrag form's precedent since round 5: **one form with a
+switch at the very top**, not two entries in the menu. The switch changes only the middle fields —
+material: a catalogue material and an amount in SCU; item: a product and a count in pieces. The
+frame (remark, CTA, the two buttons) is the same on both halves.
+
+The item half addresses its product by the **product key** `GET /api/v1/blueprints/products/search`
+hands out, and picks it the way the material field is picked: an id, not a typed name, and the key
+is dropped the moment the text changes (`REQ-APP-MARKET-007`).
+
+**An item offer binds no stock row.** Items live in the personal inventory and
+`POST /material-exchange/item-offers` takes a product key, a quantity and a remark — no
+`inventoryItemId`. So the offer sheet's stock list is a material-half control and is simply not
+drawn on the item half.
+
+**Switching keeps what was typed on the other half.** Members switch back and forth to read the two
+field sets, and losing a remark to that would be a punishment for looking.
+
+> [!warning] Two drawn fields that no DTO carries — the chapter flagged the first itself
+> Artboard 1 draws „Zustand" (Neu / Gebraucht) and artboard 2 draws „Bis wann"; the chapter's own
+> provenance note says both labels are a proposal, not derived copy, and must be reconciled with
+> the web before implementation. They cannot be: `MaterialExchangeItemReleaseRequest` carries
+> `productKey`, `quantity` and `remark`, and `MaterialItemRequestCreateRequest` carries those plus
+> **`minQuality`** — a field artboard 2 does not draw. Artboard 1's „Blueprint (Variante)" has no
+> wire field either: a product key already identifies the product, and no write carries a variant.
+> The app therefore ships the three fields that exist, uses `minQuality` on the request, and leaves
+> the other three out. All on the design gap list.
 
 **Acceptance**
 
-- [x] No create path in this slice sends a `productKey`.
-- [x] No Bearbeiten control is rendered, so nothing offers what is not built.
+- [x] The item half posts a product key and never touches the material endpoints
+  (`MaterialBoardViewModelTest`).
+- [x] An item offer names no stock row (`MaterialBoardViewModelTest`).
+- [x] A typed product that was never picked cannot be sent (`MaterialBoardViewModelTest`).
+- [ ] Observed on a device.
 
-**Code:** `MaterialBoardRepository`, `MaterialBoardScreen`
+**Code:** `MaterialBoardRepository.searchProducts` / `.createItemOffer` / `.createItemRequest`,
+`BoardKind`, `MaterialBoardScreen.ProductField`
+
+---
+
+### REQ-APP-MARKET-013 — The own row opens one sheet, and the withdrawal lives inside it
+
+Design ch. 17 artboard 3: „Bisher gab es nur «Zurückziehen» und kein Update — beides liegt jetzt
+hier." So the member's own row carries **Bearbeiten**, which opens a sheet holding both the edit and
+the withdrawal, with the interested members listed beside them — because withdrawing is what affects
+those members, which is the artboard's own reason for putting them there.
+
+**What may change.** A request's amount, minimum quality and remark; an offer's amount and remark.
+The material or item behind a row never changes — that would make it a different entry keeping the
+same id and the same interested members — and is drawn fixed with that reason.
+
+> [!warning] The artboard's „only the remark" is not the web rule
+> Artboard 3 states that only the remark may be edited on an offer and attributes that to the web.
+> The web's own modal (`fragments/materialboerse-modal.html`) offers the amount with an „Alles"
+> shortcut and a „darf den Lagerbestand nicht überschreiten" bound, and
+> `MaterialExchangeOfferUpdateRequest` **requires** `offeredAmount`. The app therefore edits the
+> amount too. The stock bound stays the server's to enforce: a board row carries no stock figure to
+> check against, so an over-large amount comes back as its refusal.
+
+**Withdrawing asks only when somebody is waiting.** With interested members it confirms and names
+them; with nobody waiting it withdraws straight away.
+
+> [!warning] No undo, against the artboard
+> Artboard 3 asks for a five-second undo toast. Withdrawal is `POST …/deactivate` and **no endpoint
+> reactivates a row**: an undo would have to post a new entry — a different id, a new timestamp, and
+> none of the interested members. Flagged rather than faked; the confirmation carries the
+> „cannot be undone" sentence instead.
+
+**Acceptance**
+
+- [x] Editing an own offer sends the amount and the remark (`MaterialBoardViewModelTest`).
+- [x] Withdrawing asks only when somebody is waiting (`MaterialBoardViewModelTest`).
+- [x] A row whose version the server never sent is refused rather than written blind
+  (`MaterialBoardRepository.updateOffer`).
+- [ ] Observed on a device.
+
+**Code:** `BoardSheet.EditEntry`, `MaterialBoardViewModel.onEditEntry` / `.onEntrySubmitted` /
+`.onWithdrawRequested`, `MaterialBoardScreen.EditEntrySheet`
 
 ### REQ-APP-MARKET-010 — The quantity is the row's figure, not a third of a grey run
 

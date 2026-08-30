@@ -9,6 +9,7 @@ package de.greluc.krt.profit.basetool.android.exchange
 
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
 import de.greluc.krt.profit.basetool.android.core.data.BoardPage
+import de.greluc.krt.profit.basetool.android.core.data.BoardProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncEvent
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
@@ -54,6 +55,18 @@ class MaterialBoardViewModelTest {
     private val dispatcher = StandardTestDispatcher()
 
     private companion object {
+        /** How many pieces the item tests ask for. */
+        const val ITEM_PIECES = 3
+
+        /** The amount the edit test types. */
+        const val EDITED_AMOUNT = 120.0
+
+        /** Doubles compared to the cent. */
+        const val TOLERANCE = 0.001
+
+        /** Two members waiting, which is what makes the withdrawal ask. */
+        const val TWO_WAITING = 2
+
         /**
          * Builds a row.
          *
@@ -85,6 +98,20 @@ class MaterialBoardViewModelTest {
             mine = mine,
             version = 1,
         )
+
+        /**
+         * One catalogue product for the item half.
+         *
+         * @return the product.
+         */
+        fun product() =
+            BoardProduct(
+                productKey = "gatling",
+                name = "Ballistic Gatling",
+                manufacturerName = "Klaus & Werner",
+                variantCount = 2,
+                owned = true,
+            )
     }
 
     /**
@@ -160,7 +187,181 @@ class MaterialBoardViewModelTest {
             createdRequests += materialId
             return writeFailure?.let { ApiResult.Failure(it) } ?: ApiResult.Success(Unit)
         }
+
+        val createdItemOffers = mutableListOf<Pair<String, Int>>()
+        val createdItemRequests = mutableListOf<Pair<String, Int>>()
+        val updatedOffers = mutableListOf<Triple<String, Double, String?>>()
+        val updatedRequests = mutableListOf<Triple<String, Double, Int?>>()
+        var products: List<BoardProduct> = emptyList()
+
+        override suspend fun searchProducts(query: String): ApiResult<List<BoardProduct>> =
+            ApiResult.Success(products)
+
+        override suspend fun createItemOffer(
+            productKey: String,
+            quantity: Int,
+            remark: String?,
+        ): ApiResult<Unit> {
+            createdItemOffers += productKey to quantity
+            return writeFailure?.let { ApiResult.Failure(it) } ?: ApiResult.Success(Unit)
+        }
+
+        override suspend fun createItemRequest(
+            productKey: String,
+            quantity: Int,
+            minQuality: Int?,
+            remark: String?,
+        ): ApiResult<Unit> {
+            createdItemRequests += productKey to quantity
+            return writeFailure?.let { ApiResult.Failure(it) } ?: ApiResult.Success(Unit)
+        }
+
+        override suspend fun updateOffer(
+            entry: BoardEntry,
+            amount: Double,
+            remark: String?,
+        ): ApiResult<BoardEntry> {
+            updatedOffers += Triple(entry.id, amount, remark)
+            writeFailure?.let { return ApiResult.Failure(it) }
+            return ApiResult.Success(entry.copy(amount = amount.toString(), remark = remark))
+        }
+
+        override suspend fun updateRequest(
+            entry: BoardEntry,
+            amount: Double,
+            minQuality: Int?,
+            remark: String?,
+        ): ApiResult<BoardEntry> {
+            updatedRequests += Triple(entry.id, amount, minQuality)
+            writeFailure?.let { return ApiResult.Failure(it) }
+            return ApiResult.Success(entry.copy(amount = amount.toString(), quality = minQuality))
+        }
     }
+
+    @Test
+    fun `the item half of a create sheet posts a product key, not a material`() =
+        runTest(dispatcher) {
+            val source = RecordingSource()
+            source.products = listOf(product())
+            val model = MaterialBoardViewModel(source, FixedLookup(emptyList()), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onNewRequest()
+            model.onRequestEdited { it.copy(kind = BoardKind.ITEM) }
+            model.onProductQueryChanged("Gatling")
+            advanceUntilIdle()
+            model.onProductPicked(product())
+            model.onRequestEdited { it.copy(amount = ITEM_PIECES.toString()) }
+
+            assertTrue(model.state.value.sheet.let { it is BoardSheet.NewRequest && it.submittable })
+            model.onRequestSubmitted()
+            advanceUntilIdle()
+
+            assertEquals(listOf("gatling" to ITEM_PIECES), source.createdItemRequests)
+            // The material write is a different endpoint and must not have been touched.
+            assertTrue(source.createdRequests.isEmpty())
+        }
+
+    @Test
+    fun `an item offer names no stock row`() =
+        runTest(dispatcher) {
+            val source = RecordingSource()
+            source.products = listOf(product())
+            val model = MaterialBoardViewModel(source, FixedLookup(emptyList()), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onNewOffer()
+            advanceUntilIdle()
+            model.onOfferEdited { it.copy(kind = BoardKind.ITEM) }
+            model.onProductPicked(product())
+            model.onOfferEdited { it.copy(amount = "2") }
+            model.onOfferSubmitted()
+            advanceUntilIdle()
+
+            assertEquals(listOf("gatling" to 2), source.createdItemOffers)
+            assertTrue(source.createdOffers.isEmpty())
+        }
+
+    @Test
+    fun `a typed product that was never picked cannot be sent`() =
+        runTest(dispatcher) {
+            val source = RecordingSource()
+            source.products = listOf(product())
+            val model = MaterialBoardViewModel(source, FixedLookup(emptyList()), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onNewRequest()
+            model.onRequestEdited { it.copy(kind = BoardKind.ITEM) }
+            model.onProductPicked(product())
+            // Editing the text after a pick makes the key stale, and the wire needs the key.
+            model.onProductQueryChanged("Gatl")
+            model.onRequestEdited { it.copy(amount = ITEM_PIECES.toString()) }
+
+            assertFalse(model.state.value.sheet.let { it is BoardSheet.NewRequest && it.submittable })
+            model.onRequestSubmitted()
+            advanceUntilIdle()
+            assertTrue(source.createdItemRequests.isEmpty())
+        }
+
+    @Test
+    fun `editing an own offer sends the amount and the remark`() =
+        runTest(dispatcher) {
+            val row = entry("o1", mine = true)
+            val source = RecordingSource(offers = listOf(row))
+            val model = MaterialBoardViewModel(source, FixedLookup(emptyList()), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onEditEntry(row)
+            model.onEntryEdited {
+                it.copy(amount = EDITED_AMOUNT.toInt().toString(), remark = "Rest bleibt hier")
+            }
+            model.onEntrySubmitted()
+            advanceUntilIdle()
+
+            // The amount too, against the artboard's "only the remark" — the web edits both and the
+            // wire requires the amount.
+            assertEquals(1, source.updatedOffers.size)
+            assertEquals("o1", source.updatedOffers.first().first)
+            assertEquals(EDITED_AMOUNT, source.updatedOffers.first().second, TOLERANCE)
+            assertEquals("Rest bleibt hier", source.updatedOffers.first().third)
+            assertEquals(BoardSheet.None, model.state.value.sheet)
+        }
+
+    @Test
+    fun `withdrawing asks only when somebody is waiting`() =
+        runTest(dispatcher) {
+            val alone = entry("o1", mine = true)
+            val source = RecordingSource(offers = listOf(alone))
+            val model = MaterialBoardViewModel(source, FixedLookup(emptyList()), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onEditEntry(alone)
+            model.onWithdrawRequested()
+            advanceUntilIdle()
+            assertEquals(listOf("o1"), source.withdrawn)
+
+            val wanted = entry("o2", mine = true, interested = true).copy(interestCount = TWO_WAITING)
+            val second = RecordingSource(offers = listOf(wanted))
+            val other = MaterialBoardViewModel(second, FixedLookup(emptyList()), null)
+            other.loadOnce()
+            advanceUntilIdle()
+
+            other.onEditEntry(wanted)
+            other.onWithdrawRequested()
+            advanceUntilIdle()
+            // Nothing withdrawn yet: two members said they can help, so it asks first.
+            assertTrue(second.withdrawn.isEmpty())
+            assertTrue(other.state.value.sheet.let { it is BoardSheet.EditEntry && it.confirmingWithdrawal })
+
+            other.onWithdraw(wanted)
+            advanceUntilIdle()
+            assertEquals(listOf("o2"), second.withdrawn)
+        }
 
     /** Answers the catalogue with one fixed match. */
     private class FixedLookup(

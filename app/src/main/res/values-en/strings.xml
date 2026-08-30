@@ -1586,4 +1586,21 @@
         <item quantity="one">The order at %1$s and its %2$d goods line will be deleted. A yield that was never stored is lost with it.</item>
         <item quantity="other">The order at %1$s and its %2$d goods lines will be deleted. A yield that was never stored is lost with it.</item>
     </plurals>
+    <!-- The board's item side and editing an entry (design ch. 17, artboards 1–3) -->
+    <string name="board_kind_material">Material</string>
+    <string name="board_kind_item">Item</string>
+    <string name="board_field_item">Item</string>
+    <string name="board_field_item_hint">Search for a product …</string>
+    <string name="board_new_offer_item_hint">From your personal inventory or named freely — an item offer is bound to no Lager row.</string>
+    <string name="board_edit_entry">Edit</string>
+    <string name="board_edit_offer">Edit offer</string>
+    <string name="board_edit_request">Edit request</string>
+    <string name="board_edit_fixed">The material or item is fixed — withdraw and post again to change it.</string>
+    <string name="board_edit_interested">Interested: %1$s</string>
+    <string name="board_save">Save</string>
+    <string name="board_withdraw_title">Withdraw the entry?</string>
+    <plurals name="board_withdraw_body">
+        <item quantity="one">%1$d member said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
+        <item quantity="other">%1$d members said they can help. Withdrawing takes the entry off the board; that cannot be undone.</item>
+    </plurals>
 </resources>

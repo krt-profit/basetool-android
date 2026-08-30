@@ -1607,4 +1607,21 @@
         <item quantity="one">Der Auftrag bei %1$s und seine %2$d Warenzeile werden gelöscht. Ein noch nicht eingelagerter Ertrag geht damit verloren.</item>
         <item quantity="other">Der Auftrag bei %1$s und seine %2$d Warenzeilen werden gelöscht. Ein noch nicht eingelagerter Ertrag geht damit verloren.</item>
     </plurals>
+    <!-- Item-Seite der Börse und Eintrag bearbeiten (Design Kap. 17, Artboards 1–3) -->
+    <string name="board_kind_material">Material</string>
+    <string name="board_kind_item">Item</string>
+    <string name="board_field_item">Item</string>
+    <string name="board_field_item_hint">Produkt suchen …</string>
+    <string name="board_new_offer_item_hint">Aus deinem persönlichen Bestand oder frei benannt — ein Item-Angebot hängt an keiner Lagerzeile.</string>
+    <string name="board_edit_entry">Bearbeiten</string>
+    <string name="board_edit_offer">Angebot bearbeiten</string>
+    <string name="board_edit_request">Gesuch bearbeiten</string>
+    <string name="board_edit_fixed">Material bzw. Item steht fest — zum Wechseln zurückziehen und neu einstellen.</string>
+    <string name="board_edit_interested">Interessenten: %1$s</string>
+    <string name="board_save">Speichern</string>
+    <string name="board_withdraw_title">Eintrag zurückziehen?</string>
+    <plurals name="board_withdraw_body">
+        <item quantity="one">%1$d Mitglied hat „Ich kann liefern" gesagt. Zurückziehen nimmt den Eintrag vom Brett; rückgängig machen lässt sich das nicht.</item>
+        <item quantity="other">%1$d Mitglieder haben „Ich kann liefern" gesagt. Zurückziehen nimmt den Eintrag vom Brett; rückgängig machen lässt sich das nicht.</item>
+    </plurals>
 </resources>

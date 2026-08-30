@@ -8,13 +8,19 @@
 package de.greluc.krt.profit.basetool.android.core.data
 
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
+import de.greluc.krt.profit.basetool.android.core.contract.model.BlueprintProductDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialExchangeItemReleaseRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialExchangeOfferDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialExchangeOfferUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialExchangeReleasableItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialExchangeReleaseRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialItemRequestCreateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialRequestCreateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialRequestDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialRequestUpdateRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialExchangeOfferDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialRequestDto
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.serialization.builtins.ListSerializer
@@ -120,6 +126,29 @@ data class ReleasableStock(
     val alreadyReleased: Boolean,
 )
 
+/**
+ * One craftable product the item half of the board can name.
+ *
+ * The board addresses an item by its **product key** — the P4K catalogue's own identifier, which
+ * `GET /blueprints/products/search` hands out. There is no inventory row behind it: an item offer
+ * is not bound to stock the way a material offer is.
+ *
+ * @property productKey what the two item writes send.
+ * @property name what it is called.
+ * @property manufacturerName who makes it, or `null` where the catalogue does not say.
+ * @property variantCount how many blueprint variants produce it; shown because a product with
+ *   several is worth naming precisely in the remark, and **not** sent — no write carries a variant.
+ * @property owned whether the caller already holds a blueprint for it, which is why the search puts
+ *   their own first.
+ */
+data class BoardProduct(
+    val productKey: String,
+    val name: String,
+    val manufacturerName: String?,
+    val variantCount: Int,
+    val owned: Boolean,
+)
+
 /** The Materialbörse reads and writes the app offers, as a seam. */
 interface MaterialBoardSource {
     /**
@@ -196,6 +225,86 @@ interface MaterialBoardSource {
         minQuality: Int?,
         remark: String?,
     ): ApiResult<Unit>
+
+    /**
+     * Searches the craftable products the item half can name.
+     *
+     * @param query what was typed; blank asks for the catalogue's own first page.
+     * @return the candidates, or the classified failure.
+     */
+    suspend fun searchProducts(query: String): ApiResult<List<BoardProduct>>
+
+    /**
+     * Offers an **item**.
+     *
+     * No inventory row is named: items live in the personal inventory and the endpoint binds none
+     * (`POST /material-exchange/item-offers` takes a product key, a quantity and a remark — and
+     * nothing else, which is why design ch. 17 artboard 1's „Zustand" and „Blueprint (Variante)"
+     * fields are absent).
+     *
+     * @param productKey which product.
+     * @param quantity how many pieces.
+     * @param remark an optional note.
+     * @return success, or the classified failure.
+     */
+    suspend fun createItemOffer(
+        productKey: String,
+        quantity: Int,
+        remark: String?,
+    ): ApiResult<Unit>
+
+    /**
+     * Asks for an **item**.
+     *
+     * @param productKey which product.
+     * @param quantity how many pieces.
+     * @param minQuality the minimum quality, or `null`. The wire carries this and **not** the „Bis
+     *   wann" deadline artboard 2 draws.
+     * @param remark an optional note.
+     * @return success, or the classified failure.
+     */
+    suspend fun createItemRequest(
+        productKey: String,
+        quantity: Int,
+        minQuality: Int?,
+        remark: String?,
+    ): ApiResult<Unit>
+
+    /**
+     * Rewrites one of the caller's own offers.
+     *
+     * **Both the amount and the remark**, against design ch. 17 artboard 3, which says only the
+     * remark may change and calls that the web rule. It is not: the web's own modal offers the
+     * amount with an „Alles" shortcut and a „darf den Lagerbestand nicht überschreiten" bound, and
+     * `MaterialExchangeOfferUpdateRequest` **requires** `offeredAmount`. Sending the stored amount
+     * unchanged would work but would leave the app unable to do what the web does.
+     *
+     * @param entry the row, which carries the version to echo.
+     * @param amount the offered amount; pieces for an item row, SCU for a material one.
+     * @param remark the note, or `null` to clear it.
+     * @return the row as it now stands, or the classified failure.
+     */
+    suspend fun updateOffer(
+        entry: BoardEntry,
+        amount: Double,
+        remark: String?,
+    ): ApiResult<BoardEntry>
+
+    /**
+     * Rewrites one of the caller's own requests.
+     *
+     * @param entry the row, which carries the version to echo.
+     * @param amount how much is wanted.
+     * @param minQuality the minimum quality, or `null`.
+     * @param remark the note, or `null` to clear it.
+     * @return the row as it now stands, or the classified failure.
+     */
+    suspend fun updateRequest(
+        entry: BoardEntry,
+        amount: Double,
+        minQuality: Int?,
+        remark: String?,
+    ): ApiResult<BoardEntry>
 }
 
 /**
@@ -356,6 +465,98 @@ class MaterialBoardRepository(
             MaterialRequestCreateRequest.serializer(),
         )
 
+    /** {@inheritDoc} */
+    override suspend fun searchProducts(query: String): ApiResult<List<BoardProduct>> =
+        when (
+            val result =
+                reader.get(
+                    PRODUCTS_PATH,
+                    listOf(QUERY_PARAM to query, LIMIT_PARAM to PRODUCT_LIMIT.toString()),
+                    ListSerializer(BlueprintProductDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.mapNotNull { it.toModel() })
+        }
+
+    /** {@inheritDoc} */
+    override suspend fun createItemOffer(
+        productKey: String,
+        quantity: Int,
+        remark: String?,
+    ): ApiResult<Unit> =
+        reader.postAccepted(
+            ITEM_OFFERS_PATH,
+            MaterialExchangeItemReleaseRequest(
+                productKey = productKey,
+                quantity = quantity,
+                remark = remark?.takeIf { it.isNotBlank() },
+            ),
+            MaterialExchangeItemReleaseRequest.serializer(),
+        )
+
+    /** {@inheritDoc} */
+    override suspend fun createItemRequest(
+        productKey: String,
+        quantity: Int,
+        minQuality: Int?,
+        remark: String?,
+    ): ApiResult<Unit> =
+        reader.postAccepted(
+            ITEM_REQUESTS_PATH,
+            MaterialItemRequestCreateRequest(
+                productKey = productKey,
+                quantity = quantity,
+                minQuality = minQuality,
+                remark = remark?.takeIf { it.isNotBlank() },
+            ),
+            MaterialItemRequestCreateRequest.serializer(),
+        )
+
+    /** {@inheritDoc} */
+    override suspend fun updateOffer(
+        entry: BoardEntry,
+        amount: Double,
+        remark: String?,
+    ): ApiResult<BoardEntry> {
+        // The wire requires a version. A row that arrived without one cannot be written safely —
+        // sending 0 would either be refused or, worse, accepted against a stale row.
+        val version = entry.version ?: return ApiResult.Failure(ApiError.OptimisticLock())
+        return reader.put(
+            path = "$OFFERS_PATH/${entry.id}/remark",
+            body =
+                MaterialExchangeOfferUpdateRequest(
+                    offeredAmount = amount,
+                    remark = remark?.takeIf { it.isNotBlank() },
+                    version = version,
+                ),
+            bodySerializer = MaterialExchangeOfferUpdateRequest.serializer(),
+            deserializer = MaterialExchangeOfferDto.serializer(),
+        ).mapOffer(entry)
+    }
+
+    /** {@inheritDoc} */
+    override suspend fun updateRequest(
+        entry: BoardEntry,
+        amount: Double,
+        minQuality: Int?,
+        remark: String?,
+    ): ApiResult<BoardEntry> {
+        val version = entry.version ?: return ApiResult.Failure(ApiError.OptimisticLock())
+        return reader.put(
+            path = "$REQUESTS_PATH/${entry.id}",
+            body =
+                MaterialRequestUpdateRequest(
+                    desiredAmount = amount,
+                    minQuality = minQuality,
+                    remark = remark?.takeIf { it.isNotBlank() },
+                    version = version,
+                ),
+            bodySerializer = MaterialRequestUpdateRequest.serializer(),
+            deserializer = MaterialRequestDto.serializer(),
+        ).mapRequest(entry)
+    }
+
     companion object {
         /** One screenful and then some. */
         const val DEFAULT_PAGE_SIZE: Int = 25
@@ -366,6 +567,14 @@ class MaterialBoardRepository(
         private const val OFFERS_PATH = "/api/v1/material-exchange/offers"
         private const val REQUESTS_PATH = "/api/v1/material-requests"
         private const val RELEASABLE_PATH = "/api/v1/material-exchange/releasable-items"
+        private const val ITEM_OFFERS_PATH = "/api/v1/material-exchange/item-offers"
+        private const val ITEM_REQUESTS_PATH = "/api/v1/material-requests/item"
+        private const val PRODUCTS_PATH = "/api/v1/blueprints/products/search"
+        private const val QUERY_PARAM = "q"
+        private const val LIMIT_PARAM = "limit"
+
+        /** How many products one search offers; the picker is a list, not a catalogue browse. */
+        private const val PRODUCT_LIMIT = 25
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
 
@@ -397,6 +606,23 @@ class MaterialBoardRepository(
             }
     }
 }
+
+/**
+ * One catalogue product as the picker holds it.
+ *
+ * @receiver what the server sent.
+ * @return the product, or `null` when it carries no key — the one field the writes need.
+ */
+private fun BlueprintProductDto.toModel(): BoardProduct? =
+    productKey?.let {
+        BoardProduct(
+            productKey = it,
+            name = name.orEmpty(),
+            manufacturerName = manufacturerName?.takeIf { name -> name.isNotBlank() },
+            variantCount = variantCount ?: 0,
+            owned = ownedByCurrentUser == true,
+        )
+    }
 
 /**
  * Maps a write's answer back onto the row it was made on.

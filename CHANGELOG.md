@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Die Materialbörse kennt jetzt Items — und eigene Einträge lassen sich bearbeiten.** Angebot und
+  Gesuch haben oben einen Umschalter „Material / Item"; die Item-Seite sucht das Produkt im Katalog
+  und hängt an keiner Lagerzeile. Ein Tipp auf die eigene Zeile öffnet ein Blatt mit Menge,
+  Mindestqualität, Anmerkung und dem Zurückziehen — das fragt nach, wenn Interessenten warten, und
+  nennt sie.
+
 - **Raffinerieaufträge lassen sich bearbeiten und löschen.** Beides im „⋮" der Auftragsansicht.
   Bearbeitet wird im gewohnten Anlegen-Formular, vorbefüllt; nach dem Einlagern sind Raffinerie,
   Methode und Waren festgeschrieben und stehen gesperrt mit dem Grund da — Geld und Einsatz bleiben
