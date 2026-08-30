@@ -191,19 +191,26 @@ the request queue with confirm and reject, the account lifecycle, the grants mat
 detail with its transfer, plus the staff account detail's two additions over the member one
 (reversal and the two reports).
 
-**The design defines the scope, and three things stay out because of it.**
+**The design defines the scope, and one thing stays out because of it.**
 
 1. **`/api/v1/bank/admin/**` — permanently.** Wipe-reset and the bank audit log are the admin
    area, which is web-only by owner decision (`ANDROID_APP_PLAN` Q6) and is named in the owner's
    own carve-out („außer beförderung und admin bereich").
-2. **The direct booking forms** — `POST /bank/deposits`, `/withdrawals`, `/transfers` and
-   `GET /transfer-fee-rate`. No artboard draws them, and artboard 4's handoff is explicit about
-   what the staff account detail adds over the member one: „+ Storno + Berichte". A booking that
-   had no request is therefore still a browser act. **This is a known delta to the web frontend**
-   and is raised with the design side rather than guessed at
-   ([`MISSING_ARTBOARD_PROMPTS_7.md`](../design/android/MISSING_ARTBOARD_PROMPTS_7.md)).
-3. **`PATCH /bank/accounts/{id}/approval-tiers`** — the KRT ladder editor. The app's four tabs are
-   ÜBERSICHT · ANTRÄGE · KONTEN · GRANTS; the web's „KRT-Freigaben" tab is not among them.
+
+> [!bug]- Two items stood here until 2026-08-30 and are now built
+> They were listed as out of scope on the grounds that **no artboard drew them**. Round 11's
+> chapter 12 drew both, so the grounds fell away:
+>
+> - **The direct booking forms** — `POST /bank/deposits`, `/withdrawals`, `/transfers`. Artboard 9
+>   settled the delta the parity programme had carried since round 7: the direct booking **stays**,
+>   because it covers what nobody files a request for. Built as `REQ-APP-BANK-016`.
+> - **The Freigabe-Limits** — artboard 10, and the correction that the web has limits *per tier*
+>   rather than a „KRT-Freigaben" ladder. Built as `REQ-APP-BANK-017`, on the account rather than
+>   as a fifth tab, for the reason recorded there.
+>
+> `GET /transfer-fee-rate` and `PATCH /bank/accounts/{id}/approval-tiers` are still unused: the fee
+> is shown from the figures the booking answers carry, and the approval-tiers endpoint is the
+> ladder the artboard replaced.
 
 **Every admitted path is named individually and anchored.** `/api/v1/bank` is **not** in the
 vhost's read-only family, so naming a path opens every verb the backend serves on it — which is
