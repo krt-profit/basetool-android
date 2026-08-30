@@ -96,6 +96,22 @@ data class LocationSearch(
 )
 
 /**
+ * What a bulk deletion did.
+ *
+ * The server has **no** bulk endpoint for personal rows — only `DELETE /personal-inventory/{id}`
+ * — so the app deletes one at a time and counts. That is also what makes this type necessary:
+ * a loop can half-succeed, and design ch. 17 artboard 4 asks for exactly that outcome to be named
+ * („Server lehnt eine Zeile ab → Ergebnis nennt gelöscht/übersprungen wie das Bulk-Umbuchen").
+ *
+ * @property deleted how many rows are gone.
+ * @property skipped how many the server refused.
+ */
+data class PersonalBulkResult(
+    val deleted: Int,
+    val skipped: Int,
+)
+
+/**
  * Everything the screen draws.
  *
  * @property items the rows.
@@ -128,7 +144,16 @@ data class PersonalInventoryState(
     val pendingDelete: PersonalItem? = null,
     val deleting: Boolean = false,
     val lastFailure: ApiError? = null,
-)
+    val selection: Set<String> = emptySet(),
+    val confirmingBulkDelete: Boolean = false,
+    val bulkResult: PersonalBulkResult? = null,
+) {
+    /** Whether the selection mode of design ch. 02 §4 is running. */
+    val selecting: Boolean get() = selection.isNotEmpty()
+
+    /** The rows a bulk action would act on, in the order they are drawn. */
+    val selected: List<PersonalItem> get() = items.filter { it.id in selection }
+}
 
 /**
  * Drives "Mein Inventar".
@@ -457,6 +482,102 @@ class PersonalInventoryViewModel(
                             lastFailure = result.error,
                         )
                 }
+            }
+        }
+    }
+
+    /**
+     * A row was long-pressed, or tapped while the selection mode runs.
+     *
+     * The mode of design ch. 02 §4, taken over unchanged: a long press starts it, further rows
+     * join with a tap, and the last row leaving ends it.
+     *
+     * @param item the row.
+     */
+    fun onToggleSelected(item: PersonalItem) {
+        val current = mutableState.value.selection
+        mutableState.value =
+            mutableState.value.copy(
+                selection = if (item.id in current) current - item.id else current + item.id,
+                bulkResult = null,
+            )
+    }
+
+    /**
+     * „Alles wählen".
+     *
+     * **Only what is loaded**, which is what the label can honestly promise: the list pages, and
+     * ticking rows the member has not seen is exactly the „delete a list you never looked at" that
+     * the artboard refuses („Eine Aktion, die 18 Zeilen löscht, muss die 18 Zeilen vorher gezeigt
+     * haben"). Scrolling further and tapping again adds the rest.
+     */
+    fun onSelectAll() {
+        mutableState.value =
+            mutableState.value.copy(
+                selection = mutableState.value.items.map { it.id }.toSet(),
+                bulkResult = null,
+            )
+    }
+
+    /** „Aufheben" — leaves the selection mode. */
+    fun onSelectionCleared() {
+        mutableState.value = mutableState.value.copy(selection = emptySet(), bulkResult = null)
+    }
+
+    /** The bulk deletion was asked for; the confirmation names the count. */
+    fun onBulkDeleteRequested() {
+        if (!mutableState.value.selecting) {
+            return
+        }
+        mutableState.value = mutableState.value.copy(confirmingBulkDelete = true)
+    }
+
+    /** The confirmation was dismissed. */
+    fun onBulkDeleteDismissed() {
+        mutableState.value = mutableState.value.copy(confirmingBulkDelete = false)
+    }
+
+    /**
+     * Deletes every selected row.
+     *
+     * **One call per row.** There is no bulk endpoint, so this loops and counts; a row the server
+     * refuses is skipped and stays selected, so the member can see which ones did not go. No undo
+     * — unlike the inbox, whose undo hangs on a server row that is gone here.
+     */
+    fun onBulkDeleteConfirmed() {
+        val ids = mutableState.value.selected.map { it.id }
+        if (ids.isEmpty() || !mutableState.value.online) {
+            return
+        }
+        mutableState.value =
+            mutableState.value.copy(confirmingBulkDelete = false, deleting = true, bulkResult = null)
+        viewModelScope.launch {
+            var deleted = 0
+            val refused = mutableSetOf<String>()
+            var failure: ApiError? = null
+            ids.forEach { id ->
+                when (val result = repository.delete(id)) {
+                    is ApiResult.Success -> {
+                        deleted++
+                    }
+
+                    is ApiResult.Failure -> {
+                        refused += id
+                        failure = failure ?: result.error
+                    }
+                }
+            }
+            mutableState.value =
+                mutableState.value.copy(
+                    deleting = false,
+                    selection = refused,
+                    bulkResult = PersonalBulkResult(deleted = deleted, skipped = refused.size),
+                    // The refusal itself is reported once, as every other write failure is; the
+                    // counts stay on the bar, where the member is looking.
+                    lastFailure = failure,
+                )
+            if (deleted > 0) {
+                reload(keepRows = true)
             }
         }
     }

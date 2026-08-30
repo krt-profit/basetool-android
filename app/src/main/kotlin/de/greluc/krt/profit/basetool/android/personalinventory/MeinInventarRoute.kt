@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.personalinventory
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -88,6 +89,13 @@ fun MeinInventarRoute(
                 onCreate = items::onCreate,
                 onEdit = items::onEdit,
                 onDelete = items::onDeleteRequested,
+                selection =
+                    PersonalSelectionActions(
+                        onToggle = items::onToggleSelected,
+                        onSelectAll = items::onSelectAll,
+                        onClear = items::onSelectionCleared,
+                        onDelete = items::onBulkDeleteRequested,
+                    ),
             )
         } else {
             PersonalBlueprintsScreen(
@@ -136,6 +144,16 @@ fun MeinInventarRoute(
             onDismiss = items::onDeleteDismissed,
         )
     }
+    if (itemsState.confirmingBulkDelete) {
+        PersonalBulkDeleteModal(
+            count = itemsState.selection.size,
+            busy = itemsState.deleting,
+            onConfirm = items::onBulkDeleteConfirmed,
+            onDismiss = items::onBulkDeleteDismissed,
+        )
+    }
+    // Two ways out of the mode and no third: „Aufheben" on the bar, and the system back gesture.
+    BackHandler(enabled = itemsState.selecting, onBack = items::onSelectionCleared)
 
     val blueprintEditor = blueprintsState.editor
     // Design ch. 14's conflict dialog for both blueprint sheets: they share one editor state, so

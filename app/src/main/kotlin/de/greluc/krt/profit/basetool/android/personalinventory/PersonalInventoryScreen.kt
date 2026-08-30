@@ -8,8 +8,10 @@
 package de.greluc.krt.profit.basetool.android.personalinventory
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,12 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.PersonalItem
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomCtaBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
@@ -44,8 +48,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectionCheckbox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -60,6 +67,12 @@ const val PERSONAL_INVENTORY_LIST_TAG: String = "personal-inventory-list"
 
 /** Test handle for the "new entry" action. */
 const val PERSONAL_INVENTORY_CREATE_TAG: String = "personal-inventory-create"
+
+/** Test handle for the selection bar's delete action. */
+const val PERSONAL_INVENTORY_BULK_TAG: String = "personal-inventory-bulk"
+
+/** Test handle for its confirmation. */
+const val PERSONAL_INVENTORY_BULK_MODAL_TAG: String = "personal-inventory-bulk-modal"
 
 /**
  * "Mein Inventar" — the member's own stock, read and written (design ch. 09 § 4).
@@ -77,9 +90,12 @@ const val PERSONAL_INVENTORY_CREATE_TAG: String = "personal-inventory-create"
  * @param onEdit a row was tapped.
  * @param onDelete a row's delete action was taken.
  * @param modifier layout modifier.
+ * @param selection the bulk actions of design ch. 17 artboard 4, or `null` where they are not
+ *   wired — which leaves the list exactly as it was.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList")
 fun PersonalInventoryScreen(
     state: PersonalInventoryState,
     onQueryChanged: (String) -> Unit,
@@ -90,6 +106,7 @@ fun PersonalInventoryScreen(
     onEdit: (PersonalItem) -> Unit,
     onDelete: (PersonalItem) -> Unit,
     modifier: Modifier = Modifier,
+    selection: PersonalSelectionActions? = null,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -170,11 +187,21 @@ fun PersonalInventoryScreen(
                                 onLoadMore = onLoadMore,
                                 onEdit = onEdit,
                                 onDelete = onDelete,
+                                selection = selection,
                             )
                         }
                     }
                 }
             }
+        }
+        // „FAB und Bottom-Nav weichen der Aktionsleiste" (design ch. 02 §4): while a selection
+        // runs, the bar owns the bottom of the screen and the FAB steps aside.
+        // The bar also survives a finished deletion, because it carries the one number a member
+        // cannot reconstruct: how many rows were skipped („Leiste bleibt, Ergebnis nennt
+        // gelöscht/übersprungen", artboard 4).
+        if ((state.selecting || state.bulkResult != null) && selection != null) {
+            SelectionActionBar(state = state, selection = selection)
+            return@Box
         }
         // Disabled, not hidden: a member offline has to be able to see that the action exists
         // and why it cannot be taken, which a missing control cannot say.
@@ -194,12 +221,137 @@ fun PersonalInventoryScreen(
 }
 
 /**
+ * The bulk actions of design ch. 17 artboard 4.
+ *
+ * A bag rather than four parameters: they travel together from the route to the list and the bar.
+ *
+ * @property onToggle a row was long-pressed, or tapped while the mode runs.
+ * @property onSelectAll „Alles wählen".
+ * @property onClear „Aufheben".
+ * @property onDelete the bar's delete action.
+ */
+data class PersonalSelectionActions(
+    val onToggle: (PersonalItem) -> Unit,
+    val onSelectAll: () -> Unit,
+    val onClear: () -> Unit,
+    val onDelete: () -> Unit,
+)
+
+/**
+ * The bottom bar the selection mode owns.
+ *
+ * It exists only while something is selected, which is what makes the mode self-evident — nothing
+ * to leave, nothing to notice you are in (design ch. 02 §4, taken over unchanged from the Lager).
+ *
+ * @param state what the screen holds.
+ * @param selection the four actions.
+ */
+@Composable
+private fun BoxScope.SelectionActionBar(
+    state: PersonalInventoryState,
+    selection: PersonalSelectionActions,
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        KrtBottomCtaBar {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val result = state.bulkResult
+                if (result == null) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = state.selection.size.toString(),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = KrtPalette.White,
+                        )
+                        Text(
+                            text = stringResource(R.string.personal_inventory_selected_word),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = KrtPalette.TextMuted,
+                        )
+                    }
+                } else {
+                    Text(
+                        text =
+                            pluralStringResource(
+                                R.plurals.personal_inventory_bulk_result,
+                                result.deleted,
+                                result.deleted,
+                                result.skipped,
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KrtPalette.TextMuted,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                KrtGhostButton(
+                    text = stringResource(R.string.personal_inventory_select_all),
+                    onClick = selection.onSelectAll,
+                )
+                KrtGhostButton(
+                    text = stringResource(R.string.inventory_selection_clear),
+                    onClick = selection.onClear,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.personal_inventory_delete),
+                    onClick = selection.onDelete,
+                    iconRes = DesignR.drawable.ic_krt_trash,
+                    enabled = state.online && !state.deleting,
+                    modifier = Modifier.testTag(PERSONAL_INVENTORY_BULK_TAG),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The bulk deletion's confirmation.
+ *
+ * A danger modal naming the count, and **no undo** — unlike the inbox, whose undo hangs on a
+ * server row that is gone here (design ch. 17 artboard 4).
+ *
+ * @param count how many rows.
+ * @param busy whether the deletion is running.
+ * @param onConfirm it was accepted.
+ * @param onDismiss it was dismissed.
+ */
+@Composable
+fun PersonalBulkDeleteModal(
+    count: Int,
+    busy: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KrtModal(
+        title = stringResource(R.string.personal_inventory_bulk_delete_title),
+        confirmText = stringResource(R.string.personal_inventory_delete),
+        onConfirm = { if (!busy) onConfirm() },
+        onDismiss = onDismiss,
+        tone = KrtModalTone.Danger,
+        modifier = Modifier.testTag(PERSONAL_INVENTORY_BULK_MODAL_TAG),
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.personal_inventory_bulk_delete_body, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+        )
+    }
+}
+
+/**
  * The rows.
  *
  * @param state what to draw.
  * @param onLoadMore the next page was asked for.
  * @param onEdit a row was tapped.
  * @param onDelete a row's delete action was taken.
+ * @param selection the bulk actions, or `null` where they are not wired.
  */
 @Composable
 private fun ItemList(
@@ -207,6 +359,7 @@ private fun ItemList(
     onLoadMore: () -> Unit,
     onEdit: (PersonalItem) -> Unit,
     onDelete: (PersonalItem) -> Unit,
+    selection: PersonalSelectionActions? = null,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(PERSONAL_INVENTORY_LIST_TAG),
@@ -216,8 +369,18 @@ private fun ItemList(
             ItemRow(
                 item = item,
                 online = state.online,
-                onEdit = { onEdit(item) },
+                // While the mode runs a tap picks rather than edits: two meanings for one tap is
+                // how a member deletes the row they meant to open.
+                onEdit = {
+                    if (state.selecting && selection != null) {
+                        selection.onToggle(item)
+                    } else {
+                        onEdit(item)
+                    }
+                },
                 onDelete = { onDelete(item) },
+                selected = item.id in state.selection,
+                onLongPress = selection?.let { { it.onToggle(item) } },
             )
             KrtHairlineRule()
         }
@@ -250,6 +413,8 @@ private val LOADING_ROW_HEIGHT = 64.dp
  * @param online whether writes are possible.
  * @param onEdit opens the editor.
  * @param onDelete asks to delete.
+ * @param selected whether the row is in the selection.
+ * @param onLongPress starts or extends the selection, or `null` where it is not wired.
  */
 @Composable
 private fun ItemRow(
@@ -257,15 +422,31 @@ private fun ItemRow(
     online: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    selected: Boolean = false,
+    onLongPress: (() -> Unit)? = null,
 ) {
     // A card, not a padded Row: every design chapter draws its list items as bordered tiles.
     // See docs/DESIGN_PARITY_AUDIT.md.
-    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onEdit.takeIf { online }) {
+    KrtCard(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    enabled = online,
+                    onClick = onEdit,
+                    // The long press is what starts the mode (design ch. 02 §4); the card's own
+                    // `onClick` cannot carry it, so the whole gesture moves onto the modifier.
+                    onLongClick = onLongPress,
+                ),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (selected) {
+                KrtSelectionCheckbox(checked = true)
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,

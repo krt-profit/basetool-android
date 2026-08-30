@@ -1637,4 +1637,16 @@
         <item quantity="one">%1$d blueprint</item>
         <item quantity="other">%1$d blueprints</item>
     </plurals>
+    <!-- Selection mode and bulk delete in "Mein Inventar" (design ch. 17, artboard 4) -->
+    <string name="personal_inventory_selected_word">SELECTED</string>
+    <string name="personal_inventory_select_all">Select all</string>
+    <string name="personal_inventory_bulk_delete_title">Delete entries?</string>
+    <plurals name="personal_inventory_bulk_delete_body">
+        <item quantity="one">%1$d entry will be deleted. Not recoverable.</item>
+        <item quantity="other">%1$d entries will be deleted. Not recoverable.</item>
+    </plurals>
+    <plurals name="personal_inventory_bulk_result">
+        <item quantity="one">%1$d deleted · %2$d skipped</item>
+        <item quantity="other">%1$d deleted · %2$d skipped</item>
+    </plurals>
 </resources>

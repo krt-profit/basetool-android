@@ -340,11 +340,48 @@ UI: „Über die globale Blaupausen-Freigabe sichtbar, kein Mitglied der gewähl
 **Code:** `PersonalBlueprintRepository.overview` / `.owners`, `Identity.blueprintOverview`,
 `BlueprintOverviewViewModel`, `BlueprintOverviewScreen`, `MoreScreen`
 
+---
+
+### REQ-APP-PI-015 — The selection mode, and a bulk delete the app has to loop
+
+Design ch. 17 artboard 4: the selection mode of ch. 02 §4, **taken over unchanged** — long press
+starts it, further rows join with a tap, the bar owns the bottom of the screen while it runs and
+the FAB steps aside, and back or „Aufheben" leaves it. No new pattern for this list.
+
+**There is no „alle löschen" menu entry.** It is „Alles wählen" plus delete, because *„eine Aktion,
+die 18 Zeilen löscht, muss die 18 Zeilen vorher gezeigt haben"*. „Alles wählen" ticks **what is
+loaded**, which is the only thing that label can honestly promise on a paged list — scrolling on
+and tapping again adds the rest.
+
+> [!warning] No bulk endpoint exists
+> The API has `DELETE /personal-inventory/{id}` and nothing else; the web's `/delete-all` route
+> belongs to the **blueprints** page, not to this one. So the app deletes one row at a time and
+> counts. That is also what makes the result line necessary rather than decorative: a loop can
+> half-succeed. A refused row **stays selected**, so the member can see which one did not go, and
+> the bar keeps standing to carry „2 gelöscht · 1 übersprungen" — the one number that cannot be
+> reconstructed from the list. A real bulk endpoint is on the gap list.
+
+**No undo.** Unlike the inbox, whose undo hangs on a server row that is gone here.
+
+**Acceptance**
+
+- [x] A bulk deletion deletes one at a time and names what was skipped
+  (`PersonalInventoryViewModelTest`).
+- [x] A refused row stays selected (`PersonalInventoryViewModelTest`).
+- [x] Selecting and unselecting starts and ends the mode (`PersonalInventoryViewModelTest`).
+- [x] Nothing selected sends no deletion (`PersonalInventoryViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `PersonalInventoryState.selection` / `.selected` / `.bulkResult`,
+`PersonalInventoryViewModel.onToggleSelected` / `.onSelectAll` / `.onBulkDelete*`,
+`PersonalInventoryScreen.SelectionActionBar`, `PersonalBulkDeleteModal`
+
 ## Known gaps
 
-- **The blueprint file import** (`/personal-blueprints/import/*`) and the „alle löschen" bulk
-  delete (`DELETE /personal-blueprints`). Phase 4, with the other file flows. The **multi-add**
-  that once sat here landed 2026-08-30 as `REQ-APP-PI-013`.
+- **The blueprint file import** (`/personal-blueprints/import/*`) and the blueprints' own „alle
+  löschen" (`DELETE /personal-blueprints`). Phase 4, with the other file flows. The **multi-add**
+  that once sat here landed 2026-08-30 as `REQ-APP-PI-013`, and the **items'** selection mode and
+  bulk delete as `REQ-APP-PI-015`.
 - **`acquiredAt`.** The API accepts it on create and update; the app offers no field for it and
   deliberately never sends it, so a save cannot rewrite a value the member cannot see.
 - **Sorting.** The list arrives in the server's default order; the web app offers no sort either.

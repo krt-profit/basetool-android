@@ -1658,4 +1658,16 @@
         <item quantity="one">%1$d Blueprint</item>
         <item quantity="other">%1$d Blueprints</item>
     </plurals>
+    <!-- Auswahlmodus und Sammellöschen in „Mein Inventar" (Design Kap. 17, Artboard 4) -->
+    <string name="personal_inventory_selected_word">GEWÄHLT</string>
+    <string name="personal_inventory_select_all">Alles wählen</string>
+    <string name="personal_inventory_bulk_delete_title">Einträge löschen?</string>
+    <plurals name="personal_inventory_bulk_delete_body">
+        <item quantity="one">%1$d Eintrag wird gelöscht. Nicht rückholbar.</item>
+        <item quantity="other">%1$d Einträge werden gelöscht. Nicht rückholbar.</item>
+    </plurals>
+    <plurals name="personal_inventory_bulk_result">
+        <item quantity="one">%1$d gelöscht · %2$d übersprungen</item>
+        <item quantity="other">%1$d gelöscht · %2$d übersprungen</item>
+    </plurals>
 </resources>

@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Mehrere Einträge in „Mein Inventar" auf einmal löschen.** Langer Druck wählt, weitere Zeilen mit
+  einem Tipp; unten stehen „Alles wählen", „Aufheben" und „Löschen". Gefragt wird nach, die Anzahl
+  steht dabei, und danach sagt die Leiste, wie viele gelöscht und wie viele übersprungen wurden —
+  abgelehnte Zeilen bleiben gewählt. Nicht rückholbar.
+
 - **Neue Ansicht „Blueprint-Verfügbarkeit" unter „Mehr".** Zeigt org-weit, wer welchen Blueprint
   hat — Besitzer werden je Zeile nachgeladen, Mitglieder anderer Einheiten sind als solche
   gekennzeichnet. Ohne die Rolle Officer steht der Eintrag gesperrt da und nennt die Rolle. Der
