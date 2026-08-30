@@ -126,29 +126,6 @@ data class ReleasableStock(
     val alreadyReleased: Boolean,
 )
 
-/**
- * One craftable product the item half of the board can name.
- *
- * The board addresses an item by its **product key** — the P4K catalogue's own identifier, which
- * `GET /blueprints/products/search` hands out. There is no inventory row behind it: an item offer
- * is not bound to stock the way a material offer is.
- *
- * @property productKey what the two item writes send.
- * @property name what it is called.
- * @property manufacturerName who makes it, or `null` where the catalogue does not say.
- * @property variantCount how many blueprint variants produce it; shown because a product with
- *   several is worth naming precisely in the remark, and **not** sent — no write carries a variant.
- * @property owned whether the caller already holds a blueprint for it, which is why the search puts
- *   their own first.
- */
-data class BoardProduct(
-    val productKey: String,
-    val name: String,
-    val manufacturerName: String?,
-    val variantCount: Int,
-    val owned: Boolean,
-)
-
 /** The Materialbörse reads and writes the app offers, as a seam. */
 interface MaterialBoardSource {
     /**
@@ -229,10 +206,18 @@ interface MaterialBoardSource {
     /**
      * Searches the craftable products the item half can name.
      *
+     * The board addresses an item by its **product key** — the catalogue's own identifier, which
+     * `GET /blueprints/products/search` hands out and which the two item writes send. There is no
+     * inventory row behind it: an item offer is not bound to stock the way a material offer is.
+     *
+     * The model is [BlueprintProduct], the same one „Mein Inventar" fills its blueprint picker
+     * with. One endpoint, one model — a second would be two places to fix when the catalogue grows
+     * a field.
+     *
      * @param query what was typed; blank asks for the catalogue's own first page.
      * @return the candidates, or the classified failure.
      */
-    suspend fun searchProducts(query: String): ApiResult<List<BoardProduct>>
+    suspend fun searchProducts(query: String): ApiResult<List<BlueprintProduct>>
 
     /**
      * Offers an **item**.
@@ -466,7 +451,7 @@ class MaterialBoardRepository(
         )
 
     /** {@inheritDoc} */
-    override suspend fun searchProducts(query: String): ApiResult<List<BoardProduct>> =
+    override suspend fun searchProducts(query: String): ApiResult<List<BlueprintProduct>> =
         when (
             val result =
                 reader.get(
@@ -606,23 +591,6 @@ class MaterialBoardRepository(
             }
     }
 }
-
-/**
- * One catalogue product as the picker holds it.
- *
- * @receiver what the server sent.
- * @return the product, or `null` when it carries no key — the one field the writes need.
- */
-private fun BlueprintProductDto.toModel(): BoardProduct? =
-    productKey?.let {
-        BoardProduct(
-            productKey = it,
-            name = name.orEmpty(),
-            manufacturerName = manufacturerName?.takeIf { name -> name.isNotBlank() },
-            variantCount = variantCount ?: 0,
-            owned = ownedByCurrentUser == true,
-        )
-    }
 
 /**
  * Maps a write's answer back onto the row it was made on.

@@ -7,9 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.exchange
 
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
 import de.greluc.krt.profit.basetool.android.core.data.BoardPage
-import de.greluc.krt.profit.basetool.android.core.data.BoardProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncEvent
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
@@ -105,10 +105,10 @@ class MaterialBoardViewModelTest {
          * @return the product.
          */
         fun product() =
-            BoardProduct(
+            BlueprintProduct(
                 productKey = "gatling",
                 name = "Ballistic Gatling",
-                manufacturerName = "Klaus & Werner",
+                manufacturer = "Klaus & Werner",
                 variantCount = 2,
                 owned = true,
             )
@@ -192,9 +192,9 @@ class MaterialBoardViewModelTest {
         val createdItemRequests = mutableListOf<Pair<String, Int>>()
         val updatedOffers = mutableListOf<Triple<String, Double, String?>>()
         val updatedRequests = mutableListOf<Triple<String, Double, Int?>>()
-        var products: List<BoardProduct> = emptyList()
+        var products: List<BlueprintProduct> = emptyList()
 
-        override suspend fun searchProducts(query: String): ApiResult<List<BoardProduct>> =
+        override suspend fun searchProducts(query: String): ApiResult<List<BlueprintProduct>> =
             ApiResult.Success(products)
 
         override suspend fun createItemOffer(

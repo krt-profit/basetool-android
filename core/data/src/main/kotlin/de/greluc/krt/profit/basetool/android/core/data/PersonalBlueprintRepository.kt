@@ -120,12 +120,16 @@ data class Craftability(
  * @property manufacturer who makes it, or `null`
  * @property owned whether the member already has this one — offering it again would be a create
  *   the server refuses
+ * @property variantCount how many blueprint variants produce it. Informational: no write carries a
+ *   variant, and the Materialbörse's item half shows it so a product with several can be named
+ *   precisely in the remark.
  */
 data class BlueprintProduct(
     val productKey: String,
     val name: String,
     val manufacturer: String?,
     val owned: Boolean,
+    val variantCount: Int = 0,
 )
 
 /**
@@ -423,13 +427,14 @@ private fun BlueprintCraftabilityDto.toModel(): Craftability? {
  *
  * @return the model, or `null` without a key — a row that cannot be added is not worth offering.
  */
-private fun BlueprintProductDto.toModel(): BlueprintProduct? {
+internal fun BlueprintProductDto.toModel(): BlueprintProduct? {
     val key = productKey?.takeIf { it.isNotBlank() } ?: return null
     return BlueprintProduct(
         productKey = key,
         name = name.orEmpty(),
         manufacturer = manufacturerName?.takeIf { it.isNotBlank() },
         owned = ownedByCurrentUser == true,
+        variantCount = variantCount ?: 0,
     )
 }
 

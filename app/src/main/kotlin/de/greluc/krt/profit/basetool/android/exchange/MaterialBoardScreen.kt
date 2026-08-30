@@ -42,8 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
-import de.greluc.krt.profit.basetool.android.core.data.BoardProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.ReleasableStock
@@ -659,7 +659,7 @@ fun NewRequestSheet(
     onDismiss: () -> Unit,
     onKind: (BoardKind) -> Unit = {},
     onProductQuery: (String) -> Unit = {},
-    onProductPicked: (BoardProduct) -> Unit = {},
+    onProductPicked: (BlueprintProduct) -> Unit = {},
 ) {
     KrtBottomSheet(
         onDismiss = onDismiss,
@@ -776,7 +776,7 @@ fun NewOfferSheet(
     onDismiss: () -> Unit,
     onKind: (BoardKind) -> Unit = {},
     onProductQuery: (String) -> Unit = {},
-    onProductPicked: (BoardProduct) -> Unit = {},
+    onProductPicked: (BlueprintProduct) -> Unit = {},
 ) {
     KrtBottomSheet(
         onDismiss = onDismiss,
@@ -881,9 +881,9 @@ fun NewOfferSheet(
 private fun ProductField(
     shown: String,
     selectedKey: String?,
-    products: List<BoardProduct>,
+    products: List<BlueprintProduct>,
     onQuery: (String) -> Unit,
-    onPicked: (BoardProduct) -> Unit,
+    onPicked: (BlueprintProduct) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     KrtCombobox(
@@ -900,7 +900,7 @@ private fun ProductField(
                 KrtOption(
                     value = product.productKey,
                     label =
-                        listOfNotNull(product.name, product.manufacturerName)
+                        listOfNotNull(product.name, product.manufacturer)
                             .joinToString(SEPARATOR),
                 )
             },

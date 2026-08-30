@@ -10,8 +10,8 @@ package de.greluc.krt.profit.basetool.android.exchange
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.BlueprintProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardEntry
-import de.greluc.krt.profit.basetool.android.core.data.BoardProduct
 import de.greluc.krt.profit.basetool.android.core.data.BoardSide
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
@@ -91,7 +91,7 @@ sealed interface BoardSheet {
         val kind: BoardKind = BoardKind.MATERIAL,
         val productKey: String? = null,
         val productName: String = "",
-        val products: List<BoardProduct> = emptyList(),
+        val products: List<BlueprintProduct> = emptyList(),
     ) : BoardSheet {
         /**
          * Whether „Gesuch veröffentlichen" may be pressed.
@@ -127,7 +127,7 @@ sealed interface BoardSheet {
         val kind: BoardKind = BoardKind.MATERIAL,
         val productKey: String? = null,
         val productName: String = "",
-        val products: List<BoardProduct> = emptyList(),
+        val products: List<BlueprintProduct> = emptyList(),
     ) : BoardSheet {
         /** Whether „Angebot veröffentlichen" may be pressed. */
         val submittable: Boolean
@@ -676,7 +676,7 @@ class MaterialBoardViewModel(
      *
      * @param product the picked product.
      */
-    fun onProductPicked(product: BoardProduct) {
+    fun onProductPicked(product: BlueprintProduct) {
         searchJob?.cancel()
         withProductSheet(
             request = {
