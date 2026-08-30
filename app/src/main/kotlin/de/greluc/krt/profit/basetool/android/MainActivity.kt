@@ -91,6 +91,7 @@ import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprint
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalInventoryViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryCreateViewModel
 import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailViewModel
+import de.greluc.krt.profit.basetool.android.refinery.RefineryDetailWrites
 import de.greluc.krt.profit.basetool.android.refinery.RefineryViewModel
 import de.greluc.krt.profit.basetool.android.settings.LanguageSetting
 import de.greluc.krt.profit.basetool.android.settings.MemberPreferencesViewModel
@@ -424,8 +425,8 @@ class MainActivity : AppCompatActivity() {
                                         MaterialMatrixViewModel(container.materialCatalog)
                                     },
                                     materialProfit = { ProfitViewModel(container.materialCatalog) },
-                                    refineryCreate = {
-                                        RefineryCreateViewModel(container.refinery)
+                                    refineryCreate = { editedRun ->
+                                        RefineryCreateViewModel(container.refinery, editedRun)
                                     },
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
@@ -455,7 +456,10 @@ class MainActivity : AppCompatActivity() {
                                             container.connectivity,
                                             it,
                                             container.liveSync,
-                                            container.refinery,
+                                            RefineryDetailWrites(
+                                                store = container.refinery,
+                                                delete = container.refinery,
+                                            ),
                                         )
                                     },
                                     personalInventory = personalInventoryViewModel,

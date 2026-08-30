@@ -1593,4 +1593,18 @@
     <string name="operation_status_planned">Geplant</string>
     <string name="operation_status_active">Läuft</string>
     <string name="operation_status_completed">Abgeschlossen</string>
+    <!-- Raffinerieauftrag bearbeiten und löschen (Design Kap. 11, Artboards 6 und 7) -->
+    <string name="refinery_edit_title">Auftrag bearbeiten</string>
+    <string name="refinery_edit_submit">Speichern</string>
+    <string name="refinery_edit_locked_stored">Eingelagert — Kern und Waren sind festgeschrieben. Geld und Verknüpfung bleiben änderbar.</string>
+    <string name="refinery_delete_action">Auftrag löschen</string>
+    <string name="refinery_delete_title">Raffinerieauftrag löschen?</string>
+    <string name="refinery_delete_confirm">Löschen</string>
+    <string name="refinery_delete_note">Nicht rückholbar. Ein bereits eingelagerter Auftrag lässt sich nicht löschen — dort korrigiert man die Lagerzeilen.</string>
+    <string name="refinery_delete_locked_stored">Bereits eingelagert — der Ertrag liegt im Lager und wird hier nicht zurückgenommen.</string>
+    <string name="refinery_deleted">Auftrag gelöscht.</string>
+    <plurals name="refinery_delete_body">
+        <item quantity="one">Der Auftrag bei %1$s und seine %2$d Warenzeile werden gelöscht. Ein noch nicht eingelagerter Ertrag geht damit verloren.</item>
+        <item quantity="other">Der Auftrag bei %1$s und seine %2$d Warenzeilen werden gelöscht. Ein noch nicht eingelagerter Ertrag geht damit verloren.</item>
+    </plurals>
 </resources>

@@ -157,7 +157,7 @@ fun BasetoolApp(
     materialDetail: (String) -> MaterialDetailViewModel,
     materialMatrix: () -> MaterialMatrixViewModel,
     materialProfit: () -> ProfitViewModel,
-    refineryCreate: () -> RefineryCreateViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,

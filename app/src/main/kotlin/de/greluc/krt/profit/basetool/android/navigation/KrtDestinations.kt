@@ -163,6 +163,18 @@ enum class KrtDestination(
     ),
 
     /**
+     * The same form rewriting one run, pushed from its detail's `⋮`.
+     *
+     * Design ch. 11 artboard 6 is explicit that this is the create form pre-filled — no second
+     * layout — so the two destinations differ only in whether they carry an id.
+     */
+    RefineryEdit(
+        "refinery-edit/{refineryOrderId}",
+        R.string.refinery_edit_title,
+        DesignR.drawable.ic_krt_edit,
+    ),
+
+    /**
      * The form that rewrites one Auftrag, pushed from its detail's overflow.
      *
      * The same screen as [OrderCreate], pre-filled — design ch. 10 artboard 10 is explicit that
@@ -314,6 +326,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         KrtDestination.BankAccount to KrtDestination.Bank,
         KrtDestination.BankHolder to KrtDestination.Bank,
         KrtDestination.RefineryCreate to KrtDestination.Refinery,
+        KrtDestination.RefineryEdit to KrtDestination.Refinery,
         KrtDestination.OrderCreate to KrtDestination.Orders,
         KrtDestination.OrderDetail to KrtDestination.Orders,
         KrtDestination.RefineryOrder to KrtDestination.Refinery,
@@ -420,6 +433,14 @@ const val ORDER_ID_ARG: String = "orderId"
  *   pattern.
  */
 fun refineryOrderRoute(orderId: String): String = "refinery-order/" + orderId
+
+/**
+ * The route that opens the pre-filled form for one refinery order.
+ *
+ * @param orderId which order.
+ * @return the concrete route.
+ */
+fun refineryEditRoute(orderId: String): String = "refinery-edit/" + orderId
 
 /** The name of the id argument in [KrtDestination.RefineryOrder]'s route. */
 const val REFINERY_ORDER_ID_ARG: String = "refineryOrderId"

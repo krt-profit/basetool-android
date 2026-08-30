@@ -36,11 +36,13 @@ import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDraft
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtLocked
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
@@ -48,6 +50,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** The create form, for the tests that read it. */
 const val REFINERY_CREATE_TAG: String = "refinery-create"
+
+/** Test handle for the note that says why a booked run's core is fixed. */
+const val REFINERY_LOCKED_NOTE_TAG: String = "refinery-locked-note"
 
 /**
  * What the create form reports back.
@@ -93,11 +98,24 @@ fun RefineryCreateScreen(
     modifier: Modifier = Modifier,
 ) {
     val draft = state.draft
+    val locked = state.coreLocked
+    val lockReason = stringResource(R.string.refinery_edit_locked_stored)
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag(REFINERY_CREATE_TAG),
         contentPadding = PaddingValues(KrtSpacing.md),
         verticalArrangement = Arrangement.spacedBy(KrtSpacing.md),
     ) {
+        if (locked) {
+            // Artboard 6 is explicit that the info block comes BEFORE the fields it explains: a
+            // member who meets the lock first has to work out what it means; one who reads this
+            // first meets a lock they were told about.
+            item(key = "locked-note") {
+                KrtHint(
+                    explanation = lockReason,
+                    modifier = Modifier.testTag(REFINERY_LOCKED_NOTE_TAG),
+                )
+            }
+        }
         item(key = "where") {
             Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 PickerField(
@@ -110,6 +128,8 @@ fun RefineryCreateScreen(
                             draft.copy(locationId = it.value, locationName = it.label),
                         )
                     },
+                    enabled = !locked,
+                    lockReason = lockReason,
                 )
                 PickerField(
                     label = stringResource(R.string.refinery_create_method),
@@ -121,6 +141,8 @@ fun RefineryCreateScreen(
                             draft.copy(methodId = it.value, methodName = it.label),
                         )
                     },
+                    enabled = !locked,
+                    lockReason = lockReason,
                 )
                 state.methods.firstOrNull { it.id == draft.methodId }?.let { method ->
                     Text(
@@ -147,19 +169,23 @@ fun RefineryCreateScreen(
         itemsIndexed(state.draft.goods) { index, good ->
             GoodCard(
                 good = good,
-                removable = state.draft.goods.size > 1,
+                removable = state.draft.goods.size > 1 && !locked,
                 materials = state.materials,
                 onQuery = actions.onMaterialQuery,
                 onChanged = { actions.onGoodChanged(index, it) },
                 onRemove = { actions.onRemoveGood(index) },
+                enabled = !locked,
+                lockReason = lockReason,
             )
         }
-        item(key = "add-good") {
-            KrtOutlineButton(
-                text = stringResource(R.string.refinery_create_add_good),
-                onClick = actions.onAddGood,
-                modifier = Modifier.fillMaxWidth(),
-            )
+        if (!locked) {
+            item(key = "add-good") {
+                KrtOutlineButton(
+                    text = stringResource(R.string.refinery_create_add_good),
+                    onClick = actions.onAddGood,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
         item(key = "timing") {
             TimingBlock(state = state, draft = draft, onDraftChanged = actions.onDraftChanged)
@@ -177,12 +203,19 @@ fun RefineryCreateScreen(
                     )
                 }
                 KrtCtaButton(
-                    text = stringResource(R.string.refinery_create_submit),
+                    text =
+                        stringResource(
+                            if (state.editing) {
+                                R.string.refinery_edit_submit
+                            } else {
+                                R.string.refinery_create_submit
+                            },
+                        ),
                     onClick = actions.onCreate,
                     modifier = Modifier.fillMaxWidth(),
                     // Validation-dimmed, without a padlock: nothing here is forbidden, it is
                     // unfinished — which the design distinguishes deliberately.
-                    enabled = draft.sendable && !state.saving,
+                    enabled = draft.sendable && !state.saving && !state.loading,
                 )
             }
         }
@@ -198,6 +231,8 @@ fun RefineryCreateScreen(
  * @param onQuery a picker was typed into.
  * @param onChanged the line was edited.
  * @param onRemove the line is to go.
+ * @param enabled whether the line may be edited; a booked run's goods are fixed.
+ * @param lockReason what to tell a screen reader about a locked line.
  */
 @Composable
 private fun GoodCard(
@@ -207,6 +242,8 @@ private fun GoodCard(
     onQuery: (String) -> Unit,
     onChanged: (RefineryGoodDraft) -> Unit,
     onRemove: () -> Unit,
+    enabled: Boolean = true,
+    lockReason: String = "",
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
@@ -222,11 +259,15 @@ private fun GoodCard(
                     onChanged(good.copy(inputMaterialId = it.first, inputMaterialName = it.second))
                 },
                 onType = { onChanged(good.copy(inputMaterialName = it, inputMaterialId = null)) },
+                enabled = enabled,
+                lockReason = lockReason,
             )
             NumberField(
                 label = stringResource(R.string.refinery_create_input_quantity),
                 value = good.inputQuantity,
                 onValue = { onChanged(good.copy(inputQuantity = it)) },
+                enabled = enabled,
+                lockReason = lockReason,
             )
             MaterialField(
                 label = stringResource(R.string.refinery_create_output_material),
@@ -238,21 +279,29 @@ private fun GoodCard(
                     onChanged(good.copy(outputMaterialId = it.first, outputMaterialName = it.second))
                 },
                 onType = { onChanged(good.copy(outputMaterialName = it, outputMaterialId = null)) },
+                enabled = enabled,
+                lockReason = lockReason,
             )
             NumberField(
                 label = stringResource(R.string.refinery_create_output_quantity),
                 value = good.outputQuantity,
                 onValue = { onChanged(good.copy(outputQuantity = it)) },
+                enabled = enabled,
+                lockReason = lockReason,
             )
             NumberField(
                 label = stringResource(R.string.refinery_create_quality),
                 value = good.quality,
                 onValue = { onChanged(good.copy(quality = it)) },
+                enabled = enabled,
+                lockReason = lockReason,
             )
             NumberField(
                 label = stringResource(R.string.refinery_create_bonus),
                 value = good.yieldBonusPercent,
                 onValue = { onChanged(good.copy(yieldBonusPercent = it)) },
+                enabled = enabled,
+                lockReason = lockReason,
             )
             if (removable) {
                 KrtQuietDangerButton(
@@ -402,8 +451,11 @@ private fun MoneyBlock(
  * @param onQuery a search was typed.
  * @param onSelect a material was picked.
  * @param onType the text changed without a pick.
+ * @param enabled whether it may be edited.
+ * @param lockReason what a screen reader is told when it may not.
  */
 @Composable
+@Suppress("LongParameterList")
 private fun MaterialField(
     label: String,
     shown: String,
@@ -412,6 +464,8 @@ private fun MaterialField(
     onQuery: (String) -> Unit,
     onSelect: (Pair<String, String>) -> Unit,
     onType: (String) -> Unit,
+    enabled: Boolean = true,
+    lockReason: String = "",
 ) {
     var expanded by remember { mutableStateOf(false) }
     KrtCombobox(
@@ -428,9 +482,10 @@ private fun MaterialField(
         },
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.krtLocked(locked = !enabled, stateLabel = lockReason).fillMaxWidth(),
         label = label,
         selectedValue = selectedValue,
+        enabled = enabled,
     )
 }
 
@@ -441,6 +496,8 @@ private fun MaterialField(
  * @param value what is in it.
  * @param onValue it was edited.
  * @param modifier layout modifier.
+ * @param enabled whether it may be edited.
+ * @param lockReason what a screen reader is told when it may not.
  */
 @Composable
 private fun NumberField(
@@ -448,13 +505,16 @@ private fun NumberField(
     value: String,
     onValue: (String) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    lockReason: String = "",
 ) {
     KrtTextField(
         value = value,
         onValueChange = onValue,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.krtLocked(locked = !enabled, stateLabel = lockReason).fillMaxWidth(),
         label = label,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        enabled = enabled,
     )
 }
 
@@ -466,6 +526,8 @@ private fun NumberField(
  * @param selectedValue what is picked.
  * @param shown what to display for it.
  * @param onSelect something was picked.
+ * @param enabled whether it may be edited.
+ * @param lockReason what a screen reader is told when it may not.
  */
 @Composable
 private fun PickerField(
@@ -474,6 +536,8 @@ private fun PickerField(
     selectedValue: String?,
     shown: String,
     onSelect: (KrtOption) -> Unit,
+    enabled: Boolean = true,
+    lockReason: String = "",
 ) {
     var expanded by remember { mutableStateOf(false) }
     KrtSelectField(
@@ -485,9 +549,10 @@ private fun PickerField(
         },
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.krtLocked(locked = !enabled, stateLabel = lockReason).fillMaxWidth(),
         label = label,
         selectedValue = selectedValue,
+        enabled = enabled,
     )
 }
 

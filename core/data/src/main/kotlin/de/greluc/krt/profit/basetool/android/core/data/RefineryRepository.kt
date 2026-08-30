@@ -226,6 +226,12 @@ interface RefinerySource {
 /** Minutes in an hour, for the duration the form takes in two fields. */
 private const val MINUTES_PER_HOUR = 60
 
+/** What a new run's status is; the other two describe what happened to it later. */
+private const val REFINERY_STATUS_IN_PROGRESS = "IN_PROGRESS"
+
+/** The status a booked run carries, which is what locks its core and its goods in the form. */
+private const val REFINERY_STATUS_COMPLETED = "COMPLETED"
+
 /**
  * The duration the two fields add up to, in minutes.
  *
@@ -402,6 +408,11 @@ data class RefineryGoodDraft(
  * @property oreSales what the ore sold for, as typed.
  * @property missionId the Einsatz to link, or `null`.
  * @property missionName what to show for it.
+ * @property version the order's optimistic lock when editing, `null` when raising one.
+ * @property stored whether the run's yield has already been booked into the Lager, which is what
+ *   locks the core and the goods lines (`REQ-APP-REF-011`).
+ * @property status what the order's status is on the server, echoed unchanged by the edit; `null`
+ *   when raising one, where the create picks „In Arbeit".
  */
 data class RefineryOrderDraft(
     val locationId: String? = null,
@@ -418,6 +429,9 @@ data class RefineryOrderDraft(
     val oreSales: String = "",
     val missionId: String? = null,
     val missionName: String = "",
+    val version: Long? = null,
+    val stored: Boolean = false,
+    val status: String? = null,
 ) {
     /**
      * When the run began, as the wire wants it.
@@ -454,7 +468,7 @@ data class RefineryOrderDraft(
 /**
  * What a new refinery order needs, beyond the order itself.
  */
-interface RefineryCreateSource {
+interface RefineryCreateSource : RefineryOrderDeleteSource {
     /**
      * Reads the refineries a run can be placed at.
      *
@@ -487,6 +501,54 @@ interface RefineryCreateSource {
      * @return the new order's id, or the classified failure.
      */
     suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String>
+
+    /**
+     * Reads one order back as a form.
+     *
+     * The detail model the list and the detail screen use keeps only what those screens draw, so
+     * the edit reads the order again rather than filling a form from a model that never carried
+     * the method id, the two cost fields or the linked Einsatz.
+     *
+     * @param orderId which order.
+     * @return the pre-filled form, or the classified failure.
+     */
+    suspend fun orderDraft(orderId: String): ApiResult<RefineryOrderDraft>
+
+    /**
+     * Rewrites the order the form describes.
+     *
+     * The `version` is echoed, so a concurrent edit is a `409` rather than a silent overwrite, and
+     * the status is echoed unchanged — the edit form does not move an order between states.
+     *
+     * @param orderId which order.
+     * @param draft the form.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun updateOrder(
+        orderId: String,
+        draft: RefineryOrderDraft,
+    ): ApiResult<Unit>
+}
+
+/**
+ * Deleting one refinery order.
+ *
+ * Its own interface because the **detail** offers the action while the **form** performs the two
+ * writes: a detail that took the whole form source would depend on the material search and the
+ * picker lists it never asks for.
+ */
+interface RefineryOrderDeleteSource {
+    /**
+     * Deletes one order.
+     *
+     * The server *cancels* it — the row is soft-deleted and `status` becomes `CANCELED` — and it
+     * does so for a booked order too. The rule that a booked run may not be deleted is the app's
+     * (`REQ-APP-REF-012`), because no gate enforces it.
+     *
+     * @param orderId which order.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun deleteOrder(orderId: String): ApiResult<Unit>
 }
 
 /**
@@ -654,29 +716,7 @@ class RefineryRepository(
         }
 
     override suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String> {
-        val locationId = draft.locationId
-        val methodId = draft.methodId
-        if (locationId == null || methodId == null) {
-            return ApiResult.Failure(ApiError.Validation())
-        }
-        val body =
-            RefineryOrderDto(
-                location = LocationDto(id = locationId, name = draft.locationName),
-                refiningMethod = RefiningMethodDto(id = methodId, name = draft.methodName),
-                goods = draft.goods.mapNotNull { it.toDto() },
-                startedAt = draft.startedAt?.toString(),
-                durationMinutes = draft.totalMinutes()?.toLong(),
-                expenses = parseTypedAmount(draft.expenses),
-                otherExpenses = parseTypedAmount(draft.otherExpenses),
-                oreSales = parseTypedAmount(draft.oreSales),
-                mission =
-                    draft.missionId?.let {
-                        MissionReferenceDto(id = it, name = draft.missionName)
-                    },
-                // „In Arbeit" is the design's default and the only status a new run can have: the
-                // other two describe what happened to it afterwards.
-                status = STATUS_IN_PROGRESS,
-            )
+        val body = draft.toWire() ?: return ApiResult.Failure(ApiError.Validation())
         return when (
             val result =
                 reader.post(
@@ -696,6 +736,30 @@ class RefineryRepository(
             }
         }
     }
+
+    override suspend fun orderDraft(orderId: String): ApiResult<RefineryOrderDraft> =
+        when (
+            val result =
+                reader.get(orderPath(orderId), emptyList(), RefineryOrderDto.serializer())
+        ) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.toDraft())
+        }
+
+    override suspend fun updateOrder(
+        orderId: String,
+        draft: RefineryOrderDraft,
+    ): ApiResult<Unit> {
+        val body = draft.toWire() ?: return ApiResult.Failure(ApiError.Validation())
+        return reader.putAccepted(
+            path = orderPath(orderId),
+            body = body,
+            bodySerializer = RefineryOrderDto.serializer(),
+        )
+    }
+
+    override suspend fun deleteOrder(orderId: String): ApiResult<Unit> =
+        reader.delete(orderPath(orderId))
 
     override suspend fun storeLines(
         orderId: String,
@@ -777,9 +841,6 @@ class RefineryRepository(
         /** How many candidates one search offers. */
         private const val PICKER_PAGE_SIZE = 25
 
-        /** What a new run's status is; the other two describe what happened to it later. */
-        private const val STATUS_IN_PROGRESS = "IN_PROGRESS"
-
         /** What a successful call that returned nothing usable is reported as. */
         private const val HTTP_OK = 200
 
@@ -805,6 +866,86 @@ class RefineryRepository(
         private fun storePath(id: String): String = "${orderPath(id)}/store"
     }
 }
+
+/**
+ * The form as the wire takes it, for both writes.
+ *
+ * @receiver the form.
+ * @return the body, or `null` when the form names no refinery or no method — which the caller
+ *   reports as a validation failure rather than sending a request the server will refuse.
+ */
+private fun RefineryOrderDraft.toWire(): RefineryOrderDto? {
+    val where = locationId
+    val method = methodId
+    if (where == null || method == null) {
+        return null
+    }
+    return RefineryOrderDto(
+        location = LocationDto(id = where, name = locationName),
+        refiningMethod = RefiningMethodDto(id = method, name = methodName),
+        goods = goods.mapNotNull { it.toDto() },
+        startedAt = startedAt?.toString(),
+        durationMinutes = totalMinutes()?.toLong(),
+        expenses = parseTypedAmount(expenses),
+        otherExpenses = parseTypedAmount(otherExpenses),
+        oreSales = parseTypedAmount(oreSales),
+        mission = missionId?.let { MissionReferenceDto(id = it, name = missionName) },
+        // The create has exactly one status to send — the other two describe what happened to the
+        // run afterwards. The edit echoes whatever the order already carries: this form moves an
+        // order's contents, never its state.
+        status = status ?: REFINERY_STATUS_IN_PROGRESS,
+        version = version,
+    )
+}
+
+/**
+ * One order as a pre-filled form.
+ *
+ * @receiver what the server sent.
+ * @return the form.
+ */
+private fun RefineryOrderDto.toDraft(): RefineryOrderDraft {
+    val started = startedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+    val local = started?.atZone(ZoneId.systemDefault())
+    val minutes = durationMinutes ?: 0L
+    return RefineryOrderDraft(
+        locationId = location.id,
+        locationName = location.name.orEmpty(),
+        methodId = refiningMethod?.id,
+        methodName = refiningMethod?.name.orEmpty(),
+        goods = goods.orEmpty().map { it.toDraft() },
+        startedDate = local?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")).orEmpty(),
+        startedTime = local?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty(),
+        durationHours = if (durationMinutes == null) "" else (minutes / MINUTES_PER_HOUR).toString(),
+        durationMinutes = if (durationMinutes == null) "" else (minutes % MINUTES_PER_HOUR).toString(),
+        expenses = formatTypedAmount(expenses),
+        otherExpenses = formatTypedAmount(otherExpenses),
+        oreSales = formatTypedAmount(oreSales),
+        missionId = mission?.id,
+        missionName = mission?.name.orEmpty(),
+        version = version,
+        stored = status == REFINERY_STATUS_COMPLETED,
+        status = status,
+    )
+}
+
+/**
+ * One goods line as the form holds it.
+ *
+ * @receiver what the server sent.
+ * @return the line.
+ */
+private fun RefineryGoodDto.toDraft(): RefineryGoodDraft =
+    RefineryGoodDraft(
+        inputMaterialId = inputMaterial.id,
+        inputMaterialName = inputMaterial.name.orEmpty(),
+        inputQuantity = inputQuantity.toString(),
+        outputMaterialId = outputMaterial?.id,
+        outputMaterialName = outputMaterial?.name.orEmpty(),
+        outputQuantity = outputQuantity.toString(),
+        quality = quality?.toString().orEmpty(),
+        yieldBonusPercent = yieldBonusPercent?.toString().orEmpty(),
+    )
 
 /**
  * Reports a detail response that carried no id as a not-found rather than as a success.

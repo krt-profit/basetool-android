@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Raffinerieaufträge lassen sich bearbeiten und löschen.** Beides im „⋮" der Auftragsansicht.
+  Bearbeitet wird im gewohnten Anlegen-Formular, vorbefüllt; nach dem Einlagern sind Raffinerie,
+  Methode und Waren festgeschrieben und stehen gesperrt mit dem Grund da — Geld und Einsatz bleiben
+  änderbar. Gelöscht wird nach Rückfrage; ein bereits eingelagerter Auftrag lässt sich nicht
+  löschen, dort korrigiert man die Lagerzeilen.
+
 - **Operationen lassen sich in der App anlegen und bearbeiten.** Über der Filterleiste der
   Operationen-Liste und im „⋮" der Detailansicht; Name, Beschreibung und Status, ein Formular für
   beides. Beginn, Ende und die Zuordnung von Einsätzen fehlen bewusst — die Schnittstelle kennt

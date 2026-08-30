@@ -315,3 +315,93 @@ is silently unsendable, which is exactly how it presented on a device.
 
 **Code:** `RefineryRepository` (`RefineryCreateSource`), `RefineryCreateViewModel`,
 `RefineryCreateScreen`
+
+---
+
+### REQ-APP-REF-010 — The edit is the create form, pre-filled
+
+Design ch. 11 artboard 6 is explicit: „Dasselbe Formular wie das Anlegen (Artboards 4–5),
+vorbefüllt — kein zweites Layout." `PUT /api/v1/refinery-orders/{id}` takes the same
+`RefineryOrderDto` the `POST` takes, so the app has one screen and one view model; only the presence
+of an id decides which of the two writes the CTA performs.
+
+It is reached from the order detail's `⋮`, beside „Löschen".
+
+**The form is read back from the server, not from the list model.** `RefineryOrder` — what the list
+and the detail draw — keeps no method id, no `expenses`/`otherExpenses`, no linked Einsatz and no
+per-good material ids. Filling a form from it would silently blank every one of those on the next
+save. The edit therefore issues its own `GET /refinery-orders/{id}` alongside the two picker reads.
+
+**The `version` is echoed**, so a concurrent edit is a `409` rather than a silent overwrite, and the
+`status` is echoed unchanged: this form moves an order's contents, never its state.
+
+**Acceptance**
+
+- [x] Editing prefills from the server and sends the version back (`RefineryEditTest`).
+- [x] Editing never posts a second order (`RefineryEditTest`).
+- [x] Raising an order is unaffected (`RefineryEditTest`, `RefineryCreateTest`).
+- [ ] Observed on a device.
+
+**Code:** `RefineryRepository.orderDraft` / `.updateOrder`, `RefineryCreateViewModel(source,
+orderId)`, `RefineryCreateScreen`
+
+---
+
+### REQ-APP-REF-011 — A booked run's core is locked by the app, because the server does not lock it
+
+Artboard 6 states the rule: „Solange nicht eingelagert ist, sind alle Angaben änderbar — danach nur
+noch Geld und Verknüpfung", with the info block **before** the fields and the affected fields drawn
+locked rather than removed. The app implements exactly that: an order whose status is `COMPLETED`
+renders its refinery, its method and every goods line dimmed and non-editable, with the reason
+stated above them; the money block and the Einsatz link stay open.
+
+> [!warning] The server does not enforce this — verified in the backend, 2026-08-30
+> `RefineryOrderService.updateRefineryOrder` has **no** status guard. It clears and re-adds the
+> goods of a `COMPLETED` order without complaint. The only „already completed and stored" refusal
+> in that service belongs to the **store** path. So this is a client-side rule protecting a real
+> invariant — the yield already exists as Lager rows, and rewriting the goods here would leave the
+> two disagreeing — and the app is the only thing enforcing it. **Recommended for the backend:**
+> refuse a `PUT` that changes location, method or goods on a `COMPLETED` order. Raised with the
+> owner as part of the design-gap list.
+
+**Acceptance**
+
+- [x] A booked run reports `coreLocked` (`RefineryEditTest`).
+- [x] An in-progress run does not (`RefineryEditTest`).
+- [ ] Observed on a device.
+
+**Code:** `RefineryCreateState.coreLocked`, `RefineryCreateScreen`
+
+---
+
+### REQ-APP-REF-012 — Deleting a run: a danger modal, no hurdle, and not once it is booked
+
+Artboard 7. A `KrtModal` in the danger tone with **no typing hurdle** — that is reserved for
+wipe-grade actions (design ch. 02 §7), and a refinery order is one row. The body names what is lost
+(the goods lines, and a yield that was never booked) and the note names what does not apply (a
+booked order is not deleted here; the Lager rows are corrected instead). Each sentence heads off a
+different wrong conclusion, which is why both are there.
+
+„Löschen" is offered to everyone and **drawn locked with its reason** on a booked run, rather than
+left out. No undo is offered afterwards: the server has nothing to restore with.
+
+> [!warning] The server does not enforce this either — verified in the backend, 2026-08-30
+> `DELETE /api/v1/refinery-orders/{id}` sets `status = CANCELED` whatever the order's state, booked
+> or not, and the Lager rows it produced stay. The rule is the app's. **Recommended for the
+> backend:** refuse the delete on a `COMPLETED` order.
+
+**The success path.** Artboard 7 asks for „zurück zur Liste, Zeile weg, Toast «Auftrag gelöscht.»".
+The app shows that toast **on the detail for two seconds and then navigates**, because handing a
+notice across two view models to raise it on the list would be more machinery than the sentence is
+worth. Recorded here as the small deviation it is.
+
+**Acceptance**
+
+- [x] A booked run is not deletable (`RefineryEditTest`).
+- [x] The confirmation is not raised for one, even though a locked row keeps its tap target
+  (`RefineryScreen.OrderMenu`).
+- [x] Deleting reports once and marks the run gone (`RefineryViewModelTest`).
+- [ ] Observed on a device.
+
+**Code:** `RefineryRepository.deleteOrder`, `RefineryDetailState.deletable`,
+`RefineryDetailViewModel.onDelete*`, `RefineryScreen.DeleteConfirmation`

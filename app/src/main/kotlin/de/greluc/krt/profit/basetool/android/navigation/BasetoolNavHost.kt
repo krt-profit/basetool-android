@@ -168,7 +168,7 @@ fun BasetoolNavHost(
     materialDetail: (String) -> MaterialDetailViewModel,
     materialMatrix: () -> MaterialMatrixViewModel,
     materialProfit: () -> ProfitViewModel,
-    refineryCreate: () -> RefineryCreateViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
@@ -640,7 +640,12 @@ private fun listDetailDestination(
                     selected?.let { id ->
                         {
                             val detailModel = remember(id) { refineryOrder(id) }
-                            RefineryOrderDetailRoute(viewModel = detailModel)
+                            RefineryOrderDetailRoute(
+                                viewModel = detailModel,
+                                onEdit = { navController.navigate(refineryEditRoute(id)) },
+                                // The pane's subject is gone; the list beside it stays.
+                                onDeleted = { selected = null },
+                            )
                         }
                     },
             ) {
@@ -693,6 +698,7 @@ private data class MaterialBindings(
 private fun SimplePushedDestination(
     destination: KrtDestination,
     backStackEntry: NavBackStackEntry,
+    navController: NavHostController,
     refineryOrder: (String) -> RefineryDetailViewModel,
     material: MaterialBindings,
     orderCollection: (String) -> OrderCollectionViewModel,
@@ -720,7 +726,11 @@ private fun SimplePushedDestination(
 
         else -> {
             val orderId = backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).orEmpty()
-            RefineryOrderDetailRoute(viewModel = remember(orderId) { refineryOrder(orderId) })
+            RefineryOrderDetailRoute(
+                viewModel = remember(orderId) { refineryOrder(orderId) },
+                onEdit = { navController.navigate(refineryEditRoute(orderId)) },
+                onDeleted = { navController.popBackStack() },
+            )
         }
     }
 }
@@ -762,7 +772,7 @@ private fun PushedDestination(
     orderDetail: (String) -> OrderDetailViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
     material: MaterialBindings,
-    refineryCreate: () -> RefineryCreateViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     orderCollection: (String) -> OrderCollectionViewModel,
@@ -802,6 +812,7 @@ private fun PushedDestination(
         }
 
         KrtDestination.RefineryCreate,
+        KrtDestination.RefineryEdit,
         KrtDestination.OrderCreate,
         KrtDestination.OrderEdit,
         KrtDestination.OperationCreate,
@@ -838,6 +849,7 @@ private fun PushedDestination(
             SimplePushedDestination(
                 destination = destination,
                 backStackEntry = backStackEntry,
+                navController = navController,
                 refineryOrder = refineryOrder,
                 material = material,
                 orderCollection = orderCollection,
@@ -983,7 +995,7 @@ private fun CreateFormDestination(
     destination: KrtDestination,
     backStackEntry: NavBackStackEntry,
     navController: NavHostController,
-    refineryCreate: () -> RefineryCreateViewModel,
+    refineryCreate: (String?) -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
     orderEdit: (String) -> OrderCreateViewModel,
     operationForm: (String?) -> OperationFormViewModel,
@@ -1013,7 +1025,16 @@ private fun CreateFormDestination(
         }
 
         else -> {
-            RefineryCreateDestination(navController = navController, build = refineryCreate)
+            // The edit is the same form pre-filled, so it lands in the same destination; only the
+            // id decides which of the two writes the CTA performs.
+            val edited =
+                backStackEntry.arguments?.getString(REFINERY_ORDER_ID_ARG).takeIf {
+                    destination == KrtDestination.RefineryEdit
+                }
+            RefineryCreateDestination(
+                navController = navController,
+                build = { refineryCreate(edited) },
+            )
         }
     }
 }

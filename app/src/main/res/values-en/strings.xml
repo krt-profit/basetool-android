@@ -1572,4 +1572,18 @@
     <string name="operation_status_planned">Planned</string>
     <string name="operation_status_active">Running</string>
     <string name="operation_status_completed">Completed</string>
+    <!-- Editing and deleting a refinery order (design ch. 11, artboards 6 and 7) -->
+    <string name="refinery_edit_title">Edit order</string>
+    <string name="refinery_edit_submit">Save</string>
+    <string name="refinery_edit_locked_stored">Stored — the core and the goods are fixed. Money and the linked Einsatz stay editable.</string>
+    <string name="refinery_delete_action">Delete order</string>
+    <string name="refinery_delete_title">Delete refinery order?</string>
+    <string name="refinery_delete_confirm">Delete</string>
+    <string name="refinery_delete_note">Not recoverable. An order that has been stored cannot be deleted — correct the Lager rows there instead.</string>
+    <string name="refinery_delete_locked_stored">Already stored — the yield sits in the Lager and is not taken back here.</string>
+    <string name="refinery_deleted">Order deleted.</string>
+    <plurals name="refinery_delete_body">
+        <item quantity="one">The order at %1$s and its %2$d goods line will be deleted. A yield that was never stored is lost with it.</item>
+        <item quantity="other">The order at %1$s and its %2$d goods lines will be deleted. A yield that was never stored is lost with it.</item>
+    </plurals>
 </resources>
