@@ -552,21 +552,13 @@ class PersonalInventoryViewModel(
         mutableState.value =
             mutableState.value.copy(confirmingBulkDelete = false, deleting = true, bulkResult = null)
         viewModelScope.launch {
-            var deleted = 0
-            val refused = mutableSetOf<String>()
-            var failure: ApiError? = null
-            ids.forEach { id ->
-                when (val result = repository.delete(id)) {
-                    is ApiResult.Success -> {
-                        deleted++
-                    }
-
-                    is ApiResult.Failure -> {
-                        refused += id
-                        failure = failure ?: result.error
-                    }
-                }
-            }
+            // Collected rather than counted in three `var`s: a tally mutated inside a lambda is
+            // invisible to the static analysis that reads this (CodeQL called `deleted > 0`
+            // always-false), and the outcome list says the same thing in a shape both a reader and
+            // an analyser can follow.
+            val outcomes = ids.map { id -> id to repository.delete(id) }
+            val refused = outcomes.filter { it.second is ApiResult.Failure }.map { it.first }.toSet()
+            val deleted = outcomes.size - refused.size
             mutableState.value =
                 mutableState.value.copy(
                     deleting = false,
@@ -574,7 +566,10 @@ class PersonalInventoryViewModel(
                     bulkResult = PersonalBulkResult(deleted = deleted, skipped = refused.size),
                     // The refusal itself is reported once, as every other write failure is; the
                     // counts stay on the bar, where the member is looking.
-                    lastFailure = failure,
+                    lastFailure =
+                        outcomes.firstNotNullOfOrNull { (_, result) ->
+                            (result as? ApiResult.Failure)?.error
+                        },
                 )
             if (deleted > 0) {
                 reload(keepRows = true)
