@@ -52,6 +52,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.ui.DENIAL_TOAST_MS
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.delay
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -109,6 +110,8 @@ fun AllocationSheet(
         onDismiss = callbacks.onDismiss,
         title = stringResource(R.string.allocation_title),
         modifier = Modifier.testTag(ALLOCATION_SHEET_TAG),
+        // The Lager's other booking surface, and the same reason (design ch. 18 §3, E9).
+        centred = isWideWindow(),
     ) {
         Column(
             modifier =

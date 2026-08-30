@@ -59,6 +59,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the booking sheet. */
@@ -92,6 +93,9 @@ fun BookingSheet(
         onDismiss = callbacks.onDismiss,
         modifier = Modifier.testTag(BOOKING_SHEET_TAG),
         title = stringResource(state.actionRes()),
+        // Design ch. 18 §3 (E9): the Lager's own sheet is what a tablet has room beside, so there
+        // it is a 560 dp centred dialog rather than a band across the bottom of a 1280 dp screen.
+        centred = isWideWindow(),
     ) {
         Column(
             modifier =

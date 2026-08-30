@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -271,6 +272,11 @@ private const val TOAST_FILL_ALPHA = 0.95f
  * @param onDismiss invoked on swipe-down, scrim tap or back.
  * @param modifier layout modifier applied to the sheet body.
  * @param title optional uppercase heading rendered under the handle.
+ * @param centred whether to draw a **centred 560 dp dialog** instead of a bottom sheet. The caller
+ *   decides, because the window class lives in the app module and because it is a per-surface
+ *   choice: design ch. 18 §3 (E9) asks for it at the Lager's booking sheet, which is the one
+ *   surface a tablet has room beside. A picker or a switcher stays a sheet at every width, because
+ *   it belongs to the control it was opened from.
  * @param content the sheet content, typically a column of [KrtSheetOption]s.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -279,8 +285,13 @@ fun KrtBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    centred: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    if (centred) {
+        KrtCentredSheet(onDismiss = onDismiss, modifier = modifier, title = title, content = content)
+        return
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         // The sheet is bottom-anchored and draws to the very edge of the screen, which puts its
@@ -335,6 +346,66 @@ fun KrtBottomSheet(
         }
     }
 }
+
+/**
+ * The same sheet as a centred dialog, for a window with room beside its content.
+ *
+ * Not a [KrtModal]: a modal asks a question and carries the two buttons that answer it, while this
+ * holds a **form** whose own action is inside it. What changes with the width is where the surface
+ * sits, not what it is — so it keeps the accent top edge and drops only the drag handle, which
+ * would promise a gesture a dialog does not have.
+ *
+ * @param onDismiss invoked on scrim tap or back.
+ * @param modifier layout modifier applied to the dialog body.
+ * @param title optional uppercase heading.
+ * @param content the same content the sheet would hold.
+ */
+@Composable
+private fun KrtCentredSheet(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(KrtPalette.Black.copy(alpha = SCRIM_ALPHA)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier =
+                    modifier
+                        .width(CENTRED_SHEET_WIDTH)
+                        .krtBloom(KrtTheme.colors.glowPrimaryLg, MODAL_BLOOM)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(KrtSpacing.hairline, KrtPalette.Gray3),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(MODAL_TOP_EDGE)
+                            .background(MaterialTheme.colorScheme.primary),
+                )
+                if (title != null) {
+                    Text(
+                        text = title.krtUppercase(),
+                        modifier = Modifier.padding(horizontal = KrtSpacing.lg, vertical = KrtSpacing.sm),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = KrtPalette.White,
+                    )
+                }
+                content()
+            }
+        }
+    }
+}
+
+/** What a centred sheet is worth on a tablet — design ch. 18 §3 (E9). */
+private val CENTRED_SHEET_WIDTH = 560.dp
 
 /** Width of the sheet drag handle. */
 private val DRAG_HANDLE_WIDTH = 32.dp
