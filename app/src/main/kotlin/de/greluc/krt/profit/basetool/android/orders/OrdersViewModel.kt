@@ -334,6 +334,14 @@ data class OrderDetailState(
     /** The Zusagen — their own read, because they are not part of the order aggregate. */
     val claims: ClaimsState = ClaimsState(),
     /**
+     * The units the caller belongs to.
+     *
+     * Read for one question: whether they are on the **requesting** side of this order, which is
+     * what `canEditJobOrderAsRequester` turns on and the only way to know which of the two edit
+     * forms to open.
+     */
+    val myUnitIds: Set<String> = emptySet(),
+    /**
      * Whether this order's responsible unit is a Spezialkommando.
      *
      * Resolved by id against the active org units, because `SquadronReferenceDto` carries no kind.
@@ -369,6 +377,43 @@ data class OrderDetailState(
      */
     val writable: Boolean
         get() = online && !saving && me != null
+
+    /**
+     * Which edit form this caller may open, or `null` when they may open none.
+     *
+     * The two gates are the server's own. A Logistician rewrites the whole order
+     * (`canEditJobOrder`). A member of the **requesting** unit gets the narrower form
+     * (`canEditJobOrderAsRequester`) — and only while **nothing at all** has been delivered: the
+     * freeze is on the whole order, not per line, so one handover anywhere closes that path.
+     *
+     * Nothing else is inferred: the app is told which form it opened rather than the form working
+     * out what it is allowed to write.
+     */
+    val editMode: OrderFormMode?
+        get() =
+            when {
+                me?.logistician == true -> {
+                    OrderFormMode.EDIT
+                }
+
+                order?.requestingOrgUnitId in myUnitIds && order?.krtUndelivered() == true -> {
+                    OrderFormMode.EDIT_AS_REQUESTER
+                }
+
+                else -> {
+                    null
+                }
+            }
+
+    /**
+     * Whether editing is offered at all on this order.
+     *
+     * An **item** order is not: `PUT /orders/{id}/items` takes a different payload and needs the
+     * blueprint-variant picker and the sub-assembly tree of design artboard 12, which is its own
+     * screen and still web-only. The control is drawn with that reason rather than hidden.
+     */
+    val editableKind: Boolean
+        get() = order?.items.isNullOrEmpty()
 
     /**
      * The tabs this order actually has.
@@ -435,6 +480,17 @@ data class OrderDetailSources(
     val identity: IdentitySource,
     val liveSync: LiveSyncSource? = null,
 )
+
+/**
+ * Whether nothing at all has been handed over on this order.
+ *
+ * The requester's edit is frozen by the **whole order**, not per line: one handover anywhere —
+ * material or item — closes the path, and the server answers 400 for the attempt.
+ *
+ * @receiver the order.
+ * @return whether the requester may still edit it.
+ */
+private fun JobOrder.krtUndelivered(): Boolean = handovers.isEmpty() && itemHandovers.isEmpty()
 
 /**
  * Drives one order.
@@ -560,8 +616,27 @@ class OrderDetailViewModel(
     /** Loads the order. */
     fun load() {
         readIdentity()
+        readMyUnits()
         reload(keepContent = false)
         claims.load(orderId)
+    }
+
+    /**
+     * Reads which units the caller belongs to, once.
+     *
+     * Only the ids are kept: the question is membership, and a name would answer it less exactly
+     * while carrying more than the screen needs.
+     */
+    private fun readMyUnits() {
+        if (mutableState.value.myUnitIds.isNotEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            val result = orgUnits.memberships()
+            if (result is ApiResult.Success) {
+                mutableState.value = mutableState.value.copy(myUnitIds = result.value.map { it.id }.toSet())
+            }
+        }
     }
 
     /**

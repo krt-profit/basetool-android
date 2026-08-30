@@ -162,6 +162,14 @@ enum class KrtDestination(
         DesignR.drawable.ic_krt_refinery,
     ),
 
+    /**
+     * The form that rewrites one Auftrag, pushed from its detail's overflow.
+     *
+     * The same screen as [OrderCreate], pre-filled — design ch. 10 artboard 10 is explicit that
+     * there is no second layout — so it carries the order's id and nothing else.
+     */
+    OrderEdit("order-edit/{orderId}", R.string.order_edit_title, DesignR.drawable.ic_krt_edit),
+
     /** The form for a new material order, pushed from the Aufträge queue. */
     OrderCreate(
         "order-create",
@@ -268,6 +276,7 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         // Without this the bar would light up „Übersicht" while a member reads a material they
         // opened from „Handel".
         KrtDestination.MaterialDetail to KrtDestination.Materials,
+        KrtDestination.OrderEdit to KrtDestination.Orders,
         KrtDestination.MaterialMatrix to KrtDestination.Materials,
         KrtDestination.MaterialProfit to KrtDestination.Materials,
         // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
@@ -304,6 +313,14 @@ fun materialDetailRoute(materialId: String): String = "material/" + materialId
 
 /** The name of the id argument in [KrtDestination.MaterialDetail]'s route. */
 const val MATERIAL_ID_ARG: String = "materialId"
+
+/**
+ * The route that opens the edit form for one Auftrag.
+ *
+ * @param orderId the Auftrag to rewrite.
+ * @return the concrete route.
+ */
+fun orderEditRoute(orderId: String): String = "order-edit/" + orderId
 
 /**
  * The route that opens one Operation.

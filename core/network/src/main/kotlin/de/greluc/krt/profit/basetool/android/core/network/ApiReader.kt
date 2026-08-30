@@ -261,6 +261,31 @@ class ApiReader(
         )
 
     /**
+     * Replaces a row and ignores what comes back.
+     *
+     * The [put] sibling parses the answer, which is right when the caller needs the new version.
+     * It is wrong when the caller re-reads the row anyway: a field the app never touches drifting
+     * on the server would then fail a write that in fact succeeded.
+     *
+     * @param B the request type
+     * @param path the API path, beginning with a slash
+     * @param body the payload
+     * @param bodySerializer the serializer for [B]
+     * @return success, or the classified failure
+     */
+    suspend fun <B> putAccepted(
+        path: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+    ): ApiResult<Unit> =
+        withoutBody(
+            path,
+            Request.Builder()
+                .url("$baseUrl$path".toHttpUrl())
+                .put(json.encodeToString(bodySerializer, body).toRequestBody(JSON_MEDIA_TYPE)),
+        )
+
+    /**
      * Deletes a row.
      *
      * Separate from the three above because the answer is `204 No Content`: there is no body to

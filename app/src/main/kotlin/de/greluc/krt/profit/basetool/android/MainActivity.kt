@@ -82,6 +82,7 @@ import de.greluc.krt.profit.basetool.android.notifications.RequestNotificationPe
 import de.greluc.krt.profit.basetool.android.orders.OrderCreateViewModel
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailSources
 import de.greluc.krt.profit.basetool.android.orders.OrderDetailViewModel
+import de.greluc.krt.profit.basetool.android.orders.OrderFormMode
 import de.greluc.krt.profit.basetool.android.orders.OrdersViewModel
 import de.greluc.krt.profit.basetool.android.orgunit.OrgUnitViewModel
 import de.greluc.krt.profit.basetool.android.personalinventory.PersonalBlueprintsViewModel
@@ -426,6 +427,15 @@ class MainActivity : AppCompatActivity() {
                                     },
                                     orderCreate = {
                                         OrderCreateViewModel(container.orders, container.orgUnits)
+                                    },
+                                    orderEdit = { editedId ->
+                                        OrderCreateViewModel(
+                                            source = container.orders,
+                                            orgUnits = container.orgUnits,
+                                            orders = container.orders,
+                                            orderId = editedId,
+                                            mode = OrderFormMode.EDIT,
+                                        )
                                     },
                                     refineryOrder = {
                                         RefineryDetailViewModel(

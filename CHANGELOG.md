@@ -15,6 +15,11 @@
   „Preise und Terminals" mit dem besten Käufer und Verkäufer und der vollständigen Terminal-Tabelle.
   Fehlt ein Preis, steht ein Gedankenstrich statt einer Null.
 
+- **Aufträge lassen sich jetzt in der App bearbeiten.** Logistiker ändern das ganze Formular,
+  Antragsteller Mengen und Kommentar — die übrigen Felder stehen dort gesperrt mit dem Grund statt
+  zu fehlen. Eine Position kann nicht unter die bereits übergebene Menge fallen; das Formular sagt,
+  welche Zeile es ist. Item-Positionen werden weiterhin im Web bearbeitet.
+
 - **Zusagen: neuer Tab im Auftrag.** Bei Aufträgen eines Spezialkommandos sieht man je Material,
   welche Staffel wie viel zugesagt hat und was noch offen ist, und kann für die eigene Staffel
   zusagen, die Zusage ändern oder sie zurückziehen. Eine Zusage ist eine Absicht, keine Buchung —

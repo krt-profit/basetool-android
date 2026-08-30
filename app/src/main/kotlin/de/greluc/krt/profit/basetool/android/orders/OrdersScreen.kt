@@ -36,6 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -72,10 +75,12 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadMore
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadgeKind
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
@@ -1019,6 +1024,8 @@ data class OrderDetailActions(
     val onRecordProduction: (JobOrderItem) -> Unit,
     /** Opens „Übergabe erfassen" for one item line — the item order's own handover. */
     val onRecordItemHandover: (JobOrderItem) -> Unit,
+    /** Opens „Auftrag bearbeiten" (design ch. 10 artboards 10 and 11). */
+    val onEditOrder: () -> Unit,
     /** Applies the marked status, asking first when the target cannot be taken back. */
     val onApplyStatus: () -> Unit,
     /** Backs out of the terminal confirmation, keeping the choice on screen. */
@@ -1026,6 +1033,69 @@ data class OrderDetailActions(
     /** Switches to another page of the order (design ch. 10 artboard 2). */
     val onTabSelected: (OrderTab) -> Unit,
 )
+
+/**
+ * The order's own „⋮" — today it holds one entry, „Auftrag bearbeiten".
+ *
+ * **Drawn even when it cannot be used**, in both of its two ways. A caller with neither edit gate
+ * gets the entry with the Logistician reason; an **item** order gets it with a different one, since
+ * that form is a capability this build does not have rather than a permission the caller lacks
+ * (`PUT /orders/{id}/items` needs the blueprint-variant picker and the sub-assembly tree of
+ * artboard 12). Hiding either would turn a rule into a mystery.
+ *
+ * @param state what the order is and who is reading it.
+ * @param actions what the entry reports.
+ * @param denials where a refused tap is announced.
+ */
+@Composable
+private fun OrderOverflow(
+    state: OrderDetailState,
+    actions: OrderDetailActions,
+    denials: DenialState,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val label = stringResource(R.string.order_detail_actions)
+    val edit = stringResource(R.string.order_edit_open)
+    val itemsOnWeb = stringResource(R.string.order_edit_item_only_web)
+    val gate =
+        Gate(
+            allowed = state.editMode != null && state.editableKind,
+            reason =
+                if (state.editableKind) {
+                    stringResource(R.string.gate_role_logistician)
+                } else {
+                    itemsOnWeb
+                },
+            detail =
+                if (state.editableKind) {
+                    stringResource(R.string.gate_role_logistician_detail)
+                } else {
+                    stringResource(R.string.order_edit_item_only_web_detail)
+                },
+        )
+    val (_, click) = rememberGated(gate, actions.onEditOrder, denials)
+    ProvideScreenTopBar(
+        actions = {
+            KrtOverflowMenu(
+                contentDescription = label,
+                expanded = open,
+                onExpandedChange = { open = it },
+                items =
+                    listOf(
+                        KrtMenuItem(
+                            label = edit,
+                            iconRes = DesignR.drawable.ic_krt_edit,
+                            reason = gate.reason.takeIf { !gate.allowed },
+                            locked = !gate.allowed,
+                        ) {
+                            open = false
+                            click()
+                        },
+                    ),
+            )
+        },
+    )
+}
 
 /**
  * The order's head and its three sections.
@@ -1115,6 +1185,7 @@ private fun OrderDetailBody(
                 }
             }
         }
+        item(key = "edit-menu") { OrderOverflow(state = state, actions = actions, denials = denials) }
         item(key = "facts") { OrderFactsBar(order = order) }
         item(key = "redaction") { RedactionNotice(order = order) }
         item(key = "tabs") {
@@ -1395,11 +1466,13 @@ fun OrdersRoute(
  *
  * @param viewModel drives the screen.
  * @param modifier layout modifier.
+ * @param onEditOrder open the edit form for this order.
  */
 @Composable
 fun OrderDetailRoute(
     viewModel: OrderDetailViewModel,
     modifier: Modifier = Modifier,
+    onEditOrder: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     OrderDetailScreen(
@@ -1477,6 +1550,7 @@ fun OrderDetailRoute(
                     )
                 },
                 onRecordItemHandover = viewModel.itemHandover::open,
+                onEditOrder = { onEditOrder(state.orderId) },
                 onRecordProduction = { line ->
                     viewModel.production.open(
                         orderId = state.orderId,

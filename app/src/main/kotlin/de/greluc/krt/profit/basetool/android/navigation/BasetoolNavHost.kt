@@ -166,6 +166,7 @@ fun BasetoolNavHost(
     materialProfit: () -> ProfitViewModel,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
     personalInventory: PersonalInventoryViewModel,
     personalBlueprints: PersonalBlueprintsViewModel,
     booking: BookingViewModel,
@@ -251,6 +252,7 @@ fun BasetoolNavHost(
                                 ),
                             refineryCreate = refineryCreate,
                             orderCreate = orderCreate,
+                            orderEdit = orderEdit,
                             fleetImport = fleetImport,
                             onOpenDestination = onOpenDestination,
                             onLogout = onLogout,
@@ -599,7 +601,10 @@ private fun listDetailDestination(
                         {
                             val detailModel = remember(id) { orderDetail(id) }
                             LaunchedEffect(id) { detailModel.load() }
-                            OrderDetailRoute(viewModel = detailModel)
+                            OrderDetailRoute(
+                                viewModel = detailModel,
+                                onEditOrder = { navController.navigate(orderEditRoute(it)) },
+                            )
                         }
                     },
             ) {
@@ -739,6 +744,7 @@ private fun PushedDestination(
     material: MaterialBindings,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
     fleetImport: FleetImportViewModel,
     onOpenDestination: (KrtDestination) -> Unit,
     onLogout: () -> Unit,
@@ -772,12 +778,14 @@ private fun PushedDestination(
             )
         }
 
-        KrtDestination.RefineryCreate, KrtDestination.OrderCreate -> {
+        KrtDestination.RefineryCreate, KrtDestination.OrderCreate, KrtDestination.OrderEdit -> {
             CreateFormDestination(
                 destination = destination,
+                backStackEntry = backStackEntry,
                 navController = navController,
                 refineryCreate = refineryCreate,
                 orderCreate = orderCreate,
+                orderEdit = orderEdit,
             )
         }
 
@@ -785,7 +793,10 @@ private fun PushedDestination(
             val orderId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
             val viewModel = remember(orderId) { orderDetail(orderId) }
             LaunchedEffect(orderId) { viewModel.load() }
-            OrderDetailRoute(viewModel = viewModel)
+            OrderDetailRoute(
+                viewModel = viewModel,
+                onEditOrder = { navController.navigate(orderEditRoute(it)) },
+            )
         }
 
         KrtDestination.RefineryOrder,
@@ -934,14 +945,27 @@ data class SettingsBindings(
 @Composable
 private fun CreateFormDestination(
     destination: KrtDestination,
+    backStackEntry: NavBackStackEntry,
     navController: NavHostController,
     refineryCreate: () -> RefineryCreateViewModel,
     orderCreate: () -> OrderCreateViewModel,
+    orderEdit: (String) -> OrderCreateViewModel,
 ) {
-    if (destination == KrtDestination.OrderCreate) {
-        OrderCreateDestination(navController = navController, build = orderCreate)
-    } else {
-        RefineryCreateDestination(navController = navController, build = refineryCreate)
+    when (destination) {
+        KrtDestination.OrderCreate -> {
+            OrderCreateDestination(navController = navController, build = orderCreate)
+        }
+
+        KrtDestination.OrderEdit -> {
+            // The same screen as the create, so it lands in the same destination — design ch. 10
+            // artboard 10 is explicit that there is no second layout.
+            val editedId = backStackEntry.arguments?.getString(ORDER_ID_ARG).orEmpty()
+            OrderCreateDestination(navController = navController, build = { orderEdit(editedId) })
+        }
+
+        else -> {
+            RefineryCreateDestination(navController = navController, build = refineryCreate)
+        }
     }
 }
 
@@ -965,6 +989,8 @@ private fun OrderCreateDestination(
     LaunchedEffect(state.created) {
         state.created?.let {
             navController.popBackStack()
+            // An edit reports the id it rewrote, so this lands on the order either way — for a
+            // create the one that now exists, for an edit the one the member came from.
             navController.navigate(orderDetailRoute(it))
         }
     }

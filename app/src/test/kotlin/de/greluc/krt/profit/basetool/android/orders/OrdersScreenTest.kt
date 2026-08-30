@@ -77,8 +77,10 @@ class OrdersScreenTest {
         priority = 1,
         type = "MATERIAL",
         requestingOrgUnit = "Staffel 1",
+        requestingOrgUnitId = null,
         responsibleOrgUnit = "SK Vanguard",
         responsibleOrgUnitId = null,
+        handle = "Rhea",
         comment = "Qualität ist zweitrangig.",
         materials = materials,
         items = items,
@@ -315,6 +317,7 @@ class OrdersScreenTest {
         onRecordHandover = {},
         onRecordProduction = { produced.add(it.id.orEmpty()) },
         onRecordItemHandover = { handedOver.add(it.id.orEmpty()) },
+        onEditOrder = {},
     )
 
     /**

@@ -1551,4 +1551,15 @@
     <string name="order_claims_withdraw">Zurückziehen</string>
     <string name="order_claims_overclaim">Mehr als noch offen ist lässt der Server nicht zu. Die Summe aller Staffeln darf den Bedarf nicht übersteigen.</string>
     <string name="order_claims_not_allowed">Dafür brauchst du die Rolle Logistiker.</string>
+    <!-- Auftrag bearbeiten (design ch. 10, artboards 10 + 11) -->
+    <string name="order_edit_title">Auftrag bearbeiten</string>
+    <string name="order_edit_submit">Speichern</string>
+    <string name="order_edit_requester_note">Du hast diesen Auftrag gestellt: Mengen und Kommentar kannst du ändern, die Bearbeitung nicht.</string>
+    <string name="order_edit_head_locked">Bearbeitende Einheit, Auftraggeber und Handle ändert die Bearbeitung — dafür brauchst du die Rolle Logistiker.</string>
+    <string name="order_edit_delivered_floor">Bereits übergeben: %1$s. Weniger lässt der Server nicht zu.</string>
+    <string name="order_edit_below_delivered">Weniger als bereits übergeben (%1$s) lässt der Server nicht zu.</string>
+    <string name="order_edit_open">Auftrag bearbeiten</string>
+    <string name="order_edit_item_only_web">Item-Positionen werden weiterhin im Web bearbeitet.</string>
+    <string name="order_detail_actions">Weitere Aktionen</string>
+    <string name="order_edit_item_only_web_detail">Blueprint-Varianten und der Unterbaugruppen-Baum fehlen der App noch.</string>
 </resources>

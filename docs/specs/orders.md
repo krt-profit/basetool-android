@@ -644,3 +644,57 @@ both are the server's arithmetic.
 - [ ] A refusal keeps the sheet and its amount, and names the overclaim rule
 
 **Enforced by:** `OrderClaimsTest`.
+
+## REQ-APP-ORDERS-022 — Auftrag bearbeiten: one form, two endpoints
+
+**Status:** implemented · **Since:** 2026-08-29
+
+The **create form, pre-filled** — design ch. 10 artboard 10 is explicit that there is no second
+layout, and the server agrees: `PUT /orders/{id}` takes exactly the same payload as the create and
+**replaces** the details and the whole material list rather than patching either.
+
+Two writes behind it, and the app is **told** which it opened rather than working it out:
+
+| Who | Endpoint | Gate |
+| --- | --- | --- |
+| Logistician | `PUT /orders/{id}` | `LOGISTICIAN` + `canEditJobOrder` |
+| The requester | `PUT /orders/{id}/requested` | `isAuthenticated` + `canEditJobOrderAsRequester` |
+
+**The requester's form is narrower, and the locked fields are drawn rather than removed.** The two
+units and the handle belong to the processing side; the server takes them from the stored order
+whatever the payload says, so an editable control there would silently do nothing — worse than one
+that says why. Artboard 11's own sentence sits at the top of the form, and the locked block carries
+the reason.
+
+> [!important] The requester's freeze is on the **whole order**, not per line
+> One handover anywhere — material or item — closes that path for everything
+> (`canEditJobOrderAsRequester`), and the attempt is a 400. The entry is therefore offered only
+> while nothing at all has been delivered.
+
+> [!danger] A line may not fall below what has already been handed over
+> The floor is the sum of the handover **lines**, never `amount − openAmount` — that one counts
+> claims (`MaterialClaimService`) and would put the floor in the wrong place. The server refuses the
+> save outright, so the form names the offending line rather than letting the save fail unlabelled.
+
+**The version travels.** The form reads the order, keeps its `version`, and sends it back; a
+mismatch is the 409 that stops two people overwriting each other.
+
+**Not offered on an item order.** `PUT /orders/{id}/items` takes a different payload and needs the
+blueprint-variant picker and the sub-assembly tree of artboard 12, which is its own screen and still
+web-only. The overflow entry is **drawn** with that reason — a capability this build lacks, not a
+permission the caller lacks — rather than hidden.
+
+Also added on the way: `JobOrder` now carries `handle`, `requestingOrgUnitId` and
+`responsibleOrgUnitId`. The app had been dropping all three, and without them the edit form could
+neither pre-fill its pickers nor pass its own submit gate.
+
+**Acceptance**
+
+- [ ] The form arrives pre-filled, including the handle and both unit pickers
+- [ ] A Logistician writes `/{id}`; a member of the requesting unit writes `/{id}/requested`
+- [ ] The requester's two unit fields and handle are drawn locked with a reason
+- [ ] A line under what was delivered blocks the save and says which line
+- [ ] The order's version is echoed on the save
+- [ ] An item order's entry is drawn with the reason it cannot be used
+
+**Enforced by:** `OrderEditTest`.

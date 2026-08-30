@@ -280,9 +280,13 @@ data class JobOrderAssignee(
  * @property priority the queue priority; lower sorts first
  * @property type `MATERIAL` or `ITEM` as the server names it
  * @property requestingOrgUnit who asked for it
+ * @property requestingOrgUnitId the same unit by id — the edit form's customer picker is filled
+ *   from it, and a name cannot select an option
  * @property responsibleOrgUnit who is working on it
  * @property responsibleOrgUnitId the same unit by id — the Herstellung's book-in preselects it when
  *   the owner belongs to it, which is a comparison a name cannot make
+ * @property handle the in-game contact for this order — required by every write that rewrites it,
+ *   so an edit form that could not read it could never submit
  * @property comment the requester's note, or `null`
  * @property materials the material lines
  * @property items the item lines, for an order of type `ITEM`
@@ -303,8 +307,10 @@ data class JobOrder(
     val priority: Int?,
     val type: String?,
     val requestingOrgUnit: String?,
+    val requestingOrgUnitId: String?,
     val responsibleOrgUnit: String?,
     val responsibleOrgUnitId: String?,
+    val handle: String?,
     val comment: String?,
     val materials: List<JobOrderMaterial>,
     val items: List<JobOrderItem>,
@@ -375,6 +381,8 @@ data class JobOrderDraftLine(
  * @property handle the contact handle in the game.
  * @property comment free text, or `null`.
  * @property lines the materials wanted; never empty.
+ * @property version the order's optimistic lock when this is an **edit**, `null` when it raises a
+ *   new order. Both writes take the same payload; only the edit has something to collide with.
  */
 data class JobOrderDraft(
     val responsibleOrgUnitId: String,
@@ -382,6 +390,7 @@ data class JobOrderDraft(
     val handle: String,
     val comment: String?,
     val lines: List<JobOrderDraftLine>,
+    val version: Long? = null,
 )
 
 /**
@@ -451,6 +460,43 @@ interface JobOrderCreateSource {
      * @return the new order's id, or the classified failure.
      */
     suspend fun create(draft: JobOrderDraft): ApiResult<String>
+
+    /**
+     * Rewrites a material order in full — a Logistician's edit.
+     *
+     * `PUT /orders/{id}` takes **the same payload as the create**: the write replaces the details
+     * and the whole material list rather than patching either, which is why the form is the create
+     * form pre-filled rather than a second layout.
+     *
+     * @param orderId the Auftrag.
+     * @param draft what it should become, carrying the version it was read at.
+     * @return nothing on success, or the classified failure — `409` when somebody saved first.
+     */
+    suspend fun update(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit>
+
+    /**
+     * The requester's own, narrower edit of a material order.
+     *
+     * `PUT /orders/{id}/requested` (REQ-ORDERS-023). Same payload, different gate: **no**
+     * Logistician role is required — a member of the *requesting* unit may change quantities, add
+     * and remove lines, and edit the comment. The server takes the two unit ids and the handle from
+     * the stored order rather than from the payload, so the form draws those fields locked.
+     *
+     * > **Only while nothing has been delivered.** The freeze is on the **whole order**, not per
+     * > line: one handover anywhere closes this path for everything (`canEditJobOrderAsRequester`),
+     * > and the attempt is a 400.
+     *
+     * @param orderId the Auftrag.
+     * @param draft what it should become, carrying the version it was read at.
+     * @return nothing on success, or the classified failure.
+     */
+    suspend fun updateAsRequester(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit>
 
     /**
      * Searches the finished items that may be ordered.
@@ -689,22 +735,23 @@ class JobOrderRepository(
             }
         }
 
+    override suspend fun update(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit> = reader.putAccepted("$QUEUE_PATH/$orderId", draft.krtToWire(), CreateJobOrderDto.serializer())
+
+    override suspend fun updateAsRequester(
+        orderId: String,
+        draft: JobOrderDraft,
+    ): ApiResult<Unit> =
+        reader.putAccepted(
+            "$QUEUE_PATH/$orderId/requested",
+            draft.krtToWire(),
+            CreateJobOrderDto.serializer(),
+        )
+
     override suspend fun create(draft: JobOrderDraft): ApiResult<String> {
-        val dto =
-            CreateJobOrderDto(
-                responsibleOrgUnitId = draft.responsibleOrgUnitId,
-                requestingOrgUnitId = draft.requestingOrgUnitId,
-                handle = draft.handle,
-                comment = draft.comment?.takeIf { it.isNotBlank() },
-                materials =
-                    draft.lines.map {
-                        CreateJobOrderMaterialDto(
-                            materialId = it.materialId,
-                            amount = it.amount,
-                            minQuality = it.minQuality,
-                        )
-                    },
-            )
+        val dto = draft.krtToWire()
         return when (
             val result =
                 reader.post(QUEUE_PATH, dto, CreateJobOrderDto.serializer(), JobOrderDto.serializer())
@@ -1073,8 +1120,10 @@ private fun JobOrderDto.toModel(): JobOrder? {
         priority = priority,
         type = type?.value,
         requestingOrgUnit = requestingOrgUnit?.name,
+        requestingOrgUnitId = requestingOrgUnit?.id,
         responsibleOrgUnit = responsibleOrgUnit?.name,
         responsibleOrgUnitId = responsibleOrgUnit?.id,
+        handle = handle?.trim()?.takeIf { it.isNotEmpty() },
         comment = comment?.trim()?.takeIf { it.isNotEmpty() },
         materials = materials.orEmpty().map { it.toModel() },
         items = items.orEmpty().map { it.toModel() },
@@ -1138,6 +1187,33 @@ private fun JobOrderItemDto.toModel(): JobOrderItem =
                 // material, and the second could never be reconciled.
                 .groupBy { it.materialId }
                 .map { (_, rows) -> rows.first().copy(requiredTotal = rows.sumOf { it.requiredTotal }) },
+        version = version,
+    )
+
+/**
+ * The order as the create and both edit endpoints all take it.
+ *
+ * One shape for three writes because the server takes one: the update **replaces** the details and
+ * the whole material list rather than patching them, which is why the edit form is the create form
+ * pre-filled.
+ *
+ * @receiver what the form holds.
+ * @return the payload.
+ */
+private fun JobOrderDraft.krtToWire(): CreateJobOrderDto =
+    CreateJobOrderDto(
+        responsibleOrgUnitId = responsibleOrgUnitId,
+        requestingOrgUnitId = requestingOrgUnitId,
+        handle = handle,
+        comment = comment?.takeIf { it.isNotBlank() },
+        materials =
+            lines.map {
+                CreateJobOrderMaterialDto(
+                    materialId = it.materialId,
+                    amount = it.amount,
+                    minQuality = it.minQuality,
+                )
+            },
         version = version,
     )
 

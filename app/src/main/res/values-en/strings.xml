@@ -1530,4 +1530,15 @@
     <string name="order_claims_withdraw">Withdraw</string>
     <string name="order_claims_overclaim">The server refuses more than is still open. The sum across Staffeln may not exceed what is needed.</string>
     <string name="order_claims_not_allowed">You need the Logistician role for that.</string>
+    <!-- Editing an Auftrag (design ch. 10, artboards 10 + 11) -->
+    <string name="order_edit_title">Edit the Auftrag</string>
+    <string name="order_edit_submit">Save</string>
+    <string name="order_edit_requester_note">You raised this Auftrag: you can change amounts and the comment, not the processing.</string>
+    <string name="order_edit_head_locked">The processing unit, the customer and the handle belong to the processing side — you need the Logistician role for those.</string>
+    <string name="order_edit_delivered_floor">Already handed over: %1$s. The server refuses less.</string>
+    <string name="order_edit_below_delivered">Less than has already been handed over (%1$s) is refused by the server.</string>
+    <string name="order_edit_open">Edit the Auftrag</string>
+    <string name="order_edit_item_only_web">Item lines are still edited on the web.</string>
+    <string name="order_detail_actions">More actions</string>
+    <string name="order_edit_item_only_web_detail">Blueprint variants and the sub-assembly tree are not in the app yet.</string>
 </resources>
