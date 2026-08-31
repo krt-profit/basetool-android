@@ -225,6 +225,7 @@ fun BasetoolNavHost(
                             missions = missions,
                             missionDetail = missionDetail,
                             operations = operations,
+                            operationDetail = operationDetail,
                             notifications = notifications,
                             dashboard = dashboard,
                             hangar = hangar,
@@ -321,6 +322,7 @@ private fun listDestination(
     missions: MissionsViewModel,
     missionDetail: (String) -> MissionDetailViewModel,
     operations: OperationsViewModel,
+    operationDetail: (String) -> OperationDetailViewModel,
     notifications: NotificationsViewModel,
     dashboard: DashboardViewModel,
     hangar: HangarViewModel,
@@ -364,6 +366,8 @@ private fun listDestination(
             orderDetail = orderDetail,
             refinery = refinery,
             refineryOrder = refineryOrder,
+            operations = operations,
+            operationDetail = operationDetail,
         )
     ) {
         return true
@@ -383,15 +387,6 @@ private fun listDestination(
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
                 onQuickAction = { action -> navController.navigate(action.destination.route) },
                 onOpenInbox = { navController.navigate(KrtDestination.Notifications.route) },
-            )
-        }
-
-        KrtDestination.Operations -> {
-            LaunchedEffect(Unit) { operations.loadOnce() }
-            OperationsRoute(
-                viewModel = operations,
-                onOpenOperation = { navController.navigate(operationDetailRoute(it)) },
-                onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
             )
         }
 
@@ -533,36 +528,16 @@ private fun listDetailDestination(
     orderDetail: (String) -> OrderDetailViewModel,
     refinery: RefineryViewModel,
     refineryOrder: (String) -> RefineryDetailViewModel,
+    operations: OperationsViewModel,
+    operationDetail: (String) -> OperationDetailViewModel,
 ): Boolean {
     when (destination) {
         KrtDestination.Missions -> {
-            LaunchedEffect(Unit) { missions.load() }
-            // Design ch. 06: "Tablet 1280×800 — list-detail". On a wide window a tap selects
-            // beside the list; on a phone it pushes the detail as its own screen, which is what
-            // the back arrow in the top bar already expects.
-            val wide = isWideWindow()
-            var selected by rememberSaveable { mutableStateOf<String?>(null) }
-            KrtListDetail(
-                detail =
-                    selected?.let { id ->
-                        {
-                            val detailModel = remember(id) { missionDetail(id) }
-                            LaunchedEffect(id) { detailModel.load() }
-                            MissionDetailRoute(viewModel = detailModel)
-                        }
-                    },
-            ) {
-                MissionsRoute(
-                    viewModel = missions,
-                    onOpenMission = {
-                        if (wide) selected = it else navController.navigate(missionDetailRoute(it))
-                    },
-                    // The segment navigates rather than toggling: both lists are their own
-                    // destination, and a local toggle would leave the navigation bar highlighting
-                    // the one the member is no longer looking at.
-                    onOpenOperations = { navController.navigate(KrtDestination.Operations.route) },
-                )
-            }
+            MissionsListDetail(
+                navController = navController,
+                missions = missions,
+                missionDetail = missionDetail,
+            )
         }
 
         KrtDestination.Bank -> {
@@ -660,11 +635,106 @@ private fun listDetailDestination(
             }
         }
 
+        KrtDestination.Operations -> {
+            OperationsListDetail(
+                navController = navController,
+                operations = operations,
+                operationDetail = operationDetail,
+            )
+        }
+
         else -> {
             return false
         }
     }
     return true
+}
+
+/**
+ * Einsätze — the list and, beside it on a tablet, the Einsatz a member picked.
+ *
+ * Design ch. 06: „Tablet 1280×800 — list-detail". On a wide window a tap selects beside the list;
+ * on a phone it pushes the detail as its own screen, which is what the back arrow in the top bar
+ * already expects.
+ *
+ * @param navController for the phone's pushed detail and the other half's route.
+ * @param missions the list's view model.
+ * @param missionDetail builds one Einsatz's view model.
+ */
+@Composable
+private fun MissionsListDetail(
+    navController: NavHostController,
+    missions: MissionsViewModel,
+    missionDetail: (String) -> MissionDetailViewModel,
+) {
+    LaunchedEffect(Unit) { missions.load() }
+    val wide = isWideWindow()
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    KrtListDetail(
+        detail =
+            selected?.let { id ->
+                {
+                    val detailModel = remember(id) { missionDetail(id) }
+                    LaunchedEffect(id) { detailModel.load() }
+                    MissionDetailRoute(viewModel = detailModel)
+                }
+            },
+    ) {
+        MissionsRoute(
+            viewModel = missions,
+            onOpenMission = {
+                if (wide) selected = it else navController.navigate(missionDetailRoute(it))
+            },
+            // The segment navigates rather than toggling: the two halves are their own routes, and
+            // a local toggle would leave the rail highlighting the one no longer on screen. Both
+            // now map to EINSÄTZE, which is what makes them one surface (S30).
+            onOpenOperations = { navController.navigate(KrtDestination.Operations.route) },
+        )
+    }
+}
+
+/**
+ * Operationen — the **second half of the Einsätze surface** (round 14 · S30).
+ *
+ * Same entry, same answer: list beside detail on a tablet, a pushed detail on a phone. It used to
+ * be a full-width list reached from „Mehr", which made one segment behave like two screens — one
+ * half with a pane and one without.
+ *
+ * @param navController for the phone's pushed detail and the edit form.
+ * @param operations the list's view model.
+ * @param operationDetail builds one Operation's view model.
+ */
+@Composable
+private fun OperationsListDetail(
+    navController: NavHostController,
+    operations: OperationsViewModel,
+    operationDetail: (String) -> OperationDetailViewModel,
+) {
+    LaunchedEffect(Unit) { operations.loadOnce() }
+    val wide = isWideWindow()
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    KrtListDetail(
+        detail =
+            selected?.let { id ->
+                {
+                    val detailModel = remember(id) { operationDetail(id) }
+                    LaunchedEffect(id) { detailModel.load() }
+                    OperationDetailRoute(
+                        viewModel = detailModel,
+                        onOpenMission = { navController.navigate(missionDetailRoute(it)) },
+                        onEdit = { navController.navigate(operationEditRoute(id)) },
+                    )
+                }
+            },
+    ) {
+        OperationsRoute(
+            viewModel = operations,
+            onOpenOperation = {
+                if (wide) selected = it else navController.navigate(operationDetailRoute(it))
+            },
+            onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
+        )
+    }
 }
 
 /**

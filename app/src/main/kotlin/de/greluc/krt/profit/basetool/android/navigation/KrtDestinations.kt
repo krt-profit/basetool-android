@@ -328,7 +328,9 @@ val TABLET_DESTINATIONS =
  */
 val MORE_DESTINATIONS =
     listOf(
-        KrtDestination.Operations,
+        // Operationen is NOT here: round 14 (S30) settled it as the second half of the Einsätze
+        // surface — same entry, same list-detail — reached through that screen's own segment.
+        // Listing it here as well offered one surface under two names.
         KrtDestination.Hangar,
         KrtDestination.Exchange,
         KrtDestination.Refinery,
@@ -366,9 +368,11 @@ val SUB_DESTINATIONS: Map<KrtDestination, KrtDestination> =
         KrtDestination.OperationEdit to KrtDestination.Operations,
         KrtDestination.MaterialMatrix to KrtDestination.Materials,
         KrtDestination.MaterialProfit to KrtDestination.Materials,
-        // Same reason, one list over: an Operation is opened from "Operationen", which itself sits
-        // behind "Mehr", and the bar has to keep saying so.
+        // Same reason, one list over: an Operation is opened from „Operationen".
         KrtDestination.OperationDetail to KrtDestination.Operations,
+        // And Operationen itself belongs to Einsätze — they are two halves of one surface behind
+        // one segment (round 14 · S30), so the rail keeps EINSÄTZE lit while the other half shows.
+        KrtDestination.Operations to KrtDestination.Missions,
         KrtDestination.BankAccount to KrtDestination.Bank,
         KrtDestination.BankHolder to KrtDestination.Bank,
         KrtDestination.RefineryCreate to KrtDestination.Refinery,
