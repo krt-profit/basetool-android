@@ -50,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
@@ -70,6 +71,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStat
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
@@ -172,79 +174,83 @@ fun RefineryOrdersScreen(
         }
 
         is RefineryPhaseState.Ready -> {
-            PullToRefreshBox(
-                isRefreshing = state.refreshing,
-                onRefresh = onRefresh,
-                modifier = modifier.fillMaxSize(),
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
-                    // Above the list rather than floating over it: a run is recorded after the
-                    // fact, so the action belongs where the member already is — not hovering over
-                    // the row they came to read.
-                    onCreate?.let {
-                        KrtOutlineButton(
-                            text = stringResource(R.string.refinery_create_title),
-                            onClick = it,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = KrtSpacing.s12)
-                                    .testTag(REFINERY_CREATE_CTA_TAG),
-                            iconRes = DesignR.drawable.ic_krt_plus,
-                        )
-                    }
-                    if (state.orders.isEmpty()) {
-                        KrtRefreshableFill {
-                            KrtEmptyState(
-                                iconRes = DesignR.drawable.ic_krt_refinery,
-                                title = stringResource(R.string.refinery_empty_title),
-                                message = stringResource(R.string.refinery_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.s16),
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            state = rememberRootListState(),
-                            modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
-                            contentPadding = PaddingValues(KrtSpacing.s12),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-                        ) {
-                            items(state.orders, key = { it.id }) { order ->
-                                OrderRow(
-                                    order = order,
-                                    now = state.now,
-                                    onClick = { onOpenOrder(order.id) },
+            // The FAB rides over the list, as artboard 11-1 draws it — the same corner every
+            // other list in the app puts its „anlegen" in. It sat above the list as a full-width
+            // outline band, a shape no chapter draws, and cost a row of the list on every screen
+            // for an action most members take once a session.
+            Box(modifier = modifier.fillMaxSize()) {
+                PullToRefreshBox(
+                    isRefreshing = state.refreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
+                        if (state.orders.isEmpty()) {
+                            KrtRefreshableFill {
+                                KrtEmptyState(
+                                    iconRes = DesignR.drawable.ic_krt_refinery,
+                                    title = stringResource(R.string.refinery_empty_title),
+                                    message = stringResource(R.string.refinery_empty_message),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
-                                KrtHairlineRule()
                             }
-                            item(key = "footer") {
-                                if (state.hasMore) {
-                                    // The label counts what is on screen, not a server total: the
-                                    // two live filters are a device-side split of one answer, so a
-                                    // server count would name the unsplit pair. Saying "mehr
-                                    // laden" beside the loaded count is the honest version, and it
-                                    // is what keeps this from reading as a completeness claim.
-                                    KrtLoadMore(
-                                        text =
-                                            pluralStringResource(
-                                                R.plurals.refinery_load_more,
-                                                state.orders.size,
-                                                state.orders.size,
-                                            ),
-                                        onClick = onLoadMore,
-                                        enabled = !state.loadingMore,
-                                        modifier = Modifier.padding(KrtSpacing.s12),
+                        } else {
+                            LazyColumn(
+                                state = rememberRootListState(),
+                                modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
+                                contentPadding = PaddingValues(KrtSpacing.s12),
+                                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                            ) {
+                                items(state.orders, key = { it.id }) { order ->
+                                    OrderRow(
+                                        order = order,
+                                        now = state.now,
+                                        onClick = { onOpenOrder(order.id) },
                                     )
-                                } else {
-                                    KrtEndOfList(
-                                        text = stringResource(R.string.refinery_end_of_list),
-                                        modifier = Modifier.padding(KrtSpacing.s12),
-                                    )
+                                    KrtHairlineRule()
+                                }
+                                item(key = "footer") {
+                                    if (state.hasMore) {
+                                        // The label counts what is on screen, not a server total: the
+                                        // two live filters are a device-side split of one answer, so a
+                                        // server count would name the unsplit pair. Saying "mehr
+                                        // laden" beside the loaded count is the honest version, and it
+                                        // is what keeps this from reading as a completeness claim.
+                                        KrtLoadMore(
+                                            text =
+                                                pluralStringResource(
+                                                    R.plurals.refinery_load_more,
+                                                    state.orders.size,
+                                                    state.orders.size,
+                                                ),
+                                            onClick = onLoadMore,
+                                            enabled = !state.loadingMore,
+                                            modifier = Modifier.padding(KrtSpacing.s12),
+                                        )
+                                    } else {
+                                        KrtEndOfList(
+                                            text = stringResource(R.string.refinery_end_of_list),
+                                            modifier = Modifier.padding(KrtSpacing.s12),
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
+                }
+                onCreate?.let { create ->
+                    KrtFab(
+                        iconRes = DesignR.drawable.ic_krt_plus,
+                        label = stringResource(R.string.refinery_create_title),
+                        onClick = create,
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(KrtSpacing.s16)
+                                .padding(bottom = LocalKrtBottomBarInset.current)
+                                .testTag(REFINERY_CREATE_CTA_TAG),
+                    )
                 }
             }
         }
@@ -406,11 +412,25 @@ private fun CardFooter(
             color = KrtPalette.SuccessText,
             modifier = Modifier.weight(1f),
         )
-        value?.let {
+        value?.let { amount ->
+            // Two texts, not one formatted string: „Wert ≈" is a muted label and the figure beside
+            // it is the data (artboard 11-1). It WAS one string — and that string carries no
+            // placeholder, so `stringResource(id, arg)` dropped the argument and every card in the
+            // list read „Geschätzter Wert" with no number at all.
             Text(
-                text = stringResource(R.string.refinery_value, formatAmount(it)),
+                text = stringResource(R.string.refinery_value),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            Text(
+                text = formatAmount(amount),
                 style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.SuccessText,
+                color =
+                    if (amount.trim().startsWith("-") || amount.trim().startsWith("−")) {
+                        KrtTheme.colors.dangerText
+                    } else {
+                        KrtPalette.SuccessText
+                    },
             )
         }
         KrtIcon(
