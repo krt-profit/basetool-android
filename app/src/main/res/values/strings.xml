@@ -1536,10 +1536,10 @@
     <string name="mission_crew_assign_title">Person zuweisen — %1$s</string>
     <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
     <string name="order_handover_title">Übergabe erfassen</string>
-    <string name="order_handover_subject">%1$s · %2$s von %3$s</string>
-    <string name="order_handover_amount">Menge</string>
+    <string name="order_handover_subject">%1$s · %2$s von %3$s SCU</string>
+    <string name="order_handover_amount">Menge (SCU)</string>
     <string name="order_handover_after">Nach dieser Übergabe</string>
-    <string name="order_handover_after_value">%1$s / %2$s</string>
+    <string name="order_handover_after_value">%1$s / %2$s SCU</string>
     <string name="order_handover_fulfils">Erfüllt</string>
     <string name="order_handover_stock">Aus welchem Bestand</string>
     <string name="order_handover_stock_hint">Die Übergabe bucht die gewählte Lagerzeile aus.</string>

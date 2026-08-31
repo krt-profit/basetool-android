@@ -1515,10 +1515,10 @@
     <string name="mission_crew_assign_title">Assign someone — %1$s</string>
     <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
     <string name="order_handover_title">Record handover</string>
-    <string name="order_handover_subject">%1$s · %2$s of %3$s</string>
-    <string name="order_handover_amount">Amount</string>
+    <string name="order_handover_subject">%1$s · %2$s of %3$s SCU</string>
+    <string name="order_handover_amount">Amount (SCU)</string>
     <string name="order_handover_after">After this handover</string>
-    <string name="order_handover_after_value">%1$s / %2$s</string>
+    <string name="order_handover_after_value">%1$s / %2$s SCU</string>
     <string name="order_handover_fulfils">Fulfilled</string>
     <string name="order_handover_stock">From which stock</string>
     <string name="order_handover_stock_hint">The handover books the chosen stock row out.</string>
