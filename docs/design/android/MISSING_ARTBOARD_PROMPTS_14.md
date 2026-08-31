@@ -354,3 +354,25 @@ the dot would be reading.
 **What is missing:** what the three colours mean and what they are read from — or the dot kept on
 the login screen, where the gate check answers it, and struck in the Einstellungen footer in favour
 of the offline banner chapter 14 already defines.
+
+## S28 · The org pill is tinted by unit kind in chapter 02 and by row role in chapter 10
+
+**Where:** `02 Components.dc.html` §3 draws the four pills side by side — „Bereich Profit" orange,
+„SK VANGUARD" grey, „TITAN" cross-org yellow, „Alle Einheiten" grey — and calls the tone the
+badge's *relationship to the current context*. Under that rule a Spezialkommando is grey wherever
+it appears.
+
+`10 Auftraege.dc.html` artboard 1 draws the queue rows the other way: **FÜR is orange and DURCH is
+grey in every row**, including the row where FÜR is „SK VG" (orange) and the row where DURCH is
+„SK VG" (grey). The same unit takes both tints depending on which side of the row it stands on.
+
+The two rules disagree, and each page reads as authoritative on its own.
+
+**Built as:** chapter 02's rule — the component chapter defines the component, and „which unit is
+this" is a property of the unit rather than of the column it is printed in. The app had drawn a
+Spezialkommando in the same orange as the member's own unit, which matched neither reading; that is
+fixed.
+
+**What is missing:** which of the two the pill follows. If it is the role, chapter 02 §3 needs the
+exception written into it; if it is the kind, chapter 10 artboard 1 needs its second row redrawn.
+

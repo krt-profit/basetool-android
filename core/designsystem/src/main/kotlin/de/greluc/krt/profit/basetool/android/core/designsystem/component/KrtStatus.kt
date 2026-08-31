@@ -99,17 +99,28 @@ fun KrtOrgBadge(
     kind: KrtOrgBadgeKind = KrtOrgBadgeKind.Own,
     onClick: (() -> Unit)? = null,
 ) {
+    // Chapter 02 §3 draws all four side by side and they are NOT the same pill: „Bereich Profit"
+    // is orange through and through, „SK VANGUARD" and „Alle Einheiten" are a grey ring around
+    // white text, and a foreign org is the cross-org yellow. A Spezialkommando was drawn orange —
+    // the same as the member's own unit — so the queue's FÜR and DURCH pills read as one kind of
+    // thing when the chapter distinguishes them at a glance (ch. 10, artboard 1).
+    val border =
+        when (kind) {
+            KrtOrgBadgeKind.Own -> MaterialTheme.colorScheme.primary
+            KrtOrgBadgeKind.SpecialCommand, KrtOrgBadgeKind.Muted -> KrtPalette.Gray2
+            KrtOrgBadgeKind.Foreign -> KrtTheme.colors.crossOrg
+        }
     val color =
         when (kind) {
-            KrtOrgBadgeKind.Own, KrtOrgBadgeKind.SpecialCommand -> MaterialTheme.colorScheme.primary
+            KrtOrgBadgeKind.Own -> MaterialTheme.colorScheme.primary
+            KrtOrgBadgeKind.SpecialCommand, KrtOrgBadgeKind.Muted -> KrtPalette.White
             KrtOrgBadgeKind.Foreign -> KrtTheme.colors.crossOrg
-            KrtOrgBadgeKind.Muted -> KrtPalette.TextMuted
         }
     Box(
         modifier =
             modifier
                 .clip(PillShape)
-                .border(KrtSpacing.hairline, color, PillShape)
+                .border(KrtSpacing.hairline, border, PillShape)
                 .then(
                     if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier,
                 )
