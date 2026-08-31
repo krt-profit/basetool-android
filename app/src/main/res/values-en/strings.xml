@@ -1371,6 +1371,7 @@
     <string name="mission_admin_save_core">Save core</string>
     <string name="mission_admin_save_schedule">Save schedule</string>
     <string name="mission_admin_save_flags">Save visibility</string>
+    <string name="mission_admin_people_counts">%1$d · %2$d · %3$d</string>
     <string name="mission_admin_section_hint">Each section is saved on its own, so a change here cannot collide with a concurrent change elsewhere.</string>
     <string name="mission_admin_start_hint">Before the actual start the server refuses every check-in.</string>
     <string name="gate_role_mission_manager">That needs the Missions-Manager role.</string>

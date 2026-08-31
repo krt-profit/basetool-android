@@ -248,7 +248,10 @@ fun KrtPanelHeader(
             )
         } else {
             KrtIcon(
-                id = if (expanded) R.drawable.ic_krt_chevron_up else R.drawable.ic_krt_chevron_down,
+                // Right when folded, down when open — chapter 02 §10 opens with „Chevron rechts"
+                // and artboard 06-7 draws it that way. Down/up is the other sanctioned rotation,
+                // but it is not the one the panel header uses.
+                id = if (expanded) R.drawable.ic_krt_chevron_down else R.drawable.ic_krt_chevron_right,
                 contentDescription = null,
                 modifier = Modifier.padding(horizontal = KrtSpacing.s16),
                 size = 16.dp,
