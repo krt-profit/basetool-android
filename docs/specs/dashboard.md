@@ -5,13 +5,14 @@
 > **Related:** [`missions.md`](missions.md), [`notifications.md`](notifications.md)
 
 The app's home screen: greeting, announcement, the Einsätze of the next seven days and a preview of
-what is unread. **Read-only.**
+what is unread — the last of those through the bell, not a band of its own. **Read-only.**
 
 ---
 
 ### REQ-APP-DASH-001 — The design's order is a reading order
 
-Greeting → announcement → Einsätze ≤ 7 days → unread preview. The web home page puts the same
+Greeting → announcement → Einsätze ≤ 7 days → quick actions. (The unread preview was removed on
+2026-08-31 — see `REQ-APP-DASH-006`.) The web home page puts the same
 material in a different order; the design reorders it for one-handed phones, and that is the reason
 to keep it rather than a layout preference.
 
@@ -101,20 +102,22 @@ across restarts would imply the server had been told.
 
 ---
 
-### REQ-APP-DASH-006 — The unread preview and the inbox cannot disagree
+### REQ-APP-DASH-006 — ~~The unread preview and the inbox cannot disagree~~ — **withdrawn**
 
-The preview reads the **same state** the inbox does, filtered to unread and cut to three. Not
-`/notifications/recent`: a second endpoint would let the dashboard and the inbox describe one
-notification differently, and the wording is assembled on the device from the same type and
-parameters either way.
+**Withdrawn 2026-08-31 by the repository owner.** The dashboard no longer previews unread
+notifications at all.
 
-**Acceptance**
+The reason it was there was that the two must not disagree, and the preview solved that by reading
+the inbox's own state. The bell in the top bar carries the unread count on **every** screen and
+reads that same state, so the preview was a second place saying what one place already says — on
+the one screen where the bell is also visible.
 
-- [x] A notification is worded identically in both places (`DashboardScreenTest`).
-- [x] "Nichts Ungelesenes." is stated rather than the band being left blank.
-- [x] "Alle ansehen" leads to the inbox.
+What the removal must not break, and does not: the badge is now what asks for the inbox read. It
+used to hang off this preview's route, so removing the preview alone would have left the count at
+zero until somebody opened the inbox. The `loadOnce` moved to `BasetoolApp`, beside the badge that
+needs it.
 
-**Code:** `DashboardScreen`, `BasetoolNavHost`
+**Code:** `BasetoolApp` (the read), `KrtTopBar` (the badge)
 
 ---
 

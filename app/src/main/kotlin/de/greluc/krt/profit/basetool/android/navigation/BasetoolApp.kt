@@ -186,6 +186,12 @@ fun BasetoolApp(
 
     // The badge and the inbox read one state, so they cannot disagree — a member seeing "3 neu"
     // over a list whose top rows are already read has been told something false by the app itself.
+    //
+    // The badge is the reason that state is read at all, so the read is asked for HERE rather than
+    // from whichever screen happens to be first. It used to hang off the dashboard, which showed an
+    // unread preview until 2026-08-31; leaving it there would have left the badge at zero until the
+    // member opened the inbox. `loadOnce` is idempotent.
+    LaunchedEffect(Unit) { notifications.loadOnce() }
     val notificationState by notifications.state.collectAsStateWithLifecycle()
     val unreadCount = notificationState.unread.toInt()
 

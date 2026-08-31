@@ -369,9 +369,6 @@
     <string name="dashboard_quick_book_in">Book in (Lager)</string>
     <string name="dashboard_quick_order">Create Auftrag</string>
     <string name="dashboard_quick_offer">Börse: offer</string>
-    <string name="dashboard_notifications">Unread</string>
-    <string name="dashboard_notifications_all">View all</string>
-    <string name="dashboard_notifications_empty">Nothing unread.</string>
     <!-- Hangar (design chapter 08) -->
     <string name="hangar_title">Hangar</string>
     <string name="hangar_segment_mine">My ships</string>
