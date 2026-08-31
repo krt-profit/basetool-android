@@ -1120,6 +1120,8 @@
     <string name="order_detail_priority_up">Höher</string>
     <string name="order_detail_priority_down">Niedriger</string>
     <string name="order_detail_note">Notiz</string>
+    <string name="order_detail_note_title">Notiz zur Zuweisung</string>
+    <string name="order_detail_note_placeholder">z. B. Bringe 400 SCU Laranite am Freitag mit.</string>
     <string name="order_detail_note_scope">#%1$s · Nur deine eigene Zuweisung</string>
     <string name="order_detail_note_counter">%1$d / %2$d</string>
     <string name="order_detail_note_conflict_title">Konflikt — Notiz zwischenzeitlich geändert</string>

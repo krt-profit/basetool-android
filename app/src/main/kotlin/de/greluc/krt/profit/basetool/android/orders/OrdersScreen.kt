@@ -1354,7 +1354,10 @@ private fun NoteSheet(
     KrtBottomSheet(
         onDismiss = actions.onDismissNote,
         modifier = Modifier.testTag(ORDER_NOTE_SHEET_TAG),
-        title = stringResource(R.string.order_detail_note),
+        // „Notiz zur Zuweisung", as artboard 10-5 heads it — not „Notiz". The order already
+        // carries the requester's Anmerkung, and a sheet titled with the bare word left it open
+        // which of the two was being written.
+        title = stringResource(R.string.order_detail_note_title),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s16),
@@ -1379,6 +1382,11 @@ private fun NoteSheet(
                 value = draft,
                 onValueChange = { typed -> actions.onNoteChanged(typed.take(NOTE_MAX_LENGTH)) },
                 label = stringResource(R.string.order_detail_note),
+                // The example the chapter writes into the empty field: a note is free text and
+                // the field alone says nothing about what belongs in it. Four lines high, as
+                // artboard 10-5 draws it — a single-line box invites a single word.
+                placeholder = stringResource(R.string.order_detail_note_placeholder),
+                minLines = NOTE_LINES,
                 enabled = !state.saving,
             )
             Text(
@@ -1709,6 +1717,9 @@ private fun NoteConflict(
  * discrepancy is recorded in docs/DESIGN_PARITY_AUDIT.md for the owner to settle.
  */
 private const val NOTE_MAX_LENGTH = 500
+
+/** How many lines the note field opens at — artboard 10-5 draws a four-line box. */
+private const val NOTE_LINES = 4
 
 /**
  * Where the character counter turns yellow.

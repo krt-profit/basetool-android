@@ -1099,6 +1099,8 @@
     <string name="order_detail_priority_up">Higher</string>
     <string name="order_detail_priority_down">Lower</string>
     <string name="order_detail_note">Note</string>
+    <string name="order_detail_note_title">Note on your assignment</string>
+    <string name="order_detail_note_placeholder">e. g. Bringing 400 SCU of Laranite on Friday.</string>
     <string name="order_detail_note_scope">#%1$s · Your own assignment only</string>
     <string name="order_detail_note_counter">%1$d / %2$d</string>
     <string name="order_detail_note_conflict_title">Conflict — the note changed in the meantime</string>
