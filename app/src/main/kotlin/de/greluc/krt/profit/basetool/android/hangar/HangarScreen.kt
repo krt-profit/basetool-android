@@ -379,6 +379,21 @@ private fun HangarState.countLabel(): String =
         pluralStringResource(R.plurals.hangar_type_count, total.toInt(), types.size, total)
     }
 
+/** Column index of the manufacturer lettermark in the ship table. */
+private const val MANUFACTURER_COLUMN = 0
+
+/** Column index of the ship type. */
+private const val TYPE_COLUMN = 1
+
+/** Column index of the member's own name for the ship. */
+private const val NAME_COLUMN = 2
+
+/** Column index of the insurance. */
+private const val INSURANCE_COLUMN = 3
+
+/** Column index of the location. */
+private const val LOCATION_COLUMN = 4
+
 /**
  * The tablet's dense ship table — the web app's columns, per design ch. 08.
  *
@@ -402,6 +417,12 @@ private fun ShipTable(
 ) {
     val columns =
         listOf(
+            // The manufacturer's lettermark leads the row, as the chapter's tablet frame draws it
+            // („HRST. · SCHIFFSTYP · VERS. · ORT · FIT. · NAME · AKT."). It was on the phone card
+            // and missing from the table, so the two layouts showed different facts about the
+            // same ship. The head is abbreviated because the artboard abbreviates it — the column
+            // is one lettermark wide, and „Hersteller" broke across two lines above it.
+            KrtTableColumn(stringResource(R.string.hangar_column_manufacturer), weight = 0.5f),
             KrtTableColumn(stringResource(R.string.hangar_column_type), weight = 1.4f),
             KrtTableColumn(stringResource(R.string.hangar_column_name), weight = 1.2f),
             KrtTableColumn(stringResource(R.string.hangar_column_insurance), weight = 0.9f),
@@ -427,18 +448,27 @@ private fun ShipTable(
                 onEdit = { onEdit(ship) },
                 onDelete = { onDelete(ship) },
             )
+        } else if (column == MANUFACTURER_COLUMN) {
+            ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
         } else {
             KrtTableCell(
                 text =
                     when (column) {
-                        0 -> ship.typeName
-                        1 -> ship.name ?: unknown
-                        2 -> ship.insurance ?: unknown
-                        3 -> ship.locationName ?: unknown
+                        TYPE_COLUMN -> ship.typeName
+
+                        NAME_COLUMN -> ship.name ?: unknown
+
+                        // „6" on its own is six of nothing. The card has said „6 Monate" all
+                        // along; the table printed the server's raw value beside a column head
+                        // that only names the subject.
+                        INSURANCE_COLUMN -> ship.insuranceLabel()
+
+                        LOCATION_COLUMN -> ship.locationName ?: unknown
+
                         else -> if (ship.fitted) fittedYes else fittedNo
                     },
                 column = columns[column],
-                emphasis = column == 0,
+                emphasis = column == TYPE_COLUMN,
             )
         }
     }

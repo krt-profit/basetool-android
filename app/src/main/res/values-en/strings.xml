@@ -395,6 +395,7 @@
         <item quantity="one">%1$d of %2$d ship type</item>
         <item quantity="other">%1$d of %2$d ship types</item>
     </plurals>
+    <string name="hangar_column_manufacturer">Mfr.</string>
     <string name="hangar_column_type">Type</string>
     <string name="hangar_column_name">Name</string>
     <string name="hangar_column_insurance">Insurance</string>

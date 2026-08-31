@@ -416,6 +416,7 @@
         <item quantity="one">%1$d von %2$d Schiffstyp</item>
         <item quantity="other">%1$d von %2$d Schiffstypen</item>
     </plurals>
+    <string name="hangar_column_manufacturer">Hrst.</string>
     <string name="hangar_column_type">Typ</string>
     <string name="hangar_column_name">Name</string>
     <string name="hangar_column_insurance">Versicherung</string>
