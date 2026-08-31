@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -257,7 +258,7 @@ private fun ShipCardActions(
     Row(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+        modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
     ) {
         KrtIconButton(
             iconRes = DesignR.drawable.ic_krt_edit,
@@ -472,17 +473,20 @@ private fun ShipCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onEdit.takeIf { online },
     ) {
+        // The actions sit ON the row, not under it. Artboard 08-1 draws the card one row high with
+        // the pencil at its trailing edge; stacked below the chips they made every ship two rows
+        // tall and put the destructive one at the bottom of the card rather than beside its ship.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
             Column(modifier = Modifier.weight(1f)) {
                 ShipCardBody(ship = ship)
             }
+            ShipCardActions(online = online, onEdit = onEdit, onDelete = onDelete)
         }
-        ShipCardActions(online = online, onEdit = onEdit, onDelete = onDelete)
     }
 }
 
@@ -570,9 +574,12 @@ private fun ShipCardBody(ship: Ship) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Row(
+        // FlowRow, not Row: with the two icon buttons beside it the line has about 190 dp, and a
+        // Row squeezed the location out of existence — „Everus Harbor" rendered as „E…" and then as
+        // nothing. Wrapping costs a second line only on the cards that need one.
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
             // Insurance first, then fitted — the artboard's order, and the useful one: the policy
             // is the fact that expires.
