@@ -38,10 +38,10 @@
             <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Filter"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-filter"></use></svg></button>
           </div>
           <div style="flex:none;padding:12px 16px;display:flex;gap:6px;overflow-x:auto">
-            <span class="chip chip--info" style="color:#6C93EF;font-size:10px;flex:none">Offen</span>
-            <span class="chip chip--warning" style="font-size:10px;flex:none">In Bearbeitung</span>
-            <span class="chip chip--muted" style="color:#8A8A8A;font-size:10px;flex:none;border-style:dashed">Abgelehnt</span>
-            <span class="chip chip--muted" style="color:#8A8A8A;font-size:10px;flex:none;border-style:dashed">Abgeschlossen</span>
+            <span class="chip chip--primary" style="font-size:10px;flex:none">Offen</span>
+            <span class="chip" style="font-size:10px;flex:none">In Bearbeitung</span>
+            <span class="chip" style="font-size:10px;flex:none">Abgelehnt</span>
+            <span class="chip" style="font-size:10px;flex:none">Abgeschlossen</span>
             <span class="chip" style="font-size:10px;flex:none">Einheit: Alle</span>
           </div>
           <div style="flex:1;overflow:auto;padding:0 16px 96px;display:flex;flex-direction:column;gap:10px">
@@ -59,8 +59,8 @@
                       <span style="font:300 11px/1 Lato,sans-serif;color:{{ o.ageColor }};font-variant-numeric:tabular-nums">{{ o.age }}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap">
-                      <span style="font:700 9px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.08em;text-transform:uppercase">Für</span><span class="squadron-badge" style="font-size:9.5px">{{ o.req }}</span>
-                      <span style="font:700 9px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.08em;text-transform:uppercase;margin-left:6px">Durch</span><span class="squadron-badge squadron-badge-sk" style="font-size:9.5px">{{ o.resp }}</span>
+                      <span style="font:700 9px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.08em;text-transform:uppercase">Für</span><span class="squadron-badge {{ o.reqCls }}" style="font-size:9.5px">{{ o.req }}</span>
+                      <span style="font:700 9px/1 Lato,sans-serif;color:#8A8A8A;letter-spacing:.08em;text-transform:uppercase;margin-left:6px">Durch</span><span class="squadron-badge {{ o.respCls }}" style="font-size:9.5px">{{ o.resp }}</span>
                     </div>
                   </div>
                   <svg class="krt-icon" style="width:16px;height:16px;color:#8A8A8A;flex:none;margin-top:4px"><use href="#krt-icon-chevron-right"></use></svg>
@@ -97,6 +97,9 @@
       <div class="card" style="padding:12px 16px">
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OrdersQueueScreen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#FFD23F">Runde 14 (S9):</b> Filter-Chips haben EINE Optik — Hairline aus, orange gefüllt an. Der Status-Ton („Offen" blau, „In Bearbeitung" gelb) und der gestrichelte Aus-Zustand sind gestrichen: Auswahl trägt im ganzen System das Orange, ein zweites Signal daneben macht sie schwächer. Der Status-Ton bleibt der Zeilen-Pille</li>
+          <li><b style="color:#FFD23F">Runde 14 (S28):</b> Der Ton der Einheiten-Pille folgt der <b style="color:#fff">Art der Einheit</b> (Kap. 02 §3), nicht der Spalte: ein Spezialkommando ist grau, ob es in FÜR oder in DURCH steht. Vorher trug dieselbe Einheit je Spalte einen anderen Ton — die Pille sagt „welche Einheit ist das", nicht „welche Rolle hat sie hier"</li>
+          <li><b style="color:#FFD23F">Runde 14 (S23):</b> Die Prioritäts-Leiste unter dem Detail-Kopf ist <b style="color:#fff">ratifiziert und bleibt</b> — bis die Warteschlange ihr Langdruck-Ziehen hat, ist sie der einzige Weg, eine Priorität zu ändern; streichen würde die Funktion entfernen, nicht verschieben. Ist das Ziehen gebaut, wandert sie in den Detail-Overflow („Priorität ändern")</li>
           <li>Age tint on the created-date: &gt;30 d warning yellow, &gt;90 d danger red (web thresholds)</li>
           <li>Prio-Reorder (Logistiker): long-press card → drag; fallback in overflow „Priorität ändern"</li>
           <li>Progress bar green at 100%, orange below; Materialliste collapsed by default (localStorage)</li>
@@ -113,7 +116,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;align-items:center;gap:8px"><span style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#1042</span><span class="chip chip--primary" style="font-size:8.5px">Material</span></div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill" style="font-size:9.5px;color:#FFD23F">In Bearbeitung</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">Prio 1 · fällig 21.08.</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill" style="font-size:9.5px;color:#FFD23F">In Bearbeitung</span><span style="font:300 11px/1 Lato,sans-serif;color:#8A8A8A">Prio 1 · angelegt 12.07.</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -135,7 +138,7 @@
                   <div style="border:1px solid #282828;background:#141414;padding:12px 14px">
                     <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">/ {{ p.need }}</span></div>
                     <div style="height:5px;background:#282828;margin-top:8px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ p.pct }};background:{{ p.barColor }}"></span></div>
-                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">Gebucht: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">Zugesagt: <strong>{{ p.claimed }}</strong></span></div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">GEBUCHT: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">ZUGESAGT: <strong>{{ p.claimed }}</strong></span></div>
                   </div>
                 </sc-for>
                 <div class="annotation" style="font-size:12.5px"><div class="annotation-label">Anmerkung</div>Qualität ist zweitrangig — Menge zählt. Anlieferung gesammelt an ARC-L1.</div>
@@ -147,7 +150,7 @@
                 <sc-for list="{{ demand }}" as="d" hint-placeholder-count="3">
                   <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;background:#141414;border:1px solid #282828;font-variant-numeric:tabular-nums">
                     <span style="flex:1;min-width:0;font:700 13px/1.3 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</span>
-                    <div style="text-align:right"><div style="font:700 13px/1.2 Lato,sans-serif;color:{{ d.color }}">{{ d.open }}</div><div style="font:300 10px/1.2 Lato,sans-serif;color:#8A8A8A">noch offen</div></div>
+                    <div style="text-align:right"><div style="font:700 13px/1.2 Lato,sans-serif;color:{{ d.color }}">{{ d.open }}</div><div style="font:300 10px/1.2 Lato,sans-serif;color:#8A8A8A">{{ d.share }}</div></div>
                   </div>
                 </sc-for>
               </div>
@@ -177,6 +180,9 @@
       <div class="card" style="padding:12px 16px">
         <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Handoff — OrderDetailScreen</div>
         <ul style="margin:0;padding:0;list-style:none;font:300 12px/1.7 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#FFD23F">Runde 14 (S20):</b> Daten-Chips UPPERCASE („GEBUCHT: 748 SCU") — Kap. 02 §3 gilt ohne Ausnahme. Der Wert behält helleres Weiß und die fettere Stärke; das ist ab jetzt Regel, nicht Zufall dieses Frames</li>
+          <li><b style="color:#FFD23F">Runde 14 (S21):</b> „fällig 21.08." ist <b style="color:#fff">gestrichen</b> — JobOrderDto führt nur createdAt; im Vertrag und im Backend-Modell gibt es kein Fälligkeitsdatum. Der Kopf zeigt „angelegt". Backend-Anfrage <b style="color:#fff">G9</b>, falls eine Fälligkeit gewollt ist (Feld plus die Frage, wer sie setzen darf)</li>
+          <li><b style="color:#FFD23F">Runde 14 (S22):</b> Der Ton der Bedarfszahl folgt dem <b style="color:#fff">offenen Anteil an der Sollmenge</b>, und die Zeile sagt ihn aus: <b style="color:#D2D2D2">&lt; 30 %</b> weiß · <b style="color:#FFD23F">30–99 %</b> gelb · <b style="color:#F2564B">100 %</b> rot (nichts geliefert). Drei Schwellen, an der Sollmenge gemessen — vorher war die Färbung eine unausgesprochene Vermutung über Dringlichkeit</li>
           <li>Status change + Zuständigen setzen im Overflow → bottom sheet (Artboards 5–9); Statuswechsel bestätigt mit Konsequenz</li>
           <li>Materialbedarf ist die Queue-übergreifende Faltung (nur mit Queue-Sicht) — gleiche Gating-Regel wie Web</li>
           <li>Verlauf = append-only Aktivitätsspur, read-only</li>
@@ -885,7 +891,7 @@
           <div style="display:flex;align-items:flex-start;gap:16px">
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:10px"><span style="font:700 20px/1.2 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">#1042</span><span class="chip chip--primary" style="font-size:9px">Material</span><span class="status-pill" style="font-size:10px;color:#FFD23F">In Bearbeitung</span></div>
-              <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Prio 1 · angelegt 12.07. · fällig 21.08. · Für STAFFEL 1 · Durch SK VANGUARD · Zuständig Vex</div>
+              <div style="font:300 12.5px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Prio 1 · angelegt 12.07. · Für STAFFEL 1 · Durch SK VANGUARD · Zuständig Vex</div>
             </div>
             <button class="btn-outline btn" style="background:transparent;min-height:44px;font-size:11px">Status ändern</button>
           </div>
@@ -900,7 +906,7 @@
               <div style="border:1px solid #282828;background:#141414;padding:12px 14px">
                 <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums"><span style="flex:1;font:700 14px/1.3 Lato,sans-serif;color:#FFFFFF">{{ p.name }}</span><span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF">{{ p.have }}</span><span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">/ {{ p.need }}</span></div>
                 <div style="height:5px;background:#282828;margin-top:8px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ p.pct }};background:{{ p.barColor }}"></span></div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">Gebucht: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">Zugesagt: <strong>{{ p.claimed }}</strong></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="chip chip--data" style="font-size:9.5px">GEBUCHT: <strong>{{ p.booked }}</strong></span><span class="chip chip--data" style="font-size:9.5px">ZUGESAGT: <strong>{{ p.claimed }}</strong></span></div>
               </div>
             </sc-for>
           </div>
@@ -925,8 +931,10 @@ class Component extends DCLogic {
     stSel: null };
   componentWillUnmount() { clearTimeout(this._n6a); clearTimeout(this._n6b); }
   renderVals() {
+    const unitCls = (name) => (String(name).startsWith('SK') ? 'squadron-badge-sk' : '');
     const mkOrder = (key, o) => ({
       ...o, open: this.state[key], chev: this.state[key] ? '90deg' : '0deg',
+      reqCls: unitCls(o.req), respCls: unitCls(o.resp),
       onToggle: () => this.setState(s => ({ [key]: !s[key] })),
     });
     const orders = [
@@ -946,9 +954,9 @@ class Component extends DCLogic {
       { name: 'Agricium', have: '96', need: '96 SCU', pct: '100%', barColor: '#239E33', booked: '96 SCU', claimed: '—' },
     ];
     const demand = [
-      { name: 'Laranite', open: '452 SCU', color: '#FFD23F' },
-      { name: 'Bexalit', open: '500 SCU', color: '#F2564B' },
-      { name: 'Titanium', open: '28 SCU', color: '#D2D2D2' },
+      { name: 'Laranite', open: '452 SCU', color: '#FFD23F', share: '38 % offen' },
+      { name: 'Bexalit', open: '500 SCU', color: '#F2564B', share: '100 % offen — nichts geliefert' },
+      { name: 'Titanium', open: '28 SCU', color: '#D2D2D2', share: '29 % offen' },
     ];
     const handovers = [
       { amt: '+400 SCU', mat: 'Laranite', who: 'Dorn → Vex', when: 'heute 14:02' },

@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
@@ -50,7 +51,7 @@ fun KrtTabRow(titles: List<String>, counts: List<Int?> , selected: Int, onSelect
                 Row(
                     Modifier.weight(1f).clickableTab { if (locked) onLocked(i) else onSelect(i) },
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs),
                 ) {
                     Text(
                         title.uppercase(),
@@ -89,7 +90,7 @@ fun KrtSegment(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
                     modifier = if (locked) Modifier.alpha(0.45f) else Modifier,
                 )
                 if (locked) {
-                    Spacer(Modifier.width(KrtSpacing.s4))
+                    Spacer(Modifier.width(KrtSpacing.xs))
                     Icon(painterResource(R.drawable.ic_krt_lock), contentDescription = null, tint = KrtPalette.TextMuted, modifier = Modifier.size(12.dp))
                 }
             }
@@ -173,13 +174,34 @@ fun KrtStatusPill(text: String, tone: KrtStatusTone, modifier: Modifier = Modifi
     }
 }
 
+/**
+ * The page-level lifecycle marker — FOUR parts, all of them load-bearing (ch. 02 §3, settled in
+ * round 14 · S24 against the stylesheet, which draws all four):
+ *   1  a faint tint fill in the state's hue (10 %)
+ *   2  a hairline border
+ *   3  a 3 dp LEADING EDGE in the state's text tint
+ *   4  a 10 dp square dot in that same tint, then the label in WHITE
+ * The label is white, not tinted: the hue is carried by the edge and the dot, so the word stays
+ * as legible as any other title. Do not drop the border or the dot — an earlier version of this
+ * file had only fill + edge and read as a different component.
+ */
 @Composable
 fun KrtStatusBadge(text: String, tone: KrtStatusTone, modifier: Modifier = Modifier) {
-    val (border, label) = tone.colors()
+    val (_, tint) = tone.colors()
     Row(
-        modifier.fillMaxWidth().background(border.copy(alpha = 0.12f)).border(KrtDimens.hairline, border).padding(horizontal = 14.dp, vertical = 12.dp),
+        modifier
+            .fillMaxWidth()
+            .background(tint.copy(alpha = 0.10f))
+            .border(KrtDimens.hairline, KrtPalette.Gray3)
+            .drawBehind { drawRect(tint, size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)) }
+            .padding(start = 14.dp + 3.dp, end = 14.dp)
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-    ) { Text(text.uppercase(), style = MaterialTheme.typography.titleSmall, color = label) }
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        Box(Modifier.size(10.dp).background(tint))
+        Text(text.uppercase(), style = MaterialTheme.typography.titleSmall, color = KrtPalette.White)
+    }
 }
 
 /* ═════════════════════════════ 10 · NUMBERS & MONEY ═════════════════════════════
@@ -221,7 +243,7 @@ fun krtFormat(value: Long): String = java.text.NumberFormat.getIntegerInstance(j
  */
 @Composable
 fun KrtEmptyState(text: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
-    Column(modifier.fillMaxWidth().padding(KrtSpacing.s12), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
+    Column(modifier.fillMaxWidth().padding(KrtSpacing.md), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
         Text(text, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.TextMuted)
         action?.invoke()
     }

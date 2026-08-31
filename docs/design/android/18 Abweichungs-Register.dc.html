@@ -22,7 +22,7 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">18</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Abweichungs-Register</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Runden 12–13. Was der Code-Abgleich offen ließ: drei Web-Flächen ohne Artboard (§E1–E3), sechs ungeratifizierte Kompositionen (§E4–E9) und die Antworten auf §C, §D, §G, §H. Die Korrekturen der Abschnitte §A und §B stehen in ihren eigenen Kapiteln — jeweils gelb als „Korrektur (Runde 12)" markiert. <b style="color:#FFD23F">Runde 13 (30.08.2026):</b> das Bauen dieses Kapitels hat zehn interne Widersprüche gefunden — sechs zwischen zwei Seiten der Spec, drei in diesem Kapitel selbst (E4-Abschnittsnamen, E5-Aktionszahl, die „frei"-Zeile der Bedarfsliste) und einen zwischen E8 und Kap. 06. Alle sind an EINER Stelle entschieden und dort gelb markiert; die Übersicht steht im Handoff-README.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Runden 12–14. Was der Code-Abgleich offen ließ: drei Web-Flächen ohne Artboard (§E1–E3), sechs ungeratifizierte Kompositionen (§E4–E9) und die Antworten auf §C, §D, §G, §H. Die Korrekturen der Abschnitte §A und §B stehen in ihren eigenen Kapiteln — jeweils gelb als „Korrektur (Runde 12)" markiert. <b style="color:#FFD23F">Runde 13 (30.08.2026):</b> das Bauen dieses Kapitels hat zehn interne Widersprüche gefunden — sechs zwischen zwei Seiten der Spec, drei in diesem Kapitel selbst (E4-Abschnittsnamen, E5-Aktionszahl, die „frei"-Zeile der Bedarfsliste) und einen zwischen E8 und Kap. 06. Alle sind an EINER Stelle entschieden und dort gelb markiert; die Übersicht steht im Handoff-README.</div>
     </div>
   </header>
     <div class="card" style="padding:14px 16px;max-width:1200px">
@@ -253,7 +253,7 @@
       <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">E9 · Tablet-Flächen — Lager-Detail und Materialbörse</div>
       <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
         <li><b style="color:#fff">Lager (Runde 9 §4): Antwort 2 — Rail + Tabelle,</b> kein Detail-Pane. Der Lagerbaum IST die Detailtiefe; eine vierte Ebene rechts würde die Einrückung doppelt erzählen. Was rechts erscheint, ist nur das Buchen-Sheet — auf dem Tablet als 560-dp-Dialog, zentriert</li>
-        <li><b style="color:#fff">Materialbörse: zwei Kartenspalten, nicht drei.</b> Angebote links, Gesuche rechts, je 480 dp, 24 dp Rinne; eine dritte Spalte macht die Karten schmaler als die Telefon-Fassung. Ab 1600 dp wachsen die Spalten, nicht ihre Zahl</li>
+        <li><b style="color:#fff">Materialbörse: zwei Spalten KARTEN, nicht drei</b> (präzisiert Runde 14 · S29: das Segment bleibt, die gewählte Seite fließt in zwei Spalten — nicht Angebote links / Gesuche rechts; das wäre ein anderer Screen mit beiden Seiten gleichzeitig geladen). Angebote links, Gesuche rechts, je 480 dp, 24 dp Rinne; eine dritte Spalte macht die Karten schmaler als die Telefon-Fassung. Ab 1600 dp wachsen die Spalten, nicht ihre Zahl</li>
         <li>Beides folgt der Tablet-Regel aus Kap. 01 (E11): jede Fläche wählt EINE der drei Antworten</li>
       </ul>
     </div>
@@ -263,8 +263,80 @@
   </section>
 
 
+  <section data-screen-label="Runde 14" style="margin-bottom:36px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">4 · Runde 14 — was das Laufen der App auf dem Gerät fand<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">31 Punkte aus dem Abgleich am Gerät (31.08.2026) — jeder Screen und jeder Zustand gegen das <b style="color:#D2D2D2">gerenderte</b> Artboard gehalten, nicht gegen die Prosa des Kapitels. Genau so fallen Fälle auf, in denen eine Beschriftung stimmt und das Bild daneben nicht. Korrekturen an Zeichnungen stehen in ihren Kapiteln (gelb, „Runde 14"); hier stehen die Entscheidungen, die keine Zeichnung brauchen.</p>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Gezeichnet, aber ohne Feld — gestrichen und angefragt</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">S2 Ziele abhaken</b> — MissionObjectiveDto führt kein done/achieved und es gibt keinen Toggle-Endpunkt. Haken-Fläche und gedimmter Text sind aus dem Artboard heraus; Anfrage <b style="color:#fff">G8</b></li>
+          <li><b style="color:#fff">S7 HVU an der Person</b> — HVU ist eine Eigenschaft der EINHEIT (MissionUnitDto.highValueUnit). Chip an den Einheiten-Kopf verschoben, keine Anfrage nötig</li>
+          <li><b style="color:#fff">S16 UEX-Zeitstempel</b> — MaterialPriceOverviewDto führt keine Frische-Angabe, der Seiten-Wrapper nur Paging. Zeile gestrichen; Anfrage <b style="color:#fff">G11</b>. Bis dahin sagt die App nicht, wie alt ein Preis ist — was ehrlicher ist als ein Datum, das sie sich denkt</li>
+          <li><b style="color:#fff">S21 Fälligkeit am Auftrag</b> — JobOrderDto führt nur createdAt. Gestrichen; Anfrage <b style="color:#fff">G9</b> (Feld plus: wer darf sie setzen)</li>
+          <li><b style="color:#fff">S26 Rang in der Konto-Zeile</b> — /users/me liefert Rollen als Anzeigenamen, keinen Rang; Identity hat keinen. Rang gestrichen, die Zeile nennt die aktive Einheit (die ist bekannt). Anfrage <b style="color:#fff">G12</b>, falls ein Rang gewollt ist</li>
+          <li><b style="color:#fff">S15 Raffinerieauftrag ohne Nummer</b> — es gibt kein displayId wie beim Auftrag. Die Karte führt deshalb mit <b style="color:#fff">Station + Startzeit</b> statt mit einer erfundenen Nummer; Anfrage <b style="color:#fff">G10</b>. Station allein hätte auf einer Staffel mit einer Raffinerie alle Karten gleich aussehen lassen — die Zeit unterscheidet sie</li>
+          <li><b style="color:#fff">S11 Lager-Filter</b> — /inventory/aggregated nimmt nur catalog, page, size, sort. „Material: Alle" und „Ort: Alle" können nichts verengen und sind aus dem Artboard heraus; client-seitig zu filtern würde die SEITE verengen, nicht das Lager. Anfrage <b style="color:#fff">G13</b> (materialIds + Ort auf dem Aggregat-Read)</li>
+          <li><b style="color:#fff">S18 Discord-Einstieg</b> — es gibt keinen unauthentifizierten Read, der die konfigurierten Identity-Provider nennt. Der zweite Knopf bleibt ungezeichnet, bis es ihn gibt: einer, der nach dem Tipp scheitert, ist schlechter als keiner. Anfrage <b style="color:#fff">G14</b></li>
+        </ul>
+      </div>
+
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Regeln, die eine Zahl brauchten</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">S5 Frequenzen</b> — der Server validiert <span style="color:#8A8A8A">@Digits(integer = 3, fraction = 2)</span> und lehnt jeden gezeichneten Wert ab. Die Artboard-Werte sind auf zwei Dezimalstellen korrigiert (148.50). SC schreibt Frequenzen konventionell mit drei — das ist eine Anfrage an das Backend (<b style="color:#fff">G15</b>), keine Freiheit der App</li>
+          <li><b style="color:#fff">S6 Anteil je Teilnehmer</b> — der Divisor sind die <b style="color:#fff">Auszahlungs-Teilnehmer</b>, nicht alle Angemeldeten: wer DONATE gewählt hat, bekommt nichts und darf den Anteil der anderen nicht drücken. Das Label nennt den Divisor mit („Anteil je Auszahlung (12 von 14)"), damit die Zahl prüfbar ist</li>
+          <li><b style="color:#fff">S22 Tönung der Bedarfszahl</b> — drei Schwellen am offenen Anteil der Sollmenge: &lt; 30 % weiß · 30–99 % gelb · 100 % rot (nichts geliefert). Die Zeile sagt den Anteil aus; vorher war die Farbe eine unausgesprochene Vermutung</li>
+          <li><b style="color:#fff">S12 KPI-Zahl</b> — headlineMedium (Black 20), die Stufe, die die Skala schon führt. displaySmall stellte jeden Saldo halb so groß wieder zu groß dar</li>
+          <li><b style="color:#fff">S3 Icon-Button</b> — 48 dp, wie Kap. 02 §1; die zwei Ablauf-Verschiebe-Buttons sind die eine ratifizierte Ausnahme bei 40 × 44. Das alte 44er-Token im Artefakt ist nachgezogen</li>
+        </ul>
+      </div>
+
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Eine Optik je Komponente</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">S9 Filter-Chip</b> — Hairline aus, orange gefüllt an. Kein Status-Ton, kein gestrichelter Aus-Zustand: Auswahl trägt im System das Orange, und ein zweites Signal daneben macht sie schwächer, nicht stärker</li>
+          <li><b style="color:#fff">S20 Daten-Chip</b> — UPPERCASE, ohne Ausnahme (Kap. 02 §3). Der Wert behält helleres Weiß und die fettere Stärke — ab jetzt Regel, nicht Zufall eines Frames</li>
+          <li><b style="color:#fff">S24 Status-Badge</b> — die Frage beantwortet der Spiegel selbst: <b style="color:#fff">alle vier Teile</b> gehören dazu (10-%-Tönung, Hairline, 3-dp-Vorderkante, 10-dp-Quadratpunkt, Label in WEISS). Weder „mit Rahmen" noch „mit Füllung" war vollständig; Compose hatte Rahmen und Punkt weggelassen und las dadurch als andere Komponente</li>
+          <li><b style="color:#fff">S28 Einheiten-Pille</b> — der Ton folgt der ART der Einheit (Kap. 02 §3), nicht der Spalte: ein Spezialkommando ist grau, ob es in FÜR oder DURCH steht. Kap. 10 ist nachgezogen</li>
+          <li><b style="color:#fff">S4 Status doppelt</b> — der Lebenszyklus wohnt im Band (F2). Der Kopf zeigt Datum und Zeit, nicht noch einmal „Geplant" einen Finger daneben</li>
+        </ul>
+      </div>
+
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Wo eine Aktion wohnt</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">S1 Ablauf-Zeile</b> — vier sichtbare Ziele: Haken · ↑ · ↓ · ⋮. Das Bild ist jetzt neu gezeichnet; vorher stand dort noch „SORTIEREN", das die Runde-12-Korrektur gestrichen hatte</li>
+          <li><b style="color:#fff">S8 Auszahlung eines anderen</b> — Zeilen-Overflow („Auszahlung ändern"), nicht ein Ghost-Button unter jeder Zeile: 14 Zeilen × ein Button verdoppeln die Listenhöhe. Die eigene Präferenz bleibt im Anmelden-Sheet</li>
+          <li><b style="color:#fff">S14 Einzelnes Schiff löschen</b> — im Editor-Sheet, das das ✎ öffnet; die Zeile behält eine Aktion. „Hangar leeren" bleibt im Overflow: alle Schiffe gegen genau dieses eine</li>
+          <li><b style="color:#fff">S23 Prioritäts-Leiste</b> — ratifiziert und bleibt, bis das Langdruck-Ziehen der Warteschlange gebaut ist; sie zu streichen würde die Funktion entfernen, nicht verschieben</li>
+          <li><b style="color:#fff">S27 Server-Status-Dot</b> — im Einstellungen-Footer gestrichen: kein Health-Endpunkt, und drei Farben behaupten drei Zustände, von denen zwei nie einträten. Er bleibt auf dem Login (Kap. 04), wo die Gate-Prüfung ihn beantwortet; im Betrieb übernimmt das Offline-Banner (Kap. 14)</li>
+          <li><b style="color:#fff">S19 + S25 Beförderung</b> — der „Mehr"-Eintrag ist aus Kap. 03 entfernt, Kap. 13 heißt nur noch „Einstellungen", und das Beförderungs-Artboard trägt ein Streich-Banner. Es bleibt als Historie stehen: das Handoff ist ein Protokoll, kein Nachtrag. <b style="color:#fff">Organigramm</b> ist ebenfalls entfernt — kein Kapitel zeichnet es, kein Endpunkt liegt nahe; es war das Menü der Weboberfläche</li>
+        </ul>
+      </div>
+
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Tablet — drei offene Layout-Fragen, entschieden</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">S29 Materialbörse</b> — <b style="color:#fff">zwei Spalten KARTEN</b>, das Segment bleibt. Die Frage, die E9 beantwortet, war „wie viele Spalten", und seine Begründung dreht sich um Kartenbreite. Zwei Spalten INHALT wären ein anderer Screen — beide Seiten gleichzeitig geladen, gepaged und aktualisiert — und den baut man nicht auf eine Lesart hin. E9 ist entsprechend präzisiert</li>
+          <li><b style="color:#fff">S30 Operationen</b> — ist die <b style="color:#fff">zweite Hälfte derselben Fläche</b> und bekommt dieselbe Liste-Detail-Antwort wie Einsätze; erreichbar über den Rail, nicht über „Mehr". Ein Segment, dessen Hälften verschieden layouten und aus verschiedenen Einstiegen kommen, sind zwei Screens mit einem gemeinsamen Kopf — und das war nicht die Absicht</li>
+          <li><b style="color:#fff">S31 Bank-Konten</b> — ja, Kap. 02 §5 gilt auch für <b style="color:#fff">Listenzeilen</b>, nicht nur für Tabellen: was auf dem Telefon eine Karte ist, wird in der Listenspalte eines Tablets eine Zeile (Name links, Saldo und Delta rechts); Sparkline und Buchungen leben im Detail-Pane. Betrifft jede Liste-Detail-Fläche — Bank, Einsätze, Aufträge, Materialien. Kap. 02 §5 ist entsprechend erweitert</li>
+        </ul>
+      </div>
+
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Nicht Design — festgehalten, damit es nicht als Rückstand gelesen wird</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li><b style="color:#fff">S10</b> — der lokale Test-Stack fährt ein zehn Tage altes Backend-Image, deshalb fehlt <span style="color:#8A8A8A">MissionListDto.registeredCount</span> auf dem Gerät, obwohl es im Vertrag und im generierten DTO steht. Das Artboard bleibt wie gezeichnet (Correction 5 in der README hält das fest); zu sehen ist es erst nach einem neueren Image</li>
+          <li><b style="color:#fff">S13</b> war halb Navigations-Kanon: die Regel steht jetzt bei der Bank und in Kap. 03 — ein geschobener Unter-Screen behält die Einheiten-Pille, wenn seine DATEN auf die Einheit begrenzt sind; ein Datensatz-Detail nennt die Einheit des Datensatzes</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
   <section data-screen-label="Register" style="margin-bottom:36px">
-    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">4 · Register — bestätigt, ratifiziert, angefragt<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">5 · Register — bestätigt, ratifiziert, angefragt<span style="flex:1;height:1px;background:#282828"></span></h2>
     <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Die Abschnitte C, D, G und H der Runde 12 brauchen keine Zeichnung, sondern eine Antwort. Hier steht sie, damit sie eine Regeneration übersteht.</p>
     <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
     <div class="card" style="padding:14px 16px;width:600px">
@@ -289,7 +361,7 @@
     </div>
 
     <div class="card" style="padding:14px 16px;width:600px">
-      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">§G · Sieben Anfragen an das Backend — Priorität in dieser Reihenfolge</div>
+      <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">§G · Anfragen an das Backend — G1–G7 aus Runde 12, G8–G15 aus Runde 14 — Priorität in dieser Reihenfolge</div>
       <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
         <li><b style="color:#F2564B">G3 zuerst</b> (Raffinerie PUT/DELETE lehnen COMPLETED ab): die einzige mit Datenintegritäts-Kante — heute kann ein direkter API-Aufruf die Waren einer gebuchten Charge umschreiben. Bis dahin ist die App die einzige Instanz, die die Regel hält (B2, B3)</li>
         <li><b style="color:#fff">G4</b> (Lagerbaum lernt catalog=ITEM) — schaltet B8 frei und lässt Items überhaupt im Baum leben</li>
