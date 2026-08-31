@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -261,14 +262,51 @@ private fun LicensesList(
     // Which groups the member has folded away. Collapsed rather than expanded is the remembered
     // state, so the default stays what the chapter draws: everything visible.
     val collapsed = remember { mutableStateSetOf<String>() }
+    // Design ch. 15, tablet: one 480 dp column, the rest of the canvas left black. Two columns
+    // would break the sticky headers and the scan order, and a register stretched to 1200 dp puts
+    // a 30-character coordinate alone on a very wide line.
+    //
+    // The cap has to come BEFORE `fillMaxHeight` and needs something to centre it in: chained
+    // after `fillMaxSize()` a `widthIn` is a no-op — the fill has already fixed the width at the
+    // maximum, and a max-constraint cannot narrow a fixed one. It was written that way and the
+    // register ran the full 1280 dp on a tablet, which is exactly what the comment above says it
+    // must not do.
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        LicenceRegister(
+            groups = groups,
+            artifactTotal = artifactTotal,
+            collapsed = collapsed,
+            hasBrowser = hasBrowser,
+            onLicenceAction = onLicenceAction,
+        )
+    }
+}
+
+/**
+ * The register itself, in its column.
+ *
+ * @param groups the licences in use with their artifacts, already ordered.
+ * @param artifactTotal how many artifacts the report holds.
+ * @param collapsed which groups the member has folded away.
+ * @param hasBrowser whether a browser is installed, which decides if the licence text is offered.
+ * @param onLicenceAction opens a licence's own text.
+ */
+@Composable
+private fun LicenceRegister(
+    groups: List<Pair<OssLicense, List<OssArtifact>>>,
+    artifactTotal: Int,
+    collapsed: MutableSet<String>,
+    hasBrowser: Boolean,
+    onLicenceAction: (String) -> Unit,
+) {
     LazyColumn(
         modifier =
             Modifier
-                .fillMaxSize()
-                // Design ch. 15, tablet: one 480 dp column, the rest of the canvas left black.
-                // Two columns would break the sticky headers and the scan order, and a register
-                // stretched to 1200 dp puts a 30-character coordinate alone on a very wide line.
-                .then(if (isWideWindow()) Modifier.widthIn(max = TABLET_COLUMN) else Modifier),
+                .then(if (isWideWindow()) Modifier.widthIn(max = TABLET_COLUMN) else Modifier)
+                .fillMaxHeight(),
         contentPadding = PaddingValues(bottom = KrtSpacing.s24),
     ) {
         item(key = "intro") {
