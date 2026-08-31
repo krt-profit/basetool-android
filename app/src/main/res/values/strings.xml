@@ -1058,7 +1058,7 @@
     <string name="booking_amount_hint">Teilmengen erlaubt: cSCU (0,01) und µSCU (0,001).</string>
     <string name="booking_available">Im Eintrag: %1$s</string>
     <string name="booking_field_quality">Qualität (0–1000)</string>
-    <string name="booking_field_place">Ort</string>
+    <string name="booking_field_place">Ziel (Lager / Ort)</string>
     <string name="booking_field_out_kind">Was passiert damit?</string>
     <string name="booking_out_discard">Verwerfen</string>
     <string name="booking_out_transfer">Umbuchen</string>

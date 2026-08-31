@@ -349,6 +349,7 @@ private fun InventoryTree(
                     // would be a control whose only job is to say "and also over there".
                     onClick = materialId?.let { { onToggleGroup(it) } },
                     onLongClick = materialId?.let { { onToggleBranch(it, null) } },
+                    expanded = materialId != null && materialId in state.opened,
                     selected = picked,
                     // Only while the group is open does „n/m" mean anything: a collapsed group's
                     // total is whatever was loaded before, not what it holds now.
@@ -486,11 +487,16 @@ private fun LazyListScope.openedGroup(
  *
  * @param group the group.
  * @param onClick opens or closes it, or `null` when it cannot be opened.
+ * @param expanded whether it is open, which is what the chevron says.
+ * @param selected how many of its rows a running selection holds.
+ * @param total how many rows it has, once they are known.
+ * @param onLongClick selects the whole branch.
  */
 @Composable
 private fun GroupRow(
     group: InventoryGroup,
     onClick: (() -> Unit)?,
+    expanded: Boolean = false,
     selected: Int = 0,
     total: Int? = null,
     onLongClick: (() -> Unit)? = null,
@@ -518,10 +524,17 @@ private fun GroupRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Rail(width = GROUP_RAIL, color = MaterialTheme.colorScheme.primary)
-        // The chapter's group toggle turns a chevron; without one nothing says the row opens.
+        // The chapter's group toggle turns a chevron — right when folded, down when open. It was
+        // hardcoded to the right-pointing one, so an opened group looked exactly like a closed one
+        // and the only thing saying it was open were the rows underneath it.
         if (onClick != null) {
             KrtIcon(
-                id = DesignR.drawable.ic_krt_chevron_right,
+                id =
+                    if (expanded) {
+                        DesignR.drawable.ic_krt_chevron_down
+                    } else {
+                        DesignR.drawable.ic_krt_chevron_right
+                    },
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )

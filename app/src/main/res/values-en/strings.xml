@@ -1037,7 +1037,7 @@
     <string name="booking_amount_hint">Fractions allowed: cSCU (0.01) and µSCU (0.001).</string>
     <string name="booking_available">In this entry: %1$s</string>
     <string name="booking_field_quality">Quality (0–1000)</string>
-    <string name="booking_field_place">Location</string>
+    <string name="booking_field_place">Destination (warehouse / location)</string>
     <string name="booking_field_out_kind">What happens to it?</string>
     <string name="booking_out_discard">Discard</string>
     <string name="booking_out_transfer">Rebook</string>

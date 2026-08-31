@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -475,10 +476,13 @@ fun KrtKpiCard(
     sparklineDescription: String? = null,
 ) {
     KrtCard(modifier = modifier, onClick = onClick) {
+        // `.kpi-card .kpi-title` is **bold and white**, not muted: the card names an entity — a
+        // bank account, a ship, a material — and the name is what a member scans a column of them
+        // for. Drawn muted it read as a caption under the figure instead of a heading over it.
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = KrtPalette.TextMuted,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = KrtPalette.White,
         )
         KrtDataValue(
             text = value,
