@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -56,6 +58,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHeading
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRailCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -500,7 +503,13 @@ private fun MissionBandRow(
     // then when and where, then the unit chip and the way in. It was a single line carrying the
     // name and the status badge — everything a member needs to decide whether to open it was
     // missing. See docs/DESIGN_PARITY_AUDIT.md.
-    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+    // A **hud-box**, brackets and all: the chapter draws this one card with them and nothing else
+    // on the dashboard, which is what marks the Einsätze band as the thing the screen is for.
+    KrtHudBox(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s14),
+        onClick = onClick,
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -532,6 +541,16 @@ private fun MissionBandRow(
             KrtStatusPill(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
         MissionFactsRow(mission = mission)
+        // The rule the artboard puts above the footer: the unit and the way in are about the row
+        // rather than about the Einsatz, and without it they read as a third fact.
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = KrtSpacing.s10)
+                    .height(KrtSpacing.hairline)
+                    .background(KrtPalette.Gray3),
+        )
         MissionBandFooter(mission = mission)
     }
 }
@@ -595,12 +614,16 @@ private fun MissionBandFooter(mission: Mission) {
         mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { unit ->
             KrtChip(text = unit, tone = KrtChipTone.Primary)
         }
-        // The design also puts "{n} angemeldet" here. MissionListDto carries no participant count,
-        // so there is nothing behind it on this endpoint — left out rather than invented, and
-        // recorded as a contract gap in docs/DESIGN_PARITY_AUDIT.md.
+        mission.registeredCount?.let { count ->
+            Text(
+                text = pluralStringResource(R.plurals.mission_lifecycle_registered, count, count),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = stringResource(R.string.dashboard_mission_open),
+            text = stringResource(R.string.dashboard_mission_open).krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
         )

@@ -1394,10 +1394,11 @@
     <string name="mission_admin_name">Titel</string>
     <string name="mission_admin_description">Beschreibung</string>
     <string name="mission_admin_meeting_point">Treffpunkt</string>
-    <string name="mission_admin_meeting_time">Teamspeak (ISO 8601)</string>
-    <string name="mission_admin_planned_start">Serverjoin (ISO 8601)</string>
-    <string name="mission_admin_planned_end">Ende (ISO 8601)</string>
-    <string name="mission_admin_actual_start">Tatsächlicher Start (ISO 8601)</string>
+    <string name="mission_admin_meeting_time">Treffzeit (Teamspeak)</string>
+    <string name="mission_admin_planned_start">Geplanter Start (Serverjoin)</string>
+    <string name="mission_admin_planned_end">Geplantes Ende</string>
+    <string name="mission_admin_actual_start">Tatsächlicher Start</string>
+    <string name="mission_admin_schedule_duration">Dauer %1$d Std. — berechnet aus Start und Ende, wie im Briefing.</string>
     <string name="mission_admin_start_now">Einsatz läuft jetzt</string>
     <string name="mission_admin_internal">Nur für die eigene Einheit sichtbar</string>
     <string name="mission_admin_save_core">Kern speichern</string>

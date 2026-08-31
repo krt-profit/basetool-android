@@ -1373,10 +1373,11 @@
     <string name="mission_admin_name">Title</string>
     <string name="mission_admin_description">Description</string>
     <string name="mission_admin_meeting_point">Meeting point</string>
-    <string name="mission_admin_meeting_time">Teamspeak (ISO 8601)</string>
-    <string name="mission_admin_planned_start">Server join (ISO 8601)</string>
-    <string name="mission_admin_planned_end">End (ISO 8601)</string>
-    <string name="mission_admin_actual_start">Actual start (ISO 8601)</string>
+    <string name="mission_admin_meeting_time">Meeting time (Teamspeak)</string>
+    <string name="mission_admin_planned_start">Planned start (server join)</string>
+    <string name="mission_admin_planned_end">Planned end</string>
+    <string name="mission_admin_actual_start">Actual start</string>
+    <string name="mission_admin_schedule_duration">Duration %1$d h — computed from start and end, as in the briefing.</string>
     <string name="mission_admin_start_now">The Einsatz is running now</string>
     <string name="mission_admin_internal">Visible only to the owning unit</string>
     <string name="mission_admin_save_core">Save core</string>

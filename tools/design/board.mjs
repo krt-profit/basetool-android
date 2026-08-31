@@ -37,9 +37,15 @@ await send("Page.enable");
 await new Promise((r) => setTimeout(r, 2600));
 
 // The caption "N · Title" sits in a sibling above the frame; its parent column is the artboard.
+// Not every chapter numbers its frames — chapter 05 captions its only one "Phone — default" — so a
+// caption that merely STARTS WITH the token is accepted when the numbered form matches nothing.
 const rect = await evaluate(`(() => {
-  const caption = [...document.querySelectorAll('div')]
-    .find(e => e.children.length === 0 && new RegExp('^\\\\s*${board}\\\\s*[·]').test(e.textContent || ''));
+  const leaves = [...document.querySelectorAll('div')].filter(e => e.children.length === 0);
+  const token = ${JSON.stringify(board)};
+  const numbered = new RegExp('^\\\\s*' + token + '\\\\s*[·]');
+  const caption =
+    leaves.find(e => numbered.test(e.textContent || '')) ||
+    leaves.find(e => (e.textContent || '').trim().toLowerCase().startsWith(token.toLowerCase()));
   if (!caption) return null;
   const col = caption.parentElement;
   const r = col.getBoundingClientRect();

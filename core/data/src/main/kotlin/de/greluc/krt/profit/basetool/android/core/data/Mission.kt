@@ -108,8 +108,9 @@ data class Mission(
     /**
      * How many members have signed up.
      *
-     * `null` on every list read: `MissionListDto` carries no participant count, so the design's
-     * "{n} angemeldet" has nothing behind it there. Not faked — see the parity audit.
+     * `null` only where the server omitted it. `MissionListDto` **does** carry `registeredCount`;
+     * an earlier note recorded its absence as a contract gap and outlived the gap, which left the
+     * dashboard band's „{n} angemeldet" (design ch. 05) unbuilt against a field that was there.
      */
     val registeredCount: Int? = null,
 ) {

@@ -64,6 +64,7 @@ fun KrtHudBox(
     modifier: Modifier = Modifier,
     contentPadding: androidx.compose.foundation.layout.PaddingValues =
         androidx.compose.foundation.layout.PaddingValues(KrtSpacing.s16),
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -72,7 +73,13 @@ fun KrtHudBox(
                 .background(KrtPalette.Gray4.copy(alpha = HUD_FILL_ALPHA))
                 .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .krtCornerBrackets()
-                .padding(contentPadding),
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(role = Role.Button, onClick = onClick)
+                    } else {
+                        Modifier
+                    },
+                ).padding(contentPadding),
         content = content,
     )
 }
