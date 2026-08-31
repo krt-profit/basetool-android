@@ -1479,6 +1479,7 @@
         <item quantity="one">%1$d angemeldet</item>
         <item quantity="other">%1$d angemeldet</item>
     </plurals>
+    <string name="mission_lifecycle_starts_in">Beginn %1$s</string>
     <string name="mission_lifecycle_start_title">Einsatz starten?</string>
     <string name="mission_lifecycle_start_irreversible">Zurück auf „Geplant" führt kein Weg in der App.</string>
     <string name="mission_lifecycle_complete_title">Einsatz abschließen?</string>
