@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -171,10 +172,15 @@ fun PersonalBlueprintsScreen(
                 modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                 placeholder = stringResource(R.string.blueprints_search),
             )
-            Row(
+            // FlowRow, not a Row with SpaceBetween: on a tablet this header sits in the ~397 dp
+            // LIST column of a master-detail, where the toggle and the two buttons do not fit on
+            // one line — and a Row does not wrap, so „Blueprint hinzufügen" was drawn past the
+            // pane's right edge as a bare orange stripe.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s12),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),

@@ -376,3 +376,24 @@ fixed.
 **What is missing:** which of the two the pill follows. If it is the role, chapter 02 §3 needs the
 exception written into it; if it is the kind, chapter 10 artboard 1 needs its second row redrawn.
 
+## S29 · „Angebote links, Gesuche rechts" — two columns of what?
+
+**Where:** `18 Abweichungs-Register.dc.html` §E9 ratifies the Materialbörse's tablet layout in one
+sentence: „Materialbörse: zwei Kartenspalten, nicht drei. **Angebote links, Gesuche rechts**, je
+480 dp, 24 dp Rinne; eine dritte Spalte macht die Karten schmaler als die Telefon-Fassung. Ab
+1600 dp wachsen die Spalten, nicht ihre Zahl." Chapter 17 has no tablet frame, so this sentence is
+the whole specification.
+
+It carries two readings and the app has picked one:
+
+- **Two columns of cards.** The question the paragraph answers is *how many columns* — its own
+  justification is about card width, and „zwei, nicht drei" is the ruling. The segment stays, and
+  whichever side is selected flows into two columns. **This is what the app does**, and its code
+  cites the same paragraph for it.
+- **Two columns of content.** Read literally, the left column holds the offers and the right the
+  requests, and the tablet has no segment at all.
+
+**What is missing:** which one. The second is a different screen, not a different layout — it needs
+both sides loaded, paged and refreshed at once, so it is not a change to make on a coin-flip
+reading of one sentence.
+
