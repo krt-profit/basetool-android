@@ -1086,6 +1086,7 @@
     <string name="order_detail_unassign_me">Step off</string>
     <string name="order_detail_status_scope">#%1$s · Currently: %2$s</string>
     <string name="order_detail_status_role_note">Which changes are allowed depends on your role.</string>
+    <string name="order_detail_status_cancel">Cancel</string>
     <string name="order_detail_status_apply">Apply status</string>
     <string name="order_detail_status_current">CURRENT</string>
     <string name="order_detail_status_note_open">The order is opened for pledges again.</string>

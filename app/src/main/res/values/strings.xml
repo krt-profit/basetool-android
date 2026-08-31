@@ -1107,6 +1107,7 @@
     <string name="order_detail_unassign_me">Abmelden</string>
     <string name="order_detail_status_scope">#%1$s · Aktuell: %2$s</string>
     <string name="order_detail_status_role_note">Erlaubte Wechsel richten sich nach deiner Rolle.</string>
+    <string name="order_detail_status_cancel">Abbrechen</string>
     <string name="order_detail_status_apply">Status übernehmen</string>
     <string name="order_detail_status_current">AKTUELL</string>
     <string name="order_detail_status_note_open">Der Auftrag wird wieder für Zusagen geöffnet.</string>

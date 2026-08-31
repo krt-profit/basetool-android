@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
@@ -31,9 +32,11 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBott
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -91,12 +94,21 @@ internal fun StatusSheet(
                 style = MaterialTheme.typography.labelSmall,
                 color = KrtPalette.TextMuted,
             )
-            KrtCtaButton(
-                text = stringResource(R.string.order_detail_status_apply),
-                onClick = actions.onApplyStatus,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.writable && state.statusChoice != null && !state.saving,
-            )
+            // Two buttons, as artboard 8 draws them. A sheet whose only control commits is one a
+            // member leaves by guessing — the drag handle and the system gesture both work, and
+            // neither is a written way out of a screen that is about to change a state.
+            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
+                KrtGhostButton(
+                    text = stringResource(R.string.order_detail_status_cancel),
+                    onClick = actions.onDismissStatusPicker,
+                )
+                KrtCtaButton(
+                    text = stringResource(R.string.order_detail_status_apply),
+                    onClick = actions.onApplyStatus,
+                    modifier = Modifier.weight(1f),
+                    enabled = state.writable && state.statusChoice != null && !state.saving,
+                )
+            }
         }
     }
     val choice = state.statusChoice
@@ -175,8 +187,11 @@ private fun StatusOption(
         Box(modifier = Modifier.size(STATUS_SWATCH).background(status.swatch()))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(status.labelRes()),
-                style = MaterialTheme.typography.bodyMedium,
+                // Uppercase and bold, as artboard 8 draws the names: the row's own label is the
+                // thing being chosen, and the consequence line under it is the explanation. Set in
+                // the same weight they read as one paragraph of two sentences.
+                text = stringResource(status.labelRes()).krtUppercase(),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = if (isCurrent) KrtPalette.TextMuted else KrtPalette.White,
             )
             // Only for a move that is on offer. The current status carries no consequence,
