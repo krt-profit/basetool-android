@@ -1726,6 +1726,9 @@ private fun NoteConflict(
     }
 }
 
+/** The middot the head line joins its parts with, as chapter 10 writes it. */
+private const val HEAD_DOT = " · "
+
 /**
  * How long a note may be.
  *
@@ -1734,9 +1737,6 @@ private fun NoteConflict(
  * accepts, which is a worse failure than a counter that reads differently from an artboard — the
  * discrepancy is recorded in docs/DESIGN_PARITY_AUDIT.md for the owner to settle.
  */
-/** The middot the head line joins its parts with, as chapter 10 writes it. */
-private const val HEAD_DOT = " · "
-
 private const val NOTE_MAX_LENGTH = 500
 
 /** How many lines the note field opens at — artboard 10-5 draws a four-line box. */
