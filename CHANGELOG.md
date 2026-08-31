@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-31
+
 ### Added
 
 - **Die Verwaltung eines Einsatzes zeigt jetzt, wer Einsatzleitung und wer Manager ist.** Vorher
@@ -135,9 +137,10 @@
 
 ### Changed
 
-- **Die Übersicht zeigt keine ungelesenen Benachrichtigungen mehr.** Die Glocke oben rechts trägt
-  die Zahl auf jedem Screen — der Block darunter sagte dasselbe noch einmal. Der Rest der Übersicht
-  bleibt unverändert.
+- **Die Übersicht schliesst wieder mit „Ungelesen".** Die zwei neuesten ungelesenen
+  Benachrichtigungen, darauf „Alle ansehen" in den Posteingang. Der Block ist eine Vorschau:
+  antippen öffnet den Posteingang, und nichts darin setzt eine Benachrichtigung auf gelesen. Ist
+  nichts ungelesen, steht er gar nicht da.
 
 - **Der Verwaltungs-Tab im Einsatz ist jetzt sichtbar und gesperrt statt versteckt.** Wer den
   Einsatz nicht verwaltet, sieht ihn ausgegraut mit Schloss; ein Tipp nennt die fehlende Rolle.
@@ -161,38 +164,6 @@
 - **Der erste Tab im Einsatz heißt jetzt „Briefing" statt „Übersicht".** Direkt darunter steht in der
   unteren Leiste ebenfalls „Übersicht" — das Dashboard. Zwei gleich benannte Bedienelemente auf
   einem Handy-Bildschirm; der Tab-Name passt jetzt auch besser zu seinem Inhalt.
-
-### Fixed
-
-- **Eine abgelehnte Eingabe sagt jetzt, was falsch war.** Elf Schreibmasken zeigten „Konnte nicht
-  gespeichert werden." und verschwiegen damit den Satz, den der Server längst mitschickt — er nennt
-  das Feld und die Regel („Menge muss größer als 0 sein."). Aufgefallen beim Gerätedurchgang: eine
-  Frequenz liess sich nicht anlegen, und die App nannte den Grund nicht. Fünf Masken behalten ihren
-  eigenen Satz, weil er einen Ausweg nennt, den der Server nicht kennt.
-
-- **Die Zielart hieß „SECONDARY" statt „Sekundär".** Die Leseseite zeigte den Rohwert des Servers,
-  während die Auswahl daneben das deutsche Wort nannte.
-
-- **„ABMELDEN" brach in eine Spalte aus einzelnen Buchstaben um.** In der Aktionsleiste standen drei
-  Dinge nebeneinander; die Auszahlungspräferenz ist keine Aktion und steht jetzt über der Leiste,
-  beschriftet. Anmelden und Einchecken teilen sich die Leiste je zur Hälfte.
-
-- **Die Unterebenen im Lager standen auf Schwarz statt auf der Tabellenfläche.** Nutzer-, Stapel-
-  und Eintragszeilen fielen auf den Seitenhintergrund durch; laut Design liegt der Baum auf einer
-  eigenen dunkelgrauen Fläche, und nur die Eintragszeile wird darüber abgedunkelt.
-
-
-- **Item-Aufträge lassen sich jetzt in der App anlegen.** Das Auftragsformular hat oben einen
-  Umschalter „Material / Items"; eine Item-Zeile ist Item, Blueprint und Anzahl. Hat ein Item nur
-  einen Blueprint, ist er sofort gesetzt. Was das Formular noch nicht kann, ist der
-  Unterbaugruppen-Baum des Webs.
-
-- **Item-Aufträge zeigen ihre Positionen.** Bisher stand bei einem Item-Auftrag „Positionen 0" und
-  darunter nichts — auch bei Aufträgen, die im Web angelegt wurden. Jetzt erscheinen Item, gebaute
-  und bestellte Anzahl, der Fortschrittsbalken, die übergebene Menge und der Hinweis „Rezept
-  veraltet". Die Auftragskarte klappt sie als „Items (n)" auf.
-
-### Changed
 
 - **Auf dem Tablet steht neben dem Lagerbaum eine Materialtabelle.** Ein Material antippen öffnet es
   im Baum und zeigt rechts alle Einträge dazu — Nutzer, Ort, Qualität, Menge, seitenweise. Auf dem
@@ -319,8 +290,6 @@
   aktuelle, damit ein reiner Ortswechsel den Bestand nicht unbemerkt in eine andere Einheit schiebt.
   Bei SCU-Material kommt die Option „Mit vorhandenem Bestand zusammenlegen" dazu.
 
-### Changed
-
 - **Die Auftragsliste zeigt das Alter jetzt als Tageszahl.** „vor 94 Tagen" statt eines Datums —
   neben der Farbe, die schon sagt, ob ein Auftrag zu lange liegt.
 
@@ -373,94 +342,6 @@
   Sitzung endet, der gespeicherte Anmelde-Schlüssel wird vom Gerät gelöscht, und die nächste
   Anmeldung läuft wieder über das Anmeldeformular im Browser. Auf den Sperr- und Freigabe-Bildschirmen
   bleibt „Abmelden" absichtlich ohne Rückfrage — dort ist es der einzige Weg weiter.
-
-### Removed
-
-- **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
-  gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
-  Er kommt zurück, wenn die Ansicht wirklich fertig ist.
-
-### Fixed
-
-- **Jede Buchungszeile zeigt ihre Richtung als Pfeil.** Eingang zeigt nach unten und ist grün,
-  Ausgang nach oben und rot, alles andere bekommt den neutralen Tausch-Pfeil. Der Abschnitt heißt
-  wieder „Buchungen" statt „Transaktionen".
-
-- **Die Menge steht auf der Börsenkarte jetzt vorn.** Rechts neben dem Material, die Zahl betont,
-  die Einheit leise — statt als erstes Drittel einer grauen Zeile, in der Menge, Qualität und
-  Zusagen gleich aussahen.
-
-- **Das Herstellerkürzel im Hangar stimmt wieder.** Es kommt jetzt aus dem Katalog (DRAK, MISC,
-  RSI) statt aus den Anfangsbuchstaben des Firmennamens — MISC stand dort als „MIA". Außerdem steht
-  die Versicherung vor dem Ausbau-Zustand und trägt einen neutralen Ton; nur eine benannte Police
-  wie „LTI" wird hervorgehoben.
-
-- **Die beiden Knöpfe über dem Posteingang tragen ihre Symbole** — Haken und Papierkorb, dieselben
-  wie an jeder Zeile — und teilen sich die Breite gleichmäßig, statt dass der kürzere Text mitten im
-  Wort umbricht.
-
-- **Die Übersicht trifft ihr Artboard.** Die Begrüßung steht jetzt in einem Block mit orangem
-  Rand statt als loser Text, und die vier Schnellaktionen tragen die Glyphe ihrer Aktion statt die
-  ihres Ziels. Der Lager-Knopf „Einbuchen" bekommt dieselbe Pfeil-Glyphe zurück.
-
-- **Auf dem Tablet nennt die Kopfzeile wieder den Bereich.** Wer einen Eintrag auswählte, bekam
-  dessen Namen in die Leiste geschrieben, während die Seitenleiste weiter den Bereich hervorhob —
-  beide sagten etwas anderes darüber, wo man ist. Der Eintrag steht jetzt über seinem eigenen
-  Detailbereich.
-
-### Fixed
-
-- **Der offene Tab ist wieder als solcher zu erkennen.** Die orange Unterstreichung unter dem
-  aktiven Tab wurde in der ganzen App nicht gezeichnet. Ebenfalls überall: die Umschalter
-  („Mitglied / Verwaltung", „Meine Schiffe / Org-Einheit" …) stehen jetzt wie im Design in
-  Großbuchstaben.
-
-- **Bei großer Schrift (1,3×) wurden Beschriftungen abgeschnitten** — „CHECK-IN NÄCHSTER EI…" — und
-  Filter brachen mitten im Wort („ABGEB ROCHE N"). Beides wächst jetzt sauber um.
-- **Zeitangaben waren in Einsätzen, Aufträgen und der Materialbörse noch in der alten Langform**
-  („Vor 20 Stunden"); sie folgen jetzt überall derselben Kurzform.
-
-- **Der Benachrichtigungskanal „Einsätze & System" wurde entfernt** — er stand in den
-  Systemeinstellungen, aber es kam nie etwas darauf an. Alle Hinweise laufen über „Allgemein".
-
-- **Ein Link, den diese App-Version nicht kennt, landete stillschweigend auf der Übersicht** — nicht
-  zu unterscheiden von einem Link, der funktioniert hat. Jetzt erscheint „Signal Lost" mit dem Weg
-  zurück zur Basis.
-
-- **Ein Tipp auf eine Benachrichtigung beendete die App**, statt den Posteingang zu öffnen — sie
-  verschwand kommentarlos zum Startbildschirm. Der Weg vom Systemhinweis in die App funktioniert
-  jetzt, und der Zurück-Schritt führt von dort auf die Übersicht.
-
-- **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
-  Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
-  alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf
-  einmal, jede Zeile trägt ein Kästchen, und die Gruppe zeigt „1/3 gewählt". Einklappen ändert nur
-  die Ansicht, nicht die Auswahl. Danach sagt das Blatt, was passiert ist — umgebucht und
-  übersprungen als zwei Zahlen, mit einem Satz dazu, dass Einträge am Zielort kein Fehler sind.
-  Lehnt der Server ab, bleibt die Auswahl stehen.
-
-- **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
-  Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als
-  Zahl daneben und wird rot, sobald mehr zugesagt ist als vorhanden. Persönliche Einträge tragen
-  keine Zuordnung.
-- **Der Hangar kann eine Fleetview-Datei importieren.** Hinter dem neuen `⋮` oben rechts: „Fleetview-Import"
-  nimmt eine JSON-Datei oder eingefügten Text und legt die Schiffe an; danach steht da, wie viele
-  importiert wurden, wie viele schon im Hangar waren und welche der Server nicht erkannt hat.
-  Erkannt werden CCU-Game-Fleetview, HangarXPLOR-Shiplist und Fleetyards-JSON.
-- **Zwei weitere Hangar-Aktionen im selben Menü:** „Home-Location setzen" ändert den Ort für die
-  ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe. Beide sagen jetzt vorher, wie viele
-  Schiffe betroffen sind, und was nicht angetastet wird; nach dem Leeren steht da, wie viele
-  gelöscht wurden. Einträge, die gerade nicht gehen, bleiben im Menü stehen und nennen den Grund.
-- **„Alle Org-Einheiten" im Umschalter.** Wer mehreren Staffeln oder einem Spezialkommando angehört,
-  kann jetzt alle auf einmal sehen statt nur eine — die Wahl bleibt über einen Neustart erhalten.
-  Der Umschalter benennt außerdem, um was für eine Einheit es geht („IRI — IRIDIUM", „SK Vanguard"),
-  damit gleichnamige Staffeln und Spezialkommandos unterscheidbar sind.
-- **Aktionen, die dir fehlende Rechte verwehren, sagen das jetzt.** Sie bleiben sichtbar, tragen ein
-  Schloss und antworten beim Antippen mit der Rolle, die dir fehlt — „Dafür brauchst du die Rolle
-  Logistiker." statt einer stummen grauen Schaltfläche oder einer 403 nach dem Absenden. Fremde
-  Lager-Einträge nennen stattdessen die Regel, nach der nur die eigene Zeile dir gehört.
-
-### Changed
 
 - **Zustands- und Sperrbildschirme sehen aus wie im Entwurf.** „GESPERRT", „FREIGABE AUSSTEHEND",
   „NUTZUNGSBEDINGUNGEN" und die Fehlermeldungen stehen jetzt in Versalien, wie jedes Kapitel des
@@ -547,12 +428,127 @@
   Kachel da — mit Prio-Block, Art (Material/Item), Status, farbig markiertem Alter und beiden
   beteiligten Einheiten als Abzeichen. Vorher war das eine Textzeile ohne Art und ohne Alter.
 
+- **Die App wurde Bild für Bild gegen die Design-Vorlagen gestellt.** Statusmarken schreien nicht
+  mehr in Grossbuchstaben, ein Spezialkommando ist an seiner eigenen Farbe zu erkennen,
+  Tabellenspalten stehen unter ihren Überschriften, und Zahlen tragen überall dieselbe Schrift.
+- **Auf dem Tablet nimmt die Detailspalte zwei Drittel der Breite ein** statt gut der Hälfte — im
+  Einsatz standen die acht Reiter sonst nicht nebeneinander.
+- **„Operationen" steht bei den Einsätzen statt unter „Mehr"** und zeigt dort dieselbe Liste mit
+  Detailspalte.
+- **Ohne Verbindung sagt das die Anmeldeseite, bevor du tippst** — Banner oben, „Anmelden"
+  ausgegraut samt Grund.
+
 ### Removed
+
 - **Der Menüpunkt „Beförderung" ist vorerst raus.** Er führte auf „Dieser Bereich wird gerade
   gebaut." — ein Eintrag, hinter dem nur eine Entschuldigung steht, ist schlechter als kein Eintrag.
   Er kommt zurück, wenn die Ansicht wirklich fertig ist.
 
 ### Fixed
+
+- **Eine abgelehnte Eingabe sagt jetzt, was falsch war.** Elf Schreibmasken zeigten „Konnte nicht
+  gespeichert werden." und verschwiegen damit den Satz, den der Server längst mitschickt — er nennt
+  das Feld und die Regel („Menge muss größer als 0 sein."). Aufgefallen beim Gerätedurchgang: eine
+  Frequenz liess sich nicht anlegen, und die App nannte den Grund nicht. Fünf Masken behalten ihren
+  eigenen Satz, weil er einen Ausweg nennt, den der Server nicht kennt.
+
+- **Die Zielart hieß „SECONDARY" statt „Sekundär".** Die Leseseite zeigte den Rohwert des Servers,
+  während die Auswahl daneben das deutsche Wort nannte.
+
+- **„ABMELDEN" brach in eine Spalte aus einzelnen Buchstaben um.** In der Aktionsleiste standen drei
+  Dinge nebeneinander; die Auszahlungspräferenz ist keine Aktion und steht jetzt über der Leiste,
+  beschriftet. Anmelden und Einchecken teilen sich die Leiste je zur Hälfte.
+
+- **Die Unterebenen im Lager standen auf Schwarz statt auf der Tabellenfläche.** Nutzer-, Stapel-
+  und Eintragszeilen fielen auf den Seitenhintergrund durch; laut Design liegt der Baum auf einer
+  eigenen dunkelgrauen Fläche, und nur die Eintragszeile wird darüber abgedunkelt.
+
+- **Item-Aufträge lassen sich jetzt in der App anlegen.** Das Auftragsformular hat oben einen
+  Umschalter „Material / Items"; eine Item-Zeile ist Item, Blueprint und Anzahl. Hat ein Item nur
+  einen Blueprint, ist er sofort gesetzt. Was das Formular noch nicht kann, ist der
+  Unterbaugruppen-Baum des Webs.
+
+- **Item-Aufträge zeigen ihre Positionen.** Bisher stand bei einem Item-Auftrag „Positionen 0" und
+  darunter nichts — auch bei Aufträgen, die im Web angelegt wurden. Jetzt erscheinen Item, gebaute
+  und bestellte Anzahl, der Fortschrittsbalken, die übergebene Menge und der Hinweis „Rezept
+  veraltet". Die Auftragskarte klappt sie als „Items (n)" auf.
+
+- **Jede Buchungszeile zeigt ihre Richtung als Pfeil.** Eingang zeigt nach unten und ist grün,
+  Ausgang nach oben und rot, alles andere bekommt den neutralen Tausch-Pfeil. Der Abschnitt heißt
+  wieder „Buchungen" statt „Transaktionen".
+
+- **Die Menge steht auf der Börsenkarte jetzt vorn.** Rechts neben dem Material, die Zahl betont,
+  die Einheit leise — statt als erstes Drittel einer grauen Zeile, in der Menge, Qualität und
+  Zusagen gleich aussahen.
+
+- **Das Herstellerkürzel im Hangar stimmt wieder.** Es kommt jetzt aus dem Katalog (DRAK, MISC,
+  RSI) statt aus den Anfangsbuchstaben des Firmennamens — MISC stand dort als „MIA". Außerdem steht
+  die Versicherung vor dem Ausbau-Zustand und trägt einen neutralen Ton; nur eine benannte Police
+  wie „LTI" wird hervorgehoben.
+
+- **Die beiden Knöpfe über dem Posteingang tragen ihre Symbole** — Haken und Papierkorb, dieselben
+  wie an jeder Zeile — und teilen sich die Breite gleichmäßig, statt dass der kürzere Text mitten im
+  Wort umbricht.
+
+- **Die Übersicht trifft ihr Artboard.** Die Begrüßung steht jetzt in einem Block mit orangem
+  Rand statt als loser Text, und die vier Schnellaktionen tragen die Glyphe ihrer Aktion statt die
+  ihres Ziels. Der Lager-Knopf „Einbuchen" bekommt dieselbe Pfeil-Glyphe zurück.
+
+- **Auf dem Tablet nennt die Kopfzeile wieder den Bereich.** Wer einen Eintrag auswählte, bekam
+  dessen Namen in die Leiste geschrieben, während die Seitenleiste weiter den Bereich hervorhob —
+  beide sagten etwas anderes darüber, wo man ist. Der Eintrag steht jetzt über seinem eigenen
+  Detailbereich.
+
+- **Der offene Tab ist wieder als solcher zu erkennen.** Die orange Unterstreichung unter dem
+  aktiven Tab wurde in der ganzen App nicht gezeichnet. Ebenfalls überall: die Umschalter
+  („Mitglied / Verwaltung", „Meine Schiffe / Org-Einheit" …) stehen jetzt wie im Design in
+  Großbuchstaben.
+
+- **Bei großer Schrift (1,3×) wurden Beschriftungen abgeschnitten** — „CHECK-IN NÄCHSTER EI…" — und
+  Filter brachen mitten im Wort („ABGEB ROCHE N"). Beides wächst jetzt sauber um.
+- **Zeitangaben waren in Einsätzen, Aufträgen und der Materialbörse noch in der alten Langform**
+  („Vor 20 Stunden"); sie folgen jetzt überall derselben Kurzform.
+
+- **Der Benachrichtigungskanal „Einsätze & System" wurde entfernt** — er stand in den
+  Systemeinstellungen, aber es kam nie etwas darauf an. Alle Hinweise laufen über „Allgemein".
+
+- **Ein Link, den diese App-Version nicht kennt, landete stillschweigend auf der Übersicht** — nicht
+  zu unterscheiden von einem Link, der funktioniert hat. Jetzt erscheint „Signal Lost" mit dem Weg
+  zurück zur Basis.
+
+- **Ein Tipp auf eine Benachrichtigung beendete die App**, statt den Posteingang zu öffnen — sie
+  verschwand kommentarlos zum Startbildschirm. Der Weg vom Systemhinweis in die App funktioniert
+  jetzt, und der Zurück-Schritt führt von dort auf die Übersicht.
+
+- **Mehrere Lager-Einträge auf einmal umbuchen.** Langes Drücken wählt eine Zeile aus, weitere
+  Zeilen kommen mit einem Tipp dazu, und unten erscheint eine Leiste mit „Umbuchen" — ein Ort für
+  alle Ausgewählten. Langes Drücken auf eine Gruppe oder einen Stapel nimmt alles darunter auf
+  einmal, jede Zeile trägt ein Kästchen, und die Gruppe zeigt „1/3 gewählt". Einklappen ändert nur
+  die Ansicht, nicht die Auswahl. Danach sagt das Blatt, was passiert ist — umgebucht und
+  übersprungen als zwei Zahlen, mit einem Satz dazu, dass Einträge am Zielort kein Fehler sind.
+  Lehnt der Server ab, bleibt die Auswahl stehen.
+
+- **Lagerbestand lässt sich Aufträgen und Einsätzen zuordnen.** Über das Ziel-Symbol an einem
+  Eintrag: Aufträge und Einsätze werden getrennt gegen die Menge abgeglichen, der Rest steht als
+  Zahl daneben und wird rot, sobald mehr zugesagt ist als vorhanden. Persönliche Einträge tragen
+  keine Zuordnung.
+- **Der Hangar kann eine Fleetview-Datei importieren.** Hinter dem neuen `⋮` oben rechts: „Fleetview-Import"
+  nimmt eine JSON-Datei oder eingefügten Text und legt die Schiffe an; danach steht da, wie viele
+  importiert wurden, wie viele schon im Hangar waren und welche der Server nicht erkannt hat.
+  Erkannt werden CCU-Game-Fleetview, HangarXPLOR-Shiplist und Fleetyards-JSON.
+- **Zwei weitere Hangar-Aktionen im selben Menü:** „Home-Location setzen" ändert den Ort für die
+  ganze Flotte auf einmal, „Hangar leeren" löscht alle Schiffe. Beide sagen jetzt vorher, wie viele
+  Schiffe betroffen sind, und was nicht angetastet wird; nach dem Leeren steht da, wie viele
+  gelöscht wurden. Einträge, die gerade nicht gehen, bleiben im Menü stehen und nennen den Grund.
+- **„Alle Org-Einheiten" im Umschalter.** Wer mehreren Staffeln oder einem Spezialkommando angehört,
+  kann jetzt alle auf einmal sehen statt nur eine — die Wahl bleibt über einen Neustart erhalten.
+  Der Umschalter benennt außerdem, um was für eine Einheit es geht („IRI — IRIDIUM", „SK Vanguard"),
+  damit gleichnamige Staffeln und Spezialkommandos unterscheidbar sind.
+- **Aktionen, die dir fehlende Rechte verwehren, sagen das jetzt.** Sie bleiben sichtbar, tragen ein
+  Schloss und antworten beim Antippen mit der Rolle, die dir fehlt — „Dafür brauchst du die Rolle
+  Logistiker." statt einer stummen grauen Schaltfläche oder einer 403 nach dem Absenden. Fremde
+  Lager-Einträge nennen stattdessen die Regel, nach der nur die eigene Zeile dir gehört.
+
 - **„Mehr" führt wieder ins Menü.** Warst du auf Bank, Hangar oder den Lizenzen, passierte beim
   Tippen auf „Mehr" nichts — ausgerechnet der Knopf, der dich da wieder herausbringen soll.
 
@@ -592,10 +588,6 @@ Erste Veröffentlichung der Android-App.
 
 ### Added
 
-
-
-
-
 - **Das Tablet nutzt die Breite jetzt so, wie es der Entwurf vorsieht.** Einsätze, Aufträge, Raffinerie und Bank zeigen die Liste neben dem Detail; die Übersicht wird zweispaltig, der Posteingang bekommt eine schmalere Lesespalte, die Nutzungsbedingungen stehen neben ihrer Zustimmungsleiste, und Blueprints zeigen rechts das Rezept mit der geforderten Qualität je Zutat. Auf dem Telefon ändert sich nichts.
 - **Der Hangar zeigt auf dem Tablet die volle Tabelle statt Karten.** Dieselben Spalten wie im Browser — Typ, Name, Versicherung, Ort, Ausgebaut — und ein Klick auf die Zeile öffnet den Editor wie auf dem Telefon.
 - **Die Haupt-Aktion einer Liste sitzt jetzt als quadratische Schaltfläche unten rechts.** Hangar, Lager, Mein Inventar und Materialbörse hatten sie in einer Kopfzeile, die auf dem Telefon Suche und Filter nach unten schob, bevor ein einziges Ergebnis zu sehen war.
@@ -633,38 +625,6 @@ Erste Veröffentlichung der Android-App.
 - **Der Eintrags-Dialog lässt sich scrollen.** Mit gewähltem Ort und offener Tastatur lagen „Abbrechen" und „Speichern" sonst unter dem Bildschirmrand — der Eintrag ließ sich nicht speichern.
 
 - **Gleichzeitige Änderungen sagen es dir, ohne deine Eingabe wegzuwerfen.** Hat jemand anderes denselben Eintrag zwischenzeitlich geändert, bleibt alles Getippte stehen und der Dialog erklärt, was zu tun ist.
-
-### Fixed
-
-- **Benachrichtigungen in der Statusleiste kamen bei niemandem an.** Die App hatte die Android-Berechtigung dafür nie angefragt, sondern nur geprüft — und damit still nichts angezeigt. Sie fragt jetzt einmal, nachdem du drin bist.
-
-- **Sicherheits-Durchsicht vor dem ersten Release.** Serverseitige Fehlertexte landen nicht mehr im Geräte-Log, die Download-Adresse der Update-Seite wird geprüft, ein fremdes Programm kann eine laufende Anmeldung nicht mehr abbrechen, und die Android-Datensicherung ist ganz abgeschaltet — sie hätte ohnehin nichts gesichert.
-
-- **Die Raffinerie rechnete die Erntemenge falsch um.** Der Server führt Mengen in Units (100 Units = 1 SCU); die App zeigte sie als SCU an und hätte beim Einlagern das Hundertfache gebucht. Zeitstempel in Raffinerie und Materialbörse erscheinen jetzt in deiner Zeitzone statt als Rohwert, und die App stürzt nach einer Buchung nicht mehr ab.
-
-- **Negative Beträge sahen unterschiedlich aus.** In den Einsatz-Finanzen stand „−2.500" bei den Ausgaben und „-2.500" eine Zeile darunter beim Netto — zwei Zeichen für dieselbe Sache.
-
-- **Aktionen in Bottom-Sheets lagen unter der Gestenleiste.** „Buchen" und „Speichern" ließen sich am unteren Bildschirmrand nicht antippen — der Tipp ging ans System statt an den Knopf. Betrifft alle Sheets der App.
-
-- **Der leere Hangar verwies noch auf die Weboberfläche.** „Schiffe hinzufügen geht derzeit über die Weboberfläche" stimmte nicht mehr, sobald die App es selbst kann.
-
-- **Die Sitzung hält jetzt länger als eine Stunde.** Bisher lief die Anmeldung nach Ablauf des Zugriffs-Tokens aus, und danach meldete jeder Bildschirm „Signal Lost" — nur ein Neustart der App half. Das Token wird jetzt vor Ablauf und nach einer Ablehnung durch den Server erneuert (REQ-APP-AUTH-012).
-
-- **Ziehen zum Aktualisieren funktioniert jetzt auch auf leeren Listen.** Genau dort, wo man es braucht — leere Auftragsliste, noch kein Konto sichtbar — passierte beim Ziehen bisher nichts (REQ-APP-UI-001).
-
-- **Ein laufender Einsatz verschwand aus der Liste.** „Vergangene aus" hat nach Startzeit gefiltert und damit auch jeden Einsatz ausgeblendet, der gerade läuft. Es filtert jetzt nach Status, wie die Weboberfläche (REQ-APP-MIS-002).
-
-- **Der Posteingang ließ die App abstürzen.** Beim Zusammensetzen des Benachrichtigungstexts brach die App auf dem Gerät ab, sobald eine Benachrichtigung vorlag (REQ-APP-NOTIF-009).
-
-- **„Anteil je Teilnehmer" zeigte 0 aUEC.** Im Finanz-Rollup einer Operation wurde der Anteil eines Verzichtenden gelesen, der serverseitig null ist. Genannt wird jetzt der tatsächlich verdiente Anteil, bei ungleicher Aufteilung als Spanne (REQ-APP-OPS-012).
-
-- **Fehlende Mengen im Auftrag lasen sich wie ein Anzeigefehler.** Eine Materialzeile ohne Bestandsangabe zeigte „ / 500"; jetzt steht dort ein Gedankenstrich, und ohne Bestandsangabe gibt es keinen Fortschrittsbalken statt eines leeren (REQ-APP-ORDERS-008).
-
-- **Die Übersicht behauptete „Nichts Ungelesenes", bevor der Posteingang geantwortet hatte** — auch dann, wenn die Glocke daneben eine 2 zeigte (REQ-APP-DASH-008).
-
-- **Der Reiter „Einsätze" trug eine erfundene Zahl.** Am Symbol klebte fest eine 2, unabhängig davon, was es zu sehen gab.
-
-### Added
 
 - **Das Lager ist da.** Der Bestand als Baum: je Material eine Zeile mit Menge, Einheit und Qualität, aufklappbar zu den einzelnen Beständen mit Verwahrer, Ort und Anzahl der Einträge. Geladen wird eine Gruppe erst beim Aufklappen. Schlägt das fehl, bleibt die Gruppe offen und sagt es — statt sich wortlos wieder zu schließen. Ein- und Ausbuchen bleibt der Weboberfläche vorbehalten (REQ-APP-INV-001…006).
 
@@ -722,30 +682,6 @@ Erste Veröffentlichung der Android-App.
   erzeugt, nicht gepflegt — und der Build bricht ab, wenn eine Abhängigkeit unter einer Lizenz
   hereinkommt, die nicht ausdrücklich erlaubt ist (REQ-APP-SET-006).
 
-### Fixed
-
-- **Die App stürzte ab, sobald der Bildschirm neu aufgebaut wurde** — etwa beim Drehen eines
-  Tablets. Sie verschwand dabei kommentarlos zum Startbildschirm. Ursache war, dass die
-  Anmelde-Verwaltung an den Bildschirm statt an die App gebunden war und der gespeicherte
-  Anmelde-Speicher sich nicht zweimal öffnen lässt. Sie gehört jetzt der App: Beim Neuaufbau
-  bleibt man angemeldet, eine offene App-Sperre bleibt offen, und eine laufende Anmeldung läuft
-  weiter. Gefunden beim Umschalten der Sprache, die denselben Neuaufbau auslöst
-  (REQ-APP-SET-008).
-
-### Changed
-
-- **Die Navigation ist jetzt übersetzbar.** Die Bezeichnungen der Bereiche standen fest im Code
-  und wären auf Englisch deutsch geblieben — also ausgerechnet auf der größten Fläche der App.
-  Fachbegriffe bleiben auch im Englischen deutsch (Einsätze, Aufträge, Lager, Raffinerie,
-  Materialbörse, Beförderung) — sie sind die Sprache der Staffel, keine zu übersetzenden Wörter
-  (REQ-APP-SET-003).
-
-### Changed
-
-- **Die App setzt jetzt Android 11 voraus (vorher Android 10).** Android 10 bot für die App-Sperre nur einen schwächeren Schlüsseltyp an, der einen zweiten, kaum benutzten Sonderweg im Code nötig machte — und dieser Sonderweg funktionierte nicht: Auf Android 10 ließ sich die Sperre weder einschalten noch öffnen, und die App meldete sie fälschlich als dauerhaft unbrauchbar. Statt ihn zu reparieren ist er entfallen. Auf Android 11 und neuer bestätigt jede Abfrage jetzt genau den Vorgang, den sie freigibt. Geräte mit Android 10 können die App nicht mehr installieren und nutzen weiterhin die Web-Anwendung.
-
-### Added
-
 - **Die App-Sperre schützt jetzt auch die gespeicherte Anmeldung, nicht nur den Bildschirm.** Bisher lag das gespeicherte Sitzungs-Token hinter dem Sperrbildschirm, war aber technisch auch ohne Entsperren lesbar. Es liegt nun zusätzlich unter einem Schlüssel, den das Gerät erst nach Fingerabdruck, Gesicht oder Gerätesperre herausgibt. Wer die Sperre aus- oder einschaltet, bleibt angemeldet; ist die Sperre aktiv und noch nicht geöffnet, bleibt die gespeicherte Anmeldung unangetastet liegen statt gelöscht zu werden (REQ-APP-AUTH-010).
 
 - **Entwickler-Builds erreichen jetzt das Backend des lokalen Teststacks — ohne Einrichtung.** Dessen Zertifikat scheiterte bisher an der TLS-Prüfung, und zwar ohne erkennbare Ursache: Die App meldete schlicht „keine Verbindung", während der Server auf demselben Rechner lief. Der Teststack bringt jetzt ein gemeinsames Zertifikat mit, das der Entwickler-Build kennt; das früher nötige Einrichten eines eigenen Zertifikats im Emulator entfällt — es ließ sich auf den gebräuchlichen Emulator-Abbildern gar nicht automatisieren. Release-Builds sind davon unberührt: Die Ausnahme steht in einem Bereich, den Android nur für Debug-Builds beachtet, und das Zertifikat liegt ausschließlich im Entwickler-Flavour (REQ-APP-AUTH-011).
@@ -756,12 +692,6 @@ Erste Veröffentlichung der Android-App.
 - **Wer noch nicht freigegeben ist, sieht das jetzt — statt einer Wand aus Fehlern.** Nach der Anmeldung prüft die App, ob das Konto von der Administration freigeschaltet ist, und zeigt andernfalls einen eigenen Wartebildschirm mit dem Kontonamen, einer Schaltfläche zum Aktualisieren und dem Weg zum Abmelden. Der Status wird alle 60 Sekunden automatisch neu geprüft; sobald die Freigabe kommt, geht es ohne Zutun weiter. Abgelehnte Konten bekommen denselben Bildschirm mit eigener Formulierung. Ist der Status gar nicht abfragbar, sagt die App genau das — und behauptet nicht, das Konto warte auf Freigabe.
 
 - **Die App hat ein Symbol.** Der Startbildschirm zeigt jetzt das Basetool-Zeichen (orange auf schwarz) statt des Android-Platzhalters — als anpassungsfähiges Symbol, das sich jeder Launcher-Form fügt, mit eigener einfarbiger Variante für die Design-Symbole von Android 13+. Auf dem Tablet trägt auch die Seitenleiste das Zeichen statt der Kartell-Marke.
-
-### Changed
-
-- **Sicherheitskonzept nach Code-Audit des Basetool-Backends nachgeschärft.** Die Konzeptdokumente übernehmen die verifizierten Ergebnisse einer Code-Analyse des Haupt-Repos: Die API-Exposition bekommt eine Default-Deny-Allowlist statt einer Blockliste, das Backend braucht vor der Freischaltung den Right-to-Left-`X-Forwarded-For`-Walk und einen eigenen Management-Port, Audience-Enforcement wird Release-Gate, und ein Keycloak-Härtungspaket (Event-Logging, S256-Client-Policy, Token-Endpoint-Budget) kommt in Phase 0 dazu. App-seitig neu: kein OkHttp-Disk-Cache, `setUnlockedDeviceRequired` für den Token-Schlüssel, server-synchronisierte DPoP-Uhrzeit, Mindestversions-Gate, CA-Pin als bevorzugte Pinning-Variante sowie Gradle Dependency Verification und Release-Provenance in der CI.
-
-### Added
 
 - **Die App baut: Gradle-Gerüst, KRT-Theme und Komponentenbibliothek stehen.** Zwei Module (`app`, `core:designsystem`) auf AGP 9.3 / Kotlin 2.4 / Compose Material 3, minSdk 29 und targetSdk 37. Enthalten sind das vollständige Design-Token-Set (Farben, Lato-Typografie, eckige Formen, Abstände), die Komponenten aus Kapitel 02 der Design-Spezifikation (Button-Leiter, HUD-Box und Karten, Chips und Status-Anzeigen, Listenzeilen, Formularfelder, Modal/Toast/Sheet, Lade-, Offline- und Leerzustände, KPI-Kacheln), 63 aus dem Design-Sprite erzeugte Vektor-Icons sowie die mitgelieferten Lato-Schriften samt OFL-Lizenztext. Eine Showcase-App zeigt alle Komponenten zum Abgleich mit den Design-Referenzen.
 
@@ -778,3 +708,53 @@ Erste Veröffentlichung der Android-App.
 - **Community- und Rechtsdokumente übernommen.** Code of Conduct (Contributor Covenant 3.0), eigenes Contributor License Agreement (CLA v1.0, wirksam 17.08.2026) mit öffentlichem Signatur-Roster unter `docs/cla-signatures.md`, ein Beitragsleitfaden (`CONTRIBUTING.md`) mit DCO-Sign-off-Pflicht für jeden Commit sowie eine Security-Policy (`.github/SECURITY.md`) mit privatem Meldeweg, App-spezifischem Scope und Safe-Harbor-Zusage.
 
 - **Star-Citizen-Fan-Kit-Compliance verankert.** Das „Made By The Community"-Logo und der vorgeschriebene CIG-Markenhinweis sind als gekoppeltes Paar verbindlich geregelt (CLAUDE.md, Design-Prompt: Pflichtplatzierung auf dem Login-Screen); das unveränderte Logo-Artwork liegt unter `core/designsystem/fankit/`, der Markenhinweis steht zusätzlich im README.
+
+### Changed
+
+- **Die Navigation ist jetzt übersetzbar.** Die Bezeichnungen der Bereiche standen fest im Code
+  und wären auf Englisch deutsch geblieben — also ausgerechnet auf der größten Fläche der App.
+  Fachbegriffe bleiben auch im Englischen deutsch (Einsätze, Aufträge, Lager, Raffinerie,
+  Materialbörse, Beförderung) — sie sind die Sprache der Staffel, keine zu übersetzenden Wörter
+  (REQ-APP-SET-003).
+
+- **Die App setzt jetzt Android 11 voraus (vorher Android 10).** Android 10 bot für die App-Sperre nur einen schwächeren Schlüsseltyp an, der einen zweiten, kaum benutzten Sonderweg im Code nötig machte — und dieser Sonderweg funktionierte nicht: Auf Android 10 ließ sich die Sperre weder einschalten noch öffnen, und die App meldete sie fälschlich als dauerhaft unbrauchbar. Statt ihn zu reparieren ist er entfallen. Auf Android 11 und neuer bestätigt jede Abfrage jetzt genau den Vorgang, den sie freigibt. Geräte mit Android 10 können die App nicht mehr installieren und nutzen weiterhin die Web-Anwendung.
+
+- **Sicherheitskonzept nach Code-Audit des Basetool-Backends nachgeschärft.** Die Konzeptdokumente übernehmen die verifizierten Ergebnisse einer Code-Analyse des Haupt-Repos: Die API-Exposition bekommt eine Default-Deny-Allowlist statt einer Blockliste, das Backend braucht vor der Freischaltung den Right-to-Left-`X-Forwarded-For`-Walk und einen eigenen Management-Port, Audience-Enforcement wird Release-Gate, und ein Keycloak-Härtungspaket (Event-Logging, S256-Client-Policy, Token-Endpoint-Budget) kommt in Phase 0 dazu. App-seitig neu: kein OkHttp-Disk-Cache, `setUnlockedDeviceRequired` für den Token-Schlüssel, server-synchronisierte DPoP-Uhrzeit, Mindestversions-Gate, CA-Pin als bevorzugte Pinning-Variante sowie Gradle Dependency Verification und Release-Provenance in der CI.
+
+### Fixed
+
+- **Benachrichtigungen in der Statusleiste kamen bei niemandem an.** Die App hatte die Android-Berechtigung dafür nie angefragt, sondern nur geprüft — und damit still nichts angezeigt. Sie fragt jetzt einmal, nachdem du drin bist.
+
+- **Sicherheits-Durchsicht vor dem ersten Release.** Serverseitige Fehlertexte landen nicht mehr im Geräte-Log, die Download-Adresse der Update-Seite wird geprüft, ein fremdes Programm kann eine laufende Anmeldung nicht mehr abbrechen, und die Android-Datensicherung ist ganz abgeschaltet — sie hätte ohnehin nichts gesichert.
+
+- **Die Raffinerie rechnete die Erntemenge falsch um.** Der Server führt Mengen in Units (100 Units = 1 SCU); die App zeigte sie als SCU an und hätte beim Einlagern das Hundertfache gebucht. Zeitstempel in Raffinerie und Materialbörse erscheinen jetzt in deiner Zeitzone statt als Rohwert, und die App stürzt nach einer Buchung nicht mehr ab.
+
+- **Negative Beträge sahen unterschiedlich aus.** In den Einsatz-Finanzen stand „−2.500" bei den Ausgaben und „-2.500" eine Zeile darunter beim Netto — zwei Zeichen für dieselbe Sache.
+
+- **Aktionen in Bottom-Sheets lagen unter der Gestenleiste.** „Buchen" und „Speichern" ließen sich am unteren Bildschirmrand nicht antippen — der Tipp ging ans System statt an den Knopf. Betrifft alle Sheets der App.
+
+- **Der leere Hangar verwies noch auf die Weboberfläche.** „Schiffe hinzufügen geht derzeit über die Weboberfläche" stimmte nicht mehr, sobald die App es selbst kann.
+
+- **Die Sitzung hält jetzt länger als eine Stunde.** Bisher lief die Anmeldung nach Ablauf des Zugriffs-Tokens aus, und danach meldete jeder Bildschirm „Signal Lost" — nur ein Neustart der App half. Das Token wird jetzt vor Ablauf und nach einer Ablehnung durch den Server erneuert (REQ-APP-AUTH-012).
+
+- **Ziehen zum Aktualisieren funktioniert jetzt auch auf leeren Listen.** Genau dort, wo man es braucht — leere Auftragsliste, noch kein Konto sichtbar — passierte beim Ziehen bisher nichts (REQ-APP-UI-001).
+
+- **Ein laufender Einsatz verschwand aus der Liste.** „Vergangene aus" hat nach Startzeit gefiltert und damit auch jeden Einsatz ausgeblendet, der gerade läuft. Es filtert jetzt nach Status, wie die Weboberfläche (REQ-APP-MIS-002).
+
+- **Der Posteingang ließ die App abstürzen.** Beim Zusammensetzen des Benachrichtigungstexts brach die App auf dem Gerät ab, sobald eine Benachrichtigung vorlag (REQ-APP-NOTIF-009).
+
+- **„Anteil je Teilnehmer" zeigte 0 aUEC.** Im Finanz-Rollup einer Operation wurde der Anteil eines Verzichtenden gelesen, der serverseitig null ist. Genannt wird jetzt der tatsächlich verdiente Anteil, bei ungleicher Aufteilung als Spanne (REQ-APP-OPS-012).
+
+- **Fehlende Mengen im Auftrag lasen sich wie ein Anzeigefehler.** Eine Materialzeile ohne Bestandsangabe zeigte „ / 500"; jetzt steht dort ein Gedankenstrich, und ohne Bestandsangabe gibt es keinen Fortschrittsbalken statt eines leeren (REQ-APP-ORDERS-008).
+
+- **Die Übersicht behauptete „Nichts Ungelesenes", bevor der Posteingang geantwortet hatte** — auch dann, wenn die Glocke daneben eine 2 zeigte (REQ-APP-DASH-008).
+
+- **Der Reiter „Einsätze" trug eine erfundene Zahl.** Am Symbol klebte fest eine 2, unabhängig davon, was es zu sehen gab.
+
+- **Die App stürzte ab, sobald der Bildschirm neu aufgebaut wurde** — etwa beim Drehen eines
+  Tablets. Sie verschwand dabei kommentarlos zum Startbildschirm. Ursache war, dass die
+  Anmelde-Verwaltung an den Bildschirm statt an die App gebunden war und der gespeicherte
+  Anmelde-Speicher sich nicht zweimal öffnen lässt. Sie gehört jetzt der App: Beim Neuaufbau
+  bleibt man angemeldet, eine offene App-Sperre bleibt offen, und eine laufende Anmeldung läuft
+  weiter. Gefunden beim Umschalten der Sprache, die denselben Neuaufbau auslöst
+  (REQ-APP-SET-008).

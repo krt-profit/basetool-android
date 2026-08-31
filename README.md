@@ -5,7 +5,7 @@ the "DAS KARTELL" Star Citizen organization. Kotlin + Jetpack Compose, phones
 portrait-first, tablets landscape-first, minSdk 30 (Android 11), dark-only DAS KARTELL
 design.
 
-**Released: [v0.1.3](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
+**Released: [v0.2.0](https://github.com/krt-profit/basetool-android/releases/latest).** Install it
 through Obtainium or straight from the release page — and check what you installed before you do
 (see [Installing, and checking what you installed](#installing-and-checking-what-you-installed)).
 
