@@ -135,11 +135,14 @@ class RefineryScreenTest {
     }
 
     @Test
-    fun `a finished run leads with its yield rather than a time`() {
+    fun `a finished run says which method produced it`() {
         list(now = AFTER)
 
         assertPhase("Abholbereit")
-        compose.onNodeWithText("Dinyx-Solventierung · 622 SCU").assertIsDisplayed()
+        // The method alone. Round 14 (S15) moved the start time up into the card's lead — which
+        // is what names a run that has no number — and the goods are listed under it in full, so
+        // the second line no longer repeats a total.
+        compose.onNodeWithText("Dinyx-Solventierung").assertIsDisplayed()
     }
 
     @Test

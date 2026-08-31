@@ -107,6 +107,7 @@ import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.fieldMessage
+import de.greluc.krt.profit.basetool.android.ui.krtShortDay
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
@@ -1214,9 +1215,20 @@ private fun OrderDetailBody(
                 // 10-2, 11, 12) draws that one. The louder badge belongs where a status is the
                 // page's whole subject.
                 KrtStatusPill(text = order.statusLabel(), tone = order.statusTone())
+                // „Prio 1 · angelegt 12.07." — the chapter's own head line. It used to end with
+                // „fällig 21.08.", which round 14 struck: `JobOrderDto` carries `createdAt` and no
+                // due date at all, so the head says the date the order actually has (S21, and the
+                // backend ask G9 if a due date is ever wanted).
                 order.priority?.let {
                     Text(
                         text = stringResource(R.string.order_detail_priority, it),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = KrtPalette.TextMuted,
+                    )
+                }
+                order.createdAt?.let { raised ->
+                    Text(
+                        text = stringResource(R.string.order_detail_created, raised.krtShortDay()),
                         style = MaterialTheme.typography.labelMedium,
                         color = KrtPalette.TextMuted,
                     )

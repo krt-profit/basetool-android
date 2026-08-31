@@ -70,6 +70,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSect
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtColor
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -78,6 +79,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBot
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import de.greluc.krt.profit.basetool.android.ui.krtShortMoment
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
@@ -335,14 +337,35 @@ private fun OrderRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = order.locationName.ifBlank { stringResource(R.string.refinery_station_unknown) },
-                style = MaterialTheme.typography.titleMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            // „ARC-L1 · 16.08. 22:41" — station AND start time, because a refinery run has no
+            // number to lead with (round 14 · S15: there is no `displayId` like an Auftrag's, and
+            // G10 asks for one). The station alone made every card on a Staffel with one refinery
+            // look the same; the time is what tells them apart.
+            //
+            // Two texts, so the STATION gives way first: „ARC-L1 Wide Forest Station" is a real
+            // name in the fixtures and one Text ellipsised the time away — exactly the half that
+            // carries the distinction.
+            Row(
                 modifier = Modifier.weight(1f),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = order.locationName.ifBlank { stringResource(R.string.refinery_station_unknown) },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = KrtPalette.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                order.krtStarted()?.let { started ->
+                    Text(
+                        text = SEPARATOR + started,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = KrtPalette.White,
+                        maxLines = 1,
+                    )
+                }
+            }
             KrtStatusPill(
                 text = stringResource(phase.labelRes()),
                 tone = phase.tone(),
@@ -353,7 +376,7 @@ private fun OrderRow(
             )
         }
         Text(
-            text = secondLine(order, phase),
+            text = secondLine(order),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
             maxLines = 2,
@@ -431,11 +454,11 @@ private fun CardFooter(
         Text(
             text = remaining,
             style = MaterialTheme.typography.bodySmall,
-            // Muted, not success green: the countdown is a fact about a run still in progress, and
-            // artboard 11-1 keeps green for „Abholbereit", which is the state worth spotting from
-            // across the list. It was green even for „Restzeit unbekannt", so a run whose end the
-            // server does not know read as one ready to collect.
-            color = KrtPalette.TextMuted,
+            // The PHASE's tone, which is what artboard 11-1 draws: „noch 5 Std. 12 Min." in the
+            // running blue, „seit 06:41 abholbereit" in the ready green. It was hardcoded green,
+            // so a run whose end the server does not know read as one ready to collect — the tint
+            // has to follow the state rather than announce one.
+            color = phase.tone().krtColor(),
             modifier = Modifier.weight(1f),
         )
         value?.let { amount ->
@@ -470,33 +493,36 @@ private fun CardFooter(
 /**
  * The row's second line: what a member needs to tell two orders apart at a glance.
  *
- * A running order leads with the time left, because that is the only thing about it that changes;
- * everything else leads with the yield, because that is what the order was for.
+ * The METHOD alone, since round 14 (S15): the start time moved up into the lead line, the goods
+ * are listed under it in full, and a running order's remaining time belongs to the footer
+ * (artboard 11-1), where it sits beside the value. Each of those had at some point been folded in
+ * here, and the card ended up saying the same clock twice.
  *
  * @param order the order.
- * @param phase what the member sees.
- * @param now the clock.
- * @return the line.
+ * @return the line, empty when the server named no method.
+ */
+private fun secondLine(order: RefineryOrder): String = order.methodName.takeIf { it.isNotBlank() }.orEmpty()
+
+/**
+ * What the card leads with: the station and the moment the run started.
+ *
+ * @receiver the run.
+ * @return „ARC-L1 · 16.08. 22:41", or the station alone when the server sent no start.
  */
 @Composable
-private fun secondLine(
-    order: RefineryOrder,
-    phase: RefineryPhase,
-): String {
-    val method = order.methodName.takeIf { it.isNotBlank() }
-    // A running order's remaining time belongs to the footer (artboard 11.1), where it sits beside
-    // the value. Repeating it here put the same clock on the card twice.
-    val detail =
-        if (phase == RefineryPhase.RUNNING) {
-            null
-        } else {
-            // The order's own unit is not knowable across mixed goods, so the row states SCU —
-            // which every refining run in practice is. A single-good order takes the good's unit.
-            val piece = order.yields.isNotEmpty() && order.yields.all { it.unitIsPiece }
-            amountText(order.totalAmount, piece)
-        }
-    return listOfNotNull(method, detail).joinToString(SEPARATOR)
+private fun RefineryOrder.krtLead(): String {
+    val station = locationName.ifBlank { stringResource(R.string.refinery_station_unknown) }
+    return listOfNotNull(station, krtStarted()).joinToString(SEPARATOR)
 }
+
+/**
+ * When the run started, as the chapter writes a moment.
+ *
+ * @receiver the run.
+ * @return „16.08. 22:41", or `null` when the server sent no start.
+ */
+private fun RefineryOrder.krtStarted(): String? =
+    startedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }?.krtShortMoment()
 
 /**
  * The remaining-time text of chapter 11, at the granularity the clock ticks.
@@ -808,10 +834,9 @@ private fun OrderDetailBody(
                 modifier = Modifier.padding(top = 2.dp),
             ) {
                 KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
-                val identity =
-                    listOf(order.locationName, order.methodName)
-                        .filter { it.isNotBlank() }
-                        .joinToString(SEPARATOR)
+                // Station and start time, the same lead the list card carries — the run has no
+                // number, and these two together are what names it (round 14 · S15).
+                val identity = order.krtLead()
                 if (identity.isNotBlank()) {
                     Text(
                         text = identity,

@@ -773,6 +773,7 @@
     <string name="order_tab_positions">Positionen</string>
     <string name="order_tab_assignees">Zuständig</string>
     <string name="order_tab_handovers">Übergaben</string>
+    <string name="order_detail_created">angelegt %1$s</string>
     <string name="order_detail_priority">Prio %1$d</string>
     <string name="order_detail_fact_for">Für</string>
     <string name="order_detail_fact_by">Durch</string>

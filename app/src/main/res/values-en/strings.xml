@@ -752,6 +752,7 @@
     <string name="order_tab_positions">Positions</string>
     <string name="order_tab_assignees">Assigned</string>
     <string name="order_tab_handovers">Handovers</string>
+    <string name="order_detail_created">created %1$s</string>
     <string name="order_detail_priority">Prio %1$d</string>
     <string name="order_detail_fact_for">For</string>
     <string name="order_detail_fact_by">By</string>

@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -282,7 +283,7 @@ private fun DemandRow(
                         row.unit,
                     ),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (row.uncovered) KrtTheme.colors.warning else KrtTheme.colors.successText,
+                color = row.krtOutstandingTone(),
             )
         }
         CoverageBar(coverage = row.coverage, uncovered = row.uncovered)
@@ -312,6 +313,38 @@ private fun DemandRow(
     }
     KrtHairlineRule()
 }
+
+/**
+ * The tone of the outstanding figure — three thresholds on the **open share of the required
+ * amount**, stated by the chapter rather than guessed (ch. 10, round 14 · S22).
+ *
+ * `< 30 %` white · `30–99 %` warning yellow · `100 %` danger red, where 100 % means nothing has
+ * been booked or promised at all. It was two tones on „is anything still open", which made a
+ * material that is 3 % short look exactly as urgent as one nobody has touched.
+ *
+ * A row with no required amount takes the plain tone: there is no share to measure.
+ *
+ * @receiver the demand row.
+ * @return the colour for the figure.
+ */
+@Composable
+private fun MaterialDemandRow.krtOutstandingTone(): Color {
+    if (required <= 0.0) {
+        return KrtPalette.White
+    }
+    val share = outstanding / required
+    return when {
+        share >= FULLY_OPEN -> KrtTheme.colors.dangerText
+        share >= PARTLY_OPEN -> KrtTheme.colors.warning
+        else -> KrtPalette.White
+    }
+}
+
+/** At or above this open share the figure is red: nothing has been booked or promised. */
+private const val FULLY_OPEN = 1.0
+
+/** At or above this open share the figure is yellow. */
+private const val PARTLY_OPEN = 0.30
 
 /**
  * The coverage bar: how much of what was asked for is already booked or promised.
