@@ -38,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateRangePickerModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
@@ -50,7 +51,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -234,23 +236,7 @@ private fun MissionsFilterBar(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
-            FILTERABLE_STATUSES.forEach { status ->
-                val selected = status in state.query.statuses
-                KrtFilterChip(
-                    text = stringResource(status.labelRes()),
-                    selected = selected,
-                    onClick = {
-                        onStatusToggled(
-                            if (selected) state.query.statuses - status else state.query.statuses + status,
-                        )
-                    },
-                )
-            }
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        ) {
+            StatusFilterChip(statuses = state.query.statuses, onStatusToggled = onStatusToggled)
             KrtFilterChip(
                 text =
                     stringResource(
@@ -278,6 +264,67 @@ private fun MissionsFilterBar(
         }
     }
 }
+
+/**
+ * The status filter: **one** chip that names what it carries, and a sheet behind it.
+ *
+ * Artboard 06-1 draws „STATUS: ALLE" beside Zeitraum and Vergangene, and the handoff says the web
+ * filters „collapse into the chip row; chips open pickers as bottom sheets". Four toggle chips took
+ * a line of their own on a 411 dp phone and pushed the list down by that much, for a filter most
+ * members set once.
+ *
+ * The label states the selection rather than the word „Status" alone: nothing selected is „Alle",
+ * one is that status by name, more than one is the count. A chip that never changes says nothing
+ * about what the list below it is showing.
+ *
+ * @param statuses which statuses are currently kept.
+ * @param onStatusToggled the new set.
+ */
+@Composable
+private fun StatusFilterChip(
+    statuses: Set<MissionStatus>,
+    onStatusToggled: (Set<MissionStatus>) -> Unit,
+) {
+    var picking by remember { mutableStateOf(false) }
+    val label =
+        when (statuses.size) {
+            0 -> stringResource(R.string.missions_filter_status_all)
+            1 -> stringResource(R.string.missions_filter_status_one, stringResource(statuses.first().labelRes()))
+            else -> stringResource(R.string.missions_filter_status_many, statuses.size)
+        }
+    KrtFilterChip(
+        text = label,
+        selected = statuses.isNotEmpty(),
+        onClick = { picking = true },
+        onClear = if (statuses.isNotEmpty()) ({ onStatusToggled(emptySet()) }) else null,
+        clearLabel = stringResource(R.string.missions_filter_status_clear),
+        modifier = Modifier.testTag(MISSIONS_STATUS_TAG),
+    )
+    if (picking) {
+        KrtBottomSheet(
+            onDismiss = { picking = false },
+            title = stringResource(R.string.missions_filter_status),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = KrtSpacing.s12)) {
+                FILTERABLE_STATUSES.forEach { status ->
+                    val selected = status in statuses
+                    KrtSheetOption(
+                        text = stringResource(status.labelRes()),
+                        selected = selected,
+                        // Multi-select, so the sheet stays open: picking two statuses is one
+                        // decision, and closing after the first would make it two trips.
+                        onClick = {
+                            onStatusToggled(if (selected) statuses - status else statuses + status)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Test handle for the status filter chip. */
+const val MISSIONS_STATUS_TAG: String = "missions-status-filter"
 
 /**
  * The date-range filter chip and its picker — design ch. 02 §11 d, spec §C7.
@@ -427,6 +474,10 @@ private fun MissionRow(
     // A card, not a padded Column: every design chapter draws its list items as bordered
     // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
     KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        // Two lines, divided as artboard 06-1 divides them: the name and where the row leads on
+        // the first, the state and the clock on the second. The status used to sit top-right as a
+        // filled badge, which put the loudest thing in the row beside the name and left the org
+        // badge to share the second line with the time.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -438,19 +489,6 @@ private fun MissionRow(
                 color = KrtPalette.White,
                 modifier = Modifier.weight(1f),
             )
-            KrtStatusBadge(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = mission.timeLabel(zone),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-                modifier = Modifier.weight(1f),
-            )
             mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
             // Design ch. 06 artboard 1 closes every row with a chevron. On a card whose whole
             // surface is the tap target, it is the only thing that says the card HAS a target —
@@ -459,6 +497,22 @@ private fun MissionRow(
                 id = DesignR.drawable.ic_krt_chevron_right,
                 contentDescription = null,
                 tint = KrtPalette.Gray2,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // The quiet pill, not the page badge: a list of ten rows each shouting its status in a
+            // filled frame is a list nobody can scan. `KrtStatusBadge` stays for the one status
+            // that describes a whole screen.
+            KrtStatusPill(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
+            Text(
+                text = mission.timeLabel(zone),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+                modifier = Modifier.weight(1f),
             )
         }
     }

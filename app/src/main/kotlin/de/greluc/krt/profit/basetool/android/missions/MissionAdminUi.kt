@@ -8,6 +8,7 @@ package de.greluc.krt.profit.basetool.android.missions
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -28,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateTimeField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPanelHeader
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -512,9 +514,25 @@ private fun MissionSection.titleRes(): Int =
  */
 @Composable
 private fun Hint(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.TextMuted,
-    )
+    // With the info glyph the artboards draw beside it: a paragraph of muted text at the top of a
+    // form otherwise reads as part of the form rather than as a note about it.
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+    ) {
+        KrtIcon(
+            id = DesignR.drawable.ic_krt_info,
+            contentDescription = null,
+            size = HINT_GLYPH,
+            tint = KrtPalette.TextMuted,
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+    }
 }
+
+/** The info glyph beside a hint — 16 px in artboard 06-7. */
+private val HINT_GLYPH = 16.dp
