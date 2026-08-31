@@ -75,13 +75,9 @@ internal fun LazyListScope.participantsTab(
     items(ordered, key = { it.id }) { participant ->
         ParticipantRow(participant = participant, isMine = participant.id == mine?.id, roster = roster)
     }
-    item {
-        Text(
-            text = stringResource(R.string.mission_detail_roster_note),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
-    }
+    // No footnote. Artboard 06-2 ends the tab with a grey paragraph, but it is a **handoff
+    // annotation** rather than copy — its second sentence points at „Muster Kap. 09" — and the app
+    // does not put chapter references in front of members.
 }
 
 /**

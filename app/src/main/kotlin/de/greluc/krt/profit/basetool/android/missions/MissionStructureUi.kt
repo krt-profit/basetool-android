@@ -166,6 +166,7 @@ fun UnitComposeSheet(structure: MissionStructureActions) {
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
+            StructureError(structure)
             KrtTextField(
                 value = structure.draft.unitName,
                 onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
@@ -385,6 +386,7 @@ fun UnitRenameSheet(structure: MissionStructureActions) {
             modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
+            StructureError(structure)
             KrtTextField(
                 value = typed,
                 onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
@@ -554,31 +556,86 @@ private const val TAKEN_ROLE_ALPHA = 0.55f
  * @param structure the actions and what is typed.
  */
 @Composable
-fun FrequencyComposer(structure: MissionStructureActions) {
+fun FrequencyAdd(structure: MissionStructureActions) {
     val gate = missionManagerGate(structure.canManage)
-    val (dim, click) = rememberGated(gate, structure.onAddFrequency, structure.denials)
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-        KrtTextField(
-            value = structure.draft.freqName,
-            onValueChange = { v -> structure.onChange { it.copy(freqName = v) } },
-            label = stringResource(R.string.mission_struct_freq_name),
-            enabled = structure.enabled && gate.allowed,
+    val (dim, click) =
+        rememberGated(
+            gate,
+            { structure.onChange { it.copy(composingFrequency = true, freqName = "", freqValue = "") } },
+            structure.denials,
         )
-        KrtTextField(
-            value = structure.draft.freqValue,
-            onValueChange = { v -> structure.onChange { it.copy(freqValue = v) } },
-            label = stringResource(R.string.mission_struct_freq_value),
-            enabled = structure.enabled && gate.allowed,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        )
-        KrtGhostButton(
-            text = stringResource(R.string.mission_struct_add_freq),
-            onClick = click,
-            iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
-            modifier = dim.testTag(MISSION_FREQ_ADD_TAG),
-            enabled = structure.enabled,
-        )
+    KrtAssocAdd(
+        text = stringResource(R.string.mission_struct_add_freq_short),
+        onClick = click,
+        modifier = dim.fillMaxWidth().testTag(MISSION_FREQ_ADD_TAG),
+        enabled = structure.enabled,
+        locked = !gate.allowed,
+    )
+}
+
+/** Test handle for the „Frequenz hinzufügen" sheet. */
+const val MISSION_FREQ_COMPOSE_TAG: String = "mission-freq-compose"
+
+/**
+ * Composing a frequency — two fields, in a sheet.
+ *
+ * The Frequenzen tab is a **reading** surface: on the evening of an Einsatz it is opened to copy a
+ * number, and it used to open on two empty inputs above the numbers. Same move as the Einheit's
+ * composer, and the same reason (design ch. 18 §3, E7).
+ *
+ * @param structure the actions and what is typed.
+ */
+@Composable
+fun FrequencyComposeSheet(structure: MissionStructureActions) {
+    if (!structure.draft.composingFrequency) {
+        return
     }
+    KrtBottomSheet(
+        onDismiss = { structure.onChange { MissionStructureDraft() } },
+        modifier = Modifier.testTag(MISSION_FREQ_COMPOSE_TAG),
+        title = stringResource(R.string.mission_struct_add_freq),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        ) {
+            StructureError(structure)
+            KrtTextField(
+                value = structure.draft.freqName,
+                onValueChange = { v -> structure.onChange { it.copy(freqName = v) } },
+                label = stringResource(R.string.mission_struct_freq_name),
+                enabled = structure.enabled,
+            )
+            KrtTextField(
+                value = structure.draft.freqValue,
+                onValueChange = { v -> structure.onChange { it.copy(freqValue = v) } },
+                label = stringResource(R.string.mission_struct_freq_value),
+                enabled = structure.enabled,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+            KrtCtaButton(
+                text = stringResource(R.string.mission_struct_add_freq),
+                onClick = structure.onAddFrequency,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = structure.enabled && structure.draft.freqValue.isNotBlank(),
+            )
+        }
+    }
+}
+
+/**
+ * Where a structure write's refusal is said out loud.
+ *
+ * `MissionStructureDraft.error` was set on every failed Einheit, crew and frequency write and
+ * **rendered nowhere**: a 403, a 409 or a dropped connection left the sheet standing open with the
+ * button still lit, which reads as a tap that did not register. Found on the device — adding a
+ * frequency did nothing, twice, with nothing on screen and nothing in the log.
+ *
+ * @param structure the actions, for the draft that carries the refusal.
+ */
+@Composable
+fun StructureError(structure: MissionStructureActions) {
+    structure.draft.error?.let { SignUpError(error = it) }
 }
 
 /**

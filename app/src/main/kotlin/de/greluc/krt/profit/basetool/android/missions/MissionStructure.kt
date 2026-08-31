@@ -45,6 +45,8 @@ private const val LOG_TAG = "MissionStructure"
  *   fourteen names on a 412 dp phone.
  * @property freqName the new frequency's label, as typed.
  * @property freqValue the frequency itself, as typed.
+ * @property composingFrequency whether the „Frequenz hinzufügen" sheet is open — same move as
+ *   [composingUnit], and for the same reason: the tab is read to copy a number.
  * @property busy whether a write is running.
  * @property error the last refusal.
  */
@@ -60,6 +62,7 @@ data class MissionStructureDraft(
     val crewPickerUnitId: String? = null,
     val freqName: String = "",
     val freqValue: String = "",
+    val composingFrequency: Boolean = false,
     val busy: Boolean = false,
     val error: ApiError? = null,
     val removingManager: MissionManager? = null,

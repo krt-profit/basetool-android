@@ -1239,14 +1239,28 @@ private fun String.toInstantOrNull(): Instant? =
  * @return the frequencies, in the server's order.
  */
 private fun MissionDto.frequencyModels(): List<MissionFrequency> =
-    frequencies.orEmpty().mapNotNull { frequency ->
-        frequency.id?.let {
-            MissionFrequency(
-                id = it,
-                type = frequency.frequencyType?.name,
-                value = frequency.name.orEmpty(),
-            )
-        }
+    frequencies.orEmpty().mapNotNull { frequency -> frequency.model() }
+
+/**
+ * One frequency as the screen reads it.
+ *
+ * **`name` is the label and `value` is the number**, and the app had them the other way round: the
+ * label was rendered as the value and the number — the only reason the tab exists — was never read
+ * at all. A custom frequency has no `frequencyType`, so its own `name` is its label; a preset one
+ * takes the type's name and leaves `name` empty.
+ *
+ * @receiver the wire row.
+ * @return the model, or `null` for a row the server sent without an id.
+ */
+private fun MissionFrequencyDto.model(): MissionFrequency? =
+    id?.let {
+        MissionFrequency(
+            id = it,
+            type = frequencyType?.name ?: name,
+            // The server's own digits, plain: `148.50` stays `148.50` rather than becoming
+            // `1.485E+2`, and no locale grouping is applied to a radio frequency.
+            value = value?.toString().orEmpty(),
+        )
     }
 
 /**
@@ -1395,16 +1409,7 @@ class MissionStructureRepository(
             is ApiResult.Success -> {
                 ApiResult.Success(
                     current.copy(
-                        frequencies =
-                            result.value.mapNotNull { dto ->
-                                dto.id?.let {
-                                    MissionFrequency(
-                                        id = it,
-                                        type = dto.frequencyType?.name,
-                                        value = dto.name.orEmpty(),
-                                    )
-                                }
-                            },
+                        frequencies = result.value.mapNotNull { it.model() },
                     ),
                 )
             }

@@ -1363,6 +1363,8 @@
     <string name="mission_struct_remove_crew">Von Bord nehmen</string>
     <string name="mission_struct_freqs">Frequenzen</string>
     <string name="mission_struct_add_freq">Frequenz hinzufügen</string>
+    <string name="mission_struct_add_freq_short">Frequenz</string>
+    <string name="mission_freq_copy">Wert kopieren</string>
     <string name="mission_struct_freq_name">Bezeichnung</string>
     <string name="mission_struct_freq_value">Frequenz</string>
     <string name="mission_struct_remove_freq">Frequenz entfernen</string>
@@ -1404,7 +1406,6 @@
     <string name="mission_detail_check_out_row">Auschecken</string>
     <string name="mission_detail_payout_row">Auszahlung umstellen</string>
     <string name="mission_detail_roster_sorted">Sortiert: Check-in</string>
-    <string name="mission_detail_roster_note">Die Einsatzleitung sieht die Check-in-Aktion je Zeile; Mitglieder nur den eigenen Status.</string>
     <plurals name="mission_roster_count">
         <item quantity="one">%1$d Teilnehmer</item>
         <item quantity="other">%1$d Teilnehmer</item>

@@ -606,21 +606,27 @@ class MissionRepositoryTest {
     @Test
     fun `a custom frequency carries its label and its value`() =
         runTest {
-            respond("""[]""")
+            respond("""[{"id":"f1","name":"Einsatz-1","value":121.50}]""")
             val structure = MissionStructureRepository(reader = reader())
 
-            structure.addCustomFrequency(
-                "m1",
-                current = mission(),
-                name = "Einsatz-1",
-                value = "121.5",
-            )
+            val result =
+                structure.addCustomFrequency(
+                    "m1",
+                    current = mission(),
+                    name = "Einsatz-1",
+                    value = "121.5",
+                )
 
             val request = server.takeRequest()
             assertTrue("a custom frequency has only a slim endpoint", request.target.endsWith("/custom/slim"))
             val body = request.body?.utf8().orEmpty()
             assertTrue(body.contains(""""name":"Einsatz-1""""))
             assertTrue(body.contains("121.5"))
+            // And the answer maps back the right way round: a custom frequency has no type, so its
+            // own name is the label, and the number is the value.
+            val saved = (result as ApiResult.Success).value.frequencies.single()
+            assertEquals("Einsatz-1", saved.type)
+            assertEquals("121.50", saved.value)
         }
 
     @Test

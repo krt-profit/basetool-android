@@ -60,6 +60,7 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionFrequency
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
@@ -78,6 +79,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilt
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
@@ -108,6 +110,7 @@ import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.launch
@@ -344,6 +347,7 @@ private fun MissionDetailOverlays(
 ) {
     MemberPickerSheet(members = members)
     UnitComposeSheet(structure = structure)
+    FrequencyComposeSheet(structure = structure)
     UnitRenameSheet(structure = structure)
     state.structure.crewPickerUnitId?.let { unitId ->
         state.detail?.units?.firstOrNull { it.id == unitId }?.let { unit ->
@@ -661,9 +665,13 @@ private fun PayoutPreference(
  */
 @Composable
 internal fun SignUpError(error: ApiError) {
+    // A validation refusal is shown in the server's own words: it names the field and the rule
+    // („<3 digits>.<2 digits> erwartet"), which is what design ch. 02 §6 draws under a field. The
+    // generic sentence stays for everything the server did not spell out.
+    val named = error.fieldMessage()
     KrtFieldError(
         text =
-            stringResource(
+            named ?: stringResource(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.mission_detail_not_allowed
@@ -807,6 +815,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
     detail: MissionDetail,
     structure: MissionStructureActions,
 ) {
+    item { StructureError(structure) }
     if (detail.units.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_units) }
     }
@@ -965,50 +974,99 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
     detail: MissionDetail,
     structure: MissionStructureActions,
 ) {
-    item { FrequencyComposer(structure) }
+    item { StructureError(structure) }
     if (detail.frequencies.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_frequencies) }
-        return
     }
     items(detail.frequencies, key = { it.id }) { frequency ->
         val clipboard = LocalClipboard.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val copy = {
+            scope.launch {
+                clipboard.setClipEntry(
+                    androidx.compose.ui.platform.ClipEntry(
+                        android.content.ClipData.newPlainText(
+                            frequency.type.orEmpty(),
+                            frequency.value,
+                        ),
+                    ),
+                )
+            }
+            Unit
+        }
+        // A bordered row with the antenna glyph, per artboard 06-2. The whole row copies, and the
+        // trailing button says so — a surface whose only gesture is invisible is one nobody uses.
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        scope.launch {
-                            clipboard.setClipEntry(
-                                androidx.compose.ui.platform.ClipEntry(
-                                    android.content.ClipData.newPlainText(
-                                        frequency.type.orEmpty(),
-                                        frequency.value,
-                                    ),
-                                ),
-                            )
-                        }
-                    }
-                    .padding(vertical = KrtSpacing.s4),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    .background(KrtPalette.Gray4)
+                    .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                    .clickable(onClick = copy)
+                    .defaultMinSize(minHeight = KrtSpacing.denseRow)
+                    .padding(horizontal = KrtSpacing.s14, vertical = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_antenna,
+                contentDescription = null,
+                size = FREQUENCY_GLYPH,
+                tint = KrtPalette.TextMuted,
+            )
             Text(
-                text = frequency.type.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
+                text = frequency.type.orEmpty().krtUppercase(),
+                style = MaterialTheme.typography.labelMedium,
                 color = KrtPalette.TextMuted,
                 modifier = Modifier.weight(1f),
             )
             // Data tone: the value stays white, never orange — a frequency is a readout, not an
             // action (design system, chip canon).
             KrtChip(text = frequency.value, tone = KrtChipTone.Data)
-            StructureRemove(
-                label = stringResource(R.string.mission_struct_remove_freq),
-                structure = structure,
-                onRemove = { structure.onRemoveFrequency(frequency.id) },
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_clipboard_check,
+                label = stringResource(R.string.mission_freq_copy),
+                onClick = copy,
             )
+            FrequencyRemove(frequency = frequency, structure = structure)
         }
     }
+    item { FrequencyAdd(structure) }
+}
+
+/** The antenna beside a frequency — 20 px in artboard 06-2. */
+private val FREQUENCY_GLYPH = 20.dp
+
+/**
+ * Dropping a frequency, as the trailing icon button of its row.
+ *
+ * Artboard 06-2 draws the row for **reading**, so it places no delete. The write exists and nothing
+ * strikes it; it takes the row's own vocabulary rather than a labelled button that would be wider
+ * than the value it removes.
+ *
+ * @param frequency the row.
+ * @param structure the actions, for the gate and the refusal slot.
+ */
+@Composable
+private fun FrequencyRemove(
+    frequency: MissionFrequency,
+    structure: MissionStructureActions,
+) {
+    val gate =
+        Gate(
+            allowed = structure.canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
+        )
+    val (dim, click) =
+        rememberGated(gate, { structure.onRemoveFrequency(frequency.id) }, structure.denials)
+    KrtIconButton(
+        iconRes = if (gate.allowed) DesignR.drawable.ic_krt_trash else DesignR.drawable.ic_krt_lock,
+        label = stringResource(R.string.mission_struct_remove_freq),
+        onClick = click,
+        modifier = dim,
+        enabled = structure.enabled,
+    )
 }
 
 /**

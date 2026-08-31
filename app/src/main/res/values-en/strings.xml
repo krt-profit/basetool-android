@@ -1342,6 +1342,8 @@
     <string name="mission_struct_remove_crew">Take off board</string>
     <string name="mission_struct_freqs">Frequencies</string>
     <string name="mission_struct_add_freq">Add frequency</string>
+    <string name="mission_struct_add_freq_short">Frequency</string>
+    <string name="mission_freq_copy">Copy value</string>
     <string name="mission_struct_freq_name">Label</string>
     <string name="mission_struct_freq_value">Frequency</string>
     <string name="mission_struct_remove_freq">Remove frequency</string>
@@ -1383,7 +1385,6 @@
     <string name="mission_detail_check_out_row">Check out</string>
     <string name="mission_detail_payout_row">Switch payout</string>
     <string name="mission_detail_roster_sorted">Sorted: check-in</string>
-    <string name="mission_detail_roster_note">Mission leads see the check-in action on every row; members see only their own status.</string>
     <plurals name="mission_roster_count">
         <item quantity="one">%1$d participant</item>
         <item quantity="other">%1$d participants</item>

@@ -164,6 +164,41 @@ class ApiErrorMapperTest {
         assertEquals("T", error.problem?.title)
     }
 
+    @Test
+    fun `a validation body keeps its field errors, in the shape the backend sends them`() {
+        // Verbatim from the backend's GlobalExceptionHandler: an ARRAY under `fieldErrors` and the
+        // same content again as a legacy map under `errors`. Declaring the array as a map made
+        // kotlinx reject the whole body, so every 400 arrived with no title, no detail and no
+        // correlation id — found on the device, where adding a frequency failed in silence.
+        val error =
+            mapper.map(
+                response(
+                    status = 400,
+                    body =
+                        """
+                        {"code":"VALIDATION_FAILED","title":"Ungültige Eingabe",
+                         "detail":"Die Anfrage wurde nicht akzeptiert.",
+                         "correlationId":"c-1",
+                         "errors":{"value":"numerischer Wert außerhalb des gültigen Bereichs"},
+                         "fieldErrors":[{"field":"value","message":"numerischer Wert außerhalb des gültigen Bereichs","code":"Digits"}]}
+                        """.trimIndent(),
+                ),
+            )
+
+        assertTrue(error is ApiError.Validation)
+        assertEquals("c-1", error.problem?.correlationId)
+        assertEquals("value", error.problem?.fieldErrors?.single()?.field)
+        assertEquals("Digits", error.problem?.fieldErrors?.single()?.code)
+        assertEquals(
+            "numerischer Wert außerhalb des gültigen Bereichs",
+            error.problem
+                ?.fieldErrors
+                ?.single()
+                ?.message,
+        )
+        assertEquals(1, error.problem?.errors?.size)
+    }
+
     private companion object {
         /** A 5xx the mapper has no special case for — it must survive with its status intact. */
         const val HTTP_INSUFFICIENT_STORAGE = 507
