@@ -1458,6 +1458,7 @@
         <item quantity="one">%1$d signed up</item>
         <item quantity="other">%1$d signed up</item>
     </plurals>
+    <string name="mission_lifecycle_starts_in">Starts %1$s</string>
     <string name="mission_lifecycle_start_title">Start the Einsatz?</string>
     <string name="mission_lifecycle_start_irreversible">There is no way back to „Planned" in the app.</string>
     <string name="mission_lifecycle_complete_title">Complete the Einsatz?</string>

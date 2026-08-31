@@ -411,6 +411,19 @@ private fun KrtStatusTone.color(): Color =
     }
 
 /**
+ * The hue a status is drawn in, for callers outside this file.
+ *
+ * A **surface** can carry a status as well as a chip: design ch. 06 (F2) draws the lifecycle band as
+ * a card washed in its own status tone, so the state, the countdown and the action read as one thing
+ * rather than as a chip with two strangers beside it.
+ *
+ * @return the tone's colour — always the *text* tint, which is what stays legible on the dark
+ *   ground and what a border drawn from it has to match.
+ */
+@Composable
+fun KrtStatusTone.krtColor(): Color = color()
+
+/**
  * The row-level status indicator: a square 8 dp dot plus an uppercase label.
  *
  * Deliberately quiet — inside a list the status must not compete with the record's name.
