@@ -102,6 +102,9 @@ fun BankDirectBookingSheet(
                     ),
                 selectedIndex = MODES.indexOf(state.kind).coerceAtLeast(0),
                 onSelect = { picked -> onEdit { it.copy(kind = MODES[picked]) } },
+                // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
+                // the control is one row high, so they wrapped instead of fitting.
+                stretch = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             AccountPicker(

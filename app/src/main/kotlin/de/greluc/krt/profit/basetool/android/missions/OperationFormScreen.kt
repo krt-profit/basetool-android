@@ -104,6 +104,9 @@ fun OperationFormScreen(
                 options = OPERATION_FORM_STATUSES.map { stringResource(it.krtLabel()) },
                 selectedIndex = OPERATION_FORM_STATUSES.indexOf(state.status).coerceAtLeast(0),
                 onSelect = { actions.onStatus(OPERATION_FORM_STATUSES[it]) },
+                // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
+                // the control is one row high, so they wrapped instead of fitting.
+                stretch = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

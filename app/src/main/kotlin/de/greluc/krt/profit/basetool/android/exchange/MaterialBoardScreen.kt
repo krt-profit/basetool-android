@@ -690,6 +690,10 @@ fun NewRequestSheet(
                 ),
             selectedIndex = if (kind == BoardKind.ITEM) 1 else 0,
             onSelect = { onKind(if (it == 1) BoardKind.ITEM else BoardKind.MATERIAL) },
+            // Stretched, like every other two-option switch in the app: without it each segment is
+            // the fixed 52 dp box, and „MATERIAL" broke across two lines inside a control one line
+            // high — found on a device in the Gesuch- and the Angebot-Sheet.
+            stretch = true,
             modifier = Modifier.fillMaxWidth().testTag(BOARD_KIND_TAG),
         )
         Text(
@@ -805,6 +809,10 @@ fun NewOfferSheet(
                 ),
             selectedIndex = if (kind == BoardKind.ITEM) 1 else 0,
             onSelect = { onKind(if (it == 1) BoardKind.ITEM else BoardKind.MATERIAL) },
+            // Stretched, like every other two-option switch in the app: without it each segment is
+            // the fixed 52 dp box, and „MATERIAL" broke across two lines inside a control one line
+            // high — found on a device in the Gesuch- and the Angebot-Sheet.
+            stretch = true,
             modifier = Modifier.fillMaxWidth().testTag(BOARD_KIND_TAG),
         )
         Text(
