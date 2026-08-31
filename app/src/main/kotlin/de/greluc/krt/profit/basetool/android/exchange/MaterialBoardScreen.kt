@@ -367,7 +367,8 @@ private fun BoardGrid(
                 onWithdraw = { onWithdraw(entry) },
             )
         }
-        // The footer is one thing about the whole board, not about one column of it.
+        // The note and the footer are one thing about the whole board, not about one column of it.
+        item(key = "privacy", span = { GridItemSpan(maxLineSpan) }) { BoardPrivacyNote() }
         item(key = "footer", span = { GridItemSpan(maxLineSpan) }) {
             BoardFooter(state = state, onLoadMore = onLoadMore)
         }

@@ -200,8 +200,6 @@ class MainActivity : AppCompatActivity() {
         authViewModels(container)
     }
 
-    /** Beförderung — the member's own assessments and rank standings (#66). */
-
     private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
 
     /** The member's own Raffinerie orders; activity-scoped like every other list. */
