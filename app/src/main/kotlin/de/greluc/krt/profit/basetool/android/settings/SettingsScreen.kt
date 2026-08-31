@@ -55,13 +55,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 /**
  * Einstellungen — the app's own settings, the legal texts and the way out (design ch. 13).
  *
- * What is here is what the **app** decides on its own. The chapter also draws the member's rank,
- * the active org unit, the payout preference and a blueprint-sharing switch; every one of those is
- * a value the backend owns, and none of the endpoints behind them is consumed yet. They arrive with
- * the read-only member core rather than being drawn now from placeholder data — a settings screen
- * that shows a rank nobody set is worse than one that does not show a rank at all. The same holds
- * for the chapter's "Lokale Daten löschen": there is no offline cache to delete yet, and a
- * destructive-looking button that does nothing teaches members to distrust the ones that do.
+ * Of the chapter's own rows, three are built and read real values: the active org unit, the payout
+ * preference and the blueprint-sharing switch. **The member's rank is not**, and stays out: no
+ * endpoint the app consumes carries it, and a settings screen that shows a rank nobody set is worse
+ * than one that does not show a rank at all. The same holds for the chapter's
+ * "Lokale Daten löschen": there is no offline cache to delete, and a destructive-looking button
+ * that does nothing teaches members to distrust the ones that do.
+ *
+ * "Screenshots erlauben" is the app's own row and no chapter draws it — the screen contents are
+ * FLAG_SECURE by default, and without a switch there is no way to take a screenshot for a bug
+ * report.
  *
  * Sign-out lives at the bottom of this screen, which is where the design puts it and where it stops
  * being reachable by mis-tapping a settings row. It asks before it acts: see [SignOutConfirmModal].
