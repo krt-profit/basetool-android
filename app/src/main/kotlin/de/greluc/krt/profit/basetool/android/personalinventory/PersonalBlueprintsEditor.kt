@@ -305,6 +305,9 @@ private fun SheetActions(
 /**
  * What a failed save says.
  *
+ * A validation refusal is shown in the server's own words, because it names the field that was
+ * rejected and the sheet cannot. A conflict and everything else keep the sheet's own sentence.
+ *
  * @param error what came back.
  */
 @Composable

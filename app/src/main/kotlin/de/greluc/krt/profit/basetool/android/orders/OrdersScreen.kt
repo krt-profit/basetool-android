@@ -1400,9 +1400,10 @@ private fun NoteSheet(
 }
 
 /**
- * What the last write returned, in the app's own words.
+ * What the last write returned.
  *
- * A `403` is ordinary here rather than exceptional: the Logistician grant is per order, so a
+ * A validation refusal is shown in the server's own words, which name the field it rejected. A
+ * `403` is ordinary here rather than exceptional: the Logistician grant is per order, so a
  * Logistician outside this order's slice is refused exactly like a member without it.
  *
  * @param error the refusal.

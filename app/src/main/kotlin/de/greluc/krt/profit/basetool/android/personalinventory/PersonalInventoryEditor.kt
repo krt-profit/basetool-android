@@ -162,9 +162,11 @@ fun PersonalInventoryEditor(
 /**
  * What a failed save says.
  *
- * A conflict gets its own wording, because it is the one failure that is nobody's fault and has a
- * specific remedy. Everything else is one sentence: the member cannot act on the difference between
- * a 500 and a dropped connection while a sheet is open over their typing.
+ * A validation refusal is shown in the server's own words, because it names the field that was
+ * rejected and the sheet cannot. A conflict gets its own wording, because it is the one failure
+ * that is nobody's fault and has a specific remedy. Everything else is one sentence: the member
+ * cannot act on the difference between a 500 and a dropped connection while a sheet is open over
+ * their typing.
  *
  * @param error what came back.
  */

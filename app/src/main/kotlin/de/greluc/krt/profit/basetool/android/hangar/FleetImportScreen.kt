@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the paste box. */
@@ -285,9 +286,9 @@ private fun NameList(names: List<String>) {
 private fun importError(error: ApiError): String {
     // The server diagnoses the file — "Die Datei muss ein JSON-Array enthalten", "Unbekanntes
     // Format" — and it is the only party that can. Its own sentence is shown when it sent one; the
-    // app's fallback covers a refusal that arrived without a detail.
-    val detail = (error as? ApiError.Validation)?.problem?.detail?.takeIf { it.isNotBlank() }
-    return detail ?: stringResource(
+    // app's fallback covers a refusal that arrived without one.
+    val named = error.fieldMessage()
+    return named ?: stringResource(
         when (error) {
             is ApiError.Forbidden -> R.string.fleet_import_error_forbidden
             is ApiError.Validation -> R.string.fleet_import_error_shape

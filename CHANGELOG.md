@@ -164,6 +164,12 @@
 
 ### Fixed
 
+- **Eine abgelehnte Eingabe sagt jetzt, was falsch war.** Elf Schreibmasken zeigten „Konnte nicht
+  gespeichert werden." und verschwiegen damit den Satz, den der Server längst mitschickt — er nennt
+  das Feld und die Regel („Menge muss größer als 0 sein."). Aufgefallen beim Gerätedurchgang: eine
+  Frequenz liess sich nicht anlegen, und die App nannte den Grund nicht. Fünf Masken behalten ihren
+  eigenen Satz, weil er einen Ausweg nennt, den der Server nicht kennt.
+
 - **Die Zielart hieß „SECONDARY" statt „Sekundär".** Die Leseseite zeigte den Rohwert des Servers,
   während die Auswahl daneben das deutsche Wort nannte.
 

@@ -487,3 +487,49 @@ eleven ended differently from the rest for no reason anyone had decided.
 **Code:** `personalinventory/PersonalInventoryScreen.kt`,
 `personalinventory/PersonalBlueprintsScreen.kt`
 
+
+### REQ-APP-UI-012 — A refused field is named in the server's own words
+
+The backend answers a validation failure with RFC 7807 `fieldErrors`: a localised sentence per
+offending field, naming the value and the rule it broke — „numerischer Wert außerhalb des gültigen
+Bereichs (<3 Stellen>.<2 Stellen> erwartet)". Sixteen write surfaces threw all of it away and showed
+„Konnte nicht gespeichert werden." instead. Design ch. 02 §6 draws the field error naming the fault
+(„Menge muss größer als 0 sein."), which is what the server already sends.
+
+`ApiError.fieldMessage()` reads the body in one place — the `fieldErrors` array, else the legacy
+`errors` map, else `detail` — and a write surface renders `error.fieldMessage() ?: <its own copy>`.
+
+**Only a validation refusal speaks for itself.** Every `ApiError` carries a problem body, and on a
+403, a 409 or a 500 the server's prose is about the *request*; what the member should do next is the
+screen's to say. `fieldMessage()` answers `null` on those by construction, so the screen's sentence
+cannot be displaced by accident.
+
+**A screen may still overrule the server, and five do.** Where the refusal is *known* and the
+screen's copy carries a remedy the server's cannot — „Die Summe aller Staffeln darf den Bedarf nicht
+übersteigen" (Zusagen), „Schließe die Zuordnung und öffne sie neu" (Zuordnung), „Lädt den Auftrag
+neu" (Item-Übergabe), the Herstellung's coverage gate, and the booking request's two-field hint —
+the screen maps `ApiError.Validation` deliberately and the server's text is not shown. Overruling is
+a decision, so it has to be *taken*: what is forbidden is the third case, an `else` branch that
+swallows a named refusal because nobody considered it.
+
+**This is a wording rule, not a layout one.** The 409 still raises chapter 14's dialog
+(`REQ-APP-UI-008`); the inline line under the form is what this requirement governs.
+
+**Acceptance**
+
+- [x] Eleven surfaces defer to the server; five overrule it on purpose. No site lets
+  `ApiError.Validation` reach `R.string.write_failed` unconsidered — swept from the sources, so a
+  new write surface inherits the guard (`WriteErrorWordingTest`).
+- [x] The precedence inside one body is pinned, including the two shapes the backend sends for the
+  same refusal — the array wins, so a sentence is not printed twice (`FieldMessageTest`).
+- [x] A non-validation refusal answers `null`, so a screen's 403 and 409 wording stands
+  (`FieldMessageTest`).
+- [x] Rendered end to end at both kinds of site: „Mein Inventar" shows the server's sentence and
+  drops the generic one, and the booking request keeps its own over a server that named a field
+  (`PersonalInventoryScreenTest`, `BankRequestScreenTest`).
+
+**Code:** `ui/FieldMessage.kt`, `missions/MissionDetailScreen.kt`, `missions/OperationDetailScreen.kt`,
+`missions/OperationFormScreen.kt`, `bank/BankScreen.kt`, `hangar/FleetImportScreen.kt`,
+`hangar/ShipEditorSheet.kt`, `inventory/BookingSheet.kt`, `orders/OrderHandoverSheet.kt`,
+`orders/OrdersScreen.kt`, `personalinventory/PersonalBlueprintsEditor.kt`,
+`personalinventory/PersonalInventoryEditor.kt`
