@@ -224,6 +224,8 @@
     <string name="mission_detail_finance_income">Income</string>
     <string name="mission_detail_finance_expense">Expenses</string>
     <string name="mission_detail_finance_net">Net</string>
+    <string name="mission_detail_finance_per_head">Share per participant (%1$d)</string>
+    <string name="mission_detail_finance_per_head_value">%1$s aUEC</string>
     <string name="mission_detail_finance_forbidden">You cannot view this Einsatz\'s finances.</string>
     <string name="mission_detail_empty_participants">Nobody has signed up yet.</string>
     <string name="mission_detail_empty_units">No Einheiten assigned.</string>
@@ -1113,7 +1115,7 @@
     <string name="mission_detail_take_payout">Take payout</string>
     <string name="mission_detail_not_allowed">You are not allowed to change this Einsatz.</string>
     <string name="mission_detail_check_in_not_yet">Checking in works once the Einsatz has started.</string>
-    <string name="mission_detail_finance_add">Book</string>
+    <string name="mission_detail_finance_add">Add finance entry</string>
     <string name="mission_detail_finance_edit">Edit</string>
     <string name="mission_detail_finance_delete">Delete</string>
     <string name="mission_detail_finance_amount">Amount (aUEC)</string>

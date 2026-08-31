@@ -50,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTogg
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 
 /** Test handle for the ship editor. */
 const val SHIP_EDITOR_TAG: String = "ship-editor"
@@ -176,7 +177,7 @@ fun ShipEditorSheet(
             editor.error?.let { error ->
                 KrtFieldError(
                     text =
-                        stringResource(
+                        error.fieldMessage() ?: stringResource(
                             if (error is ApiError.OptimisticLock) {
                                 R.string.conflict_inline
                             } else {

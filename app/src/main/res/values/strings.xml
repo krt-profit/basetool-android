@@ -245,6 +245,8 @@
     <string name="mission_detail_finance_income">Einnahmen</string>
     <string name="mission_detail_finance_expense">Ausgaben</string>
     <string name="mission_detail_finance_net">Netto</string>
+    <string name="mission_detail_finance_per_head">Anteil je Teilnehmer (%1$d)</string>
+    <string name="mission_detail_finance_per_head_value">%1$s aUEC</string>
     <string name="mission_detail_finance_forbidden">Die Finanzen dieses Einsatzes sind für dich nicht einsehbar.</string>
     <string name="mission_detail_empty_participants">Noch niemand angemeldet.</string>
     <string name="mission_detail_empty_units">Keine Einheiten eingeteilt.</string>
@@ -1134,7 +1136,7 @@
     <string name="mission_detail_take_payout">Auszahlen</string>
     <string name="mission_detail_not_allowed">Für diesen Einsatz fehlt dir die Berechtigung.</string>
     <string name="mission_detail_check_in_not_yet">Einchecken geht, sobald der Einsatz gestartet ist.</string>
-    <string name="mission_detail_finance_add">Buchen</string>
+    <string name="mission_detail_finance_add">Finanz-Eintrag hinzufügen</string>
     <string name="mission_detail_finance_edit">Ändern</string>
     <string name="mission_detail_finance_delete">Löschen</string>
     <string name="mission_detail_finance_amount">Betrag (aUEC)</string>

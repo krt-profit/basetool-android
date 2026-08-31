@@ -366,10 +366,15 @@ fun KrtTotalTile(
  * so it is bare except for a 4 dp rail in the tone of the number beside it. Give each sibling
  * `Modifier.weight(1f)`.
  *
+ * **Three across a phone need [compact].** The Finanzen band (ch. 06 artboard 2) puts Einnahmen,
+ * Ausgaben and Netto side by side on 411 dp, and the artboard drops the figure to 15 px to make
+ * that fit — at the full size a five-digit sum wraps inside its own tile.
+ *
  * @param label what the figure counts, drawn small and muted above it.
  * @param value the figure.
  * @param tone the rail and the figure's colour.
  * @param modifier usually the weight that pairs it with its siblings.
+ * @param compact whether the tile is one of three across a phone, which shrinks the figure.
  */
 @Composable
 fun KrtFigureTile(
@@ -377,22 +382,31 @@ fun KrtFigureTile(
     value: String,
     tone: KrtFigureTone,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     val hue =
         when (tone) {
             KrtFigureTone.Primary -> KrtPalette.White
             KrtFigureTone.Success -> KrtTheme.colors.successText
+            KrtFigureTone.Danger -> KrtTheme.colors.dangerText
             KrtFigureTone.Neutral -> KrtPalette.Gray1
         }
     val rail =
         when (tone) {
             KrtFigureTone.Primary -> MaterialTheme.colorScheme.primary
             KrtFigureTone.Success -> KrtTheme.colors.success
+            KrtFigureTone.Danger -> KrtTheme.colors.danger
             KrtFigureTone.Neutral -> KrtPalette.Gray2
         }
     Row(modifier = modifier.height(IntrinsicSize.Min).background(KrtPalette.Gray4)) {
         Box(modifier = Modifier.width(FIGURE_RAIL).fillMaxHeight().background(rail))
-        Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = FIGURE_PAD)) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal = if (compact) KrtSpacing.s10 else KrtSpacing.s12,
+                    vertical = if (compact) KrtSpacing.s8 else FIGURE_PAD,
+                ),
+        ) {
             Text(
                 text = label.krtUppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -401,7 +415,12 @@ fun KrtFigureTile(
             Text(
                 text = value,
                 modifier = Modifier.padding(top = KrtSpacing.s4),
-                style = MaterialTheme.typography.headlineMedium,
+                style =
+                    if (compact) {
+                        MaterialTheme.typography.titleMedium
+                    } else {
+                        MaterialTheme.typography.headlineMedium
+                    },
                 color = hue,
             )
         }
@@ -415,6 +434,9 @@ enum class KrtFigureTone {
 
     /** Something was done, or is ready — the green figure. */
     Success,
+
+    /** Money leaving, or a count that is a loss — the red figure (ch. 06 artboard 2, „Ausgaben"). */
+    Danger,
 
     /** A figure that is neither good nor bad: skipped, remaining, unclassified. */
     Neutral,

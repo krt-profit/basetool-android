@@ -102,6 +102,7 @@ import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -1604,7 +1605,7 @@ private fun BankSettingsSheet(
             state.error?.let { error ->
                 KrtFieldError(
                     text =
-                        stringResource(
+                        error.fieldMessage() ?: stringResource(
                             if (error is ApiError.OptimisticLock) {
                                 R.string.conflict_inline
                             } else {

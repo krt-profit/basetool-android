@@ -72,9 +72,12 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDataValue
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
@@ -86,6 +89,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoad
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
@@ -102,6 +106,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
@@ -114,6 +119,8 @@ import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -687,7 +694,7 @@ internal fun SignUpError(error: ApiError) {
  * @param writable whether a write may be offered.
  * @return the modifier.
  */
-private fun Modifier.writeAlpha(writable: Boolean): Modifier =
+internal fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
@@ -1067,270 +1074,6 @@ private fun FrequencyRemove(
         modifier = dim,
         enabled = structure.enabled,
     )
-}
-
-/**
- * Finanzen: the totals band and the entries, on their own load state.
- *
- * @param phase how far the money has got.
- * @param onRetry retries just this tab.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.financesTab(
-    state: MissionDetailState,
-    onRetry: () -> Unit,
-    actions: MissionFinanceActions,
-) {
-    when (val phase = state.finances) {
-        is MissionFinancesPhase.Idle, is MissionFinancesPhase.Loading -> {
-            item { KrtLoadingIndicator(text = stringResource(R.string.mission_detail_tab_finances)) }
-        }
-
-        is MissionFinancesPhase.Failed -> {
-            item {
-                // A refusal here is ordinary — a member may see the Einsatz and not its books — so
-                // it gets its own sentence rather than the generic outage copy.
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_bank,
-                    title = stringResource(R.string.mission_detail_tab_finances),
-                    message =
-                        stringResource(
-                            if (phase.error is ApiError.Forbidden) {
-                                R.string.mission_detail_finance_forbidden
-                            } else {
-                                R.string.mission_detail_error_message
-                            },
-                        ),
-                    actionText =
-                        if (phase.error is ApiError.Forbidden) null else stringResource(R.string.missions_retry),
-                    onAction = if (phase.error is ApiError.Forbidden) null else onRetry,
-                )
-            }
-        }
-
-        is MissionFinancesPhase.Ready -> {
-            financeContent(phase.finances, state, actions)
-        }
-    }
-}
-
-/**
- * The Finanzen tab once it has loaded.
- *
- * @param finances the totals and the entries.
- * @param state the screen, for who the caller is and whether a write may be offered.
- * @param actions what the tab reports back.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(
-    finances: MissionFinances,
-    state: MissionDetailState,
-    actions: MissionFinanceActions,
-) {
-    item {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-            KrtKeyValueRow(
-                label = stringResource(R.string.mission_detail_finance_income),
-                value = formatSignedAmount(finances.incomeSum.orEmpty(), income = true),
-            )
-            KrtKeyValueRow(
-                label = stringResource(R.string.mission_detail_finance_expense),
-                value = formatSignedAmount(finances.expenseSum.orEmpty(), income = false),
-            )
-            // The net carries no sign of its own: it is a balance, and a leading plus on a positive
-            // result would read as a third booking rather than as the sum of the two above it.
-            KrtKeyValueRow(
-                label = stringResource(R.string.mission_detail_finance_net),
-                value = formatAmount(finances.total.orEmpty()),
-            )
-            KrtHairlineRule()
-            // Booking needs a participant to book against, and the only one the app may name is
-            // the caller's own. A member who has not signed up is told that rather than shown a
-            // button that answers 403.
-            if (state.mySignUp == null) {
-                Text(
-                    text = stringResource(R.string.mission_detail_finance_needs_signup),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            } else {
-                KrtCtaButton(
-                    text = stringResource(R.string.mission_detail_finance_add),
-                    onClick = actions.onAdd,
-                    modifier =
-                        Modifier
-                            .testTag(MISSION_FINANCE_ADD_TAG)
-                            .writeAlpha(state.bookingPossible),
-                    enabled = state.bookingPossible,
-                )
-            }
-            state.error?.let { error -> SignUpError(error = error) }
-        }
-    }
-    if (finances.entries.isEmpty()) {
-        item { EmptyTab(R.string.mission_detail_empty_finances) }
-        return
-    }
-    items(finances.entries, key = { it.id }) { entry ->
-        FinanceEntryRow(
-            entry = entry,
-            mine = entry.participantId != null && entry.participantId == state.mySignUp?.id,
-            writable = state.writable,
-            actions = actions,
-        )
-    }
-}
-
-/**
- * One booking, with the two actions the caller has on their own.
- *
- * Someone else's booking is theirs to change: the server refuses an edit by anyone but the owner
- * or an admin, and the app does not offer what it knows will be refused.
- *
- * @param entry the booking.
- * @param mine whether it hangs off the caller's own sign-up.
- * @param writable whether a write may be offered at all.
- * @param actions what the row reports back.
- */
-@Composable
-private fun FinanceEntryRow(
-    entry: MissionFinanceEntry,
-    mine: Boolean,
-    writable: Boolean,
-    actions: MissionFinanceActions,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = entry.note.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-            )
-            entry.participantName?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-            }
-        }
-        KrtChip(
-            text = formatSignedAmount(entry.amount, entry.income),
-            tone = if (entry.income) KrtChipTone.Success else KrtChipTone.Danger,
-        )
-        if (mine) {
-            KrtGhostButton(
-                text = stringResource(R.string.mission_detail_finance_edit),
-                onClick = { actions.onEdit(entry) },
-                modifier = Modifier.testTag(MISSION_FINANCE_EDIT_TAG).writeAlpha(writable),
-                enabled = writable,
-            )
-            KrtGhostButton(
-                text = stringResource(R.string.mission_detail_finance_delete),
-                onClick = { actions.onDelete(entry) },
-                modifier = Modifier.testTag(MISSION_FINANCE_DELETE_TAG).writeAlpha(writable),
-                enabled = writable,
-            )
-        }
-    }
-}
-
-/**
- * The booking form.
- *
- * The direction is a segment rather than a signed amount: a minus typed into a number field is a
- * character a member can lose, and the sign is what decides whether the Einsatz earned or spent.
- *
- * @param draft what the form holds.
- * @param state the screen, for the save gate and the last refusal.
- * @param actions what it reports back.
- */
-@Composable
-private fun FinanceEntrySheet(
-    draft: FinanceEntryDraft,
-    state: MissionDetailState,
-    actions: MissionFinanceActions,
-) {
-    // Artboard 06.4 gives the entry one tone throughout: green for an Einnahme, red for an Ausgabe,
-    // on the chosen segment and on the amount alike. The sign is never typed - it IS the segment -
-    // and the hint under the field says so, which is why it changes with the choice.
-    val tone = if (draft.income) KrtPalette.Success else KrtPalette.Danger
-    val amountTone = if (draft.income) KrtPalette.SuccessText else KrtPalette.DangerText
-    KrtBottomSheet(
-        onDismiss = actions.onDismiss,
-        modifier = Modifier.testTag(MISSION_FINANCE_SHEET_TAG),
-        title = stringResource(R.string.mission_detail_finance_title),
-    ) {
-        // The sheet scrolls: with the keyboard up on a small phone the form is taller than what is
-        // left of the screen, and a save button that cannot be reached is a form that cannot be
-        // submitted.
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
-        ) {
-            KrtFieldLabel(text = stringResource(R.string.mission_detail_finance_type))
-            KrtSegmentedControl(
-                options =
-                    listOf(
-                        stringResource(R.string.mission_detail_finance_type_income),
-                        stringResource(R.string.mission_detail_finance_type_expense),
-                    ),
-                selectedIndex = if (draft.income) 0 else 1,
-                onSelect = { actions.onIncome(it == 0) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !state.saving,
-                stretch = true,
-                activeColor = tone,
-                activeContentColor = KrtPalette.White,
-            )
-            KrtTextField(
-                value = draft.amount,
-                onValueChange = actions.onAmount,
-                label = stringResource(R.string.mission_detail_finance_amount),
-                enabled = !state.saving,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textAlign = TextAlign.End,
-                tabularFigures = true,
-                valueStyle = MaterialTheme.typography.headlineSmall.copy(color = amountTone),
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (draft.income) {
-                            R.string.mission_detail_finance_amount_hint_income
-                        } else {
-                            R.string.mission_detail_finance_amount_hint_expense
-                        },
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-            KrtTextField(
-                value = draft.note,
-                onValueChange = actions.onNote,
-                label = stringResource(R.string.mission_detail_finance_note),
-                placeholder = stringResource(R.string.mission_detail_finance_note_hint),
-                enabled = !state.saving,
-            )
-            state.error?.let { error -> SignUpError(error = error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
-                KrtGhostButton(
-                    text = stringResource(R.string.personal_inventory_cancel),
-                    onClick = actions.onDismiss,
-                    enabled = !state.saving,
-                )
-                KrtCtaButton(
-                    text = stringResource(R.string.personal_inventory_save),
-                    onClick = actions.onSave,
-                    iconRes = DesignR.drawable.ic_krt_save,
-                    modifier = Modifier.testTag(MISSION_FINANCE_SAVE_TAG),
-                    enabled = draft.submittable && state.writable,
-                )
-            }
-        }
-    }
 }
 
 /**
