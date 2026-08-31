@@ -783,6 +783,7 @@ class MainActivity : AppCompatActivity() {
                     DashboardViewModel(
                         container.missions,
                         container.announcements,
+                        container.notifications,
                         container.serverClock,
                     )
                 }

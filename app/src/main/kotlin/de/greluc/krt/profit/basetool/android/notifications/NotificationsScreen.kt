@@ -340,7 +340,7 @@ private fun NotificationRow(
                     ),
         )
         KrtIcon(
-            id = notification.kind.iconRes(),
+            id = notification.kind.krtIconRes(),
             // The icon repeats the row's source area, which the sentence already names. A screen
             // reader announcing it again would read every row twice.
             contentDescription = null,
@@ -419,9 +419,13 @@ private fun Notification.timeLabel(): String {
 /**
  * The icon for a notification's source area.
  *
+ * Internal because the dashboard's unread band draws the same rows and must not keep a second copy
+ * of the mapping — two lists of the same notifications with different icons is the kind of drift
+ * nobody notices until a member asks which one is right.
+ *
  * @return the drawable id, per the design's rule.
  */
-private fun NotificationKind.iconRes(): Int =
+internal fun NotificationKind.krtIconRes(): Int =
     when (this) {
         NotificationKind.MISSION -> DesignR.drawable.ic_krt_target
         NotificationKind.ORDER -> DesignR.drawable.ic_krt_clipboard_list

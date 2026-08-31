@@ -382,6 +382,7 @@ private fun listDestination(
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
                 onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
                 onQuickAction = { action -> navController.navigate(action.destination.route) },
+                onOpenInbox = { navController.navigate(KrtDestination.Notifications.route) },
             )
         }
 

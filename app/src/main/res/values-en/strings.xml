@@ -372,6 +372,8 @@
     <!-- The greeting's date: the real one, then the Star Citizen year in brackets. -->
     <string name="dashboard_date">%1$s (%2$d)</string>
     <string name="dashboard_date_pattern">EEEE, dd/MM/yyyy</string>
+    <string name="dashboard_unread">Unread</string>
+    <string name="dashboard_unread_all">See all</string>
     <string name="dashboard_quick_actions">QUICK ACTIONS</string>
     <string name="dashboard_quick_check_in">Check-in next Einsatz</string>
     <string name="dashboard_quick_book_in">Book in (Lager)</string>

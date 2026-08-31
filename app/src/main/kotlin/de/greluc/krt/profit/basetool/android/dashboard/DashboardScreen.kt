@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -45,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -68,6 +70,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.missions.missionStatusLabel
 import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
+import de.greluc.krt.profit.basetool.android.notifications.krtIconRes
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.carriesClock
@@ -96,9 +99,10 @@ private const val ANNOUNCEMENT_COLLAPSED_LINES = 2
  * The design's order is kept — greeting, announcement, Einsätze of the next seven days, then the
  * unread preview — because it is a one-handed reading order and not a layout preference.
  *
- * **The quick-action row is absent.** Its four entries (Check-In, Einbuchen, Auftrag, Angebot) are
- * all mutations, and three of them lead to screens Phase 2 does not build. Four buttons that do
- * nothing would be worse than the row arriving with what it promises.
+ * All four bands are built: greeting, announcement, the Einsatz band, the four shortcuts and the
+ * unread preview. The shortcuts each open the **surface** the action lives on rather than the
+ * action itself — there is no global „Check-In", only a check-in on one Einsatz, and sending a
+ * member to a guessed one would be worse than sending them to the list they can pick from.
  *
  * @param state the fetched parts.
  * @param memberName the signed-in member's name, or `null` while unknown.
@@ -107,6 +111,8 @@ private const val ANNOUNCEMENT_COLLAPSED_LINES = 2
  * @param onRefresh pull-to-refresh.
  * @param onOpenMission an Einsatz row was tapped.
  * @param onOpenMissions the Einsatz band's header action.
+ * @param onQuickAction opens the destination behind a shortcut tile.
+ * @param onOpenInbox opens the inbox — the unread band's header action and its rows.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,6 +126,7 @@ fun DashboardScreen(
     onOpenMission: (String) -> Unit,
     onOpenMissions: () -> Unit,
     onQuickAction: (QuickAction) -> Unit,
+    onOpenInbox: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PullToRefreshBox(
@@ -170,6 +177,7 @@ fun DashboardScreen(
                         contentPadding = PaddingValues(vertical = KrtSpacing.s12),
                     ) {
                         quickActionsSection(onQuickAction = onQuickAction)
+                        unreadSection(state = state, onOpenInbox = onOpenInbox)
                     }
                 }
             }
@@ -200,6 +208,7 @@ fun DashboardScreen(
                     onOpenMissions = onOpenMissions,
                 )
                 quickActionsSection(onQuickAction = onQuickAction)
+                unreadSection(state = state, onOpenInbox = onOpenInbox)
             }
         }
     }
@@ -715,3 +724,113 @@ private const val SC_YEAR_OFFSET = 930
 
 /** How often the seven-day band re-reads its countdowns (design ch. 05: "each minute"). */
 private const val COUNTDOWN_TICK_MS = 60_000L
+
+/**
+ * The band design chapter 05 closes the dashboard with: what is new since the member last looked.
+ *
+ * Two rows and a way past them, on the phone and on the tablet alike (artboard 05). It is a
+ * **preview of the inbox**, not a second inbox: the rows are read-only, tapping anything opens the
+ * inbox, and nothing here marks a notification read — a dashboard that quietly clears the badge
+ * while a member scrolls past it would take away the one signal they came for.
+ *
+ * Absent entirely when nothing is unread, rather than drawn empty. „Nichts Neues" is what an empty
+ * dashboard already says by not having the band.
+ *
+ * @param state the fetched parts.
+ * @param onOpenInbox opens the inbox.
+ */
+private fun LazyListScope.unreadSection(
+    state: DashboardState,
+    onOpenInbox: () -> Unit,
+) {
+    if (state.unread.isEmpty()) {
+        return
+    }
+    item(key = "unread-title") {
+        KrtSectionTitle(
+            text = stringResource(R.string.dashboard_unread),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+            trailing = {
+                SectionAction(
+                    text = stringResource(R.string.dashboard_unread_all),
+                    onClick = onOpenInbox,
+                )
+            },
+        )
+    }
+    items(state.unread, key = { "unread-${it.id}" }) { notification ->
+        UnreadRow(
+            notification = notification,
+            onClick = onOpenInbox,
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
+        )
+    }
+}
+
+/**
+ * One row of the unread band.
+ *
+ * Wears the unread inset bar of the inbox's own rows, because it is the same thing seen from the
+ * dashboard — and it borrows the inbox's sentence and time wording rather than restating them, so
+ * the two surfaces cannot drift apart on what a notification says.
+ *
+ * @param notification the row.
+ * @param onClick opens the inbox.
+ * @param modifier layout modifier.
+ */
+@Composable
+private fun UnreadRow(
+    notification: Notification,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(KrtPalette.Gray4)
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(UNREAD_BAR)
+                    .height(UNREAD_BAR_HEIGHT)
+                    .background(MaterialTheme.colorScheme.primary),
+        )
+        KrtIcon(
+            id = notification.kind.krtIconRes(),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text =
+                notificationSentence(
+                    notification = notification,
+                    template = stringResource(notificationTypeRes(notification.type)),
+                    generic = stringResource(R.string.notifications_type_generic),
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        notification.createdAt?.let { raised ->
+            Text(
+                text = raised.relativeToNow(),
+                style = MaterialTheme.typography.labelMedium,
+                color = KrtPalette.TextMuted,
+            )
+        }
+    }
+}
+
+/** Width of a row's unread inset bar. */
+private val UNREAD_BAR = 3.dp
+
+/** Height of that bar — a two-line row, as the inbox draws it. */
+private val UNREAD_BAR_HEIGHT = 40.dp

@@ -91,6 +91,7 @@ class DashboardScreenTest {
                     onOpenMission = { opened.add(it) },
                     onOpenMissions = { taps.add("missions") },
                     onQuickAction = { taps.add("quick:" + it.name) },
+                    onOpenInbox = { taps.add("inbox") },
                 )
             }
         }
