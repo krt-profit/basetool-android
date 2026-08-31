@@ -224,6 +224,7 @@
     <string name="mission_detail_start_at">Start %1$s</string>
     <string name="mission_detail_at_a_glance">EINSATZ AUF EINEN BLICK</string>
     <string name="mission_detail_brief_goal">Ziel</string>
+    <string name="mission_detail_brief_meeting">Teamspeak</string>
     <string name="mission_detail_brief_join">Serverjoin</string>
     <string name="mission_detail_brief_place">Treffpunkt</string>
     <string name="mission_detail_brief_duration">Dauer</string>
@@ -240,7 +241,6 @@
         <item quantity="other">%1$d an Bord</item>
     </plurals>
     <string name="mission_detail_unit_lead">Verantwortlich: %1$s</string>
-    <string name="mission_detail_step_done">Erledigt</string>
     <string name="mission_detail_frequency_copied">Wert kopiert</string>
     <string name="mission_detail_finance_income">Einnahmen</string>
     <string name="mission_detail_finance_expense">Ausgaben</string>
@@ -1355,6 +1355,7 @@
     </plurals>
     <string name="mission_struct_units">Einheiten</string>
     <string name="mission_struct_add_unit">Einheit hinzufügen</string>
+    <string name="mission_struct_add_unit_short">Einheit</string>
     <string name="mission_struct_unit_name">Name der Einheit</string>
     <string name="mission_struct_hvu">Hochwertiges Ziel (HVU)</string>
     <string name="mission_struct_remove_unit">Einheit entfernen</string>
@@ -1402,6 +1403,16 @@
     <string name="mission_detail_check_in_row">Einchecken</string>
     <string name="mission_detail_check_out_row">Auschecken</string>
     <string name="mission_detail_payout_row">Auszahlung umstellen</string>
+    <string name="mission_detail_roster_sorted">Sortiert: Check-in</string>
+    <string name="mission_detail_roster_note">Die Einsatzleitung sieht die Check-in-Aktion je Zeile; Mitglieder nur den eigenen Status.</string>
+    <plurals name="mission_roster_count">
+        <item quantity="one">%1$d Teilnehmer</item>
+        <item quantity="other">%1$d Teilnehmer</item>
+    </plurals>
+    <plurals name="mission_roster_checked_in">
+        <item quantity="one">%1$d eingecheckt</item>
+        <item quantity="other">%1$d eingecheckt</item>
+    </plurals>
     <string name="mission_detail_function_label">Funktion an Bord</string>
     <string name="gate_role_logistician">Dafür brauchst du die Rolle Logistiker.</string>
     <string name="gate_role_logistician_detail">Vergeben je Staffel durch die Administration.</string>
@@ -1448,7 +1459,7 @@
     <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
     <string name="mission_unit_rename">Umbenennen</string>
     <string name="mission_unit_rename_save">Einheit speichern</string>
-    <string name="mission_crew_roles">Funktion an Bord</string>
+    <string name="mission_crew_roles">Funktionen an Bord (Crew)</string>
     <string name="mission_crew_roles_empty">Keine CREW-Funktionen hinterlegt.</string>
     <string name="mission_timeline_up">Hoch</string>
     <string name="mission_timeline_down">Runter</string>

@@ -26,6 +26,9 @@ private const val LOG_TAG = "MissionStructure"
  * @property unitName the new Einheit's name, as typed — or the edited one's, while
  *   [editingUnitId] names a unit.
  * @property unitHighValue whether it is to be flagged HVU.
+ * @property composingUnit whether the „Einheit hinzufügen" sheet is open. Design ch. 18 §3 (E7)
+ *   keeps composing out of the list itself, and artboard 06-14 replaced the permanent form above
+ *   the Einheiten with a dashed „+ Einheit" at their foot.
  * @property editingUnitId the Einheit being renamed, or `null` while composing a new one. One set
  *   of fields serves both, because only one Einheit can be edited at a time and a second pair would
  *   only be a second thing to keep in sync.
@@ -48,6 +51,7 @@ private const val LOG_TAG = "MissionStructure"
 data class MissionStructureDraft(
     val unitName: String = "",
     val unitHighValue: Boolean = false,
+    val composingUnit: Boolean = false,
     val editingUnitId: String? = null,
     val editingUnitVersion: Long = 0L,
     val editingUnitOriginalName: String = "",

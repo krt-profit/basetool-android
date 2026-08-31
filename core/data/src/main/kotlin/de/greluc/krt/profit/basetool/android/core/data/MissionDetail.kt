@@ -20,6 +20,8 @@ import java.time.Instant
  * @property name what to show: the member's effective name, else the guest's name, else empty —
  *   the server redacts identity for outsiders, so an anonymous read can legitimately yield neither
  * @property role the planned job, falling back to the desired one when nothing is assigned yet
+ * @property orgUnitNames which Staffeln or Spezialkommandos they belong to, shorthand first — the
+ *   roster row's second line („Staffel 1", „SK Vanguard"). Empty for a read the server redacted
  * @property checkedIn whether they have checked in, which the design draws as the "davon N
  *   eingecheckt" count and a per-row mark
  * @property comment their free-text note; **absent for an outsider read** (ADR-0034 strips it)
@@ -43,6 +45,7 @@ data class MissionParticipant(
     val userId: String?,
     val name: String,
     val role: String?,
+    val orgUnitNames: List<String> = emptyList(),
     val checkedIn: Boolean,
     val comment: String?,
     val donating: Boolean?,

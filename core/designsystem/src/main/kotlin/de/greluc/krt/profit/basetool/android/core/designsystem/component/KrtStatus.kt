@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
@@ -422,6 +424,33 @@ private fun KrtStatusTone.color(): Color =
  */
 @Composable
 fun KrtStatusTone.krtColor(): Color = color()
+
+/**
+ * The design system's `.status-dot` — an 8 dp square saying whether one row is „on".
+ *
+ * Square, like everything else here: a circle would be the only round thing on the screen. The dot
+ * carries no text, so it takes a description of its own — in a roster it is the **only** thing
+ * saying whether that member has checked in, and a screen reader would otherwise read the row
+ * without its state.
+ *
+ * @param on whether the row is in the positive state.
+ * @param stateLabel what the current state means, in words, for a screen reader.
+ * @param modifier layout modifier.
+ */
+@Composable
+fun KrtStatusDot(
+    on: Boolean,
+    stateLabel: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(STATUS_DOT)
+                .background(if (on) KrtTheme.colors.success else KrtPalette.Gray2)
+                .semantics { contentDescription = stateLabel },
+    )
+}
 
 /**
  * The row-level status indicator: a square 8 dp dot plus an uppercase label.

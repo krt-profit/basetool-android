@@ -1562,6 +1562,9 @@ private fun MissionParticipantDto.toModel(): MissionParticipant? {
         // The server redacts identity for an outsider, so all three can legitimately be absent.
         name = user?.effectiveName ?: user?.displayName ?: guestName.orEmpty(),
         role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
+        // The shorthand where there is one: the roster's second line has about 150 dp, and
+        // „SK Vanguard" fits where „Spezialkommando Vanguard" would be cut off mid-word.
+        orgUnitNames = orgUnits.orEmpty().mapNotNull { it.shorthand ?: it.name },
         // A start time is what a check-in writes; there is no separate flag on the wire.
         checkedIn = startTime != null,
         startTime = startTime,

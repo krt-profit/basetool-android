@@ -11,6 +11,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
@@ -19,10 +20,13 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -40,11 +44,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
@@ -488,3 +494,173 @@ private fun RowsPreview() {
         }
     }
 }
+
+/**
+ * Where one step of an Ablauf stands relative to the rest of the list.
+ *
+ * The three values are the design system's `.step--done` / `.step--now` / plain `.step`, and they
+ * are derived rather than stored: the wire carries `done` per step and nothing else, so "now" is
+ * the first step that is not done. That is what artboard 06-13 draws — a „Geplant" Einsatz still
+ * marks the step the crew is about to reach.
+ */
+enum class KrtStepState {
+    /** Ticked off. Green box with a check, and the rail below it turns green with it. */
+    Done,
+
+    /** The first step that is not done — the one the list is currently about. */
+    Now,
+
+    /** Still ahead. */
+    Ahead,
+}
+
+/**
+ * One line of an Ablauf, drawn as the design system's `.ablauf > .step`.
+ *
+ * The numbered box and the rail running out of its foot are what make this a **timeline** rather
+ * than a list with a status chip: progress is read down the left edge in one movement, and the
+ * green segment stops exactly where the work stops. A „ERLEDIGT" chip on the right says the same
+ * thing about one row and nothing at all about the list.
+ *
+ * Design ch. 06 artboard 13 puts the actions **on this row** rather than under it — „die Zeile
+ * bleibt EINE Zeile hoch". They are centred against the whole row, so a title that wraps does not
+ * drag them out of line with their neighbours.
+ *
+ * @param number the step's 1-based position, shown when it is not [KrtStepState.Done].
+ * @param state where it stands; decides the box, the title's colour and the rail below it.
+ * @param title what happens.
+ * @param modifier layout modifier.
+ * @param meta the time-and-place line beneath the title, or `null` when the step has none.
+ * @param connected whether a rail runs on to a following step — `false` on the last row, which must
+ *   not trail a stub into empty space.
+ * @param actions the row's own controls, drawn at the trailing edge and vertically centred.
+ */
+@Composable
+fun KrtStepRow(
+    number: Int,
+    state: KrtStepState,
+    title: String,
+    modifier: Modifier = Modifier,
+    meta: String? = null,
+    connected: Boolean = false,
+    actions: @Composable () -> Unit = {},
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s14),
+        verticalAlignment = Alignment.Top,
+    ) {
+        StepRail(number = number, state = state, connected = connected)
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    // The gap to the next step lives inside this row so the rail can run through
+                    // it; a gap between list items would break the line at every step.
+                    .padding(top = STEP_BODY_TOP, bottom = if (connected) KrtSpacing.s16 else 0.dp),
+            verticalArrangement = Arrangement.spacedBy(STEP_BODY_GAP),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color =
+                    when (state) {
+                        KrtStepState.Done -> KrtPalette.Gray1
+                        KrtStepState.Now -> KrtPalette.Orange
+                        KrtStepState.Ahead -> KrtPalette.White
+                    },
+            )
+            meta?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
+        }
+        Box(modifier = Modifier.align(Alignment.CenterVertically)) { actions() }
+    }
+}
+
+/**
+ * The numbered box and the rail that leaves its foot.
+ *
+ * @param number the step's 1-based position.
+ * @param state where the step stands.
+ * @param connected whether the rail continues to a following step.
+ */
+@Composable
+private fun StepRail(
+    number: Int,
+    state: KrtStepState,
+    connected: Boolean,
+) {
+    val accent =
+        when (state) {
+            KrtStepState.Done -> KrtPalette.Success
+            KrtStepState.Now -> KrtPalette.Orange
+            KrtStepState.Ahead -> KrtPalette.Gray2
+        }
+    Column(
+        modifier = Modifier.width(STEP_NUM_SIZE).fillMaxHeight(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(STEP_NUM_SIZE)
+                    .background(
+                        if (state == KrtStepState.Done) {
+                            KrtPalette.Success.copy(alpha = STEP_DONE_FILL_ALPHA)
+                        } else {
+                            KrtPalette.Black
+                        },
+                    ).border(KrtSpacing.hairline, accent),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (state == KrtStepState.Done) {
+                KrtIcon(
+                    id = R.drawable.ic_krt_check,
+                    contentDescription = null,
+                    size = STEP_CHECK_SIZE,
+                    tint = KrtPalette.SuccessText,
+                )
+            } else {
+                Text(
+                    text = number.toString(),
+                    style = MaterialTheme.typography.titleSmall.copy(letterSpacing = 0.sp),
+                    color = if (state == KrtStepState.Now) KrtPalette.Orange else KrtPalette.Gray1,
+                )
+            }
+        }
+        if (connected) {
+            Box(
+                modifier =
+                    Modifier
+                        .width(STEP_RAIL_WIDTH)
+                        .weight(1f)
+                        .background(
+                            if (state == KrtStepState.Done) KrtPalette.Success else KrtPalette.Gray3,
+                        ),
+            )
+        }
+    }
+}
+
+/** The box carrying the step's number — 30 dp square, per `.ablauf .step-num`. */
+private val STEP_NUM_SIZE = 30.dp
+
+/** The check inside a ticked box, sized so it sits inside the 30 dp square with air around it. */
+private val STEP_CHECK_SIZE = 16.dp
+
+/** The rail between two boxes, per `.ablauf .step:not(:last-child)::before`. */
+private val STEP_RAIL_WIDTH = 2.dp
+
+/** The body's optical alignment with the number box, which sits a touch higher than the text. */
+private val STEP_BODY_TOP = KrtSpacing.s4
+
+/** Title to meta — they are one block, so the gap is tighter than any spacing token. */
+private val STEP_BODY_GAP = 2.dp
+
+/** The wash behind a ticked box: `rgba(35,158,51,0.10)`. */
+private const val STEP_DONE_FILL_ALPHA = 0.10f

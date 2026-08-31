@@ -203,6 +203,7 @@
     <string name="mission_detail_start_at">Start %1$s</string>
     <string name="mission_detail_at_a_glance">MISSION AT A GLANCE</string>
     <string name="mission_detail_brief_goal">Goal</string>
+    <string name="mission_detail_brief_meeting">Teamspeak</string>
     <string name="mission_detail_brief_join">Server join</string>
     <string name="mission_detail_brief_place">Rally point</string>
     <string name="mission_detail_brief_duration">Duration</string>
@@ -219,7 +220,6 @@
         <item quantity="other">%1$d aboard</item>
     </plurals>
     <string name="mission_detail_unit_lead">Responsible: %1$s</string>
-    <string name="mission_detail_step_done">Done</string>
     <string name="mission_detail_frequency_copied">Value copied</string>
     <string name="mission_detail_finance_income">Income</string>
     <string name="mission_detail_finance_expense">Expenses</string>
@@ -1334,6 +1334,7 @@
     </plurals>
     <string name="mission_struct_units">Units</string>
     <string name="mission_struct_add_unit">Add unit</string>
+    <string name="mission_struct_add_unit_short">Unit</string>
     <string name="mission_struct_unit_name">Unit name</string>
     <string name="mission_struct_hvu">High-value unit (HVU)</string>
     <string name="mission_struct_remove_unit">Remove unit</string>
@@ -1381,6 +1382,16 @@
     <string name="mission_detail_check_in_row">Check in</string>
     <string name="mission_detail_check_out_row">Check out</string>
     <string name="mission_detail_payout_row">Switch payout</string>
+    <string name="mission_detail_roster_sorted">Sorted: check-in</string>
+    <string name="mission_detail_roster_note">Mission leads see the check-in action on every row; members see only their own status.</string>
+    <plurals name="mission_roster_count">
+        <item quantity="one">%1$d participant</item>
+        <item quantity="other">%1$d participants</item>
+    </plurals>
+    <plurals name="mission_roster_checked_in">
+        <item quantity="one">%1$d checked in</item>
+        <item quantity="other">%1$d checked in</item>
+    </plurals>
     <string name="mission_detail_function_label">Function on board</string>
     <string name="gate_role_logistician">That needs the Logistiker role.</string>
     <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
@@ -1427,7 +1438,7 @@
     <!-- Einsatz: renaming an Einheit and setting who does what aboard it -->
     <string name="mission_unit_rename">Rename</string>
     <string name="mission_unit_rename_save">Save Einheit</string>
-    <string name="mission_crew_roles">Function aboard</string>
+    <string name="mission_crew_roles">Functions aboard (crew)</string>
     <string name="mission_crew_roles_empty">No CREW functions defined.</string>
     <string name="mission_timeline_up">Up</string>
     <string name="mission_timeline_down">Down</string>

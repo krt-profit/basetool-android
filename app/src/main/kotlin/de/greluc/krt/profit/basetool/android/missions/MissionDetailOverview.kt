@@ -50,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.carriesClock
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import java.time.Instant
@@ -386,11 +387,17 @@ private fun AttendanceBox(detail: MissionDetail) {
                         style = MaterialTheme.typography.titleSmall,
                         color = KrtPalette.White,
                     )
-                    Text(
-                        text = stringResource(R.string.mission_detail_start_at, time.format(at)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.TextMuted,
-                    )
+                    // „Start 20:44" under „25.08., 20:44" prints the same clock reading twice.
+                    // Once the distance to the start is itself a date-and-time — which is what it
+                    // becomes as soon as the Einsatz is running — the absolute half has nothing
+                    // left to add, exactly as in the Einsatz list.
+                    if (!at.carriesClock()) {
+                        Text(
+                            text = stringResource(R.string.mission_detail_start_at, time.format(at)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = KrtPalette.TextMuted,
+                        )
+                    }
                 }
             }
         }
@@ -456,7 +463,9 @@ private fun BriefingCard(detail: MissionDetail) {
                 add(stringResource(R.string.mission_detail_brief_goal) to it)
             }
             detail.meetingTime?.let {
-                add(stringResource(R.string.mission_detail_fact_meeting) to time.format(it))
+                // „Teamspeak", not the facts bar's „TS": the bar abbreviates because it has four
+                // facts across 411 dp, and this table does not. Artboard 06-2 writes both words.
+                add(stringResource(R.string.mission_detail_brief_meeting) to time.format(it))
             }
             detail.plannedStartTime?.let {
                 add(stringResource(R.string.mission_detail_brief_join) to time.format(it))
