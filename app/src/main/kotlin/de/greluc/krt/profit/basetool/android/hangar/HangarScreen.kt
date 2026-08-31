@@ -127,7 +127,6 @@ const val HANGAR_ADD_TAG: String = "hangar-add"
  * @param onLoadMore the load-more control was tapped.
  * @param onCreate the add action was taken.
  * @param onEdit a ship was tapped.
- * @param onDelete a ship's delete action was taken.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,7 +140,6 @@ fun HangarScreen(
     onLoadMore: () -> Unit,
     onCreate: () -> Unit,
     onEdit: (Ship) -> Unit,
-    onDelete: (Ship) -> Unit,
     onTypeDrilldown: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -217,7 +215,6 @@ fun HangarScreen(
                             state = state,
                             onLoadMore = onLoadMore,
                             onEdit = onEdit,
-                            onDelete = onDelete,
                             onTypeDrilldown = onTypeDrilldown,
                         )
                     }
@@ -246,20 +243,20 @@ fun HangarScreen(
 }
 
 /**
- * The card's delete affordance.
+ * The row's one action — the ✎ that opens the editor.
  *
  * @param online whether writes are possible.
- * @param onDelete asks to delete.
+ * @param onEdit opens the editor for this ship.
  */
 @Composable
 private fun ShipCardActions(
     online: Boolean,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
 ) {
-    // Design ch. 08 gives the row 44 dp icon buttons, not a labelled button. A ghost button reading
-    // "LÖSCHEN" is the widest, loudest thing on a card whose subject is a ship, and it made the
-    // destructive action the most prominent one on every row.
+    // ONE action on the row — the ✎ (round 14 · S14). Deleting a single ship happens in the sheet
+    // that pencil opens, as a quiet danger button at its foot: two icons left the row about 190 dp
+    // for its chips and its location and pushed long station names out, and „delete this one" is
+    // an action about the ship a member already has open rather than one to offer on every line.
     Row(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
@@ -271,12 +268,6 @@ private fun ShipCardActions(
             onClick = onEdit,
             enabled = online,
         )
-        KrtIconButton(
-            iconRes = DesignR.drawable.ic_krt_trash,
-            label = stringResource(R.string.hangar_delete),
-            onClick = onDelete,
-            enabled = online,
-        )
     }
 }
 
@@ -286,7 +277,6 @@ private fun ShipCardActions(
  * @param state what to draw.
  * @param onLoadMore the next page was asked for.
  * @param onEdit a ship was tapped.
- * @param onDelete a ship's delete action was taken.
  * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
  */
 @Composable
@@ -294,7 +284,6 @@ private fun HangarBody(
     state: HangarState,
     onLoadMore: () -> Unit,
     onEdit: (Ship) -> Unit,
-    onDelete: (Ship) -> Unit,
     onTypeDrilldown: (String) -> Unit,
 ) {
     val empty =
@@ -319,7 +308,6 @@ private fun HangarBody(
                     ships = state.ships,
                     online = state.online,
                     onEdit = onEdit,
-                    onDelete = onDelete,
                 )
             }
         } else if (state.segment == HangarSegment.MINE) {
@@ -328,7 +316,6 @@ private fun HangarBody(
                     ship = ship,
                     online = state.online,
                     onEdit = { onEdit(ship) },
-                    onDelete = { onDelete(ship) },
                 )
             }
         } else {
@@ -404,16 +391,13 @@ private const val LOCATION_COLUMN = 4
  *
  * @param ships the rows.
  * @param online whether writes are possible; the actions disable with the rest of the screen.
- * @param onEdit opens the editor for a ship.
- * @param onDelete asks to delete one.
- * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
+ * @param onEdit opens the editor for a ship — the row's only action since round 14 (S14).
  */
 @Composable
 private fun ShipTable(
     ships: List<Ship>,
     online: Boolean,
     onEdit: (Ship) -> Unit,
-    onDelete: (Ship) -> Unit,
 ) {
     val columns =
         listOf(
@@ -446,7 +430,6 @@ private fun ShipTable(
             ShipCardActions(
                 online = online,
                 onEdit = { onEdit(ship) },
-                onDelete = { onDelete(ship) },
             )
         } else if (column == MANUFACTURER_COLUMN) {
             ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
@@ -485,15 +468,13 @@ private fun ShipTable(
  *
  * @param ship the ship.
  * @param online whether writes are possible.
- * @param onEdit opens the editor.
- * @param onDelete asks to delete.
+ * @param onEdit opens the editor — which is also where the ship is deleted (S14).
  */
 @Composable
 private fun ShipCard(
     ship: Ship,
     online: Boolean,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
 ) {
     // A card, not a padded Column: every design chapter draws its list items as bordered
     // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
@@ -513,7 +494,7 @@ private fun ShipCard(
             Column(modifier = Modifier.weight(1f)) {
                 ShipCardBody(ship = ship)
             }
-            ShipCardActions(online = online, onEdit = onEdit, onDelete = onDelete)
+            ShipCardActions(online = online, onEdit = onEdit)
         }
     }
 }
@@ -883,7 +864,6 @@ fun HangarRoute(
         onLoadMore = viewModel::onLoadMore,
         onCreate = viewModel::onCreate,
         onEdit = viewModel::onEdit,
-        onDelete = viewModel::onDeleteRequested,
         onTypeDrilldown = viewModel::onTypeDrilldown,
         modifier = modifier,
     )
@@ -910,6 +890,7 @@ fun HangarRoute(
             onPlace = viewModel::onPlaceChosen,
             onFitted = viewModel::onFittedChanged,
             onSave = viewModel::onSave,
+            onDelete = viewModel::onDeleteRequested,
             onDismiss = viewModel::onEditorDismissed,
         )
     }

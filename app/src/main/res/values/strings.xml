@@ -1050,6 +1050,7 @@
     <string name="hangar_ship_delete_body">„%1$s“ wird aus deinem Hangar gelöscht.</string>
     <string name="hangar_add">Schiff anlegen</string>
     <string name="hangar_edit">Bearbeiten</string>
+    <string name="hangar_delete_ship">Schiff löschen</string>
     <string name="hangar_delete">Löschen</string>
     <plurals name="hangar_type_more">
         <item quantity="one">Ein weiterer. Suche genauer.</item>

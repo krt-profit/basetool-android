@@ -43,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtQuietDangerButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
@@ -57,6 +58,9 @@ const val SHIP_EDITOR_TAG: String = "ship-editor"
 
 /** Test handle for the editor's save action. */
 const val SHIP_SAVE_TAG: String = "ship-save"
+
+/** Test handle for the editor's delete action — the only place a single ship is deleted. */
+const val SHIP_DELETE_TAG: String = "ship-delete"
 
 /** How many hulls the picker shows before it asks the member to narrow the search. */
 private const val HULL_RESULT_LIMIT = 8
@@ -98,6 +102,7 @@ fun ShipEditorSheet(
     onPlace: (HomeLocation?) -> Unit,
     onFitted: (Boolean) -> Unit,
     onSave: () -> Unit,
+    onDelete: (Ship) -> Unit,
     onDismiss: () -> Unit,
 ) {
     KrtBottomSheet(
@@ -197,6 +202,19 @@ fun ShipEditorSheet(
                     onClick = onSave,
                     modifier = Modifier.testTag(SHIP_SAVE_TAG),
                     enabled = editor.submittable && !editor.saving,
+                )
+            }
+            // A quiet danger button at the sheet's foot, and only when a ship is open here
+            // (round 14 · S14). It used to be a second icon on every row, which left the row about
+            // 190 dp for its chips and its location and pushed long station names out — and the
+            // split is the overflow's own: „Hangar leeren" is about every ship, „Löschen" about the
+            // one already in front of the member.
+            editor.editing?.let { ship ->
+                KrtQuietDangerButton(
+                    text = stringResource(R.string.hangar_delete_ship),
+                    onClick = { onDelete(ship) },
+                    modifier = Modifier.fillMaxWidth().testTag(SHIP_DELETE_TAG),
+                    enabled = !editor.saving,
                 )
             }
         }

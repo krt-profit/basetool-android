@@ -1029,6 +1029,7 @@
     <string name="hangar_ship_delete_body">“%1$s” will be deleted from your hangar.</string>
     <string name="hangar_add">Add ship</string>
     <string name="hangar_edit">Edit</string>
+    <string name="hangar_delete_ship">Delete ship</string>
     <string name="hangar_delete">Delete</string>
     <plurals name="hangar_type_more">
         <item quantity="one">One more. Search more precisely.</item>
