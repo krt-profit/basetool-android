@@ -30,6 +30,12 @@ const val KRT_DEEP_LINK_SCHEME = "basetool"
  * @property route navigation route, without a leading slash.
  * @property titleRes screen title shown in the top bar and beside the glyph.
  * @property iconRes glyph used in the bottom bar, the rail and the "Mehr" list.
+ * @property orgScoped whether everything this screen shows is bounded by the **active org unit**.
+ *   Such a screen keeps the unit pill in its bar even when it was pushed rather than navigated to
+ *   (design ch. 03, round 14 · S13): there the pill names the *scope* the numbers were read under,
+ *   which a member cannot otherwise tell — „0 aUEC" means something different for one unit than
+ *   for all of them. A screen about **one record** never gets it: there the pill would look like a
+ *   property of the record.
  */
 @Immutable
 enum class KrtDestination(
@@ -37,6 +43,7 @@ enum class KrtDestination(
     @param:StringRes val titleRes: Int,
     @param:DrawableRes val iconRes: Int,
     @param:StringRes private val navTitleRes: Int? = null,
+    val orgScoped: Boolean = false,
 ) {
     /** The dashboard — the app's home and the target of every "back from a root". */
     Home("home", R.string.nav_home, DesignR.drawable.ic_krt_dashboard),
@@ -77,7 +84,7 @@ enum class KrtDestination(
     PersonalInventory("personal-inventory", R.string.nav_personal_inventory, DesignR.drawable.ic_krt_blueprint),
 
     /** Bank — org-unit accounts and booking requests. */
-    Bank("bank", R.string.nav_bank, DesignR.drawable.ic_krt_bank),
+    Bank("bank", R.string.nav_bank, DesignR.drawable.ic_krt_bank, orgScoped = true),
 
     /**
      * Handel — the material catalogue and what the universe pays for it.
@@ -86,7 +93,7 @@ enum class KrtDestination(
      * this screen's own overflow rather than in the „Mehr" list, because all three answer the same
      * question at different resolutions.
      */
-    Materials("materials", R.string.nav_materials, DesignR.drawable.ic_krt_list),
+    Materials("materials", R.string.nav_materials, DesignR.drawable.ic_krt_list, orgScoped = true),
 
     /** Benachrichtigungen — the inbox behind the bell. */
     Notifications("notifications", R.string.nav_notifications, DesignR.drawable.ic_krt_bell),

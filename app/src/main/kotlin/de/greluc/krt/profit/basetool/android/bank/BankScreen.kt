@@ -412,8 +412,12 @@ fun BankAccountScreen(
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     Text(
+                                        // headlineMedium, the step below the screen's own total
+                                        // (round 14 · S12). At displaySmall the card's figure was
+                                        // the same size as the GESAMT tile's, which made every
+                                        // single account look like the sum of them.
                                         text = formatAmount(account.balance.orEmpty()),
-                                        style = MaterialTheme.typography.displaySmall,
+                                        style = MaterialTheme.typography.headlineMedium,
                                         color = KrtPalette.White,
                                     )
                                     Text(

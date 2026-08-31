@@ -514,11 +514,17 @@ private fun AppTopBar(
         // back arrow AND the chip AND the bell. Artboards 07.1, 08.4, 13.1 and 15.1 all draw the
         // same head: back arrow, title, and whatever that screen owns on the right. Nothing else.
         onBack = if (navigable) null else onBack,
-        // The org chip and the bell are for choosing what to look at, so they belong to the
-        // destinations the navigation itself offers. On anything pushed they compete with the thing
-        // being looked at — and on the inbox the bell would point at the screen it is on.
+        // The bell is for choosing what to look at, so it belongs to the destinations the
+        // navigation itself offers; on anything pushed it competes with the thing being looked at,
+        // and on the inbox it would point at the screen it is on.
+        //
+        // The org pill is **not** the same case (round 14 · S13). A pushed screen keeps it when
+        // everything on it is bounded by the active unit — the Bank and the Handel are the two —
+        // because there it names the scope the numbers were read under, which a member cannot
+        // otherwise tell: „0 aUEC" means one thing for a Staffel and another for all units. A
+        // screen about one record still never gets it.
         orgBadge =
-            if (!navigable) {
+            if (!navigable && !destination.orgScoped) {
                 null
             } else {
                 {
