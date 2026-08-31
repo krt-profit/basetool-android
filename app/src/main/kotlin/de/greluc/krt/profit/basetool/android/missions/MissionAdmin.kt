@@ -102,6 +102,10 @@ data class MissionSectionConflict(
  * @property correctStartDate that pair's date half.
  * @property correctStartClock that pair's time half.
  * @property internal whether only the owning unit sees it.
+ * @property partyLeadSet whether an Einsatzleitung is named — the first figure of the Personen
+ *   head's „Leitung · Manager · Teilnehmer" count.
+ * @property managerCount how many managers there are.
+ * @property participantCount how many have signed up.
  * @property expanded which sections are open; Kern starts open and the rest closed.
  * @property states each section's own head state.
  * @property savedAt the clock time a section's receipt shows, per section.
@@ -124,6 +128,9 @@ data class MissionAdminForm(
     val correctStartDate: String = "",
     val correctStartClock: String = "",
     val internal: Boolean = false,
+    val partyLeadSet: Boolean = false,
+    val managerCount: Int = 0,
+    val participantCount: Int = 0,
     val expanded: Set<MissionSection> = setOf(MissionSection.CORE),
     val states: Map<MissionSection, MissionSectionState> = emptyMap(),
     val savedAt: Map<MissionSection, String> = emptyMap(),
@@ -317,6 +324,9 @@ class MissionAdmin(
             plannedEndClock = endClock,
             actualStart = detail.actualStartTime?.toString().orEmpty(),
             internal = detail.isInternal,
+            partyLeadSet = !detail.partyLeadName.isNullOrBlank(),
+            managerCount = detail.managers.size,
+            participantCount = detail.registeredParticipants,
         )
     }
 

@@ -215,9 +215,9 @@ private fun StandingChip(
     section: MissionSection,
     form: MissionAdminForm,
 ) {
-    // Only two sections have a standing value: Kern has none worth a chip, and Personen's counts
-    // live on its own rows. Written as two guards rather than an exhaustive `when` with an empty
-    // branch, which is an unused expression the compiler rejects under -Werror.
+    // Three of the four have a standing value; Kern has none worth a chip. Written as guards
+    // rather than an exhaustive `when` with an empty branch, which is an unused expression the
+    // compiler rejects under -Werror.
     if (section == MissionSection.SCHEDULE) {
         KrtChip(
             text =
@@ -227,6 +227,21 @@ private fun StandingChip(
                     stringResource(R.string.mission_admin_not_started_chip)
                 },
             tone = if (form.started) KrtChipTone.Success else KrtChipTone.Muted,
+        )
+    }
+    if (section == MissionSection.PEOPLE) {
+        // „Ein Kopf, der nur ein Wort zeigt, macht das Aufklappen zur Pflicht — dann ist die
+        // Faltung falsch" (ch. 02 §10). Artboard 7 draws Leitung · Manager · Teilnehmer as one
+        // count; this head was the only one folding over nothing.
+        KrtChip(
+            text =
+                stringResource(
+                    R.string.mission_admin_people_counts,
+                    if (form.partyLeadSet) 1 else 0,
+                    form.managerCount,
+                    form.participantCount,
+                ),
+            tone = KrtChipTone.Data,
         )
     }
     if (section == MissionSection.FLAGS) {

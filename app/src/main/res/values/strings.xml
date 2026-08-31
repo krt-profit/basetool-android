@@ -1392,6 +1392,7 @@
     <string name="mission_admin_save_core">Kern speichern</string>
     <string name="mission_admin_save_schedule">Zeitplan speichern</string>
     <string name="mission_admin_save_flags">Sichtbarkeit speichern</string>
+    <string name="mission_admin_people_counts">%1$d · %2$d · %3$d</string>
     <string name="mission_admin_section_hint">Jeder Abschnitt wird einzeln gespeichert — so kollidiert eine Änderung hier nicht mit einer gleichzeitigen Änderung woanders.</string>
     <string name="mission_admin_start_hint">Vor dem tatsächlichen Start weist der Server jeden Check-in ab.</string>
     <string name="gate_role_mission_manager">Dafür brauchst du die Rolle Missions-Manager.</string>
