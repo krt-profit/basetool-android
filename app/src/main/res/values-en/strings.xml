@@ -1177,7 +1177,7 @@
     <string name="refinery_phase_cancelled">Cancelled</string>
     <string name="refinery_station">Station</string>
     <string name="refinery_good_with_quality">%1$s (Q %2$d)</string>
-    <string name="refinery_value">Value ≈</string>
+    <string name="refinery_value">Estimated value</string>
     <string name="refinery_station_unknown">Unknown station</string>
     <string name="refinery_method">Method</string>
     <string name="refinery_method_unknown">Unknown method</string>

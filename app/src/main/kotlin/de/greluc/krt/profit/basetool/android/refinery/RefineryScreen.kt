@@ -39,6 +39,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
@@ -69,6 +70,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSect
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -588,7 +590,6 @@ fun RefineryOrderDetailScreen(
 
         is RefineryDetailPhase.Ready -> {
             val order = state.order
-            menu?.let { OrderMenu(state = state, menu = it) }
             if (order == null) {
                 KrtEmptyState(
                     iconRes = DesignR.drawable.ic_krt_refinery,
@@ -606,6 +607,7 @@ fun RefineryOrderDetailScreen(
                 OrderDetailBody(
                     state = state,
                     order = order,
+                    menu = menu,
                     onStoreRequested = onStoreRequested,
                 )
             }
@@ -663,42 +665,38 @@ private fun OrderMenu(
     val edit = stringResource(R.string.refinery_edit_title)
     val delete = stringResource(R.string.refinery_delete_action)
     val lockedReason = stringResource(R.string.refinery_delete_locked_stored)
-    ProvideScreenTopBar(
-        actions = {
-            KrtOverflowMenu(
-                contentDescription = edit,
-                expanded = open,
-                onExpandedChange = { open = it },
-                modifier = Modifier.testTag(REFINERY_DETAIL_MENU_TAG),
-                items =
-                    listOf(
-                        KrtMenuItem(
-                            label = edit,
-                            iconRes = DesignR.drawable.ic_krt_edit,
-                            onClick = {
-                                open = false
-                                menu.onEdit()
-                            },
-                        ),
-                        KrtMenuItem(
-                            label = delete,
-                            iconRes = DesignR.drawable.ic_krt_trash,
-                            danger = true,
-                            locked = !state.deletable,
-                            reason = lockedReason.takeIf { !state.deletable },
-                            onClick = {
-                                open = false
-                                // A locked row keeps its tap target so it can state its reason —
-                                // which the row itself draws. It must not go on to raise the
-                                // confirmation for a deletion that will not happen.
-                                if (state.deletable) {
-                                    menu.onDeleteRequested()
-                                }
-                            },
-                        ),
-                    ),
-            )
-        },
+    KrtOverflowMenu(
+        contentDescription = edit,
+        expanded = open,
+        onExpandedChange = { open = it },
+        modifier = Modifier.testTag(REFINERY_DETAIL_MENU_TAG),
+        items =
+            listOf(
+                KrtMenuItem(
+                    label = edit,
+                    iconRes = DesignR.drawable.ic_krt_edit,
+                    onClick = {
+                        open = false
+                        menu.onEdit()
+                    },
+                ),
+                KrtMenuItem(
+                    label = delete,
+                    iconRes = DesignR.drawable.ic_krt_trash,
+                    danger = true,
+                    locked = !state.deletable,
+                    reason = lockedReason.takeIf { !state.deletable },
+                    onClick = {
+                        open = false
+                        // A locked row keeps its tap target so it can state its reason —
+                        // which the row itself draws. It must not go on to raise the
+                        // confirmation for a deletion that will not happen.
+                        if (state.deletable) {
+                            menu.onDeleteRequested()
+                        }
+                    },
+                ),
+            ),
     )
 }
 
@@ -756,15 +754,52 @@ private fun DeleteConfirmation(
  *
  * @param state what to draw.
  * @param order the loaded order.
+ * @param menu the ⋮ this screen owns, or `null` where the caller draws none.
  * @param onStoreRequested the booking action was tapped.
  */
 @Composable
 private fun OrderDetailBody(
     state: RefineryDetailState,
     order: RefineryOrder,
+    menu: RefineryDetailMenu?,
     onStoreRequested: () -> Unit,
 ) {
     val phase = order.phaseAt(state.now)
+    // The run's own head, as artboard 11-2 draws it: the status under the name and, beside it,
+    // which refinery and which method. Both stood in the body under the section bar, which left
+    // the bar naming the category („RAFFINERIEAUFTRAG") of a screen that shows exactly one.
+    //
+    // The artboard's „#7841" is mock — no order number exists on the wire, and the web's own
+    // title is „Raffinerieauftrag Details" — so the head names what the app actually has.
+    ProvideScreenTopBar(
+        title = stringResource(R.string.refinery_order_title),
+        // **One publisher for the whole bar.** The slot holds one head and the last writer wins,
+        // so the overflow published on its own — with a null title — raced this one: whichever
+        // ran last, the bar lost either its name or its ⋮. Same trap the Auftrag detail hit.
+        actions = menu?.let { { OrderMenu(state = state, menu = it) } },
+        subtitle = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
+                val identity =
+                    listOf(order.locationName, order.methodName)
+                        .filter { it.isNotBlank() }
+                        .joinToString(SEPARATOR)
+                if (identity.isNotBlank()) {
+                    Text(
+                        text = identity,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = KrtPalette.TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        },
+    )
     Column(
         modifier =
             Modifier
@@ -776,18 +811,6 @@ private fun OrderDetailBody(
         if (!state.online) {
             OfflineBand()
         }
-        // Artboard 2 carries the run's identity beside the status: which refinery, which method.
-        // Its „#7841" is mock — no order number exists on the wire, and the web's own title is
-        // „Raffinerieauftrag Details" — so the app names what it actually has.
-        Text(
-            text =
-                listOf(order.locationName, order.methodName)
-                    .filter { it.isNotBlank() }
-                    .joinToString(SEPARATOR),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
-        KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
         // Artboard 2 puts the four facts in the HUD box, brackets and all — the same container the
         // rest of the app uses for a block of facts that belong together.
         KrtHudBox(modifier = Modifier.fillMaxWidth()) {
@@ -833,11 +856,22 @@ private fun OrderDetailBody(
         // recorded profit is the figure the web itself shows. Printing Ore Sales beside it repeated
         // an input as if it were a result. Deviation recorded in docs/specs/refinery.md.
         order.profit?.let {
-            KrtKeyValueRow(
-                label = stringResource(R.string.refinery_value),
-                value = formatAmount(it),
-                valueColor = KrtPalette.SuccessText,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.refinery_value).krtUppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = KrtPalette.TextMuted,
+                )
+                Text(
+                    text = formatAmount(it),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = KrtPalette.SuccessText,
+                )
+            }
         }
         if (state.stored) {
             Text(

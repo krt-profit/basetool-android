@@ -1198,7 +1198,7 @@
     <string name="refinery_phase_cancelled">Abgebrochen</string>
     <string name="refinery_station">Station</string>
     <string name="refinery_good_with_quality">%1$s (Q %2$d)</string>
-    <string name="refinery_value">Wert ≈</string>
+    <string name="refinery_value">Geschätzter Wert</string>
     <string name="refinery_station_unknown">Unbekannte Station</string>
     <string name="refinery_method">Methode</string>
     <string name="refinery_method_unknown">Unbekannte Methode</string>
