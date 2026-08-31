@@ -57,7 +57,7 @@ licensee = "1.14.1"
 openapiGenerator = "7.25.0"
 
 detekt = "2.0.0-alpha.6"
-spotless = "8.10.0"
+spotless = "8.10.1"
 ktlint = "1.8.0"
 
 [libraries]
