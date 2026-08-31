@@ -188,6 +188,9 @@ fun OrdersScreen(
     OrdersOverflow(onOpenDemand = onOpenDemand)
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
+            if (!state.online) {
+                OfflineBand()
+            }
             // FlowRow, not Row: at font scale 1.3x a Row squeezes the last chip until its label
             // breaks character by character („ABG ESC HLO SSE N").
             FlowRow(
@@ -274,6 +277,9 @@ fun OrdersScreen(
             iconRes = DesignR.drawable.ic_krt_plus,
             label = stringResource(R.string.orders_create),
             onClick = onCreate,
+            // Offline the „+" leads to a form that can only refuse, so it is dimmed here the way
+            // every other list in the app dims its create action.
+            enabled = state.online,
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)

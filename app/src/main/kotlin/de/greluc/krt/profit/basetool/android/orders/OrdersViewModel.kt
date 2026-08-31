@@ -84,6 +84,7 @@ data class OrdersState(
     val retryIn: Int? = null,
     val expanded: Set<String> = emptySet(),
     val ageThresholds: JobOrderAgeThresholds = JobOrderAgeThresholds(),
+    val online: Boolean = true,
 )
 
 /**
@@ -102,6 +103,7 @@ data class OrdersState(
 class OrdersViewModel(
     private val source: JobOrderSource,
     private val liveSync: LiveSyncSource? = null,
+    connectivity: Connectivity? = null,
 ) : ViewModel() {
     init {
         observeLiveSync(liveSync, setOf(LiveSyncTopic.ORDERS)) { sections ->
@@ -118,6 +120,22 @@ class OrdersViewModel(
 
     /** What the screen draws. */
     val state: StateFlow<OrdersState> = mutableState.asStateFlow()
+
+    // AFTER `mutableState`, not in the init block above it: a property is initialised in source
+    // order, and `Connectivity.online` replays its current value the moment it is collected — so
+    // collecting from an earlier init block read `mutableState` while it was still null and the
+    // app died on its first frame.
+    init {
+        // The queue offers one write — its „+" — and offline it led to a form that could only
+        // refuse. Every other list in the app says so up front (ch. 14); this one did not.
+        connectivity?.let { network ->
+            viewModelScope.launch {
+                network.online.collect { online ->
+                    mutableState.value = mutableState.value.copy(online = online)
+                }
+            }
+        }
+    }
 
     /**
      * The chapter-14 retry ladder for this screen's first load (REQ-APP-UI-003).

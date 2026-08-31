@@ -750,7 +750,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 bankViewModels(container)
-                initializer { OrdersViewModel(container.orders, container.liveSync) }
+                initializer { OrdersViewModel(container.orders, container.liveSync, container.connectivity) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
                 initializer { MaterialsViewModel(container.materialCatalog, container.connectivity) }
                 initializer {
