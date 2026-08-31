@@ -7,6 +7,10 @@
 // The clip comes from the artboard's own bounding box rather than from guessed pixels, so a
 // chapter that reflows does not silently start cropping the wrong frame.
 //
+// Not every chapter captions its frames: chapter 04 puts the „N · Title" line on the NOTES card
+// under the row of phones, so there is nothing above a frame to anchor to. For those, screenshot
+// the whole page with `page.mjs` and crop.
+//
 // usage: node board.mjs <url> <artboardNumber> <out.png> [clickText ...]
 const [, , url, board, out, ...clicks] = process.argv;
 
@@ -50,9 +54,15 @@ const rect = await evaluate(`(() => {
   const deepest = list => list.length ? list.reduce((a, b) => (depth(b) > depth(a) ? b : a)) : null;
   const token = ${JSON.stringify(board)};
   const numbered = new RegExp('^\\\\s*' + token + '\\\\s*[·]');
+  // A LEAF match wins: chapter 04's handoff panel opens with the same „N · Title" line as the
+  // frame's caption, and taking the deepest match there picked the panel and clipped the prose
+  // instead of the phone. Only when no leaf matches — chapter 02 wraps its number in a <b> —
+  // does the deepest non-leaf match stand in.
+  const numberedHits = all.filter(e => numbered.test((e.textContent || '').trim()));
+  const startsHits = all.filter(e => (e.textContent || '').trim().toLowerCase().startsWith(token.toLowerCase()));
+  const leaf = list => list.find(e => e.children.length === 0) || null;
   const caption =
-    deepest(all.filter(e => numbered.test((e.textContent || '').trim()))) ||
-    deepest(all.filter(e => (e.textContent || '').trim().toLowerCase().startsWith(token.toLowerCase())));
+    leaf(numberedHits) || deepest(numberedHits) || leaf(startsHits) || deepest(startsHits);
   if (!caption) return null;
   const col = caption.parentElement;
   const r = col.getBoundingClientRect();

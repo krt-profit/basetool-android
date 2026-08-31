@@ -346,5 +346,11 @@ Three colours imply three states, and nothing says what they are or where they c
 has no health endpoint in its contract, and „is the server up" is answerable only by a request
 that has just succeeded or failed. Read literally it would be a permanent green dot.
 
-**What is missing:** what the three colours mean and what they are read from — or the dot struck in
-favour of the offline banner chapter 14 already defines.
+Chapter 04's login frame draws the same footer with the dot green and the words
+„Server bereit · v1.4.2 (37)", which gives green a meaning on **that** screen — the gate check has
+just answered. Inside the app, where every screen has its own last request, it is not clear what
+the dot would be reading.
+
+**What is missing:** what the three colours mean and what they are read from — or the dot kept on
+the login screen, where the gate check answers it, and struck in the Einstellungen footer in favour
+of the offline banner chapter 14 already defines.
