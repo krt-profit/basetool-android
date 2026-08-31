@@ -77,6 +77,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
@@ -242,17 +243,35 @@ fun RefineryOrdersScreen(
                     }
                 }
                 onCreate?.let { create ->
-                    KrtFab(
-                        iconRes = DesignR.drawable.ic_krt_plus,
-                        label = stringResource(R.string.refinery_create_title),
-                        onClick = create,
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(KrtSpacing.s16)
-                                .padding(bottom = LocalKrtBottomBarInset.current)
-                                .testTag(REFINERY_CREATE_CTA_TAG),
-                    )
+                    if (isWideWindow()) {
+                        // A bar across the foot of the list column, as chapter 11's tablet frame
+                        // draws it — not a floating button. In a pane this narrow the FAB sat on
+                        // top of a row and hid half of it, and the row it covered was a run the
+                        // member might have come to collect.
+                        KrtCtaButton(
+                            text = stringResource(R.string.refinery_create_title),
+                            onClick = create,
+                            iconRes = DesignR.drawable.ic_krt_plus,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                                    .padding(KrtSpacing.s12)
+                                    .testTag(REFINERY_CREATE_CTA_TAG),
+                        )
+                    } else {
+                        KrtFab(
+                            iconRes = DesignR.drawable.ic_krt_plus,
+                            label = stringResource(R.string.refinery_create_title),
+                            onClick = create,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(KrtSpacing.s16)
+                                    .padding(bottom = LocalKrtBottomBarInset.current)
+                                    .testTag(REFINERY_CREATE_CTA_TAG),
+                        )
+                    }
                 }
             }
         }
@@ -408,10 +427,15 @@ private fun CardFooter(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val remaining = if (phase == RefineryPhase.RUNNING) remainingText(order.endsAt, now) else ""
         Text(
-            text = if (phase == RefineryPhase.RUNNING) remainingText(order.endsAt, now) else "",
+            text = remaining,
             style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.SuccessText,
+            // Muted, not success green: the countdown is a fact about a run still in progress, and
+            // artboard 11-1 keeps green for „Abholbereit", which is the state worth spotting from
+            // across the list. It was green even for „Restzeit unbekannt", so a run whose end the
+            // server does not know read as one ready to collect.
+            color = KrtPalette.TextMuted,
             modifier = Modifier.weight(1f),
         )
         value?.let { amount ->
