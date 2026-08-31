@@ -251,7 +251,7 @@
     <string name="mission_detail_finance_income">Einnahmen</string>
     <string name="mission_detail_finance_expense">Ausgaben</string>
     <string name="mission_detail_finance_net">Netto</string>
-    <string name="mission_detail_finance_per_head">Anteil je Teilnehmer (%1$d)</string>
+    <string name="mission_detail_finance_per_head">Anteil je Auszahlung (%1$s von %2$s)</string>
     <string name="mission_detail_finance_per_head_value">%1$s aUEC</string>
     <string name="mission_detail_finance_forbidden">Die Finanzen dieses Einsatzes sind für dich nicht einsehbar.</string>
     <string name="mission_detail_empty_participants">Noch niemand angemeldet.</string>

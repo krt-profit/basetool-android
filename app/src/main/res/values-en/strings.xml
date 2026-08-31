@@ -230,7 +230,7 @@
     <string name="mission_detail_finance_income">Income</string>
     <string name="mission_detail_finance_expense">Expenses</string>
     <string name="mission_detail_finance_net">Net</string>
-    <string name="mission_detail_finance_per_head">Share per participant (%1$d)</string>
+    <string name="mission_detail_finance_per_head">Share per payout (%1$s of %2$s)</string>
     <string name="mission_detail_finance_per_head_value">%1$s aUEC</string>
     <string name="mission_detail_finance_forbidden">You cannot view this Einsatz\'s finances.</string>
     <string name="mission_detail_empty_participants">Nobody has signed up yet.</string>

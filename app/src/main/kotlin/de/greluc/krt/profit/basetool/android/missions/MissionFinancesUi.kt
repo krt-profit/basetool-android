@@ -222,23 +222,31 @@ private fun FinanceAction(
 }
 
 /**
- * „Anteil je Teilnehmer (14)" — the card's closing line.
+ * „Anteil je Auszahlung (12 von 14)" — the card's closing line.
  *
  * **Computed, and the divisor is on screen.** The wire carries no per-head figure, so this is the
- * net divided by the number of registered participants, exactly as artboard 06-2 draws it
- * (74.700 ÷ 14 = 5.335). It does **not** account for who has chosen the Org-Kasse over a payout —
- * which is why the count it divided by is named in the label rather than hidden behind it. The
- * question of whether the share should exclude donors is on the design gap list.
+ * net divided by the people who actually take one — round 14 (S6) settled that the divisor is the
+ * **payout takers**, not everybody registered: a member who gives their share to the Org-Kasse is
+ * not paid, and counting them made every other share too small.
+ *
+ * Both numbers are named, because „12 von 14" is the only way to see that two people donated
+ * without opening the roster. A roster that has not loaded yet falls back to the registered count,
+ * which is the same figure it always was.
  *
  * @param finances the totals.
- * @param detail the Einsatz, for how many are registered.
+ * @param detail the Einsatz, for the roster and the registered count.
  */
 @Composable
 private fun PerHeadShare(
     finances: MissionFinances,
     detail: MissionDetail?,
 ) {
-    val heads = detail?.registeredParticipants ?: 0
+    val registered = detail?.registeredParticipants ?: 0
+    val roster = detail?.participants.orEmpty()
+    // `donating == null` is „the server did not say", which is not the same as „donates" — an
+    // unknown preference still expects a payout, so it counts.
+    val takers = if (roster.isEmpty()) registered else roster.count { it.donating != true }
+    val heads = takers
     val net = finances.total?.takeIf { it.isNotBlank() }?.let { runCatching { BigDecimal(it) }.getOrNull() }
     if (heads <= 0 || net == null) {
         return
@@ -254,7 +262,15 @@ private fun PerHeadShare(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stringResource(R.string.mission_detail_finance_per_head, heads).krtUppercase(),
+            text =
+                stringResource(
+                    R.string.mission_detail_finance_per_head,
+                    // As strings, like every other figure the app prints: „%d von %d" reads to
+                    // Android Lint as a quantity phrase that needs plural forms, and this one
+                    // never inflects — „von" is the same word after 1 and after 12.
+                    heads.toString(),
+                    maxOf(registered, roster.size, heads).toString(),
+                ).krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = KrtPalette.Gray1,
             modifier = Modifier.weight(1f),
