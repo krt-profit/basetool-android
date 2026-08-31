@@ -72,15 +72,11 @@ class DashboardScreenTest {
      * Renders the dashboard.
      *
      * @param state the fetched parts.
-     * @param unread the preview rows.
-     * @param unreadKnown whether the inbox has answered.
      * @param opened receives the id of a tapped Einsatz.
      * @param taps records taps on the two band links, by label.
      */
     private fun show(
         state: DashboardState,
-        unread: List<Notification> = emptyList(),
-        unreadKnown: Boolean = true,
         opened: MutableList<String> = mutableListOf(),
         taps: MutableList<String> = mutableListOf(),
     ) {
@@ -90,13 +86,10 @@ class DashboardScreenTest {
                     state = state,
                     memberName = "GrafRotz",
                     orgUnitName = "Bereich Profit",
-                    unread = unread,
-                    unreadKnown = unreadKnown,
                     onMarkAnnouncementRead = { taps.add("announcement-read") },
                     onRefresh = {},
                     onOpenMission = { opened.add(it) },
                     onOpenMissions = { taps.add("missions") },
-                    onOpenNotifications = { taps.add("notifications") },
                     onQuickAction = { taps.add("quick:" + it.name) },
                 )
             }
@@ -167,41 +160,33 @@ class DashboardScreenTest {
         compose.onNodeWithText("Die Einsätze konnten nicht geladen werden.").assertIsDisplayed()
     }
 
+    /**
+     * The dashboard says nothing about unread notifications — withdrawn 2026-08-31.
+     *
+     * It previewed the three newest and stated „Nichts Ungelesenes." when there were none. The bell
+     * in the top bar carries the same count on every screen, so this was a second place saying what
+     * one place already says. Pinned as an absence, because a preview is exactly the kind of band
+     * that gets added back by someone reading the artboard rather than this note.
+     */
     @Test
-    fun `the unread preview words a notification exactly as the inbox does`() {
-        show(DashboardState(phase = DashboardPhase.Ready), unread = listOf(notification("n1")))
-
-        compose.onNodeWithText("Neuer Auftrag #1042 für Staffel 1").assertIsDisplayed()
-    }
-
-    @Test
-    fun `nothing unread is stated, not left blank`() {
+    fun `the dashboard no longer previews unread notifications`() {
         show(DashboardState(phase = DashboardPhase.Ready))
 
-        compose.onNodeWithText("Nichts Ungelesenes.").assertIsDisplayed()
-    }
-
-    @Test
-    fun `nothing unread is not claimed before the inbox has answered`() {
-        // The badge is live from the shell while the list may still be loading. Saying "Nichts
-        // Ungelesenes" in that window contradicted a badge showing 2 — found on a device.
-        show(DashboardState(phase = DashboardPhase.Ready), unreadKnown = false)
-
         compose.onAllNodesWithText("Nichts Ungelesenes.").assertCountEquals(0)
+        compose.onAllNodesWithText("UNGELESEN", ignoreCase = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Alle ansehen", ignoreCase = true).assertCountEquals(0)
     }
 
     @Test
-    fun `both band links lead somewhere`() {
+    fun `the Einsatz band's link leads somewhere`() {
         val taps = mutableListOf<String>()
         show(
             DashboardState(missions = listOf(mission("m1")), phase = DashboardPhase.Ready),
-            unread = listOf(notification("n1")),
             taps = taps,
         )
 
         compose.onNodeWithText("Alle Einsätze", ignoreCase = true).performClick()
-        compose.onNodeWithText("Alle ansehen", ignoreCase = true).performClick()
 
-        assertEquals(listOf("missions", "notifications"), taps)
+        assertEquals(listOf("missions"), taps)
     }
 }

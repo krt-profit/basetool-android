@@ -135,6 +135,10 @@
 
 ### Changed
 
+- **Die Übersicht zeigt keine ungelesenen Benachrichtigungen mehr.** Die Glocke oben rechts trägt
+  die Zahl auf jedem Screen — der Block darunter sagte dasselbe noch einmal. Der Rest der Übersicht
+  bleibt unverändert.
+
 - **Der Verwaltungs-Tab im Einsatz ist jetzt sichtbar und gesperrt statt versteckt.** Wer den
   Einsatz nicht verwaltet, sieht ihn ausgegraut mit Schloss; ein Tipp nennt die fehlende Rolle.
   Eine Funktion, die niemand sieht, wird nie angefragt.

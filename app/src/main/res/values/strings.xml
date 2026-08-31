@@ -390,9 +390,6 @@
     <string name="dashboard_quick_book_in">Einbuchen (Lager)</string>
     <string name="dashboard_quick_order">Auftrag erstellen</string>
     <string name="dashboard_quick_offer">Börse: Angebot</string>
-    <string name="dashboard_notifications">Ungelesen</string>
-    <string name="dashboard_notifications_all">Alle ansehen</string>
-    <string name="dashboard_notifications_empty">Nichts Ungelesenes.</string>
     <!-- Hangar (design chapter 08) -->
     <string name="hangar_title">Hangar</string>
     <string name="hangar_segment_mine">Meine Schiffe</string>

@@ -87,9 +87,6 @@ const val DASHBOARD_TAG: String = "dashboard"
 /** How many lines of the announcement are shown while it is collapsed. */
 private const val ANNOUNCEMENT_COLLAPSED_LINES = 2
 
-/** How many unread notifications the preview band shows. */
-private const val PREVIEW_ROWS = 3
-
 /**
  * The dashboard (design spec ch. 05), read-only.
  *
@@ -103,14 +100,10 @@ private const val PREVIEW_ROWS = 3
  * @param state the fetched parts.
  * @param memberName the signed-in member's name, or `null` while unknown.
  * @param orgUnitName the active org unit's name, or `null` while unknown.
- * @param unread the newest unread notifications, already limited by the caller.
- * @param unreadKnown whether the inbox has answered at all — "nothing unread" is a claim and
- *   may only be made once it has.
  * @param onMarkAnnouncementRead the notice's own action; clears its unread marker.
  * @param onRefresh pull-to-refresh.
  * @param onOpenMission an Einsatz row was tapped.
  * @param onOpenMissions the Einsatz band's header action.
- * @param onOpenNotifications the preview's header action.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,13 +112,10 @@ fun DashboardScreen(
     state: DashboardState,
     memberName: String?,
     orgUnitName: String?,
-    unread: List<Notification>,
-    unreadKnown: Boolean,
     onMarkAnnouncementRead: () -> Unit,
     onRefresh: () -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenMissions: () -> Unit,
-    onOpenNotifications: () -> Unit,
     onQuickAction: (QuickAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -177,11 +167,6 @@ fun DashboardScreen(
                         contentPadding = PaddingValues(vertical = KrtSpacing.s12),
                     ) {
                         quickActionsSection(onQuickAction = onQuickAction)
-                        notificationsSection(
-                            unread = unread,
-                            unreadKnown = unreadKnown,
-                            onOpenNotifications = onOpenNotifications,
-                        )
                     }
                 }
             }
@@ -212,11 +197,6 @@ fun DashboardScreen(
                     onOpenMissions = onOpenMissions,
                 )
                 quickActionsSection(onQuickAction = onQuickAction)
-                notificationsSection(
-                    unread = unread,
-                    unreadKnown = unreadKnown,
-                    onOpenNotifications = onOpenNotifications,
-                )
             }
         }
     }
@@ -372,50 +352,6 @@ private fun LazyListScope.missionsSection(
             items(state.missions, key = { it.id }) { mission ->
                 MissionBandRow(mission = mission, onClick = { onOpenMission(mission.id) })
             }
-        }
-    }
-}
-
-/**
- * The "Benachrichtigungen" half of the dashboard.
- *
- * @param unread the unread rows, of which only the first few are previewed.
- * @param unreadKnown whether the inbox has answered yet.
- * @param onOpenNotifications opens the inbox.
- */
-private fun LazyListScope.notificationsSection(
-    unread: List<Notification>,
-    unreadKnown: Boolean,
-    onOpenNotifications: () -> Unit,
-) {
-    item(key = "notifications-title") {
-        KrtSectionTitle(
-            text = stringResource(R.string.dashboard_notifications),
-            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
-            trailing = {
-                if (unread.isNotEmpty()) {
-                    SectionAction(
-                        text = stringResource(R.string.dashboard_notifications_all),
-                        onClick = onOpenNotifications,
-                    )
-                }
-            },
-        )
-    }
-    if (unread.isEmpty()) {
-        // Silence while the inbox is still answering: saying "nothing unread" before it
-        // has is a claim about the member's inbox made out of not knowing yet.
-        if (unreadKnown) {
-            item(key = "notifications-empty") {
-                MutedLine(text = stringResource(R.string.dashboard_notifications_empty))
-            }
-        }
-    } else {
-        items(unread.take(PREVIEW_ROWS), key = { it.id }) { notification ->
-            // Sentence over timestamp, as artboard 1 stacks them. Without the time a preview row
-            // says that something happened but not whether it is still worth acting on, which is
-            // the one thing a member skimming the dashboard is deciding.
-            PreviewLine(text = notification.preview(), time = notification.dashboardTime())
         }
     }
 }
@@ -703,48 +639,6 @@ private fun GlyphFact(
 }
 
 /**
- * A muted line, used for the bands' empty and failed states.
- *
- * @param text what to say.
- */
-@Composable
-private fun PreviewLine(
-    text: String,
-    time: String,
-) {
-    Column(
-        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (time.isNotBlank()) {
-            Text(
-                text = time,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-        }
-    }
-}
-
-/**
- * When this notification was raised, on the ladder every screen in the app shares.
- *
- * @return the timestamp, or an empty string when the server sent none.
- */
-@Composable
-private fun Notification.dashboardTime(): String {
-    val raised = createdAt ?: return ""
-    return raised.relativeToNow()
-}
-
-/**
  * A quiet single line, for the states that have no timestamp to show.
  *
  * @param text the line.
@@ -779,20 +673,6 @@ private fun SectionAction(
         modifier = Modifier.clickable(onClick = onClick).padding(KrtSpacing.s4),
     )
 }
-
-/**
- * The one-line wording of a notification in the preview.
- *
- * @return the same sentence the inbox shows, so the two cannot describe one notification
- *   differently.
- */
-@Composable
-private fun Notification.preview(): String =
-    notificationSentence(
-        notification = this,
-        template = stringResource(notificationTypeRes(type)),
-        generic = stringResource(R.string.notifications_type_generic),
-    )
 
 /** Smallest a shortcut tile gets, so a wrapped label never squeezes the glyph out (artboard: 64). */
 private val QUICK_TILE_MIN_HEIGHT = 64.dp
