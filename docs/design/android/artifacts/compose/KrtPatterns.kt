@@ -210,6 +210,7 @@ fun KrtStatusBadge(text: String, tone: KrtStatusTone, modifier: Modifier = Modif
  * an em dash in TextMuted, never 0 and never an empty cell.
  */
 @Composable
+/** @param big the card rung of [KrtFigure]; a screen's ONE hero number uses KrtFigure.total directly. */
 fun KrtAmount(value: Long?, modifier: Modifier = Modifier, unit: String? = null, signed: Boolean = false, positive: Boolean = true, big: Boolean = false) {
     val text = when {
         value == null -> "—"
@@ -223,7 +224,7 @@ fun KrtAmount(value: Long?, modifier: Modifier = Modifier, unit: String? = null,
         else -> KrtPalette.White
     }
     Row(modifier, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text, style = (if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleSmall).merge(KrtTabularNums), color = color)
+        Text(text, style = if (big) KrtFigure.card else MaterialTheme.typography.titleSmall.merge(KrtTabularNums), color = color)
         if (unit != null && value != null) Text(unit, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
     }
 }

@@ -6,6 +6,21 @@ package de.greluc.krt.profit.basetool.app.ui.theme
 // Dark-ONLY: there is no light scheme. Dynamic color (Material You) is
 // deliberately NOT used — do not call dynamicDarkColorScheme().
 // Spec: 01 Foundations.dc.html
+//
+// SINGLE SOURCE OF TRUTH: artifacts/compose/KrtTokens.kt
+//
+// What this file is, precisely: a VALUE-COMPATIBLE SUBSET. Every token it declares carries the
+// same NAME and the same VALUE as in KrtTokens — the full Typography (12 slots), KrtFigure,
+// KrtSpacing (s4…s32) and the KrtDimens tokens this app actually uses. KrtTokens declares more
+// dimens (fieldHeight, icon, iconSmall, activeBar, appBarHeight, listAppBarHeight,
+// bottomNavHeight, tabHeight, navRailWidth, tabletBreakpoint, readableMaxWidth); take them from
+// there — do not re-declare them here under a different name. Nothing this file declares is
+// missing from KrtTokens: every name here resolves there, at the same value.
+//
+// It once diverged: the spacing scale, the touch rule and the icon-button size were each a round
+// or two behind, nine type slots differed by 1–2 sp, and a design note ended up citing this
+// file's names with the other's numbers (round 15 · R2). If the two ever disagree again,
+// KrtTokens wins and this file is the bug.
 // ============================================================================
 
 import androidx.compose.material3.Typography
@@ -164,22 +179,36 @@ private fun lato(w: FontWeight, size: Int, line: Int, track: Double = 0.0) = Tex
 
 // NOTE: Compose has no text-transform — UPPERCASE styles are applied by
 // passing text.uppercase(locale) at the call site (wrap in KrtText helpers).
+// NO display* slots. A figure NEVER names a display or headline style — it takes KrtFigure
+// (total 32 / card 20 / inline 16, Black, tabular, no tracking). This file once carried
+// displayMedium "hero KPI numbers" at Black 40 AND displaySmall at Black 32: two hero-number
+// claims in adjacent lines, both contradicted by KrtFigure.total (round 15 · R3).
+//
+// Every value below is KrtTokens.kt verbatim. NINE of the twelve slots below once differed from
+// it by 1–2 sp (title L/M/S, body L/M/S, label L/M/S) and were pulled onto its values; the two
+// former display* slots were DELETED rather than reconciled (ch. 18 §5 · R2). If you change a
+// number here without changing it there, you have reintroduced R2.
 val KrtTypography = Typography(
-    displayMedium = lato(FontWeight.Black, 40, 44),          // hero KPI numbers (tnum)
-    displaySmall  = lato(FontWeight.Black, 32, 36),          // KPI numbers (tnum)
     headlineLarge = lato(FontWeight.Black, 32, 38, 1.6),     // h1 — UPPERCASE, orange
     headlineMedium = lato(FontWeight.Bold, 24, 30, 1.2),     // h2 — UPPERCASE, orange
     headlineSmall = lato(FontWeight.Bold, 19, 25, 0.95),     // h3 — UPPERCASE
-    titleLarge    = lato(FontWeight.Bold, 19, 25),           // dialog/card titles
-    titleMedium   = lato(FontWeight.Bold, 16, 22),           // row headlines, emphasis
-    titleSmall    = lato(FontWeight.Bold, 14, 20, 0.7),      // section titles — UPPERCASE, gray
-    bodyLarge     = lato(FontWeight.Light, 16, 24),          // body default
-    bodyMedium    = lato(FontWeight.Light, 14, 21),          // secondary text
-    bodySmall     = lato(FontWeight.Light, 13, 20),          // meta, timestamps
-    labelLarge    = lato(FontWeight.Bold, 13, 16, 0.39),     // buttons — UPPERCASE
-    labelMedium   = lato(FontWeight.Bold, 11, 14, 0.55),     // chips, table heads — UPPERCASE
-    labelSmall    = lato(FontWeight.Bold, 11, 14, 1.65),     // overline — UPPERCASE 0.15em
+    titleLarge    = lato(FontWeight.Bold, 18, 20, 0.9),      // app-bar screen title — UPPERCASE
+    titleMedium   = lato(FontWeight.Bold, 15, 18, 0.8),      // detail-screen title, row headline
+    titleSmall    = lato(FontWeight.Bold, 13, 16, 0.65),     // section titles, card titles
+    bodyLarge     = lato(FontWeight.Light, 14, 22),          // body default
+    bodyMedium    = lato(FontWeight.Light, 13, 20),          // secondary text, helper lines
+    bodySmall     = lato(FontWeight.Light, 12, 17),          // meta, timestamps, notices
+    labelLarge    = lato(FontWeight.Bold, 12, 14, 0.6),      // buttons — UPPERCASE
+    labelMedium   = lato(FontWeight.Bold, 11, 13, 0.55),     // chips, table heads — UPPERCASE
+    labelSmall    = lato(FontWeight.Bold, 10, 12, 0.5),      // overline, chip text — UPPERCASE
 )
+
+// The figure ladder — mirrors KrtFigure in KrtTokens.kt (Black, tabular, NO letter-spacing).
+object KrtFigure {
+    val total  = lato(FontWeight.Black, 32, 36).copy(fontFeatureSettings = "tnum")  // one hero number per screen
+    val card   = lato(FontWeight.Black, 20, 24).copy(fontFeatureSettings = "tnum")  // figure in a card or row
+    val inline = lato(FontWeight.Black, 16, 20).copy(fontFeatureSettings = "tnum")  // figure beside a label
+}
 
 // ----------------------------------------------------------------------------
 // Shapes — square-first. The ONLY rounded things are pill badges (999 dp),
@@ -197,14 +226,34 @@ val PillShape = RoundedCornerShape(percent = 50)   // squadron badge / pills onl
 // ----------------------------------------------------------------------------
 // Spacing & metrics (dp)
 // ----------------------------------------------------------------------------
+// The ONE spacing scale — ch. 01 §5, nine steps, nothing off-scale (A3).
+// Positional names so the value stays readable at the call site.
 object KrtSpacing {
-    val xs = 4.dp; val sm = 8.dp; val md = 12.dp; val lg = 16.dp
-    val xl = 24.dp; val xxl = 32.dp
-    val touchTarget = 48.dp          // web minimum is 44 px — Android uses 48 dp
-    val contentMax = 1200.dp         // tablet content cap
+    val s4 = 4.dp     // field to helper text
+    val s8 = 8.dp     // inside a dense row
+    val s10 = 10.dp   // between cards in a list
+    val s12 = 12.dp   // between sections; card padding (vertical)
+    val s14 = 14.dp   // card padding (horizontal)
+    val s16 = 16.dp   // screen gutter on phone; modal padding
+    val s20 = 20.dp   // sheet gutter
+    val s24 = 24.dp   // tablet content gutter
+    val s32 = 32.dp
+}
+
+// Three sizes, NOT one floor — the distinction that once shrank every input (ch. 02 §1 · A2).
+object KrtDimens {
+    val touchTarget = 44.dp      // MINIMUM TAP AREA: rows, accordion heads, menu entries.
+                                 // NEVER a control height — that is controlHeight below.
+    val controlHeight = 48.dp    // field / button / select / segment
+    val navIconFloor = 48.dp     // bottom-nav and rail icon slots
+    val ctaHeight = 52.dp        // bottom-anchored primary CTA
+    val iconButton = 48.dp       // icon-only row action (round 14 · S3)
+    val iconButtonSmall = 40.dp  // the ONE exception: Ablauf move buttons, 40 × 44 (ch. 18 §3)
+    val contentMax = 1200.dp     // tablet content cap
+    val listPaneWidth = 480.dp   // tablet list column in list-detail
     val hairline = 1.dp
-    val headingRule = 2.dp           // orange under-rule on table heads
-    val bracket = 10.dp              // HUD corner brackets (13 dp on modals)
+    val accentRule = 2.dp        // orange under-rule on app bars and table heads (name as in KrtTokens)
+    val bracket = 10.dp          // .hud-box arms; the modal frame draws 13 dp
 }
 
 // Motion: 0.2 s color transitions only. No bounces, no parallax.

@@ -111,3 +111,28 @@ val KrtTypography =
  * countdowns, balances — so digits do not jitter horizontally as values update.
  */
 const val KRT_TABULAR_FIGURES = "tnum"
+
+/**
+ * The ladder a **number** is set on — three rungs, Black, tabular, and with no letter-spacing.
+ *
+ * Numbers do not share the heading ladder. `headlineLarge` is the uppercase h1 and carries 1.6 sp
+ * tracking, which applied to digits reads as spaced-out numerals; and while the two token
+ * artifacts disagreed about what each heading rung was, a note could cite
+ * „headlineMedium (Black 20)" and be wrong about both the name and the size. Round 15 (R2, R3)
+ * settled it: a figure never names a heading style.
+ *
+ * @property total the one hero number of a screen — a KPI total, a balance hero, an attendance
+ *   count.
+ * @property card a figure inside a card or a list row — an account balance, a per-head share.
+ * @property inline a figure beside a label — a section count, „3 / 3".
+ */
+object KrtFigure {
+    val total: TextStyle =
+        lato(FontWeight.Black, 32, 36).copy(fontFeatureSettings = KRT_TABULAR_FIGURES)
+
+    val card: TextStyle =
+        lato(FontWeight.Black, 20, 24).copy(fontFeatureSettings = KRT_TABULAR_FIGURES)
+
+    val inline: TextStyle =
+        lato(FontWeight.Black, 16, 20).copy(fontFeatureSettings = KRT_TABULAR_FIGURES)
+}

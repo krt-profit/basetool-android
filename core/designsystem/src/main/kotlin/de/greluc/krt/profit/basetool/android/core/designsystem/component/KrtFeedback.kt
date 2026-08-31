@@ -52,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
 import de.greluc.krt.profit.basetool.android.core.designsystem.modifier.krtDashedBorder
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtFigure
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPreviewSurface
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
@@ -344,7 +345,10 @@ fun KrtTotalTile(
                 color = KrtPalette.TextMuted,
             )
             Row(verticalAlignment = Alignment.Bottom) {
-                KrtDataValue(text = value, style = MaterialTheme.typography.displaySmall)
+                // The screen's one hero number, on the figure ladder rather than a heading
+                // style (round 15 · R2/R3): a heading rung carries letter-spacing, which on
+                // digits reads as spaced-out numerals.
+                KrtDataValue(text = value, style = KrtFigure.total)
                 if (unit != null) {
                     Text(
                         text = unit,
@@ -487,7 +491,8 @@ fun KrtKpiCard(
         KrtDataValue(
             text = value,
             modifier = Modifier.padding(top = KrtSpacing.s4),
-            style = MaterialTheme.typography.displaySmall,
+            // A figure in a CARD is the ladder's middle rung, not the hero one (round 15).
+            style = KrtFigure.card,
         )
         if (delta != null || sparkline != null) {
             Row(

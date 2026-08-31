@@ -94,6 +94,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtFigure
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
@@ -422,12 +423,13 @@ fun BankAccountScreen(
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     Text(
-                                        // headlineMedium, the step below the screen's own total
-                                        // (round 14 · S12). At displaySmall the card's figure was
-                                        // the same size as the GESAMT tile's, which made every
-                                        // single account look like the sum of them.
+                                        // `KrtFigure.card` — the ladder's middle rung, below the
+                                        // screen's own total (round 14 · S12, put on the figure
+                                        // ladder in round 15). At the hero size the card's figure
+                                        // matched the GESAMT tile's, which made every single
+                                        // account look like the sum of them.
                                         text = formatAmount(account.balance.orEmpty()),
-                                        style = MaterialTheme.typography.headlineMedium,
+                                        style = KrtFigure.card,
                                         color = KrtPalette.White,
                                     )
                                     Text(

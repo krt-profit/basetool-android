@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSect
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtColor
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtFigure
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
@@ -343,8 +344,10 @@ private fun AttendanceBox(detail: MissionDetail) {
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Text(
+                        // The attendance count is the band's hero figure — `KrtFigure.total`, the
+                        // ladder numbers get since round 15, not the h1 heading rung.
                         text = detail.registeredParticipants.toString(),
-                        style = MaterialTheme.typography.displaySmall,
+                        style = KrtFigure.total,
                         color = KrtPalette.White,
                     )
                     Text(

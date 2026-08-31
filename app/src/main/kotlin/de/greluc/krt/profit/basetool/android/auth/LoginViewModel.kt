@@ -40,6 +40,24 @@ class LoginViewModel(
     /** What the login screen renders. */
     val state: StateFlow<LoginUiState> = mutableState.asStateFlow()
 
+    private val mutableOnline = MutableStateFlow(true)
+
+    /**
+     * Whether the device has a network.
+     *
+     * A **network** state, not a server one — chapter 04 keeps the two apart (round 15 · R1). The
+     * app has asked the server nothing before the first tap, so it can say only this: without a
+     * connection the sign-in cannot start, and the screen says so up front instead of opening a
+     * browser that lands on nothing.
+     */
+    val online: StateFlow<Boolean> = mutableOnline.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            container.connectivity.online.collect { mutableOnline.value = it }
+        }
+    }
+
     /**
      * Starts a login: mints an attempt, persists it, and opens the Custom Tab.
      *

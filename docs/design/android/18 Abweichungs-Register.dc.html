@@ -22,7 +22,7 @@
     <div style="font:900 44px/1 Lato,sans-serif;color:#E77E23">18</div>
     <div style="flex:1">
       <h1 style="font:900 28px/1.1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.05em;margin:0">Abweichungs-Register</h1>
-      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Runden 12–14. Was der Code-Abgleich offen ließ: drei Web-Flächen ohne Artboard (§E1–E3), sechs ungeratifizierte Kompositionen (§E4–E9) und die Antworten auf §C, §D, §G, §H. Die Korrekturen der Abschnitte §A und §B stehen in ihren eigenen Kapiteln — jeweils gelb als „Korrektur (Runde 12)" markiert. <b style="color:#FFD23F">Runde 13 (30.08.2026):</b> das Bauen dieses Kapitels hat zehn interne Widersprüche gefunden — sechs zwischen zwei Seiten der Spec, drei in diesem Kapitel selbst (E4-Abschnittsnamen, E5-Aktionszahl, die „frei"-Zeile der Bedarfsliste) und einen zwischen E8 und Kap. 06. Alle sind an EINER Stelle entschieden und dort gelb markiert; die Übersicht steht im Handoff-README.</div>
+      <div style="font:300 14px/1.5 Lato,sans-serif;color:#8A8A8A;margin-top:4px">Runden 12–15. Was der Code-Abgleich offen ließ: drei Web-Flächen ohne Artboard (§E1–E3), sechs ungeratifizierte Kompositionen (§E4–E9) und die Antworten auf §C, §D, §G, §H. Die Korrekturen der Abschnitte §A und §B stehen in ihren eigenen Kapiteln — jeweils gelb als „Korrektur (Runde 12)" markiert. <b style="color:#FFD23F">Runde 13 (30.08.2026):</b> das Bauen dieses Kapitels hat zehn interne Widersprüche gefunden — sechs zwischen zwei Seiten der Spec, drei in diesem Kapitel selbst (E4-Abschnittsnamen, E5-Aktionszahl, die „frei"-Zeile der Bedarfsliste) und einen zwischen E8 und Kap. 06. Alle sind an EINER Stelle entschieden und dort gelb markiert; die Übersicht steht im Handoff-README.</div>
     </div>
   </header>
     <div class="card" style="padding:14px 16px;max-width:1200px">
@@ -287,8 +287,8 @@
           <li><b style="color:#fff">S5 Frequenzen</b> — der Server validiert <span style="color:#8A8A8A">@Digits(integer = 3, fraction = 2)</span> und lehnt jeden gezeichneten Wert ab. Die Artboard-Werte sind auf zwei Dezimalstellen korrigiert (148.50). SC schreibt Frequenzen konventionell mit drei — das ist eine Anfrage an das Backend (<b style="color:#fff">G15</b>), keine Freiheit der App</li>
           <li><b style="color:#fff">S6 Anteil je Teilnehmer</b> — der Divisor sind die <b style="color:#fff">Auszahlungs-Teilnehmer</b>, nicht alle Angemeldeten: wer DONATE gewählt hat, bekommt nichts und darf den Anteil der anderen nicht drücken. Das Label nennt den Divisor mit („Anteil je Auszahlung (12 von 14)"), damit die Zahl prüfbar ist</li>
           <li><b style="color:#fff">S22 Tönung der Bedarfszahl</b> — drei Schwellen am offenen Anteil der Sollmenge: &lt; 30 % weiß · 30–99 % gelb · 100 % rot (nichts geliefert). Die Zeile sagt den Anteil aus; vorher war die Farbe eine unausgesprochene Vermutung</li>
-          <li><b style="color:#fff">S12 KPI-Zahl</b> — headlineMedium (Black 20), die Stufe, die die Skala schon führt. displaySmall stellte jeden Saldo halb so groß wieder zu groß dar</li>
-          <li><b style="color:#fff">S3 Icon-Button</b> — 48 dp, wie Kap. 02 §1; die zwei Ablauf-Verschiebe-Buttons sind die eine ratifizierte Ausnahme bei 40 × 44. Das alte 44er-Token im Artefakt ist nachgezogen</li>
+          <li><b style="color:#fff">S12 KPI-Zahl</b> — die Konto-Karte nimmt <span style="color:#8A8A8A">KrtFigure.card</span> (Black 20), das Gesamt-Feld <span style="color:#8A8A8A">KrtFigure.total</span> (Black 32); die App hatte für die Karte die Hero-Stufe und stellte jeden Saldo zu groß dar. <b style="color:#FFD23F">Die erste Fassung dieser Zeile nannte „headlineMedium (Black 20)" und lag bei Name und Zahl daneben — Begründung und Ursache in §5 · R2</b></li>
+          <li><b style="color:#fff">S3 Icon-Button</b> — 48 dp, wie Kap. 02 §1; die zwei Ablauf-Verschiebe-Buttons sind die eine ratifizierte Ausnahme bei 40 × 44. <b style="color:#FFD23F">Nachtrag Runde 15:</b> „Das alte 44er-Token ist nachgezogen" war zum Zeitpunkt der Notiz FALSCH — der Durchlauf fand in <span style="color:#8A8A8A">Theme.kt</span> keinen Treffer und änderte nichts, und <span style="color:#8A8A8A">KrtTokens.kt</span> trug weiter 44 dp. Jetzt tragen beide 48 dp, und <span style="color:#8A8A8A">iconButtonSmall</span> (40) ist im Kommentar auf die eine Ausnahme festgelegt</li>
         </ul>
       </div>
 
@@ -335,8 +335,33 @@
     </div>
   </section>
 
+  <section data-screen-label="Runde 15" style="margin-bottom:36px">
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">5 · Runde 15 — was die Runde-14-Antworten selbst noch offen ließen<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Drei Punkte, alle aus dem Bauen der Runde-14-Antworten. Zwei waren Fehler in meinen eigenen Notizen — die teuerste Sorte, weil sie als Regel gelesen werden.</p>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">R1 · Der Status-Punkt ist überall gestrichen</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li>S27 nahm ihn aus der Einstellungen-Fußzeile und behielt ihn „auf dem Login, wo die Gate-Prüfung ihn beantwortet". Sie tut es nicht: die Prüfung läuft NACH erfolgreicher Anmeldung, auf ihrem eigenen Screen. Vor dem ersten Tipp wäre der Punkt dauerhaft grün — derselbe Einwand, den S27 selbst erhoben hat</li>
+          <li><b style="color:#fff">Entscheidung:</b> kein Punkt, auch nicht auf dem Login. Die Fußzeile zeigt die Version</li>
+          <li><b style="color:#fff">Und die Trennung, die dahinter fehlte:</b> ein NETZ-Zustand ist kein SERVER-Zustand. Fehlt die Verbindung, zeigt das Offline-Banner (Kap. 14) es und der Anmelde-Knopf ist gedimmt mit Grund; scheitert ein Versuch, sagt es die Fehlerzeile am Formular. Beide sagen nur, was die App wirklich weiß — ein dritter Indikator hätte nichts hinzugefügt</li>
+        </ul>
+      </div>
+      <div class="card" style="padding:14px 16px;width:600px">
+        <div style="font:700 11px/1 Lato,sans-serif;color:#E77E23;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">R2 + R3 · Zahlen bekommen eine eigene Leiter</div>
+        <ul style="margin:0;padding:0;list-style:none;font:300 12.5px/1.75 Lato,sans-serif;color:#D2D2D2">
+          <li>Die S12-Notiz nannte „headlineMedium (Black 20)" und „headlineLarge (Black 28)" — <b style="color:#fff">beide Male Name und Zahl daneben</b>. Ursache: zwei Token-Artefakte belegten dieselbe Stufe verschieden (<span style="color:#8A8A8A">Theme.kt</span>: Black 32/1.6 und Bold 24 · <span style="color:#8A8A8A">KrtTokens.kt</span>: Black 28 und Black 20). Eine Skala, zwei Wahrheiten</li>
+          <li>Dazu R3, das den Grund benennt: <span style="color:#8A8A8A">headlineLarge</span> ist die UPPERCASE-h1 <b style="color:#fff">mit 1,6 sp Laufweite</b> — auf Ziffern angewandt zieht sie die Zahl auseinander. Eine Zahl darf keinen Überschrift-Stil benennen</li>
+          <li><b style="color:#fff">Entscheidung: <span style="color:#8A8A8A">KrtFigure</span></b> — drei Stufen, Black, tabular, ohne Laufweite: <b style="color:#fff">total</b> 32 (die EINE Hero-Zahl eines Screens) · <b style="color:#fff">card</b> 20 (Zahl in Karte oder Zeile) · <b style="color:#fff">inline</b> 16 (Zahl neben einem Label). <span style="color:#8A8A8A">headline*</span> ist wieder ausschließlich die Überschriften-Leiter, und beide Artefakte tragen jetzt die identische Typo-Skala — <b style="color:#fff">alle zwölf Stufen</b> (headline · title · body · label, je L/M/S), nicht nur die drei berührten: <b style="color:#fff">neun</b> wichen um 1–2 sp ab und sind nachgezogen, drei stimmten bereits. Genau so entsteht eine Notiz, die die Namen der einen Datei mit den Zahlen der anderen zitiert. <span style="color:#8A8A8A">Theme.kt</span> hatte zusätzlich <span style="color:#8A8A8A">displayMedium</span> „hero KPI numbers" (Black 40) NEBEN <span style="color:#8A8A8A">displaySmall</span> (Black 32) — zwei Hero-Zahl-Behauptungen in benachbarten Zeilen, beide von KrtFigure.total widerlegt. Die zwei <span style="color:#8A8A8A">display*</span>-Stufen sind <b style="color:#fff">ersatzlos entfernt</b>, nicht angeglichen — eine Ziffer benennt keinen Display- und keinen Überschrift-Stil. Zwölf Stufen bleiben, und wer sie nachzählt, findet zwölf</li>
+          <li><b style="color:#FFD23F">Und die Ursache war größer als die Typografie:</b> <span style="color:#8A8A8A">Theme.kt</span> führte auch noch die alte Sechs-Stufen-Abstandsskala, den gestrichenen 48-dp-Boden und kein <span style="color:#8A8A8A">iconButton</span> — dieselbe „zwei Artefakte, zwei Wahrheiten"-Lage, nur in Spacing und Dimens. Jetzt gilt: <b style="color:#fff">KrtTokens.kt ist die einzige Quelle</b>, Theme.kt ist ihr Spiegel und sagt das in seinem Kopf; bei Abweichung gewinnt KrtTokens und Theme.kt ist der Fehler. Nachgezogen sind die Neun-Stufen-Skala (s4…s32), die drei Maße (touchTarget 44 als Tippfläche · controlHeight 48 · navIconFloor 48) und iconButton 48</li>
+          <li>Damit ist die Klasse Fehler weg, nicht nur der Fall: es gibt keinen Weg mehr, eine Ziffer versehentlich auf eine getrackte Überschrift zu setzen</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <section data-screen-label="Register" style="margin-bottom:36px">
-    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">5 · Register — bestätigt, ratifiziert, angefragt<span style="flex:1;height:1px;background:#282828"></span></h2>
+    <h2 style="font:700 16px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin:0 0 6px;max-width:1200px">6 · Register — bestätigt, ratifiziert, angefragt<span style="flex:1;height:1px;background:#282828"></span></h2>
     <p style="font:300 13px/1.5 Lato,sans-serif;color:#8A8A8A;margin:0 0 14px;max-width:110ch">Die Abschnitte C, D, G und H der Runde 12 brauchen keine Zeichnung, sondern eine Antwort. Hier steht sie, damit sie eine Regeneration übersteht.</p>
     <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1240px">
     <div class="card" style="padding:14px 16px;width:600px">

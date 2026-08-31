@@ -10,7 +10,7 @@ already chosen, and where the spec has a gap it says so instead of leaving you t
 
 | File | Contains |
 | --- | --- |
-| `KrtTokens.kt` | palette (fills **and** text tints), spacing, sizes, shapes (all `RectangleShape`), Lato typography, the Material 3 `darkColorScheme` mapping, `KrtTheme` |
+| `KrtTokens.kt` | **the single source of truth for every token** — palette (fills **and** text tints), the nine-step spacing scale, the three size tokens, `KrtFigure` (the figure ladder), shapes (all `RectangleShape`), Lato typography, the Material 3 `darkColorScheme` mapping, `KrtTheme`. `artifacts/Theme.kt` is the app-side mirror: if they disagree, this file wins. |
 | `KrtGlow.kt` | the only light effect in the app, with hard caps — radius ≤ 12 dp, alpha ≤ 0.10 |
 | `KrtComponents.kt` | button ladder, icon button, card / flush card / HUD box, chip, squadron badge, section title, `KrtPanelHeader` (collapsible) |
 | `KrtFieldsAndOverlays.kt` | text field, date+time pair, combobox, bottom sheet, modal, corner-bracket toast |

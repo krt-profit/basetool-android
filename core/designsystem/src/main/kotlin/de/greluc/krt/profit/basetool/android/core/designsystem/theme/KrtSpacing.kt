@@ -72,6 +72,24 @@ object KrtSpacing {
      */
     val controlHeight = 48.dp
 
+    /**
+     * An icon-only row action, square.
+     *
+     * The same 48 dp as any other control (ch. 02 §1, ruled in round 14 · S3). Named separately
+     * from [controlHeight] because the ruling is about a *button*, and the next reader looking for
+     * „how big is a ✎" should find it rather than infer it from a field's height.
+     */
+    val iconButton = 48.dp
+
+    /**
+     * The **one** ratified departure from [iconButton]: 40 dp wide, [touchTarget] high.
+     *
+     * The Ablauf row's move buttons, and nothing else (ch. 18 §3 · E8). They share a row with a
+     * tick and an overflow, which is the reason the exception exists — a control that does not
+     * has no claim on it.
+     */
+    val iconButtonSmall = 40.dp
+
     /** Minimum height of a dense list row; the whole row is the touch target. */
     val denseRow = 56.dp
 

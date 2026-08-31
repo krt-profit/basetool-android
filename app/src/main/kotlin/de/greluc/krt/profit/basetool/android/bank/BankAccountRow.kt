@@ -27,6 +27,7 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDataValue
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtFigure
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 
@@ -66,7 +67,9 @@ internal fun AccountRow(
         Column(horizontalAlignment = Alignment.End) {
             KrtDataValue(
                 text = formatAmount(account.balance.orEmpty()),
-                style = MaterialTheme.typography.titleMedium,
+                // A row is a card's sibling on the figure ladder, so the number keeps its rung
+                // when the card collapses to a row on a tablet (round 15).
+                style = KrtFigure.card,
             )
             account.delta30d?.let { delta ->
                 Text(

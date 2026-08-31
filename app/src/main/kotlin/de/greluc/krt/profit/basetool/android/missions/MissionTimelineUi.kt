@@ -368,8 +368,12 @@ private fun MoveIcon(
     )
 }
 
-/** The reorder pair is 40 dp wide against the 44 dp floor, so the pair plus a `⋮` fits a phone row. */
-private val MOVE_BUTTON_WIDTH = 40.dp
+/**
+ * The reorder pair is 40 dp wide against the 44 dp tap floor, so the pair plus a `⋮` fits a phone
+ * row — the design system's own [KrtSpacing.iconButtonSmall], which exists for this row and no
+ * other (ch. 18 §3 · E8).
+ */
+private val MOVE_BUTTON_WIDTH = KrtSpacing.iconButtonSmall
 
 /**
  * One icon button, dimmed and locked when the caller may not use it.

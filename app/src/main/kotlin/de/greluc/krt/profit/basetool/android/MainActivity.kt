@@ -253,6 +253,7 @@ class MainActivity : AppCompatActivity() {
     private fun Content() {
         val session by container.session.state.collectAsState()
         val login by loginViewModel.state.collectAsState()
+        val loginOnline by loginViewModel.online.collectAsState()
         val version = remember { packageManager.getPackageInfo(packageName, 0) }
 
         val scope = rememberCoroutineScope()
@@ -586,6 +587,7 @@ class MainActivity : AppCompatActivity() {
                             onOpenImprint = { openWebPage(IMPRINT_PATH) },
                             versionName = version.versionName.orEmpty(),
                             versionCode = BuildConfig.VERSION_CODE,
+                            online = loginOnline,
                         )
                     }
                 }

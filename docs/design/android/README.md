@@ -161,6 +161,34 @@ while the picture beside it is not.
 * **S10 is not a design gap:** the local stack runs a ten-day-old backend image, so
   `MissionListDto.registeredCount` is in the contract but not on the wire yet. The artboard stands.
 
+## Round 15 — three items from building the round-14 answers (31.08.2026)
+
+Two of the three were errors in the round-14 notes themselves, which is the expensive kind: a note
+reads as a rule.
+
+* **R1 — the server-status dot is struck everywhere.** S27 kept it on the login screen „where the
+  gate check answers it". It does not: the gate check runs *after* a successful sign-in, on its own
+  screen, so before the first tap the dot would be permanently green — S27's own objection. The
+  footer shows the version. The distinction that was missing behind it: a **network** state is not
+  a **server** state — no connection is the ch. 14 offline banner plus a dimmed login button with a
+  reason; a failed attempt is the form's error line. Both say only what the app actually knows.
+* **R2 + R3 — numbers get their own ladder.** The S12 note cited „headlineMedium (Black 20)" and
+  „headlineLarge (Black 28)" and was wrong on both name and number, because two token artifacts
+  defined the same rung differently (`Theme.kt`: Black 32/1.6 and Bold 24; `KrtTokens.kt`: Black 28
+  and Black 20). R3 named the reason it mattered: `headlineLarge` is the uppercase h1 **with 1.6 sp
+  tracking**, which spaces digits apart. Resolved with **`KrtFigure`** — three rungs, Black,
+  tabular, no tracking: **total** 32 (a screen's one hero number), **card** 20 (a figure in a card
+  or row), **inline** 16 (a figure beside a label). `headline*` is the heading ladder again, both
+  artifacts now carry the identical scale, and there is no longer a way to put a digit on a tracked
+  heading style.
+* **The root cause was wider than typography, and is now closed.** `Theme.kt` also still carried the
+  old six-step spacing scale, the struck 48 dp touch *floor* and no `iconButton` at all — so the S3
+  ruling (48 dp, 40 × 40 only for the Ablauf move buttons) had landed in neither artifact, and the
+  round-14 note claiming otherwise was false. **`artifacts/compose/KrtTokens.kt` is now the single
+  source of truth**; `Theme.kt` says so in its header, mirrors it value for value (nine-step
+  `s4…s32`, `touchTarget` 44 as tap area, `controlHeight`/`navIconFloor` 48, `iconButton` 48), and
+  if the two ever disagree again, KrtTokens wins and Theme.kt is the bug.
+
 ## Fidelity
 **High-fidelity.** Colors, type, spacing, states and copy are final and binding — recreate
 pixel-perfectly (1 CSS px in the mockups = 1 dp). The only deliberate placeholders are the
