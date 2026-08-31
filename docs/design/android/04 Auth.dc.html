@@ -53,7 +53,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;align-items:center;padding-bottom:16px">
               <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A"><span>Datenschutz</span><span>Impressum</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2 (37)</div>
+              <div style="display:flex;align-items:center;gap:6px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;font-variant-numeric:tabular-nums">v1.4.2 (37)</div>
             </div>
           </div>
         </x-import>
@@ -65,6 +65,7 @@
             <li>Genau zwei Einstiege: Keycloak (Custom Tab) und Discord. Footer nur Datenschutz + Impressum — kein Nutzungsbedingungen-Link (Zustimmung wird beim ersten Login erzwungen + versioniert; Q8 ANDROID_APP_PLAN.md, REQ-APP-AUTH-007/008)</li>
             <li>Offline: both login buttons disabled 45% + offline banner</li>
             <li>Radial bloom: 440×260 dp at top center, rgba(231,126,35,.25) → transparent</li>
+            <li><b style="color:#FFD23F">Korrektur (Runde 15, R1):</b> KEIN Server-Status-Punkt in der Fußzeile — auch hier nicht. Vor dem ersten Anmeldeversuch hat die App den Server nichts gefragt: die Gate-Prüfung läuft NACH erfolgreicher Anmeldung auf ihrem eigenen Screen. Ein Punkt wäre bis zum ersten Tipp dauerhaft grün — genau der Einwand, mit dem S27 ihn aus der Einstellungen-Fußzeile genommen hat. Die Fußzeile zeigt die Version. Ein Netz-Zustand ist etwas anderes als ein Server-Zustand: fehlt die Verbindung, erscheint das Offline-Banner aus Kap. 14 und der Anmelde-Knopf ist gedimmt mit Grund (bereits gezeichnet); scheitert ein Versuch, sagt es die Fehlerzeile am Formular</li>
             <li><b>Fan-Kit-Band</b> über dem Versions-Footer — Pflicht, EINE gekoppelte Einheit aus DREI Elementen: Logo + §2b-Zeile + 2(g)-Absatz (Fankit Agreement), beide Notices verbatim EN, beide 14 sp (ch. 02 §9)</li>
             <li>Die Login-SEITE scrollt als Ganzes (kein Band-Scroll, kein Falten): CTA-Block bleibt im ersten Viewport, Band + Footer folgen im Scrollfluss — das Band steht beim CIG-Material selbst („reasonably prominent"); fontScale 1.3 wächst einfach mit</li>
           </ul>
@@ -246,7 +247,7 @@
               <img src="assets/made-by-the-community.png" alt="Star Citizen — Made by the Community" style="width:36px;height:36px;flex:none">
               <div style="display:flex;flex-direction:column;gap:8px;min-width:0"><div style="font:300 14px/1.45 Lato,sans-serif;color:#D2D2D2">Star Citizen®, Roberts Space Industries® and Cloud Imperium ® are registered trademarks of Cloud Imperium Rights LLC</div><div style="font:300 14px/1.5 Lato,sans-serif;color:#D2D2D2">This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space Industries group of companies. All game content and materials are copyright Cloud Imperium Rights LLC and Cloud Imperium Rights Ltd.. Star Citizen®, Squadron 42®, Roberts Space Industries®, and Cloud Imperium® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.</div></div>
             </div>
-            <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;padding-bottom:20px"><span>Datenschutz</span><span>Impressum</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;background:#2EBC3D"></span>Server bereit · v1.4.2</span></div>
+            <div style="display:flex;gap:16px;font:300 11px/1 Lato,sans-serif;color:#8A8A8A;padding-bottom:20px"><span>Datenschutz</span><span>Impressum</span><span style="display:inline-flex;align-items:center;gap:6px">v1.4.2</span></div>
           </div>
         </x-import>
       </div>

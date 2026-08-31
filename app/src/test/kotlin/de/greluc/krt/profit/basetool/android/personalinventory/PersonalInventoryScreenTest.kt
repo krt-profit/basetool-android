@@ -27,6 +27,8 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocationKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.core.network.ProblemDetail
+import de.greluc.krt.profit.basetool.android.core.network.ProblemFieldError
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -373,6 +375,38 @@ class PersonalInventoryScreenTest {
     }
 
     @Test
+    fun `a rejected field is named in the server's own words`() {
+        // The sheet has no per-field error slots, so „Konnte nicht gespeichert werden." was the
+        // whole of what a member saw when the server had already said which value it rejected and
+        // why (design ch. 02 §6 draws that sentence under the field).
+        openEditor(
+            error =
+                ApiError.Validation(
+                    ProblemDetail(
+                        detail = "Validierung fehlgeschlagen",
+                        fieldErrors = listOf(ProblemFieldError("quantity", "Menge muss größer als 0 sein.")),
+                    ),
+                ),
+        )
+
+        // Asserted as rendered rather than as on-screen: what is under test is which sentence the
+        // sheet chose, and the sheet scrolls — where the error sits on a 411 dp phone is the
+        // separate concern the scroll test above already covers.
+        compose.onNodeWithText("Menge muss größer als 0 sein.").assertExists()
+        compose.onAllNodesWithText("Konnte nicht gespeichert werden.").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a conflict keeps the sheet's own sentence`() {
+        // A 409 body describes the row that moved; the member needs to be told to reload, which is
+        // the screen's to say and not the server's.
+        openEditor(error = ApiError.OptimisticLock(ProblemDetail(detail = "Row version 7 is stale")))
+
+        compose.onNodeWithText("Nicht gespeichert — gleichzeitig geändert.").assertExists()
+        compose.onAllNodesWithText("Row version 7 is stale").assertCountEquals(0)
+    }
+
+    @Test
     fun `the delete confirmation names the entry`() {
         // "Are you sure?" without the name is a question the member cannot answer.
         compose.setContent {
@@ -388,5 +422,29 @@ class PersonalInventoryScreenTest {
 
         compose.onNodeWithText("„Medpens“ wird gelöscht. Das lässt sich nicht rückgängig machen.")
             .assertIsDisplayed()
+    }
+
+    /**
+     * The editor, open over an entry whose save was refused.
+     *
+     * @param error what the save came back with.
+     */
+    private fun openEditor(error: ApiError) {
+        compose.setContent {
+            KrtTheme {
+                PersonalInventoryEditor(
+                    editor = EditorState.Open(editing = item(), name = "Medpens", quantity = "0", error = error),
+                    locations = LocationSearch(),
+                    onName = {},
+                    onQuantity = {},
+                    onStep = {},
+                    onNote = {},
+                    onLocationQuery = {},
+                    onLocationChosen = {},
+                    onSave = {},
+                    onDismiss = {},
+                )
+            }
+        }
     }
 }

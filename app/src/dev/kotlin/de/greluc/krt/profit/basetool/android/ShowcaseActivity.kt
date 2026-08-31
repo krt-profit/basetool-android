@@ -218,7 +218,6 @@ private fun ComponentGallery() {
             KrtTableCell(
                 text = tableRows[row][column],
                 column = tableColumns[column],
-                modifier = Modifier.weight(tableColumns[column].weight),
                 emphasis = column == 0 || column == 3,
                 unit = if (column == 3) "SCU" else null,
             )

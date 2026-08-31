@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 
 /** Test handle for the editor sheet. */
 const val PERSONAL_INVENTORY_EDITOR_TAG: String = "personal-inventory-editor"
@@ -161,9 +162,11 @@ fun PersonalInventoryEditor(
 /**
  * What a failed save says.
  *
- * A conflict gets its own wording, because it is the one failure that is nobody's fault and has a
- * specific remedy. Everything else is one sentence: the member cannot act on the difference between
- * a 500 and a dropped connection while a sheet is open over their typing.
+ * A validation refusal is shown in the server's own words, because it names the field that was
+ * rejected and the sheet cannot. A conflict gets its own wording, because it is the one failure
+ * that is nobody's fault and has a specific remedy. Everything else is one sentence: the member
+ * cannot act on the difference between a 500 and a dropped connection while a sheet is open over
+ * their typing.
  *
  * @param error what came back.
  */
@@ -171,7 +174,7 @@ fun PersonalInventoryEditor(
 private fun EditorError(error: ApiError) {
     KrtFieldError(
         text =
-            stringResource(
+            error.fieldMessage() ?: stringResource(
                 if (error is ApiError.OptimisticLock) R.string.conflict_inline else R.string.write_failed,
             ),
     )

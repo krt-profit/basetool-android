@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -55,6 +56,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.API_VERSION
+import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 
 /** Width of the centred column; the tablet layout is the same column, not a split (design ch. 04). */
 private val COLUMN_MAX_WIDTH = 480.dp
@@ -100,6 +103,7 @@ fun LoginScreen(
     versionName: String,
     versionCode: Int,
     modifier: Modifier = Modifier,
+    online: Boolean = true,
 ) {
     Box(
         modifier =
@@ -160,11 +164,22 @@ fun LoginScreen(
                         modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
+                        // Chapter 04, offline: the banner from ch. 14 and a dimmed sign-in with
+                        // its reason. There is no server-status dot to go with it — a network
+                        // state is not a server state, and before the first tap the app has asked
+                        // the server nothing (round 15 · R1).
+                        if (!online) {
+                            OfflineBand()
+                            Spacer(Modifier.height(KrtSpacing.s12))
+                        }
                         KrtCtaButton(
                             text = stringResource(R.string.login_sign_in),
                             onClick = onSignIn,
-                            enabled = state !is LoginUiState.Working,
-                            modifier = Modifier.fillMaxWidth(),
+                            enabled = online && state !is LoginUiState.Working,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
                         )
 
                         // The message occupies its own slot rather than replacing the button: a

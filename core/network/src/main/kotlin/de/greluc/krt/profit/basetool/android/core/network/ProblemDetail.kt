@@ -11,6 +11,27 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
+ * One field's validation message inside a problem body's `fieldErrors`.
+ *
+ * The backend sends this as an array of objects and, for older consumers, the same content again as
+ * a flat `{field: message}` map under `errors`. **The array is the shape to read.** Declaring
+ * `fieldErrors` as a map was not merely a lost convenience: kotlinx refuses an array where an
+ * object is declared, `parseProblem` catches that as „not problem+json", and every validation
+ * refusal therefore arrived with **no body at all** — no title, no detail, no correlation id.
+ * Found on the device: adding a frequency failed silently, and the server had said exactly why.
+ *
+ * @property field which field was rejected.
+ * @property message the localised reason, safe to show.
+ * @property code the constraint that failed, e.g. `Digits`.
+ */
+@Serializable
+data class ProblemFieldError(
+    val field: String? = null,
+    val message: String? = null,
+    val code: String? = null,
+)
+
+/**
  * The backend's RFC 7807 `application/problem+json` body.
  *
  * Every field is optional because a problem body is what the server sends when something already
@@ -25,7 +46,10 @@ import kotlinx.serialization.Serializable
  * @property instance the request path the problem refers to
  * @property code the stable code the client branches on, e.g. `PENDING_APPROVAL`
  * @property correlationId ties this response to one backend log line (REQ-OBS-002)
- * @property fieldErrors per-field validation messages, keyed by field name
+ * @property fieldErrors the structured per-field validation messages, in the shape the backend
+ *   actually sends them: an **array** of `{field, message}`
+ * @property errors the same messages in the backend's legacy map shape, kept because it is
+ *   still sent and costs one line to read
  */
 @Serializable
 data class ProblemDetail(
@@ -36,7 +60,8 @@ data class ProblemDetail(
     val instance: String? = null,
     val code: String? = null,
     @SerialName("correlationId") val correlationId: String? = null,
-    val fieldErrors: Map<String, String>? = null,
+    val fieldErrors: List<ProblemFieldError>? = null,
+    val errors: Map<String, String>? = null,
 ) {
     /**
      * Renders only the three fields that identify a problem, never the ones that describe it.

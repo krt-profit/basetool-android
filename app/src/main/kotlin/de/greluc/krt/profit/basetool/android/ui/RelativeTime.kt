@@ -163,3 +163,41 @@ private fun locale(context: Context): Locale = context.resources.configuration.l
  * would have rendered a real countdown is affected.
  */
 private const val CLOCK_SKEW_MILLIS: Long = 60_000
+
+/**
+ * A wire timestamp as the chapters write a **day**: „12.07.".
+ *
+ * Day and month, no year — chapters 10 and 11 both write dates that way, because everything the
+ * app shows a date for happened or is happening this game year, and a four-digit year in a
+ * subtitle is four characters that never vary. Localised through the platform's own skeleton, so
+ * an English build gets its own order rather than a German one transliterated.
+ *
+ * @param zone the zone whose calendar decides the day; the member's by default.
+ * @return the formatted day, e.g. „12.07.".
+ */
+fun Instant.krtShortDay(zone: ZoneId = ZoneId.systemDefault()): String =
+    DateTimeFormatter
+        .ofPattern(android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "ddMM"))
+        .withZone(zone)
+        .format(this)
+
+/**
+ * A wire timestamp as the chapters write a **moment**: „16.08. 22:41".
+ *
+ * The day above plus the time, which is what chapter 11 leads a refinery run with now that it has
+ * no number to lead with: on a Staffel with one refinery the station alone makes every card look
+ * the same, and the time is what tells them apart.
+ *
+ * @param zone the zone the moment is read in; the member's by default.
+ * @return the formatted moment, e.g. „16.08. 22:41".
+ */
+fun Instant.krtShortMoment(zone: ZoneId = ZoneId.systemDefault()): String {
+    // Two skeletons joined by a space, not one „dd.MM. HH:mm" skeleton: asked for the whole thing
+    // at once the platform inserts its locale's date/time separator and German came back as
+    // „26.08., 22:41" — a comma the chapter does not write.
+    val time =
+        DateTimeFormatter
+            .ofPattern(android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "Hm"))
+            .withZone(zone)
+    return "${krtShortDay(zone)} ${time.format(this)}"
+}

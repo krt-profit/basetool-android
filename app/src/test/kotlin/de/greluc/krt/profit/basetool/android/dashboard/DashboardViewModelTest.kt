@@ -18,11 +18,17 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
+import de.greluc.krt.profit.basetool.android.core.data.NotificationBulkResult
+import de.greluc.krt.profit.basetool.android.core.data.NotificationPage
+import de.greluc.krt.profit.basetool.android.core.data.NotificationSignal
+import de.greluc.krt.profit.basetool.android.core.data.NotificationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -195,7 +201,38 @@ class DashboardViewModelTest {
     private fun viewModel(
         missions: MissionSource,
         announcements: AnnouncementSource,
-    ) = DashboardViewModel(missions, announcements, ServerClock())
+        notifications: NotificationSource = EmptyInbox,
+    ) = DashboardViewModel(missions, announcements, notifications, ServerClock())
+
+    /**
+     * An inbox with nothing in it.
+     *
+     * The unread band is its own read and its own failure, so the tests that are about the
+     * announcement and the Einsatz band say so by giving it nothing to draw.
+     */
+    private object EmptyInbox : NotificationSource {
+        override suspend fun inbox(
+            page: Int,
+            pageSize: Int,
+        ): ApiResult<NotificationPage> =
+            ApiResult.Success(
+                NotificationPage(notifications = emptyList(), page = 0, totalPages = 0, totalElements = 0),
+            )
+
+        override suspend fun unreadCount(): ApiResult<Long> = ApiResult.Success(0)
+
+        override suspend fun markRead(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun markAllRead(): ApiResult<NotificationBulkResult> =
+            ApiResult.Success(NotificationBulkResult(affected = 0, unreadCount = 0))
+
+        override suspend fun delete(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+
+        override suspend fun deleteRead(): ApiResult<NotificationBulkResult> =
+            ApiResult.Success(NotificationBulkResult(affected = 0, unreadCount = 0))
+
+        override fun changes(): Flow<NotificationSignal> = emptyFlow()
+    }
 
     /**
      * The marker is off until the app knows, not on.

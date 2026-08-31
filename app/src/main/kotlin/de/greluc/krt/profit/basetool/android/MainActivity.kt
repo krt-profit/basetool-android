@@ -200,8 +200,6 @@ class MainActivity : AppCompatActivity() {
         authViewModels(container)
     }
 
-    /** Beförderung — the member's own assessments and rank standings (#66). */
-
     private val ordersViewModel: OrdersViewModel by viewModels { authViewModels(container) }
 
     /** The member's own Raffinerie orders; activity-scoped like every other list. */
@@ -255,6 +253,7 @@ class MainActivity : AppCompatActivity() {
     private fun Content() {
         val session by container.session.state.collectAsState()
         val login by loginViewModel.state.collectAsState()
+        val loginOnline by loginViewModel.online.collectAsState()
         val version = remember { packageManager.getPackageInfo(packageName, 0) }
 
         val scope = rememberCoroutineScope()
@@ -588,6 +587,7 @@ class MainActivity : AppCompatActivity() {
                             onOpenImprint = { openWebPage(IMPRINT_PATH) },
                             versionName = version.versionName.orEmpty(),
                             versionCode = BuildConfig.VERSION_CODE,
+                            online = loginOnline,
                         )
                     }
                 }
@@ -752,7 +752,7 @@ class MainActivity : AppCompatActivity() {
                 initializer { HangarViewModel(container.hangar, container.connectivity) }
                 initializer { FleetImportViewModel(container.hangar, container.connectivity) }
                 bankViewModels(container)
-                initializer { OrdersViewModel(container.orders, container.liveSync) }
+                initializer { OrdersViewModel(container.orders, container.liveSync, container.connectivity) }
                 initializer { RefineryViewModel(container.refinery, container.liveSync) }
                 initializer { MaterialsViewModel(container.materialCatalog, container.connectivity) }
                 initializer {
@@ -785,6 +785,7 @@ class MainActivity : AppCompatActivity() {
                     DashboardViewModel(
                         container.missions,
                         container.announcements,
+                        container.notifications,
                         container.serverClock,
                     )
                 }

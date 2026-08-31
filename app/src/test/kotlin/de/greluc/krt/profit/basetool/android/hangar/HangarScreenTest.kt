@@ -68,7 +68,6 @@ class HangarScreenTest {
         state: HangarState,
         created: MutableList<Unit> = mutableListOf(),
         edited: MutableList<Ship> = mutableListOf(),
-        deleted: MutableList<Ship> = mutableListOf(),
     ) {
         compose.setContent {
             KrtTheme {
@@ -81,7 +80,6 @@ class HangarScreenTest {
                     onLoadMore = {},
                     onCreate = { created.add(Unit) },
                     onEdit = { edited.add(it) },
-                    onDelete = { deleted.add(it) },
                     onTypeDrilldown = {},
                 )
             }
@@ -264,6 +262,7 @@ class HangarScreenTest {
                     onPlace = {},
                     onFitted = {},
                     onSave = {},
+                    onDelete = {},
                     onDismiss = {},
                 )
             }
@@ -288,6 +287,7 @@ class HangarScreenTest {
                     onPlace = {},
                     onFitted = {},
                     onSave = {},
+                    onDelete = {},
                     onDismiss = {},
                 )
             }

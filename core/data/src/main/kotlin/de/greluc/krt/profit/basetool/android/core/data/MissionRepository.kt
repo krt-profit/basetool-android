@@ -1210,10 +1210,10 @@ private fun MissionListDto.toModel(): Mission? {
         orgUnitShorthand = owningSquadron?.shorthand,
         meetingPoint = meetingPoint,
         description = description?.takeIf { it.isNotBlank() },
-        // MissionListDto carries no participant count, so the dashboard band's "{n} angemeldet"
-        // (design ch. 05) has nothing behind it on this endpoint. Left null rather than faked, and
-        // recorded as a contract gap in docs/DESIGN_PARITY_AUDIT.md.
-        registeredCount = null,
+        // `registeredCount` **is** on `MissionListDto` — it was recorded as a contract gap when it
+        // was not, and the note outlived the gap. The dashboard band's „{n} angemeldet" (design
+        // ch. 05) has had something behind it since.
+        registeredCount = registeredCount?.toInt(),
     )
 }
 
@@ -1239,14 +1239,28 @@ private fun String.toInstantOrNull(): Instant? =
  * @return the frequencies, in the server's order.
  */
 private fun MissionDto.frequencyModels(): List<MissionFrequency> =
-    frequencies.orEmpty().mapNotNull { frequency ->
-        frequency.id?.let {
-            MissionFrequency(
-                id = it,
-                type = frequency.frequencyType?.name,
-                value = frequency.name.orEmpty(),
-            )
-        }
+    frequencies.orEmpty().mapNotNull { frequency -> frequency.model() }
+
+/**
+ * One frequency as the screen reads it.
+ *
+ * **`name` is the label and `value` is the number**, and the app had them the other way round: the
+ * label was rendered as the value and the number — the only reason the tab exists — was never read
+ * at all. A custom frequency has no `frequencyType`, so its own `name` is its label; a preset one
+ * takes the type's name and leaves `name` empty.
+ *
+ * @receiver the wire row.
+ * @return the model, or `null` for a row the server sent without an id.
+ */
+private fun MissionFrequencyDto.model(): MissionFrequency? =
+    id?.let {
+        MissionFrequency(
+            id = it,
+            type = frequencyType?.name ?: name,
+            // The server's own digits, plain: `148.50` stays `148.50` rather than becoming
+            // `1.485E+2`, and no locale grouping is applied to a radio frequency.
+            value = value?.toString().orEmpty(),
+        )
     }
 
 /**
@@ -1395,16 +1409,7 @@ class MissionStructureRepository(
             is ApiResult.Success -> {
                 ApiResult.Success(
                     current.copy(
-                        frequencies =
-                            result.value.mapNotNull { dto ->
-                                dto.id?.let {
-                                    MissionFrequency(
-                                        id = it,
-                                        type = dto.frequencyType?.name,
-                                        value = dto.name.orEmpty(),
-                                    )
-                                }
-                            },
+                        frequencies = result.value.mapNotNull { it.model() },
                     ),
                 )
             }
@@ -1562,6 +1567,9 @@ private fun MissionParticipantDto.toModel(): MissionParticipant? {
         // The server redacts identity for an outsider, so all three can legitimately be absent.
         name = user?.effectiveName ?: user?.displayName ?: guestName.orEmpty(),
         role = plannedMissionJobType?.name ?: desiredMissionJobType?.name,
+        // The shorthand where there is one: the roster's second line has about 150 dp, and
+        // „SK Vanguard" fits where „Spezialkommando Vanguard" would be cut off mid-word.
+        orgUnitNames = orgUnits.orEmpty().mapNotNull { it.shorthand ?: it.name },
         // A start time is what a check-in writes; there is no separate flag on the wire.
         checkedIn = startTime != null,
         startTime = startTime,

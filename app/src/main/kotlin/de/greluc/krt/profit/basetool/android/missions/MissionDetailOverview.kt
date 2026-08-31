@@ -43,17 +43,31 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtColor
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtFigure
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.Gate
+import de.greluc.krt.profit.basetool.android.ui.carriesClock
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
+
+/** How strongly the band is washed in its status tone (artboard 06-a). */
+private const val BAND_TINT_ALPHA = 0.12f
+
+/** Its border, the same tone at reading strength. */
+private const val BAND_BORDER_ALPHA = 0.55f
+
+/** The separator between the band's two facts. */
+private const val KRT_DOT = " · "
 
 /** Test handle for the badge band's lifecycle action. */
 const val MISSION_LIFECYCLE_TAG: String = "mission-lifecycle-action"
@@ -73,6 +87,11 @@ const val MISSION_LIFECYCLE_TAG: String = "mission-lifecycle-action"
  * Without the role the button is **drawn locked** rather than hidden: it keeps its target, wears
  * the lock, and the toast names the role that is missing (ADR-0011).
  *
+ * The band is a **card washed in the status's own tone** (artboard 06-a): the state, what it costs
+ * and the action are one thing, not a chip with two strangers beside it. It is also the only place
+ * the status is drawn — „die EINE Fläche für den Lebenszyklus" — so the top bar carries the org
+ * badge alone.
+ *
  * @param detail the Einsatz.
  * @param next the status the badge may advance to, or `null` when it is at rest.
  * @param enabled whether a write may run right now.
@@ -90,6 +109,7 @@ internal fun MissionLifecycleBand(
     if (next == null) {
         return
     }
+    val tone = detail.statusTone().krtColor()
     val gate =
         Gate(
             allowed = detail.canManage,
@@ -102,19 +122,34 @@ internal fun MissionLifecycleBand(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8),
+                .padding(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s8)
+                .background(tone.copy(alpha = BAND_TINT_ALPHA))
+                .border(KrtSpacing.hairline, tone.copy(alpha = BAND_BORDER_ALPHA))
+                .padding(KrtSpacing.s12),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            KrtStatusBadge(text = detail.statusLabel(), tone = detail.statusTone())
             Text(
+                text = detail.statusLabel().krtUppercase(),
+                style = MaterialTheme.typography.titleSmall,
+                color = tone,
+            )
+            Text(
+                // „Beginn in 42 Min. · 12 angemeldet" — the state, the time left, and the size of
+                // what starts. The countdown is dropped once there is nothing left to count down
+                // to, rather than printed as a stale or negative span.
                 text =
-                    pluralStringResource(
-                        R.plurals.mission_lifecycle_registered,
-                        detail.registeredParticipants,
-                        detail.registeredParticipants,
-                    ),
+                    listOfNotNull(
+                        detail.plannedStartTime
+                            ?.takeIf { next == MissionStatus.ACTIVE && it.isAfter(Instant.now()) }
+                            ?.let { stringResource(R.string.mission_lifecycle_starts_in, it.relativeToNow()) },
+                        pluralStringResource(
+                            R.plurals.mission_lifecycle_registered,
+                            detail.registeredParticipants,
+                            detail.registeredParticipants,
+                        ),
+                    ).joinToString(KRT_DOT),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
                 modifier = Modifier.padding(top = KrtSpacing.s4),
@@ -135,7 +170,18 @@ internal fun MissionLifecycleBand(
             // screen disables it. Disabling a refused control is the thing the drawn-not-hidden
             // rule exists to avoid.
             enabled = if (detail.canManage) enabled else true,
-            iconRes = if (detail.canManage) null else DesignR.drawable.ic_krt_lock,
+            iconRes =
+                if (detail.canManage) {
+                    // The artboard gives the action a leading glyph: the enter arrow for starting,
+                    // the tick for finishing — the same two the rest of the app uses for those.
+                    if (next == MissionStatus.ACTIVE) {
+                        DesignR.drawable.ic_krt_login
+                    } else {
+                        DesignR.drawable.ic_krt_check
+                    }
+                } else {
+                    DesignR.drawable.ic_krt_lock
+                },
         )
     }
 }
@@ -162,7 +208,13 @@ internal fun MissionDetailHead(detail: MissionDetail) {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp),
                 ) {
-                    KrtStatusBadge(text = detail.statusLabel(), tone = detail.statusTone())
+                    // No status badge here. Design ch. 06 (F2) makes the lifecycle band „die EINE
+                    // Fläche" for it, and artboard 06-a draws this head without one; drawing it in
+                    // both places put the same word on screen twice, a finger apart.
+                    //
+                    // Artboard 2 still shows it in the head and has not been corrected — on the
+                    // design gap list, the same way ch. 06's drag handle was pulled into line
+                    // with E8.
                     detail.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { KrtOrgBadge(text = it) }
                 }
             },
@@ -292,8 +344,10 @@ private fun AttendanceBox(detail: MissionDetail) {
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Text(
+                        // The attendance count is the band's hero figure — `KrtFigure.total`, the
+                        // ladder numbers get since round 15, not the h1 heading rung.
                         text = detail.registeredParticipants.toString(),
-                        style = MaterialTheme.typography.displaySmall,
+                        style = KrtFigure.total,
                         color = KrtPalette.White,
                     )
                     Text(
@@ -336,11 +390,17 @@ private fun AttendanceBox(detail: MissionDetail) {
                         style = MaterialTheme.typography.titleSmall,
                         color = KrtPalette.White,
                     )
-                    Text(
-                        text = stringResource(R.string.mission_detail_start_at, time.format(at)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.TextMuted,
-                    )
+                    // „Start 20:44" under „25.08., 20:44" prints the same clock reading twice.
+                    // Once the distance to the start is itself a date-and-time — which is what it
+                    // becomes as soon as the Einsatz is running — the absolute half has nothing
+                    // left to add, exactly as in the Einsatz list.
+                    if (!at.carriesClock()) {
+                        Text(
+                            text = stringResource(R.string.mission_detail_start_at, time.format(at)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = KrtPalette.TextMuted,
+                        )
+                    }
                 }
             }
         }
@@ -406,7 +466,9 @@ private fun BriefingCard(detail: MissionDetail) {
                 add(stringResource(R.string.mission_detail_brief_goal) to it)
             }
             detail.meetingTime?.let {
-                add(stringResource(R.string.mission_detail_fact_meeting) to time.format(it))
+                // „Teamspeak", not the facts bar's „TS": the bar abbreviates because it has four
+                // facts across 411 dp, and this table does not. Artboard 06-2 writes both words.
+                add(stringResource(R.string.mission_detail_brief_meeting) to time.format(it))
             }
             detail.plannedStartTime?.let {
                 add(stringResource(R.string.mission_detail_brief_join) to time.format(it))

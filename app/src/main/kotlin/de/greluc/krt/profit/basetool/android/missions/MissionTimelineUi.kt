@@ -8,7 +8,6 @@
 package de.greluc.krt.profit.basetool.android.missions
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -28,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.MissionObjectiveKind
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
@@ -228,6 +228,10 @@ data class RowPosition(
  * validation rather than a lock: nothing is being refused, there is simply nowhere to move to, so
  * they carry no lock glyph and raise no refusal.
  *
+ * The group is **as wide as its buttons** and nothing more. Artboard 13 draws it at the trailing
+ * edge of the row the actions belong to — „die Zeile bleibt EINE Zeile hoch" — so it must not claim
+ * a width of its own and push itself onto a line below the title.
+ *
  * @param timeline the actions, for the gate and the refusal slot.
  * @param position where the row sits, which decides whether each arrow has anywhere to go.
  * @param firstIcon the row's own primary action, or `null` when it has none.
@@ -254,7 +258,6 @@ private fun RowActions(
     val gate = missionTimelineGate(timeline.canManage)
     var open by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -275,7 +278,6 @@ private fun RowActions(
             timeline = timeline,
             possible = !position.last,
         ) { onMove(false) }
-        Box(modifier = Modifier.weight(1f))
         KrtOverflowMenu(
             contentDescription = stringResource(R.string.mission_timeline_more),
             expanded = open,
@@ -366,8 +368,12 @@ private fun MoveIcon(
     )
 }
 
-/** The reorder pair is 40 dp wide against the 44 dp floor, so the pair plus a `⋮` fits a phone row. */
-private val MOVE_BUTTON_WIDTH = 40.dp
+/**
+ * The reorder pair is 40 dp wide against the 44 dp tap floor, so the pair plus a `⋮` fits a phone
+ * row — the design system's own [KrtSpacing.iconButtonSmall], which exists for this row and no
+ * other (ch. 18 §3 · E8).
+ */
+private val MOVE_BUTTON_WIDTH = KrtSpacing.iconButtonSmall
 
 /**
  * One icon button, dimmed and locked when the caller may not use it.
@@ -521,6 +527,19 @@ fun String.kindLabel(): String =
     MissionObjectiveKind.entries.firstOrNull { it.wire == this }
         ?.let { stringResource(it.labelRes()) }
         ?: this
+
+/**
+ * The hue a Ziel's kind chip carries.
+ *
+ * Artboard 06-2 draws a Primärziel in the brand tone and everything else muted, which is the whole
+ * point of classifying them: on a list of five goals the two that decide the Einsatz have to be
+ * findable without reading the chips. A kind this build does not know stays muted rather than
+ * borrowing the weight of a primary goal.
+ *
+ * @return the chip tone.
+ */
+fun String.kindTone(): KrtChipTone =
+    if (this == MissionObjectiveKind.PRIMARY.wire) KrtChipTone.Primary else KrtChipTone.Muted
 
 /**
  * Resolves the server's raw kind string back to the enum a write sends.

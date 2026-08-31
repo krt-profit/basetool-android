@@ -113,6 +113,9 @@ private fun MatrixFilters(
                 ),
             selectedIndex = if (state.mode == MatrixMode.SELL) 0 else 1,
             onSelect = { actions.onMode(if (it == 0) MatrixMode.SELL else MatrixMode.BUY) },
+            // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
+            // the control is one row high, so they wrapped or clipped instead of fitting.
+            stretch = true,
             modifier = Modifier.fillMaxWidth(),
         )
         if (state.systems.size > 1) {

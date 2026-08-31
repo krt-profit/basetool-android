@@ -94,9 +94,9 @@ class OrderCollectionTest {
             comment = null,
             materials =
                 listOf(
-                    JobOrderMaterial("m1", "Laranite", "400", "120", 1, "220"),
+                    JobOrderMaterial("m1", "Laranite", "400", "120", 1, "180", "220"),
                     // Required, and no linked row covers it — the design's second section.
-                    JobOrderMaterial("m2", "Bexalit", "50", null, 0, "50"),
+                    JobOrderMaterial("m2", "Bexalit", "50", null, 0, null, "50"),
                 ),
             items = emptyList(),
             handovers = emptyList(),

@@ -167,6 +167,9 @@ data class JobOrderItem(
  * @property needed how much the order asks for, as the server rendered it
  * @property inStock how much the responsible unit already holds
  * @property claimCount how many separate promises exist, which is a count and not an amount
+ * @property claimedAmount how much those promises add up to, or `null` when there are none —
+ *   the figure artboard 10-2's position card states („Zugesagt: 300 SCU"), summed from the
+ *   claims because the server sends one amount each and no total
  * @property open how much is still missing, as the server computed it
  */
 data class JobOrderMaterial(
@@ -175,6 +178,7 @@ data class JobOrderMaterial(
     val needed: String?,
     val inStock: String?,
     val claimCount: Int,
+    val claimedAmount: String?,
     val open: String?,
 ) {
     /**
@@ -1407,6 +1411,17 @@ private fun JobOrderMaterialDto.toModel(): JobOrderMaterial =
         needed = amount?.toPlainString(),
         inStock = currentStock?.toPlainString(),
         claimCount = claims.orEmpty().size,
+        // The artboard's position card says „Zugesagt: 300 SCU", not „2 Zusagen": what is
+        // already promised is a quantity against the need. Only the count was kept, so the
+        // figure the card is about could not be drawn. Summed here rather than in the UI — the
+        // server sends one amount per claim and no total.
+        claimedAmount =
+            claims
+                .orEmpty()
+                .mapNotNull { it.amount }
+                .takeIf { it.isNotEmpty() }
+                ?.sum()
+                ?.let { java.math.BigDecimal(it.toString()).stripTrailingZeros().toPlainString() },
         open = openAmount?.toPlainString(),
     )
 

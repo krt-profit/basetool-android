@@ -7,6 +7,8 @@
 
 package de.greluc.krt.profit.basetool.android.bank
 
+import androidx.compose.material3.Text
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -20,6 +22,9 @@ import de.greluc.krt.profit.basetool.android.core.data.BankRequestApprover
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
+import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.core.network.ProblemDetail
+import de.greluc.krt.profit.basetool.android.core.network.ProblemFieldError
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -292,5 +297,31 @@ class BankRequestScreenTest {
         tab(BankRequestRow(request = request(), mine = true, actionable = false))
 
         compose.onNodeWithText("−120.000", ignoreCase = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the sheet overrules the server on a rejected booking`() {
+        // This is the one refusal the sheet knows better than the server does. A booking request
+        // has exactly two values that can be wrong, and naming both is a shorter path to the fix
+        // than a constraint message about whichever one the validator reached first — so the
+        // screen's sentence wins here, where most write surfaces defer to the server's.
+        compose.setContent {
+            KrtTheme {
+                Text(
+                    text =
+                        bankRequestErrorMessage(
+                            ApiError.Validation(
+                                ProblemDetail(
+                                    fieldErrors =
+                                        listOf(ProblemFieldError("amount", "numerischer Wert außerhalb des Bereichs")),
+                                ),
+                            ),
+                        ),
+                )
+            }
+        }
+
+        compose.onNodeWithText("Betrag oder Zielkonto sind nicht gültig.").assertIsDisplayed()
+        compose.onAllNodesWithText("numerischer Wert außerhalb des Bereichs").assertCountEquals(0)
     }
 }

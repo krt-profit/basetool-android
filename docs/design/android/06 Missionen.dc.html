@@ -147,7 +147,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -218,11 +218,12 @@
                     <svg class="krt-icon" style="width:18px;height:18px;color:#E77E23"><use href="#krt-icon-ship"></use></svg>
                     <span style="font:700 13px/1 Lato,sans-serif;color:#FFFFFF;text-transform:uppercase;letter-spacing:.65px">Einheit Alpha</span>
                     <span style="font:300 11.5px/1 Lato,sans-serif;color:#8A8A8A">Carrack „Meridian"</span>
+                    <span class="chip chip--warning" style="color:#FFD23F;font-size:8.5px">HVU</span>
                     <span style="flex:1"></span><span class="chip chip--muted" style="color:#8A8A8A;font-size:9.5px">4</span>
                   </div>
                   <div style="padding:8px;display:flex;flex-direction:column;gap:6px">
                     <div class="person-row" style="min-height:48px"><svg class="krt-icon row-grip" style="width:16px;height:16px"><use href="#krt-icon-grip"></use></svg><span class="status-dot status-dot--on"></span><div class="row-main"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Rhea</div><div class="row-sub">Einsatzleiterin</div></div><select class="chip-select"><option>Pilot</option><option>Turret</option><option>Cargo</option><option>Scan</option></select></div>
-                    <div class="person-row" style="min-height:48px"><svg class="krt-icon row-grip" style="width:16px;height:16px"><use href="#krt-icon-grip"></use></svg><span class="status-dot status-dot--on"></span><div class="row-main"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Dorn <span class="chip chip--warning" style="font-size:8.5px;margin-left:4px">HVU</span></div><div class="row-sub">Staffel 1</div></div><select class="chip-select"><option>Turret</option><option>Pilot</option><option>Cargo</option></select></div>
+                    <div class="person-row" style="min-height:48px"><svg class="krt-icon row-grip" style="width:16px;height:16px"><use href="#krt-icon-grip"></use></svg><span class="status-dot status-dot--on"></span><div class="row-main"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Dorn</div><div class="row-sub">Staffel 1</div></div><select class="chip-select"><option>Turret</option><option>Pilot</option><option>Cargo</option></select></div>
                     <div class="drop-hint" style="min-height:44px;display:flex;align-items:center;justify-content:center">+ Person zuweisen — antippen oder halten & ziehen</div>
                   </div>
                 </div>
@@ -250,7 +251,6 @@
               <div style="display:flex;flex-direction:column;gap:8px">
                 <sc-for list="{{ goals }}" as="g" hint-placeholder-count="4">
                   <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;background:#141414;border:1px solid #282828">
-                    <span class="matrix-flag {{ g.flagCls }}" style="flex:none">{{ g.mark }}</span>
                     <div style="flex:1;font:300 13.5px/1.4 Lato,sans-serif;color:{{ g.color }}">{{ g.text }}</div>
                     <span class="chip {{ g.chipCls }}" style="font-size:9px;flex:none">{{ g.kind }}</span>
                   </div>
@@ -285,8 +285,8 @@
                     </div>
                   </sc-for>
                   <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 14px;background:#1C1C1C">
-                    <span style="flex:1;font:700 12px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.5px">Anteil je Teilnehmer (14)</span>
-                    <span style="font:900 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">5.335 aUEC</span>
+                    <span style="flex:1;font:700 12px/1 Lato,sans-serif;color:#D2D2D2;text-transform:uppercase;letter-spacing:.5px">Anteil je Auszahlung (12 von 14)</span>
+                    <span style="font:900 15px/1 Lato,sans-serif;color:#FFFFFF;font-variant-numeric:tabular-nums">6.225 aUEC</span>
                   </div>
                 </div>
                 <button class="btn-outline btn" style="background:transparent;min-height:48px;width:100%"><svg class="krt-icon" style="width:16px;height:16px"><use href="#krt-icon-plus"></use></svg>Finanz-Eintrag hinzufügen</button>
@@ -521,7 +521,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -592,7 +592,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -667,7 +667,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -742,7 +742,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -812,7 +812,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -885,7 +885,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -963,7 +963,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -1043,7 +1043,7 @@
     </div>
 
     <div style="flex:none;width:428px;display:flex;flex-direction:column;gap:12px">
-      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">13 · Ablauf &amp; Ziele — Zeilenaktionen als Icon-Buttons</div>
+      <div style="font:700 12px/1 Lato,sans-serif;color:#8A8A8A;text-transform:uppercase;letter-spacing:.1em">13 · Ablauf — vier Ziele je Zeile (Haken · ↑ · ↓ · ⋮)</div>
       <x-import component-from-global-scope="AndroidDevice" from="./assets/android-frame.jsx" dark="{{ true }}" hint-size="428px,915px">
         <div style="display:flex;flex-direction:column;height:100%;background:#000;font-family:Lato,sans-serif;position:relative">
           <div style="flex:none;background:#141414;border-bottom:1px solid #282828">
@@ -1051,7 +1051,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -1077,14 +1077,10 @@
           <div style="flex:1;overflow:auto;padding:14px 16px 16px">
             <div style="display:flex;flex-direction:column;gap:12px">
               <ol class="ablauf" style="padding:4px 2px;display:flex;flex-direction:column;gap:8px">
-                <li class="step step--done" style="align-items:center"><span class="step-num"></span><div class="step-body" style="flex:1;min-width:0"><span class="step-title" style="font-size:14px">Sammeln im Teamspeak</span><span class="step-meta">20:30 · Kanal KRT/Einsatz-1</span></div><div style="display:flex;gap:6px;flex:none"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Zurücksetzen" title="Zurücksetzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-reset"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Bearbeiten" title="Bearbeiten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Entfernen" title="Entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div></li>
-                <li class="step step--now" style="align-items:center"><span class="step-num"></span><div class="step-body" style="flex:1;min-width:0"><span class="step-title" style="font-size:14px">Abbau South Ridge</span><span class="step-meta">Rotation: 2 Prospector + Eskorte</span></div><div style="display:flex;gap:6px;flex:none"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Abhaken" title="Abhaken"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-check"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Bearbeiten" title="Bearbeiten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Entfernen" title="Entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div></li>
-                <li class="step" style="align-items:center"><span class="step-num"></span><div class="step-body" style="flex:1;min-width:0"><span class="step-title" style="font-size:14px">Raffinerie-Abgabe &amp; Debrief</span><span class="step-meta">ARC-L1 · Work Order auf Org-Konto</span></div><div style="display:flex;gap:6px;flex:none"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Abhaken" title="Abhaken"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-check"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Bearbeiten" title="Bearbeiten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-edit"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Entfernen" title="Entfernen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-trash"></use></svg></button></div></li>
+                <li class="step step--done" style="align-items:center"><span class="step-num"></span><div class="step-body" style="flex:1;min-width:0"><span class="step-title" style="font-size:14px">Sammeln im Teamspeak</span><span class="step-meta">20:30 · Kanal KRT/Einsatz-1</span></div><div style="display:flex;gap:6px;flex:none"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Zurücksetzen" title="Zurücksetzen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-reset"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2;opacity:.45" aria-label="Nach oben" title="Nach oben"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-chevron-up"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Nach unten" title="Nach unten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-chevron-down"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Mehr" title="Mehr"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-more-v"></use></svg></button></div></li>
+                <li class="step step--now" style="align-items:center"><span class="step-num"></span><div class="step-body" style="flex:1;min-width:0"><span class="step-title" style="font-size:14px">Abbau South Ridge</span><span class="step-meta">Rotation: 2 Prospector + Eskorte</span></div><div style="display:flex;gap:6px;flex:none"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Abhaken" title="Abhaken"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-check"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Nach oben" title="Nach oben"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-chevron-up"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Nach unten" title="Nach unten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-chevron-down"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Mehr" title="Mehr"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-more-v"></use></svg></button></div></li>
+                <li class="step" style="align-items:center"><span class="step-num"></span><div class="step-body" style="flex:1;min-width:0"><span class="step-title" style="font-size:14px">Raffinerie-Abgabe &amp; Debrief</span><span class="step-meta">ARC-L1 · Work Order auf Org-Konto</span></div><div style="display:flex;gap:6px;flex:none"><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Abhaken" title="Abhaken"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-check"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Nach oben" title="Nach oben"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-chevron-up"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:40px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Nach unten" title="Nach unten"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-chevron-down"></use></svg></button><button style="all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Mehr" title="Mehr"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-more-v"></use></svg></button></div></li>
               </ol>
-              <div style="display:flex;align-items:center;gap:10px;border-top:1px solid #282828;padding-top:10px">
-                <span style="flex:1;font:300 11.5px/1.5 Lato,sans-serif;color:#8A8A8A">Reihenfolge über ↑ / ↓ je Zeile — an der ersten bzw. letzten Zeile gedimmt-inaktiv.</span>
-                <button class="btn-ghost btn" style="background:transparent;min-height:44px;font-size:10.5px;flex:none"><svg class="krt-icon" style="width:14px;height:14px"><use href="#krt-icon-grip"></use></svg>Sortieren</button>
-              </div>
               <button class="assoc-add" style="min-height:48px;justify-content:center;font-size:11px">+ Schritt</button>
             </div>
           </div>
@@ -1097,7 +1093,9 @@
           <li>Abhaken ist die Aktion, für die die Zeile existiert → erstes Icon, Haken; abgehakt wird daraus das Reset-Icon. Die Zeile bleibt EINE Zeile hoch. Damit trägt die Zeile <b style="color:#fff">vier sichtbare Ziele</b>: Haken · ↑ · ↓ · ⋮ (Bearbeiten · Duplizieren · Löschen) — Kap. 18 §3 zählte fünf Aktionen und hatte den Haken übersehen; korrigiert</li>
           <li><b style="color:#FFD23F">Korrektur 30.08.2026 (zehnter Widerspruch, in Runde 13 gefunden):</b> Hier stand „Höher/Niedriger entfallen als Buttons — Reihenfolge über Griff-Ziehen mit ‚Sortieren‘ als Klick-Fallback". Das widersprach Kap. 18 §3 (E8), das <b style="color:#fff">zwei Buttons ↑ / ↓ je Zeile</b> ratifiziert hat, und die App hat E8 gebaut. E8 gilt: Drag&amp;Drop in einer scrollenden Liste ist auf dem Telefon unzuverlässig, und die DS-Regel verlangt ohnehin immer einen Tipp-Ersatz — dann ist der Ersatz besser die einzige Bedienung als die zweite. ↑ / ↓ sind 40×44 dp und an der ersten bzw. letzten Zeile gedimmt-inaktiv (Validierung, kein Schloss). Der Endpunkt nimmt ohnehin die ganze ID-Liste</li>
           <li>Anlegen/Bearbeiten NICHT als Dauer-Formular unter der Liste, sondern als Sheet (Titel „Schritt hinzufügen" / „Schritt bearbeiten") — ein offener Editor unter einer Liste, die man gerade sortiert, konkurriert mit ihr um dieselbe Fläche</li>
-          <li>Ziele identisch: dieselben drei Icons, Zielart als Chips im Sheet (drei Werte — Primär, Sekundär, Kein Ziel; deutsche Labels, nie der Rohwert)</li>
+          <li><b style="color:#FFD23F">Entscheidung (Runde 14, S7):</b> Der <b style="color:#fff">HVU-Chip sitzt am Einheiten-Kopf</b>, nicht an einer Person — MissionUnitDto.highValueUnit ist eine Eigenschaft der Einheit, und kein Teilnehmer- oder Crew-DTO trägt eine. Vorher stand er neben zwei Namen und behauptete damit ein Feld, das es nicht gibt</li>
+            <li><b style="color:#FFD23F">Entscheidung (Runde 14, S8):</b> Die Auszahlungspräferenz eines <b style="color:#fff">anderen</b> Mitglieds ändert ein Manager im <b style="color:#fff">Zeilen-Overflow</b> (⋮ → „Auszahlung ändern"), nicht als Ghost-Button unter der Zeile: die Teilnehmer-Liste hat 14 Zeilen, ein Button je Zeile verdoppelt ihre Höhe. Die eigene Präferenz bleibt im Anmelden-Sheet. Ohne Missions-Manager-Rolle ist der Eintrag gesperrt-antippbar (Kap. 09-Muster)</li>
+            <li><b style="color:#FFD23F">Korrektur (Runde 14, S2):</b> Ziele sind NICHT abhakbar — MissionObjectiveDto führt id · title · kind · orderIndex, kein done/achieved, und es gibt keinen Toggle-Endpunkt wie beim Ablauf-Schritt. Die Zeile trägt deshalb <b style="color:#fff">keine Haken-Fläche und keinen gedimmten Text</b>, sondern zwei Icons (Bearbeiten · ⋮). Backend-Anfrage <b style="color:#fff">G8</b>, falls Ziele abhakbar werden sollen. Sonst identisch: Icons, Zielart als Chips im Sheet (drei Werte — Primär, Sekundär, Kein Ziel; deutsche Labels, nie der Rohwert)</li>
         </ul>
       </div>
     </div>
@@ -1111,7 +1109,7 @@
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Zurück"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-arrow-left"></use></svg></button>
               <div style="flex:1;min-width:0">
                 <div style="font:700 15px/1.2 Lato,sans-serif;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vertikaler Abbau — Lyria</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="status-pill status-planned" style="font-size:9.5px">Geplant</span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">01.09.2026 · 19:00</span></div>
               </div>
               <button style="all:unset;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#D2D2D2" aria-label="Mehr"><svg class="krt-icon" style="width:20px;height:20px"><use href="#krt-icon-more-v"></use></svg></button>
             </div>
@@ -1160,7 +1158,7 @@
                   <div style="border:1px solid #282828;background:#141414;padding:8px 10px">
                     <div style="display:flex;align-items:center;gap:10px">
                       <span class="status-dot" style="flex:none"></span>
-                      <div style="flex:1;min-width:0"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Dorn <span class="chip chip--warning" style="font-size:8.5px;margin-left:4px">HVU</span></div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Staffel 1</div></div>
+                      <div style="flex:1;min-width:0"><div style="font:700 13px/1.2 Lato,sans-serif;color:#fff">Dorn</div><div style="font:300 11px/1.3 Lato,sans-serif;color:#8A8A8A">Staffel 1</div></div>
                       <button style="all:unset;box-sizing:border-box;cursor:pointer;width:36px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #282828;color:#D2D2D2" aria-label="Von Bord nehmen" title="Von Bord nehmen"><svg class="krt-icon" style="width:17px;height:17px"><use href="#krt-icon-logout"></use></svg></button>
                     </div>
                     <div style="margin-top:8px;font:300 11px/1.4 Lato,sans-serif;color:#8A8A8A">Keine Funktionen an Bord hinterlegt — die Administration pflegt den Katalog.</div>
@@ -1532,15 +1530,15 @@ class Component extends DCLogic {
       { name: 'Mara', sub: 'Staffel 2', dotCls: '', pay: 'Auszahlung', payCls: 'chip--muted', checkable: true, job: '—', jobWish: false, jobStyle: 'min-height:32px;flex:none;opacity:.55' },
     ];
     const goals = [
-      { text: '600 SCU Quantainium eingelagert', kind: 'Primär', chipCls: 'chip--primary', flagCls: 'on', mark: '✓', color: '#8A8A8A' },
-      { text: 'Raffinerie Work Order angelegt', kind: 'Primär', chipCls: 'chip--primary', flagCls: 'on', mark: '✓', color: '#8A8A8A' },
+      { text: '600 SCU Quantainium eingelagert', kind: 'Primär', chipCls: 'chip--primary', flagCls: '', mark: '', color: '#D2D2D2' },
+      { text: 'Raffinerie Work Order angelegt', kind: 'Primär', chipCls: 'chip--primary', flagCls: '', mark: '', color: '#D2D2D2' },
       { text: 'Kein Schiffsverlust', kind: 'Primär', chipCls: 'chip--primary', flagCls: '', mark: '', color: '#D2D2D2' },
       { text: 'Nebenvorkommen scannen (Bexalit)', kind: 'Sekundär', chipCls: 'chip--muted', flagCls: '', mark: '', color: '#D2D2D2' },
       { text: 'Neue Piloten einweisen', kind: 'Sekundär', chipCls: 'chip--muted', flagCls: '', mark: '', color: '#D2D2D2' },
     ];
     const freqs = [
-      { k: 'Kommando', v: '148.500' }, { k: 'Einheit Alpha', v: '148.510' },
-      { k: 'Einheit Bravo', v: '148.520' }, { k: 'Notfall', v: '121.500' },
+      { k: 'Kommando', v: '148.50' }, { k: 'Einheit Alpha', v: '148.51' },
+      { k: 'Einheit Bravo', v: '148.52' }, { k: 'Notfall', v: '121.50' },
     ];
     const finance = [
       { what: 'Raffinerie-Ertrag Quantainium', who: 'Rhea · Work Order #7841', amt: '+86.400', color: '#2EBC3D' },

@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -84,7 +85,7 @@ fun KrtTable(
     rowCount: Int,
     modifier: Modifier = Modifier,
     onRowClick: ((Int) -> Unit)? = null,
-    cell: @Composable RowScope.(row: Int, column: Int) -> Unit,
+    cell: @Composable BoxScope.(row: Int, column: Int) -> Unit,
 ) {
     Column(
         modifier =
@@ -137,7 +138,13 @@ fun KrtTable(
                         .defaultMinSize(minHeight = TABLE_ROW_HEIGHT),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                columns.forEachIndexed { columnIndex, _ -> cell(rowIndex, columnIndex) }
+                // The table owns the grid, not its caller. This was a `RowScope` lambda and the
+                // weight was the caller's to apply, which two of four callers forgot: their cells
+                // sized to their own content while the header row — which does apply it — stayed
+                // on the grid, so figures drifted left of the titles they belong under.
+                columns.forEachIndexed { columnIndex, column ->
+                    Box(modifier = Modifier.weight(column.weight)) { cell(rowIndex, columnIndex) }
+                }
             }
             if (rowIndex < rowCount - 1) {
                 KrtHairlineRule(modifier = Modifier.fillMaxWidth())
@@ -151,10 +158,13 @@ fun KrtTable(
  *
  * @param text the cell content.
  * @param column the column this cell belongs to; drives alignment and figure style.
- * @param modifier layout modifier — pass `Modifier.weight(column.weight)` from the row scope.
+ * @param modifier layout modifier; the table already sizes the cell to its column.
  * @param emphasis whether this is the row's identifying value (bright white bold) rather than a
  *   secondary attribute.
  * @param unit optional unit rendered after the value in a quieter tone.
+ * @param tone the colour of the value where the column carries a meaning of its own — a buy price
+ *   is a cost and a sell price is a return, and chapter 16 draws them in the danger and success
+ *   tints for exactly that reason. `null` keeps the default, which is what a neutral column wants.
  */
 @Composable
 fun KrtTableCell(
@@ -163,9 +173,16 @@ fun KrtTableCell(
     modifier: Modifier = Modifier,
     emphasis: Boolean = false,
     unit: String? = null,
+    tone: Color? = null,
 ) {
     Row(
-        modifier = modifier.padding(horizontal = CELL_PADDING_H, vertical = CELL_PADDING_V),
+        // Fills its column, so a numeric cell's `Arrangement.End` ends at the column's right edge
+        // — the same edge the header is aligned to. Sized to content it sat at the column's START
+        // and every figure hung to the left of the title above it.
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = CELL_PADDING_H, vertical = CELL_PADDING_V),
         horizontalArrangement =
             if (column.numeric) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
@@ -180,7 +197,7 @@ fun KrtTableCell(
                         fontFeatureSettings = if (column.numeric) KRT_TABULAR_FIGURES else null,
                     )
                 },
-            color = if (emphasis) KrtPalette.White else KrtPalette.Gray1,
+            color = tone ?: if (emphasis) KrtPalette.White else KrtPalette.Gray1,
         )
         if (unit != null) {
             Text(
@@ -272,7 +289,6 @@ private fun TablePreview() {
                 KrtTableCell(
                     text = rows[row][column],
                     column = columns[column],
-                    modifier = Modifier.weight(columns[column].weight),
                     emphasis = column == 0 || column == 3,
                     unit = if (column == 3) "SCU" else null,
                 )

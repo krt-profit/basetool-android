@@ -15,6 +15,8 @@ import de.greluc.krt.profit.basetool.android.core.data.AnnouncementSource
 import de.greluc.krt.profit.basetool.android.core.data.Mission
 import de.greluc.krt.profit.basetool.android.core.data.MissionQuery
 import de.greluc.krt.profit.basetool.android.core.data.MissionSource
+import de.greluc.krt.profit.basetool.android.core.data.Notification
+import de.greluc.krt.profit.basetool.android.core.data.NotificationSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.ServerClock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +49,8 @@ sealed interface DashboardPhase {
  *   claiming something is unread and taking it back is worse than being a beat late to say so.
  * @property announcement the org-wide notice, or `null` when there is none — an ordinary answer
  * @property missions the Einsätze starting within the next seven days
+ * @property unread the newest unread notifications, capped at [UNREAD_PREVIEW]; the band's
+ *   „Alle ansehen" is the way past the cap, so it is never a silent truncation
  * @property phase how far that read has got
  * @property refreshing whether a pull-to-refresh is running over content already on screen
  */
@@ -54,6 +58,7 @@ data class DashboardState(
     val announcement: Announcement? = null,
     val announcementRead: Boolean = true,
     val missions: List<Mission> = emptyList(),
+    val unread: List<Notification> = emptyList(),
     val phase: DashboardPhase = DashboardPhase.Loading,
     val refreshing: Boolean = false,
 )
@@ -71,11 +76,13 @@ data class DashboardState(
  *
  * @property missions where the Einsätze come from
  * @property announcements where the notice comes from
+ * @property notifications where the unread preview comes from
  * @property clock the server-corrected clock that bounds the window
  */
 class DashboardViewModel(
     private val missions: MissionSource,
     private val announcements: AnnouncementSource,
+    private val notifications: NotificationSource,
     private val clock: ServerClock,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(DashboardState())
@@ -105,6 +112,34 @@ class DashboardViewModel(
         }
         loadAnnouncement()
         loadMissions()
+        loadUnread()
+    }
+
+    /**
+     * Reads the newest unread notifications for the band design ch. 05 closes the dashboard with.
+     *
+     * The inbox's own first page, filtered to what is unread: there is no „unread only" read on the
+     * API, and the count endpoint answers *how many* rather than *which*. A failure leaves the band
+     * out rather than failing the screen — it is a preview of a surface that has its own.
+     */
+    private fun loadUnread() {
+        viewModelScope.launch {
+            when (val result = notifications.inbox(page = 0, pageSize = UNREAD_PAGE)) {
+                is ApiResult.Success -> {
+                    mutableState.value =
+                        mutableState.value.copy(
+                            unread =
+                                result.value.notifications
+                                    .filterNot { it.read }
+                                    .take(UNREAD_PREVIEW),
+                        )
+                }
+
+                is ApiResult.Failure -> {
+                    KrtLog.w(LOG_TAG) { "the unread preview could not be read: ${result.error}" }
+                }
+            }
+        }
     }
 
     /**
@@ -212,6 +247,24 @@ class DashboardViewModel(
          * of them with their filters. Five is what fits above the fold beside the other bands.
          */
         const val BAND_SIZE = 5
+
+        /**
+         * How many unread notifications the closing band shows.
+         *
+         * Two, as artboard 05 draws it on both the phone and the tablet. It is a preview of the
+         * inbox, and „Alle ansehen" beside the heading is the way past it — which is what keeps
+         * the cap from being a silent one (ADR-0104).
+         */
+        const val UNREAD_PREVIEW = 2
+
+        /**
+         * How much of the inbox is read to find those two.
+         *
+         * The API has no „unread only" read, so the newest page is filtered here. One page is
+         * enough in practice and wrong only for a member whose newest twenty are all read — who
+         * then sees no band, which is also what „nothing new" looks like.
+         */
+        const val UNREAD_PAGE = 20
 
         /** Log subsystem. */
         const val LOG_TAG = "dashboard"

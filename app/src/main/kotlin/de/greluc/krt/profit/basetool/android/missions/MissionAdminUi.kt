@@ -6,8 +6,10 @@
 
 package de.greluc.krt.profit.basetool.android.missions
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -28,10 +30,15 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateTimeField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPanelHeader
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLocalDate
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLocalTime
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import java.time.Duration
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Verwaltung tab's content. */
@@ -119,7 +126,9 @@ fun LazyListScope.adminTab(
                 Hint(text = stringResource(R.string.mission_member_hint))
                 MemberSection(members = members)
             }
-            form.error?.let { SignUpError(error = it) }
+            // Only a refusal that belongs to no section lands here; a section's own is drawn in
+            // that section, where the member who caused it is looking.
+            form.error?.takeIf { form.errorSection == null }?.let { SignUpError(error = it) }
         }
     }
 }
@@ -158,6 +167,7 @@ private fun AdminSection(
                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
                 body(section)
+                form.error?.takeIf { form.errorSection == section }?.let { SignUpError(error = it) }
             }
         }
     }
@@ -215,9 +225,9 @@ private fun StandingChip(
     section: MissionSection,
     form: MissionAdminForm,
 ) {
-    // Only two sections have a standing value: Kern has none worth a chip, and Personen's counts
-    // live on its own rows. Written as two guards rather than an exhaustive `when` with an empty
-    // branch, which is an unused expression the compiler rejects under -Werror.
+    // Three of the four have a standing value; Kern has none worth a chip. Written as guards
+    // rather than an exhaustive `when` with an empty branch, which is an unused expression the
+    // compiler rejects under -Werror.
     if (section == MissionSection.SCHEDULE) {
         KrtChip(
             text =
@@ -227,6 +237,21 @@ private fun StandingChip(
                     stringResource(R.string.mission_admin_not_started_chip)
                 },
             tone = if (form.started) KrtChipTone.Success else KrtChipTone.Muted,
+        )
+    }
+    if (section == MissionSection.PEOPLE) {
+        // „Ein Kopf, der nur ein Wort zeigt, macht das Aufklappen zur Pflicht — dann ist die
+        // Faltung falsch" (ch. 02 §10). Artboard 7 draws Leitung · Manager · Teilnehmer as one
+        // count; this head was the only one folding over nothing.
+        KrtChip(
+            text =
+                stringResource(
+                    R.string.mission_admin_people_counts,
+                    if (form.partyLeadSet) 1 else 0,
+                    form.managerCount,
+                    form.participantCount,
+                ),
+            tone = KrtChipTone.Data,
         )
     }
     if (section == MissionSection.FLAGS) {
@@ -318,8 +343,47 @@ private fun ScheduleFields(
         onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(plannedEndClock = v) } },
     )
     ActualStart(form, writable, actions)
+    ScheduleDuration(form)
     SectionSave(R.string.mission_admin_save_schedule, MissionSection.SCHEDULE, form, writable, actions.onSave)
 }
+
+/**
+ * „Dauer 4 Std. — berechnet aus Start und Ende, wie im Briefing."
+ *
+ * The same span the Briefing card carries, said again where it is being edited: a manager typing an
+ * end time has no other way to see what they have just made the Einsatz last, and the artboard puts
+ * the sentence directly under the three pairs for that reason.
+ *
+ * Silent when either end is missing or the span is not positive — a duration invented from one
+ * timestamp would be a guess printed as a plan.
+ *
+ * @param form what is typed.
+ */
+@Composable
+private fun ScheduleDuration(form: MissionAdminForm) {
+    // Parsed through the picker's own readers, because the fields hold what the member SEES
+    // („29.08.2026", „21:00") and not an ISO instant.
+    val start = form.plannedStartDate.krtToLocalDate()?.atTime(form.plannedStartClock.krtToLocalTime())
+    val end = form.plannedEndDate.krtToLocalDate()?.atTime(form.plannedEndClock.krtToLocalTime())
+    val minutes =
+        if (start == null || end == null) {
+            null
+        } else {
+            Duration.between(start, end).toMinutes().takeIf { it > 0 }
+        } ?: return
+    Text(
+        text =
+            stringResource(
+                R.string.mission_admin_schedule_duration,
+                minutes / MINUTES_PER_HOUR,
+            ),
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.TextMuted,
+    )
+}
+
+/** Minutes in an hour, for the Zeitplan's computed duration. */
+private const val MINUTES_PER_HOUR = 60L
 
 /**
  * One planned time as the drawn date/time pair.
@@ -368,16 +432,32 @@ private fun ActualStart(
     writable: Boolean,
     actions: MissionAdminActions,
 ) {
-    Text(
-        text =
-            if (form.started) {
-                stringResource(R.string.mission_admin_running_since, form.actualStart.toKrtStartedAt())
-            } else {
-                stringResource(R.string.mission_admin_not_started)
-            },
-        style = MaterialTheme.typography.bodySmall,
-        color = if (form.started) KrtPalette.Gray1 else KrtPalette.TextMuted,
-    )
+    // A framed readout, not a loose line: artboard 06-8 boxes it under its own uppercase label so
+    // it reads as the fourth **value** of the section rather than as a footnote to the third.
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                .padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+    ) {
+        Text(
+            text = stringResource(R.string.mission_admin_actual_start).krtUppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        Text(
+            text =
+                if (form.started) {
+                    stringResource(R.string.mission_admin_running_since, form.actualStart.toKrtStartedAt())
+                } else {
+                    stringResource(R.string.mission_admin_not_started)
+                },
+            style = MaterialTheme.typography.bodySmall,
+            color = if (form.started) KrtPalette.Gray1 else KrtPalette.TextMuted,
+        )
+    }
     when {
         form.started && form.correctingStart -> {
             KrtDateTimeField(
@@ -497,9 +577,25 @@ private fun MissionSection.titleRes(): Int =
  */
 @Composable
 private fun Hint(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.TextMuted,
-    )
+    // With the info glyph the artboards draw beside it: a paragraph of muted text at the top of a
+    // form otherwise reads as part of the form rather than as a note about it.
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+    ) {
+        KrtIcon(
+            id = DesignR.drawable.ic_krt_info,
+            contentDescription = null,
+            size = HINT_GLYPH,
+            tint = KrtPalette.TextMuted,
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+    }
 }
+
+/** The info glyph beside a hint — 16 px in artboard 06-7. */
+private val HINT_GLYPH = 16.dp

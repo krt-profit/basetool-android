@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSpin
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the form. */
@@ -103,6 +104,9 @@ fun OperationFormScreen(
                 options = OPERATION_FORM_STATUSES.map { stringResource(it.krtLabel()) },
                 selectedIndex = OPERATION_FORM_STATUSES.indexOf(state.status).coerceAtLeast(0),
                 onSelect = { actions.onStatus(OPERATION_FORM_STATUSES[it]) },
+                // Stretched: a fixed 52 dp segment is narrower than any of these labels, and
+                // the control is one row high, so they wrapped instead of fitting.
+                stretch = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -115,7 +119,13 @@ fun OperationFormScreen(
             KrtHint(explanation = stringResource(R.string.operation_form_missions_hint))
         }
         item(key = "cta") {
-            state.error?.let { KrtFieldError(text = stringResource(R.string.write_failed)) }
+            // In the server's words when it named the field it rejected; this form has one error
+            // slot for every field, and „Konnte nicht gespeichert werden." names none of them.
+            state.error?.let { error ->
+                KrtFieldError(
+                    text = error.fieldMessage() ?: stringResource(R.string.write_failed),
+                )
+            }
             KrtCtaButton(
                 text =
                     stringResource(

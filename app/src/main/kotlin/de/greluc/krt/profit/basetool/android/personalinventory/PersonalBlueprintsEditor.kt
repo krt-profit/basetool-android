@@ -38,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 
 /** Test handle for the add sheet's save action. */
 const val BLUEPRINTS_SAVE_TAG: String = "blueprints-save"
@@ -83,7 +84,9 @@ fun BlueprintAddSheet(
             KrtTextField(
                 value = editor.query,
                 onValueChange = onQuery,
-                label = stringResource(R.string.blueprints_product_search),
+                // Inside the box, as the chapters draw every search field: it says what it
+                // searches while it is empty and gives the room back once it is not.
+                placeholder = stringResource(R.string.blueprints_product_search),
                 enabled = !editor.saving,
             )
             if (editor.chosen.isNotEmpty()) {
@@ -304,13 +307,16 @@ private fun SheetActions(
 /**
  * What a failed save says.
  *
+ * A validation refusal is shown in the server's own words, because it names the field that was
+ * rejected and the sheet cannot. A conflict and everything else keep the sheet's own sentence.
+ *
  * @param error what came back.
  */
 @Composable
 private fun SheetError(error: ApiError) {
     KrtFieldError(
         text =
-            stringResource(
+            error.fieldMessage() ?: stringResource(
                 if (error is ApiError.OptimisticLock) R.string.conflict_inline else R.string.write_failed,
             ),
     )

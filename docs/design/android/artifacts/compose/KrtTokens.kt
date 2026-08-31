@@ -95,8 +95,9 @@ object KrtDimens {
     val controlHeight = 48.dp      // FIELD / BUTTON / SELECT / SEGMENT — one control height (ch. 02 §1)
     val fieldHeight = 48.dp        // alias of controlHeight; the date/time pair matches it (ch. 02 §11)
     val navIconFloor = 48.dp       // bottom-nav and rail icon slots
-    val iconButton = 44.dp         // icon-only row action (square)
-    val iconButtonSmall = 40.dp    // same inside a dense card head
+    val iconButton = 48.dp         // icon-only row action (square) — ch. 02 §1, ruled in round 14 (S3)
+    val iconButtonSmall = 40.dp    // THE one ratified exception: the Ablauf move buttons, 40 × 44
+                                   // (ch. 18 §3 · E8). Nothing else may use it.
     val icon = 18.dp
     val iconSmall = 15.dp
     val hairline = 1.dp
@@ -110,6 +111,8 @@ object KrtDimens {
     val listPaneWidth = 480.dp     // tablet list column in list-detail
     val tabletBreakpoint = 600.dp  // below it: phone layout
     val readableMaxWidth = 640.dp  // long-form text cap
+    val contentMax = 1200.dp       // tablet content column cap (ch. 01)
+    val bracket = 10.dp            // .hud-box corner-bracket arms; the modal frame draws 13 dp
 }
 
 /* ───────────────────────────── SHAPE ─────────────────────────────
@@ -141,10 +144,11 @@ val KrtTypography = Typography(
     titleLarge = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 20.sp, letterSpacing = 0.9.sp),
     titleMedium = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 18.sp, letterSpacing = 0.8.sp),
     titleSmall = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 16.sp, letterSpacing = 0.65.sp),
-    // Hero numbers (balance, attendance, KPI) — Black 900
-    headlineLarge = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 28.sp, lineHeight = 30.sp),
-    headlineMedium = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 20.sp, lineHeight = 22.sp),
-    headlineSmall = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 16.sp, lineHeight = 18.sp),
+    // Headings — UPPERCASE, tracked. NEVER used for a figure: the tracking pulls digits apart.
+    // A number takes KrtFigure (below); that is the round-15 fix for R2/R3.
+    headlineLarge = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 32.sp, lineHeight = 38.sp, letterSpacing = 1.6.sp),
+    headlineMedium = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 30.sp, letterSpacing = 1.2.sp),
+    headlineSmall = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 25.sp, letterSpacing = 0.95.sp),
     // Body
     bodyLarge = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Light, fontSize = 14.sp, lineHeight = 22.sp),
     bodyMedium = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Light, fontSize = 13.sp, lineHeight = 20.sp),
@@ -157,6 +161,23 @@ val KrtTypography = Typography(
 
 /** Every amount, count and timestamp renders tabular so columns line up. */
 val KrtTabularNums = TextStyle(fontFeatureSettings = "tnum")
+
+/* ───────────────────────────── FIGURES ─────────────────────────────
+ * Numbers have their OWN ladder — three rungs, Black, tabular, and NO letter-spacing.
+ * Why it exists (round 15, R2 + R3): the KPI figure used to point at `headlineLarge`, which is
+ * the uppercase h1 and carries 1.6 sp tracking — applied to digits that reads as spaced-out
+ * numerals. And two token artifacts had named the same rung at different sizes, so a note could
+ * cite "headlineMedium (Black 20)" and be wrong twice. A figure never names a heading style now.
+ *
+ *   total   Black 32   the one hero number of a screen — KPI total, balance hero, attendance
+ *   card    Black 20   a figure inside a card or list row — account balance, per-head share
+ *   inline  Black 16   a figure beside a label — section counts, "3 / 3"
+ */
+object KrtFigure {
+    val total = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 32.sp, lineHeight = 36.sp, fontFeatureSettings = "tnum")
+    val card = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 20.sp, lineHeight = 24.sp, fontFeatureSettings = "tnum")
+    val inline = TextStyle(fontFamily = Lato, fontWeight = FontWeight.Black, fontSize = 16.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum")
+}
 
 /* ───────────────────────────── THEME ─────────────────────────────
  * Dark only. There is no light theme, and Material You dynamic colour is deliberately OFF: the

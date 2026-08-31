@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBott
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCardVariant
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDataValue
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
@@ -92,6 +94,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToggle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTotalTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtFigure
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
@@ -102,6 +105,7 @@ import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -278,6 +282,14 @@ private fun AccountCard(
     account: BankAccountSummary,
     onClick: () -> Unit,
 ) {
+    // In a tablet's list column the card becomes a ROW — name left, figures right (ch. 02 §5,
+    // extended to list rows in round 14 · S31). Everything else the card carries, the sparkline
+    // above all, belongs to the detail pane beside it: three accounts as full cards filled the
+    // 397 dp column, and the pane next to them repeated every figure a second time.
+    if (isWideWindow()) {
+        AccountRow(account = account, onClick = onClick)
+        return
+    }
     // KrtKpiCard *is* this card: design ch. 12 draws the account as a `kpi-card` — name above, the
     // balance large beneath it, and the 30-day delta beside a sparkline on one row. It was built
     // here as a bare Column with a hairline underneath, which loses the border, puts the balance on
@@ -301,7 +313,7 @@ private fun AccountCard(
 }
 
 /** The typographic minus the shared formatter emits, which a raw server value may carry. */
-private const val MINUS_CHAR = '\u2212'
+internal const val MINUS_CHAR = '\u2212'
 
 /**
  * Whether a formatted delta reads as an increase.
@@ -411,8 +423,13 @@ fun BankAccountScreen(
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     Text(
+                                        // `KrtFigure.card` — the ladder's middle rung, below the
+                                        // screen's own total (round 14 · S12, put on the figure
+                                        // ladder in round 15). At the hero size the card's figure
+                                        // matched the GESAMT tile's, which made every single
+                                        // account look like the sum of them.
                                         text = formatAmount(account.balance.orEmpty()),
-                                        style = MaterialTheme.typography.displaySmall,
+                                        style = KrtFigure.card,
                                         color = KrtPalette.White,
                                     )
                                     Text(
@@ -1604,7 +1621,7 @@ private fun BankSettingsSheet(
             state.error?.let { error ->
                 KrtFieldError(
                     text =
-                        stringResource(
+                        error.fieldMessage() ?: stringResource(
                             if (error is ApiError.OptimisticLock) {
                                 R.string.conflict_inline
                             } else {

@@ -34,6 +34,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Übergabe sheet. */
@@ -255,10 +256,12 @@ private fun HandoverStockRow.krtLabel(): String =
 private fun Double.krtPlainAmount(): String = java.math.BigDecimal(this.toString()).toPlainString()
 
 /**
- * What the last write returned, in the app's own words.
+ * What the last write returned.
  *
- * A `409` here means the line was fulfilled while the sheet was open — the artboard's own case —
- * so it reads as a conflict rather than as a generic failure.
+ * A validation refusal is shown in the server's own words: it names the field and the rule, which
+ * is what design ch. 02 §6 draws under a field. A `409` keeps the sheet's own sentence — it means
+ * the line was fulfilled while the sheet was open, the artboard's own case, and it reads as a
+ * conflict rather than as a generic failure.
  *
  * @param error the refusal.
  */
@@ -266,7 +269,7 @@ private fun Double.krtPlainAmount(): String = java.math.BigDecimal(this.toString
 private fun HandoverError(error: ApiError) {
     KrtFieldError(
         text =
-            stringResource(
+            error.fieldMessage() ?: stringResource(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.order_handover_not_allowed

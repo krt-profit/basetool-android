@@ -44,7 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefr
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
-import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -392,7 +392,11 @@ private fun OperationRow(
                 color = KrtPalette.White,
                 modifier = Modifier.weight(1f),
             )
-            KrtStatusBadge(text = operation.statusLabel(), tone = operation.statusTone())
+            // The row pill, not the page badge: this row sits in the same segment as the Einsatz
+            // rows, which wear the dot-and-tint pill (ch. 02 §3). The louder badge belongs on a
+            // detail, where the status is the page's own subject — side by side in one list the
+            // two read as different kinds of record.
+            KrtStatusPill(text = operation.statusLabel(), tone = operation.statusTone())
         }
         operation.description?.takeIf { it.isNotBlank() }?.let { description ->
             Text(

@@ -77,7 +77,8 @@ class MissionDetailRepositoryTest {
               ],
               "steps": [{"id": "s1", "title": "Sammeln im Teamspeak", "meta": "20:30 · Kanal", "done": true}],
               "objectives": [{"id": "o1", "title": "500 SCU Quantainium", "kind": "PRIMARY"}],
-              "frequencies": [{"id": "f1", "name": "KRT/Einsatz-1", "frequencyType": {"name": "Einsatz"}}]
+              "frequencies": [{"id": "f1", "name": "KRT/Einsatz-1", "value": 148.50,
+                               "frequencyType": {"name": "Einsatz"}}]
             }
             """.trimIndent()
 
@@ -156,6 +157,24 @@ class MissionDetailRepositoryTest {
             assertEquals(1, detail.objectives.size)
             assertEquals(1, detail.frequencies.size)
             assertEquals("/api/v1/missions/m1", server.takeRequest().target)
+        }
+
+    /**
+     * The label is `name` (or the type's) and the value is the **number** — they were swapped.
+     *
+     * The row rendered the label where the frequency belonged and left the label column empty, so
+     * the one fact the tab exists for was never on screen. The old test asserted only what the
+     * request sent, which is why nothing caught it.
+     */
+    @Test
+    fun `a frequency's label and its number do not swap places`() =
+        runTest {
+            respond(FULL)
+
+            val frequency = (repository.detail("m1") as ApiResult.Success).value.frequencies.single()
+
+            assertEquals("Einsatz", frequency.type)
+            assertEquals("148.50", frequency.value)
         }
 
     @Test

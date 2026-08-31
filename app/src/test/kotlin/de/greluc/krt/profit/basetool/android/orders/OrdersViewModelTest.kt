@@ -15,8 +15,11 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderSource
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
+import de.greluc.krt.profit.basetool.android.core.network.Connectivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -24,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -232,6 +236,39 @@ class OrdersViewModelTest {
 
             assertTrue(model.state.value.phase is OrdersPhase.Failed)
         }
+
+    /**
+     * The queue hears the network, and hears it from the first frame.
+     *
+     * `Connectivity.online` replays its current value the moment it is collected, so a collector
+     * started before `mutableState` exists dereferences null and the app dies on its first frame.
+     * That is exactly what happened on a device, and the other tests could not see it because they
+     * leave the connectivity source out.
+     */
+    @Test
+    fun `the queue follows the network from the first frame`() =
+        runTest(dispatcher) {
+            val network = MutableStateFlow(false)
+            val model = OrdersViewModel(source, null, TestConnectivity(network))
+
+            advanceUntilIdle()
+            assertFalse(model.state.value.online)
+
+            network.value = true
+            advanceUntilIdle()
+            assertTrue(model.state.value.online)
+        }
+
+    /**
+     * A network whose state the test drives.
+     *
+     * @property state what the flow reports.
+     */
+    private class TestConnectivity(
+        private val state: MutableStateFlow<Boolean>,
+    ) : Connectivity {
+        override val online: Flow<Boolean> get() = state
+    }
 
     private companion object {
         /** A two-page result. */

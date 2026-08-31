@@ -41,12 +41,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.data.MATERIAL_CATEGORY_UNSORTED
 import de.greluc.krt.profit.basetool.android.core.data.MaterialPriceRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
@@ -309,11 +311,18 @@ private fun MaterialRows(
     LazyColumn(
         state = rememberRootListState(),
         modifier = Modifier.fillMaxSize().testTag(MATERIALS_LIST_TAG),
-        contentPadding = PaddingValues(horizontal = contentGutter(), vertical = KrtSpacing.s4),
+        // A gutter, not a hairline-separated full-bleed list: artboard 16-1 draws each material as
+        // its own bordered card. Without the gutter the prices ran into the right edge of the
+        // screen with nothing between them and it.
+        contentPadding =
+            PaddingValues(
+                horizontal = contentGutter().coerceAtLeast(KrtSpacing.s12),
+                vertical = KrtSpacing.s8,
+            ),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
     ) {
         items(rows, key = { it.id }) { row ->
             MaterialRow(row = row, onClick = { onOpen(row.id) })
-            KrtHairlineRule()
         }
     }
 }
@@ -332,42 +341,47 @@ private fun MaterialRow(
     row: MaterialPriceRow,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = KrtSpacing.s8)
-                .clickable(onClick = onClick),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = row.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = row.category ?: MATERIAL_CATEGORY_UNSORTED,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (row.illegal) {
-            KrtChip(text = stringResource(R.string.materials_illegal), tone = KrtChipTone.Danger)
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            PriceLine(
-                text = row.maxPriceSell?.let { stringResource(R.string.materials_price_sell, it.toPlainString()) },
-                color = KrtPalette.SuccessText,
-            )
-            PriceLine(
-                text = row.minPriceBuy?.let { stringResource(R.string.materials_price_buy, it.toPlainString()) },
-                color = KrtPalette.DangerText,
+    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = row.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = KrtPalette.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = row.category ?: MATERIAL_CATEGORY_UNSORTED,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (row.illegal) {
+                KrtChip(text = stringResource(R.string.materials_illegal), tone = KrtChipTone.Danger)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                PriceLine(
+                    text = row.maxPriceSell?.let { stringResource(R.string.materials_price_sell, it.toPlainString()) },
+                    color = KrtPalette.SuccessText,
+                )
+                PriceLine(
+                    text = row.minPriceBuy?.let { stringResource(R.string.materials_price_buy, it.toPlainString()) },
+                    color = KrtPalette.DangerText,
+                )
+            }
+            // The artboard closes every row with the chevron: on a card whose whole surface is the tap
+            // target it is the only thing saying the card HAS one.
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_chevron_right,
+                contentDescription = null,
+                tint = KrtPalette.Gray2,
             )
         }
     }

@@ -18,6 +18,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -100,7 +101,8 @@ class MissionManagerScreenTest {
             canManage = true,
         )
 
-        compose.onNodeWithText("Einchecken", ignoreCase = true).performClick()
+        // A 44 dp icon button carrying its name as a content description, per `.btn-icon`.
+        compose.onNodeWithContentDescription("Einchecken", ignoreCase = true).performClick()
 
         assertEquals(listOf("check-in:p2"), taps)
     }
@@ -123,8 +125,8 @@ class MissionManagerScreenTest {
             canManage = false,
         )
 
-        compose.onNodeWithText("Einchecken", ignoreCase = true).assertIsDisplayed()
-        compose.onNodeWithText("Einchecken", ignoreCase = true).performClick()
+        compose.onNodeWithContentDescription("Einchecken", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("Einchecken", ignoreCase = true).performClick()
 
         assertTrue("a locked control must not write", taps.isEmpty())
         compose.onNodeWithText("Missions-Manager", substring = true).assertIsDisplayed()

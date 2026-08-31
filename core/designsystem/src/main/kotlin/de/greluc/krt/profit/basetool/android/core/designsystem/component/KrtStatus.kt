@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.core.designsystem.R
@@ -55,6 +57,17 @@ private val STATUS_DOT = 8.dp
 
 /** Width of the leading edge bar on a page-level status badge. */
 private val STATUS_BADGE_EDGE = 3.dp
+
+/**
+ * The badge's tint fill.
+ *
+ * Ten per cent, not the twelve a chip uses: the badge already carries its hue in an edge and a dot,
+ * so the fill only has to lift it off the page (ch. 02 §3).
+ */
+private const val BADGE_TINT_ALPHA = 0.10f
+
+/** The badge's square dot — larger than the row pill's, because the badge is the loud one. */
+private val BADGE_DOT = 10.dp
 
 /** Period of the presence pulse. */
 private const val PRESENCE_PULSE_MS = 2000
@@ -97,17 +110,28 @@ fun KrtOrgBadge(
     kind: KrtOrgBadgeKind = KrtOrgBadgeKind.Own,
     onClick: (() -> Unit)? = null,
 ) {
+    // Chapter 02 §3 draws all four side by side and they are NOT the same pill: „Bereich Profit"
+    // is orange through and through, „SK VANGUARD" and „Alle Einheiten" are a grey ring around
+    // white text, and a foreign org is the cross-org yellow. A Spezialkommando was drawn orange —
+    // the same as the member's own unit — so the queue's FÜR and DURCH pills read as one kind of
+    // thing when the chapter distinguishes them at a glance (ch. 10, artboard 1).
+    val border =
+        when (kind) {
+            KrtOrgBadgeKind.Own -> MaterialTheme.colorScheme.primary
+            KrtOrgBadgeKind.SpecialCommand, KrtOrgBadgeKind.Muted -> KrtPalette.Gray2
+            KrtOrgBadgeKind.Foreign -> KrtTheme.colors.crossOrg
+        }
     val color =
         when (kind) {
-            KrtOrgBadgeKind.Own, KrtOrgBadgeKind.SpecialCommand -> MaterialTheme.colorScheme.primary
+            KrtOrgBadgeKind.Own -> MaterialTheme.colorScheme.primary
+            KrtOrgBadgeKind.SpecialCommand, KrtOrgBadgeKind.Muted -> KrtPalette.White
             KrtOrgBadgeKind.Foreign -> KrtTheme.colors.crossOrg
-            KrtOrgBadgeKind.Muted -> KrtPalette.TextMuted
         }
     Box(
         modifier =
             modifier
                 .clip(PillShape)
-                .border(KrtSpacing.hairline, color, PillShape)
+                .border(KrtSpacing.hairline, border, PillShape)
                 .then(
                     if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier,
                 )
@@ -411,11 +435,55 @@ private fun KrtStatusTone.color(): Color =
     }
 
 /**
- * The row-level status indicator: a square 8 dp dot plus an uppercase label.
+ * The hue a status is drawn in, for callers outside this file.
  *
- * Deliberately quiet — inside a list the status must not compete with the record's name.
+ * A **surface** can carry a status as well as a chip: design ch. 06 (F2) draws the lifecycle band as
+ * a card washed in its own status tone, so the state, the countdown and the action read as one thing
+ * rather than as a chip with two strangers beside it.
  *
- * @param text status label; uppercased for display.
+ * @return the tone's colour — always the *text* tint, which is what stays legible on the dark
+ *   ground and what a border drawn from it has to match.
+ */
+@Composable
+fun KrtStatusTone.krtColor(): Color = color()
+
+/**
+ * The design system's `.status-dot` — an 8 dp square saying whether one row is „on".
+ *
+ * Square, like everything else here: a circle would be the only round thing on the screen. The dot
+ * carries no text, so it takes a description of its own — in a roster it is the **only** thing
+ * saying whether that member has checked in, and a screen reader would otherwise read the row
+ * without its state.
+ *
+ * @param on whether the row is in the positive state.
+ * @param stateLabel what the current state means, in words, for a screen reader.
+ * @param modifier layout modifier.
+ */
+@Composable
+fun KrtStatusDot(
+    on: Boolean,
+    stateLabel: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(STATUS_DOT)
+                .background(if (on) KrtTheme.colors.success else KrtPalette.Gray2)
+                .semantics { contentDescription = stateLabel },
+    )
+}
+
+/**
+ * The row-level status indicator: a square 8 dp dot plus the label as written.
+ *
+ * Deliberately quiet — inside a list the status must not compete with the record's name, which is
+ * also why the label is **not** uppercased. Chapter 02 §3 draws the five of them as
+ * „Geplant · Aktiv · Briefing · Abgeschlossen · Abgesagt", and every list and detail head that uses
+ * one follows suit (ch. 06 artboards 1 and 2, ch. 10 artboard 2, ch. 11 artboard 2). Uppercase is
+ * the louder [KrtStatusBadge]'s, where the status IS the page's subject.
+ *
+ * @param text status label, drawn as given.
  * @param tone the lifecycle state.
  * @param modifier layout modifier.
  */
@@ -433,7 +501,7 @@ fun KrtStatusPill(
     ) {
         Box(modifier = Modifier.size(STATUS_DOT).background(color))
         Text(
-            text = text.krtUppercase(),
+            text = text,
             style = MaterialTheme.typography.labelMedium,
             color = color,
         )
@@ -443,8 +511,17 @@ fun KrtStatusPill(
 /**
  * The page-level status badge — the louder sibling of [KrtStatusPill].
  *
- * Carries a 3 dp leading edge and a tinted fill, and belongs at the top of a detail screen where a
- * single status describes the whole record.
+ * **Four parts, all load-bearing** (ch. 02 §3, settled in round 14 · S24 against the stylesheet,
+ * which draws all four):
+ *
+ * 1. a **10 %** tint fill in the state's hue,
+ * 2. a **hairline border** in Gray3,
+ * 3. a **3 dp leading edge** in the state's tint,
+ * 4. a **10 dp square dot** in that tint — and then the label in **white**.
+ *
+ * The label is white, not tinted: the hue is carried by the edge and the dot, so the word stays as
+ * legible as any other title. This build had only the fill and the edge, with the label in the
+ * tint — two of the four missing, which the chapter says reads as a different component.
  *
  * @param text status label; uppercased for display.
  * @param tone the lifecycle state.
@@ -460,7 +537,8 @@ fun KrtStatusBadge(
     Row(
         modifier =
             modifier
-                .background(color.copy(alpha = CHIP_TINT_ALPHA))
+                .background(color.copy(alpha = BADGE_TINT_ALPHA))
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .defaultMinSize(minHeight = KrtSpacing.s24),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -474,14 +552,14 @@ fun KrtStatusBadge(
             modifier =
                 Modifier
                     .padding(start = KrtSpacing.s8)
-                    .size(10.dp)
+                    .size(BADGE_DOT)
                     .background(color),
         )
         Text(
             text = text.krtUppercase(),
             modifier = Modifier.padding(horizontal = KrtSpacing.s8),
             style = MaterialTheme.typography.labelMedium,
-            color = color,
+            color = KrtPalette.White,
         )
     }
 }

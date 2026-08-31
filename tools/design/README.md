@@ -21,6 +21,15 @@ node tools/design/board.mjs "http://localhost:8731/06%20Missionen.dc.html" 2 tei
 The clip comes from the artboard's own bounding box, so a chapter that reflows does not silently
 start cropping the wrong frame.
 
+**Not every chapter captions its frames.** `board.mjs` anchors on the „N · Title" line above a
+frame, and chapter 04 has none — its numbered lines are the headers of the *notes* cards under the
+row of phones, so anchoring there clips the prose instead of the screen. For those chapters, take
+the whole page and crop:
+
+```bash
+node tools/design/page.mjs "http://localhost:8731/04%20Auth.dc.html" auth-page.png
+```
+
 The other half of the spec is `_ds/…/krt-components.css`: the classes the artboards use
 (`.facts-bar`, `.tab-nav`, `.attendance`, `card--flush`) carry the exact sizes and colours, and
 several of them carry the reasoning too — `.attendance-meter` says in as many words why it is green

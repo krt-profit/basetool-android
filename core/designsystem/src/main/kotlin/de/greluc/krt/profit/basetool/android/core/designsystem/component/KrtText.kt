@@ -133,7 +133,10 @@ fun KrtHairlineRule(
  *
  * @param text the formatted number, including its thousands separators.
  * @param modifier layout modifier.
- * @param style type scale entry; `titleMedium` for row values, `displaySmall` for KPI heroes.
+ * @param style the figure's rung on [KrtFigure] — `total` for a screen's hero number, `card`
+ *   for one inside a card or row, `inline` beside a label. A number never names a heading
+ *   style: those carry letter-spacing, which on digits reads as spaced-out numerals
+ *   (round 15 · R2, R3).
  * @param color value colour; white by default, semantic tints for deltas and prices.
  */
 @Composable

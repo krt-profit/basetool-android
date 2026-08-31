@@ -23,6 +23,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTabl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
@@ -54,6 +56,12 @@ const val MATERIAL_PRICES_TAG: String = "material-prices"
 
 /** The two price columns of the table, after the terminal name. */
 private const val PRICE_COLUMNS = 3
+
+/** The buy column's index in the price table. */
+private const val BUY_COLUMN = 1
+
+/** The sell column's index in the price table. */
+private const val SELL_COLUMN = 2
 
 /**
  * „Preise und Terminals" — one material's market (design spec ch. 16, artboard 2).
@@ -325,12 +333,37 @@ private fun PriceTable(state: MaterialDetailState) {
         KrtTableCell(
             text = text ?: stringResource(R.string.krt_empty_value),
             column = columns[column],
-            // The best row on each side is the answer the page came for; the tint marks it where
+            // The best row on each side is the answer the page came for; the weight marks it where
             // it stands rather than making the reader compare a column of equals.
             emphasis = column in 1 until PRICE_COLUMNS && text != null && price.krtIsBest(state, column),
+            tone = priceTone(column = column, present = text != null),
         )
     }
 }
+
+/**
+ * What each price column MEANS, in the chapter's own two tints.
+ *
+ * A buy price is money out and a sell price is money in. Both columns were drawn in the same
+ * neutral grey, which made „Einkauf" and „Verkauf" tell apart only by their heading — and on a
+ * table a reader scans down a column rather than across a row.
+ *
+ * @param column the cell's column index.
+ * @param present whether the cell holds a figure at all; a dash takes no tint, because there is no
+ *   cost and no return to colour.
+ * @return the colour, or `null` to keep the table's default.
+ */
+@Composable
+private fun priceTone(
+    column: Int,
+    present: Boolean,
+): Color? =
+    when {
+        !present -> null
+        column == BUY_COLUMN -> KrtTheme.colors.dangerText
+        column == SELL_COLUMN -> KrtTheme.colors.successText
+        else -> null
+    }
 
 /**
  * Whether this row holds the best price in its column.

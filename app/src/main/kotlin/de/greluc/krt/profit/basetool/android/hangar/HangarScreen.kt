@@ -8,10 +8,12 @@
 package de.greluc.krt.profit.basetool.android.hangar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,8 +40,12 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -121,7 +127,6 @@ const val HANGAR_ADD_TAG: String = "hangar-add"
  * @param onLoadMore the load-more control was tapped.
  * @param onCreate the add action was taken.
  * @param onEdit a ship was tapped.
- * @param onDelete a ship's delete action was taken.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,7 +140,6 @@ fun HangarScreen(
     onLoadMore: () -> Unit,
     onCreate: () -> Unit,
     onEdit: (Ship) -> Unit,
-    onDelete: (Ship) -> Unit,
     onTypeDrilldown: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -211,7 +215,6 @@ fun HangarScreen(
                             state = state,
                             onLoadMore = onLoadMore,
                             onEdit = onEdit,
-                            onDelete = onDelete,
                             onTypeDrilldown = onTypeDrilldown,
                         )
                     }
@@ -240,35 +243,29 @@ fun HangarScreen(
 }
 
 /**
- * The card's delete affordance.
+ * The row's one action — the ✎ that opens the editor.
  *
  * @param online whether writes are possible.
- * @param onDelete asks to delete.
+ * @param onEdit opens the editor for this ship.
  */
 @Composable
 private fun ShipCardActions(
     online: Boolean,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
 ) {
-    // Design ch. 08 gives the row 44 dp icon buttons, not a labelled button. A ghost button reading
-    // "LÖSCHEN" is the widest, loudest thing on a card whose subject is a ship, and it made the
-    // destructive action the most prominent one on every row.
+    // ONE action on the row — the ✎ (round 14 · S14). Deleting a single ship happens in the sheet
+    // that pencil opens, as a quiet danger button at its foot: two icons left the row about 190 dp
+    // for its chips and its location and pushed long station names out, and „delete this one" is
+    // an action about the ship a member already has open rather than one to offer on every line.
     Row(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
+        modifier = Modifier.alpha(if (online) 1f else DISABLED_WRITE_ALPHA),
     ) {
         KrtIconButton(
             iconRes = DesignR.drawable.ic_krt_edit,
             label = stringResource(R.string.hangar_edit),
             onClick = onEdit,
-            enabled = online,
-        )
-        KrtIconButton(
-            iconRes = DesignR.drawable.ic_krt_trash,
-            label = stringResource(R.string.hangar_delete),
-            onClick = onDelete,
             enabled = online,
         )
     }
@@ -280,7 +277,6 @@ private fun ShipCardActions(
  * @param state what to draw.
  * @param onLoadMore the next page was asked for.
  * @param onEdit a ship was tapped.
- * @param onDelete a ship's delete action was taken.
  * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
  */
 @Composable
@@ -288,7 +284,6 @@ private fun HangarBody(
     state: HangarState,
     onLoadMore: () -> Unit,
     onEdit: (Ship) -> Unit,
-    onDelete: (Ship) -> Unit,
     onTypeDrilldown: (String) -> Unit,
 ) {
     val empty =
@@ -313,7 +308,6 @@ private fun HangarBody(
                     ships = state.ships,
                     online = state.online,
                     onEdit = onEdit,
-                    onDelete = onDelete,
                 )
             }
         } else if (state.segment == HangarSegment.MINE) {
@@ -322,7 +316,6 @@ private fun HangarBody(
                     ship = ship,
                     online = state.online,
                     onEdit = { onEdit(ship) },
-                    onDelete = { onDelete(ship) },
                 )
             }
         } else {
@@ -373,6 +366,21 @@ private fun HangarState.countLabel(): String =
         pluralStringResource(R.plurals.hangar_type_count, total.toInt(), types.size, total)
     }
 
+/** Column index of the manufacturer lettermark in the ship table. */
+private const val MANUFACTURER_COLUMN = 0
+
+/** Column index of the ship type. */
+private const val TYPE_COLUMN = 1
+
+/** Column index of the member's own name for the ship. */
+private const val NAME_COLUMN = 2
+
+/** Column index of the insurance. */
+private const val INSURANCE_COLUMN = 3
+
+/** Column index of the location. */
+private const val LOCATION_COLUMN = 4
+
 /**
  * The tablet's dense ship table — the web app's columns, per design ch. 08.
  *
@@ -383,19 +391,22 @@ private fun HangarState.countLabel(): String =
  *
  * @param ships the rows.
  * @param online whether writes are possible; the actions disable with the rest of the screen.
- * @param onEdit opens the editor for a ship.
- * @param onDelete asks to delete one.
- * @param onTypeDrilldown an aggregate row was tapped; shows that type's ships.
+ * @param onEdit opens the editor for a ship — the row's only action since round 14 (S14).
  */
 @Composable
 private fun ShipTable(
     ships: List<Ship>,
     online: Boolean,
     onEdit: (Ship) -> Unit,
-    onDelete: (Ship) -> Unit,
 ) {
     val columns =
         listOf(
+            // The manufacturer's lettermark leads the row, as the chapter's tablet frame draws it
+            // („HRST. · SCHIFFSTYP · VERS. · ORT · FIT. · NAME · AKT."). It was on the phone card
+            // and missing from the table, so the two layouts showed different facts about the
+            // same ship. The head is abbreviated because the artboard abbreviates it — the column
+            // is one lettermark wide, and „Hersteller" broke across two lines above it.
+            KrtTableColumn(stringResource(R.string.hangar_column_manufacturer), weight = 0.5f),
             KrtTableColumn(stringResource(R.string.hangar_column_type), weight = 1.4f),
             KrtTableColumn(stringResource(R.string.hangar_column_name), weight = 1.2f),
             KrtTableColumn(stringResource(R.string.hangar_column_insurance), weight = 0.9f),
@@ -415,31 +426,32 @@ private fun ShipTable(
         onRowClick = { onEdit(ships[it]) },
     ) { row, column ->
         val ship = ships[row]
-        // `cell` is a RowScope lambda: the weight is the CALLER's to apply, and without it every
-        // cell sizes to its own content while the header row — which does apply it — stays on the
-        // grid. The two disagreed, so figures drifted left of the titles they belong under. Only
-        // visible once the aggregate put two numeric columns side by side (ch. 08, artboard 11).
         if (column == columns.lastIndex) {
-            Box(modifier = Modifier.weight(columns[column].weight)) {
-                ShipCardActions(
-                    online = online,
-                    onEdit = { onEdit(ship) },
-                    onDelete = { onDelete(ship) },
-                )
-            }
+            ShipCardActions(
+                online = online,
+                onEdit = { onEdit(ship) },
+            )
+        } else if (column == MANUFACTURER_COLUMN) {
+            ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
         } else {
             KrtTableCell(
                 text =
                     when (column) {
-                        0 -> ship.typeName
-                        1 -> ship.name ?: unknown
-                        2 -> ship.insurance ?: unknown
-                        3 -> ship.locationName ?: unknown
+                        TYPE_COLUMN -> ship.typeName
+
+                        NAME_COLUMN -> ship.name ?: unknown
+
+                        // „6" on its own is six of nothing. The card has said „6 Monate" all
+                        // along; the table printed the server's raw value beside a column head
+                        // that only names the subject.
+                        INSURANCE_COLUMN -> ship.insuranceLabel()
+
+                        LOCATION_COLUMN -> ship.locationName ?: unknown
+
                         else -> if (ship.fitted) fittedYes else fittedNo
                     },
                 column = columns[column],
-                modifier = Modifier.weight(columns[column].weight),
-                emphasis = column == 0,
+                emphasis = column == TYPE_COLUMN,
             )
         }
     }
@@ -456,15 +468,13 @@ private fun ShipTable(
  *
  * @param ship the ship.
  * @param online whether writes are possible.
- * @param onEdit opens the editor.
- * @param onDelete asks to delete.
+ * @param onEdit opens the editor — which is also where the ship is deleted (S14).
  */
 @Composable
 private fun ShipCard(
     ship: Ship,
     online: Boolean,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
 ) {
     // A card, not a padded Column: every design chapter draws its list items as bordered
     // tiles, and the app was drawing lines of text. See docs/DESIGN_PARITY_AUDIT.md.
@@ -472,17 +482,20 @@ private fun ShipCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onEdit.takeIf { online },
     ) {
+        // The actions sit ON the row, not under it. Artboard 08-1 draws the card one row high with
+        // the pencil at its trailing edge; stacked below the chips they made every ship two rows
+        // tall and put the destructive one at the bottom of the card rather than beside its ship.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             ManufacturerMark(ship.manufacturerAbbreviation, ship.manufacturerName)
             Column(modifier = Modifier.weight(1f)) {
                 ShipCardBody(ship = ship)
             }
+            ShipCardActions(online = online, onEdit = onEdit)
         }
-        ShipCardActions(online = online, onEdit = onEdit, onDelete = onDelete)
     }
 }
 
@@ -512,14 +525,17 @@ private fun ManufacturerMark(
         modifier =
             Modifier
                 .size(MARK_SIZE)
-                .background(KrtPalette.SurfaceInput)
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .semantics { spoken?.let { contentDescription = it } },
         contentAlignment = Alignment.Center,
     ) {
         Text(
+            // White on a hairline square, as artboard 08-1 draws it — not orange. The maker is
+            // what the ship IS, in the same weight as its type beside it; orange is the app's
+            // action colour and made a label look like something to press.
             text = abbreviation.markOrNull() ?: spoken.lettermark(),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = KrtPalette.White,
         )
     }
 }
@@ -563,16 +579,21 @@ private fun String?.lettermark(): String {
 @Composable
 private fun ShipCardBody(ship: Ship) {
     Column {
+        // Two tones in one line, as artboard 08-1 sets it: the type is the catalogue's word and
+        // stays bright, the member's own name for the ship is theirs and sits back a step. Both in
+        // white, the sentence read as one long product name.
         Text(
-            text = ship.headline(),
+            text = ship.headlineText(),
             style = MaterialTheme.typography.titleMedium,
-            color = KrtPalette.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Row(
+        // FlowRow, not Row: with the two icon buttons beside it the line has about 190 dp, and a
+        // Row squeezed the location out of existence — „Everus Harbor" rendered as „E…" and then as
+        // nothing. Wrapping costs a second line only on the cards that need one.
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
         ) {
             // Insurance first, then fitted — the artboard's order, and the useful one: the policy
             // is the fact that expires.
@@ -617,11 +638,18 @@ private fun ShipCardBody(ship: Ship) {
 }
 
 /**
- * The card's headline.
+ * The card's headline: the type bright, the member's own name a step back.
  *
- * @return the type, plus the member's own name in quotes when they gave one.
+ * @return the styled headline.
  */
-private fun Ship.headline(): String = name?.let { "$typeName „$it\"" } ?: typeName
+@Composable
+private fun Ship.headlineText(): AnnotatedString =
+    buildAnnotatedString {
+        withStyle(SpanStyle(color = KrtPalette.White)) { append(typeName) }
+        name?.takeIf { it.isNotBlank() }?.let { own ->
+            withStyle(SpanStyle(color = KrtPalette.TextMuted)) { append(" „$own\"") }
+        }
+    }
 
 /**
  * The band over the aggregate: how many ships the org unit has, and how many are ready.
@@ -690,7 +718,6 @@ private fun ShipTypeTable(
         when (column) {
             0 -> {
                 Row(
-                    modifier = Modifier.weight(columns[0].weight),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -703,7 +730,6 @@ private fun ShipTypeTable(
                 KrtTableCell(
                     text = type.count.toString(),
                     column = columns[1],
-                    modifier = Modifier.weight(columns[1].weight),
                     emphasis = true,
                 )
             }
@@ -715,7 +741,7 @@ private fun ShipTypeTable(
                     text = type.fittedCount.toString(),
                     modifier =
                         Modifier
-                            .weight(columns[2].weight)
+                            .fillMaxWidth()
                             .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
                     textAlign = TextAlign.End,
                     style = MaterialTheme.typography.bodyMedium,
@@ -838,7 +864,6 @@ fun HangarRoute(
         onLoadMore = viewModel::onLoadMore,
         onCreate = viewModel::onCreate,
         onEdit = viewModel::onEdit,
-        onDelete = viewModel::onDeleteRequested,
         onTypeDrilldown = viewModel::onTypeDrilldown,
         modifier = modifier,
     )
@@ -865,6 +890,7 @@ fun HangarRoute(
             onPlace = viewModel::onPlaceChosen,
             onFitted = viewModel::onFittedChanged,
             onSave = viewModel::onSave,
+            onDelete = viewModel::onDeleteRequested,
             onDismiss = viewModel::onEditorDismissed,
         )
     }

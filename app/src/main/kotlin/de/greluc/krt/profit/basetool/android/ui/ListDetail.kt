@@ -36,8 +36,15 @@ import de.greluc.krt.profit.basetool.android.navigation.LocalScreenTopBar
 import de.greluc.krt.profit.basetool.android.navigation.ScreenTopBar
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
-/** How much wider the detail pane is than the list beside it. */
-private const val DETAIL_WEIGHT = 1.5f
+/**
+ * How much wider the detail pane is than the list beside it.
+ *
+ * Two, from the chapters' own tablet frames: on a 1280 dp landscape the rail takes 88 and the
+ * remaining 1192 split into a ~397 dp list and a ~795 dp pane (ch. 06, 10, 11, 12 all draw that
+ * proportion). At 1.5 the list took 477 dp of it, and the Einsatz detail's **eight** tabs — which
+ * chapter 06 requires to fit „ohne Scroll" on a tablet — ran off the pane's right edge.
+ */
+private const val DETAIL_WEIGHT = 2f
 
 /**
  * The tablet's list-detail layout, and the phone's plain list.
@@ -143,14 +150,21 @@ private fun DetailPaneHead(head: ScreenTopBar) {
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                head.title?.let { title ->
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = KrtPalette.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    head.title?.let { title ->
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = KrtPalette.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    head.titleBadge?.invoke()
                 }
                 head.subtitle?.invoke()
             }

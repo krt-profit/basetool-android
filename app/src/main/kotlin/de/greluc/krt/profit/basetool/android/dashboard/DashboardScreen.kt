@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -42,7 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +60,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHeading
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRailCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
@@ -65,6 +70,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.missions.missionStatusLabel
 import de.greluc.krt.profit.basetool.android.missions.missionStatusTone
+import de.greluc.krt.profit.basetool.android.notifications.krtIconRes
 import de.greluc.krt.profit.basetool.android.notifications.notificationSentence
 import de.greluc.krt.profit.basetool.android.notifications.notificationTypeRes
 import de.greluc.krt.profit.basetool.android.ui.carriesClock
@@ -87,30 +93,26 @@ const val DASHBOARD_TAG: String = "dashboard"
 /** How many lines of the announcement are shown while it is collapsed. */
 private const val ANNOUNCEMENT_COLLAPSED_LINES = 2
 
-/** How many unread notifications the preview band shows. */
-private const val PREVIEW_ROWS = 3
-
 /**
  * The dashboard (design spec ch. 05), read-only.
  *
  * The design's order is kept — greeting, announcement, Einsätze of the next seven days, then the
  * unread preview — because it is a one-handed reading order and not a layout preference.
  *
- * **The quick-action row is absent.** Its four entries (Check-In, Einbuchen, Auftrag, Angebot) are
- * all mutations, and three of them lead to screens Phase 2 does not build. Four buttons that do
- * nothing would be worse than the row arriving with what it promises.
+ * All four bands are built: greeting, announcement, the Einsatz band, the four shortcuts and the
+ * unread preview. The shortcuts each open the **surface** the action lives on rather than the
+ * action itself — there is no global „Check-In", only a check-in on one Einsatz, and sending a
+ * member to a guessed one would be worse than sending them to the list they can pick from.
  *
  * @param state the fetched parts.
  * @param memberName the signed-in member's name, or `null` while unknown.
  * @param orgUnitName the active org unit's name, or `null` while unknown.
- * @param unread the newest unread notifications, already limited by the caller.
- * @param unreadKnown whether the inbox has answered at all — "nothing unread" is a claim and
- *   may only be made once it has.
  * @param onMarkAnnouncementRead the notice's own action; clears its unread marker.
  * @param onRefresh pull-to-refresh.
  * @param onOpenMission an Einsatz row was tapped.
  * @param onOpenMissions the Einsatz band's header action.
- * @param onOpenNotifications the preview's header action.
+ * @param onQuickAction opens the destination behind a shortcut tile.
+ * @param onOpenInbox opens the inbox — the unread band's header action and its rows.
  * @param modifier layout modifier.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,14 +121,12 @@ fun DashboardScreen(
     state: DashboardState,
     memberName: String?,
     orgUnitName: String?,
-    unread: List<Notification>,
-    unreadKnown: Boolean,
     onMarkAnnouncementRead: () -> Unit,
     onRefresh: () -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenMissions: () -> Unit,
-    onOpenNotifications: () -> Unit,
     onQuickAction: (QuickAction) -> Unit,
+    onOpenInbox: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PullToRefreshBox(
@@ -177,11 +177,7 @@ fun DashboardScreen(
                         contentPadding = PaddingValues(vertical = KrtSpacing.s12),
                     ) {
                         quickActionsSection(onQuickAction = onQuickAction)
-                        notificationsSection(
-                            unread = unread,
-                            unreadKnown = unreadKnown,
-                            onOpenNotifications = onOpenNotifications,
-                        )
+                        unreadSection(state = state, onOpenInbox = onOpenInbox)
                     }
                 }
             }
@@ -212,11 +208,7 @@ fun DashboardScreen(
                     onOpenMissions = onOpenMissions,
                 )
                 quickActionsSection(onQuickAction = onQuickAction)
-                notificationsSection(
-                    unread = unread,
-                    unreadKnown = unreadKnown,
-                    onOpenNotifications = onOpenNotifications,
-                )
+                unreadSection(state = state, onOpenInbox = onOpenInbox)
             }
         }
     }
@@ -377,50 +369,6 @@ private fun LazyListScope.missionsSection(
 }
 
 /**
- * The "Benachrichtigungen" half of the dashboard.
- *
- * @param unread the unread rows, of which only the first few are previewed.
- * @param unreadKnown whether the inbox has answered yet.
- * @param onOpenNotifications opens the inbox.
- */
-private fun LazyListScope.notificationsSection(
-    unread: List<Notification>,
-    unreadKnown: Boolean,
-    onOpenNotifications: () -> Unit,
-) {
-    item(key = "notifications-title") {
-        KrtSectionTitle(
-            text = stringResource(R.string.dashboard_notifications),
-            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
-            trailing = {
-                if (unread.isNotEmpty()) {
-                    SectionAction(
-                        text = stringResource(R.string.dashboard_notifications_all),
-                        onClick = onOpenNotifications,
-                    )
-                }
-            },
-        )
-    }
-    if (unread.isEmpty()) {
-        // Silence while the inbox is still answering: saying "nothing unread" before it
-        // has is a claim about the member's inbox made out of not knowing yet.
-        if (unreadKnown) {
-            item(key = "notifications-empty") {
-                MutedLine(text = stringResource(R.string.dashboard_notifications_empty))
-            }
-        }
-    } else {
-        items(unread.take(PREVIEW_ROWS), key = { it.id }) { notification ->
-            // Sentence over timestamp, as artboard 1 stacks them. Without the time a preview row
-            // says that something happened but not whether it is still worth acting on, which is
-            // the one thing a member skimming the dashboard is deciding.
-            PreviewLine(text = notification.preview(), time = notification.dashboardTime())
-        }
-    }
-}
-
-/**
  * The greeting and the context line beneath it.
  *
  * @param memberName the member's name, or `null`.
@@ -564,7 +512,13 @@ private fun MissionBandRow(
     // then when and where, then the unit chip and the way in. It was a single line carrying the
     // name and the status badge — everything a member needs to decide whether to open it was
     // missing. See docs/DESIGN_PARITY_AUDIT.md.
-    KrtCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+    // A **hud-box**, brackets and all: the chapter draws this one card with them and nothing else
+    // on the dashboard, which is what marks the Einsätze band as the thing the screen is for.
+    KrtHudBox(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = KrtSpacing.s16, vertical = KrtSpacing.s14),
+        onClick = onClick,
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
@@ -596,6 +550,16 @@ private fun MissionBandRow(
             KrtStatusPill(text = mission.missionStatusLabel(), tone = mission.missionStatusTone())
         }
         MissionFactsRow(mission = mission)
+        // The rule the artboard puts above the footer: the unit and the way in are about the row
+        // rather than about the Einsatz, and without it they read as a third fact.
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = KrtSpacing.s10)
+                    .height(KrtSpacing.hairline)
+                    .background(KrtPalette.Gray3),
+        )
         MissionBandFooter(mission = mission)
     }
 }
@@ -659,12 +623,16 @@ private fun MissionBandFooter(mission: Mission) {
         mission.orgUnitShorthand?.takeIf { it.isNotBlank() }?.let { unit ->
             KrtChip(text = unit, tone = KrtChipTone.Primary)
         }
-        // The design also puts "{n} angemeldet" here. MissionListDto carries no participant count,
-        // so there is nothing behind it on this endpoint — left out rather than invented, and
-        // recorded as a contract gap in docs/DESIGN_PARITY_AUDIT.md.
+        mission.registeredCount?.let { count ->
+            Text(
+                text = pluralStringResource(R.plurals.mission_lifecycle_registered, count, count),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = stringResource(R.string.dashboard_mission_open),
+            text = stringResource(R.string.dashboard_mission_open).krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -703,48 +671,6 @@ private fun GlyphFact(
 }
 
 /**
- * A muted line, used for the bands' empty and failed states.
- *
- * @param text what to say.
- */
-@Composable
-private fun PreviewLine(
-    text: String,
-    time: String,
-) {
-    Column(
-        modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (time.isNotBlank()) {
-            Text(
-                text = time,
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-        }
-    }
-}
-
-/**
- * When this notification was raised, on the ladder every screen in the app shares.
- *
- * @return the timestamp, or an empty string when the server sent none.
- */
-@Composable
-private fun Notification.dashboardTime(): String {
-    val raised = createdAt ?: return ""
-    return raised.relativeToNow()
-}
-
-/**
  * A quiet single line, for the states that have no timestamp to show.
  *
  * @param text the line.
@@ -780,20 +706,6 @@ private fun SectionAction(
     )
 }
 
-/**
- * The one-line wording of a notification in the preview.
- *
- * @return the same sentence the inbox shows, so the two cannot describe one notification
- *   differently.
- */
-@Composable
-private fun Notification.preview(): String =
-    notificationSentence(
-        notification = this,
-        template = stringResource(notificationTypeRes(type)),
-        generic = stringResource(R.string.notifications_type_generic),
-    )
-
 /** Smallest a shortcut tile gets, so a wrapped label never squeezes the glyph out (artboard: 64). */
 private val QUICK_TILE_MIN_HEIGHT = 64.dp
 
@@ -812,3 +724,113 @@ private const val SC_YEAR_OFFSET = 930
 
 /** How often the seven-day band re-reads its countdowns (design ch. 05: "each minute"). */
 private const val COUNTDOWN_TICK_MS = 60_000L
+
+/**
+ * The band design chapter 05 closes the dashboard with: what is new since the member last looked.
+ *
+ * Two rows and a way past them, on the phone and on the tablet alike (artboard 05). It is a
+ * **preview of the inbox**, not a second inbox: the rows are read-only, tapping anything opens the
+ * inbox, and nothing here marks a notification read — a dashboard that quietly clears the badge
+ * while a member scrolls past it would take away the one signal they came for.
+ *
+ * Absent entirely when nothing is unread, rather than drawn empty. „Nichts Neues" is what an empty
+ * dashboard already says by not having the band.
+ *
+ * @param state the fetched parts.
+ * @param onOpenInbox opens the inbox.
+ */
+private fun LazyListScope.unreadSection(
+    state: DashboardState,
+    onOpenInbox: () -> Unit,
+) {
+    if (state.unread.isEmpty()) {
+        return
+    }
+    item(key = "unread-title") {
+        KrtSectionTitle(
+            text = stringResource(R.string.dashboard_unread),
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s8),
+            trailing = {
+                SectionAction(
+                    text = stringResource(R.string.dashboard_unread_all),
+                    onClick = onOpenInbox,
+                )
+            },
+        )
+    }
+    items(state.unread, key = { "unread-${it.id}" }) { notification ->
+        UnreadRow(
+            notification = notification,
+            onClick = onOpenInbox,
+            modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4),
+        )
+    }
+}
+
+/**
+ * One row of the unread band.
+ *
+ * Wears the unread inset bar of the inbox's own rows, because it is the same thing seen from the
+ * dashboard — and it borrows the inbox's sentence and time wording rather than restating them, so
+ * the two surfaces cannot drift apart on what a notification says.
+ *
+ * @param notification the row.
+ * @param onClick opens the inbox.
+ * @param modifier layout modifier.
+ */
+@Composable
+private fun UnreadRow(
+    notification: Notification,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(KrtPalette.Gray4)
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(KrtSpacing.s12),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(UNREAD_BAR)
+                    .height(UNREAD_BAR_HEIGHT)
+                    .background(MaterialTheme.colorScheme.primary),
+        )
+        KrtIcon(
+            id = notification.kind.krtIconRes(),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text =
+                notificationSentence(
+                    notification = notification,
+                    template = stringResource(notificationTypeRes(notification.type)),
+                    generic = stringResource(R.string.notifications_type_generic),
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = KrtPalette.White,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        notification.createdAt?.let { raised ->
+            Text(
+                text = raised.relativeToNow(),
+                style = MaterialTheme.typography.labelMedium,
+                color = KrtPalette.TextMuted,
+            )
+        }
+    }
+}
+
+/** Width of a row's unread inset bar. */
+private val UNREAD_BAR = 3.dp
+
+/** Height of that bar — a two-line row, as the inbox draws it. */
+private val UNREAD_BAR_HEIGHT = 40.dp

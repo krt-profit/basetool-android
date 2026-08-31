@@ -74,7 +74,7 @@ fun KrtTextField(
                 cursorColor = KrtPalette.Primary,
             ),
         )
-        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
             val note = error ?: helper
             if (note != null) {
                 Text(note, style = MaterialTheme.typography.bodySmall, color = if (error != null) KrtPalette.DangerText else KrtPalette.TextMuted, modifier = Modifier.weight(1f))
@@ -117,7 +117,7 @@ fun String.krtToDoubleOrNull(): Double? = replace(",", ".").trim().toDoubleOrNul
 fun KrtDateTimeField(label: String, date: String, time: String, onDate: (String) -> Unit, onTime: (String) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     Column(modifier.fillMaxWidth()) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.Gray1, modifier = Modifier.padding(bottom = 4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
             Box(Modifier.weight(1.35f)) { KrtTextField(date, onDate, label = "", enabled = enabled, keyboardType = KeyboardType.Number) }
             Box(Modifier.weight(1f)) { KrtTextField(time, onTime, label = "", enabled = enabled, keyboardType = KeyboardType.Number) }
         }
@@ -165,7 +165,7 @@ fun KrtCombobox(
                     HorizontalDivider(color = KrtPalette.Gray3, thickness = KrtDimens.hairline)
                 }
                 if (searching) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(KrtSpacing.xs)) {
                         CircularProgressIndicator(Modifier.size(13.dp), strokeWidth = 2.dp, color = KrtPalette.Primary)
                         Text("Suche läuft…", style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
                     }
@@ -210,7 +210,7 @@ fun KrtBottomSheet(
             }
         },
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.s16).padding(bottom = KrtSpacing.s16), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = KrtSpacing.lg).padding(bottom = KrtSpacing.lg), verticalArrangement = Arrangement.spacedBy(13.dp)) {
             Column {
                 Text(title.uppercase(), style = MaterialTheme.typography.titleMedium, color = KrtPalette.White)
                 if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = KrtPalette.TextMuted, modifier = Modifier.padding(top = 2.dp))
@@ -234,9 +234,9 @@ fun KrtModal(
             Modifier.widthIn(max = 360.dp).background(KrtPalette.Gray4).border(KrtDimens.hairline, KrtPalette.Gray3).krtOverlayGlow(if (danger) KrtPalette.Danger else KrtPalette.Primary),
         ) {
             Box(Modifier.fillMaxWidth().height(KrtDimens.activeBar).background(if (danger) KrtPalette.Danger else KrtPalette.Primary))
-            Text(title.uppercase(), style = MaterialTheme.typography.titleSmall, color = KrtPalette.White, modifier = Modifier.padding(KrtSpacing.s12))
-            Column(Modifier.padding(horizontal = KrtSpacing.s12), content = body)
-            Row(Modifier.fillMaxWidth().padding(KrtSpacing.s12), horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
+            Text(title.uppercase(), style = MaterialTheme.typography.titleSmall, color = KrtPalette.White, modifier = Modifier.padding(KrtSpacing.md))
+            Column(Modifier.padding(horizontal = KrtSpacing.md), content = body)
+            Row(Modifier.fillMaxWidth().padding(KrtSpacing.md), horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm)) {
                 Box(Modifier.weight(1f)) { cancel() }
                 Box(Modifier.weight(1.3f)) { confirm() }
             }
@@ -259,8 +259,8 @@ fun KrtToast(title: String, detail: String? = null, tone: KrtChipTone = KrtChipT
         else -> KrtPalette.Warning
     }
     Row(
-        Modifier.fillMaxWidth().padding(KrtSpacing.s12).background(KrtPalette.Gray4).border(KrtDimens.hairline, edge).krtOverlayGlow(edge).padding(horizontal = KrtSpacing.s12, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        Modifier.fillMaxWidth().padding(KrtSpacing.md).background(KrtPalette.Gray4).border(KrtDimens.hairline, edge).krtOverlayGlow(edge).padding(horizontal = KrtSpacing.md, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.sm),
     ) {
         if (iconRes != null) Icon(painterResource(iconRes), contentDescription = null, tint = edge, modifier = Modifier.size(16.dp))
         Column(Modifier.weight(1f)) {

@@ -18,6 +18,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -216,8 +217,10 @@ class MissionDetailScreenTest {
         )
 
         compose.onNodeWithText("Kestrel").assertIsDisplayed()
-        compose.onNodeWithText("EINGECHECKT").assertIsDisplayed()
-        compose.onNodeWithText("NICHT EINGECHECKT").assertIsDisplayed()
+        // The state is an 8 dp dot now, not a two-word chip (artboard 06-2), so it is asserted
+        // where a member using a screen reader actually meets it.
+        compose.onNodeWithContentDescription("Eingecheckt").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Nicht eingecheckt").assertIsDisplayed()
     }
 
     @Test
@@ -250,7 +253,9 @@ class MissionDetailScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Einheit Alpha").assertIsDisplayed()
+        // The header band uppercases the name — artboard 06-14 draws it that way, the same as
+        // every other section title in the app.
+        compose.onNodeWithText("EINHEIT ALPHA").assertIsDisplayed()
         compose.onNodeWithText("Carrack Meridian").assertIsDisplayed()
         compose.onNodeWithText("HVU").assertIsDisplayed()
         // The sign-up band above the tabs costs a row of height, so the crew line can sit below

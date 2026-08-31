@@ -46,6 +46,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -815,6 +816,11 @@ fun KrtSegmentedControl(
                         style = MaterialTheme.typography.labelMedium,
                         color = tint,
                         textAlign = TextAlign.Center,
+                        // One line, always. The control is one row high, so a label that wraps is
+                        // drawn clipped through the middle of a word rather than made to fit — an
+                        // ellipsis says „this is shortened", a broken word says „this is broken".
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (index in lockedIndices) {
                         KrtInlineLock()

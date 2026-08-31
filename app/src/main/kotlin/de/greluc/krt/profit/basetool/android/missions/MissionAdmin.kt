@@ -102,12 +102,20 @@ data class MissionSectionConflict(
  * @property correctStartDate that pair's date half.
  * @property correctStartClock that pair's time half.
  * @property internal whether only the owning unit sees it.
+ * @property partyLeadSet whether an Einsatzleitung is named — the first figure of the Personen
+ *   head's „Leitung · Manager · Teilnehmer" count.
+ * @property managerCount how many managers there are.
+ * @property participantCount how many have signed up.
  * @property expanded which sections are open; Kern starts open and the rest closed.
  * @property states each section's own head state.
  * @property savedAt the clock time a section's receipt shows, per section.
  * @property saving which section is being written, or `null`.
  * @property conflict the refused save, or `null`.
  * @property error a refusal that is not a conflict.
+ * @property errorSection which section [error] belongs to, or `null` when it belongs to the tab
+ *   rather than to one section. The same reasoning as [MissionSectionConflict]: four sections
+ *   save independently, so a refusal at the foot of all four says nothing about which one was
+ *   refused — and on a scrolled tab it is not even on screen.
  */
 data class MissionAdminForm(
     val name: String = "",
@@ -124,12 +132,16 @@ data class MissionAdminForm(
     val correctStartDate: String = "",
     val correctStartClock: String = "",
     val internal: Boolean = false,
+    val partyLeadSet: Boolean = false,
+    val managerCount: Int = 0,
+    val participantCount: Int = 0,
     val expanded: Set<MissionSection> = setOf(MissionSection.CORE),
     val states: Map<MissionSection, MissionSectionState> = emptyMap(),
     val savedAt: Map<MissionSection, String> = emptyMap(),
     val saving: MissionSection? = null,
     val conflict: MissionSectionConflict? = null,
     val error: ApiError? = null,
+    val errorSection: MissionSection? = null,
 ) {
     /** Whether the Einsatz has been started, which is what the server needs before any check-in. */
     val started: Boolean
@@ -317,6 +329,9 @@ class MissionAdmin(
             plannedEndClock = endClock,
             actualStart = detail.actualStartTime?.toString().orEmpty(),
             internal = detail.isInternal,
+            partyLeadSet = !detail.partyLeadName.isNullOrBlank(),
+            managerCount = detail.managers.size,
+            participantCount = detail.registeredParticipants,
         )
     }
 
@@ -336,7 +351,7 @@ class MissionAdmin(
         form: MissionAdminForm,
         detail: MissionDetail,
     ) {
-        write(form.copy(saving = section, error = null, conflict = null))
+        write(form.copy(saving = section, error = null, errorSection = null, conflict = null))
         scope.launch {
             val result = request(section, form, detail)
             when (result) {
@@ -393,7 +408,7 @@ class MissionAdmin(
                     ),
             )
         } else {
-            form.copy(saving = null, error = error)
+            form.copy(saving = null, error = error, errorSection = section)
         }
 
     /**

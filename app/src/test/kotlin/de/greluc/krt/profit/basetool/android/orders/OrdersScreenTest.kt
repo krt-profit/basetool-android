@@ -7,6 +7,9 @@
 
 package de.greluc.krt.profit.basetool.android.orders
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -15,6 +18,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -30,6 +34,8 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderMaterial
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderStatus
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.navigation.LocalScreenTopBar
+import de.greluc.krt.profit.basetool.android.navigation.ScreenTopBar
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -98,6 +104,7 @@ class OrdersScreenTest {
             needed = "500.0",
             inStock = "125.0",
             claimCount = 1,
+            claimedAmount = "180",
             open = "325.0",
         )
 
@@ -146,55 +153,67 @@ class OrdersScreenTest {
     ) {
         compose.setContent {
             KrtTheme {
-                OrderDetailScreen(
-                    state = state,
-                    handover =
-                        OrderHandoverActions(
-                            draft = null,
-                            onChange = {},
-                            onSubmit = {},
-                            onDismiss = {},
-                        ),
-                    itemHandover =
-                        OrderItemHandoverActions(
-                            draft = null,
-                            onChange = {},
-                            onSubmit = {},
-                            onDismiss = {},
-                        ),
-                    claims =
-                        ClaimActions(
-                            draft = null,
-                            onOpen = { _, _ -> },
-                            onChange = {},
-                            onSubmit = {},
-                            onWithdraw = {},
-                            onDismiss = {},
-                        ),
-                    production =
-                        OrderProductionActions(
-                            draft = null,
-                            onAmount = {},
-                            onDraw = { _, _, _ -> },
-                            onSkip = {},
-                            onAutoFill = {},
-                            bookIn =
-                                ProductionBookInActions(
-                                    onLocationQuery = {},
-                                    onLocation = { _, _ -> },
-                                    onOwnerQuery = {},
-                                    onOwner = { _, _ -> },
-                                    onOrgUnit = {},
-                                    onPersonal = {},
-                                    onAllocate = {},
-                                ),
-                            onSubmit = {},
-                            onDismiss = {},
-                        ),
-                    onRefresh = {},
-                    onRetryNow = {},
-                    actions = detailActions(assigned, statuses, notes, produced, handedOver),
-                )
+                // The shell in miniature: the detail publishes its head into the slot and the host
+                // renders the trailing controls. Without it the overflow — which is where the
+                // assignment and the status change live since design ch. 10 artboard 2 — is never
+                // composed and cannot be asserted on.
+                val slot = remember { mutableStateOf<ScreenTopBar?>(null) }
+                CompositionLocalProvider(LocalScreenTopBar provides slot) {
+                    OrderDetailScreen(
+                        state = state,
+                        handover =
+                            OrderHandoverActions(
+                                draft = null,
+                                onChange = {},
+                                onSubmit = {},
+                                onDismiss = {},
+                            ),
+                        itemHandover =
+                            OrderItemHandoverActions(
+                                draft = null,
+                                onChange = {},
+                                onSubmit = {},
+                                onDismiss = {},
+                            ),
+                        claims =
+                            ClaimActions(
+                                draft = null,
+                                onOpen = { _, _ -> },
+                                onChange = {},
+                                onSubmit = {},
+                                onWithdraw = {},
+                                onDismiss = {},
+                            ),
+                        production =
+                            OrderProductionActions(
+                                draft = null,
+                                onAmount = {},
+                                onDraw = { _, _, _ -> },
+                                onSkip = {},
+                                onAutoFill = {},
+                                bookIn =
+                                    ProductionBookInActions(
+                                        onLocationQuery = {},
+                                        onLocation = { _, _ -> },
+                                        onOwnerQuery = {},
+                                        onOwner = { _, _ -> },
+                                        onOrgUnit = {},
+                                        onPersonal = {},
+                                        onAllocate = {},
+                                    ),
+                                onSubmit = {},
+                                onDismiss = {},
+                            ),
+                        onRefresh = {},
+                        onRetryNow = {},
+                        actions = detailActions(assigned, statuses, notes, produced, handedOver),
+                    )
+                    // Drawn AFTER the screen, and therefore above it: the detail fills the window,
+                    // so a bar rendered first is laid out but every tap on it is swallowed by the
+                    // list on top. The shell has a real app bar for this; the test only needs the
+                    // trailing controls to be reachable.
+                    slot.value?.actions?.invoke()
+                }
             }
         }
     }
@@ -346,7 +365,7 @@ class OrdersScreenTest {
         compose.onNodeWithText("#1042").assertIsDisplayed()
         // The priority block: the figure the queue is sorted by, and its label underneath.
         compose.onNodeWithText("1").assertIsDisplayed()
-        compose.onNodeWithText("Prio").assertIsDisplayed()
+        compose.onNodeWithText("PRIO").assertIsDisplayed()
         // The kind chip, which the card did not show at all. Uppercased by the chip, like the
         // badges below it.
         compose.onNodeWithText("MATERIAL").assertIsDisplayed()
@@ -368,7 +387,7 @@ class OrdersScreenTest {
         )
 
         compose.onAllNodesWithText("Quantainium").assertCountEquals(0)
-        compose.onNodeWithText("Materialien").performClick()
+        compose.onNodeWithText("MATERIALIEN").performClick()
 
         assertEquals(listOf("o1"), toggled)
     }
@@ -385,7 +404,10 @@ class OrdersScreenTest {
         )
 
         compose.onNodeWithText("Quantainium").assertIsDisplayed()
-        compose.onNodeWithText("125 / 500").assertIsDisplayed()
+        // Two texts since the position became a card: the booked figure is the data and carries the
+        // weight, what was asked for is the scale beside it (design ch. 10, artboard 2).
+        compose.onNodeWithText("125").assertIsDisplayed()
+        compose.onNodeWithText("/ 500 SCU").assertIsDisplayed()
     }
 
     @Test
@@ -401,7 +423,8 @@ class OrdersScreenTest {
             ),
         )
 
-        compose.onNodeWithText("— / 500").assertIsDisplayed()
+        compose.onAllNodesWithText("—").onFirst().assertIsDisplayed()
+        compose.onNodeWithText("/ 500 SCU").assertIsDisplayed()
     }
 
     @Test
@@ -520,16 +543,17 @@ class OrdersScreenTest {
         val taken = mutableListOf<Unit>()
         showDetail(ready(), assigned = taken)
 
-        compose.onNodeWithTag(ORDER_ASSIGN_TAG).assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Übernehmen", ignoreCase = true).assertIsDisplayed().performClick()
 
         assertEquals(1, taken.size)
-        compose.onNodeWithText("Übernehmen", ignoreCase = true).assertIsDisplayed()
     }
 
     @Test
     fun `an order the caller is on offers to step off`() {
         showDetail(ready(assignees = listOf(assignee())))
 
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
         compose.onNodeWithText("Abmelden", ignoreCase = true).assertIsDisplayed()
     }
 
@@ -548,7 +572,8 @@ class OrdersScreenTest {
     fun `the status control is absent unless the caller is a Logistician`() {
         showDetail(ready())
 
-        compose.onAllNodesWithTag(ORDER_STATUS_TAG).assertCountEquals(0)
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onAllNodesWithText("Status ändern", ignoreCase = true).assertCountEquals(0)
     }
 
     @Test
@@ -556,7 +581,8 @@ class OrdersScreenTest {
         val picked = mutableListOf<JobOrderStatus>()
         showDetail(ready(logistician = true), statuses = picked)
 
-        compose.onNodeWithTag(ORDER_STATUS_TAG).assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onNodeWithText("Status ändern", ignoreCase = true).performClick()
 
         assertEquals(listOf(JobOrderStatus.UNKNOWN), picked)
     }
@@ -613,7 +639,11 @@ class OrdersScreenTest {
 
         compose.onNodeWithText("Schreiben ist gesperrt, bis die Verbindung zurück ist.")
             .assertIsDisplayed()
-        compose.onNodeWithTag(ORDER_ASSIGN_TAG).assertIsNotEnabled()
+        // Offline the writes are not offered at all: the overflow keeps only the reads. A disabled
+        // item that says nothing about why is worse than an item that is simply not there while the
+        // banner above already names the reason.
+        compose.onNodeWithContentDescription("Weitere Aktionen").performClick()
+        compose.onAllNodesWithText("Übernehmen", ignoreCase = true).assertCountEquals(0)
     }
 
     /**

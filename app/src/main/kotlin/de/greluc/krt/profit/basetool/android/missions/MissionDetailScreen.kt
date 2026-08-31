@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -46,6 +48,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,6 +60,7 @@ import de.greluc.krt.profit.basetool.android.common.formatSignedAmount
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinanceEntry
 import de.greluc.krt.profit.basetool.android.core.data.MissionFinances
+import de.greluc.krt.profit.basetool.android.core.data.MissionFrequency
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
@@ -68,18 +72,24 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDataValue
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldLabel
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTile
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFigureTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtKeyValueRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLoadingIndicator
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtModalTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOrgBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOutlineButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPageTabs
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
@@ -87,12 +97,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetr
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSegmentedControl
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusDot
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSuccessButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
@@ -101,9 +115,12 @@ import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -336,6 +353,8 @@ private fun MissionDetailOverlays(
     timeline: MissionTimelineActions,
 ) {
     MemberPickerSheet(members = members)
+    UnitComposeSheet(structure = structure)
+    FrequencyComposeSheet(structure = structure)
     UnitRenameSheet(structure = structure)
     state.structure.crewPickerUnitId?.let { unitId ->
         state.detail?.units?.firstOrNull { it.id == unitId }?.let { unit ->
@@ -489,31 +508,56 @@ private fun SignUpBar(
             PayoutPreference(mine = mine, state = state, actions = actions)
         }
         KrtBottomCtaBar {
-            KrtCtaButton(
-                text =
-                    stringResource(
-                        if (mine == null) {
-                            R.string.mission_detail_sign_up
-                        } else {
-                            R.string.mission_detail_withdraw
-                        },
-                    ),
-                // The artboard's CTA carries the login glyph beside its label; signing up is an
-                // entry, and the icon says so before the word is read.
-                iconRes =
-                    if (mine == null) DesignR.drawable.ic_krt_login else DesignR.drawable.ic_krt_logout,
-                onClick = actions.onToggleSignUp,
-                modifier =
-                    Modifier
-                        .testTag(MISSION_SIGN_UP_TAG)
-                        .weight(1f)
-                        .writeAlpha(state.writable),
-                enabled = state.writable,
-            )
+            SignUpAction(mine = mine, state = state, actions = actions)
             if (mine != null && state.checkInPossible) {
                 CheckInAction(mine = mine, state = state, actions = actions)
             }
         }
+    }
+}
+
+/**
+ * Signing up, and back out again — the bar's first action.
+ *
+ * **„Anmelden" is the filled one; „Abmelden" is not.** The chapter's ladder for this bar is „ONE
+ * filled CTA, bottom-anchored: Anmelden → signed up it becomes green ‚Check-In', then ghost
+ * ‘Check-Out'" — so exactly one button on the screen may be filled at a time, and once a member is
+ * signed up that one is the green check-in beside this. Withdrawing drawn in filled orange put two
+ * filled buttons side by side and gave the louder one to the action nobody came for.
+ *
+ * @param mine the caller's own row, or `null` when they have not signed up.
+ * @param state the screen.
+ * @param actions what it reports back.
+ */
+@Composable
+private fun RowScope.SignUpAction(
+    mine: MissionParticipant?,
+    state: MissionDetailState,
+    actions: MissionSignUpActions,
+) {
+    val modifier =
+        Modifier
+            .testTag(MISSION_SIGN_UP_TAG)
+            .weight(1f)
+            .writeAlpha(state.writable)
+    if (mine == null) {
+        KrtCtaButton(
+            // The artboard's CTA carries the login glyph beside its label; signing up is an entry,
+            // and the icon says so before the word is read.
+            text = stringResource(R.string.mission_detail_sign_up),
+            iconRes = DesignR.drawable.ic_krt_login,
+            onClick = actions.onToggleSignUp,
+            modifier = modifier,
+            enabled = state.writable,
+        )
+    } else {
+        KrtGhostButton(
+            text = stringResource(R.string.mission_detail_withdraw),
+            iconRes = DesignR.drawable.ic_krt_logout,
+            onClick = actions.onToggleSignUp,
+            modifier = modifier,
+            enabled = state.writable,
+        )
     }
 }
 
@@ -628,9 +672,13 @@ private fun PayoutPreference(
  */
 @Composable
 internal fun SignUpError(error: ApiError) {
+    // A validation refusal is shown in the server's own words: it names the field and the rule
+    // („<3 digits>.<2 digits> erwartet"), which is what design ch. 02 §6 draws under a field. The
+    // generic sentence stays for everything the server did not spell out.
+    val named = error.fieldMessage()
     KrtFieldError(
         text =
-            stringResource(
+            named ?: stringResource(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Forbidden -> R.string.mission_detail_not_allowed
@@ -646,7 +694,7 @@ internal fun SignUpError(error: ApiError) {
  * @param writable whether a write may be offered.
  * @return the modifier.
  */
-private fun Modifier.writeAlpha(writable: Boolean): Modifier =
+internal fun Modifier.writeAlpha(writable: Boolean): Modifier =
     alpha(if (writable) 1f else DISABLED_WRITE_ALPHA)
 
 /**
@@ -766,196 +814,6 @@ private fun MissionTabContent(
 }
 
 /**
- * Teilnehmer: the roster with its check-in marks, and — for a manager — the per-row actions the
- * design draws ("Manager sehen die Check-In-Aktion je Zeile; Mitglieder nur den eigenen Status",
- * chapter 06, artboard 2).
- *
- * @param detail the Einsatz.
- * @param mine the caller's own row, drawn in the brand colour so they can find themselves in a
- *   roster of thirty.
- * @param roster what a manager may do to a row, and what to say when they may not.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.participantsTab(
-    detail: MissionDetail,
-    mine: MissionParticipant?,
-    roster: MissionRosterActions,
-) {
-    if (detail.participants.isEmpty()) {
-        item { EmptyTab(R.string.mission_detail_empty_participants) }
-        return
-    }
-    items(detail.participants, key = { it.id }) { participant ->
-        ParticipantRow(participant = participant, isMine = participant.id == mine?.id, roster = roster)
-    }
-}
-
-/**
- * One roster row: who, whether they are in, what they fly, and what they asked to fly.
- *
- * @param participant the row.
- * @param isMine whether it is the caller's own.
- * @param roster the manager's actions and their gate.
- */
-@Composable
-private fun ParticipantRow(
-    participant: MissionParticipant,
-    isMine: Boolean,
-    roster: MissionRosterActions,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = participant.name,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (isMine) MaterialTheme.colorScheme.primary else KrtPalette.White,
-                modifier = Modifier.weight(1f),
-            )
-            KrtChip(
-                text =
-                    stringResource(
-                        if (participant.checkedIn) {
-                            R.string.mission_detail_checked_in
-                        } else {
-                            R.string.mission_detail_not_checked_in
-                        },
-                    ),
-                tone = if (participant.checkedIn) KrtChipTone.Success else KrtChipTone.Muted,
-            )
-        }
-        participant.role?.let {
-            Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-        }
-        // The wish is drawn beside the assignment („Wunsch: {{ p.jobWish }}") and is the whole
-        // reason a manager can assign anything sensibly. It is shown only when it differs from what
-        // is already assigned — repeating the same word twice tells nobody anything.
-        participant.desiredJobName
-            ?.takeIf { it != participant.role }
-            ?.let {
-                Text(
-                    text = stringResource(R.string.mission_detail_wish, it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            }
-        ParticipantManagerActions(participant, roster)
-    }
-}
-
-/**
- * The row's manager controls: check the member in or out, switch their payout, assign their job.
- *
- * All three render for **everyone** and are locked for a caller who may not manage, per the design
- * ("Ohne Missions-Manager-Rolle rendert das Funktions-Select gesperrt — antippbar, der Toast nennt
- * die Rolle"). Hiding them was the rejected alternative: this organisation grants roles by hand,
- * and a control nobody can see is one nobody asks to be given.
- *
- * @param participant the row.
- * @param roster the actions and the gate.
- */
-@Composable
-private fun ParticipantManagerActions(
-    participant: MissionParticipant,
-    roster: MissionRosterActions,
-) {
-    val gate =
-        Gate(
-            allowed = roster.canManage,
-            reason = stringResource(R.string.gate_role_mission_manager),
-            detail = stringResource(R.string.gate_role_mission_manager_detail),
-        )
-    val (checkInDim, checkInClick) =
-        rememberGated(gate, { roster.onCheckIn(participant.id) }, roster.denials)
-    val (payoutDim, payoutClick) =
-        rememberGated(gate, { roster.onPayout(participant.id) }, roster.denials)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        KrtGhostButton(
-            text =
-                stringResource(
-                    if (participant.checkedIn) {
-                        R.string.mission_detail_check_out_row
-                    } else {
-                        R.string.mission_detail_check_in_row
-                    },
-                ),
-            onClick = checkInClick,
-            iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
-            modifier = checkInDim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
-            // The server refuses a check-in before the Einsatz has actually started, so the control
-            // is not offered before then — the same rule the caller's own check-in follows.
-            enabled = roster.enabled && roster.checkInPossible,
-        )
-        KrtGhostButton(
-            text = stringResource(R.string.mission_detail_payout_row),
-            onClick = payoutClick,
-            iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
-            modifier = payoutDim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
-            enabled = roster.enabled,
-        )
-    }
-    ParticipantFunctionSelect(participant, gate, roster)
-}
-
-/**
- * „Funktion an Bord": the chips a manager assigns from.
- *
- * The catalogue is only read for a caller who may assign, so for everyone else this draws the
- * assignment as a single locked chip rather than an empty row — a locked control with nothing in it
- * would say less than the plain text above it already does.
- *
- * @param participant the row.
- * @param gate whether the caller may assign, and why not.
- * @param roster the actions and the catalogue.
- */
-@Composable
-private fun ParticipantFunctionSelect(
-    participant: MissionParticipant,
-    gate: Gate,
-    roster: MissionRosterActions,
-) {
-    if (roster.jobTypes.isEmpty()) {
-        return
-    }
-    Text(
-        text = stringResource(R.string.mission_detail_function_label),
-        style = MaterialTheme.typography.bodySmall,
-        color = KrtPalette.TextMuted,
-    )
-    // The same control as the sign-up sheet's, for the same reason it is a FlowRow there: five
-    // Funktionen do not fit one phone line, and a horizontal scroller would hide the ones past the
-    // edge behind a gesture nothing announces.
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-    ) {
-        roster.jobTypes.forEach { jobType ->
-            val (dim, click) =
-                rememberGated(gate, { roster.onFunction(participant.id, jobType) }, roster.denials)
-            // A choice, not a filter: design ch. 18 §3 (E6) keeps the two chips deliberately
-            // different, and this one IS the value rather than a way of narrowing a list.
-            KrtChoiceChip(
-                text = jobType.name,
-                selected = participant.plannedJobTypeId == jobType.id,
-                onClick = click,
-                modifier = dim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
-                // Never `enabled = false`: a chip that cannot be tapped cannot say why it is dim,
-                // which is the whole point of the locked pattern (ADR-0011, artboard 14). Offline
-                // is the one case that does disable it — there the answer is the connection, not a
-                // grant, and the toast would name the wrong thing.
-                enabled = roster.enabled,
-            )
-        }
-    }
-}
-
-/**
  * Einheiten: each unit, its ship and its crew.
  *
  * @param detail the Einsatz.
@@ -964,68 +822,47 @@ private fun androidx.compose.foundation.lazy.LazyListScope.unitsTab(
     detail: MissionDetail,
     structure: MissionStructureActions,
 ) {
-    item { UnitComposer(structure) }
+    item { StructureError(structure) }
     if (detail.units.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_units) }
-        return
     }
     items(detail.units, key = { it.id }) { unit ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-                verticalAlignment = Alignment.CenterVertically,
+        // A flush card with its own header band — artboard 06-14. The unit is a container, and
+        // drawing it as one is what keeps a second unit's crew from reading as a continuation of
+        // the first one's.
+        KrtCard(modifier = Modifier.fillMaxWidth(), variant = KrtCardVariant.Flush) {
+            UnitHeader(unit = unit, structure = structure)
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s8),
+                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             ) {
-                Text(
-                    text = unit.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = KrtPalette.White,
-                    modifier = Modifier.weight(1f),
-                )
-                if (unit.highValue) {
-                    KrtChip(text = stringResource(R.string.mission_detail_unit_hvu), tone = KrtChipTone.Warning)
-                }
-                KrtChip(text = pluralStringResource(R.plurals.mission_detail_unit_crew, unit.crew.size, unit.crew.size))
-            }
-            unit.shipName?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-            }
-            unit.responsibleName?.let {
-                Text(
-                    text = stringResource(R.string.mission_detail_unit_lead, it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            }
-            UnitRowActions(unit = unit, structure = structure)
-            CrewAdd(unit = unit, roster = detail.participants, structure = structure)
-            unit.crew.forEach { member ->
-                Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+                unit.responsibleName?.let {
                     Text(
-                        text = member.name,
+                        text = stringResource(R.string.mission_detail_unit_lead, it),
                         style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.White,
-                    )
-                    // The roles are the picker now rather than a joined string: for a manager the
-                    // chips ARE the reading of them, selected meaning held. For everybody else they
-                    // render locked, which reads the same and says why on a tap.
-                    CrewRoleSelect(
-                        unitId = unit.id,
-                        member = member,
-                        crew = unit.crew,
-                        structure = structure,
-                    )
-                    StructureRemove(
-                        label = stringResource(R.string.mission_struct_remove_crew),
-                        structure = structure,
-                        onRemove = { structure.onRemoveCrew(unit.id, member.id) },
+                        color = KrtPalette.TextMuted,
                     )
                 }
+                unit.crew.forEach { member ->
+                    CrewRow(
+                        unit = unit,
+                        member = member,
+                        roster = detail.participants,
+                        structure = structure,
+                    )
+                }
+                CrewAdd(unit = unit, roster = detail.participants, structure = structure)
             }
-            KrtHairlineRule()
         }
     }
+    item { UnitAdd(structure) }
 }
+
+/**
+ * A Ziel's row height — artboard 06-2 draws it at 52 dp, above the 48 dp control floor because the
+ * row carries a chip and a button group rather than a single line of text.
+ */
+private val OBJECTIVE_ROW_HEIGHT = 52.dp
 
 /**
  * Ablauf: the checklist.
@@ -1041,36 +878,37 @@ private fun androidx.compose.foundation.lazy.LazyListScope.stepsTab(
         item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
         return
     }
-    items(detail.steps, key = { it.id }) { step ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = step.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = KrtPalette.White,
-                    modifier = Modifier.weight(1f),
-                )
-                if (step.done) {
-                    KrtChip(text = stringResource(R.string.mission_detail_step_done), tone = KrtChipTone.Success)
+    // One item for the whole checklist, not one per step. The rail between two steps runs through
+    // the gap between them, and a LazyColumn's own arrangement would cut it at every row. An
+    // Ablauf is a briefing checklist — bounded by what a person can read out before a start — so
+    // there is nothing here that laziness was protecting.
+    item {
+        Column {
+            // „Now" is derived, because the wire carries only `done` per step: the first step that
+            // is not ticked is the one the Einsatz is about. Artboard 13 marks it even on a
+            // „Geplant" Einsatz, which is what makes the list read as a plan rather than a log.
+            val now = detail.steps.indexOfFirst { !it.done }
+            detail.steps.forEachIndexed { index, step ->
+                KrtStepRow(
+                    number = index + 1,
+                    state =
+                        when {
+                            step.done -> KrtStepState.Done
+                            index == now -> KrtStepState.Now
+                            else -> KrtStepState.Ahead
+                        },
+                    title = step.title,
+                    meta = step.meta,
+                    connected = index < detail.steps.lastIndex,
+                ) {
+                    StepRowActions(
+                        step = MissionStepEdit(id = step.id, title = step.title, meta = step.meta),
+                        done = step.done,
+                        timeline = timeline,
+                        position = RowPosition(first = index == 0, last = index == detail.steps.lastIndex),
+                    )
                 }
             }
-            step.meta?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-            }
-            StepRowActions(
-                step = MissionStepEdit(id = step.id, title = step.title, meta = step.meta),
-                done = step.done,
-                timeline = timeline,
-                position =
-                    RowPosition(
-                        first = step.id == detail.steps.first().id,
-                        last = step.id == detail.steps.last().id,
-                    ),
-            )
         }
     }
     item { TimelineListActions(R.string.mission_step_add, MISSION_STEP_ADD_TAG, timeline) }
@@ -1092,25 +930,32 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
         }
         return
     }
-    items(detail.objectives, key = { it.id }) { objective ->
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = objective.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = KrtPalette.White,
-                    modifier = Modifier.weight(1f),
-                )
-                // A kind the app knows gets its German label; one it does not is shown verbatim.
-                // Both halves matter: „SECONDARY" is a wire constant and has no business on a
-                // German screen now that the picker has a word for it — and a goal whose kind the
-                // app does not recognise must still be marked rather than silently unlabelled.
-                objective.kind?.let { KrtChip(text = it.kindLabel()) }
-            }
+    itemsIndexed(detail.objectives, key = { _, row -> row.id }) { index, objective ->
+        // Artboard 06-2's Ziele tab draws each goal as its own bordered row rather than as loose
+        // text on the page: a Ziel is a record with a kind and its own actions, and the frame is
+        // what separates it from the next one now that the actions sit on the same line.
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(KrtPalette.Gray4)
+                    .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                    .defaultMinSize(minHeight = OBJECTIVE_ROW_HEIGHT)
+                    .padding(horizontal = KrtSpacing.s14, vertical = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = objective.title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.Gray1,
+                modifier = Modifier.weight(1f),
+            )
+            // A kind the app knows gets its German label; one it does not is shown verbatim.
+            // Both halves matter: „SECONDARY" is a wire constant and has no business on a
+            // German screen now that the picker has a word for it — and a goal whose kind the
+            // app does not recognise must still be marked rather than silently unlabelled.
+            objective.kind?.let { KrtChip(text = it.kindLabel(), tone = it.kindTone()) }
             ObjectiveRowActions(
                 objective =
                     MissionObjectiveEdit(
@@ -1120,10 +965,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.objectivesTab(
                     ),
                 timeline = timeline,
                 position =
-                    RowPosition(
-                        first = objective.id == detail.objectives.first().id,
-                        last = objective.id == detail.objectives.last().id,
-                    ),
+                    RowPosition(first = index == 0, last = index == detail.objectives.lastIndex),
             )
         }
     }
@@ -1139,314 +981,99 @@ private fun androidx.compose.foundation.lazy.LazyListScope.frequenciesTab(
     detail: MissionDetail,
     structure: MissionStructureActions,
 ) {
-    item { FrequencyComposer(structure) }
+    item { StructureError(structure) }
     if (detail.frequencies.isEmpty()) {
         item { EmptyTab(R.string.mission_detail_empty_frequencies) }
-        return
     }
     items(detail.frequencies, key = { it.id }) { frequency ->
         val clipboard = LocalClipboard.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val copy = {
+            scope.launch {
+                clipboard.setClipEntry(
+                    androidx.compose.ui.platform.ClipEntry(
+                        android.content.ClipData.newPlainText(
+                            frequency.type.orEmpty(),
+                            frequency.value,
+                        ),
+                    ),
+                )
+            }
+            Unit
+        }
+        // A bordered row with the antenna glyph, per artboard 06-2. The whole row copies, and the
+        // trailing button says so — a surface whose only gesture is invisible is one nobody uses.
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        scope.launch {
-                            clipboard.setClipEntry(
-                                androidx.compose.ui.platform.ClipEntry(
-                                    android.content.ClipData.newPlainText(
-                                        frequency.type.orEmpty(),
-                                        frequency.value,
-                                    ),
-                                ),
-                            )
-                        }
-                    }
-                    .padding(vertical = KrtSpacing.s4),
-            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    .background(KrtPalette.Gray4)
+                    .border(KrtSpacing.hairline, KrtPalette.Gray3)
+                    .clickable(onClick = copy)
+                    .defaultMinSize(minHeight = KrtSpacing.denseRow)
+                    .padding(horizontal = KrtSpacing.s14, vertical = KrtSpacing.s4),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            KrtIcon(
+                id = DesignR.drawable.ic_krt_antenna,
+                contentDescription = null,
+                size = FREQUENCY_GLYPH,
+                tint = KrtPalette.TextMuted,
+            )
             Text(
-                text = frequency.type.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
+                text = frequency.type.orEmpty().krtUppercase(),
+                style = MaterialTheme.typography.labelMedium,
                 color = KrtPalette.TextMuted,
                 modifier = Modifier.weight(1f),
             )
             // Data tone: the value stays white, never orange — a frequency is a readout, not an
             // action (design system, chip canon).
             KrtChip(text = frequency.value, tone = KrtChipTone.Data)
-            StructureRemove(
-                label = stringResource(R.string.mission_struct_remove_freq),
-                structure = structure,
-                onRemove = { structure.onRemoveFrequency(frequency.id) },
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_clipboard_check,
+                label = stringResource(R.string.mission_freq_copy),
+                onClick = copy,
             )
+            FrequencyRemove(frequency = frequency, structure = structure)
         }
     }
+    item { FrequencyAdd(structure) }
 }
 
-/**
- * Finanzen: the totals band and the entries, on their own load state.
- *
- * @param phase how far the money has got.
- * @param onRetry retries just this tab.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.financesTab(
-    state: MissionDetailState,
-    onRetry: () -> Unit,
-    actions: MissionFinanceActions,
-) {
-    when (val phase = state.finances) {
-        is MissionFinancesPhase.Idle, is MissionFinancesPhase.Loading -> {
-            item { KrtLoadingIndicator(text = stringResource(R.string.mission_detail_tab_finances)) }
-        }
-
-        is MissionFinancesPhase.Failed -> {
-            item {
-                // A refusal here is ordinary — a member may see the Einsatz and not its books — so
-                // it gets its own sentence rather than the generic outage copy.
-                KrtEmptyState(
-                    iconRes = DesignR.drawable.ic_krt_bank,
-                    title = stringResource(R.string.mission_detail_tab_finances),
-                    message =
-                        stringResource(
-                            if (phase.error is ApiError.Forbidden) {
-                                R.string.mission_detail_finance_forbidden
-                            } else {
-                                R.string.mission_detail_error_message
-                            },
-                        ),
-                    actionText =
-                        if (phase.error is ApiError.Forbidden) null else stringResource(R.string.missions_retry),
-                    onAction = if (phase.error is ApiError.Forbidden) null else onRetry,
-                )
-            }
-        }
-
-        is MissionFinancesPhase.Ready -> {
-            financeContent(phase.finances, state, actions)
-        }
-    }
-}
+/** The antenna beside a frequency — 20 px in artboard 06-2. */
+private val FREQUENCY_GLYPH = 20.dp
 
 /**
- * The Finanzen tab once it has loaded.
+ * Dropping a frequency, as the trailing icon button of its row.
  *
- * @param finances the totals and the entries.
- * @param state the screen, for who the caller is and whether a write may be offered.
- * @param actions what the tab reports back.
- */
-private fun androidx.compose.foundation.lazy.LazyListScope.financeContent(
-    finances: MissionFinances,
-    state: MissionDetailState,
-    actions: MissionFinanceActions,
-) {
-    item {
-        Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
-            KrtKeyValueRow(
-                label = stringResource(R.string.mission_detail_finance_income),
-                value = formatSignedAmount(finances.incomeSum.orEmpty(), income = true),
-            )
-            KrtKeyValueRow(
-                label = stringResource(R.string.mission_detail_finance_expense),
-                value = formatSignedAmount(finances.expenseSum.orEmpty(), income = false),
-            )
-            // The net carries no sign of its own: it is a balance, and a leading plus on a positive
-            // result would read as a third booking rather than as the sum of the two above it.
-            KrtKeyValueRow(
-                label = stringResource(R.string.mission_detail_finance_net),
-                value = formatAmount(finances.total.orEmpty()),
-            )
-            KrtHairlineRule()
-            // Booking needs a participant to book against, and the only one the app may name is
-            // the caller's own. A member who has not signed up is told that rather than shown a
-            // button that answers 403.
-            if (state.mySignUp == null) {
-                Text(
-                    text = stringResource(R.string.mission_detail_finance_needs_signup),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            } else {
-                KrtCtaButton(
-                    text = stringResource(R.string.mission_detail_finance_add),
-                    onClick = actions.onAdd,
-                    modifier =
-                        Modifier
-                            .testTag(MISSION_FINANCE_ADD_TAG)
-                            .writeAlpha(state.bookingPossible),
-                    enabled = state.bookingPossible,
-                )
-            }
-            state.error?.let { error -> SignUpError(error = error) }
-        }
-    }
-    if (finances.entries.isEmpty()) {
-        item { EmptyTab(R.string.mission_detail_empty_finances) }
-        return
-    }
-    items(finances.entries, key = { it.id }) { entry ->
-        FinanceEntryRow(
-            entry = entry,
-            mine = entry.participantId != null && entry.participantId == state.mySignUp?.id,
-            writable = state.writable,
-            actions = actions,
-        )
-    }
-}
-
-/**
- * One booking, with the two actions the caller has on their own.
+ * Artboard 06-2 draws the row for **reading**, so it places no delete. The write exists and nothing
+ * strikes it; it takes the row's own vocabulary rather than a labelled button that would be wider
+ * than the value it removes.
  *
- * Someone else's booking is theirs to change: the server refuses an edit by anyone but the owner
- * or an admin, and the app does not offer what it knows will be refused.
- *
- * @param entry the booking.
- * @param mine whether it hangs off the caller's own sign-up.
- * @param writable whether a write may be offered at all.
- * @param actions what the row reports back.
+ * @param frequency the row.
+ * @param structure the actions, for the gate and the refusal slot.
  */
 @Composable
-private fun FinanceEntryRow(
-    entry: MissionFinanceEntry,
-    mine: Boolean,
-    writable: Boolean,
-    actions: MissionFinanceActions,
+private fun FrequencyRemove(
+    frequency: MissionFrequency,
+    structure: MissionStructureActions,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = entry.note.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.White,
-            )
-            entry.participantName?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = KrtPalette.TextMuted)
-            }
-        }
-        KrtChip(
-            text = formatSignedAmount(entry.amount, entry.income),
-            tone = if (entry.income) KrtChipTone.Success else KrtChipTone.Danger,
+    val gate =
+        Gate(
+            allowed = structure.canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
         )
-        if (mine) {
-            KrtGhostButton(
-                text = stringResource(R.string.mission_detail_finance_edit),
-                onClick = { actions.onEdit(entry) },
-                modifier = Modifier.testTag(MISSION_FINANCE_EDIT_TAG).writeAlpha(writable),
-                enabled = writable,
-            )
-            KrtGhostButton(
-                text = stringResource(R.string.mission_detail_finance_delete),
-                onClick = { actions.onDelete(entry) },
-                modifier = Modifier.testTag(MISSION_FINANCE_DELETE_TAG).writeAlpha(writable),
-                enabled = writable,
-            )
-        }
-    }
-}
-
-/**
- * The booking form.
- *
- * The direction is a segment rather than a signed amount: a minus typed into a number field is a
- * character a member can lose, and the sign is what decides whether the Einsatz earned or spent.
- *
- * @param draft what the form holds.
- * @param state the screen, for the save gate and the last refusal.
- * @param actions what it reports back.
- */
-@Composable
-private fun FinanceEntrySheet(
-    draft: FinanceEntryDraft,
-    state: MissionDetailState,
-    actions: MissionFinanceActions,
-) {
-    // Artboard 06.4 gives the entry one tone throughout: green for an Einnahme, red for an Ausgabe,
-    // on the chosen segment and on the amount alike. The sign is never typed - it IS the segment -
-    // and the hint under the field says so, which is why it changes with the choice.
-    val tone = if (draft.income) KrtPalette.Success else KrtPalette.Danger
-    val amountTone = if (draft.income) KrtPalette.SuccessText else KrtPalette.DangerText
-    KrtBottomSheet(
-        onDismiss = actions.onDismiss,
-        modifier = Modifier.testTag(MISSION_FINANCE_SHEET_TAG),
-        title = stringResource(R.string.mission_detail_finance_title),
-    ) {
-        // The sheet scrolls: with the keyboard up on a small phone the form is taller than what is
-        // left of the screen, and a save button that cannot be reached is a form that cannot be
-        // submitted.
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(KrtSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
-        ) {
-            KrtFieldLabel(text = stringResource(R.string.mission_detail_finance_type))
-            KrtSegmentedControl(
-                options =
-                    listOf(
-                        stringResource(R.string.mission_detail_finance_type_income),
-                        stringResource(R.string.mission_detail_finance_type_expense),
-                    ),
-                selectedIndex = if (draft.income) 0 else 1,
-                onSelect = { actions.onIncome(it == 0) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !state.saving,
-                stretch = true,
-                activeColor = tone,
-                activeContentColor = KrtPalette.White,
-            )
-            KrtTextField(
-                value = draft.amount,
-                onValueChange = actions.onAmount,
-                label = stringResource(R.string.mission_detail_finance_amount),
-                enabled = !state.saving,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textAlign = TextAlign.End,
-                tabularFigures = true,
-                valueStyle = MaterialTheme.typography.headlineSmall.copy(color = amountTone),
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (draft.income) {
-                            R.string.mission_detail_finance_amount_hint_income
-                        } else {
-                            R.string.mission_detail_finance_amount_hint_expense
-                        },
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = KrtPalette.TextMuted,
-            )
-            KrtTextField(
-                value = draft.note,
-                onValueChange = actions.onNote,
-                label = stringResource(R.string.mission_detail_finance_note),
-                placeholder = stringResource(R.string.mission_detail_finance_note_hint),
-                enabled = !state.saving,
-            )
-            state.error?.let { error -> SignUpError(error = error) }
-            Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
-                KrtGhostButton(
-                    text = stringResource(R.string.personal_inventory_cancel),
-                    onClick = actions.onDismiss,
-                    enabled = !state.saving,
-                )
-                KrtCtaButton(
-                    text = stringResource(R.string.personal_inventory_save),
-                    onClick = actions.onSave,
-                    iconRes = DesignR.drawable.ic_krt_save,
-                    modifier = Modifier.testTag(MISSION_FINANCE_SAVE_TAG),
-                    enabled = draft.submittable && state.writable,
-                )
-            }
-        }
-    }
+    val (dim, click) =
+        rememberGated(gate, { structure.onRemoveFrequency(frequency.id) }, structure.denials)
+    KrtIconButton(
+        iconRes = if (gate.allowed) DesignR.drawable.ic_krt_trash else DesignR.drawable.ic_krt_lock,
+        label = stringResource(R.string.mission_struct_remove_freq),
+        onClick = click,
+        modifier = dim,
+        enabled = structure.enabled,
+    )
 }
 
 /**
@@ -1455,7 +1082,7 @@ private fun FinanceEntrySheet(
  * @param messageRes what to say.
  */
 @Composable
-private fun EmptyTab(messageRes: Int) {
+internal fun EmptyTab(messageRes: Int) {
     Text(
         text = stringResource(messageRes),
         style = MaterialTheme.typography.bodyMedium,

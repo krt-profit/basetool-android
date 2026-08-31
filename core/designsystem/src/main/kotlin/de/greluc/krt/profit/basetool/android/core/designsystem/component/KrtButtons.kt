@@ -405,8 +405,8 @@ fun KrtIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     style: KrtButtonStyle = KrtButtonStyles.ghost,
-    width: Dp = KrtSpacing.controlHeight,
-    height: Dp = KrtSpacing.controlHeight,
+    width: Dp = KrtSpacing.iconButton,
+    height: Dp = KrtSpacing.iconButton,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()

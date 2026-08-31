@@ -39,6 +39,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
@@ -50,6 +51,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHudBox
@@ -68,11 +70,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSect
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtToast
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtColor
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import de.greluc.krt.profit.basetool.android.ui.krtShortMoment
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
 import kotlinx.coroutines.delay
@@ -172,78 +179,100 @@ fun RefineryOrdersScreen(
         }
 
         is RefineryPhaseState.Ready -> {
-            PullToRefreshBox(
-                isRefreshing = state.refreshing,
-                onRefresh = onRefresh,
-                modifier = modifier.fillMaxSize(),
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
-                    // Above the list rather than floating over it: a run is recorded after the
-                    // fact, so the action belongs where the member already is — not hovering over
-                    // the row they came to read.
-                    onCreate?.let {
-                        KrtOutlineButton(
-                            text = stringResource(R.string.refinery_create_title),
-                            onClick = it,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = KrtSpacing.s12)
-                                    .testTag(REFINERY_CREATE_CTA_TAG),
-                            iconRes = DesignR.drawable.ic_krt_plus,
-                        )
-                    }
-                    if (state.orders.isEmpty()) {
-                        KrtRefreshableFill {
-                            KrtEmptyState(
-                                iconRes = DesignR.drawable.ic_krt_refinery,
-                                title = stringResource(R.string.refinery_empty_title),
-                                message = stringResource(R.string.refinery_empty_message),
-                                modifier = Modifier.padding(KrtSpacing.s16),
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            state = rememberRootListState(),
-                            modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
-                            contentPadding = PaddingValues(KrtSpacing.s12),
-                            verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-                        ) {
-                            items(state.orders, key = { it.id }) { order ->
-                                OrderRow(
-                                    order = order,
-                                    now = state.now,
-                                    onClick = { onOpenOrder(order.id) },
+            // The FAB rides over the list, as artboard 11-1 draws it — the same corner every
+            // other list in the app puts its „anlegen" in. It sat above the list as a full-width
+            // outline band, a shape no chapter draws, and cost a row of the list on every screen
+            // for an action most members take once a session.
+            Box(modifier = modifier.fillMaxSize()) {
+                PullToRefreshBox(
+                    isRefreshing = state.refreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        FilterRow(selected = state.filter, onFilterChanged = onFilterChanged)
+                        if (state.orders.isEmpty()) {
+                            KrtRefreshableFill {
+                                KrtEmptyState(
+                                    iconRes = DesignR.drawable.ic_krt_refinery,
+                                    title = stringResource(R.string.refinery_empty_title),
+                                    message = stringResource(R.string.refinery_empty_message),
+                                    modifier = Modifier.padding(KrtSpacing.s16),
                                 )
-                                KrtHairlineRule()
                             }
-                            item(key = "footer") {
-                                if (state.hasMore) {
-                                    // The label counts what is on screen, not a server total: the
-                                    // two live filters are a device-side split of one answer, so a
-                                    // server count would name the unsplit pair. Saying "mehr
-                                    // laden" beside the loaded count is the honest version, and it
-                                    // is what keeps this from reading as a completeness claim.
-                                    KrtLoadMore(
-                                        text =
-                                            pluralStringResource(
-                                                R.plurals.refinery_load_more,
-                                                state.orders.size,
-                                                state.orders.size,
-                                            ),
-                                        onClick = onLoadMore,
-                                        enabled = !state.loadingMore,
-                                        modifier = Modifier.padding(KrtSpacing.s12),
+                        } else {
+                            LazyColumn(
+                                state = rememberRootListState(),
+                                modifier = Modifier.fillMaxSize().testTag(REFINERY_LIST_TAG),
+                                contentPadding = PaddingValues(KrtSpacing.s12),
+                                verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                            ) {
+                                items(state.orders, key = { it.id }) { order ->
+                                    OrderRow(
+                                        order = order,
+                                        now = state.now,
+                                        onClick = { onOpenOrder(order.id) },
                                     )
-                                } else {
-                                    KrtEndOfList(
-                                        text = stringResource(R.string.refinery_end_of_list),
-                                        modifier = Modifier.padding(KrtSpacing.s12),
-                                    )
+                                    KrtHairlineRule()
+                                }
+                                item(key = "footer") {
+                                    if (state.hasMore) {
+                                        // The label counts what is on screen, not a server total: the
+                                        // two live filters are a device-side split of one answer, so a
+                                        // server count would name the unsplit pair. Saying "mehr
+                                        // laden" beside the loaded count is the honest version, and it
+                                        // is what keeps this from reading as a completeness claim.
+                                        KrtLoadMore(
+                                            text =
+                                                pluralStringResource(
+                                                    R.plurals.refinery_load_more,
+                                                    state.orders.size,
+                                                    state.orders.size,
+                                                ),
+                                            onClick = onLoadMore,
+                                            enabled = !state.loadingMore,
+                                            modifier = Modifier.padding(KrtSpacing.s12),
+                                        )
+                                    } else {
+                                        KrtEndOfList(
+                                            text = stringResource(R.string.refinery_end_of_list),
+                                            modifier = Modifier.padding(KrtSpacing.s12),
+                                        )
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+                onCreate?.let { create ->
+                    if (isWideWindow()) {
+                        // A bar across the foot of the list column, as chapter 11's tablet frame
+                        // draws it — not a floating button. In a pane this narrow the FAB sat on
+                        // top of a row and hid half of it, and the row it covered was a run the
+                        // member might have come to collect.
+                        KrtCtaButton(
+                            text = stringResource(R.string.refinery_create_title),
+                            onClick = create,
+                            iconRes = DesignR.drawable.ic_krt_plus,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                                    .padding(KrtSpacing.s12)
+                                    .testTag(REFINERY_CREATE_CTA_TAG),
+                        )
+                    } else {
+                        KrtFab(
+                            iconRes = DesignR.drawable.ic_krt_plus,
+                            label = stringResource(R.string.refinery_create_title),
+                            onClick = create,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(KrtSpacing.s16)
+                                    .padding(bottom = LocalKrtBottomBarInset.current)
+                                    .testTag(REFINERY_CREATE_CTA_TAG),
+                        )
                     }
                 }
             }
@@ -308,14 +337,35 @@ private fun OrderRow(
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = order.locationName.ifBlank { stringResource(R.string.refinery_station_unknown) },
-                style = MaterialTheme.typography.titleMedium,
-                color = KrtPalette.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            // „ARC-L1 · 16.08. 22:41" — station AND start time, because a refinery run has no
+            // number to lead with (round 14 · S15: there is no `displayId` like an Auftrag's, and
+            // G10 asks for one). The station alone made every card on a Staffel with one refinery
+            // look the same; the time is what tells them apart.
+            //
+            // Two texts, so the STATION gives way first: „ARC-L1 Wide Forest Station" is a real
+            // name in the fixtures and one Text ellipsised the time away — exactly the half that
+            // carries the distinction.
+            Row(
                 modifier = Modifier.weight(1f),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = order.locationName.ifBlank { stringResource(R.string.refinery_station_unknown) },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = KrtPalette.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                order.krtStarted()?.let { started ->
+                    Text(
+                        text = SEPARATOR + started,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = KrtPalette.White,
+                        maxLines = 1,
+                    )
+                }
+            }
             KrtStatusPill(
                 text = stringResource(phase.labelRes()),
                 tone = phase.tone(),
@@ -326,7 +376,7 @@ private fun OrderRow(
             )
         }
         Text(
-            text = secondLine(order, phase),
+            text = secondLine(order),
             style = MaterialTheme.typography.bodySmall,
             color = KrtPalette.TextMuted,
             maxLines = 2,
@@ -400,17 +450,36 @@ private fun CardFooter(
         horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val remaining = if (phase == RefineryPhase.RUNNING) remainingText(order.endsAt, now) else ""
         Text(
-            text = if (phase == RefineryPhase.RUNNING) remainingText(order.endsAt, now) else "",
+            text = remaining,
             style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.SuccessText,
+            // The PHASE's tone, which is what artboard 11-1 draws: „noch 5 Std. 12 Min." in the
+            // running blue, „seit 06:41 abholbereit" in the ready green. It was hardcoded green,
+            // so a run whose end the server does not know read as one ready to collect — the tint
+            // has to follow the state rather than announce one.
+            color = phase.tone().krtColor(),
             modifier = Modifier.weight(1f),
         )
-        value?.let {
+        value?.let { amount ->
+            // Two texts, not one formatted string: „Wert ≈" is a muted label and the figure beside
+            // it is the data (artboard 11-1). It WAS one string — and that string carries no
+            // placeholder, so `stringResource(id, arg)` dropped the argument and every card in the
+            // list read „Geschätzter Wert" with no number at all.
             Text(
-                text = stringResource(R.string.refinery_value, formatAmount(it)),
+                text = stringResource(R.string.refinery_value),
+                style = MaterialTheme.typography.bodySmall,
+                color = KrtPalette.TextMuted,
+            )
+            Text(
+                text = formatAmount(amount),
                 style = MaterialTheme.typography.bodyMedium,
-                color = KrtPalette.SuccessText,
+                color =
+                    if (amount.trim().startsWith("-") || amount.trim().startsWith("−")) {
+                        KrtTheme.colors.dangerText
+                    } else {
+                        KrtPalette.SuccessText
+                    },
             )
         }
         KrtIcon(
@@ -424,33 +493,36 @@ private fun CardFooter(
 /**
  * The row's second line: what a member needs to tell two orders apart at a glance.
  *
- * A running order leads with the time left, because that is the only thing about it that changes;
- * everything else leads with the yield, because that is what the order was for.
+ * The METHOD alone, since round 14 (S15): the start time moved up into the lead line, the goods
+ * are listed under it in full, and a running order's remaining time belongs to the footer
+ * (artboard 11-1), where it sits beside the value. Each of those had at some point been folded in
+ * here, and the card ended up saying the same clock twice.
  *
  * @param order the order.
- * @param phase what the member sees.
- * @param now the clock.
- * @return the line.
+ * @return the line, empty when the server named no method.
+ */
+private fun secondLine(order: RefineryOrder): String = order.methodName.takeIf { it.isNotBlank() }.orEmpty()
+
+/**
+ * What the card leads with: the station and the moment the run started.
+ *
+ * @receiver the run.
+ * @return „ARC-L1 · 16.08. 22:41", or the station alone when the server sent no start.
  */
 @Composable
-private fun secondLine(
-    order: RefineryOrder,
-    phase: RefineryPhase,
-): String {
-    val method = order.methodName.takeIf { it.isNotBlank() }
-    // A running order's remaining time belongs to the footer (artboard 11.1), where it sits beside
-    // the value. Repeating it here put the same clock on the card twice.
-    val detail =
-        if (phase == RefineryPhase.RUNNING) {
-            null
-        } else {
-            // The order's own unit is not knowable across mixed goods, so the row states SCU —
-            // which every refining run in practice is. A single-good order takes the good's unit.
-            val piece = order.yields.isNotEmpty() && order.yields.all { it.unitIsPiece }
-            amountText(order.totalAmount, piece)
-        }
-    return listOfNotNull(method, detail).joinToString(SEPARATOR)
+private fun RefineryOrder.krtLead(): String {
+    val station = locationName.ifBlank { stringResource(R.string.refinery_station_unknown) }
+    return listOfNotNull(station, krtStarted()).joinToString(SEPARATOR)
 }
+
+/**
+ * When the run started, as the chapter writes a moment.
+ *
+ * @receiver the run.
+ * @return „16.08. 22:41", or `null` when the server sent no start.
+ */
+private fun RefineryOrder.krtStarted(): String? =
+    startedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }?.krtShortMoment()
 
 /**
  * The remaining-time text of chapter 11, at the granularity the clock ticks.
@@ -568,7 +640,6 @@ fun RefineryOrderDetailScreen(
 
         is RefineryDetailPhase.Ready -> {
             val order = state.order
-            menu?.let { OrderMenu(state = state, menu = it) }
             if (order == null) {
                 KrtEmptyState(
                     iconRes = DesignR.drawable.ic_krt_refinery,
@@ -586,6 +657,7 @@ fun RefineryOrderDetailScreen(
                 OrderDetailBody(
                     state = state,
                     order = order,
+                    menu = menu,
                     onStoreRequested = onStoreRequested,
                 )
             }
@@ -643,42 +715,38 @@ private fun OrderMenu(
     val edit = stringResource(R.string.refinery_edit_title)
     val delete = stringResource(R.string.refinery_delete_action)
     val lockedReason = stringResource(R.string.refinery_delete_locked_stored)
-    ProvideScreenTopBar(
-        actions = {
-            KrtOverflowMenu(
-                contentDescription = edit,
-                expanded = open,
-                onExpandedChange = { open = it },
-                modifier = Modifier.testTag(REFINERY_DETAIL_MENU_TAG),
-                items =
-                    listOf(
-                        KrtMenuItem(
-                            label = edit,
-                            iconRes = DesignR.drawable.ic_krt_edit,
-                            onClick = {
-                                open = false
-                                menu.onEdit()
-                            },
-                        ),
-                        KrtMenuItem(
-                            label = delete,
-                            iconRes = DesignR.drawable.ic_krt_trash,
-                            danger = true,
-                            locked = !state.deletable,
-                            reason = lockedReason.takeIf { !state.deletable },
-                            onClick = {
-                                open = false
-                                // A locked row keeps its tap target so it can state its reason —
-                                // which the row itself draws. It must not go on to raise the
-                                // confirmation for a deletion that will not happen.
-                                if (state.deletable) {
-                                    menu.onDeleteRequested()
-                                }
-                            },
-                        ),
-                    ),
-            )
-        },
+    KrtOverflowMenu(
+        contentDescription = edit,
+        expanded = open,
+        onExpandedChange = { open = it },
+        modifier = Modifier.testTag(REFINERY_DETAIL_MENU_TAG),
+        items =
+            listOf(
+                KrtMenuItem(
+                    label = edit,
+                    iconRes = DesignR.drawable.ic_krt_edit,
+                    onClick = {
+                        open = false
+                        menu.onEdit()
+                    },
+                ),
+                KrtMenuItem(
+                    label = delete,
+                    iconRes = DesignR.drawable.ic_krt_trash,
+                    danger = true,
+                    locked = !state.deletable,
+                    reason = lockedReason.takeIf { !state.deletable },
+                    onClick = {
+                        open = false
+                        // A locked row keeps its tap target so it can state its reason —
+                        // which the row itself draws. It must not go on to raise the
+                        // confirmation for a deletion that will not happen.
+                        if (state.deletable) {
+                            menu.onDeleteRequested()
+                        }
+                    },
+                ),
+            ),
     )
 }
 
@@ -736,15 +804,51 @@ private fun DeleteConfirmation(
  *
  * @param state what to draw.
  * @param order the loaded order.
+ * @param menu the ⋮ this screen owns, or `null` where the caller draws none.
  * @param onStoreRequested the booking action was tapped.
  */
 @Composable
 private fun OrderDetailBody(
     state: RefineryDetailState,
     order: RefineryOrder,
+    menu: RefineryDetailMenu?,
     onStoreRequested: () -> Unit,
 ) {
     val phase = order.phaseAt(state.now)
+    // The run's own head, as artboard 11-2 draws it: the status under the name and, beside it,
+    // which refinery and which method. Both stood in the body under the section bar, which left
+    // the bar naming the category („RAFFINERIEAUFTRAG") of a screen that shows exactly one.
+    //
+    // The artboard's „#7841" is mock — no order number exists on the wire, and the web's own
+    // title is „Raffinerieauftrag Details" — so the head names what the app actually has.
+    ProvideScreenTopBar(
+        title = stringResource(R.string.refinery_order_title),
+        // **One publisher for the whole bar.** The slot holds one head and the last writer wins,
+        // so the overflow published on its own — with a null title — raced this one: whichever
+        // ran last, the bar lost either its name or its ⋮. Same trap the Auftrag detail hit.
+        actions = menu?.let { { OrderMenu(state = state, menu = it) } },
+        subtitle = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
+                // Station and start time, the same lead the list card carries — the run has no
+                // number, and these two together are what names it (round 14 · S15).
+                val identity = order.krtLead()
+                if (identity.isNotBlank()) {
+                    Text(
+                        text = identity,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = KrtPalette.TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        },
+    )
     Column(
         modifier =
             Modifier
@@ -756,18 +860,6 @@ private fun OrderDetailBody(
         if (!state.online) {
             OfflineBand()
         }
-        // Artboard 2 carries the run's identity beside the status: which refinery, which method.
-        // Its „#7841" is mock — no order number exists on the wire, and the web's own title is
-        // „Raffinerieauftrag Details" — so the app names what it actually has.
-        Text(
-            text =
-                listOf(order.locationName, order.methodName)
-                    .filter { it.isNotBlank() }
-                    .joinToString(SEPARATOR),
-            style = MaterialTheme.typography.bodySmall,
-            color = KrtPalette.TextMuted,
-        )
-        KrtStatusPill(text = stringResource(phase.labelRes()), tone = phase.tone())
         // Artboard 2 puts the four facts in the HUD box, brackets and all — the same container the
         // rest of the app uses for a block of facts that belong together.
         KrtHudBox(modifier = Modifier.fillMaxWidth()) {
@@ -813,11 +905,22 @@ private fun OrderDetailBody(
         // recorded profit is the figure the web itself shows. Printing Ore Sales beside it repeated
         // an input as if it were a result. Deviation recorded in docs/specs/refinery.md.
         order.profit?.let {
-            KrtKeyValueRow(
-                label = stringResource(R.string.refinery_value),
-                value = formatAmount(it),
-                valueColor = KrtPalette.SuccessText,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.refinery_value).krtUppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = KrtPalette.TextMuted,
+                )
+                Text(
+                    text = formatAmount(it),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = KrtPalette.SuccessText,
+                )
+            }
         }
         if (state.stored) {
             Text(
