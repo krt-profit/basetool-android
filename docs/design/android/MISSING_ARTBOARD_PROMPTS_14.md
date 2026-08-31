@@ -397,3 +397,29 @@ It carries two readings and the app has picked one:
 both sides loaded, paged and refreshed at once, so it is not a change to make on a coin-flip
 reading of one sentence.
 
+## S30 · The Operationen list has no detail pane on a tablet, its sibling segment does
+
+**Where:** „Einsätze" and „Operationen" are the two halves of one segment. Opened from the rail,
+Einsätze is a list-detail with the pane chapter 06's tablet frame draws. Opened from „Mehr",
+Operationen is a full-width list — same segment, same screen head, different layout, and tapping a
+row pushes a full-screen detail instead of filling the pane beside it.
+
+Chapter 06's tablet frame only draws the Einsätze half, so nothing says which of the two the
+Operationen half should follow.
+
+**What is missing:** whether Operationen is a pane of the same surface (and therefore reached from
+the rail rather than from „Mehr"), or a screen of its own that happens to share a segment with one.
+
+## S31 · The Bank's account rows are phone cards on a tablet
+
+**Where:** `12 Bank.dc.html`'s tablet frame lists the accounts as compact one-line rows — name
+left, balance and delta right — in a ~360 dp column, with the sparkline and the booking table in
+the **detail** pane. The app puts the phone's three-line card (name / balance / delta + sparkline)
+in that column, so three accounts fill it.
+
+This is chapter 02 §5's rule („tablet keeps tables, phone collapses to rows") applied to a list
+rather than a table, and the chapter states it for tables only.
+
+**What is missing:** whether §5's rule extends to list rows — i.e. whether a card that is right on
+a phone must become a row in a tablet's list column, and which surfaces that covers.
+
