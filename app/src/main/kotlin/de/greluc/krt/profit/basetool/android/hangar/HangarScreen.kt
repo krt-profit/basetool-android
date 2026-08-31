@@ -416,18 +416,12 @@ private fun ShipTable(
         onRowClick = { onEdit(ships[it]) },
     ) { row, column ->
         val ship = ships[row]
-        // `cell` is a RowScope lambda: the weight is the CALLER's to apply, and without it every
-        // cell sizes to its own content while the header row — which does apply it — stays on the
-        // grid. The two disagreed, so figures drifted left of the titles they belong under. Only
-        // visible once the aggregate put two numeric columns side by side (ch. 08, artboard 11).
         if (column == columns.lastIndex) {
-            Box(modifier = Modifier.weight(columns[column].weight)) {
-                ShipCardActions(
-                    online = online,
-                    onEdit = { onEdit(ship) },
-                    onDelete = { onDelete(ship) },
-                )
-            }
+            ShipCardActions(
+                online = online,
+                onEdit = { onEdit(ship) },
+                onDelete = { onDelete(ship) },
+            )
         } else {
             KrtTableCell(
                 text =
@@ -439,7 +433,6 @@ private fun ShipTable(
                         else -> if (ship.fitted) fittedYes else fittedNo
                     },
                 column = columns[column],
-                modifier = Modifier.weight(columns[column].weight),
                 emphasis = column == 0,
             )
         }
@@ -697,7 +690,6 @@ private fun ShipTypeTable(
         when (column) {
             0 -> {
                 Row(
-                    modifier = Modifier.weight(columns[0].weight),
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -710,7 +702,6 @@ private fun ShipTypeTable(
                 KrtTableCell(
                     text = type.count.toString(),
                     column = columns[1],
-                    modifier = Modifier.weight(columns[1].weight),
                     emphasis = true,
                 )
             }
@@ -722,7 +713,7 @@ private fun ShipTypeTable(
                     text = type.fittedCount.toString(),
                     modifier =
                         Modifier
-                            .weight(columns[2].weight)
+                            .fillMaxWidth()
                             .padding(horizontal = KrtSpacing.s8, vertical = KrtSpacing.s4),
                     textAlign = TextAlign.End,
                     style = MaterialTheme.typography.bodyMedium,
