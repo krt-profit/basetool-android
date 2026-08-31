@@ -423,3 +423,53 @@ rather than a table, and the chapter states it for tables only.
 **What is missing:** whether §5's rule extends to list rows — i.e. whether a card that is right on
 a phone must become a row in a tablet's list column, and which surfaces that covers.
 
+---
+
+# Round 15 — what building the round-14 answers turned up
+
+The handoff answered all 31 items and eleven chapters changed; the app follows them. Two answers
+could not be built as written, and one component note disagrees with the spec's own scale.
+
+## R1 · The login screen's server-status dot has nothing to read
+
+**Where:** `13 Einstellungen.dc.html`, S27 — the dot is struck in the Einstellungen footer („die App
+hat keinen Health-Endpunkt") and **kept** on the login screen, „wo die Gate-Prüfung ihn
+beantwortet". Artboard 04-1 draws it green beside „Server bereit · v1.4.2 (37)".
+
+On the login screen the app has not yet asked the server anything. The gate check
+(`AccountGateViewModel`) runs **after** a successful sign-in, on its own screen; before that the
+only signals are the device's connectivity and, once a sign-in has been tried and failed,
+`login_error_unreachable`. A dot drawn before the first attempt would be permanently green — which
+is the same objection S27 raised against keeping it in the Einstellungen.
+
+**Built as:** no dot, the version line alone — the same as the Einstellungen footer.
+
+**What is missing:** what the dot reads *on the login screen, before a request has been made*. If
+the answer is „the device's network", it is an offline marker and should say so; if it is „the last
+attempt", it has nothing to show on a cold start.
+
+## R2 · S12's sizes contradict the spec's own type scale
+
+**Where:** `12 Bank.dc.html`, S12 — „Die Kontostand-Zahl der Konto-Karte ist **headlineMedium
+(Black 20)** … Das KPI-Gesamt oben bleibt **headlineLarge (Black 28)**".
+
+`artifacts/Theme.kt`, which the app's scale mirrors line for line, defines `headlineMedium` as
+**Bold 24/30** and `headlineLarge` as **Black 32/38**. Neither bracketed size matches the entry it
+names, and there is no Black 20 or Black 28 step in the scale at all.
+
+**Built as:** the **names**, not the numbers — the card's figure is `headlineMedium`, one step below
+the total. That is the distinction the note is about („die kleinere Schwester, nicht dieselbe
+Stufe") and it is the half the app can act on.
+
+**What is missing:** either the bracketed sizes corrected, or two new steps in the scale.
+
+## R3 · The KPI total tile has no named scale entry
+
+**Where:** the same note says the total „stays headlineLarge". In the scale `headlineLarge` carries
+`letterSpacing 1.6` — it is the uppercase h1 — and applying it to a figure tracks the digits apart.
+The app draws the tile with `displaySmall` (Black 32, no tracking), which is the same size and
+weight without the tracking.
+
+**What is missing:** confirmation that a KPI figure uses `displaySmall` rather than the h1 step, or
+a tracking-free headline entry to point at.
+

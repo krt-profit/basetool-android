@@ -1388,6 +1388,7 @@
     <string name="mission_struct_add_freq_short">Frequenz</string>
     <string name="mission_freq_copy">Wert kopieren</string>
     <string name="mission_struct_freq_name">Bezeichnung</string>
+    <string name="mission_struct_freq_helper">Höchstens drei Vorkomma- und zwei Nachkommastellen.</string>
     <string name="mission_struct_freq_value">Frequenz</string>
     <string name="mission_struct_remove_freq">Frequenz entfernen</string>
     <string name="mission_struct_party_lead">Einsatzleitung</string>
@@ -1427,6 +1428,7 @@
     <string name="mission_detail_function_none">Keine Funktion</string>
     <string name="mission_detail_check_in_row">Einchecken</string>
     <string name="mission_detail_check_out_row">Auschecken</string>
+    <string name="mission_detail_participant_actions">Weitere Aktionen</string>
     <string name="mission_detail_payout_row">Auszahlung umstellen</string>
     <string name="mission_detail_roster_sorted">Sortiert: Check-in</string>
     <plurals name="mission_roster_count">

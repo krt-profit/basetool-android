@@ -339,8 +339,6 @@ private fun PriorityControls(
                     .testTag(ORDER_PRIORITY_UP_TAG)
                     .alpha(if (state.writable && !atFront) 1f else DISABLED_WRITE_ALPHA),
             enabled = state.writable && !atFront,
-            width = QUEUE_MOVE_WIDTH,
-            height = KrtSpacing.touchTarget,
         )
         KrtIconButton(
             iconRes = DesignR.drawable.ic_krt_chevron_down,
@@ -351,14 +349,13 @@ private fun PriorityControls(
                     .testTag(ORDER_PRIORITY_DOWN_TAG)
                     .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
             enabled = state.writable,
-            width = QUEUE_MOVE_WIDTH,
-            height = KrtSpacing.touchTarget,
         )
     }
 }
 
-/** The queue's move pair takes the Ablauf's ratified 40 dp width (design ch. 18 §3). */
-private val QUEUE_MOVE_WIDTH = 40.dp
+// The 40 × 44 pair was the ABLAUF row's exception, and round 14 (S3) says so in as many words:
+// an icon button is 48 dp, and the Ablauf's move buttons are the one ratified departure from it —
+// they share a row with a tick and a ⋮, which this pair does not.
 
 /**
  * The paginated queue.

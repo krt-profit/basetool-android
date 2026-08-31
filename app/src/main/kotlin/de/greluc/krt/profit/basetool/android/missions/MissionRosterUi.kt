@@ -21,6 +21,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -36,6 +40,8 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoiceChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtMenuItem
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOverflowMenu
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusDot
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
@@ -189,7 +195,7 @@ private fun ParticipantRow(
             }
             // The payout as a **read** chip: it states the member's standing choice. Design ch. 18
             // §3 (E6) keeps the read chip and the choice chip apart on purpose, so this one never
-            // becomes the control — switching it is the ghost button below.
+            // becomes the control — switching it is the row's ⋮.
             participant.donating?.let { donating ->
                 KrtChip(
                     text =
@@ -204,6 +210,7 @@ private fun ParticipantRow(
                 )
             }
             ParticipantCheckIn(participant, roster)
+            ParticipantOverflow(participant, roster)
         }
         ParticipantManagerActions(participant, roster)
     }
@@ -276,20 +283,58 @@ private fun ParticipantManagerActions(
             reason = stringResource(R.string.gate_role_mission_manager),
             detail = stringResource(R.string.gate_role_mission_manager_detail),
         )
-    val (payoutDim, payoutClick) =
-        rememberGated(gate, { roster.onPayout(participant.id) }, roster.denials)
-    // Switching somebody else's payout is the one manager action artboard 06-2 does not place: the
-    // row draws the preference as a read chip and stops there. It stays a ghost button under the
-    // row rather than being dropped — the write exists and the design nowhere strikes it — and it
-    // is on the gap list for a ruling.
-    KrtGhostButton(
-        text = stringResource(R.string.mission_detail_payout_row),
-        onClick = payoutClick,
-        iconRes = if (gate.allowed) null else DesignR.drawable.ic_krt_lock,
-        modifier = payoutDim.alpha(if (roster.enabled) 1f else DISABLED_WRITE_ALPHA),
-        enabled = roster.enabled,
-    )
     ParticipantFunctionSelect(participant, gate, roster)
+}
+
+/**
+ * The row's ⋮ — today it carries one entry: another member's payout preference.
+ *
+ * Round 14 (S8) placed it here rather than under the row: the roster runs to fourteen rows, and a
+ * button on each doubled the list's height for an action a manager takes once. Without the
+ * Missions-Manager role the entry is drawn **locked and tappable**, which is the app's own rule for
+ * a grant handed out by a person — an entry nobody sees is one nobody asks for.
+ *
+ * The member's own preference is not changed here; that stays in the sign-up sheet.
+ *
+ * @param participant the row.
+ * @param roster the actions and the gate.
+ */
+@Composable
+private fun ParticipantOverflow(
+    participant: MissionParticipant,
+    roster: MissionRosterActions,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val gate =
+        Gate(
+            allowed = roster.canManage,
+            reason = stringResource(R.string.gate_role_mission_manager),
+            detail = stringResource(R.string.gate_role_mission_manager_detail),
+        )
+    val label = stringResource(R.string.mission_detail_participant_actions)
+    val payout = stringResource(R.string.mission_detail_payout_row)
+    KrtOverflowMenu(
+        contentDescription = label,
+        expanded = open,
+        onExpandedChange = { open = it },
+        items =
+            listOf(
+                KrtMenuItem(
+                    label = payout,
+                    iconRes = DesignR.drawable.ic_krt_swap,
+                    reason = gate.reason.takeIf { !gate.allowed },
+                    locked = !gate.allowed,
+                    enabled = roster.enabled,
+                ) {
+                    open = false
+                    if (gate.allowed) {
+                        roster.onPayout(participant.id)
+                    } else {
+                        roster.denials.raise(gate)
+                    }
+                },
+            ),
+    )
 }
 
 /**

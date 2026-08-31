@@ -43,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChoi
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFilterChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
@@ -606,6 +607,10 @@ fun FrequencyComposeSheet(structure: MissionStructureActions) {
                 label = stringResource(R.string.mission_struct_freq_name),
                 enabled = structure.enabled,
             )
+            // Three digits before the point and two after — the server validates `@Digits(3, 2)`
+            // and refused every value the chapter drew (round 14 · S5; G15 asks for the column to
+            // be widened). Saying the shape in a helper and holding the CTA is the honest half the
+            // app can do: a refusal that arrives after the tap teaches nobody the rule.
             KrtTextField(
                 value = structure.draft.freqValue,
                 onValueChange = { v -> structure.onChange { it.copy(freqValue = v) } },
@@ -613,11 +618,12 @@ fun FrequencyComposeSheet(structure: MissionStructureActions) {
                 enabled = structure.enabled,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
+            KrtHint(explanation = stringResource(R.string.mission_struct_freq_helper))
             KrtCtaButton(
                 text = stringResource(R.string.mission_struct_add_freq),
                 onClick = structure.onAddFrequency,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = structure.enabled && structure.draft.freqValue.isNotBlank(),
+                enabled = structure.enabled && structure.draft.freqValue.krtIsFrequency(),
             )
         }
     }
@@ -675,3 +681,21 @@ private fun missionManagerGate(canManage: Boolean): Gate =
         reason = stringResource(R.string.gate_role_mission_manager),
         detail = stringResource(R.string.gate_role_mission_manager_detail),
     )
+
+/**
+ * Whether this is a frequency the server will take.
+ *
+ * `MissionFrequencyDto.value` is validated `@Digits(integer = 3, fraction = 2)`, so „148.500" —
+ * the value the chapter draws — is refused: three integer digits and two decimals is the whole
+ * range. Checked here so the CTA stays dark rather than the refusal arriving after the tap.
+ *
+ * @receiver what was typed; a comma counts as a decimal point, as it does everywhere else.
+ * @return whether the server would accept it.
+ */
+private fun String.krtIsFrequency(): Boolean {
+    val typed = trim().replace(',', '.')
+    return typed.isNotBlank() && FREQUENCY_SHAPE.matches(typed)
+}
+
+/** Three digits before the point, at most two after — the server's own `@Digits(3, 2)`. */
+private val FREQUENCY_SHAPE = Regex("""^\d{1,3}(\.\d{1,2})?$""")

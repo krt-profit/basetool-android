@@ -1367,6 +1367,7 @@
     <string name="mission_struct_add_freq_short">Frequency</string>
     <string name="mission_freq_copy">Copy value</string>
     <string name="mission_struct_freq_name">Label</string>
+    <string name="mission_struct_freq_helper">At most three digits before and two after the point.</string>
     <string name="mission_struct_freq_value">Frequency</string>
     <string name="mission_struct_remove_freq">Remove frequency</string>
     <string name="mission_struct_party_lead">Party lead</string>
@@ -1406,6 +1407,7 @@
     <string name="mission_detail_function_none">No function</string>
     <string name="mission_detail_check_in_row">Check in</string>
     <string name="mission_detail_check_out_row">Check out</string>
+    <string name="mission_detail_participant_actions">More actions</string>
     <string name="mission_detail_payout_row">Switch payout</string>
     <string name="mission_detail_roster_sorted">Sorted: check-in</string>
     <plurals name="mission_roster_count">
