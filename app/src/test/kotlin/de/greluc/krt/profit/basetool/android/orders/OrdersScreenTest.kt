@@ -346,7 +346,7 @@ class OrdersScreenTest {
         compose.onNodeWithText("#1042").assertIsDisplayed()
         // The priority block: the figure the queue is sorted by, and its label underneath.
         compose.onNodeWithText("1").assertIsDisplayed()
-        compose.onNodeWithText("Prio").assertIsDisplayed()
+        compose.onNodeWithText("PRIO").assertIsDisplayed()
         // The kind chip, which the card did not show at all. Uppercased by the chip, like the
         // badges below it.
         compose.onNodeWithText("MATERIAL").assertIsDisplayed()
@@ -368,7 +368,7 @@ class OrdersScreenTest {
         )
 
         compose.onAllNodesWithText("Quantainium").assertCountEquals(0)
-        compose.onNodeWithText("Materialien").performClick()
+        compose.onNodeWithText("MATERIALIEN").performClick()
 
         assertEquals(listOf("o1"), toggled)
     }

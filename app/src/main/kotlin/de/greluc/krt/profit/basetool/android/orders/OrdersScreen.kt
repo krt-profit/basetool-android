@@ -88,8 +88,10 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPage
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRefreshableFill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRetryCountdown
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusBadge
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusPill
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
@@ -454,7 +456,10 @@ private fun OrderCard(
                     horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
+                    // The row-level pill, not the page badge: a queue of twenty orders each
+                    // shouting its status in a filled frame cannot be scanned, and artboard 10-1
+                    // draws the dot-plus-word form here.
+                    KrtStatusPill(text = order.statusLabel(), tone = order.statusTone())
                     order.createdAt?.let { created ->
                         Text(
                             // A day count, not a date. The shared `relativeToNow` switches to
@@ -526,7 +531,7 @@ private fun PriorityBlock(priority: Int?) {
             color = if (priority != null) MaterialTheme.colorScheme.primary else KrtPalette.Gray2,
         )
         Text(
-            text = stringResource(R.string.orders_priority_label),
+            text = stringResource(R.string.orders_priority_label).krtUppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
         )
@@ -549,7 +554,7 @@ private fun PartiesRow(order: JobOrder) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stringResource(R.string.orders_for_label),
+            text = stringResource(R.string.orders_for_label).krtUppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
         )
@@ -558,7 +563,7 @@ private fun PartiesRow(order: JobOrder) {
             kind = orgBadgeKind(order.requestingOrgUnit),
         )
         Text(
-            text = stringResource(R.string.orders_by_label),
+            text = stringResource(R.string.orders_by_label).krtUppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = KrtPalette.TextMuted,
         )
@@ -607,7 +612,7 @@ private fun MaterialsDisclosure(
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = stringResource(labelRes),
+            text = stringResource(labelRes).krtUppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
         )
