@@ -464,11 +464,15 @@ fun KrtStatusDot(
 }
 
 /**
- * The row-level status indicator: a square 8 dp dot plus an uppercase label.
+ * The row-level status indicator: a square 8 dp dot plus the label as written.
  *
- * Deliberately quiet — inside a list the status must not compete with the record's name.
+ * Deliberately quiet — inside a list the status must not compete with the record's name, which is
+ * also why the label is **not** uppercased. Chapter 02 §3 draws the five of them as
+ * „Geplant · Aktiv · Briefing · Abgeschlossen · Abgesagt", and every list and detail head that uses
+ * one follows suit (ch. 06 artboards 1 and 2, ch. 10 artboard 2, ch. 11 artboard 2). Uppercase is
+ * the louder [KrtStatusBadge]'s, where the status IS the page's subject.
  *
- * @param text status label; uppercased for display.
+ * @param text status label, drawn as given.
  * @param tone the lifecycle state.
  * @param modifier layout modifier.
  */
@@ -486,7 +490,7 @@ fun KrtStatusPill(
     ) {
         Box(modifier = Modifier.size(STATUS_DOT).background(color))
         Text(
-            text = text.krtUppercase(),
+            text = text,
             style = MaterialTheme.typography.labelMedium,
             color = color,
         )

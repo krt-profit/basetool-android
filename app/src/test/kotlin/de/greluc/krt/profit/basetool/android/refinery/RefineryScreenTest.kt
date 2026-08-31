@@ -116,7 +116,7 @@ class RefineryScreenTest {
         // is clickable, so Compose merges its children into the row node and the pill's tag is
         // gone from the merged tree; and the tag sits on the pill's layout, whose label is a
         // child, so the tagged node carries no text of its own.
-        assertPhase("IN ARBEIT")
+        assertPhase("In Arbeit")
         // The method is the subtitle and the countdown is in the card's FOOTER beside the value
         // (design ch. 11 artboard 1). They used to be one line, which put the same clock on the
         // card twice once the footer arrived.
@@ -138,7 +138,7 @@ class RefineryScreenTest {
     fun `a finished run leads with its yield rather than a time`() {
         list(now = AFTER)
 
-        assertPhase("ABHOLBEREIT")
+        assertPhase("Abholbereit")
         compose.onNodeWithText("Dinyx-Solventierung · 622 SCU").assertIsDisplayed()
     }
 
