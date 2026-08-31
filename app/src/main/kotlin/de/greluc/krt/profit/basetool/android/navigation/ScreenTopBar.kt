@@ -82,6 +82,9 @@ fun ProvideScreenTopBar(
     actions: (@Composable () -> Unit)? = null,
     selection: SelectionBar? = null,
 ) {
+    // Publish from the screen's own composable rather than from a `LazyColumn` item: a lazy item
+    // is disposed and recomposed as the list measures, which makes the head come and go for
+    // reasons that have nothing to do with the screen.
     val slot = LocalScreenTopBar.current
     val published by
         rememberUpdatedState(
@@ -93,5 +96,17 @@ fun ProvideScreenTopBar(
     // replaced the composition group behind `actions` and reset any state inside it, an overflow
     // menu that would not stay open (found on a device, 2026-08-26).
     SideEffect { slot.value = published }
-    DisposableEffect(Unit) { onDispose { slot.value = null } }
+    DisposableEffect(Unit) {
+        onDispose {
+            // Clear only what THIS screen last published. Compose recreates a subtree before it
+            // disposes the old one, so a recomposed detail publishes its head and the outgoing
+            // instance's `onDispose` then ran a moment later and wiped it — leaving the shell on
+            // the route's fallback title. The Auftrag detail showed „Auftrag" instead of its
+            // number and status for exactly this reason, on every open, and the sequence is only
+            // visible in a log: publish → read → publish → read null.
+            if (slot.value === published) {
+                slot.value = null
+            }
+        }
+    }
 }

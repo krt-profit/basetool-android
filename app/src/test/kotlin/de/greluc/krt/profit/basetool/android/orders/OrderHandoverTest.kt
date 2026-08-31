@@ -78,6 +78,7 @@ class OrderHandoverTest {
             needed = NEEDED,
             inStock = "442",
             claimCount = 1,
+            claimedAmount = "180",
             open = "220",
         )
 

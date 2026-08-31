@@ -69,9 +69,6 @@ internal fun LazyListScope.positionsTab(
     val onHandOver = items.onHandOver
     val tree = items.tree
     val itemStock = items.itemStock
-    order.comment?.let { comment ->
-        item(key = "comment") { CommentCard(comment = comment) }
-    }
     // Only the top-level lines get a row of their own; a sub-assembly is drawn inside its parent's
     // branch, because on its own it reads as a second thing that was ordered.
     val topLevel = if (tree.isEmpty()) order.items else tree.map { it.line }
@@ -121,10 +118,15 @@ internal fun LazyListScope.positionsTab(
         }
     } else {
         items(order.materials, key = { it.name }) { material ->
-            Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12)) {
+            Column(modifier = Modifier.padding(horizontal = KrtSpacing.s12, vertical = KrtSpacing.s4)) {
                 MaterialLine(material = material)
             }
         }
+    }
+    // Under the positions, where artboard 10-2 puts it: the note is what the requester said ABOUT
+    // the order, and above them it was read before the thing it comments on.
+    order.comment?.let { comment ->
+        item(key = "comment") { CommentCard(comment = comment) }
     }
 }
 

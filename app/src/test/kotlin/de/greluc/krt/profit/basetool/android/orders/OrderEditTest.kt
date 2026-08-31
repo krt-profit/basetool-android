@@ -90,6 +90,7 @@ class OrderEditTest {
                         needed = NEEDED,
                         inStock = "120",
                         claimCount = 1,
+                        claimedAmount = "180",
                         open = "220",
                     ),
                 ),

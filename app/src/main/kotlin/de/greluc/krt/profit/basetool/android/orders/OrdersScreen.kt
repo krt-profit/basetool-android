@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,6 +68,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChip
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtChipTone
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDataValue
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEmptyState
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtEndOfList
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFab
@@ -120,12 +122,6 @@ const val ORDERS_CREATE_TAG: String = "orders-create"
 
 /** Test handle for one order's screen. */
 const val ORDER_DETAIL_TAG: String = "order-detail"
-
-/** Test handle for the order's assign action. */
-const val ORDER_ASSIGN_TAG: String = "order-assign"
-
-/** Test handle for the order's status action. */
-const val ORDER_STATUS_TAG: String = "order-status"
 
 /** Test tag of „An den Anfang" on the order detail. */
 const val ORDER_PRIORITY_FRONT_TAG: String = "order-priority-front"
@@ -645,49 +641,32 @@ private fun orgBadgeKind(unit: String?): KrtOrgBadgeKind =
  */
 @Composable
 internal fun MaterialLine(material: JobOrderMaterial) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = KrtSpacing.s4),
-        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
-    ) {
+    // A card, as artboard 10-2 draws every position: the name, the two figures, the bar, and the
+    // two facts underneath as chips. It was four loose lines between hairlines, which is what made
+    // an order of five materials read as one paragraph.
+    KrtCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+            verticalAlignment = Alignment.Bottom,
         ) {
             Text(
                 text = material.name,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = KrtPalette.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            // The booked figure is the data and stays bright; what was asked for is the scale it
+            // is read against and stays muted. A figure the server did not send reads as a dash —
+            // left empty it became „ / 500", which looks like a rendering fault rather than an
+            // absent number (found on a device, on a material nothing is stocked of).
+            KrtDataValue(text = material.inStock.orDash(), style = MaterialTheme.typography.titleMedium)
             Text(
-                // A figure the server did not send reads as a dash. Left empty it became " / 500",
-                // which looks like a rendering fault rather than an absent number — found on a
-                // device, on an order for a material nothing is stocked of.
-                text =
-                    stringResource(
-                        R.string.orders_material_progress,
-                        material.inStock.orDash(),
-                        material.needed.orDash(),
-                    ),
+                text = stringResource(R.string.orders_material_of, material.needed.orDash()),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
-            )
-        }
-        // Design ch. 10 artboard 2 puts the claims beside the stock on a position: "who has already
-        // promised part of this" is what turns an open figure into a plan. The count was in the
-        // model and drawn nowhere.
-        if (material.claimCount > 0) {
-            Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.orders_material_claims,
-                        material.claimCount,
-                        material.claimCount,
-                    ),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
             )
         }
         material.progress?.let { progress ->
@@ -696,11 +675,35 @@ internal fun MaterialLine(material: JobOrderMaterial) {
                 color =
                     if (progress >= 1f) KrtPalette.SuccessText else MaterialTheme.colorScheme.primary,
                 trackColor = KrtPalette.Gray3,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s8).height(POSITION_BAR),
+                // No stop indicator: Material3 draws a dot at the far end of the track, which on an
+                // empty bar is the only thing on it and reads as a value rather than as a scale.
+                // The design system's meters are a filled rectangle and nothing else.
+                drawStopIndicator = {},
+            )
+        }
+        // Design ch. 10 artboard 2 puts both facts under the bar as chips: what is booked, and what
+        // is already promised. „Who has already promised part of this" is what turns an open figure
+        // into a plan.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s8),
+            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+        ) {
+            KrtChip(text = stringResource(R.string.orders_material_booked, material.inStock.orDash()))
+            KrtChip(
+                // „Zugesagt: —" when nobody has promised anything: the artboard writes the dash
+                // alone, without a unit, because there is no quantity for the unit to belong to.
+                text =
+                    material.claimedAmount
+                        ?.let { stringResource(R.string.orders_material_claimed, it) }
+                        ?: stringResource(R.string.orders_material_claimed_none),
             )
         }
     }
 }
+
+/** The position bar — thicker than a default indicator, as artboard 10-2 draws it. */
+private val POSITION_BAR = 6.dp
 
 /**
  * The production action on one item line: whether the caller may, and what to do when they tap.
@@ -1087,6 +1090,15 @@ private fun OrderOverflow(
     val edit = stringResource(R.string.order_edit_open)
     val itemsOnWeb = stringResource(R.string.order_edit_item_only_web)
     val collection = stringResource(R.string.order_collection_open)
+    val status = stringResource(R.string.order_detail_change_status)
+    val assignment =
+        stringResource(
+            if (state.myAssignment == null) {
+                R.string.order_detail_assign_me
+            } else {
+                R.string.order_detail_unassign_me
+            },
+        )
     val gate =
         Gate(
             allowed = state.editMode != null && state.editableKind,
@@ -1104,35 +1116,51 @@ private fun OrderOverflow(
                 },
         )
     val (_, click) = rememberGated(gate, actions.onEditOrder, denials)
-    ProvideScreenTopBar(
-        actions = {
-            KrtOverflowMenu(
-                contentDescription = label,
-                expanded = open,
-                onExpandedChange = { open = it },
-                items =
-                    listOf(
-                        KrtMenuItem(
-                            label = edit,
-                            iconRes = DesignR.drawable.ic_krt_edit,
-                            reason = gate.reason.takeIf { !gate.allowed },
-                            locked = !gate.allowed,
-                        ) {
-                            open = false
-                            click()
-                        },
-                        // Not gated: the collection is a READ for anyone who may see the order.
-                        // Only its own writes are gated, and the screen draws those.
-                        KrtMenuItem(
-                            label = collection,
-                            iconRes = DesignR.drawable.ic_krt_crate,
-                        ) {
-                            open = false
-                            actions.onOpenCollection()
-                        },
-                    ),
-            )
-        },
+    KrtOverflowMenu(
+        contentDescription = label,
+        expanded = open,
+        onExpandedChange = { open = it },
+        items =
+            listOfNotNull(
+                // „Status change + Zuständigen setzen im Overflow" (ch. 10, artboard 2's handoff).
+                // They were a filled CTA and a ghost button under the head, which put two controls
+                // in front of every member on a screen most of them only read.
+                KrtMenuItem(
+                    label = assignment,
+                    iconRes = DesignR.drawable.ic_krt_user_plus,
+                ) {
+                    open = false
+                    actions.onToggleAssignment()
+                }.takeIf { state.writable },
+                // Only a Logistician is offered this, and only because the app can ask whether the
+                // caller is one. The grant is also per order, so the refusal is named rather than
+                // assumed away.
+                KrtMenuItem(
+                    label = status,
+                    iconRes = DesignR.drawable.ic_krt_swap,
+                ) {
+                    open = false
+                    actions.onOpenStatusPicker()
+                }.takeIf { state.statusChangeable && state.writable },
+                KrtMenuItem(
+                    label = edit,
+                    iconRes = DesignR.drawable.ic_krt_edit,
+                    reason = gate.reason.takeIf { !gate.allowed },
+                    locked = !gate.allowed,
+                ) {
+                    open = false
+                    click()
+                },
+                // Not gated: the collection is a READ for anyone who may see the order. Only its
+                // own writes are gated, and the screen draws those.
+                KrtMenuItem(
+                    label = collection,
+                    iconRes = DesignR.drawable.ic_krt_crate,
+                ) {
+                    open = false
+                    actions.onOpenCollection()
+                },
+            ),
     )
 }
 
@@ -1153,6 +1181,35 @@ private fun OrderDetailBody(
     claims: ClaimActions,
     denials: DenialState,
 ) {
+    // The order's number and status live in the TOP BAR (design ch. 10 artboard 2), the same rule
+    // the Einsatz detail follows. The parties move to the facts bar.
+    //
+    // **Published from outside the list, and exactly once.** It was published from inside a
+    // `LazyColumn` item, and a lazy item's `onDispose` — which clears the slot — raced its own
+    // `SideEffect` on every recomposition, so the shell kept falling back to the route's „Auftrag"
+    // and neither the number nor the status ever appeared. A second call for the overflow alone,
+    // with a null title, would have wiped them again even if the first had landed: the slot holds
+    // one bar and the last writer wins.
+    ProvideScreenTopBar(
+        title = stringResource(R.string.orders_number, order.displayId),
+        actions = { OrderOverflow(state = state, actions = actions, denials = denials) },
+        subtitle = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
+                order.priority?.let {
+                    Text(
+                        text = stringResource(R.string.order_detail_priority, it),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = KrtPalette.TextMuted,
+                    )
+                }
+            }
+        },
+    )
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(ORDER_DETAIL_TAG),
         contentPadding = PaddingValues(horizontal = contentGutter()),
@@ -1165,66 +1222,15 @@ private fun OrderDetailBody(
                 modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                 verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
             ) {
-                // The order's number and status live in the TOP BAR (design ch. 10 artboard 2),
-                // the same rule the Einsatz detail follows. The parties move to the facts bar.
-                ProvideScreenTopBar(
-                    title = stringResource(R.string.orders_number, order.displayId),
-                    subtitle = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp),
-                        ) {
-                            KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
-                            order.priority?.let {
-                                Text(
-                                    text = stringResource(R.string.order_detail_priority, it),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = KrtPalette.TextMuted,
-                                )
-                            }
-                        }
-                    },
-                )
                 state.error?.let { error -> WriteError(error = error) }
-                Row(horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
-                    KrtCtaButton(
-                        text =
-                            stringResource(
-                                if (state.myAssignment == null) {
-                                    R.string.order_detail_assign_me
-                                } else {
-                                    R.string.order_detail_unassign_me
-                                },
-                            ),
-                        onClick = actions.onToggleAssignment,
-                        modifier =
-                            Modifier
-                                .testTag(ORDER_ASSIGN_TAG)
-                                .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
-                        enabled = state.writable,
-                    )
-                    // Only a Logistician is offered this, and only because the app can ask whether
-                    // the caller is one. The grant is also per order, so the refusal is named
-                    // rather than assumed away.
-                    if (state.statusChangeable) {
-                        KrtGhostButton(
-                            text = stringResource(R.string.order_detail_change_status),
-                            onClick = actions.onOpenStatusPicker,
-                            modifier =
-                                Modifier
-                                    .testTag(ORDER_STATUS_TAG)
-                                    .alpha(if (state.writable) 1f else DISABLED_WRITE_ALPHA),
-                            enabled = state.writable,
-                        )
-                    }
-                }
+                // „Status change + Zuständigen setzen im Overflow" (ch. 10, artboard 2's handoff).
+                // They were a filled CTA and a ghost button under the head, which put two controls
+                // in front of every member on a screen most of them only read.
                 if (state.priorityChangeable) {
                     PriorityControls(state = state, actions = actions)
                 }
             }
         }
-        item(key = "edit-menu") { OrderOverflow(state = state, actions = actions, denials = denials) }
         item(key = "facts") { OrderFactsBar(order = order) }
         item(key = "redaction") { RedactionNotice(order = order) }
         item(key = "tabs") {

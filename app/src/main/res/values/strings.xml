@@ -751,6 +751,10 @@
         <item quantity="one">%1$d Zusage</item>
         <item quantity="other">%1$d Zusagen</item>
     </plurals>
+    <string name="orders_material_of">/ %1$s SCU</string>
+    <string name="orders_material_booked">Gebucht: %1$s SCU</string>
+    <string name="orders_material_claimed">Zugesagt: %1$s SCU</string>
+    <string name="orders_material_claimed_none">Zugesagt: —</string>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Teile dieses Auftrags sind für dich ausgeblendet.</string>
     <plurals name="orders_count">

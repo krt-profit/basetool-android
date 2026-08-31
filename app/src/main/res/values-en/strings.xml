@@ -730,6 +730,10 @@
         <item quantity="one">%1$d claim</item>
         <item quantity="other">%1$d claims</item>
     </plurals>
+    <string name="orders_material_of">/ %1$s SCU</string>
+    <string name="orders_material_booked">Booked: %1$s SCU</string>
+    <string name="orders_material_claimed">Promised: %1$s SCU</string>
+    <string name="orders_material_claimed_none">Promised: —</string>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Parts of this order are hidden from you.</string>
     <plurals name="orders_count">
