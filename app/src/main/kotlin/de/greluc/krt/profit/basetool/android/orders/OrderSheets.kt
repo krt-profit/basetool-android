@@ -125,7 +125,17 @@ internal fun StatusSheet(
                         R.string.order_detail_status_confirm_title
                     },
                 ),
-            confirmText = stringResource(R.string.order_detail_status_apply),
+            // The button names the act it commits, not the mechanism. „Status übernehmen" on a
+            // modal that ends the order reads as one more step of the picker behind it (artboard
+            // 10-9 writes „ENDGÜLTIG ABSCHLIESSEN" / „… ABLEHNEN").
+            confirmText =
+                stringResource(
+                    if (choice == JobOrderStatus.REJECTED) {
+                        R.string.order_detail_status_confirm_reject_cta
+                    } else {
+                        R.string.order_detail_status_confirm_complete_cta
+                    },
+                ),
             onConfirm = actions.onApplyStatus,
             onDismiss = actions.onDismissStatusConfirm,
             // Artboard 9 distinguishes the two terminal ends: finishing an order is orange, and
@@ -134,9 +144,14 @@ internal fun StatusSheet(
                 if (choice == JobOrderStatus.REJECTED) KrtModalTone.Danger else KrtModalTone.Standard,
         ) {
             Text(
+                // Names the order as well as the state: the modal covers the sheet that covers the
+                // detail, and by the third layer „der Auftrag" no longer says which one. Where
+                // reopening happens belongs here too — it is the answer to the question the word
+                // „endgültig" raises (artboard 10-9).
                 text =
                     stringResource(
                         R.string.order_detail_status_confirm_body,
+                        state.order?.displayId.orEmpty(),
                         stringResource(choice.labelRes()),
                     ),
                 style = MaterialTheme.typography.bodyMedium,

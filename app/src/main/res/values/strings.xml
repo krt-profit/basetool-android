@@ -1114,7 +1114,9 @@
     <string name="order_detail_status_note_terminal">Endgültig — in der App nicht zurücknehmbar.</string>
     <string name="order_detail_status_confirm_reject_title">Auftrag ablehnen?</string>
     <string name="order_detail_status_confirm_title">Auftrag abschließen?</string>
-    <string name="order_detail_status_confirm_body">Der Auftrag wechselt auf „%1$s“. Das lässt sich in der App nicht zurücknehmen.</string>
+    <string name="order_detail_status_confirm_body">#%1$s wird endgültig als „%2$s“ markiert. Terminale Status lassen sich in der App nicht zurücknehmen — Wiedereröffnung nur durch die Administration (Web).</string>
+    <string name="order_detail_status_confirm_complete_cta">Endgültig abschließen</string>
+    <string name="order_detail_status_confirm_reject_cta">Endgültig ablehnen</string>
     <string name="order_detail_change_status">Status ändern</string>
     <string name="order_detail_priority_front">An den Anfang</string>
     <string name="order_detail_priority_up">Höher</string>

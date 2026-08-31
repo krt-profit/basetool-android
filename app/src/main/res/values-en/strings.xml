@@ -1093,7 +1093,9 @@
     <string name="order_detail_status_note_terminal">Final — cannot be undone in the app.</string>
     <string name="order_detail_status_confirm_reject_title">Reject the order?</string>
     <string name="order_detail_status_confirm_title">Close the order?</string>
-    <string name="order_detail_status_confirm_body">The order moves to “%1$s”. This cannot be undone in the app.</string>
+    <string name="order_detail_status_confirm_body">#%1$s is marked “%2$s” for good. Terminal states cannot be undone in the app — reopening is done by an administrator on the web.</string>
+    <string name="order_detail_status_confirm_complete_cta">Close for good</string>
+    <string name="order_detail_status_confirm_reject_cta">Reject for good</string>
     <string name="order_detail_change_status">Change status</string>
     <string name="order_detail_priority_front">To the front</string>
     <string name="order_detail_priority_up">Higher</string>
