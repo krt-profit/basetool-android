@@ -290,7 +290,7 @@ private fun StatusFilterChip(
         when (statuses.size) {
             0 -> stringResource(R.string.missions_filter_status_all)
             1 -> stringResource(R.string.missions_filter_status_one, stringResource(statuses.first().labelRes()))
-            else -> stringResource(R.string.missions_filter_status_many, statuses.size)
+            else -> pluralStringResource(R.plurals.missions_filter_status_many, statuses.size, statuses.size)
         }
     KrtFilterChip(
         text = label,

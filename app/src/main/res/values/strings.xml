@@ -174,7 +174,10 @@
     <string name="missions_filter_range_both">%1$s – %2$s</string>
     <string name="missions_filter_range_clear">Zeitraum entfernen</string>
     <string name="missions_filter_status_one">Status: %1$s</string>
-    <string name="missions_filter_status_many">Status: %1$d gewählt</string>
+    <plurals name="missions_filter_status_many">
+        <item quantity="one">Status: %1$d gewählt</item>
+        <item quantity="other">Status: %1$d gewählt</item>
+    </plurals>
     <string name="missions_filter_status_clear">Statusfilter aufheben</string>
     <string name="missions_filter_reset">Filter zurücksetzen</string>
     <string name="missions_status_planned">Geplant</string>

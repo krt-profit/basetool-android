@@ -158,9 +158,12 @@ class MissionsScreenTest {
     }
 
     @Test
-    fun `a status chip reports the whole resulting set, not just the tapped one`() {
-        // The view model replaces the set rather than merging, so a chip that reported only itself
-        // would silently clear every other selection.
+    fun `a status option reports the whole resulting set, not just the tapped one`() {
+        // The view model replaces the set rather than merging, so an option that reported only
+        // itself would silently clear every other selection.
+        //
+        // The four toggle chips became one chip and a sheet (artboard 06-1), so the tap is two
+        // steps now: open the chip, then pick inside it.
         val statuses = mutableListOf<Set<MissionStatus>>()
         show(
             MissionsState(
@@ -172,9 +175,25 @@ class MissionsScreenTest {
             statuses = statuses,
         )
 
-        compose.onNodeWithText("AKTIV").performClick()
+        compose.onNodeWithTag(MISSIONS_STATUS_TAG).performClick()
+        compose.onNodeWithText("Aktiv").performClick()
 
         assertEquals(listOf(setOf(MissionStatus.PLANNED, MissionStatus.ACTIVE)), statuses)
+    }
+
+    @Test
+    fun `the status chip names what it carries`() {
+        // A chip that always said „Status" would say nothing about what the list below it shows.
+        show(
+            MissionsState(
+                query = MissionQuery(statuses = setOf(MissionStatus.PLANNED)),
+                missions = listOf(mission("m1", "Vertikaler Abbau")),
+                total = 1,
+                phase = MissionsPhase.Ready,
+            ),
+        )
+
+        compose.onNodeWithText("STATUS: GEPLANT").assertIsDisplayed()
     }
 
     @Test
