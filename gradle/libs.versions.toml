@@ -19,7 +19,7 @@ androidxLifecycle = "2.11.0"
 composeBom = "2026.08.00"
 # Adaptive layout + navigation are versioned outside the Compose BOM.
 composeAdaptive = "1.3.0"
-androidxNavigation = "2.9.8"
+androidxNavigation = "2.10.0"
 
 junit = "4.13.2"
 robolectric = "4.16.1"
