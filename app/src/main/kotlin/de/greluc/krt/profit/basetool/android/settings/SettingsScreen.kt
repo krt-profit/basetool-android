@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -207,10 +208,10 @@ private fun SettingsColumn(
                 // second copy of the state to disagree with the header (design ch. 13, artboard 2).
                 KrtSettingRow(
                     title = stringResource(R.string.settings_active_org_unit),
-                    subtitle = orgUnitName,
                     leadingIcon = DesignR.drawable.ic_krt_users,
                     onClick = onSwitchOrgUnit,
                 ) {
+                    SettingValue(orgUnitName)
                     KrtIcon(
                         id = DesignR.drawable.ic_krt_chevron_right,
                         contentDescription = null,
@@ -513,5 +514,25 @@ private fun SettingsPreview() {
                 versionCode = 1,
             )
         }
+    }
+}
+
+/**
+ * A setting's current value, in the trailing slot of its row.
+ *
+ * Artboard 13-2 puts „Bereich Profit" on the **right** of its own row, beside the chevron, which is
+ * where a settings list is read for what a setting currently IS — a subtitle under the label reads
+ * as an explanation of the setting rather than as its value.
+ *
+ * @param value the value, or `null`/blank when there is none to show.
+ */
+@Composable
+private fun SettingValue(value: String?) {
+    value?.takeIf { it.isNotBlank() }?.let {
+        Text(
+            text = it,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = KrtPalette.White,
+        )
     }
 }

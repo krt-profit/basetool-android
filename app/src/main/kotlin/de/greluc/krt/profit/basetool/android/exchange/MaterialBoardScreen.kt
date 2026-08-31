@@ -211,18 +211,6 @@ fun MaterialBoardScreen(
                         stretch = true,
                         modifier = Modifier.fillMaxWidth().padding(KrtSpacing.s12),
                     )
-                    // Part of the design, not decoration: chapter 10 states it as copy, because the
-                    // board deliberately carries no place and no handover and a member must be able to
-                    // tell that from the screen rather than from its absence.
-                    Text(
-                        text = stringResource(R.string.board_privacy_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KrtPalette.TextMuted,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = KrtSpacing.s12)
-                                .testTag(BOARD_PRIVACY_TAG),
-                    )
                     PullToRefreshBox(
                         isRefreshing = state.refreshing,
                         onRefresh = onRefresh,
@@ -312,8 +300,29 @@ private fun BoardColumn(
             )
             KrtHairlineRule()
         }
+        item(key = "privacy") { BoardPrivacyNote() }
         item(key = "footer") { BoardFooter(state = state, onLoadMore = onLoadMore) }
     }
+}
+
+/**
+ * „Übergabe & Ort bleiben off-tool und privat — die Börse vermittelt nur Interesse."
+ *
+ * Part of the design, not decoration: chapter 10 states it as copy, because the board deliberately
+ * carries no place and no handover and a member has to be able to tell that from the screen rather
+ * than from its absence.
+ *
+ * **Under the cards**, where artboard 10-3 puts it — above them it pushed the first offer down by
+ * two lines to say something about the offers nobody had read yet.
+ */
+@Composable
+private fun BoardPrivacyNote() {
+    Text(
+        text = stringResource(R.string.board_privacy_note),
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.TextMuted,
+        modifier = Modifier.padding(top = KrtSpacing.s4).testTag(BOARD_PRIVACY_TAG),
+    )
 }
 
 /**
