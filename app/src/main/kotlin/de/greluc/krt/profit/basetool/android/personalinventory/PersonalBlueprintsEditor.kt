@@ -84,7 +84,9 @@ fun BlueprintAddSheet(
             KrtTextField(
                 value = editor.query,
                 onValueChange = onQuery,
-                label = stringResource(R.string.blueprints_product_search),
+                // Inside the box, as the chapters draw every search field: it says what it
+                // searches while it is empty and gives the room back once it is not.
+                placeholder = stringResource(R.string.blueprints_product_search),
                 enabled = !editor.saving,
             )
             if (editor.chosen.isNotEmpty()) {

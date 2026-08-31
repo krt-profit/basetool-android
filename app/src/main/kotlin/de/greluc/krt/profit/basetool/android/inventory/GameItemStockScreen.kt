@@ -83,7 +83,10 @@ fun GameItemStockScreen(
         KrtTextField(
             value = state.query,
             onValueChange = onQueryChanged,
-            label = stringResource(R.string.game_items_search),
+            // Inside the box, as the chapters draw every search field (ch. 09 artboard 21,
+            // ch. 16, ch. 17): a search box says what it searches while it is empty and
+            // gives the room back once it is not.
+            placeholder = stringResource(R.string.game_items_search),
             modifier =
                 Modifier
                     .fillMaxWidth()
