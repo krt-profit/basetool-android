@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.hangar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,8 +40,12 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -509,14 +514,17 @@ private fun ManufacturerMark(
         modifier =
             Modifier
                 .size(MARK_SIZE)
-                .background(KrtPalette.SurfaceInput)
+                .border(KrtSpacing.hairline, KrtPalette.Gray3)
                 .semantics { spoken?.let { contentDescription = it } },
         contentAlignment = Alignment.Center,
     ) {
         Text(
+            // White on a hairline square, as artboard 08-1 draws it — not orange. The maker is
+            // what the ship IS, in the same weight as its type beside it; orange is the app's
+            // action colour and made a label look like something to press.
             text = abbreviation.markOrNull() ?: spoken.lettermark(),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = KrtPalette.White,
         )
     }
 }
@@ -560,10 +568,12 @@ private fun String?.lettermark(): String {
 @Composable
 private fun ShipCardBody(ship: Ship) {
     Column {
+        // Two tones in one line, as artboard 08-1 sets it: the type is the catalogue's word and
+        // stays bright, the member's own name for the ship is theirs and sits back a step. Both in
+        // white, the sentence read as one long product name.
         Text(
-            text = ship.headline(),
+            text = ship.headlineText(),
             style = MaterialTheme.typography.titleMedium,
-            color = KrtPalette.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
@@ -617,11 +627,18 @@ private fun ShipCardBody(ship: Ship) {
 }
 
 /**
- * The card's headline.
+ * The card's headline: the type bright, the member's own name a step back.
  *
- * @return the type, plus the member's own name in quotes when they gave one.
+ * @return the styled headline.
  */
-private fun Ship.headline(): String = name?.let { "$typeName „$it\"" } ?: typeName
+@Composable
+private fun Ship.headlineText(): AnnotatedString =
+    buildAnnotatedString {
+        withStyle(SpanStyle(color = KrtPalette.White)) { append(typeName) }
+        name?.takeIf { it.isNotBlank() }?.let { own ->
+            withStyle(SpanStyle(color = KrtPalette.TextMuted)) { append(" „$own\"") }
+        }
+    }
 
 /**
  * The band over the aggregate: how many ships the org unit has, and how many are ready.
