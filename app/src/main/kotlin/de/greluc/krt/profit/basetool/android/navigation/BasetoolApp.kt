@@ -505,6 +505,7 @@ private fun AppTopBar(
         title = subject ?: stringResource(destination.titleRes),
         subject = subject != null,
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        titleBadge = detail?.titleBadge,
         subtitle = detail?.subtitle,
         // The back arrow and the right-hand side answer the same question and used to be asked
         // differently: the arrow from the destination, the chip and the bell from whether a screen

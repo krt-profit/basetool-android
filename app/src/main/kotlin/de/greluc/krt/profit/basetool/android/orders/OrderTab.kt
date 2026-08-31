@@ -18,12 +18,14 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrder
  * changed hands, and on a phone those stacked into a column a member had to scroll past to reach
  * the part they came for.
  *
- * **Two of the chapter's four tabs are missing, deliberately rather than by oversight.**
- * *Materialbedarf* is the queue-wide fold of the same materials; the API sends it
- * (`JobOrderDto.aggregatedMaterials`) but the app's model does not map it yet. *Verlauf* is an
- * append-only activity trail the API does not expose at all. A tab that can only ever be empty is
- * worse than no tab — it promises content and then blames the member's filter for its absence — so
- * neither is drawn until it can be filled.
+ * **Two of the chapter's four tabs are missing, and both omissions are ratified** — design ch. 18
+ * §C1 and §C2, confirmed rather than outstanding. *Materialbedarf* stays struck because the
+ * cross-order surface (`MaterialDemandScreen`, ch. 18 §1) answers the same question better than a
+ * tab inside one order, and `JobOrderDto.aggregatedMaterials` stays unmapped with it. *Verlauf*
+ * stays struck because the API exposes no per-order activity trail: `/api/v1/audit/{domain}` is
+ * admin-only and filters by domain and actor, never by one order. That is a backend ask, not a
+ * drawing. A tab that can only ever be empty is worse than no tab — it promises content and then
+ * blames the member's filter for its absence.
  *
  * @property labelRes the tab's name.
  */

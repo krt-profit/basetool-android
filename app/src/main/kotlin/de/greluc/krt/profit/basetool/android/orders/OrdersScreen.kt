@@ -1192,6 +1192,10 @@ private fun OrderDetailBody(
     // one bar and the last writer wins.
     ProvideScreenTopBar(
         title = stringResource(R.string.orders_number, order.displayId),
+        // What kind of order this is, beside its number — artboard 10-2 draws it there because a
+        // Material order and an Item order are read and worked differently, and the number alone
+        // says neither. The model carried `type` and nothing drew it.
+        titleBadge = order.kindLabel()?.let { kind -> { KrtChip(text = kind, tone = order.kindTone()) } },
         actions = { OrderOverflow(state = state, actions = actions, denials = denials) },
         subtitle = {
             Row(
@@ -1199,7 +1203,11 @@ private fun OrderDetailBody(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 2.dp),
             ) {
-                KrtStatusBadge(text = order.statusLabel(), tone = order.statusTone())
+                // A dot and tinted text, not a filled badge: ch. 02 §3 defines the status pill as
+                // „square 8 dp dot + tint text", and every detail head in the chapters (06-2,
+                // 10-2, 11, 12) draws that one. The louder badge belongs where a status is the
+                // page's whole subject.
+                KrtStatusPill(text = order.statusLabel(), tone = order.statusTone())
                 order.priority?.let {
                     Text(
                         text = stringResource(R.string.order_detail_priority, it),

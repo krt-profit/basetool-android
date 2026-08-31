@@ -40,12 +40,19 @@ await new Promise((r) => setTimeout(r, 2600));
 // Not every chapter numbers its frames — chapter 05 captions its only one "Phone — default" — so a
 // caption that merely STARTS WITH the token is accepted when the numbered form matches nothing.
 const rect = await evaluate(`(() => {
-  const leaves = [...document.querySelectorAll('div')].filter(e => e.children.length === 0);
+  // Not only leaves: chapter 02 wraps its number in a <b>, so the caption is an element WITH
+  // children and a leaf-only search silently fell through to the startsWith fallback, which
+  // then matched the first paragraph beginning with the same digit. Match on text, then take
+  // the DEEPEST match so the frame's column is the caption's parent, not the whole page.
+  const all = [...document.querySelectorAll('div,p,h1,h2,h3,h4,figcaption')]
+    .filter(e => ((e.textContent || '').trim().length) <= 160);
+  const depth = e => { let d = 0; for (let n = e; n; n = n.parentElement) d++; return d; };
+  const deepest = list => list.length ? list.reduce((a, b) => (depth(b) > depth(a) ? b : a)) : null;
   const token = ${JSON.stringify(board)};
   const numbered = new RegExp('^\\\\s*' + token + '\\\\s*[·]');
   const caption =
-    leaves.find(e => numbered.test(e.textContent || '')) ||
-    leaves.find(e => (e.textContent || '').trim().toLowerCase().startsWith(token.toLowerCase()));
+    deepest(all.filter(e => numbered.test((e.textContent || '').trim()))) ||
+    deepest(all.filter(e => (e.textContent || '').trim().toLowerCase().startsWith(token.toLowerCase())));
   if (!caption) return null;
   const col = caption.parentElement;
   const r = col.getBoundingClientRect();

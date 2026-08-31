@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,6 +64,7 @@ fun KrtTopBar(
     title: String,
     modifier: Modifier = Modifier,
     subject: Boolean = false,
+    titleBadge: (@Composable () -> Unit)? = null,
     subtitle: (@Composable () -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     orgBadge: @Composable (() -> Unit)? = null,
@@ -88,18 +90,29 @@ fun KrtTopBar(
                 )
             }
             Column(modifier = Modifier.weight(1f).padding(end = KrtSpacing.s8)) {
-                Text(
-                    text = if (subject) title else title.krtUppercase(),
-                    style =
-                        if (subject) {
-                            MaterialTheme.typography.titleMedium
-                        } else {
-                            MaterialTheme.typography.headlineSmall
-                        },
-                    color = if (subject) KrtPalette.White else MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (subject) title else title.krtUppercase(),
+                        style =
+                            if (subject) {
+                                MaterialTheme.typography.titleMedium
+                            } else {
+                                MaterialTheme.typography.headlineSmall
+                            },
+                        color = if (subject) KrtPalette.White else MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    // Beside the name, not under it: what KIND of thing this is qualifies the name
+                    // and is read with it (design ch. 10 artboard 2 — „#1042  MATERIAL"). Put on
+                    // the second line it would compete with the status, which answers a different
+                    // question.
+                    titleBadge?.invoke()
+                }
                 subtitle?.invoke()
             }
             orgBadge?.invoke()

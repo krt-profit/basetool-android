@@ -28,6 +28,8 @@ import androidx.compose.runtime.rememberUpdatedState
  * @property title the subject's name, or `null` when the screen only wants to add actions to the
  *   section bar it already has — a top-level destination is not a subject and must not start
  *   rendering as one.
+ * @property titleBadge drawn beside the title — the subject's KIND, where the subject has one
+ *   (design ch. 10 artboard 2 puts „MATERIAL" next to the order's number).
  * @property subtitle drawn under the title, small — usually a status pill.
  * @property actions trailing controls the screen owns, such as its overflow menu.
  * @property selection a running multi-selection, which **replaces** the whole bar rather than
@@ -36,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
  */
 data class ScreenTopBar(
     val title: String? = null,
+    val titleBadge: (@Composable () -> Unit)? = null,
     val subtitle: (@Composable () -> Unit)? = null,
     val actions: (@Composable () -> Unit)? = null,
     val selection: SelectionBar? = null,
@@ -71,6 +74,7 @@ val LocalScreenTopBar: androidx.compose.runtime.ProvidableCompositionLocal<Mutab
  * rendering one.
  *
  * @param title the subject's name, or `null` to keep the destination's own section title.
+ * @param titleBadge drawn beside the title — the subject's kind.
  * @param subtitle drawn under it.
  * @param actions trailing controls the screen owns, such as its overflow menu.
  * @param selection a running multi-selection, which replaces the bar entirely while it lasts.
@@ -78,6 +82,7 @@ val LocalScreenTopBar: androidx.compose.runtime.ProvidableCompositionLocal<Mutab
 @Composable
 fun ProvideScreenTopBar(
     title: String? = null,
+    titleBadge: (@Composable () -> Unit)? = null,
     subtitle: (@Composable () -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
     selection: SelectionBar? = null,
@@ -88,7 +93,13 @@ fun ProvideScreenTopBar(
     val slot = LocalScreenTopBar.current
     val published by
         rememberUpdatedState(
-            ScreenTopBar(title = title, subtitle = subtitle, actions = actions, selection = selection),
+            ScreenTopBar(
+                title = title,
+                titleBadge = titleBadge,
+                subtitle = subtitle,
+                actions = actions,
+                selection = selection,
+            ),
         )
     // Published on every successful recomposition, cleared once on the way out. Keying a
     // DisposableEffect on the slots instead looks tidier and is a trap: a `subtitle` or `actions`

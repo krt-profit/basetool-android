@@ -143,14 +143,21 @@ private fun DetailPaneHead(head: ScreenTopBar) {
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                head.title?.let { title ->
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = KrtPalette.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    head.title?.let { title ->
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = KrtPalette.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    head.titleBadge?.invoke()
                 }
                 head.subtitle?.invoke()
             }
