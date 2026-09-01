@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-09-01
+
 ### Added
 
 - **Die Bank sagt jetzt, was die Gebühr kostet — vor dem Buchen.** Bei Auszahlung und
