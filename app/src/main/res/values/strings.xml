@@ -1339,6 +1339,7 @@
     <string name="allocation_add_cancel">Abbrechen</string>
     <string name="allocation_rest_free">%1$s frei</string>
     <string name="allocation_rest_none">Rest 0</string>
+    <string name="allocation_remove">Zuordnung entfernen</string>
     <string name="allocation_overbooked">Überbucht</string>
     <string name="allocation_save">Zuordnung speichern</string>
     <string name="allocation_open">Zuordnen</string>

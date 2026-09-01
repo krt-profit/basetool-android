@@ -50,6 +50,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.math.BigDecimal
 
 /**
  * The booking form's rules.
@@ -186,10 +187,17 @@ class BookingViewModelTest {
         ): ApiResult<InventoryEntry> = error("not used")
 
         override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
-            ApiResult.Success(emptyList())
+            ApiResult.Success(
+                listOf(
+                    // Asks for m1 only, so a Titanium booking must not be offered it.
+                    AllocationTarget("jo1", "#91", requiredMaterialIds = listOf("m1")),
+                    // Names no requirement, so it is offered whatever is booked.
+                    AllocationTarget("jo2", "#104"),
+                ),
+            )
 
         override suspend fun missionTargets(): ApiResult<List<AllocationTarget>> =
-            ApiResult.Success(emptyList())
+            ApiResult.Success(listOf(AllocationTarget("mi1", "Bergung")))
     }
 
     private lateinit var source: FakeSource
@@ -558,6 +566,116 @@ class BookingViewModelTest {
             // Drives both the cSCU hint and the merge opt-in. An item always merges into a
             // matching stack server-side, so the toggle would be a control that changes nothing.
             assertEquals(false, vm.state.value?.materialIsScu)
+        }
+
+    @Test
+    fun `an earmark travels with the booking rather than after it`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onQualityChanged("874")
+            vm.onAmountChanged("400")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+            vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "250")
+            vm.onSave()
+            advanceUntilIdle()
+
+            // One request, not a booking followed by a write per target: the server checks the sum
+            // and every target in the same transaction that creates the row (Variante C).
+            val sent = source.bookedIn.single()
+            assertEquals(1, sent.jobOrderAllocations.size)
+            assertEquals("jo1", sent.jobOrderAllocations.single().targetId)
+            assertEquals("250", sent.jobOrderAllocations.single().amount)
+        }
+
+    @Test
+    fun `a new earmark starts at what is left rather than at zero`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onAmountChanged("400")
+
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+            assertEquals("400", vm.state.value?.jobOrderSplit?.single()?.amount)
+
+            // And the next one starts at what the first left over.
+            vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "250")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo2", "#104"))
+            assertEquals("150", vm.state.value?.jobOrderSplit?.last()?.amount)
+        }
+
+    @Test
+    fun `promising more than is booked in blocks the whole booking`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onQualityChanged("874")
+            vm.onAmountChanged("400")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+
+            vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "500")
+
+            // The server refuses the booking, not just the earmark (R5), so the CTA goes dark
+            // rather than letting a member expect a row that will not exist.
+            assertEquals(true, vm.state.value?.splitOverbooked)
+            assertEquals(false, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `the two splits are reconciled apart`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onAmountChanged("400")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+            vm.splits.add(AllocationKind.MISSION, AllocationTarget("mi1", "Bergung"))
+
+            // The same 400 SCU may be promised to an Auftrag and to an Einsatz; one shared rest
+            // would be wrong in both directions.
+            assertEquals(BigDecimal.ZERO.compareTo(vm.state.value?.jobOrderRest), 0)
+            assertEquals(BigDecimal.ZERO.compareTo(vm.state.value?.missionRest), 0)
+            assertEquals(false, vm.state.value?.splitOverbooked)
+        }
+
+    @Test
+    fun `an item row never carries a mission earmark`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.splits.add(AllocationKind.MISSION, AllocationTarget("mi1", "Bergung"))
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("3")
+            vm.onSave()
+            advanceUntilIdle()
+
+            // The form does not offer the Einsatz split in item mode; this is the second lock, for
+            // a split entered before the switch. The server refuses one outright (REQ-INV-031).
+            assertEquals(emptyList<Any>(), source.bookedIn.single().missionAllocations)
+        }
+
+    @Test
+    fun `an Auftrag that never asked for this material is not offered`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onMaterialChosen(MaterialOption("m2", "Titanium", "SCU"))
+
+            // The server checks every earmark against its target's own requirement, so offering
+            // #91 here would be offering a rejection. A target naming no requirement stays.
+            val offered = vm.state.value?.offerable(AllocationKind.JOB_ORDER).orEmpty().map { it.id }
+            assertEquals(listOf("jo2"), offered)
         }
 
     @Test

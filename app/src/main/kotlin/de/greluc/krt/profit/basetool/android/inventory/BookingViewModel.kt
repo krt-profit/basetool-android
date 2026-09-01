@@ -9,11 +9,14 @@ package de.greluc.krt.profit.basetool.android.inventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
 import de.greluc.krt.profit.basetool.android.core.data.AllocationReduction
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
+import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
@@ -32,6 +35,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+
+/**
+ * Maps the form's earmark rows onto what the repository sends.
+ *
+ * @return one allocation per row that names an amount.
+ */
+private fun List<AllocationRow>.krtToAllocations(): List<InventoryAllocation> =
+    map { InventoryAllocation(targetId = it.targetId, label = it.label, subtitle = it.subtitle, amount = it.amount) }
 
 /** Which of the booking form's modes is showing (design ch. 09, Frame 2). */
 enum class BookingMode {
@@ -82,6 +94,14 @@ private const val SCU_UNIT = "SCU"
  * @property gameItemQuery what is in the item search.
  * @property gameItems what that search returned.
  * @property moreGameItems whether the catalogue holds items this page does not carry.
+ * @property orderTargets the Aufträge a book-in may earmark part of the new row for.
+ * @property missionTargets the same for Einsätze.
+ * @property jobOrderSplit what the member has earmarked for which Auftrag, entered while booking
+ *   in (Variante C). Sent with the booking, in one request, so the server checks the sum and every
+ *   target in the same transaction that creates the row.
+ * @property missionSplit the same for Einsätze. Never filled in item mode — the server refuses a
+ *   mission earmark on an item row.
+ * @property picking which "+ zuordnen" picker is open, or `null`.
  * @property moreMaterials whether the catalogue holds materials this page does not carry.
  * @property place the place picked.
  * @property placeQuery what is in the place search.
@@ -121,6 +141,11 @@ data class BookingState(
     val gameItemQuery: String = "",
     val gameItems: List<GameItemOption> = emptyList(),
     val moreGameItems: Boolean = false,
+    val orderTargets: List<AllocationTarget> = emptyList(),
+    val missionTargets: List<AllocationTarget> = emptyList(),
+    val jobOrderSplit: List<AllocationRow> = emptyList(),
+    val missionSplit: List<AllocationRow> = emptyList(),
+    val picking: AllocationKind? = null,
     val place: LocationOption? = null,
     val placeQuery: String = "",
     val places: List<LocationOption> = emptyList(),
@@ -166,7 +191,10 @@ data class BookingState(
                 // — the web form marks the field required and the server refuses without it. An
                 // item row needs none, refuses one, and needs its amount to be a whole number.
                 BookingMode.IN -> {
-                    positiveAmount && place != null &&
+                    // `!splitOverbooked` because the server refuses the WHOLE booking when a split
+                    // promises more than the amount (R5) — not just the earmark. Dimming the CTA
+                    // is what keeps a member from expecting a row that will never exist.
+                    positiveAmount && place != null && !splitOverbooked &&
                         when (kind) {
                             BookingCatalogKind.MATERIAL -> material != null && qualityGiven
                             BookingCatalogKind.ITEM -> gameItem != null && wholeAmount
@@ -189,6 +217,84 @@ data class BookingState(
      */
     private val qualityGiven: Boolean
         get() = quality.trim().toIntOrNull() != null
+
+    /**
+     * One of the two splits.
+     *
+     * @param kind which one.
+     * @return its rows.
+     */
+    fun split(kind: AllocationKind): List<AllocationRow> =
+        if (kind == AllocationKind.JOB_ORDER) jobOrderSplit else missionSplit
+
+    /**
+     * The rest of one split, which is what the member is watching while they type.
+     *
+     * @param kind which one.
+     * @return what is not earmarked yet.
+     */
+    fun rest(kind: AllocationKind): BigDecimal =
+        if (kind == AllocationKind.JOB_ORDER) jobOrderRest else missionRest
+
+    /**
+     * What one split's picker may still offer.
+     *
+     * A target already earmarked is left out — two rows for the same Auftrag would be two promises
+     * the server merges into one — and so is one that has no use for what is being booked: the
+     * server checks every earmark against its target's own requirement, so offering the rest would
+     * be offering a rejection. Missions carry no requirement and are filtered only for duplicates.
+     *
+     * @param dimension which split.
+     * @return the targets left to pick.
+     */
+    fun offerable(dimension: AllocationKind): List<AllocationTarget> {
+        val taken = split(dimension).map { it.targetId }.toSet()
+        val all = if (dimension == AllocationKind.JOB_ORDER) orderTargets else missionTargets
+        val bookingItem = kind == BookingCatalogKind.ITEM
+        return all
+            .filterNot { it.id in taken }
+            .filter {
+                dimension == AllocationKind.MISSION || it.krtAccepts(catalogId, item = bookingItem)
+            }
+    }
+
+    /**
+     * The same state with one split replaced.
+     *
+     * @param kind which split.
+     * @param rows what it now holds.
+     * @return the updated state.
+     */
+    internal fun withSplit(
+        kind: AllocationKind,
+        rows: List<AllocationRow>,
+    ): BookingState =
+        if (kind == AllocationKind.JOB_ORDER) copy(jobOrderSplit = rows) else copy(missionSplit = rows)
+
+    /** What is being booked in, for the earmark targets to be matched against. */
+    val catalogId: String?
+        get() = if (kind == BookingCatalogKind.ITEM) gameItem?.id else material?.id
+
+    /** How much of the booked amount is not earmarked for an Auftrag yet. */
+    val jobOrderRest: BigDecimal
+        get() = bookedAmount - jobOrderSplit.krtSum()
+
+    /** The same for the Einsatz split, reconciled apart because the server reconciles it apart. */
+    val missionRest: BigDecimal
+        get() = bookedAmount - missionSplit.krtSum()
+
+    /**
+     * Whether either split promises more than is being booked in.
+     *
+     * The server refuses the **whole booking** when a split exceeds the amount (R5), so this dims
+     * the CTA rather than letting a member find out after they expected a row to exist.
+     */
+    val splitOverbooked: Boolean
+        get() = jobOrderRest.signum() < 0 || missionRest.signum() < 0
+
+    /** The amount being booked in, as a figure; zero while the field is unreadable. */
+    private val bookedAmount: BigDecimal
+        get() = amount.trim().replace(',', '.').toBigDecimalOrNull() ?: BigDecimal.ZERO
 
     /**
      * Whether the amount is a whole number, which an item row may not go without.
@@ -288,6 +394,16 @@ class BookingViewModel(
     /** What the form draws, or `null` when it is closed. */
     val state: StateFlow<BookingState?> = mutableState.asStateFlow()
 
+    /**
+     * The book-in's earmarks.
+     *
+     * Public so the screen wires its actions straight to it: the split is its own question with
+     * its own state, and relaying five methods through the view model would add a hop and nothing
+     * else.
+     */
+    val splits: BookingSplitHolder =
+        BookingSplitHolder(source = source, scope = viewModelScope, update = ::update)
+
     private val onlineState = MutableStateFlow(true)
 
     /** Whether a booking can be sent at all. */
@@ -313,6 +429,7 @@ class BookingViewModel(
     fun openBookIn(onSaved: () -> Unit) {
         saved = onSaved
         mutableState.value = BookingState(mode = BookingMode.IN, online = onlineState.value)
+        splits.load()
     }
 
     /**
@@ -621,6 +738,12 @@ class BookingViewModel(
                         locationId = current.place?.id.orEmpty(),
                         amount = current.amount,
                         quality = current.quality.toIntOrNull().takeUnless { item },
+                        jobOrderAllocations = current.jobOrderSplit.krtToAllocations(),
+                        // Never on an item row: the server refuses a mission earmark there
+                        // (REQ-INV-031), and the form does not offer the split — this is the
+                        // second lock, for a split entered before the kind was switched.
+                        missionAllocations =
+                            if (item) emptyList() else current.missionSplit.krtToAllocations(),
                     ),
                 )
             }

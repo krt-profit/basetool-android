@@ -4,6 +4,13 @@
 
 ### Added
 
+- **Beim Einbuchen lässt sich der Bestand direkt zuordnen.** Unter dem Ort stehen jetzt
+  „Aufträge" und „Einsätze": 400 SCU einbuchen und dabei 250 für Auftrag #91 und 150 für #104
+  vormerken — in einem Schritt, wie im Webtool. Bisher musstest du erst einbuchen und den Eintrag
+  danach einzeln zuweisen; dazwischen lag der Bestand für alle anderen sichtbar als frei. Angeboten
+  werden nur Aufträge, die das Material überhaupt brauchen, und wer mehr vormerkt als er einbucht,
+  kommt nicht am Knopf vorbei.
+
 - **Game-Items lassen sich jetzt ins Lager einbuchen.** Das Einbuchen-Blatt hat oben einen
   Umschalter „Material / Item"; die Item-Seite sucht im Item-Katalog, fragt keine Qualität (der
   Server nimmt dort keine) und zählt in ganzen Stück. Ein Wechsel des Umschalters verwirft die

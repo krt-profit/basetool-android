@@ -92,6 +92,11 @@ class BookingSheetTest {
                         BookingCallbacks(
                             onMode = { modes.add(it) },
                             onKind = { kinds.add(it) },
+                            onSplitAmount = { _, _, _ -> },
+                            onSplitStep = { _, _, _ -> },
+                            onSplitPicking = {},
+                            onSplitAdd = { _, _ -> },
+                            onSplitRemove = { _, _ -> },
                             onGameItemQuery = {},
                             onGameItem = {},
                             onAmount = {},

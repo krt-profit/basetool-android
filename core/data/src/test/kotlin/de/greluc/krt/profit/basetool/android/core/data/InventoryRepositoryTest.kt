@@ -269,6 +269,57 @@ class InventoryRepositoryTest {
         }
 
     @Test
+    fun `the booking carries its earmarks, in the same request`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(
+                    materialId = "m1",
+                    locationId = "l1",
+                    amount = "400",
+                    quality = 874,
+                    jobOrderAllocations =
+                        listOf(InventoryAllocation("jo1", "#91", null, "250")),
+                    missionAllocations =
+                        listOf(InventoryAllocation("mi1", "Bergung", null, "100")),
+                ),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            // One request, not a booking followed by a write per target: the server checks the sum
+            // against the amount and every target against its own requirement in the same
+            // transaction that creates the row (Variante C, REQ-INV-027 R4).
+            assertTrue(body.contains("\"jobOrderAllocations\":[{\"targetId\":\"jo1\",\"amount\":250"))
+            assertTrue(body.contains("\"missionAllocations\":[{\"targetId\":\"mi1\",\"amount\":100"))
+        }
+
+    @Test
+    fun `an earmark without an amount is dropped rather than sent as a zero`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(
+                    materialId = "m1",
+                    locationId = "l1",
+                    amount = "400",
+                    quality = 874,
+                    jobOrderAllocations =
+                        listOf(
+                            InventoryAllocation("jo1", "#91", null, ""),
+                            InventoryAllocation("jo2", "#104", null, "0"),
+                        ),
+                ),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            // A zero is an earmark OF nothing, which the server would create: a target promised
+            // nothing, standing among targets promised something.
+            assertFalse("an empty split must not travel, was: ${'$'}body", body.contains("jobOrderAllocations"))
+        }
+
+    @Test
     fun `a material booking still sends its quality`() =
         runTest {
             server.enqueue(MockResponse.Builder().code(HTTP_OK).build())

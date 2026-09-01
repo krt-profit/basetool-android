@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BulkCheckoutReq
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryAllocationInput
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryAllocationWriteDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemBookOutDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemCreateDto
@@ -209,12 +210,36 @@ data class InventoryAllocation(
  * @property id the Auftrag or Einsatz.
  * @property label what to call it.
  * @property subtitle a second line, or `null`.
+ * @property requiredMaterialIds which materials the target asks for, empty when it names none.
+ * @property requiredGameItemIds the same for items.
  */
 data class AllocationTarget(
     val id: String,
     val label: String,
     val subtitle: String? = null,
-)
+    val requiredMaterialIds: List<String> = emptyList(),
+    val requiredGameItemIds: List<String> = emptyList(),
+) {
+    /**
+     * Whether this target has any use for what is being booked in.
+     *
+     * The server checks every earmark against the target's own requirement and refuses one that
+     * does not match, so offering an Auftrag that never asked for this material would be offering
+     * a rejection. A target that names **no** requirement is offered regardless: the lists are the
+     * order's material lines, and a mission carries none at all.
+     *
+     * @param catalogId the material or item being booked in, or `null` before one is picked.
+     * @param item whether that id names an item rather than a material.
+     * @return whether the target may be offered.
+     */
+    fun krtAccepts(
+        catalogId: String?,
+        item: Boolean,
+    ): Boolean {
+        val required = if (item) requiredGameItemIds else requiredMaterialIds
+        return catalogId == null || required.isEmpty() || catalogId in required
+    }
+}
 
 /**
  * One game item and where the org unit's copies of it sit (design ch. 09 artboard 21).
@@ -252,6 +277,21 @@ enum class BookOutKind {
 }
 
 /**
+ * Maps the form's earmarks onto the wire, or to `null` when there are none.
+ *
+ * A row whose amount is not a positive number is dropped rather than sent as a zero: the server
+ * reads a zero as an earmark of nothing and would create it, leaving a target promised nothing.
+ *
+ * @return the inputs, or `null` when nothing is earmarked.
+ */
+private fun List<InventoryAllocation>.krtToInputs(): List<InventoryAllocationInput>? =
+    mapNotNull { row ->
+        row.amount.krtToDoubleOrNull()?.takeIf { it > 0.0 }?.let {
+            InventoryAllocationInput(targetId = row.targetId, amount = it)
+        }
+    }.takeIf { it.isNotEmpty() }
+
+/**
  * What booking stock in carries.
  *
  * **`materialId` and `gameItemId` exclude each other and one of them is required** — the server's
@@ -272,6 +312,13 @@ enum class BookOutKind {
  *   the app: the Lager reads exclude private stock, so booking it in from here would put material
  *   somewhere no screen of this app can show it again
  * @property mergeStock whether the server may merge it into an identical entry
+ * @property jobOrderAllocations how much of the new row is earmarked for which Auftrag, entered
+ *   while booking in rather than afterwards (Variante C / split-at-check-in, REQ-INV-027 R4). The
+ *   server checks the sum against [amount] and every target against its own requirement, **in the
+ *   same transaction as the booking** — which is the whole point of sending them together.
+ *   Empty falls back to the server's own default: the row lands unassigned.
+ * @property missionAllocations the same for Einsätze. Always empty for an item row — the server
+ *   refuses a mission earmark there (REQ-INV-031), item stock goes to ITEM orders only.
  */
 data class BookInDraft(
     val materialId: String? = null,
@@ -281,6 +328,8 @@ data class BookInDraft(
     val quality: Int?,
     val personal: Boolean = false,
     val mergeStock: Boolean = true,
+    val jobOrderAllocations: List<InventoryAllocation> = emptyList(),
+    val missionAllocations: List<InventoryAllocation> = emptyList(),
 )
 
 /**
@@ -836,6 +885,10 @@ class InventoryRepository(
                 quality = draft.quality.takeIf { draft.gameItemId == null },
                 personal = draft.personal,
                 mergeStock = draft.mergeStock,
+                // Omitted rather than sent empty: an empty list and an absent one mean the same
+                // thing to the server, and `null` is what the other clients send.
+                jobOrderAllocations = draft.jobOrderAllocations.krtToInputs(),
+                missionAllocations = draft.missionAllocations.krtToInputs(),
             ),
             InventoryItemCreateDto.serializer(),
         )
@@ -920,6 +973,8 @@ class InventoryRepository(
                                 id = id,
                                 label = reference.displayId?.let { "#$it" } ?: id,
                                 subtitle = reference.handle?.takeIf { it.isNotBlank() },
+                                requiredMaterialIds = reference.requiredMaterialIds.orEmpty(),
+                                requiredGameItemIds = reference.requiredGameItemIds.orEmpty(),
                             )
                         }
                     },

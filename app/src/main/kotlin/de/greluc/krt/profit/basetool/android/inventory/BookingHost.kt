@@ -30,6 +30,11 @@ fun BookingHost(viewModel: BookingViewModel) {
                 BookingCallbacks(
                     onMode = viewModel::onModeChanged,
                     onKind = viewModel::onKindChanged,
+                    onSplitAmount = viewModel.splits::amount,
+                    onSplitStep = viewModel.splits::step,
+                    onSplitPicking = viewModel.splits::picking,
+                    onSplitAdd = viewModel.splits::add,
+                    onSplitRemove = viewModel.splits::remove,
                     onGameItemQuery = viewModel::onGameItemQueryChanged,
                     onGameItem = viewModel::onGameItemChosen,
                     onAmount = viewModel::onAmountChanged,

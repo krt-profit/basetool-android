@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
+import de.greluc.krt.profit.basetool.android.core.data.AllocationKind
+import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
@@ -218,6 +220,11 @@ fun BookingSheet(
  *
  * @property onMode the segment changed.
  * @property onKind a book-in switched between the material and the item catalogue.
+ * @property onSplitAmount an earmark's amount was typed.
+ * @property onSplitStep an earmark's stepper was used.
+ * @property onSplitPicking an earmark picker was opened or closed.
+ * @property onSplitAdd a target was earmarked.
+ * @property onSplitRemove an earmark is to go.
  * @property onGameItemQuery the item search was typed into.
  * @property onGameItem an item was picked.
  * @property onAmount the amount changed.
@@ -242,6 +249,11 @@ fun BookingSheet(
 data class BookingCallbacks(
     val onMode: (BookingMode) -> Unit,
     val onKind: (BookingCatalogKind) -> Unit,
+    val onSplitAmount: (AllocationKind, String, String) -> Unit,
+    val onSplitStep: (AllocationKind, String, Int) -> Unit,
+    val onSplitPicking: (AllocationKind?) -> Unit,
+    val onSplitAdd: (AllocationKind, AllocationTarget) -> Unit,
+    val onSplitRemove: (AllocationKind, String) -> Unit,
     val onGameItemQuery: (String) -> Unit,
     val onGameItem: (GameItemOption) -> Unit,
     val onAmount: (String) -> Unit,
@@ -409,6 +421,57 @@ private fun BookInFields(
             }
         }
         PlaceField(state = state, callbacks = callbacks)
+        BookInSplits(state = state, callbacks = callbacks)
+    }
+}
+
+/**
+ * „Herkunft" in reverse: where the amount being booked in is promised to go.
+ *
+ * The web has carried this since Variante C landed — earmarks entered **with** the booking rather
+ * than afterwards on the created row, so the server checks the sum and every target in the same
+ * transaction that creates it. The app booked first and assigned second, which left the stock
+ * unassigned in between and turned one refusal into several.
+ *
+ * The Einsatz split is absent in item mode: the server refuses a mission earmark on an item row
+ * (REQ-INV-031), and an offer nobody may accept is worse than no offer.
+ *
+ * @param state the form.
+ * @param callbacks what it reports.
+ */
+@Composable
+private fun BookInSplits(
+    state: BookingState,
+    callbacks: BookingCallbacks,
+) {
+    val actions =
+        SplitActions(
+            onAmount = callbacks.onSplitAmount,
+            onStep = callbacks.onSplitStep,
+            onPick = callbacks.onSplitPicking,
+            onAdd = callbacks.onSplitAdd,
+            onRemove = callbacks.onSplitRemove,
+        )
+    val dimensions =
+        if (state.kind == BookingCatalogKind.ITEM) {
+            listOf(AllocationKind.JOB_ORDER)
+        } else {
+            listOf(AllocationKind.JOB_ORDER, AllocationKind.MISSION)
+        }
+    dimensions.forEach { kind ->
+        Split(
+            kind = kind,
+            pane =
+                SplitPane(
+                    rows = state.split(kind),
+                    offerable = state.offerable(kind),
+                    rest = state.rest(kind),
+                    picking = state.picking == kind,
+                    enabled = !state.saving,
+                    removable = true,
+                ),
+            actions = actions,
+        )
     }
 }
 

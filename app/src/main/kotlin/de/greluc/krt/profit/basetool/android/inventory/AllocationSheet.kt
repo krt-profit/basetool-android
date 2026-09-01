@@ -42,6 +42,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHairlineRule
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtLockToast
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStepperField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
@@ -55,6 +56,7 @@ import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import kotlinx.coroutines.delay
+import java.math.BigDecimal
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Zuordnung sheet. */
@@ -130,8 +132,27 @@ fun AllocationSheet(
             // caller without the grant still sees them — only the editors recede (artboard 13).
             Box(modifier = Modifier.alpha(if (saveGate.allowed) 1f else LOCKED_EDITOR_ALPHA)) {
                 Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
-                    Split(kind = AllocationKind.JOB_ORDER, state = state, callbacks = callbacks)
-                    Split(kind = AllocationKind.MISSION, state = state, callbacks = callbacks)
+                    val actions =
+                        SplitActions(
+                            onAmount = callbacks.onAmount,
+                            onStep = callbacks.onStep,
+                            onPick = callbacks.onPick,
+                            onAdd = callbacks.onAdd,
+                        )
+                    listOf(AllocationKind.JOB_ORDER, AllocationKind.MISSION).forEach { kind ->
+                        Split(
+                            kind = kind,
+                            pane =
+                                SplitPane(
+                                    rows = state.rows(kind),
+                                    offerable = state.addable(kind),
+                                    rest = state.rest(kind),
+                                    picking = state.picking == kind,
+                                    enabled = !state.saving,
+                                ),
+                            actions = actions,
+                        )
+                    }
                 }
             }
             Text(
@@ -167,17 +188,61 @@ fun AllocationSheet(
 }
 
 /**
+ * What one split shows, independent of which surface is showing it.
+ *
+ * Split out so the Zuordnung sheet and the book-in form draw the **same** thing: the split of an
+ * amount across targets is one interaction, and two renderings of it would drift on the day one of
+ * them gains a state the other does not.
+ *
+ * @property rows what is promised so far.
+ * @property offerable what the add-picker may still offer.
+ * @property rest what is not promised yet.
+ * @property picking whether this split's add-picker is open.
+ * @property enabled whether it may still be changed.
+ * @property removable whether a row may be taken away.
+ *
+ *   The Zuordnung sheet says no: there a row **exists on the server**, and un-promising it means
+ *   writing a zero, which is what the stepper already does. A book-in's rows exist only in the form
+ *   until it is sent, so removing one is the only way to take it back.
+ */
+data class SplitPane(
+    val rows: List<AllocationRow>,
+    val offerable: List<AllocationTarget>,
+    val rest: BigDecimal,
+    val picking: Boolean,
+    val enabled: Boolean,
+    val removable: Boolean = false,
+)
+
+/**
+ * What a split reports back.
+ *
+ * @property onAmount a row's amount was typed.
+ * @property onStep a row's stepper was used.
+ * @property onPick the add-picker was opened, or closed with `null`.
+ * @property onAdd a target was picked.
+ * @property onRemove a row is to go; never called unless [SplitPane.removable].
+ */
+data class SplitActions(
+    val onAmount: (AllocationKind, String, String) -> Unit,
+    val onStep: (AllocationKind, String, Int) -> Unit,
+    val onPick: (AllocationKind?) -> Unit,
+    val onAdd: (AllocationKind, AllocationTarget) -> Unit,
+    val onRemove: (AllocationKind, String) -> Unit = { _, _ -> },
+)
+
+/**
  * One of the two splits: its heading, its rest, its rows and its add row.
  *
  * @param kind which split.
- * @param state the open sheet.
- * @param callbacks what it reports back.
+ * @param pane what it shows.
+ * @param actions what it reports back.
  */
 @Composable
-private fun Split(
+internal fun Split(
     kind: AllocationKind,
-    state: AllocationSheetState,
-    callbacks: AllocationCallbacks,
+    pane: SplitPane,
+    actions: SplitActions,
 ) {
     val rail = kind.rail()
     Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
@@ -192,33 +257,34 @@ private fun Split(
                 color = rail,
             )
             KrtHairlineRule(modifier = Modifier.weight(1f))
-            RestChip(state = state, kind = kind)
+            RestChip(rest = pane.rest)
         }
-        state.rows(kind).forEach { row ->
+        pane.rows.forEach { row ->
             AllocationRowView(
                 row = row,
                 rail = rail,
-                enabled = !state.saving,
-                onAmount = { value -> callbacks.onAmount(kind, row.targetId, value) },
-                onStep = { by -> callbacks.onStep(kind, row.targetId, by) },
+                enabled = pane.enabled,
+                onAmount = { value -> actions.onAmount(kind, row.targetId, value) },
+                onStep = { by -> actions.onStep(kind, row.targetId, by) },
+                onRemove = if (pane.removable) ({ actions.onRemove(kind, row.targetId) }) else null,
             )
         }
-        val addable = state.addable(kind)
-        if (state.picking == kind) {
+        val addable = pane.offerable
+        if (pane.picking) {
             addable.forEach { target ->
-                TargetRow(target = target, rail = rail, onPick = { callbacks.onAdd(kind, target) })
+                TargetRow(target = target, rail = rail, onPick = { actions.onAdd(kind, target) })
             }
             KrtGhostButton(
                 text = stringResource(R.string.allocation_add_cancel),
-                onClick = { callbacks.onPick(null) },
+                onClick = { actions.onPick(null) },
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
             KrtGhostButton(
                 text = stringResource(kind.addRes()),
-                onClick = { callbacks.onPick(kind) },
+                onClick = { actions.onPick(kind) },
                 iconRes = DesignR.drawable.ic_krt_plus,
-                enabled = addable.isNotEmpty() && !state.saving,
+                enabled = addable.isNotEmpty() && pane.enabled,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -228,15 +294,10 @@ private fun Split(
 /**
  * The split's rest, in the one of three states it is in.
  *
- * @param state the open sheet.
- * @param kind which split.
+ * @param rest what is not promised yet.
  */
 @Composable
-private fun RestChip(
-    state: AllocationSheetState,
-    kind: AllocationKind,
-) {
-    val rest = state.rest(kind)
+private fun RestChip(rest: BigDecimal) {
     when {
         rest.signum() < 0 -> {
             KrtChip(text = stringResource(R.string.allocation_overbooked), tone = KrtChipTone.Danger)
@@ -263,6 +324,7 @@ private fun RestChip(
  * @param enabled whether it can still be changed.
  * @param onAmount the field was typed into.
  * @param onStep a step was taken.
+ * @param onRemove takes the row away, or `null` where rows are not removed.
  */
 @Composable
 private fun AllocationRowView(
@@ -271,6 +333,7 @@ private fun AllocationRowView(
     enabled: Boolean,
     onAmount: (String) -> Unit,
     onStep: (Int) -> Unit,
+    onRemove: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -308,6 +371,14 @@ private fun AllocationRowView(
             enabled = enabled,
             modifier = Modifier.width(STEPPER_WIDTH),
         )
+        onRemove?.let { remove ->
+            KrtIconButton(
+                iconRes = DesignR.drawable.ic_krt_close,
+                label = stringResource(R.string.allocation_remove),
+                onClick = remove,
+                enabled = enabled,
+            )
+        }
     }
 }
 
