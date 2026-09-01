@@ -13,13 +13,16 @@ import de.greluc.krt.profit.basetool.android.core.data.AllocationReduction
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventorySource
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
+import de.greluc.krt.profit.basetool.android.core.data.krtToDoubleOrNull
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -42,6 +45,22 @@ enum class BookingMode {
     NOTE,
 }
 
+/**
+ * Which catalogue a book-in names.
+ *
+ * The server takes the two in **mutually exclusive** fields and treats them differently in three
+ * further ways — a material row requires a grade and an item row forbids one, an item amount must
+ * be a positive whole number, and an item always merges into a matching stack. So this is a kind of
+ * row, not a filter on one list (REQ-INV-029).
+ */
+enum class BookingCatalogKind {
+    /** Ore and refined goods — graded, and measured in SCU or in pieces. */
+    MATERIAL,
+
+    /** A finished product — ungraded, always counted in whole pieces. */
+    ITEM,
+}
+
 /** What the server calls a material measured in standard cargo units rather than in pieces. */
 private const val SCU_UNIT = "SCU"
 
@@ -52,11 +71,17 @@ private const val SCU_UNIT = "SCU"
  * and must not lose the amount they already typed, which is the field the moving modes share.
  *
  * @property mode which mode is showing.
+ * @property kind whether a book-in names a material or a game item. Only asked of a book-in: an
+ *   entry already knows what it holds, and every way out is the same for both.
  * @property entry the entry being booked out or rebooked; `null` in [BookingMode.IN].
  * @property amount how much, as typed.
  * @property material the material picked, for booking in.
  * @property materialQuery what is in the material search.
  * @property materials what that search returned.
+ * @property gameItem the item picked, for booking in in item mode.
+ * @property gameItemQuery what is in the item search.
+ * @property gameItems what that search returned.
+ * @property moreGameItems whether the catalogue holds items this page does not carry.
  * @property moreMaterials whether the catalogue holds materials this page does not carry.
  * @property place the place picked.
  * @property placeQuery what is in the place search.
@@ -85,12 +110,17 @@ private const val SCU_UNIT = "SCU"
  */
 data class BookingState(
     val mode: BookingMode = BookingMode.IN,
+    val kind: BookingCatalogKind = BookingCatalogKind.MATERIAL,
     val entry: InventoryEntry? = null,
     val amount: String = "",
     val material: MaterialOption? = null,
     val materialQuery: String = "",
     val materials: List<MaterialOption> = emptyList(),
     val moreMaterials: Boolean = false,
+    val gameItem: GameItemOption? = null,
+    val gameItemQuery: String = "",
+    val gameItems: List<GameItemOption> = emptyList(),
+    val moreGameItems: Boolean = false,
     val place: LocationOption? = null,
     val placeQuery: String = "",
     val places: List<LocationOption> = emptyList(),
@@ -127,15 +157,25 @@ data class BookingState(
             when (mode) {
                 // A note moves nothing, so it needs no amount — and an emptied note is a
                 // deliberate edit, not an incomplete form.
-                BookingMode.NOTE -> entry != null && note != entry.note.orEmpty()
+                BookingMode.NOTE -> {
+                    entry != null && note != entry.note.orEmpty()
+                }
 
-                // The quality belongs here because the server requires it of a material row
-                // (`InventoryItemCreateDto`, REQ-INV-029) and the web form marks it `required`.
-                // Without it the CTA invited a booking the server answers with a 400 — a refusal
-                // the form knew about before it was sent.
-                BookingMode.IN -> positiveAmount && material != null && place != null && qualityGiven
+                // Both kinds need an amount and a place; what they need beyond that is where the
+                // server's two catalogues part company (REQ-INV-029). A material row needs a grade
+                // — the web form marks the field required and the server refuses without it. An
+                // item row needs none, refuses one, and needs its amount to be a whole number.
+                BookingMode.IN -> {
+                    positiveAmount && place != null &&
+                        when (kind) {
+                            BookingCatalogKind.MATERIAL -> material != null && qualityGiven
+                            BookingCatalogKind.ITEM -> gameItem != null && wholeAmount
+                        }
+                }
 
-                BookingMode.OUT -> positiveAmount && entry != null && outKindSatisfied && herkunftValid
+                BookingMode.OUT -> {
+                    positiveAmount && entry != null && outKindSatisfied && herkunftValid
+                }
             }
 
     /** Whether the amount is a quantity and not zero. */
@@ -149,6 +189,16 @@ data class BookingState(
      */
     private val qualityGiven: Boolean
         get() = quality.trim().toIntOrNull() != null
+
+    /**
+     * Whether the amount is a whole number, which an item row may not go without.
+     *
+     * `ValidQuantityAmountValidator` refuses `amount % 1 != 0` for a game item outright: items are
+     * counted, not measured, and half a medical station is not a quantity. Checked here so the
+     * CTA does not invite the refusal.
+     */
+    private val wholeAmount: Boolean
+        get() = amount.krtToDoubleOrNull()?.let { it % 1.0 == 0.0 } == true
 
     /** Whether the chosen way out has the field that makes it what it is. */
     private val outKindSatisfied: Boolean
@@ -202,7 +252,9 @@ data class BookingState(
      * that changes nothing — which is worse than no checkbox, because the member cannot tell.
      */
     val materialIsScu: Boolean
-        get() = (entry?.unit ?: material?.unit)?.equals(SCU_UNIT, ignoreCase = true) == true
+        get() =
+            kind == BookingCatalogKind.MATERIAL &&
+                (entry?.unit ?: material?.unit)?.equals(SCU_UNIT, ignoreCase = true) == true
 
     /**
      * Whether the transfer would actually move the material.
@@ -375,7 +427,9 @@ class BookingViewModel(
      */
     fun onMaterialQueryChanged(query: String) {
         update { it.copy(materialQuery = query) }
-        search(query) { results -> update { it.copy(materials = results) } }
+        searchPicker(query, source::materials) { rows, more ->
+            copy(materials = rows, moreMaterials = more)
+        }
     }
 
     /**
@@ -387,13 +441,65 @@ class BookingViewModel(
         update { it.copy(material = material, materials = emptyList(), error = null) }
 
     /**
+     * Types into the item search.
+     *
+     * @param query what the member typed.
+     */
+    fun onGameItemQueryChanged(query: String) {
+        update { it.copy(gameItem = null, gameItemQuery = query) }
+        searchPicker(query, source::gameItems) { rows, more ->
+            copy(gameItems = rows, moreGameItems = more)
+        }
+    }
+
+    /**
+     * Picks an item.
+     *
+     * @param item what was picked.
+     */
+    fun onGameItemChosen(item: GameItemOption) =
+        update { it.copy(gameItem = item, gameItemQuery = item.name, gameItems = emptyList(), error = null) }
+
+    /**
+     * Switches a book-in between the two catalogues.
+     *
+     * The other kind's pick is dropped rather than kept: the server takes exactly one of the two,
+     * and a material still held in state while an item is showing is a booking nobody can see
+     * being assembled. The grade goes with it — an item row refuses one.
+     *
+     * @param kind which catalogue the form now names.
+     */
+    fun onKindChanged(kind: BookingCatalogKind) =
+        update {
+            if (it.kind == kind) {
+                it
+            } else {
+                it.copy(
+                    kind = kind,
+                    material = null,
+                    materialQuery = "",
+                    materials = emptyList(),
+                    moreMaterials = false,
+                    gameItem = null,
+                    gameItemQuery = "",
+                    gameItems = emptyList(),
+                    moreGameItems = false,
+                    quality = "",
+                    error = null,
+                )
+            }
+        }
+
+    /**
      * Searches places.
      *
      * @param query what the member typed.
      */
     fun onPlaceQueryChanged(query: String) {
         update { it.copy(placeQuery = query) }
-        searchPlaces(query)
+        searchPicker(query, source::locations) { rows, more ->
+            copy(places = rows, morePlaces = more)
+        }
     }
 
     /**
@@ -411,7 +517,9 @@ class BookingViewModel(
      */
     fun onMemberQueryChanged(query: String) {
         update { it.copy(memberQuery = query) }
-        searchMembers(query)
+        searchPicker(query, source::members) { rows, more ->
+            copy(members = rows, moreMembers = more)
+        }
     }
 
     /**
@@ -502,12 +610,17 @@ class BookingViewModel(
     private suspend fun send(current: BookingState): ApiResult<Unit> =
         when (current.mode) {
             BookingMode.IN -> {
+                val item = current.kind == BookingCatalogKind.ITEM
                 source.bookIn(
                     BookInDraft(
-                        materialId = current.material?.id.orEmpty(),
+                        // Exactly one of the two, which is the server's XOR and a DB check
+                        // constraint besides: sending both refuses the booking, sending neither
+                        // refuses it too.
+                        materialId = current.material?.id.takeUnless { item },
+                        gameItemId = current.gameItem?.id.takeIf { item },
                         locationId = current.place?.id.orEmpty(),
                         amount = current.amount,
-                        quality = current.quality.toIntOrNull(),
+                        quality = current.quality.toIntOrNull().takeUnless { item },
                     ),
                 )
             }
@@ -582,67 +695,37 @@ class BookingViewModel(
     }
 
     /**
-     * Runs a debounced material search.
+     * Runs a debounced picker search.
      *
+     * One function for all four pickers rather than four near-copies: they differ only in which
+     * catalogue they ask and which pair of state fields they write, and the four-fold repetition
+     * was where the item picker's overflow flag would have been forgotten. A query below
+     * [MIN_SEARCH] clears the list **and** the flag — leaving a stale „there are more" beside an
+     * empty list is the one wrong thing this can say.
+     *
+     * The single [searchJob] is deliberate: the sheet shows one picker at a time, so a new search
+     * cancelling the last one is what keeps a slow answer from landing after a faster one.
+     *
+     * @param T what the picker offers.
      * @param query what the member typed.
-     * @param onResults what to do with the answer.
+     * @param fetch the catalogue to ask.
+     * @param write puts the rows and the overflow flag on the form.
      */
-    private fun search(
+    private fun <T> searchPicker(
         query: String,
-        onResults: (List<MaterialOption>) -> Unit,
+        fetch: suspend (String) -> ApiResult<PickerPage<T>>,
+        write: BookingState.(List<T>, Boolean) -> BookingState,
     ) {
         searchJob?.cancel()
         if (query.trim().length < MIN_SEARCH) {
-            update { it.copy(moreMaterials = false) }
-            onResults(emptyList())
+            update { it.write(emptyList(), false) }
             return
         }
         searchJob =
             viewModelScope.launch {
                 delay(DEBOUNCE_MILLIS)
-                (source.materials(query) as? ApiResult.Success)?.let { result ->
-                    update { it.copy(moreMaterials = result.value.more) }
-                    onResults(result.value.rows)
-                }
-            }
-    }
-
-    /**
-     * Runs a debounced place search.
-     *
-     * @param query what the member typed.
-     */
-    private fun searchPlaces(query: String) {
-        searchJob?.cancel()
-        if (query.trim().length < MIN_SEARCH) {
-            update { it.copy(places = emptyList(), morePlaces = false) }
-            return
-        }
-        searchJob =
-            viewModelScope.launch {
-                delay(DEBOUNCE_MILLIS)
-                (source.locations(query) as? ApiResult.Success)?.let { result ->
-                    update { it.copy(places = result.value.rows, morePlaces = result.value.more) }
-                }
-            }
-    }
-
-    /**
-     * Runs a debounced member search.
-     *
-     * @param query what the member typed.
-     */
-    private fun searchMembers(query: String) {
-        searchJob?.cancel()
-        if (query.trim().length < MIN_SEARCH) {
-            update { it.copy(members = emptyList(), moreMembers = false) }
-            return
-        }
-        searchJob =
-            viewModelScope.launch {
-                delay(DEBOUNCE_MILLIS)
-                (source.members(query) as? ApiResult.Success)?.let { result ->
-                    update { it.copy(members = result.value.rows, moreMembers = result.value.more) }
+                (fetch(query) as? ApiResult.Success)?.let { result ->
+                    update { it.write(result.value.rows, result.value.more) }
                 }
             }
     }

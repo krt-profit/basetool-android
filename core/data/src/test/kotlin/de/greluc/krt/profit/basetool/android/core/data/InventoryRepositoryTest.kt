@@ -84,6 +84,13 @@ class InventoryRepositoryTest {
              "page": 0, "totalElements": 2, "totalPages": 1}
             """.trimIndent()
 
+        /** One item out of a catalogue of thirty. */
+        val ITEMS =
+            """
+            {"content": [{"id": "gi1", "name": "Medizinische Station T2"}],
+             "page": 0, "totalElements": 30, "totalPages": 30}
+            """.trimIndent()
+
         val MEMBERS =
             """
             {"content": [{"id": "u1", "username": "rhea", "effectiveName": "Rhea"}],
@@ -234,6 +241,60 @@ class InventoryRepositoryTest {
             val page = (repository.materials("quant") as ApiResult.Success).value
 
             assertFalse(page.more)
+        }
+
+    @Test
+    fun `an item booking sends the item and no quality at all`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(
+                    gameItemId = "gi1",
+                    locationId = "l1",
+                    amount = "3",
+                    // Carried over from a material the member had picked before switching: the
+                    // draft may hold it, the wire may not.
+                    quality = 874,
+                ),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains("\"gameItemId\":\"gi1\""))
+            // Asserted as an ABSENCE: the server refuses a quality on an item row outright
+            // (isQualityConsistentWithCatalog, REQ-INV-029), and a payload carrying one looks
+            // perfectly valid until it comes back a 400.
+            assertFalse("a quality must never travel with an item row, was: ${'$'}body", body.contains("quality"))
+            assertFalse("the catalogue reference is exclusive", body.contains("materialId"))
+        }
+
+    @Test
+    fun `a material booking still sends its quality`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(materialId = "m1", locationId = "l1", amount = "3", quality = 874),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains("\"materialId\":\"m1\""))
+            assertTrue(body.contains("\"quality\":874"))
+            assertFalse(body.contains("gameItemId"))
+        }
+
+    @Test
+    fun `the item picker searches the order form's catalogue`() =
+        runTest {
+            respond(ITEMS)
+
+            val page = (repository.gameItems("station") as ApiResult.Success).value
+
+            // The item catalogue, not the materials: the two are separate tables and the server
+            // takes them in mutually exclusive fields.
+            assertTrue(requestedUrl().encodedPath.endsWith("/api/v1/orders/item-catalog"))
+            assertEquals("Medizinische Station T2", page.rows.single().name)
+            assertTrue(page.more)
         }
 
     @Test

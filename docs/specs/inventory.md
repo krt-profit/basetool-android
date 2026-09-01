@@ -661,3 +661,54 @@ merge opt-in beside it already followed — the web applies it too, hiding its o
 - [ ] Walked on a device: outstanding.
 
 **Code:** `BookingViewModel` (`submittable`, `qualityGiven`), `BookingSheet`
+
+---
+
+### REQ-APP-INV-020 — A book-in names one of two catalogues, and they are not interchangeable
+
+The web's booking form has carried a Material/Item switch since the item inventory landed
+(REQ-INV-029, ADR-0101); the app could read item stock („Game-Items" under „Mehr") but never book
+any in. It can now, and the two kinds are **kinds of row rather than one list with a filter** —
+`InventoryItemCreateDto` takes them in mutually exclusive fields, mirrored by the DB check
+constraint `chk_inventory_item_catalog_xor`, and asks different things of each:
+
+| | material row | item row |
+| --- | --- | --- |
+| catalogue field | `materialId` | `gameItemId` — never both, never neither |
+| grade | **required** | **forbidden** |
+| amount | SCU or pieces, per the material | positive **whole** units, always |
+| `mergeStock` | honoured for SCU | ignored; a piece row always merges |
+| mission earmark | allowed | refused (REQ-INV-031) |
+
+Each of those is a `400` when got wrong, so the form settles all of them before the CTA lights:
+the item side asks for no grade **and shows no field for one** (a field whose every value is a
+rejection is worse than none), the amount is refused unless whole, and the SCU affordances — the
+cSCU hint and the merge opt-in — stay away because an item is never measured in SCU.
+
+**Switching kinds drops the other side's pick**, rather than keeping it out of sight. The server
+takes exactly one catalogue reference, so a material still held in state behind a showing item is a
+booking nobody can watch being assembled — and the grade goes with it, because the item row refuses
+one. Pinned by a test that picks a material, types a grade, switches, and asserts that neither
+reaches the wire.
+
+**The amount label now says the unit in German.** It printed the wire's own word, so a piece-counted
+material read „Menge (PIECE)" on a German form. `unit()` still answers the wire value — the
+whole-number check compares against it — and `unitLabel()` is the rendering.
+
+**Not in scope:** the web's book-in also carries Variante-C allocations (`jobOrderAllocations`,
+`missionAllocations`). The app sets earmarks afterwards, on the created entry, and that difference
+predates this change.
+
+**Acceptance**
+
+- [x] An item booking needs its item and a whole amount, and no grade (`BookingViewModelTest`).
+- [x] Half an item is not a quantity (`BookingViewModelTest`).
+- [x] A material and a grade picked before the switch reach neither the state nor the wire
+  (`BookingViewModelTest`, `InventoryRepositoryTest` — asserted as an absence).
+- [x] The item side draws the switch, no grade field, and „Menge (Stück)" (`BookingSheetTest`).
+- [x] The item picker searches `/api/v1/orders/item-catalog` and reports its overflow
+  (`InventoryRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `InventoryRepository` (`BookInDraft.gameItemId`, `gameItems`, `GameItemOption`),
+`BookingViewModel` (`BookingCatalogKind`), `BookingSheet`

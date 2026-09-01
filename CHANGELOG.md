@@ -2,7 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Game-Items lassen sich jetzt ins Lager einbuchen.** Das Einbuchen-Blatt hat oben einen
+  Umschalter „Material / Item"; die Item-Seite sucht im Item-Katalog, fragt keine Qualität (der
+  Server nimmt dort keine) und zählt in ganzen Stück. Ein Wechsel des Umschalters verwirft die
+  Wahl der anderen Seite — der Server nimmt genau eine von beiden.
+
 ### Changed
+- **Die Mengen-Beschriftung nennt die Einheit auf Deutsch.** Bei einem Stück-Material stand dort
+  „Menge (PIECE)", das Wort vom Draht.
 - **Picker sagen jetzt, wenn sie nicht alles zeigen.** Ort, Material und Mitglied im Lager, die
   Mitgliedersuche im Einsatz und die Grant-Suche in der Bank brachen die Liste bei 25 Treffern ab,
   ohne ein Wort — ein fehlender Eintrag sah aus, als gäbe es ihn nicht. Die Ortsliste holt jetzt

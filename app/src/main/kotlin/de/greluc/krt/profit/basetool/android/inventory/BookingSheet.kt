@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
@@ -74,6 +75,15 @@ const val BOOKING_SHEET_TAG: String = "booking-sheet"
  * somebody long-presses it — so its presence cannot be asserted by text.
  */
 const val BOOKING_SCU_HINT_TAG: String = "booking-scu-hint"
+
+/** The Material/Item switch of a book-in. */
+const val BOOKING_KIND_TAG: String = "booking-kind"
+
+/** What the server calls a quantity counted in whole pieces. */
+private const val PIECE_UNIT = "PIECE"
+
+/** What the server calls a quantity measured in standard cargo units. */
+private const val SCU_WIRE_UNIT = "SCU"
 
 /** Test handle for the booking's save action. */
 const val BOOKING_SAVE_TAG: String = "booking-save"
@@ -136,16 +146,7 @@ fun BookingSheet(
             }
 
             if (state.mode == BookingMode.IN) {
-                Picker(
-                    label = stringResource(R.string.booking_field_material),
-                    query = state.materialQuery,
-                    chosen = state.material?.name,
-                    options = state.materials.map { it.id to it.label() },
-                    enabled = !state.saving,
-                    onQuery = callbacks.onMaterialQuery,
-                    onChosen = { id -> state.materials.firstOrNull { it.id == id }?.let(callbacks.onMaterial) },
-                )
-                PickerOverflowNote(more = state.moreMaterials)
+                BookInFields(state = state, callbacks = callbacks)
             }
 
             if (state.mode == BookingMode.NOTE) {
@@ -155,30 +156,7 @@ fun BookingSheet(
                     label = stringResource(R.string.inventory_entry_note),
                     enabled = !state.saving,
                 )
-            } else if (state.mode == BookingMode.IN) {
-                // Design ch. 09 artboard 2 puts the amount and the quality on ONE row: they are
-                // two readings of the same stack, and stacked full-width they read as two separate
-                // decisions. Quality is the narrow one — it is three digits.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    AmountField(
-                        state = state,
-                        onAmount = callbacks.onAmount,
-                        modifier = Modifier.weight(1f),
-                    )
-                    KrtTextField(
-                        value = state.quality,
-                        onValueChange = callbacks.onQuality,
-                        label = stringResource(R.string.booking_field_quality),
-                        enabled = !state.saving,
-                        modifier = Modifier.width(QUALITY_FIELD_WIDTH),
-                    )
-                }
-                PlaceField(state = state, callbacks = callbacks)
-            } else {
+            } else if (state.mode != BookingMode.IN) {
                 AmountField(state = state, onAmount = callbacks.onAmount)
             }
 
@@ -239,6 +217,9 @@ fun BookingSheet(
  * signature nobody can call correctly twice.
  *
  * @property onMode the segment changed.
+ * @property onKind a book-in switched between the material and the item catalogue.
+ * @property onGameItemQuery the item search was typed into.
+ * @property onGameItem an item was picked.
  * @property onAmount the amount changed.
  * @property onQuality the quality changed.
  * @property onMaterialQuery the material search changed.
@@ -260,6 +241,9 @@ fun BookingSheet(
  */
 data class BookingCallbacks(
     val onMode: (BookingMode) -> Unit,
+    val onKind: (BookingCatalogKind) -> Unit,
+    val onGameItemQuery: (String) -> Unit,
+    val onGameItem: (GameItemOption) -> Unit,
     val onAmount: (String) -> Unit,
     val onQuality: (String) -> Unit,
     val onMaterialQuery: (String) -> Unit,
@@ -302,7 +286,7 @@ private fun AmountField(
                 text =
                     stringResource(
                         R.string.booking_field_amount,
-                        state.unit() ?: stringResource(R.string.booking_unit_unknown),
+                        state.unitLabel() ?: stringResource(R.string.booking_unit_unknown),
                     ),
                 enabled = !state.saving,
             )
@@ -329,6 +313,102 @@ private fun AmountField(
         state.entry?.amount?.let { available ->
             Muted(stringResource(R.string.booking_available, formatAmount(available)))
         }
+    }
+}
+
+/**
+ * Everything a book-in asks for: which catalogue, what from it, how much, and where.
+ *
+ * Its own composable because the sheet serves three modes and this is the one that branches:
+ * two catalogues with different fields under each. Inlined it pushed the sheet's own
+ * complexity past what the gate allows, which is the gate saying the sheet had grown a second
+ * screen inside it.
+ *
+ * @param state the form.
+ * @param callbacks what it reports.
+ */
+@Composable
+private fun BookInFields(
+    state: BookingState,
+    callbacks: BookingCallbacks,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12)) {
+        // Two catalogues, not one list with a filter: the server takes them in mutually
+        // exclusive fields and asks different things of each (REQ-INV-029), so the form
+        // says which one it is naming before it asks for anything else.
+        KrtSegmentedControl(
+            options =
+                listOf(
+                    stringResource(R.string.booking_kind_material),
+                    stringResource(R.string.booking_kind_item),
+                ),
+            selectedIndex = if (state.kind == BookingCatalogKind.ITEM) 1 else 0,
+            onSelect = {
+                callbacks.onKind(
+                    if (it == 1) BookingCatalogKind.ITEM else BookingCatalogKind.MATERIAL,
+                )
+            },
+            modifier = Modifier.fillMaxWidth().testTag(BOOKING_KIND_TAG),
+            enabled = !state.saving,
+            stretch = true,
+        )
+        if (state.kind == BookingCatalogKind.MATERIAL) {
+            Picker(
+                label = stringResource(R.string.booking_field_material),
+                query = state.materialQuery,
+                chosen = state.material?.name,
+                options = state.materials.map { it.id to it.label() },
+                enabled = !state.saving,
+                onQuery = callbacks.onMaterialQuery,
+                onChosen = { id ->
+                    state.materials.firstOrNull { it.id == id }?.let(callbacks.onMaterial)
+                },
+            )
+            PickerOverflowNote(more = state.moreMaterials)
+        } else {
+            Picker(
+                label = stringResource(R.string.booking_field_item),
+                query = state.gameItemQuery,
+                chosen = state.gameItem?.name,
+                options = state.gameItems.map { it.id to it.name },
+                enabled = !state.saving,
+                onQuery = callbacks.onGameItemQuery,
+                onChosen = { id ->
+                    state.gameItems.firstOrNull { it.id == id }?.let(callbacks.onGameItem)
+                },
+            )
+            PickerOverflowNote(more = state.moreGameItems)
+        }
+
+        // Design ch. 09 artboard 2 puts the amount and the quality on ONE row: they are
+        // two readings of the same stack, and stacked full-width they read as two separate
+        // decisions. Quality is the narrow one — it is three digits.
+        if (state.kind == BookingCatalogKind.ITEM) {
+            // No grade beside it: the server **refuses** a quality on an item row, so a
+            // field here would be one whose every value is a rejection. The amount then
+            // has the row to itself rather than a gap where the grade used to sit.
+            AmountField(state = state, onAmount = callbacks.onAmount)
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                AmountField(
+                    state = state,
+                    onAmount = callbacks.onAmount,
+                    modifier = Modifier.weight(1f),
+                )
+                KrtTextField(
+                    value = state.quality,
+                    onValueChange = callbacks.onQuality,
+                    label = stringResource(R.string.booking_field_quality),
+                    enabled = !state.saving,
+                    modifier = Modifier.width(QUALITY_FIELD_WIDTH),
+                )
+            }
+        }
+        PlaceField(state = state, callbacks = callbacks)
     }
 }
 
@@ -716,9 +796,33 @@ private fun InventoryEntry.modes(): List<BookingMode> = listOf(BookingMode.OUT, 
 /**
  * The unit the amount is counted in.
  *
- * @return the entry's unit when booking out, the picked material's when booking in, or `null`.
+ * An item needs no lookup: a game item is **always** whole pieces, which is what makes it a
+ * separate kind of row rather than a material with another unit — the server refuses a fractional
+ * amount on one outright.
+ *
+ * @return the entry's unit when booking out, the picked material's or the item's fixed one when
+ *   booking in, or `null` when nothing is picked yet.
  */
-internal fun BookingState.unit(): String? = entry?.unit ?: material?.unit
+internal fun BookingState.unit(): String? =
+    if (kind == BookingCatalogKind.ITEM) PIECE_UNIT else entry?.unit ?: material?.unit
+
+/**
+ * The unit as a member reads it.
+ *
+ * [unit] answers the **wire's** word, which is what the amount is compared against — and putting
+ * it on screen printed „Menge (PIECE)" over a German form for every piece-counted material. The
+ * mapping lives here rather than in the state, because it is a rendering and the comparison above
+ * still needs the raw value.
+ *
+ * @return the localized word, or `null` when nothing is picked yet.
+ */
+@Composable
+internal fun BookingState.unitLabel(): String? =
+    when (unit()) {
+        PIECE_UNIT -> stringResource(R.string.materials_unit_piece)
+        SCU_WIRE_UNIT -> stringResource(R.string.materials_unit_scu)
+        else -> unit()
+    }
 
 /**
  * How an entry reads at the top of the sheet.

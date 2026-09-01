@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.GameItemStock
 import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
@@ -133,6 +134,11 @@ class BookingViewModelTest {
 
         override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> =
             ApiResult.Success(PickerPage(listOf(MaterialOption("m1", "Quantainium", "SCU"))))
+
+        var itemOptions: List<GameItemOption> = listOf(GameItemOption("gi1", "Medizinische Station T2"))
+
+        override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+            ApiResult.Success(PickerPage(itemOptions))
 
         override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
             ApiResult.Success(PickerPage(listOf(LocationOption("l1", "ARC-L1"))))
@@ -467,6 +473,91 @@ class BookingViewModelTest {
             vm.onQualityChanged("874")
 
             assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `an item booking needs its item and a whole amount, and no grade at all`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("3")
+
+            assertEquals("an item is not picked yet", false, vm.state.value?.submittable)
+
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            // No quality was ever typed, and none is wanted: the server refuses one on an item
+            // row (`isQualityConsistentWithCatalog`, REQ-INV-029).
+            assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `half an item is not a quantity`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            // `ValidQuantityAmountValidator` refuses `amount % 1 != 0` for a game item outright.
+            vm.onAmountChanged("2,5")
+            assertEquals(false, vm.state.value?.submittable)
+
+            vm.onAmountChanged("2")
+            assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `an item booking sends the item, and never a material or a grade`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onQualityChanged("874")
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("3")
+            vm.onSave()
+            advanceUntilIdle()
+
+            // The material and the grade picked before the switch are gone, not merely unused:
+            // the server takes exactly one catalogue reference and refuses a quality beside an
+            // item, so either survivor would have refused the whole booking.
+            val sent = source.bookedIn.single()
+            assertEquals("gi1", sent.gameItemId)
+            assertNull(sent.materialId)
+            assertNull(sent.quality)
+        }
+
+    @Test
+    fun `switching back to material clears the item`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            vm.onKindChanged(BookingCatalogKind.MATERIAL)
+
+            assertNull(vm.state.value?.gameItem)
+            assertEquals("", vm.state.value?.gameItemQuery)
+        }
+
+    @Test
+    fun `an item is counted in pieces, so the SCU affordances stay away`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            // Drives both the cSCU hint and the merge opt-in. An item always merges into a
+            // matching stack server-side, so the toggle would be a control that changes nothing.
+            assertEquals(false, vm.state.value?.materialIsScu)
         }
 
     @Test

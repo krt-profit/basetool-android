@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHan
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.ClaimBucket
 import de.greluc.krt.profit.basetool.android.core.data.ClaimQuality
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
@@ -83,6 +84,9 @@ private object NoOrgUnits : OrgUnitSource {
 
 /** Where produced stock could land — never asked here. */
 private object NoBookInOptions : BookInOptions {
+    override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+        ApiResult.Success(PickerPage())
+
     override suspend fun locations(
         query: String,
     ): ApiResult<PickerPage<LocationOption>> = ApiResult.Success(PickerPage())

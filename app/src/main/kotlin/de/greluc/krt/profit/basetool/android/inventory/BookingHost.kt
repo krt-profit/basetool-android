@@ -29,6 +29,9 @@ fun BookingHost(viewModel: BookingViewModel) {
             callbacks =
                 BookingCallbacks(
                     onMode = viewModel::onModeChanged,
+                    onKind = viewModel::onKindChanged,
+                    onGameItemQuery = viewModel::onGameItemQueryChanged,
+                    onGameItem = viewModel::onGameItemChosen,
                     onAmount = viewModel::onAmountChanged,
                     onQuality = viewModel::onQualityChanged,
                     onMaterialQuery = viewModel::onMaterialQueryChanged,

@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemRequirement
@@ -405,6 +406,9 @@ class OrderProductionTest {
 
     /** Where produced stock may land. */
     private inner class FakeOptions : BookInOptions {
+        override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+            ApiResult.Success(PickerPage())
+
         override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
             ApiResult.Success(PickerPage(listOf(LocationOption(id = "loc1", name = "ARC-L1"))))
 

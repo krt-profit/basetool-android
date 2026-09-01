@@ -28,6 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialSelling
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitMembershipOptionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseAggregatedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseLocationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
@@ -251,19 +252,30 @@ enum class BookOutKind {
 }
 
 /**
- * What booking material in carries.
+ * What booking stock in carries.
  *
- * @property materialId what is being booked in
+ * **`materialId` and `gameItemId` exclude each other and one of them is required** — the server's
+ * own XOR (`InventoryItemCreateDto.isCatalogReferenceValid`, REQ-INV-029), mirrored by a DB check
+ * constraint. The two kinds then differ in three more ways, each of them a `400` when got wrong:
+ *
+ *  * a material row **requires** a quality and an item row **forbids** one;
+ *  * an item amount must be a **positive whole** number — items are counted, not measured;
+ *  * `mergeStock` is ignored for an item, because a piece-counted row always merges into a
+ *    matching stack server-side.
+ *
+ * @property materialId the material being booked in, or `null` for an item row
+ * @property gameItemId the item being booked in, or `null` for a material row
  * @property locationId where it goes
  * @property amount how much
- * @property quality the quality, 0–1000, or `null` when the material has none
+ * @property quality the quality, 0–1000; `null` for an item row, where the server refuses one
  * @property personal whether it is private stock rather than the shared Lager. Always `false` from
  *   the app: the Lager reads exclude private stock, so booking it in from here would put material
  *   somewhere no screen of this app can show it again
  * @property mergeStock whether the server may merge it into an identical entry
  */
 data class BookInDraft(
-    val materialId: String,
+    val materialId: String? = null,
+    val gameItemId: String? = null,
     val locationId: String,
     val amount: String,
     val quality: Int?,
@@ -330,6 +342,20 @@ data class MaterialOption(
     val id: String,
     val name: String,
     val unit: String?,
+)
+
+/**
+ * A game item the booking form can pick.
+ *
+ * Carries no unit: an item is always counted in whole pieces, which is what makes it a different
+ * kind of row rather than a material with a different unit.
+ *
+ * @property id what a booking sends as `gameItemId`
+ * @property name what to show for it
+ */
+data class GameItemOption(
+    val id: String,
+    val name: String,
 )
 
 /**
@@ -493,6 +519,18 @@ interface BookInOptions {
      * @return one page of matches, and whether the catalogue holds more (ADR-0104).
      */
     suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>>
+
+    /**
+     * Searches the game items a booking can name.
+     *
+     * A different catalogue from the materials, not a filter on them: an item is a finished
+     * product, the two live in separate tables and the server takes them in mutually exclusive
+     * fields. The same search the order form's item picker uses.
+     *
+     * @param query what the member typed.
+     * @return one page of matches, and whether the catalogue holds more (ADR-0104).
+     */
+    suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>>
 
     /**
      * Searches members.
@@ -791,7 +829,11 @@ class InventoryRepository(
                 amount = parseTypedAmount(draft.amount) ?: 0.0,
                 locationId = draft.locationId,
                 materialId = draft.materialId,
-                quality = draft.quality,
+                gameItemId = draft.gameItemId,
+                // Never sent for an item row: the server refuses a quality there outright
+                // (`isQualityConsistentWithCatalog`), so carrying one over from a mode the member
+                // switched away from would refuse the whole booking.
+                quality = draft.quality.takeIf { draft.gameItemId == null },
                 personal = draft.personal,
                 mergeStock = draft.mergeStock,
             ),
@@ -1034,6 +1076,34 @@ class InventoryRepository(
         }
     }
 
+    override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> {
+        val params =
+            listOf(
+                SEARCH_PARAM to query.trim(),
+                PAGE_PARAM to "0",
+                SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+            )
+        return when (
+            val result =
+                reader.get(ITEM_CATALOG_PATH, params, PageResponseGameItemReferenceDto.serializer())
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { row ->
+                            row.id?.let { GameItemOption(id = it, name = row.name.orEmpty()) }
+                        },
+                        result.value.totalElements,
+                    ),
+                )
+            }
+        }
+    }
+
     override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> {
         val params =
             listOf(
@@ -1172,6 +1242,9 @@ class InventoryRepository(
         private const val MATERIALS_PATH = "/api/v1/materials/search"
         private const val LOCATIONS_PATH = "/api/v1/locations/search"
         private const val MEMBERS_PATH = "/api/v1/users/search"
+
+        /** The item catalogue behind the book-in's item picker — the order form's own search. */
+        private const val ITEM_CATALOG_PATH = "/api/v1/orders/item-catalog"
         private const val MATERIAL_ID_PARAM = "materialId"
         private const val LOCATION_ID_PARAM = "locationId"
         private const val USER_ID_PARAM = "userId"

@@ -1042,6 +1042,9 @@
     <string name="booking_mode_note">Note</string>
     <string name="booking_field_material">Material</string>
     <string name="booking_field_amount">Amount (%1$s)</string>
+    <string name="booking_kind_material">Material</string>
+    <string name="booking_kind_item">Item</string>
+    <string name="booking_field_item">Item</string>
     <string name="booking_unit_unknown">unit</string>
     <string name="booking_amount_hint">Fractions allowed: cSCU (0.01) and µSCU (0.001).</string>
     <string name="booking_available">In this entry: %1$s</string>

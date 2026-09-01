@@ -1063,6 +1063,9 @@
     <string name="booking_mode_note">Notiz</string>
     <string name="booking_field_material">Material</string>
     <string name="booking_field_amount">Menge (%1$s)</string>
+    <string name="booking_kind_material">Material</string>
+    <string name="booking_kind_item">Item</string>
+    <string name="booking_field_item">Item</string>
     <string name="booking_unit_unknown">Einheit</string>
     <string name="booking_amount_hint">Teilmengen erlaubt: cSCU (0,01) und µSCU (0,001).</string>
     <string name="booking_available">Im Eintrag: %1$s</string>
