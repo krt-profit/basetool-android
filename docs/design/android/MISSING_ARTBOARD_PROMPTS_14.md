@@ -473,3 +473,28 @@ weight without the tracking.
 **What is missing:** confirmation that a KPI figure uses `displaySmall` rather than the h1 step, or
 a tracking-free headline entry to point at.
 
+
+## Round 16 — found building the refinery create form against the web (2026-09-01)
+
+**R4 — Chapter 11's goods row asks for two things the server does not accept.**
+The row editor is captioned „Eingangs-/Ausgangsmaterial + Mengen, optional Qualität & Bonus-%".
+Both halves are wrong against the backend:
+
+* The **output material** is not a choice. `RefineryOrderService.resolveGood` derives it from the
+  input ore's `refinedMaterial` and refuses any other value; the web form shows it in a read-only
+  box and never sends it. Please redraw it as a derived read-only field, not a picker.
+* The **yield bonus** is UEX-derived and read-only — the write path ignores it and nothing is
+  persisted for it. The web draws it as a badge on the output-quantity label (`+12%` / `−4%`,
+  tinted), fed by the refinery's yield map. Please draw the badge and drop the input field.
+
+**R5 — The input picker needs a „not everything is shown" state.**
+The ore catalogue is searched server-side and the answer is one page. Chapter 11 draws no state for
+„more matches exist, narrow the search", so the app borrowed the orders screen's line. If that is
+the intended pattern, please say so in chapter 11; if the combobox should carry it itself, please
+draw it once in chapter 02 and let every picker inherit it.
+
+**R6 — The quantity fields need their unit in the label.**
+Both quantities are in **units** (100 units = 1 SCU), which is what the wire takes, and a member
+thinks in SCU. The web writes „Eingangsmenge (Units)" with a read-only „(SCU)" box beside it. The
+artboards say only „Menge", which is how the app came to label them SCU over a field that was sent
+as units. Please put the unit in the label and draw the SCU readout.

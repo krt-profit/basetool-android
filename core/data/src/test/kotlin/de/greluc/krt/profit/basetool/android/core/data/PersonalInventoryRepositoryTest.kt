@@ -21,6 +21,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -253,22 +254,59 @@ class PersonalInventoryRepositoryTest {
         }
 
     @Test
-    fun `the picker asks for a bounded number of places`() =
+    fun `the picker asks for one place more than it shows`() =
         runTest {
-            // The cap is what the screen has to tell the member about when the answer comes back
-            // full (ADR-0104): a silently truncated picker hides the place they are looking for.
+            // This endpoint answers a bare array with no total, so the extra row IS the overflow
+            // signal (ADR-0104). Asking for exactly the render cap left „25 back" meaning both
+            // „that is all of them" and „there are more", which the screen then had to guess at.
             respond(LOCATIONS)
 
-            val places = (repository.locations("ever") as ApiResult.Success).value
+            val page = (repository.locations("ever") as ApiResult.Success).value
 
             assertEquals(
-                PersonalInventoryRepository.LOCATION_LIMIT.toString(),
+                (PersonalInventoryRepository.LOCATION_LIMIT + 1).toString(),
                 requestedUrl().queryParameter("limit"),
             )
-            assertEquals(2, places.size)
-            assertEquals(PersonalLocationKind.SPACE_STATION, places.first().kind)
-            assertEquals("Stanton", places.first().system)
-            assertNull("an absent parent stays absent", places.last().parent)
+            assertEquals(2, page.rows.size)
+            assertEquals(PersonalLocationKind.SPACE_STATION, page.rows.first().kind)
+            assertEquals("Stanton", page.rows.first().system)
+            assertNull("an absent parent stays absent", page.rows.last().parent)
+            assertFalse("two rows out of a probe of 26 is the whole answer", page.more)
+        }
+
+    @Test
+    fun `a full page reports the overflow and never renders the sentinel`() =
+        runTest {
+            val cap = PersonalInventoryRepository.LOCATION_LIMIT
+            respond(
+                (0..cap).joinToString(prefix = "[", postfix = "]") {
+                    """{"uexId": $it, "type": "CITY", "name": "Ort $it"}"""
+                },
+            )
+
+            val page = (repository.locations("o") as ApiResult.Success).value
+
+            // The probe row is counted and then dropped: the member sees the cap, not cap + 1.
+            assertEquals(cap, page.rows.size)
+            assertTrue(page.more)
+        }
+
+    @Test
+    fun `exactly a full page without the sentinel is a complete answer`() =
+        runTest {
+            val cap = PersonalInventoryRepository.LOCATION_LIMIT
+            respond(
+                (1..cap).joinToString(prefix = "[", postfix = "]") {
+                    """{"uexId": $it, "type": "CITY", "name": "Ort $it"}"""
+                },
+            )
+
+            val page = (repository.locations("o") as ApiResult.Success).value
+
+            // The case the old `size >= LIMIT` check got wrong: 25 places and no 26th means the
+            // catalogue holds 25, and the screen claimed it was hiding something.
+            assertEquals(cap, page.rows.size)
+            assertFalse(page.more)
         }
 
     @Test
@@ -276,7 +314,7 @@ class PersonalInventoryRepositoryTest {
         runTest {
             respond("""[{"uexId": 1, "type": "MOON_OUTPOST", "name": "Irgendwo"}]""")
 
-            val places = (repository.locations("x") as ApiResult.Success).value
+            val places = (repository.locations("x") as ApiResult.Success).value.rows
 
             assertEquals(PersonalLocationKind.UNKNOWN, places.single().kind)
         }

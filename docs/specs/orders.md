@@ -795,3 +795,38 @@ single line, and without the third there was no tree.
 - [ ] An item order with a handover offers the edit entry with the reason it cannot be used
 
 **Enforced by:** `OrderEditTest`, `OrdersScreenTest`.
+
+---
+
+### REQ-APP-ORDERS-019 — A material line starts at the grade the web starts it at, and names its own unit
+
+Two differences from the web form, both found 2026-09-01 by reading the two side by side rather
+than by reading either alone.
+
+**The minimum quality starts at 650.** `JobOrderForm.JobOrderMaterialForm` has
+`private Integer minQuality = 650`, so every fresh material line in the browser asks for graded ore.
+The app started every line at „Keine". Both offer the same two entries, so this never looked like a
+difference — but the same order raised on a phone and in a browser asked for different material,
+and for a squadron that works by ore grade that changes what gets delivered. It is a starting point
+and not a rule: „Keine" is one tap away.
+
+**A position names the material's own unit.** `RefineryScreen` writes the rule down — *never a
+hardcoded SCU, an item counted in pieces and labelled „SCU" is a quantity a member acts on* — and
+the position card broke it: it printed „SCU" over every line, and `JobOrderMaterial` carried no unit
+for it to do otherwise. The web switches per material (`th:switch="${mat.material.quantityType}"`,
+whole numbers for `PIECE`) and even splits its demand band into two figures, because SCU and pieces
+cannot be added. The model now carries `quantityType` and the three labels take it. **A unit the
+server did not name is left unsaid**, because naming the wrong one is worse than naming none.
+
+The app needs no equivalent of the web's split demand band: it aggregates no quantity across
+materials, only counts.
+
+**Acceptance**
+
+- [x] A fresh line carries `DEFAULT_MIN_QUALITY`, which is the web's 650 (`OrderCreateTest`).
+- [x] An explicit „Keine" still travels as `null` (`OrderCreateTest`).
+- [x] A `PIECE` material reads „/ 500 Stück" and „Gebucht: 125 Stück"; an unnamed unit prints the
+  figure alone (`OrdersScreenTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `JobOrderRepository` (`JobOrderMaterial.unit`), `OrderCreateViewModel`, `OrdersScreen`

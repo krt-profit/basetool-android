@@ -94,6 +94,7 @@ import de.greluc.krt.profit.basetool.android.ui.DenialState
 import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
 import de.greluc.krt.profit.basetool.android.ui.isLogistician
 import de.greluc.krt.profit.basetool.android.ui.mayEditRowOf
@@ -1469,6 +1470,7 @@ private fun BulkMoveSheet(
                 selectedValue = bulk.place?.id,
                 enabled = !bulk.saving,
             )
+            PickerOverflowNote(more = bulk.morePlaces)
             // Said before the write rather than after it: a member told afterwards that four rows
             // were skipped reads it as four failures (design ch. 09, artboard 6).
             Text(

@@ -202,6 +202,7 @@ data class InventoryState(
  *
  * @property place where the selected rows are being sent, or `null` until one is picked.
  * @property places the org's locations.
+ * @property morePlaces whether the catalogue holds places this page does not carry.
  * @property saving whether the move is running.
  * @property error the last refusal.
  * @property result what the server did, once it has — the sheet's **second step** rather than a
@@ -211,6 +212,7 @@ data class InventoryState(
 data class BulkMoveState(
     val place: LocationOption? = null,
     val places: List<LocationOption> = emptyList(),
+    val morePlaces: Boolean = false,
     val saving: Boolean = false,
     val error: ApiError? = null,
     val result: BulkRebookResult? = null,
@@ -715,7 +717,11 @@ class InventoryViewModel(
             val open = mutableState.value.bulk ?: return@launch
             mutableState.value =
                 mutableState.value.copy(
-                    bulk = open.copy(places = (places as? ApiResult.Success)?.value.orEmpty()),
+                    bulk =
+                        open.copy(
+                            places = (places as? ApiResult.Success)?.value?.rows.orEmpty(),
+                            morePlaces = (places as? ApiResult.Success)?.value?.more == true,
+                        ),
                 )
         }
     }

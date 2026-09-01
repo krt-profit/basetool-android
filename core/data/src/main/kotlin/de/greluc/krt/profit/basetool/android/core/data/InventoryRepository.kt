@@ -398,9 +398,9 @@ fun interface MaterialLookup {
      * Searches materials.
      *
      * @param query what the member typed.
-     * @return the matches, capped by the server's page size.
+     * @return one page of matches, and whether the catalogue holds more (ADR-0104).
      */
-    suspend fun materials(query: String): ApiResult<List<MaterialOption>>
+    suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>>
 }
 
 /**
@@ -490,17 +490,17 @@ interface BookInOptions {
      * Searches places.
      *
      * @param query what the member typed.
-     * @return the matches.
+     * @return one page of matches, and whether the catalogue holds more (ADR-0104).
      */
-    suspend fun locations(query: String): ApiResult<List<LocationOption>>
+    suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>>
 
     /**
      * Searches members.
      *
      * @param query what the member typed.
-     * @return the matches.
+     * @return one page of matches, and whether the roster holds more (ADR-0104).
      */
-    suspend fun members(query: String): ApiResult<List<MemberOption>>
+    suspend fun members(query: String): ApiResult<PickerPage<MemberOption>>
 
     /**
      * Reads the org units stock may be booked into for one member.
@@ -1009,7 +1009,7 @@ class InventoryRepository(
             is ApiResult.Success -> ApiResult.Success(Unit)
         }
 
-    override suspend fun materials(query: String): ApiResult<List<MaterialOption>> {
+    override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> {
         val params =
             listOf(
                 SEARCH_PARAM to query.trim(),
@@ -1024,17 +1024,22 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toOption() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toOption() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
     }
 
-    override suspend fun locations(query: String): ApiResult<List<LocationOption>> {
+    override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> {
         val params =
             listOf(
                 SEARCH_PARAM to query.trim(),
                 PAGE_PARAM to "0",
-                SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+                SIZE_PARAM to LOCATION_PAGE_SIZE.toString(),
             )
         return when (
             val result =
@@ -1045,12 +1050,17 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toOption() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toOption() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
     }
 
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> {
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> {
         val params =
             listOf(
                 QUERY_PARAM to query.trim(),
@@ -1065,7 +1075,12 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toOption() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toOption() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
     }
@@ -1172,7 +1187,17 @@ class InventoryRepository(
         private const val ENTRY_PAGE_SIZE = 100
 
         /** How many rows a picker asks for. */
-        private const val PICKER_PAGE_SIZE = 25
+        private const val PICKER_PAGE_SIZE = 50
+
+        /**
+         * How many places one search offers.
+         *
+         * Two hundred, not [PICKER_PAGE_SIZE]. The location catalogue is small and bounded by the
+         * game universe, and a member booking stock expects to scroll it rather than guess a search
+         * term — which is why the web fetches the same. At `size=25` this very picker showed 25 of
+         * 53 places, with nothing on screen saying the list had been cut.
+         */
+        private const val LOCATION_PAGE_SIZE = 200
         private const val MATERIAL_PARAM = "materialIds"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"

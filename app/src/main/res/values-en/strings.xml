@@ -651,7 +651,6 @@
     <string name="order_create_amount">Amount</string>
     <string name="order_create_min_quality">Min. quality</string>
     <string name="order_create_min_quality_none">None</string>
-    <string name="order_create_more_matches">More matches exist — refine the search.</string>
     <string name="order_create_no_matches">No orderable material found.</string>
     <string name="order_create_add_material">Add material</string>
     <string name="order_create_remove_material">Remove material</string>
@@ -733,9 +732,9 @@
         <item quantity="one">%1$d claim</item>
         <item quantity="other">%1$d claims</item>
     </plurals>
-    <string name="orders_material_of">/ %1$s SCU</string>
-    <string name="orders_material_booked">Booked: %1$s SCU</string>
-    <string name="orders_material_claimed">Promised: %1$s SCU</string>
+    <string name="orders_material_of">/ %1$s %2$s</string>
+    <string name="orders_material_booked">Booked: %1$s %2$s</string>
+    <string name="orders_material_claimed">Promised: %1$s %2$s</string>
     <string name="orders_material_claimed_none">Promised: —</string>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Parts of this order are hidden from you.</string>
@@ -849,6 +848,7 @@
     <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
+    <string name="picker_more_matches">More matches available — narrow the search.</string>
     <plurals name="personal_inventory_location_capped">
         <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>
         <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
@@ -1210,11 +1210,13 @@
     <string name="refinery_create_ratings">Cost %1$d · Speed %2$d · Yield %3$d</string>
     <string name="refinery_create_goods">Goods (at least 1)</string>
     <string name="refinery_create_input_material">Input material (required)</string>
-    <string name="refinery_create_input_quantity">Input (SCU, required)</string>
-    <string name="refinery_create_output_material">Output material</string>
-    <string name="refinery_create_output_quantity">Output (SCU, required)</string>
+    <string name="refinery_create_more_materials">More ores available — narrow the search.</string>
+    <string name="refinery_create_input_quantity">Input amount (units, required)</string>
+    <string name="refinery_create_output_material">Output material (follows from the input)</string>
+    <string name="refinery_create_output_material_none">—</string>
+    <string name="refinery_create_output_quantity">Output amount (units, required)</string>
+    <string name="refinery_create_scu_hint">= %1$s SCU</string>
     <string name="refinery_create_quality">Quality (0–1000)</string>
-    <string name="refinery_create_bonus">Yield bonus (%)</string>
     <string name="refinery_create_add_good">+ Good</string>
     <string name="refinery_create_remove_good">Remove good</string>
     <string name="refinery_create_timing">Timing</string>
@@ -1468,10 +1470,6 @@
     <string name="mission_crew_roles_empty">No CREW functions defined.</string>
     <string name="mission_timeline_up">Up</string>
     <string name="mission_timeline_down">Down</string>
-    <plurals name="mission_member_notice">
-        <item quantity="one">%1$d of at most %2$d matches — keep typing to narrow it</item>
-        <item quantity="other">%1$d of at most %2$d matches — keep typing to narrow it</item>
-    </plurals>
     <string name="mission_crew_assign">Assign someone</string>
     <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
     <string name="mission_admin_people">People</string>

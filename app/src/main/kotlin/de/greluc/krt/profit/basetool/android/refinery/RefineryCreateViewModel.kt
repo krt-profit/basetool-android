@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
 import de.greluc.krt.profit.basetool.android.core.data.RefineryCreateSource
 import de.greluc.krt.profit.basetool.android.core.data.RefineryGoodDraft
+import de.greluc.krt.profit.basetool.android.core.data.RefineryInputMaterial
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDraft
 import de.greluc.krt.profit.basetool.android.core.data.RefiningMethod
 import de.greluc.krt.profit.basetool.android.core.data.parseTypedAmount
@@ -33,7 +34,8 @@ import java.time.Instant
  * @property loading whether the pickers are still arriving.
  * @property saving whether the creation is in flight.
  * @property created the new order's id once it exists, which is what the screen navigates to.
- * @property materials the candidates the goods lines' material pickers show.
+ * @property materials the ores the goods lines' input pickers show.
+ * @property moreMaterials whether the catalogue holds ores this page does not carry.
  * @property error what the last read or write was refused with.
  * @property editing whether this rewrites an order or raises one.
  */
@@ -44,7 +46,8 @@ data class RefineryCreateState(
     val loading: Boolean = true,
     val saving: Boolean = false,
     val created: String? = null,
-    val materials: List<Pair<String, String>> = emptyList(),
+    val materials: List<RefineryInputMaterial> = emptyList(),
+    val moreMaterials: Boolean = false,
     val error: ApiError? = null,
     val editing: Boolean = false,
 ) {
@@ -151,7 +154,7 @@ class RefineryCreateViewModel(
     }
 
     /**
-     * Searches the materials a goods line can name.
+     * Searches the ores a goods line can name.
      *
      * One shared list rather than one per line: every line asks the same question of the same
      * catalogue, and a per-line list would answer it several times over.
@@ -162,7 +165,11 @@ class RefineryCreateViewModel(
         viewModelScope.launch {
             when (val result = source.searchMaterials(query)) {
                 is ApiResult.Success -> {
-                    mutableState.value = mutableState.value.copy(materials = result.value)
+                    mutableState.value =
+                        mutableState.value.copy(
+                            materials = result.value.rows,
+                            moreMaterials = result.value.more,
+                        )
                 }
 
                 is ApiResult.Failure -> {
@@ -170,6 +177,58 @@ class RefineryCreateViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Records the ore a goods line names, and derives what it refines into.
+     *
+     * The output material is not a question the form asks. `RefineryOrderService.resolveGood` sets
+     * it from the input's `refinedMaterial`, falling back to the input itself for an ore the
+     * catalogue names no output for — so that is what the line carries and shows. Deriving it here,
+     * on the pick, is what keeps the shown value and the stored one the same thing.
+     *
+     * @param index which line.
+     * @param material the ore that was picked.
+     */
+    fun onInputMaterialPicked(
+        index: Int,
+        material: RefineryInputMaterial,
+    ) {
+        val goods = mutableState.value.draft.goods.toMutableList()
+        val line = goods.getOrNull(index) ?: return
+        goods[index] =
+            line.copy(
+                inputMaterialId = material.id,
+                inputMaterialName = material.name,
+                outputMaterialId = material.refinedId ?: material.id,
+                outputMaterialName = material.refinedName ?: material.name,
+            )
+        onDraftChanged(mutableState.value.draft.copy(goods = goods))
+    }
+
+    /**
+     * Clears a goods line's ore because its name was typed over.
+     *
+     * A typed name carries no id, and a stale id under a new label is the one thing a picker must
+     * never send. The derived output goes with it — it was never the member's answer to keep.
+     *
+     * @param index which line.
+     * @param typed what now stands in the field.
+     */
+    fun onInputMaterialTyped(
+        index: Int,
+        typed: String,
+    ) {
+        val goods = mutableState.value.draft.goods.toMutableList()
+        val line = goods.getOrNull(index) ?: return
+        goods[index] =
+            line.copy(
+                inputMaterialId = null,
+                inputMaterialName = typed,
+                outputMaterialId = null,
+                outputMaterialName = "",
+            )
+        onDraftChanged(mutableState.value.draft.copy(goods = goods))
     }
 
     /**

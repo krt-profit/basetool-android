@@ -45,6 +45,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSele
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test tag of the create form's scrolling body. */
@@ -522,15 +523,7 @@ private fun LineCard(
                 onQuery = onQuery,
                 onPicked = onPicked,
             )
-            if (truncated) {
-                Text(
-                    // ADR-0104: a picker that shows a capped page says so, rather than letting the
-                    // member conclude the material they are looking for does not exist.
-                    text = stringResource(R.string.order_create_more_matches),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KrtPalette.TextMuted,
-                )
-            }
+            PickerOverflowNote(more = truncated)
             if (line.materialId == null && line.query.trim().length >= MIN_QUERY && materials.isEmpty()) {
                 Text(
                     // An empty dropdown reads as a broken picker. Only orderable materials are

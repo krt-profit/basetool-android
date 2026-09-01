@@ -7,12 +7,14 @@
 
 package de.greluc.krt.profit.basetool.android.refinery
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.common.formatAmount
 import de.greluc.krt.profit.basetool.android.core.data.RefineryGoodDraft
+import de.greluc.krt.profit.basetool.android.core.data.RefineryInputMaterial
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDraft
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
@@ -47,6 +50,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtLock
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import java.math.BigDecimal
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** The create form, for the tests that read it. */
@@ -54,6 +58,9 @@ const val REFINERY_CREATE_TAG: String = "refinery-create"
 
 /** Test handle for the note that says why a booked run's core is fixed. */
 const val REFINERY_LOCKED_NOTE_TAG: String = "refinery-locked-note"
+
+/** The derived output material of a goods line, which is shown and never picked. */
+const val REFINERY_OUTPUT_MATERIAL_TAG: String = "refinery-output-material"
 
 /**
  * What the create form reports back.
@@ -63,6 +70,8 @@ const val REFINERY_LOCKED_NOTE_TAG: String = "refinery-locked-note"
  * @property onAddGood a line is to be added.
  * @property onRemoveGood a line is to be removed.
  * @property onMaterialQuery a material picker was typed into.
+ * @property onInputMaterialPicked an ore was picked on one line; the view model derives the output.
+ * @property onInputMaterialTyped a line's ore was typed over, which un-picks it.
  * @property onCreate the order is to be created.
  */
 data class RefineryCreateActions(
@@ -71,6 +80,8 @@ data class RefineryCreateActions(
     val onAddGood: () -> Unit,
     val onRemoveGood: (Int) -> Unit,
     val onMaterialQuery: (String) -> Unit,
+    val onInputMaterialPicked: (Int, RefineryInputMaterial) -> Unit,
+    val onInputMaterialTyped: (Int, String) -> Unit,
     val onCreate: () -> Unit,
 )
 
@@ -172,8 +183,11 @@ fun RefineryCreateScreen(
                 good = good,
                 removable = state.draft.goods.size > 1 && !locked,
                 materials = state.materials,
+                moreMaterials = state.moreMaterials,
                 onQuery = actions.onMaterialQuery,
                 onChanged = { actions.onGoodChanged(index, it) },
+                onInputPicked = { actions.onInputMaterialPicked(index, it) },
+                onInputTyped = { actions.onInputMaterialTyped(index, it) },
                 onRemove = { actions.onRemoveGood(index) },
                 enabled = !locked,
                 lockReason = lockReason,
@@ -228,20 +242,27 @@ fun RefineryCreateScreen(
  *
  * @param good what to draw.
  * @param removable whether it may be taken away — the last line stays.
- * @param materials the candidates the two pickers show.
- * @param onQuery a picker was typed into.
+ * @param materials the ores the input picker shows.
+ * @param moreMaterials whether the catalogue holds ores this page does not carry.
+ * @param onQuery the picker was typed into.
  * @param onChanged the line was edited.
+ * @param onInputPicked an ore was picked; the output follows from it.
+ * @param onInputTyped the ore's name was typed over, which un-picks it.
  * @param onRemove the line is to go.
  * @param enabled whether the line may be edited; a booked run's goods are fixed.
  * @param lockReason what to tell a screen reader about a locked line.
  */
 @Composable
+@Suppress("LongParameterList")
 private fun GoodCard(
     good: RefineryGoodDraft,
     removable: Boolean,
-    materials: List<Pair<String, String>>,
+    materials: List<RefineryInputMaterial>,
+    moreMaterials: Boolean,
     onQuery: (String) -> Unit,
     onChanged: (RefineryGoodDraft) -> Unit,
+    onInputPicked: (RefineryInputMaterial) -> Unit,
+    onInputTyped: (String) -> Unit,
     onRemove: () -> Unit,
     enabled: Boolean = true,
     lockReason: String = "",
@@ -256,13 +277,18 @@ private fun GoodCard(
                 selectedValue = good.inputMaterialId,
                 materials = materials,
                 onQuery = onQuery,
-                onSelect = {
-                    onChanged(good.copy(inputMaterialId = it.first, inputMaterialName = it.second))
-                },
-                onType = { onChanged(good.copy(inputMaterialName = it, inputMaterialId = null)) },
+                onSelect = onInputPicked,
+                onType = onInputTyped,
                 enabled = enabled,
                 lockReason = lockReason,
             )
+            if (moreMaterials) {
+                Text(
+                    text = stringResource(R.string.refinery_create_more_materials),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
             NumberField(
                 label = stringResource(R.string.refinery_create_input_quantity),
                 value = good.inputQuantity,
@@ -270,19 +296,8 @@ private fun GoodCard(
                 enabled = enabled,
                 lockReason = lockReason,
             )
-            MaterialField(
-                label = stringResource(R.string.refinery_create_output_material),
-                shown = good.outputMaterialName,
-                selectedValue = good.outputMaterialId,
-                materials = materials,
-                onQuery = onQuery,
-                onSelect = {
-                    onChanged(good.copy(outputMaterialId = it.first, outputMaterialName = it.second))
-                },
-                onType = { onChanged(good.copy(outputMaterialName = it, outputMaterialId = null)) },
-                enabled = enabled,
-                lockReason = lockReason,
-            )
+            ScuHint(scu = good.inputScu)
+            DerivedOutputMaterial(name = good.outputMaterialName)
             NumberField(
                 label = stringResource(R.string.refinery_create_output_quantity),
                 value = good.outputQuantity,
@@ -290,17 +305,11 @@ private fun GoodCard(
                 enabled = enabled,
                 lockReason = lockReason,
             )
+            ScuHint(scu = good.outputScu)
             NumberField(
                 label = stringResource(R.string.refinery_create_quality),
                 value = good.quality,
                 onValue = { onChanged(good.copy(quality = it)) },
-                enabled = enabled,
-                lockReason = lockReason,
-            )
-            NumberField(
-                label = stringResource(R.string.refinery_create_bonus),
-                value = good.yieldBonusPercent,
-                onValue = { onChanged(good.copy(yieldBonusPercent = it)) },
                 enabled = enabled,
                 lockReason = lockReason,
             )
@@ -454,9 +463,9 @@ private fun MaterialField(
     label: String,
     shown: String,
     selectedValue: String?,
-    materials: List<Pair<String, String>>,
+    materials: List<RefineryInputMaterial>,
     onQuery: (String) -> Unit,
-    onSelect: (Pair<String, String>) -> Unit,
+    onSelect: (RefineryInputMaterial) -> Unit,
     onType: (String) -> Unit,
     enabled: Boolean = true,
     lockReason: String = "",
@@ -469,10 +478,10 @@ private fun MaterialField(
             onType(it)
             onQuery(it)
         },
-        options = materials.map { KrtOption(value = it.first, label = it.second) },
+        options = materials.map { KrtOption(value = it.id, label = it.name) },
         onSelect = { option ->
             expanded = false
-            onSelect(option.value to option.label)
+            materials.firstOrNull { it.id == option.value }?.let(onSelect)
         },
         expanded = expanded,
         onExpandedChange = { expanded = it },
@@ -480,6 +489,64 @@ private fun MaterialField(
         label = label,
         selectedValue = selectedValue,
         enabled = enabled,
+    )
+}
+
+/**
+ * The refined material the picked ore resolves to, shown rather than asked for.
+ *
+ * `RefineryOrderService.resolveGood` derives it from the ore's `refinedMaterial` and refuses any
+ * other value, so there is nothing here for a member to decide — and a picker offering the choice
+ * could only ever produce a `400` whose reason the server strips before it leaves. Empty until an
+ * ore is picked, which is the same em dash the web form's read-only box shows.
+ *
+ * @param name what the ore refines into, or blank before a pick.
+ */
+@Composable
+private fun DerivedOutputMaterial(name: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+        Text(
+            text = stringResource(R.string.refinery_create_output_material),
+            style = MaterialTheme.typography.labelMedium,
+            color = KrtPalette.Gray1,
+        )
+        Text(
+            text = name.ifBlank { stringResource(R.string.refinery_create_output_material_none) },
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (name.isBlank()) KrtPalette.TextMuted else KrtPalette.White,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(KrtPalette.SurfaceInput)
+                    .padding(KrtSpacing.s12)
+                    .testTag(REFINERY_OUTPUT_MATERIAL_TAG),
+        )
+    }
+}
+
+/**
+ * What a quantity in units comes to in SCU.
+ *
+ * The wire counts units, a hundred to the SCU, and the fields above say so — but a member thinks
+ * in SCU, and REQ-APP-REF-004a records what happened the last time the two were confused: a booking
+ * that would have written a Lager entry a hundred times the yield. So the figure is shown rather
+ * than converted, exactly as the web form's read-only SCU box does it.
+ *
+ * @param scu the converted figure, or `null` while the field holds no number.
+ */
+@Composable
+private fun ScuHint(scu: Double?) {
+    if (scu == null) {
+        return
+    }
+    Text(
+        text =
+            stringResource(
+                R.string.refinery_create_scu_hint,
+                formatAmount(BigDecimal.valueOf(scu).stripTrailingZeros().toPlainString()),
+            ),
+        style = MaterialTheme.typography.bodySmall,
+        color = KrtPalette.TextMuted,
     )
 }
 
@@ -571,6 +638,8 @@ fun RefineryCreateRoute(
                 onAddGood = viewModel::onAddGood,
                 onRemoveGood = viewModel::onRemoveGood,
                 onMaterialQuery = viewModel::onMaterialQuery,
+                onInputMaterialPicked = viewModel::onInputMaterialPicked,
+                onInputMaterialTyped = viewModel::onInputMaterialTyped,
                 onCreate = viewModel::onCreate,
             ),
         modifier = modifier,

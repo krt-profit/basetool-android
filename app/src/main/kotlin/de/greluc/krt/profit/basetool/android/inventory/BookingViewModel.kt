@@ -57,14 +57,17 @@ private const val SCU_UNIT = "SCU"
  * @property material the material picked, for booking in.
  * @property materialQuery what is in the material search.
  * @property materials what that search returned.
+ * @property moreMaterials whether the catalogue holds materials this page does not carry.
  * @property place the place picked.
  * @property placeQuery what is in the place search.
  * @property places what that search returned.
+ * @property morePlaces whether the catalogue holds places this page does not carry.
  * @property quality the quality as typed, for booking in.
  * @property outKind what happens to the material on the way out.
  * @property member the member a transfer hands it to.
  * @property memberQuery what is in the member search.
  * @property members what that search returned.
+ * @property moreMembers whether the roster holds members this page does not carry.
  * @property terminal the terminal a sale happens at.
  * @property terminals the terminals that buy this material.
  * @property jobOrderPlan what the member typed into each Auftrag earmark, keyed by target id.
@@ -87,14 +90,17 @@ data class BookingState(
     val material: MaterialOption? = null,
     val materialQuery: String = "",
     val materials: List<MaterialOption> = emptyList(),
+    val moreMaterials: Boolean = false,
     val place: LocationOption? = null,
     val placeQuery: String = "",
     val places: List<LocationOption> = emptyList(),
+    val morePlaces: Boolean = false,
     val quality: String = "",
     val outKind: BookOutKind = BookOutKind.DISCARD,
     val member: MemberOption? = null,
     val memberQuery: String = "",
     val members: List<MemberOption> = emptyList(),
+    val moreMembers: Boolean = false,
     val terminal: TerminalOption? = null,
     val terminals: List<TerminalOption> = emptyList(),
     val jobOrderPlan: Map<String, String> = emptyMap(),
@@ -123,7 +129,11 @@ data class BookingState(
                 // deliberate edit, not an incomplete form.
                 BookingMode.NOTE -> entry != null && note != entry.note.orEmpty()
 
-                BookingMode.IN -> positiveAmount && material != null && place != null
+                // The quality belongs here because the server requires it of a material row
+                // (`InventoryItemCreateDto`, REQ-INV-029) and the web form marks it `required`.
+                // Without it the CTA invited a booking the server answers with a 400 — a refusal
+                // the form knew about before it was sent.
+                BookingMode.IN -> positiveAmount && material != null && place != null && qualityGiven
 
                 BookingMode.OUT -> positiveAmount && entry != null && outKindSatisfied && herkunftValid
             }
@@ -131,6 +141,14 @@ data class BookingState(
     /** Whether the amount is a quantity and not zero. */
     private val positiveAmount: Boolean
         get() = amount.toDoubleOrNull()?.let { it > 0 } == true
+
+    /**
+     * Whether a grade has been entered, which a material row may not go without.
+     *
+     * Zero is a grade and passes; blank is the absence the server refuses.
+     */
+    private val qualityGiven: Boolean
+        get() = quality.trim().toIntOrNull() != null
 
     /** Whether the chosen way out has the field that makes it what it is. */
     private val outKindSatisfied: Boolean
@@ -575,13 +593,17 @@ class BookingViewModel(
     ) {
         searchJob?.cancel()
         if (query.trim().length < MIN_SEARCH) {
+            update { it.copy(moreMaterials = false) }
             onResults(emptyList())
             return
         }
         searchJob =
             viewModelScope.launch {
                 delay(DEBOUNCE_MILLIS)
-                (source.materials(query) as? ApiResult.Success)?.let { onResults(it.value) }
+                (source.materials(query) as? ApiResult.Success)?.let { result ->
+                    update { it.copy(moreMaterials = result.value.more) }
+                    onResults(result.value.rows)
+                }
             }
     }
 
@@ -593,14 +615,14 @@ class BookingViewModel(
     private fun searchPlaces(query: String) {
         searchJob?.cancel()
         if (query.trim().length < MIN_SEARCH) {
-            update { it.copy(places = emptyList()) }
+            update { it.copy(places = emptyList(), morePlaces = false) }
             return
         }
         searchJob =
             viewModelScope.launch {
                 delay(DEBOUNCE_MILLIS)
                 (source.locations(query) as? ApiResult.Success)?.let { result ->
-                    update { it.copy(places = result.value) }
+                    update { it.copy(places = result.value.rows, morePlaces = result.value.more) }
                 }
             }
     }
@@ -613,14 +635,14 @@ class BookingViewModel(
     private fun searchMembers(query: String) {
         searchJob?.cancel()
         if (query.trim().length < MIN_SEARCH) {
-            update { it.copy(members = emptyList()) }
+            update { it.copy(members = emptyList(), moreMembers = false) }
             return
         }
         searchJob =
             viewModelScope.launch {
                 delay(DEBOUNCE_MILLIS)
                 (source.members(query) as? ApiResult.Success)?.let { result ->
-                    update { it.copy(members = result.value) }
+                    update { it.copy(members = result.value.rows, moreMembers = result.value.more) }
                 }
             }
     }

@@ -7,8 +7,10 @@
 
 package de.greluc.krt.profit.basetool.android.refinery
 
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.RefineryCreateSource
 import de.greluc.krt.profit.basetool.android.core.data.RefineryGoodDraft
+import de.greluc.krt.profit.basetool.android.core.data.RefineryInputMaterial
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrder
 import de.greluc.krt.profit.basetool.android.core.data.RefineryOrderDraft
 import de.greluc.krt.profit.basetool.android.core.data.RefineryServerStatus
@@ -24,6 +26,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -68,8 +71,8 @@ class RefineryEditTest {
         override suspend fun methods(): ApiResult<List<RefiningMethod>> =
             ApiResult.Success(emptyList())
 
-        override suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>> =
-            ApiResult.Success(emptyList())
+        override suspend fun searchMaterials(query: String): ApiResult<PickerPage<RefineryInputMaterial>> =
+            ApiResult.Success(PickerPage())
 
         override suspend fun createOrder(draft: RefineryOrderDraft): ApiResult<String> {
             created.add(draft)
@@ -124,6 +127,66 @@ class RefineryEditTest {
             assertEquals("r1", source.updated.first().first)
             assertEquals(VERSION, source.updated.first().second.version)
             assertTrue("editing never posts a second order", source.created.isEmpty())
+        }
+
+    /** Picking an ore fills in what it refines into; the member never answers that question. */
+    @Test
+    fun pickingAnOreDerivesItsOutputMaterial() =
+        runTest(dispatcher) {
+            val model = RefineryCreateViewModel(RecordingSource(), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onInputMaterialPicked(
+                0,
+                RefineryInputMaterial("raw-agr", "Agricium (Raw)", "ref-agr", "Agricium"),
+            )
+
+            val line = model.state.value.draft.goods.first()
+            assertEquals("raw-agr", line.inputMaterialId)
+            assertEquals("ref-agr", line.outputMaterialId)
+            assertEquals("Agricium", line.outputMaterialName)
+        }
+
+    /** An ore the catalogue names no output for refines into itself, which is what the server does. */
+    @Test
+    fun anOreWithoutARefinedMaterialStandsInForItsOwnOutput() =
+        runTest(dispatcher) {
+            val model = RefineryCreateViewModel(RecordingSource(), null)
+            model.loadOnce()
+            advanceUntilIdle()
+
+            model.onInputMaterialPicked(0, RefineryInputMaterial("raw-ine", "Inert Materials"))
+
+            // `RefineryOrderService.resolveGood` falls back to the input material itself. Drawing
+            // an em dash here would be the web form's answer and a different one from the server's,
+            // so the screen would name nothing for a good that will be stored under a real name.
+            val line = model.state.value.draft.goods.first()
+            assertEquals("raw-ine", line.outputMaterialId)
+            assertEquals("Inert Materials", line.outputMaterialName)
+        }
+
+    /** Typing over a picked ore drops the derived output with it. */
+    @Test
+    fun typingOverAnOreClearsWhatWasDerivedFromIt() =
+        runTest(dispatcher) {
+            val model = RefineryCreateViewModel(RecordingSource(), null)
+            model.loadOnce()
+            advanceUntilIdle()
+            model.onInputMaterialPicked(
+                0,
+                RefineryInputMaterial("raw-agr", "Agricium (Raw)", "ref-agr", "Agricium"),
+            )
+
+            model.onInputMaterialTyped(0, "Agri")
+
+            // A stale id under a new label is the one thing a picker must never send, and an
+            // output still naming the old ore's product would say the run yields something it
+            // no longer takes in.
+            val line = model.state.value.draft.goods.first()
+            assertNull(line.inputMaterialId)
+            assertNull(line.outputMaterialId)
+            assertEquals("", line.outputMaterialName)
         }
 
     /** A booked run's core is locked — the app's rule, because no server gate enforces it. */

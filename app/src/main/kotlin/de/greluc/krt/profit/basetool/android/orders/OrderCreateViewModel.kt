@@ -54,15 +54,26 @@ enum class OrderKind {
  * @property materialName what the picker shows for it.
  * @property query what is in the picker's text field.
  * @property amount what was typed for the quantity.
- * @property minQuality the minimum quality, or `null` for „keine".
+ * @property minQuality the minimum quality, or `null` for „keine". Starts at
+ *   [DEFAULT_MIN_QUALITY], which is where `JobOrderForm.JobOrderMaterialForm` starts it: the same
+ *   order raised on a phone and in a browser has to ask for the same ore, and it did not — the app
+ *   defaulted to „keine" and quietly ordered ungraded material.
  */
 data class OrderLineDraft(
     val materialId: String? = null,
     val materialName: String = "",
     val query: String = "",
     val amount: String = "",
-    val minQuality: Int? = null,
+    val minQuality: Int? = DEFAULT_MIN_QUALITY,
 )
+
+/**
+ * The minimum quality a fresh material line asks for.
+ *
+ * 650, the web form's own default. It is a starting point and not a rule — the picker's other
+ * entry is „Keine", one tap away.
+ */
+const val DEFAULT_MIN_QUALITY: Int = 650
 
 /** Whether the line names a material and a positive amount. */
 val OrderLineDraft.isComplete: Boolean

@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
 import de.greluc.krt.profit.basetool.android.core.data.MaterialBoardSource
 import de.greluc.krt.profit.basetool.android.core.data.MaterialLookup
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.ReleasableStock
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -369,9 +370,9 @@ class MaterialBoardViewModelTest {
     ) : MaterialLookup {
         var calls = 0
 
-        override suspend fun materials(query: String): ApiResult<List<MaterialOption>> {
+        override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> {
             calls++
-            return ApiResult.Success(options)
+            return ApiResult.Success(PickerPage(options))
         }
     }
 

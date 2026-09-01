@@ -30,6 +30,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOpti
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 
 /** The holder registration sheet, for the tests that open it. */
 const val BANK_HOLDER_REGISTER_TAG: String = "bank-holder-register-sheet"
@@ -102,6 +103,7 @@ fun BankHolderRegisterSheet(
                 placeholder = stringResource(R.string.bank_grants_add_member_placeholder),
                 selectedValue = draft.selected?.id,
             )
+            PickerOverflowNote(more = draft.moreOptions)
             error?.let {
                 Text(
                     text = bankGrantErrorMessage(it),

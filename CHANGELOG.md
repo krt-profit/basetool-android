@@ -2,6 +2,37 @@
 
 ## [Unreleased]
 
+### Changed
+- **Picker sagen jetzt, wenn sie nicht alles zeigen.** Ort, Material und Mitglied im Lager, die
+  Mitgliedersuche im Einsatz und die Grant-Suche in der Bank brachen die Liste bei 25 Treffern ab,
+  ohne ein Wort — ein fehlender Eintrag sah aus, als gäbe es ihn nicht. Die Ortsliste holt jetzt
+  außerdem den ganzen Katalog statt eines Bildschirms davon. Umgekehrt behauptet der Ort-Picker in
+  „Mein Inventar" nicht mehr, es gäbe weitere Treffer, wenn er gerade alle zeigt.
+- **Eine neue Materialzeile im Auftrag fordert wieder Qualität 650**, wie im Webtool. Bisher stand
+  dort „Keine": derselbe Auftrag, im Browser und auf dem Telefon angelegt, bestellte
+  unterschiedliches Material.
+- **Auftragspositionen nennen die Einheit des Materials.** Bei einem Stück-Material stand „SCU"
+  über der Menge — 500 Stück lasen sich als 500 SCU.
+- **Der Hinweis auf Teilmengen steht nur noch bei SCU-Material.** Über einem Feld, das Stück
+  zählt, bot er Bruchteile von etwas an, das keine hat.
+- **Einbuchen verlangt jetzt eine Qualität, bevor der Knopf freigibt.** Ohne sie lehnte der Server
+  die Buchung ab — eine Absage, die das Formular vorher kannte.
+- **Der Raffinerieauftrag bietet nur noch raffinierbare Erze an.** Bisher stand der ganze
+  Materialkatalog im Eingangs-Picker — und der Server lehnte ein nicht-raffinierbares Material ab,
+  ohne einen Grund zu nennen. Das **Ausgangsmaterial** wählst du nicht mehr selbst: es ergibt sich
+  aus dem Erz und steht als Text daneben, wie im Webtool.
+- **Die Mengenfelder heißen jetzt Units, nicht SCU** — und darunter steht, was das in SCU ist. Das
+  Feld war als SCU beschriftet, ging aber unverändert an den Server, der Units zählt: wer 442
+  eintrug und SCU meinte, legte 4,42 SCU an.
+- **Zeigt der Erz-Picker nicht alle Treffer, sagt er das.** Bisher endete die Liste bei 25 Zeilen,
+  ohne Hinweis — ein fehlendes Erz sah aus, als gäbe es das nicht.
+
+### Removed
+
+- **Das Feld „Ertragsbonus" im Raffinerieauftrag ist raus.** Der Server berechnet den Bonus aus
+  UEX-Daten und verwirft, was die App schickt — das Feld nahm einen Wert entgegen, der nie
+  irgendwo ankam.
+
 ## [0.2.0] — 2026-08-31
 
 ### Added

@@ -532,7 +532,7 @@ class BankStaffRepository(
             is ApiResult.Success -> ApiResult.Success(Unit)
         }
 
-    override suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>> =
+    override suspend fun searchGrantees(query: String): ApiResult<PickerPage<BankGrantee>> =
         when (
             val result =
                 reader.get(
@@ -550,7 +550,12 @@ class BankStaffRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toGrantee() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toGrantee() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
 
@@ -608,7 +613,7 @@ class BankStaffRepository(
         const val QUERY_PARAM = "query"
 
         /** How many candidates one search offers. */
-        private const val GRANTEE_PAGE_SIZE = 25
+        private const val GRANTEE_PAGE_SIZE = 50
 
         /** The stem a Storno addresses; the transaction's id and `/reversal` complete it. */
         const val REVERSAL_PATH = "/api/v1/bank/transactions"

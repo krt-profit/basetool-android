@@ -25,7 +25,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.OkHttpClient
 
 /** How many rows a picker asks for; the notice says what the cap hid. */
-private const val PICKER_SIZE = 25
+private const val PICKER_SIZE = 50
 
 /** The whole CREW catalogue in one read — it is admin-maintained Stammdaten and small. */
 private const val CATALOGUE_SIZE = 200
@@ -228,7 +228,7 @@ interface MissionPeopleSource {
      * @return at most [PICKER_SIZE] matches, or the classified failure. The caller states the cap
      *   in the picker's notice — a filtered list must always say what it is hiding.
      */
-    suspend fun members(query: String): ApiResult<List<MemberOption>>
+    suspend fun members(query: String): ApiResult<PickerPage<MemberOption>>
 
     /**
      * The **CREW** Funktionen: the roles somebody holds aboard an Einheit.
@@ -418,7 +418,7 @@ class MissionTimelineRepository(
             ),
         )
 
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> =
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
         when (
             val result =
                 reader.get(
@@ -437,11 +437,14 @@ class MissionTimelineRepository(
 
             is ApiResult.Success -> {
                 ApiResult.Success(
-                    result.value.content.orEmpty().mapNotNull { dto ->
-                        val id = dto.id ?: return@mapNotNull null
-                        val name = dto.effectiveName ?: dto.displayName ?: dto.username
-                        name?.takeIf { it.isNotBlank() }?.let { MemberOption(id = id, name = it) }
-                    },
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { dto ->
+                            val id = dto.id ?: return@mapNotNull null
+                            val name = dto.effectiveName ?: dto.displayName ?: dto.username
+                            name?.takeIf { it.isNotBlank() }?.let { MemberOption(id = id, name = it) }
+                        },
+                        result.value.totalElements,
+                    ),
                 )
             }
         }

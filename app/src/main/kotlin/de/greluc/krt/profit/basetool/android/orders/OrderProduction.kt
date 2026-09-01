@@ -140,10 +140,12 @@ data class ProductionMaterialDraft(
  * @property locationId the chosen place, or `null` while none is. The server requires one.
  * @property locationQuery what is typed in the place picker.
  * @property locations the current matches.
+ * @property moreLocations whether the catalogue holds places this page does not carry.
  * @property ownerId whose stock it becomes; seeded with the acting member.
  * @property ownerName how they read, so the field shows a name and not an id.
  * @property ownerQuery what is typed in the member picker.
  * @property members the current matches.
+ * @property moreMembers whether the roster holds members this page does not carry.
  * @property orgUnits the owner's memberships, as read for **them** and not for the caller.
  * @property orgUnitId the chosen pool.
  * @property personal whether it goes into the owner's personal pool.
@@ -153,10 +155,12 @@ data class ProductionBookInDraft(
     val locationId: String? = null,
     val locationQuery: String = "",
     val locations: List<LocationOption> = emptyList(),
+    val moreLocations: Boolean = false,
     val ownerId: String? = null,
     val ownerName: String = "",
     val ownerQuery: String = "",
     val members: List<MemberOption> = emptyList(),
+    val moreMembers: Boolean = false,
     val orgUnits: List<OrgUnitOption> = emptyList(),
     val orgUnitId: String? = null,
     val personal: Boolean = false,

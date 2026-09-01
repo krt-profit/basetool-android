@@ -533,3 +533,64 @@ swallows a named refusal because nobody considered it.
 `hangar/ShipEditorSheet.kt`, `inventory/BookingSheet.kt`, `orders/OrderHandoverSheet.kt`,
 `orders/OrdersScreen.kt`, `personalinventory/PersonalBlueprintsEditor.kt`,
 `personalinventory/PersonalInventoryEditor.kt`
+
+---
+
+### REQ-APP-UI-013 — A picker says when its page is not the catalogue
+
+Every server-side picker search answers a **page**, never the whole catalogue. A client that
+renders the page and says nothing is indistinguishable from one that has shown everything: the
+member whose entry is missing concludes it does not exist rather than that they should keep typing.
+That is ADR-0104, and it is the failure that hid **28 of 53 locations** in the web's Lager booking
+form with nothing on screen indicating a cut.
+
+**The flag comes from `totalElements`, never from the row count.** A page that happens to be exactly
+full is not evidence of more, and a row dropped for having no id makes the size comparison lie in
+the other direction. `PickerPage<T>` and `krtPickerPage(rows, totalElements)` are the one place
+this is decided; `PickerOverflowNote` is its one rendering, so the wording is the same everywhere
+and a member learns it once. It draws **nothing** when there is nothing more — the absence is the
+signal that the list is complete.
+
+**Two pickers had shipped without it and five had shipped silent** (found 2026-09-01 comparing the
+app against the web, one release after the same fix landed on the refinery's ore picker):
+
+| picker | was | now |
+| --- | --- | --- |
+| Lager · Ort | 25, silent | **200**, reports |
+| Lager · Material | 25, silent | 50, reports |
+| Lager · Mitglied | 25, silent | 50, reports |
+| Einsätze · Mitglied | 25, cap named on **every** search | 50, reports only when it bites |
+| Bank · Grant-Empfänger | 25, silent | 50, reports |
+| Mein Inventar · Ort | 25, reported off `rows.size >= limit` | 25 shown, 26 fetched, reports |
+
+The Ort picker keeps its own size: the location catalogue is small and bounded by the game universe
+and a member booking stock expects to scroll it rather than guess a search term, which is why the
+web fetches 201 there against 51 elsewhere.
+
+**One endpoint cannot answer `totalElements`, and gets a sentinel instead.**
+`/api/v1/uex/locations/search` returns a **bare array** with a `limit`, so „Mein Inventar"'s place
+picker had only `rows.size >= limit` to go on — the very comparison the rule above rejects, and it
+is wrong in the common case: a catalogue holding exactly 25 matches reads as truncated, and the
+screen tells the member to narrow a search that has already shown them everything. It now asks for
+**one row more than it renders** and keeps the extra as the signal, never drawing it. That is the
+same trick the web plays with `PickerSearch.PAGE_SIZE = RENDER_CAP + 1`, and the endpoint clamps
+`limit` to `[1, 2000]` so the extra row is safe to ask for.
+
+The Einsätze picker is the opposite failure and worth naming separately. It was not silent — it
+printed „3 von höchstens 25 Treffern" on **every** search, which warns about a list that is in fact
+complete and says nothing different on the search where somebody really is missing. A notice that
+never varies carries no information.
+
+**Acceptance**
+
+- [x] The place picker asks for 200, not the generic page (`InventoryRepositoryTest`).
+- [x] A page that leaves candidates behind reports it, and one that carries the catalogue does not
+  (`InventoryRepositoryTest`, `RefineryRepositoryTest`).
+- [x] The sentinel picker asks for cap + 1, renders the cap, and reports the overflow — and a full
+  page **without** the sentinel is a complete answer (`PersonalInventoryRepositoryTest`,
+  `PersonalInventoryViewModelTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/data/PickerPage.kt`, `ui/PickerOverflowNote.kt`, `InventoryRepository`,
+`MissionTimelineRepository`, `BankStaffRepository`, `RefineryRepository`, `JobOrderRepository`,
+`PersonalInventoryRepository`

@@ -637,3 +637,27 @@ and so nothing to declare (ADR-0104 is satisfied by the read).
 
 **Code:** `InventoryRepository.gameItemStock`, `GameItemStock`, `GameItemStockViewModel`,
 `GameItemStockScreen`
+
+---
+
+### REQ-APP-INV-019 — Booking in needs a grade, and the cSCU hint belongs to SCU
+
+**A material row without a grade is a rejection the form knows about.**
+`InventoryItemCreateDto` pairs the two with an `@AssertTrue` (REQ-INV-029): a material row requires
+a quality, a game-item row forbids one. The web form marks the field `required`. The app left it
+optional, so the CTA invited a booking the server answers with a `400` — legible since the
+field-error fix, but still a refusal the form could have prevented. Zero is a grade and passes;
+blank is the absence the server refuses.
+
+**The cSCU/µSCU hint is shown only for an SCU material.** cSCU and µSCU are SCU words, and over a
+field counting pieces the hint offered fractions of a thing that has none. This is the rule the
+merge opt-in beside it already followed — the web applies it too, hiding its own hint for `PIECE`.
+
+**Acceptance**
+
+- [x] Material, place and amount are not enough; a grade is (`BookingViewModelTest`).
+- [x] A grade of `0` passes and a blank one does not (`BookingViewModelTest`).
+- [x] The hint stands beside an SCU material and is absent from a piece one (`BookingSheetTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `BookingViewModel` (`submittable`, `qualityGiven`), `BookingSheet`

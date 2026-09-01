@@ -97,7 +97,7 @@ class OrdersScreenTest {
         redacted = redacted,
     )
 
-    private fun material() =
+    private fun material(unit: String? = "SCU") =
         JobOrderMaterial(
             materialId = "m1",
             name = "Quantainium",
@@ -106,6 +106,7 @@ class OrdersScreenTest {
             claimCount = 1,
             claimedAmount = "180",
             open = "325.0",
+            unit = unit,
         )
 
     /**
@@ -408,6 +409,41 @@ class OrdersScreenTest {
         // weight, what was asked for is the scale beside it (design ch. 10, artboard 2).
         compose.onNodeWithText("125").assertIsDisplayed()
         compose.onNodeWithText("/ 500 SCU").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a material counted in pieces is not labelled SCU`() {
+        showQueue(
+            OrdersState(
+                orders = listOf(order(materials = listOf(material(unit = "PIECE")))),
+                total = 1,
+                phase = OrdersPhase.Ready,
+                expanded = setOf("o1"),
+            ),
+        )
+
+        // The card printed „SCU" over every line, so an order for 500 *pieces* read as 500 SCU —
+        // a quantity a member acts on. The rule is `RefineryScreen`'s own: never a hardcoded SCU.
+        compose.onNodeWithText("/ 500 Stück").assertIsDisplayed()
+        // ignoreCase, because `KrtChip` uppercases anything but a Data-toned chip; assertExists
+        // rather than assertIsDisplayed, because the chip row sits below the fold in the test's
+        // viewport and what is under test is the word it carries, not where it lands.
+        compose.onNodeWithText("Gebucht: 125 Stück", ignoreCase = true).assertExists()
+    }
+
+    @Test
+    fun `a material whose unit the server did not name says nothing rather than guessing`() {
+        showQueue(
+            OrdersState(
+                orders = listOf(order(materials = listOf(material(unit = null)))),
+                total = 1,
+                phase = OrdersPhase.Ready,
+                expanded = setOf("o1"),
+            ),
+        )
+
+        // Naming the wrong unit is worse than naming none.
+        compose.onNodeWithText("/ 500", substring = true).assertIsDisplayed()
     }
 
     @Test

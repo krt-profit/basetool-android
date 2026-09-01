@@ -277,18 +277,14 @@ fun MemberPickerSheet(members: MissionMemberActions) {
             modifier = Modifier.fillMaxWidth(),
             label = stringResource(R.string.mission_member_search),
             placeholder = stringResource(R.string.mission_member_search_hint),
-            // The cap is stated, never silent: the server is asked for at most MEMBER_PICKER_CAP
-            // rows, so a full list is a list that may be hiding somebody. Typing more narrows it.
+            // Stated when it bites and silent when it does not (ADR-0104). The old line named the
+            // cap on every search, which reads as a warning about a list that is in fact complete
+            // — and said nothing different on the search where somebody really was missing.
             notice =
-                if (members.state.searching) {
-                    stringResource(R.string.mission_member_searching)
-                } else {
-                    pluralStringResource(
-                        R.plurals.mission_member_notice,
-                        members.state.options.size,
-                        members.state.options.size,
-                        MEMBER_PICKER_CAP,
-                    )
+                when {
+                    members.state.searching -> stringResource(R.string.mission_member_searching)
+                    members.state.moreOptions -> stringResource(R.string.picker_more_matches)
+                    else -> null
                 },
         )
     }

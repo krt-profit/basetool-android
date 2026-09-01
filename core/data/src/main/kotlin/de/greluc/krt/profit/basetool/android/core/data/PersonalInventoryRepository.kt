@@ -178,9 +178,9 @@ interface PersonalInventorySource {
      * Searches places for the editor's picker.
      *
      * @param query what the member typed.
-     * @return the matches, capped by the server.
+     * @return one page of matches and whether the catalogue holds more (ADR-0104).
      */
-    suspend fun locations(query: String): ApiResult<List<PersonalLocation>>
+    suspend fun locations(query: String): ApiResult<PickerPage<PersonalLocation>>
 }
 
 /**
@@ -263,14 +263,25 @@ class PersonalInventoryRepository(
 
     override suspend fun delete(id: String): ApiResult<Unit> = reader.delete(itemPath(id))
 
-    override suspend fun locations(query: String): ApiResult<List<PersonalLocation>> {
-        val params = listOf(QUERY_PARAM to query.trim(), LIMIT_PARAM to LOCATION_LIMIT.toString())
+    override suspend fun locations(query: String): ApiResult<PickerPage<PersonalLocation>> {
+        val params = listOf(QUERY_PARAM to query.trim(), LIMIT_PARAM to LOCATION_PROBE.toString())
         return when (
             val result =
                 reader.get(LOCATIONS_PATH, params, ListSerializer(UexLocationDto.serializer()))
         ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(result.value.map { it.toModel() })
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                val fetched = result.value.map { it.toModel() }
+                ApiResult.Success(
+                    PickerPage(
+                        rows = fetched.take(LOCATION_LIMIT),
+                        more = fetched.size > LOCATION_LIMIT,
+                    ),
+                )
+            }
         }
     }
 
@@ -287,12 +298,27 @@ class PersonalInventoryRepository(
         const val DEFAULT_PAGE_SIZE: Int = 30
 
         /**
-         * How many places the picker asks for.
+         * How many places the picker renders.
          *
-         * Named here because the number is a cap the member has to be told about: the search says
-         * so when it comes back full, rather than pretending the rest do not exist (ADR-0104).
+         * A cap the member has to be told about, so the search says when it is biting rather than
+         * letting the rest look non-existent (ADR-0104).
          */
         const val LOCATION_LIMIT: Int = 25
+
+        /**
+         * How many places are actually asked for: one more than are shown.
+         *
+         * `/uex/locations/search` answers a **bare array** with no total, so unlike every other
+         * picker in the app there is no `totalElements` to compare against. The overflow was
+         * therefore read off `rows.size >= LOCATION_LIMIT`, which is exactly the comparison the
+         * rest of the codebase warns about: a result set of exactly 25 is indistinguishable from
+         * a truncated one, so a complete list claimed to be hiding something.
+         *
+         * The extra row is the sentinel and is never rendered — the same trick the web's
+         * `PickerSearch.PAGE_SIZE = RENDER_CAP + 1` plays for the same reason. The endpoint clamps
+         * `limit` to `[1, 2000]`, so asking for one more is safe.
+         */
+        private const val LOCATION_PROBE: Int = LOCATION_LIMIT + 1
 
         private const val LOG_TAG = "personal-inventory"
         private const val PATH = "/api/v1/personal-inventory"

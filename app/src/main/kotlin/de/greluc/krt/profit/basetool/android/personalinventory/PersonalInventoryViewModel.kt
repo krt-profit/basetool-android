@@ -376,11 +376,14 @@ class PersonalInventoryViewModel(
                             mutableState.value.copy(
                                 locations =
                                     mutableState.value.locations.copy(
-                                        results = result.value,
+                                        results = result.value.rows,
                                         searching = false,
-                                        // A full answer means the server stopped counting, not that
-                                        // there are exactly this many places (ADR-0104).
-                                        capped = result.value.size >= PersonalInventoryRepository.LOCATION_LIMIT,
+                                        // The repository asks for one place more than it renders
+                                        // and keeps the extra as the sentinel: this endpoint sends
+                                        // a bare array with no total, so „exactly 25 back" used to
+                                        // be the only signal — and it cannot tell a complete list
+                                        // of 25 from a truncated one (ADR-0104).
+                                        capped = result.value.more,
                                     ),
                             )
                     }

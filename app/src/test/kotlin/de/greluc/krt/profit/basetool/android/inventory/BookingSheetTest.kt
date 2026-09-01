@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
+import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -118,6 +119,32 @@ class BookingSheetTest {
 
         compose.onNodeWithTag(BOOKING_SHEET_TAG).assertIsDisplayed()
         compose.onNodeWithText("Material").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the cSCU hint stands beside an SCU material`() {
+        show(
+            BookingState(
+                mode = BookingMode.IN,
+                material = MaterialOption("m1", "Quantainium", "SCU"),
+            ),
+        )
+
+        compose.onNodeWithTag(BOOKING_SCU_HINT_TAG).assertExists()
+    }
+
+    @Test
+    fun `the cSCU hint is absent from a material counted in pieces`() {
+        show(
+            BookingState(
+                mode = BookingMode.IN,
+                material = MaterialOption("gi1", "Medizinische Station", "PIECE"),
+            ),
+        )
+
+        // cSCU and µSCU are SCU words. Over a field counting pieces the hint offered fractions
+        // of a thing that has none — the rule the merge opt-in beside it already follows.
+        compose.onNodeWithTag(BOOKING_SCU_HINT_TAG).assertDoesNotExist()
     }
 
     @Test

@@ -63,6 +63,27 @@ class InventoryRepositoryTest {
              "page": 0, "totalElements": 2, "totalPages": 1}
             """.trimIndent()
 
+        /** One row out of a catalogue of forty — a page that is hiding something. */
+        val MATERIALS_CAPPED =
+            """
+            {"content": [{"id": "m1", "name": "Quantainium", "quantityType": "SCU"}],
+             "page": 0, "totalElements": 40, "totalPages": 40}
+            """.trimIndent()
+
+        /** The same row, and the catalogue holds nothing else. */
+        val MATERIALS_COMPLETE =
+            """
+            {"content": [{"id": "m1", "name": "Quantainium", "quantityType": "SCU"}],
+             "page": 0, "totalElements": 1, "totalPages": 1}
+            """.trimIndent()
+
+        /** Two places, which is all of them. */
+        val LOCATIONS =
+            """
+            {"content": [{"id": "l1", "name": "ARC-L1"}, {"id": "l2", "name": "Area18"}],
+             "page": 0, "totalElements": 2, "totalPages": 1}
+            """.trimIndent()
+
         val MEMBERS =
             """
             {"content": [{"id": "u1", "username": "rhea", "effectiveName": "Rhea"}],
@@ -175,10 +196,44 @@ class InventoryRepositoryTest {
         runTest {
             respond(MATERIALS)
 
-            val materials = (repository.materials("quant") as ApiResult.Success).value
+            val materials = (repository.materials("quant") as ApiResult.Success).value.rows
 
             assertEquals(1, materials.size)
             assertEquals("SCU", materials.single().unit)
+        }
+
+    @Test
+    fun `the place picker asks for the whole catalogue, not a screenful of it`() =
+        runTest {
+            respond(LOCATIONS)
+
+            repository.locations("")
+
+            // 200, not the generic picker page. The location catalogue is small and bounded by the
+            // game universe, and a member booking stock expects to scroll it. At `size=25` this
+            // very picker showed 25 of 53 places with nothing on screen saying so.
+            assertEquals("200", requestedUrl().queryParameter("size"))
+        }
+
+    @Test
+    fun `a picker page that leaves candidates behind says so`() =
+        runTest {
+            respond(MATERIALS_CAPPED)
+
+            val page = (repository.materials("q") as ApiResult.Success).value
+
+            // Read off `totalElements`, not off a full-looking page (ADR-0104).
+            assertTrue(page.more)
+        }
+
+    @Test
+    fun `a picker page that carries the catalogue claims nothing more`() =
+        runTest {
+            respond(MATERIALS_COMPLETE)
+
+            val page = (repository.materials("quant") as ApiResult.Success).value
+
+            assertFalse(page.more)
         }
 
     @Test
@@ -187,7 +242,7 @@ class InventoryRepositoryTest {
             // effectiveName, not username: it is what the web app renders.
             respond(MEMBERS)
 
-            val members = (repository.members("rh") as ApiResult.Success).value
+            val members = (repository.members("rh") as ApiResult.Success).value.rows
 
             assertEquals("Rhea", members.single().name)
             assertEquals("rh", requestedUrl().queryParameter("query"))

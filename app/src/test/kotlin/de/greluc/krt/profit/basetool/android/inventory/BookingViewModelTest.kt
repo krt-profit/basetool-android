@@ -26,6 +26,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -130,14 +131,14 @@ class BookingViewModelTest {
             return answer
         }
 
-        override suspend fun materials(query: String): ApiResult<List<MaterialOption>> =
-            ApiResult.Success(listOf(MaterialOption("m1", "Quantainium", "SCU")))
+        override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> =
+            ApiResult.Success(PickerPage(listOf(MaterialOption("m1", "Quantainium", "SCU"))))
 
-        override suspend fun locations(query: String): ApiResult<List<LocationOption>> =
-            ApiResult.Success(listOf(LocationOption("l1", "ARC-L1")))
+        override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
+            ApiResult.Success(PickerPage(listOf(LocationOption("l1", "ARC-L1"))))
 
-        override suspend fun members(query: String): ApiResult<List<MemberOption>> =
-            ApiResult.Success(listOf(MemberOption("u1", "Rhea")))
+        override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+            ApiResult.Success(PickerPage(listOf(MemberOption("u1", "Rhea"))))
 
         var orgUnitAnswer: List<OrgUnitOption> =
             listOf(OrgUnitOption("ou1", "Bereich Profit"), OrgUnitOption("ou2", "SK Nebelkraehe"))
@@ -447,7 +448,7 @@ class BookingViewModelTest {
         BookingViewModel(source, connectivity)
 
     @Test
-    fun `booking in needs a material, a place and an amount`() =
+    fun `booking in needs a material, a place, an amount and a grade`() =
         runTest(dispatcher) {
             val vm = model()
             vm.openBookIn {}
@@ -458,7 +459,30 @@ class BookingViewModelTest {
             vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
             vm.onAmountChanged("12.5")
 
+            // Still not sendable: the server requires a grade of a material row
+            // (`InventoryItemCreateDto`, REQ-INV-029) and the web form marks the field required.
+            // Without this the CTA invited a booking that comes back a 400.
+            assertEquals(false, vm.state.value?.submittable)
+
+            vm.onQualityChanged("874")
+
             assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `a grade of zero is a grade, and blank is the absence the server refuses`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("12.5")
+
+            vm.onQualityChanged("0")
+            assertEquals(true, vm.state.value?.submittable)
+
+            vm.onQualityChanged("")
+            assertEquals(false, vm.state.value?.submittable)
         }
 
     @Test
@@ -596,6 +620,7 @@ class BookingViewModelTest {
             vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
             vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
             vm.onAmountChanged("3")
+            vm.onQualityChanged("874")
             vm.onSave()
             advanceUntilIdle()
 

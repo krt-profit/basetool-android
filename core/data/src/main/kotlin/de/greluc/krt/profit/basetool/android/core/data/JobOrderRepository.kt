@@ -171,6 +171,11 @@ data class JobOrderItem(
  *   the figure artboard 10-2's position card states („Zugesagt: 300 SCU"), summed from the
  *   claims because the server sends one amount each and no total
  * @property open how much is still missing, as the server computed it
+ * @property unit `SCU` or `PIECE` — the material's own unit, `null` when the server named none.
+ *   Carried because a figure without it is a figure a member has to guess at: the screen printed
+ *   „SCU" over every line, so an order for eight *pieces* read as eight SCU. The web switches per
+ *   material and even splits its demand band into two numbers, because the two units cannot be
+ *   added.
  */
 data class JobOrderMaterial(
     val materialId: String?,
@@ -180,6 +185,7 @@ data class JobOrderMaterial(
     val claimCount: Int,
     val claimedAmount: String?,
     val open: String?,
+    val unit: String? = null,
 ) {
     /**
      * How far along this line is, between 0 and 1, or `null` when it cannot be told.
@@ -1423,6 +1429,7 @@ private fun JobOrderMaterialDto.toModel(): JobOrderMaterial =
                 ?.sum()
                 ?.let { java.math.BigDecimal(it.toString()).stripTrailingZeros().toPlainString() },
         open = openAmount?.toPlainString(),
+        unit = material?.quantityType,
     )
 
 /**

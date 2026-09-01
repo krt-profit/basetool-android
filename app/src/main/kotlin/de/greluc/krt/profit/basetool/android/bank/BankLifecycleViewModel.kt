@@ -140,6 +140,7 @@ data class BankLifecycleState(
  *
  * @property query what has been typed into the member picker.
  * @property options the candidates the last search answered with.
+ * @property moreOptions whether the roster holds members this page does not carry.
  * @property searching whether a search is in flight.
  * @property selected the member picked, or `null` before one is.
  * @property canDeposit whether the new grant may book money in.
@@ -149,6 +150,7 @@ data class BankLifecycleState(
 data class BankGranteeDraft(
     val query: String = "",
     val options: List<BankGrantee> = emptyList(),
+    val moreOptions: Boolean = false,
     val searching: Boolean = false,
     val selected: BankGrantee? = null,
     val canDeposit: Boolean = false,
@@ -486,7 +488,12 @@ class BankLifecycleViewModel(
                 when (result) {
                     is ApiResult.Success -> {
                         mutableState.value.copy(
-                            holderDraft = current.copy(options = result.value, searching = false),
+                            holderDraft =
+                                current.copy(
+                                    options = result.value.rows,
+                                    moreOptions = result.value.more,
+                                    searching = false,
+                                ),
                         )
                     }
 
@@ -613,7 +620,12 @@ class BankLifecycleViewModel(
                 when (result) {
                     is ApiResult.Success -> {
                         mutableState.value.copy(
-                            granteeDraft = current.copy(options = result.value, searching = false),
+                            granteeDraft =
+                                current.copy(
+                                    options = result.value.rows,
+                                    moreOptions = result.value.more,
+                                    searching = false,
+                                ),
                         )
                     }
 

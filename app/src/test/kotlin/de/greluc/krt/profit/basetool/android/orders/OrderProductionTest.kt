@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderProductionSource
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -404,11 +405,11 @@ class OrderProductionTest {
 
     /** Where produced stock may land. */
     private inner class FakeOptions : BookInOptions {
-        override suspend fun locations(query: String): ApiResult<List<LocationOption>> =
-            ApiResult.Success(listOf(LocationOption(id = "loc1", name = "ARC-L1")))
+        override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
+            ApiResult.Success(PickerPage(listOf(LocationOption(id = "loc1", name = "ARC-L1"))))
 
-        override suspend fun members(query: String): ApiResult<List<MemberOption>> =
-            ApiResult.Success(listOf(MemberOption(id = "u2", name = "Dorn")))
+        override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+            ApiResult.Success(PickerPage(listOf(MemberOption(id = "u2", name = "Dorn"))))
 
         override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
             ApiResult.Success(memberships)

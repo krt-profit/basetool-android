@@ -22,6 +22,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineSource
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -262,12 +263,12 @@ internal object NoMissionTimeline : MissionTimelineSource {
 
 /** What the member picker was asked for, and what it is answered with. */
 private val memberQueries = mutableListOf<String>()
-private var memberAnswer: ApiResult<List<MemberOption>> =
-    ApiResult.Success(listOf(MemberOption(id = "u9", name = "Rhea")))
+private var memberAnswer: ApiResult<PickerPage<MemberOption>> =
+    ApiResult.Success(PickerPage(listOf(MemberOption(id = "u9", name = "Rhea"))))
 
 /** The two catalogue lookups. */
 internal class RecordingMissionPeople : MissionPeopleSource {
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> {
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> {
         memberQueries.add(query)
         return memberAnswer
     }

@@ -29,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -82,9 +83,12 @@ private object NoOrgUnits : OrgUnitSource {
 
 /** Where produced stock could land — never asked here. */
 private object NoBookInOptions : BookInOptions {
-    override suspend fun locations(query: String): ApiResult<List<LocationOption>> = ApiResult.Success(emptyList())
+    override suspend fun locations(
+        query: String,
+    ): ApiResult<PickerPage<LocationOption>> = ApiResult.Success(PickerPage())
 
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> = ApiResult.Success(emptyList())
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+        ApiResult.Success(PickerPage())
 
     override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> = ApiResult.Success(emptyList())
 }

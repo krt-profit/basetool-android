@@ -138,7 +138,16 @@ class OrderCreateTest {
     fun `the minimum quality travels with its line`() {
         val draft = state(FULL.copy(minQuality = GRADE)).toDraft()
         assertEquals(GRADE, draft?.lines?.single()?.minQuality)
-        assertNull(state(FULL).toDraft()?.lines?.single()?.minQuality)
+        assertNull(state(FULL.copy(minQuality = null)).toDraft()?.lines?.single()?.minQuality)
+    }
+
+    @Test
+    fun `a fresh line asks for the grade the web form asks for`() {
+        // `JobOrderForm.JobOrderMaterialForm` starts at 650. The app started at „keine", so the
+        // same order raised on a phone quietly asked for ungraded ore — a difference in what gets
+        // delivered, not in how the form looks. „Keine" is still one tap away.
+        assertEquals(DEFAULT_MIN_QUALITY, OrderLineDraft().minQuality)
+        assertEquals(GRADE, DEFAULT_MIN_QUALITY)
     }
 
     @Test

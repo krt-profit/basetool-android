@@ -59,12 +59,21 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the booking sheet. */
 const val BOOKING_SHEET_TAG: String = "booking-sheet"
+
+/**
+ * The cSCU/µSCU hint beside the amount.
+ *
+ * Tagged because [KrtHint] renders its sentence inside a tooltip, which is not in the tree until
+ * somebody long-presses it — so its presence cannot be asserted by text.
+ */
+const val BOOKING_SCU_HINT_TAG: String = "booking-scu-hint"
 
 /** Test handle for the booking's save action. */
 const val BOOKING_SAVE_TAG: String = "booking-save"
@@ -136,6 +145,7 @@ fun BookingSheet(
                     onQuery = callbacks.onMaterialQuery,
                     onChosen = { id -> state.materials.firstOrNull { it.id == id }?.let(callbacks.onMaterial) },
                 )
+                PickerOverflowNote(more = state.moreMaterials)
             }
 
             if (state.mode == BookingMode.NOTE) {
@@ -296,7 +306,15 @@ private fun AmountField(
                     ),
                 enabled = !state.saving,
             )
-            KrtHint(explanation = stringResource(R.string.booking_amount_hint))
+            if (state.materialIsScu) {
+                // cSCU and µSCU are SCU words. Over a field counting pieces the hint offered
+                // fractions of a thing that has none — the same rule the merge opt-in already
+                // follows, and the one the web applies by hiding its own hint for PIECE.
+                KrtHint(
+                    explanation = stringResource(R.string.booking_amount_hint),
+                    modifier = Modifier.testTag(BOOKING_SCU_HINT_TAG),
+                )
+            }
         }
         // A stepper, not a bare field: the artboard's `− 120 +` is what a member uses when the
         // amount is one or two off, which on a booking form it usually is. Typing still works —
@@ -334,6 +352,7 @@ private fun PlaceField(
         onQuery = callbacks.onPlaceQuery,
         onChosen = { id -> state.places.firstOrNull { it.id == id }?.let(callbacks.onPlace) },
     )
+    PickerOverflowNote(more = state.morePlaces)
 }
 
 /**
@@ -511,6 +530,7 @@ private fun OutKindField(
                     onQuery = callbacks.onMemberQuery,
                     onChosen = { id -> state.members.firstOrNull { it.id == id }?.let(callbacks.onMember) },
                 )
+                PickerOverflowNote(more = state.moreMembers)
                 Picker(
                     label = stringResource(R.string.booking_field_place_transfer),
                     query = state.placeQuery,
@@ -520,6 +540,7 @@ private fun OutKindField(
                     onQuery = callbacks.onPlaceQuery,
                     onChosen = { id -> state.places.firstOrNull { it.id == id }?.let(callbacks.onPlace) },
                 )
+                PickerOverflowNote(more = state.morePlaces)
                 // The refusal speaks about the two pickers directly above, so it stays with them.
                 // The pool and the merge option are a separate decision about where the moved row
                 // lands, and a rule about the targets read underneath them looks like a rule about

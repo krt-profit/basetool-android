@@ -1137,9 +1137,10 @@ interface BankGrantSource {
      * impossible.
      *
      * @param query what was typed; blank asks for the first page unfiltered.
-     * @return the candidates, or the classified failure.
+     * @return one page of candidates and whether the roster holds more (ADR-0104), or the
+     *   classified failure.
      */
-    suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>>
+    suspend fun searchGrantees(query: String): ApiResult<PickerPage<BankGrantee>>
 }
 
 /** Which of the three direct bookings the Verwaltung is making. */
