@@ -63,6 +63,7 @@ class MissionAdminTest {
             plannedEndTime = null,
             isInternal = false,
             meetingPoint = "ARC-L1",
+            operationId = null,
             operationName = null,
             orgUnitName = null,
             orgUnitShorthand = null,
@@ -91,6 +92,34 @@ class MissionAdminTest {
         write = { form = it },
         onSaved = { saved = it },
     )
+
+    @Test
+    fun `the Kern section is where an Einsatz joins an Operation`() =
+        runTest(dispatcher) {
+            val source = RecordingSource(detail())
+            val subject =
+                MissionAdmin(
+                    missionId = "m1",
+                    source = source,
+                    scope = this,
+                    read = { MissionAdminContext(form, detail(), canManage) },
+                    write = { form = it },
+                    onSaved = { saved = it },
+                )
+            subject.open()
+            advanceUntilIdle()
+
+            // The picker fills in after the form: the tab opens on what is already known.
+            assertEquals(listOf("op1" to "Bergung Hurston"), form?.operations)
+
+            subject.change(MissionSection.CORE) { it.copy(operationId = "op1") }
+            subject.save(MissionSection.CORE)
+            advanceUntilIdle()
+
+            // The Operation's own form has no such field because the wire has none, so this is
+            // the only place it can be set - and the app used to offer it in neither.
+            assertEquals(listOf("op1"), source.cores)
+        }
 
     @Test
     fun `the sheet opens filled from the Einsatz`() =
@@ -191,6 +220,12 @@ class MissionAdminTest {
     private inner class RecordingSource(
         private val answer: MissionDetail,
     ) : MissionAdminSource {
+        /** Which Operation each Kern write carried. */
+        val cores = mutableListOf<String?>()
+
+        override suspend fun operationOptions(): List<Pair<String, String>> =
+            listOf("op1" to "Bergung Hurston")
+
         override suspend fun patchCore(
             missionId: String,
             name: String,
@@ -198,9 +233,11 @@ class MissionAdminTest {
             meetingPoint: String?,
             calendarLink: String?,
             status: String?,
+            operationId: String?,
             version: Long,
         ): ApiResult<MissionDetail> {
             calls.add(MissionSection.CORE to version)
+            cores.add(operationId)
             return ApiResult.Success(answer)
         }
 

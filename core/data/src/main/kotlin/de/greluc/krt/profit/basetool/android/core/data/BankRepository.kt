@@ -1171,6 +1171,23 @@ enum class DirectBookingKind {
  * @property note the Verwendungszweck.
  * @property destinationAccountId the receiving account, for a transfer.
  * @property destinationHolderId who holds it afterwards, for a transfer.
+ * @property feeInclusive which side of the in-game transfer fee [amount] stands on.
+ *
+ *   `false` — the server's own default — means the typed figure is what the **recipient
+ *   receives**, and the fee is added on top: the account is debited `amount + fee` (ADR-0052,
+ *   REQ-BANK-033). `true` makes the typed figure the **debited gross**, and the recipient gets
+ *   `amount - fee`. The app used to send neither the flag nor any word about the fee, so a member
+ *   typing 100 000 watched more than 100 000 leave the account with nothing on screen having said
+ *   so.
+ *
+ *   Only meaningful where a fee applies — a withdrawal, and a transfer that changes holder. A
+ *   deposit and a same-holder transfer are fee-free, and the flag is not sent for them.
+ * @property justification why the booking was made, where the member gave a reason. Shown in the
+ *   web's booking detail beside the Verwendungszweck; a booking made without one simply has none.
+ * @property counterpartyUserId the member who received the payout, distinct from the holder who
+ *   paid it (REQ-BANK-044) — recorded on the transaction header, not on the holder posting.
+ * @property counterpartyOrgUnitId which unit that member acted for.
+ * @property counterpartyExternalName who received it when they are not a member at all.
  */
 data class DirectBooking(
     val kind: DirectBookingKind,
@@ -1180,7 +1197,27 @@ data class DirectBooking(
     val note: String? = null,
     val destinationAccountId: String? = null,
     val destinationHolderId: String? = null,
-)
+    val feeInclusive: Boolean = false,
+    val justification: String? = null,
+    val counterpartyUserId: String? = null,
+    val counterpartyOrgUnitId: String? = null,
+    val counterpartyExternalName: String? = null,
+) {
+    /**
+     * Whether the in-game transfer fee applies to this booking.
+     *
+     * A withdrawal always, a transfer only when it changes holder, a deposit never (ADR-0052). The
+     * form asks about the fee only where the answer can matter — a toggle that changes nothing is
+     * worse than no toggle, because the member cannot tell which one they are looking at.
+     */
+    val feeApplies: Boolean
+        get() =
+            when (kind) {
+                DirectBookingKind.DEPOSIT -> false
+                DirectBookingKind.WITHDRAWAL -> true
+                DirectBookingKind.TRANSFER -> holderId != destinationHolderId
+            }
+}
 
 /**
  * The bank-staff surface — design chapter 12, artboards 4 to 8.
@@ -1198,6 +1235,18 @@ interface BankStaffSource {
      *   bank employee, which is the ordinary answer rather than a defect.
      */
     suspend fun staffDashboard(): ApiResult<BankStaffDashboard>
+
+    /**
+     * Reads the org-wide in-game transfer-fee rate, as a fraction.
+     *
+     * Guidance only: the authoritative fee is computed server-side at booking time. It exists so a
+     * member can be told, **before** they confirm, what will actually leave the account — which
+     * with the default on-top mode is more than the figure they typed.
+     *
+     * @return the rate, or the classified failure. A failure is not a reason to block a booking:
+     *   the caller falls back to showing no preview, exactly as the web does.
+     */
+    suspend fun transferFeeRate(): ApiResult<KrtDecimal>
 
     /**
      * Reads one page of the request queue.

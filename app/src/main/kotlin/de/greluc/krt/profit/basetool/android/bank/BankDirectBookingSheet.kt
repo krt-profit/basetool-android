@@ -32,6 +32,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
 import de.greluc.krt.profit.basetool.android.core.data.DirectBookingKind
 import de.greluc.krt.profit.basetool.android.core.data.parseTypedDecimal
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtFieldError
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
@@ -52,6 +53,57 @@ const val BANK_DIRECT_CONFIRM_TAG: String = "bank-direct-confirm"
 
 /** The three modes, in the order the segment draws them. */
 private val MODES = listOf(DirectBookingKind.DEPOSIT, DirectBookingKind.WITHDRAWAL, DirectBookingKind.TRANSFER)
+
+/**
+ * What the in-game transfer fee does to this booking, before it is made.
+ *
+ * The default is **on top**: the figure the member typed is what the recipient must receive, and
+ * the account is debited `amount + fee` (ADR-0052, REQ-BANK-033). The app used to send neither the
+ * flag nor any word about the fee, so a member typing 100 000 watched more than 100 000 leave the
+ * account with nothing on screen having said so — and „Stand nach Buchung" beneath it showed the
+ * balance the account would have had **without** the fee.
+ *
+ * Shown only where a fee applies. Guidance only: the authoritative fee is computed server-side at
+ * booking time, and the block says so rather than implying this figure is binding.
+ *
+ * @param state the form.
+ * @param onEdit how the toggle reports back.
+ */
+@Composable
+private fun FeeBlock(
+    state: DirectBookingState,
+    onEdit: ((DirectBookingState) -> DirectBookingState) -> Unit,
+) {
+    val fee = state.fee ?: return
+    Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4)) {
+        KrtCheckboxRow(
+            checked = state.feeInclusive,
+            onCheckedChange = { value -> onEdit { it.copy(feeInclusive = value) } },
+            label = stringResource(R.string.bank_direct_fee_inclusive),
+            enabled = !state.saving,
+        )
+        Text(
+            text = stringResource(R.string.bank_direct_fee, fee.toPlainString()),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+        state.debited?.let { gross ->
+            Text(
+                text = stringResource(R.string.bank_direct_fee_debited, gross.toPlainString()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+        }
+        state.arrives?.let { net ->
+            Text(
+                text = stringResource(R.string.bank_direct_fee_arrives, net.toPlainString()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KrtPalette.White,
+            )
+        }
+        KrtHint(explanation = stringResource(R.string.bank_direct_fee_hint))
+    }
+}
 
 /**
  * „Direktbuchung" — design ch. 12 artboard 9.
@@ -156,6 +208,7 @@ fun BankDirectBookingSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
             KrtHint(explanation = stringResource(R.string.bank_direct_no_approval))
+            FeeBlock(state = state, onEdit = onEdit)
             state.preview(balance)?.let { after ->
                 Text(
                     text = stringResource(R.string.bank_direct_preview, after.toPlainString()),

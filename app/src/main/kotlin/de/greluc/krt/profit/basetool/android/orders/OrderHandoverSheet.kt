@@ -98,6 +98,7 @@ fun OrderHandoverSheet(actions: OrderHandoverActions) {
                         draft.materialName,
                         draft.alreadyDone.orEmpty(),
                         draft.needed.orEmpty(),
+                        draft.unitWord(),
                     ),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
@@ -105,7 +106,7 @@ fun OrderHandoverSheet(actions: OrderHandoverActions) {
             KrtTextField(
                 value = draft.amount,
                 onValueChange = { v -> actions.onChange { it.copy(amount = v) } },
-                label = stringResource(R.string.order_handover_amount),
+                label = stringResource(R.string.order_handover_amount, draft.unitWord()),
                 enabled = !draft.saving,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 tabularFigures = true,
@@ -144,6 +145,23 @@ fun OrderHandoverSheet(actions: OrderHandoverActions) {
 }
 
 /**
+ * The position's own unit word.
+ *
+ * **Never a hardcoded SCU** — the rule `RefineryScreen` writes down. This sheet labelled every
+ * amount „SCU", so handing over 8 *pieces* read as 8 SCU on the one screen that finishes an
+ * Auftrag. A unit the server did not name is left unsaid rather than guessed.
+ *
+ * @return the word to put after the figure, or an empty string when the server named no unit.
+ */
+@Composable
+private fun OrderHandoverDraft.unitWord(): String =
+    when (unit) {
+        "PIECE" -> stringResource(R.string.materials_unit_piece)
+        "SCU" -> stringResource(R.string.materials_unit_scu)
+        else -> ""
+    }
+
+/**
  * Where the line stands after this handover — the number that finishes the Auftrag.
  *
  * @param draft what is typed.
@@ -168,6 +186,7 @@ private fun Projection(draft: OrderHandoverDraft) {
                     R.string.order_handover_after_value,
                     draft.projectedAmount?.krtPlainAmount().orEmpty(),
                     draft.needed.orEmpty(),
+                    draft.unitWord(),
                 ),
             style = MaterialTheme.typography.bodyMedium,
             color = KrtPalette.White,

@@ -71,7 +71,7 @@ class OrderHandoverTest {
         )
     private var writeAnswer: ApiResult<JobOrderHandoverDto> = ApiResult.Success(JobOrderHandoverDto())
 
-    private fun material() =
+    private fun material(unit: String? = "SCU") =
         JobOrderMaterial(
             materialId = "m1",
             name = "Laranite",
@@ -80,6 +80,7 @@ class OrderHandoverTest {
             claimCount = 1,
             claimedAmount = "180",
             open = "220",
+            unit = unit,
         )
 
     private fun handover(scope: kotlinx.coroutines.CoroutineScope) =
@@ -125,6 +126,18 @@ class OrderHandoverTest {
         }
 
     /** A German keyboard sends a comma, and a member who types what their locale shows is not wrong. */
+    @Test
+    fun `the sheet carries the material's own unit`() =
+        runTest(dispatcher) {
+            val subject = handover(this)
+            subject.open("o1", material(unit = "PIECE"), alreadyDone = DONE)
+            advanceUntilIdle()
+
+            // Never a hardcoded SCU: this is the one screen that finishes an Auftrag, and it
+            // labelled pieces as SCU.
+            assertEquals("PIECE", draft?.unit)
+        }
+
     @Test
     fun `a comma is a decimal point`() =
         runTest(dispatcher) {

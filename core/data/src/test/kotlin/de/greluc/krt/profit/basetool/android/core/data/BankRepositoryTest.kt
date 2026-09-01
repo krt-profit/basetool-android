@@ -16,6 +16,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -34,6 +35,9 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class BankRepositoryTest {
     private companion object {
+        /** What the bank writes answer with: accepted, no body. */
+        const val HTTP_ACCEPTED = 202
+
         const val HTTP_OK = 200
         const val HTTP_FORBIDDEN = 403
 
@@ -75,17 +79,46 @@ class BankRepositoryTest {
 
     private lateinit var server: MockWebServer
     private lateinit var repository: BankRepository
+    private lateinit var staff: BankStaffRepository
 
     @Before
     fun setUp() {
         server = MockWebServer()
         server.start()
-        repository =
-            BankRepository(
-                httpClient = OkHttpClient(),
-                baseUrl = server.url("/").toString().removeSuffix("/"),
-            )
+        val base = server.url("/").toString().removeSuffix("/")
+        repository = BankRepository(httpClient = OkHttpClient(), baseUrl = base)
+        staff = BankStaffRepository(httpClient = OkHttpClient(), baseUrl = base)
     }
+
+    @Test
+    fun `the fee flag rides on a withdrawal and stays off a deposit`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_ACCEPTED).build())
+            staff.bookDirectly(
+                DirectBooking(
+                    kind = DirectBookingKind.WITHDRAWAL,
+                    accountId = "acc-1",
+                    amount = "100000",
+                    holderId = "h1",
+                    feeInclusive = true,
+                ),
+            )
+            assertTrue(server.takeRequest().body?.utf8().orEmpty().contains("\"feeInclusive\":true"))
+
+            server.enqueue(MockResponse.Builder().code(HTTP_ACCEPTED).build())
+            staff.bookDirectly(
+                DirectBooking(
+                    kind = DirectBookingKind.DEPOSIT,
+                    accountId = "acc-1",
+                    amount = "100000",
+                    holderId = "h1",
+                    feeInclusive = true,
+                ),
+            )
+            // A deposit is fee-free, so the flag decides nothing and must not travel: a field that
+            // changes nothing invites the next reader to think it did.
+            assertFalse(server.takeRequest().body?.utf8().orEmpty().contains("feeInclusive"))
+        }
 
     @After
     fun tearDown() {

@@ -102,6 +102,10 @@ data class MissionSectionConflict(
  * @property correctStartDate that pair's date half.
  * @property correctStartClock that pair's time half.
  * @property internal whether only the owning unit sees it.
+ * @property operationId which Operation the Einsatz belongs to, or `null` for none. The Kern
+ *   section is the **only** place this can be set: the Operation's own form has no such field
+ *   because the wire has none, and the app used to offer it in neither.
+ * @property operations what that picker may offer, read once with the tab.
  * @property partyLeadSet whether an Einsatzleitung is named — the first figure of the Personen
  *   head's „Leitung · Manager · Teilnehmer" count.
  * @property managerCount how many managers there are.
@@ -132,6 +136,8 @@ data class MissionAdminForm(
     val correctStartDate: String = "",
     val correctStartClock: String = "",
     val internal: Boolean = false,
+    val operationId: String? = null,
+    val operations: List<Pair<String, String>> = emptyList(),
     val partyLeadSet: Boolean = false,
     val managerCount: Int = 0,
     val participantCount: Int = 0,
@@ -223,6 +229,13 @@ class MissionAdmin(
             return
         }
         write(formFor(detail))
+        // After the form, not before: the tab opens on what is already known, and the Operation
+        // picker fills in when its list arrives. A read the member waits for would make attaching
+        // an Einsatz feel like the reason the tab is slow.
+        scope.launch {
+            val options = source.operationOptions()
+            write(read().form?.copy(operations = options))
+        }
     }
 
     /** Closes it, discarding what was typed. */
@@ -329,6 +342,7 @@ class MissionAdmin(
             plannedEndClock = endClock,
             actualStart = detail.actualStartTime?.toString().orEmpty(),
             internal = detail.isInternal,
+            operationId = detail.operationId,
             partyLeadSet = !detail.partyLeadName.isNullOrBlank(),
             managerCount = detail.managers.size,
             participantCount = detail.registeredParticipants,
@@ -436,6 +450,9 @@ class MissionAdmin(
                     calendarLink = detail.calendarLink,
                     // The status is the badge's business (F2), never this form's.
                     status = null,
+                    // The only place an Einsatz joins an Operation: the Operation's own form has
+                    // no such field, because the wire has none. Blank means „keiner".
+                    operationId = form.operationId,
                     version = detail.coreVersion,
                 )
             }

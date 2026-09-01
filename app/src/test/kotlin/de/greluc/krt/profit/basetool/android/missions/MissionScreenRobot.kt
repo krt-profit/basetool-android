@@ -82,6 +82,7 @@ internal class MissionScreenRobot(
         plannedEndTime = null,
         isInternal = false,
         meetingPoint = "ARC-L1",
+        operationId = null,
         operationName = null,
         orgUnitName = null,
         orgUnitShorthand = "S1",

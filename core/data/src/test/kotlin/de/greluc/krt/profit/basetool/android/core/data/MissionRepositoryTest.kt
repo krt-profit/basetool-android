@@ -551,6 +551,7 @@ class MissionRepositoryTest {
                 meetingPoint = "ARC-L1",
                 calendarLink = null,
                 status = null,
+                operationId = null,
                 version = CORE_VERSION,
             )
 
@@ -707,6 +708,7 @@ class MissionRepositoryTest {
             plannedEndTime = null,
             isInternal = false,
             meetingPoint = null,
+            operationId = null,
             operationName = null,
             orgUnitName = null,
             orgUnitShorthand = null,

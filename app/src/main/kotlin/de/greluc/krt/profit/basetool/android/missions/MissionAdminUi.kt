@@ -17,6 +17,10 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -31,7 +35,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateTimeField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPanelHeader
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLocalDate
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLocalTime
@@ -302,7 +308,48 @@ private fun CoreFields(
         label = stringResource(R.string.mission_admin_meeting_point),
         enabled = writable,
     )
+    OperationField(form = form, writable = writable, actions = actions)
     SectionSave(R.string.mission_admin_save_core, MissionSection.CORE, form, writable, actions.onSave)
+}
+
+/**
+ * Which Operation the Einsatz belongs to.
+ *
+ * **The only place this can be set.** An Einsatz joins an Operation through its own Kern section
+ * (`PATCH /missions/{id}/core` with `operationId`); the Operation's own form has no such field
+ * because the wire has none. The app used to offer it in neither, so its Operation form told the
+ * member to do it „from the Einsatz" and the Einsatz had no control — a dead end that read like a
+ * missing permission.
+ *
+ * „Keiner" is a real choice and stands first: an Einsatz standing alone is the ordinary case.
+ *
+ * @param form what is typed.
+ * @param writable whether a write may run right now.
+ * @param actions what the tab can do.
+ */
+@Composable
+private fun OperationField(
+    form: MissionAdminForm,
+    writable: Boolean,
+    actions: MissionAdminActions,
+) {
+    val none = stringResource(R.string.mission_admin_operation_none)
+    var open by remember { mutableStateOf(false) }
+    KrtSelectField(
+        value = form.operations.firstOrNull { it.first == form.operationId }?.second ?: none,
+        options =
+            listOf(KrtOption(value = "", label = none)) +
+                form.operations.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = { option ->
+            open = false
+            actions.onChange(MissionSection.CORE) { it.copy(operationId = option.value.ifBlank { null }) }
+        },
+        expanded = open,
+        onExpandedChange = { open = it },
+        label = stringResource(R.string.mission_admin_operation),
+        selectedValue = form.operationId.orEmpty(),
+        enabled = writable,
+    )
 }
 
 /**

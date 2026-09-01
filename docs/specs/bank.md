@@ -758,3 +758,50 @@ somebody had set.
 
 **Code:** `BankApprovalLimits`, `BankLimitTarget`, `BankRepository.setApprovalLimit` /
 `.clearApprovalLimit`, `BankAccountViewModel.ApprovalLimitActions`, `BankApprovalLimitsSection`
+
+---
+
+### REQ-APP-BANK-012 — The transfer fee is said out loud, and which side of it the amount stands on
+
+The in-game transfer fee applies to a **withdrawal** and to a **holder-changing transfer**; a
+deposit and a same-holder transfer are fee-free (ADR-0052). Its default mode is **on top**: the
+figure the member types is what the recipient must *receive*, and the account is debited
+`amount + fee` (REQ-BANK-033).
+
+The app used to send neither the `feeInclusive` flag nor a word about the fee. A member booking a
+payout of 100 000 aUEC watched more than 100 000 leave the account with nothing on screen having
+said so — and „Stand nach Buchung" beneath the field showed the balance the account would have had
+**without** the fee, so the one number that could have warned them was wrong too.
+
+Now, wherever a fee applies:
+
+- the sheet shows **fee**, **„wird abgebucht"** and **„kommt an"**, and says they are an estimate
+  from the configured rate — the binding figure is computed server-side at booking time;
+- a **toggle** flips which side of the fee the typed amount stands on, and is offered *only* here,
+  because a control that changes nothing is worse than no control;
+- the flag is sent **only** where a fee applies, for the same reason;
+- the balance preview and the coverage check both run against what is **debited**. The server's own
+  overdraft guard uses the gross, so checking the typed figure would let the form invite a booking
+  the server then refuses;
+- in fee-inclusive mode a figure at or below the fee is refused before it is sent — the recipient
+  would get nothing, which the server answers with `BANK_FEE_EXCEEDS_AMOUNT`.
+
+A failed rate read shows **no** fee block rather than a guessed one: an invented rate is a figure a
+member would act on.
+
+**Also now sent**, having been dropped on the floor: `justification` on a withdrawal and a transfer,
+and the `counterparty*` trio (REQ-BANK-044) on a deposit and a withdrawal. A booking made from the
+app carried less than the same booking made in the browser, and could not be completed afterwards
+either.
+
+**Acceptance**
+
+- [x] A withdrawal names its fee, its gross and its net (`BankStaffViewModelTest`).
+- [x] The toggle flips which side the typed figure is on (`BankStaffViewModelTest`).
+- [x] The coverage check runs against the gross, not the typed figure (`BankStaffViewModelTest`).
+- [x] A deposit and a same-holder transfer carry no fee (`BankStaffViewModelTest`).
+- [x] The flag rides on a withdrawal and stays off a deposit (`BankRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `BankRepository` (`DirectBooking.feeApplies`), `BankStaffRepository`,
+`BankStaffViewModel` (`DirectBookingState`), `BankDirectBookingSheet` (`FeeBlock`)

@@ -28,6 +28,9 @@ private const val LOG_TAG = "OrderHandover"
  * @property materialName what it is called, for the sheet's subtitle.
  * @property needed how much the order asked for, as the server rendered it.
  * @property alreadyDone how much has already changed hands, as the server rendered it.
+ * @property unit `SCU` or `PIECE` — the material's own. Carried so the sheet never labels a
+ *   piece-counted position „SCU", which is the rule `RefineryScreen` writes down and this sheet
+ *   broke: „Menge (SCU)" over a field counting medical stations.
  * @property amount how much this handover carries, as typed.
  * @property stock the rows it can be booked out of.
  * @property stockId the chosen row, or `null` while none is.
@@ -42,6 +45,7 @@ data class OrderHandoverDraft(
     val materialName: String,
     val needed: String?,
     val alreadyDone: String?,
+    val unit: String? = null,
     val amount: String = "",
     val stock: List<HandoverStockRow> = emptyList(),
     val stockId: String? = null,
@@ -129,6 +133,7 @@ class OrderHandover(
                 materialName = material.name,
                 needed = material.needed,
                 alreadyDone = alreadyDone,
+                unit = material.unit,
             ),
         )
         scope.launch {

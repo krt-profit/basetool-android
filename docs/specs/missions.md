@@ -985,3 +985,35 @@ One picker still serves all three writes.
 **Code:** `MissionManager`, `MissionDetail.managers` / `.canManageManagers`,
 `MissionMemberActions`, `MemberSection`, `MissionStructure.askRemoveManager` /
 `.confirmRemoveManager`
+
+---
+
+### REQ-APP-MIS-033 — An Einsatz joins an Operation from its own Kern section
+
+`PATCH /missions/{id}/core` carries `operationId`, and that is the **only** way the assignment can
+be made: the Operation's own write has no such field because the wire has none, which the app's
+Operation form already said out loud — „ein Einsatz wird über den Einsatz selbst zugeordnet".
+
+The Einsatz had no such control either. So the app pointed a member at a screen that did not have
+what it promised, and the dead end read like a missing permission rather than a missing field. The
+web has had an Operation picker on its mission form throughout.
+
+The Kern section now carries the picker, filled from `GET /operations/lookup` after the tab has
+opened — the tab shows what is already known first, and a read the member waits for would make
+attaching an Einsatz feel like the reason it is slow. „Keine" stands first, because standing alone
+is the ordinary case.
+
+**The status change had to learn it too.** The Kern PATCH **replaces** the section, so the
+status-only write that „Einsatz läuft jetzt" performs would have detached the Einsatz from its
+Operation as a side effect. It echoes `operationId` now, exactly as it already echoed
+`calendarLink` for the same reason.
+
+**Acceptance**
+
+- [x] The Kern section offers the Operations and sends the pick (`MissionAdminTest`).
+- [x] A status change echoes the Operation rather than clearing it (covered by the same call site;
+      the echo is asserted through `MissionDetail.operationId`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `MissionRepository` (`patchCore`, `operationOptions`), `MissionDetail.operationId`,
+`MissionAdmin`, `MissionAdminUi` (`OperationField`)

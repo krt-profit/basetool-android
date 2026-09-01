@@ -24,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFrequenc
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OperationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
@@ -155,6 +156,18 @@ interface MissionFinanceSource {
  */
 interface MissionAdminSource {
     /**
+     * The Operations the Kern section may attach this Einsatz to.
+     *
+     * Read here rather than from the Operation side because that is where the write lives: an
+     * Einsatz joins an Operation through `PATCH /missions/{id}/core`, and the Operation's own
+     * form has no such field.
+     *
+     * @return what the picker may offer, id to name; empty on a failure, which shows as „nothing
+     *   to attach to" rather than as a banner over a form about something else.
+     */
+    suspend fun operationOptions(): List<Pair<String, String>>
+
+    /**
      * Rewrites the Kern section: title, briefing, meeting point, calendar link, status.
      *
      * > **This replaces the whole section, it does not merge into it.** The server assigns every
@@ -173,6 +186,12 @@ interface MissionAdminSource {
      * @param meetingPoint the gathering place, or `null` to clear it.
      * @param calendarLink the external calendar entry, or `null` to clear it.
      * @param status the new lifecycle status, or `null` to leave it untouched.
+     * @param operationId which Operation the Einsatz belongs to, or `null` for none.
+     *
+     *   **This is the only way an Einsatz joins an Operation.** The Operation's own form carries no
+     *   such field — the wire has none — so the assignment lives here, on the mission's Kern
+     *   section, and needs that section's counter like everything else on it. The app used to send
+     *   neither, which left its own Operation form pointing at a control that did not exist.
      * @param version the **Kern** section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
      *   stale, which is a concurrent edit of *this* section and nothing else.
@@ -184,6 +203,7 @@ interface MissionAdminSource {
         meetingPoint: String?,
         calendarLink: String?,
         status: String?,
+        operationId: String?,
         version: Long,
     ): ApiResult<MissionDetail>
 
@@ -777,6 +797,28 @@ class MissionRepository(
             ),
         )
 
+    override suspend fun operationOptions(): List<Pair<String, String>> =
+        when (
+            val result =
+                reader.get(
+                    OPERATIONS_LOOKUP_PATH,
+                    emptyList(),
+                    ListSerializer(OperationReferenceDto.serializer()),
+                )
+        ) {
+            // Empty rather than a failure: the picker is one field on a form about something else,
+            // and a banner over the Kern section would be about the wrong thing.
+            is ApiResult.Failure -> {
+                emptyList()
+            }
+
+            is ApiResult.Success -> {
+                result.value.mapNotNull { row ->
+                    row.id?.let { id -> id to (row.name?.takeIf { it.isNotBlank() } ?: id) }
+                }
+            }
+        }
+
     override suspend fun patchCore(
         missionId: String,
         name: String,
@@ -784,6 +826,7 @@ class MissionRepository(
         meetingPoint: String?,
         calendarLink: String?,
         status: String?,
+        operationId: String?,
         version: Long,
     ): ApiResult<MissionDetail> =
         oneMission(
@@ -798,6 +841,7 @@ class MissionRepository(
                     meetingPoint = meetingPoint,
                     calendarLink = calendarLink,
                     status = status,
+                    operationId = operationId,
                 ),
                 PatchMissionCoreRequest.serializer(),
                 MissionDto.serializer(),
@@ -1091,6 +1135,9 @@ class MissionRepository(
 
         private const val SEARCH_PATH = "/api/v1/missions/search"
 
+        /** The Operations the Kern section may attach an Einsatz to. */
+        private const val OPERATIONS_LOOKUP_PATH = "/api/v1/operations/lookup"
+
         /**
          * The Funktionen a **participant** can be asked for or assigned — read when the sign-up
          * sheet opens, and by a manager on the Teilnehmer tab.
@@ -1305,6 +1352,7 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         isInternal = isInternal ?: false,
         meetingPoint = meetingPoint?.takeIf { it.isNotBlank() },
         calendarLink = calendarLink?.takeIf { it.isNotBlank() },
+        operationId = operation?.id,
         operationName = operation?.name,
         orgUnitName = owningSquadron?.name,
         orgUnitShorthand = owningSquadron?.shorthand,

@@ -4,6 +4,15 @@
 
 ### Added
 
+- **Die Bank sagt jetzt, was die Gebühr kostet — vor dem Buchen.** Bei Auszahlung und
+  halterwechselnder Umbuchung stehen Gebühr, „wird abgebucht" und „kommt an" im Blatt, dazu ein
+  Schalter, ob dein Betrag der Bruttobetrag ist oder das, was ankommen soll. Bisher stand davon
+  nichts da: wer 100 000 auszahlte, bei dem verließen mehr als 100 000 das Konto, und „Stand nach
+  Buchung" rechnete die Gebühr auch nicht mit.
+- **Ein Einsatz lässt sich jetzt einer Operation zuordnen** — im Verwaltungs-Tab unter „Kern".
+  Bisher ging das nirgends: das Operationen-Formular verwies auf den Einsatz, und der hatte kein
+  solches Feld.
+
 - **Beim Einbuchen lässt sich der Bestand direkt zuordnen.** Unter dem Ort stehen jetzt
   „Aufträge" und „Einsätze": 400 SCU einbuchen und dabei 250 für Auftrag #91 und 150 für #104
   vormerken — in einem Schritt, wie im Webtool. Bisher musstest du erst einbuchen und den Eintrag
@@ -17,6 +26,10 @@
   Wahl der anderen Seite — der Server nimmt genau eine von beiden.
 
 ### Changed
+- **Die Übergabe-Maske nennt die Einheit der Position.** Bei einem Stück-Material stand dort
+  „Menge (SCU)" — auf dem einen Bildschirm, der einen Auftrag abschließt.
+- **Direktbuchungen tragen jetzt Begründung und Empfänger mit**, wie im Webtool. Bisher gingen
+  beide Angaben verloren.
 - **Die Mengen-Beschriftung nennt die Einheit auf Deutsch.** Bei einem Stück-Material stand dort
   „Menge (PIECE)", das Wort vom Draht.
 - **Picker sagen jetzt, wenn sie nicht alles zeigen.** Ort, Material und Mitglied im Lager, die

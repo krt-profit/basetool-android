@@ -555,6 +555,10 @@ class MissionDetailViewModel(
                         meetingPoint = detail.meetingPoint,
                         calendarLink = detail.calendarLink,
                         status = next.name,
+                        // Echoed, not changed. The Kern PATCH replaces the section, so a status
+                        // change that left this out would detach the Einsatz from its Operation
+                        // as a side effect — the same trap `calendarLink` carries above.
+                        operationId = detail.operationId,
                         version = detail.coreVersion,
                     )
                 settle(result)

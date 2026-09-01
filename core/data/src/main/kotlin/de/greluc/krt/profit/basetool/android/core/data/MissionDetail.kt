@@ -168,6 +168,9 @@ data class MissionManager(
  * @property plannedEndTime the scheduled end, or `null`
  * @property isInternal squadron-internal; an outsider never receives one at all
  * @property meetingPoint the in-fiction gathering location, or `null`
+ * @property operationId the umbrella Operation by id, or `null`. Carried because the Kern PATCH
+ *   **replaces** the section: a write that left it out would detach the Einsatz from its Operation
+ *   as a side effect of renaming it, the same trap `calendarLink` already carries a warning about.
  * @property operationName the umbrella Operation, or `null`
  * @property orgUnitName the owning unit's name, or `null`
  * @property orgUnitShorthand the owning unit's short form, which the badge draws
@@ -210,6 +213,7 @@ data class MissionDetail(
     val plannedEndTime: Instant?,
     val isInternal: Boolean,
     val meetingPoint: String?,
+    val operationId: String?,
     val operationName: String?,
     val orgUnitName: String?,
     val orgUnitShorthand: String?,

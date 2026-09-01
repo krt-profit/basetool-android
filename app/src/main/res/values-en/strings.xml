@@ -1394,6 +1394,8 @@
     <string name="mission_admin_name">Title</string>
     <string name="mission_admin_description">Description</string>
     <string name="mission_admin_meeting_point">Meeting point</string>
+    <string name="mission_admin_operation">Operation</string>
+    <string name="mission_admin_operation_none">None</string>
     <string name="mission_admin_meeting_time">Meeting time (Teamspeak)</string>
     <string name="mission_admin_planned_start">Planned start (server join)</string>
     <string name="mission_admin_planned_end">Planned end</string>
@@ -1524,10 +1526,10 @@
     <string name="mission_crew_assign_title">Assign someone — %1$s</string>
     <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
     <string name="order_handover_title">Record handover</string>
-    <string name="order_handover_subject">%1$s · %2$s of %3$s SCU</string>
-    <string name="order_handover_amount">Amount (SCU)</string>
+    <string name="order_handover_subject">%1$s · %2$s of %3$s %4$s</string>
+    <string name="order_handover_amount">Amount (%1$s)</string>
     <string name="order_handover_after">After this handover</string>
-    <string name="order_handover_after_value">%1$s / %2$s SCU</string>
+    <string name="order_handover_after_value">%1$s / %2$s %3$s</string>
     <string name="order_handover_fulfils">Fulfilled</string>
     <string name="order_handover_stock">From which stock</string>
     <string name="order_handover_stock_hint">The handover books the chosen stock row out.</string>
@@ -1830,6 +1832,11 @@
     <string name="bank_direct_target_holder">Holder at the target</string>
     <string name="bank_direct_note">Purpose</string>
     <string name="bank_direct_no_approval">A direct booking has no request behind it and no second approval. A wrong one is corrected with a reversal.</string>
+    <string name="bank_direct_fee_inclusive">Amount is the debited gross</string>
+    <string name="bank_direct_fee">Fee: %1$s aUEC</string>
+    <string name="bank_direct_fee_debited">Debited: %1$s aUEC</string>
+    <string name="bank_direct_fee_arrives">Arrives: %1$s aUEC</string>
+    <string name="bank_direct_fee_hint">An estimate from the configured rate. The server computes the binding figure when it books.</string>
     <string name="bank_direct_preview">Balance afterwards: %1$s aUEC</string>
     <string name="bank_direct_over_balance">The amount exceeds the balance.</string>
     <string name="bank_direct_failed">Booking refused — nothing was booked.</string>

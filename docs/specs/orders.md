@@ -830,3 +830,23 @@ materials, only counts.
 - [ ] Walked on a device: outstanding.
 
 **Code:** `JobOrderRepository` (`JobOrderMaterial.unit`), `OrderCreateViewModel`, `OrdersScreen`
+
+---
+
+### REQ-APP-ORDERS-020 — The Übergabe names the position's own unit
+
+The same rule as `REQ-APP-ORDERS-019`, on the one screen that finishes an Auftrag: the handover
+sheet labelled every amount „SCU" and `OrderHandoverDraft` carried no unit for it to do otherwise,
+so handing over eight *pieces* read as eight SCU in the subject line, the field label and the live
+projection („Nach dieser Übergabe 300 / 400 SCU"). The web switches on `quantityType` throughout
+the order detail, the handover block included.
+
+The draft now carries the unit and the three labels take it; a unit the server did not name is left
+unsaid rather than guessed.
+
+**Acceptance**
+
+- [x] The sheet carries the material's own unit (`OrderHandoverTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `OrderHandover` (`OrderHandoverDraft.unit`), `OrderHandoverSheet`

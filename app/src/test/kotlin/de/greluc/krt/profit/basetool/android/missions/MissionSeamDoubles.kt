@@ -66,6 +66,9 @@ internal data class CorePatch(
 internal class RecordingMissionAdmin(
     private val patches: MutableList<CorePatch>,
 ) : MissionAdminSource {
+    override suspend fun operationOptions(): List<Pair<String, String>> =
+        listOf("op1" to "Bergung Hurston")
+
     override suspend fun patchCore(
         missionId: String,
         name: String,
@@ -73,6 +76,7 @@ internal class RecordingMissionAdmin(
         meetingPoint: String?,
         calendarLink: String?,
         status: String?,
+        operationId: String?,
         version: Long,
     ): ApiResult<MissionDetail> {
         patches.add(CorePatch(name, description, meetingPoint, calendarLink, status, version))
@@ -482,6 +486,7 @@ internal fun missionDetail(
     isInternal = false,
     meetingPoint = "ARC-L1",
     calendarLink = "https://calendar.example/e",
+    operationId = null,
     operationName = null,
     orgUnitName = null,
     orgUnitShorthand = null,
