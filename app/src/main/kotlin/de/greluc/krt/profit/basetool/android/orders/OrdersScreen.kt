@@ -668,7 +668,7 @@ internal fun MaterialLine(material: JobOrderMaterial) {
             // absent number (found on a device, on a material nothing is stocked of).
             KrtDataValue(text = material.inStock.orDash(), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = stringResource(R.string.orders_material_of, material.needed.orDash()),
+                text = stringResource(R.string.orders_material_of, material.needed.orDash(), material.unitWord()),
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
@@ -693,13 +693,20 @@ internal fun MaterialLine(material: JobOrderMaterial) {
             modifier = Modifier.fillMaxWidth().padding(top = KrtSpacing.s8),
             horizontalArrangement = Arrangement.spacedBy(KrtSpacing.s8),
         ) {
-            KrtChip(text = stringResource(R.string.orders_material_booked, material.inStock.orDash()))
+            KrtChip(
+                text =
+                    stringResource(
+                        R.string.orders_material_booked,
+                        material.inStock.orDash(),
+                        material.unitWord(),
+                    ),
+            )
             KrtChip(
                 // „Zugesagt: —" when nobody has promised anything: the artboard writes the dash
                 // alone, without a unit, because there is no quantity for the unit to belong to.
                 text =
                     material.claimedAmount
-                        ?.let { stringResource(R.string.orders_material_claimed, it) }
+                        ?.let { stringResource(R.string.orders_material_claimed, it, material.unitWord()) }
                         ?: stringResource(R.string.orders_material_claimed_none),
             )
         }
@@ -1460,6 +1467,7 @@ private fun WriteError(error: ApiError) {
             error.fieldMessage() ?: stringResource(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
+                    is ApiError.Conflict -> R.string.refused_inline
                     is ApiError.Forbidden -> R.string.order_detail_not_allowed
                     else -> R.string.write_failed
                 },

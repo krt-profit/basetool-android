@@ -13,6 +13,7 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalItemDraft
 import de.greluc.krt.profit.basetool.android.core.data.PersonalItemPage
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
 import de.greluc.krt.profit.basetool.android.core.data.PersonalLocationKind
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -84,6 +85,9 @@ class PersonalInventoryViewModelTest {
         var pageReads = 0
         var locationAnswer: List<PersonalLocation> = emptyList()
 
+        /** Whether the catalogue holds places the answer does not carry. */
+        var locationsCapped: Boolean = false
+
         override suspend fun page(
             query: String,
             page: Int,
@@ -122,9 +126,9 @@ class PersonalInventoryViewModelTest {
         /** Rows the server refuses, keyed by id — a bulk deletion can half-succeed. */
         val refusals = mutableMapOf<String, ApiError>()
 
-        override suspend fun locations(query: String): ApiResult<List<PersonalLocation>> {
+        override suspend fun locations(query: String): ApiResult<PickerPage<PersonalLocation>> {
             searched.add(query)
-            return ApiResult.Success(locationAnswer)
+            return ApiResult.Success(PickerPage(rows = locationAnswer, more = locationsCapped))
         }
     }
 
@@ -372,12 +376,13 @@ class PersonalInventoryViewModelTest {
         }
 
     @Test
-    fun `a full answer is reported as capped, because the rest is not gone`() =
+    fun `a cut answer is reported as capped, because the rest is not gone`() =
         runTest(dispatcher) {
             // ADR-0104: a picker that silently drops the place a member is looking for is worse
             // than one that admits the list was cut.
             val source = FakeSource()
             source.locationAnswer = List(LOCATION_CAP) { place().copy(uexId = it) }
+            source.locationsCapped = true
             val model = viewModel(source)
             model.onCreate()
 
@@ -385,6 +390,25 @@ class PersonalInventoryViewModelTest {
             advanceUntilIdle()
 
             assertTrue(model.state.value.locations.capped)
+        }
+
+    @Test
+    fun `a full answer that is the whole catalogue is not reported as capped`() =
+        runTest(dispatcher) {
+            // The case the old `results.size >= LOCATION_LIMIT` check got wrong. The endpoint
+            // sends a bare array with no total, so a page of exactly the cap used to read as a
+            // truncation — and the screen told the member to narrow a search that had already
+            // shown them everything. The repository now settles it with a sentinel row.
+            val source = FakeSource()
+            source.locationAnswer = List(LOCATION_CAP) { place().copy(uexId = it) }
+            source.locationsCapped = false
+            val model = viewModel(source)
+            model.onCreate()
+
+            model.onLocationQueryChanged("lorville")
+            advanceUntilIdle()
+
+            assertFalse(model.state.value.locations.capped)
         }
 
     @Test

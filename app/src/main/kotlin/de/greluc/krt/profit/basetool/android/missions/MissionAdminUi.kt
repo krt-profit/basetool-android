@@ -17,6 +17,10 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -31,13 +35,16 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaB
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtDateTimeField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhostButton
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtPanelHeader
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLocalDate
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLocalTime
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import java.time.Duration
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -67,6 +74,8 @@ private const val MIN_BRIEFING_LINES = 3
  * @property onDismissLifecycle the confirmation was declined.
  * @property onCorrectStart the started time is to be corrected.
  * @property onCancelCorrectStart that correction was abandoned.
+ * @property onEndMission the Einsatz is to be ended, which opens the time pair.
+ * @property onCancelEndMission that was abandoned.
  * @property onKeepMine a conflict is resolved by re-writing the member's own version.
  * @property onReload a conflict is resolved by taking the server's.
  */
@@ -79,6 +88,8 @@ data class MissionAdminActions(
     val onDismissLifecycle: () -> Unit,
     val onCorrectStart: () -> Unit,
     val onCancelCorrectStart: () -> Unit,
+    val onEndMission: () -> Unit = {},
+    val onCancelEndMission: () -> Unit = {},
     val onKeepMine: () -> Unit,
     val onReload: () -> Unit,
 )
@@ -284,13 +295,19 @@ private fun CoreFields(
 ) {
     KrtTextField(
         value = form.name,
-        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(name = v) } },
+        onValueChange = { v ->
+            actions.onChange(MissionSection.CORE) { it.copy(name = v.take(FieldLimits.NAME)) }
+        },
         label = stringResource(R.string.mission_admin_name),
         enabled = writable,
     )
     KrtTextField(
         value = form.description,
-        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(description = v) } },
+        onValueChange = { v ->
+            actions.onChange(MissionSection.CORE) {
+                it.copy(description = v.take(FieldLimits.DESCRIPTION))
+            }
+        },
         modifier = Modifier.heightIn(min = DESCRIPTION_MIN),
         label = stringResource(R.string.mission_admin_description),
         enabled = writable,
@@ -298,11 +315,56 @@ private fun CoreFields(
     )
     KrtTextField(
         value = form.meetingPoint,
-        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(meetingPoint = v) } },
+        onValueChange = { v ->
+            actions.onChange(MissionSection.CORE) {
+                it.copy(meetingPoint = v.take(FieldLimits.MEETING_POINT))
+            }
+        },
         label = stringResource(R.string.mission_admin_meeting_point),
         enabled = writable,
     )
+    OperationField(form = form, writable = writable, actions = actions)
     SectionSave(R.string.mission_admin_save_core, MissionSection.CORE, form, writable, actions.onSave)
+}
+
+/**
+ * Which Operation the Einsatz belongs to.
+ *
+ * **The only place this can be set.** An Einsatz joins an Operation through its own Kern section
+ * (`PATCH /missions/{id}/core` with `operationId`); the Operation's own form has no such field
+ * because the wire has none. The app used to offer it in neither, so its Operation form told the
+ * member to do it „from the Einsatz" and the Einsatz had no control — a dead end that read like a
+ * missing permission.
+ *
+ * „Keiner" is a real choice and stands first: an Einsatz standing alone is the ordinary case.
+ *
+ * @param form what is typed.
+ * @param writable whether a write may run right now.
+ * @param actions what the tab can do.
+ */
+@Composable
+private fun OperationField(
+    form: MissionAdminForm,
+    writable: Boolean,
+    actions: MissionAdminActions,
+) {
+    val none = stringResource(R.string.mission_admin_operation_none)
+    var open by remember { mutableStateOf(false) }
+    KrtSelectField(
+        value = form.operations.firstOrNull { it.first == form.operationId }?.second ?: none,
+        options =
+            listOf(KrtOption(value = "", label = none)) +
+                form.operations.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = { option ->
+            open = false
+            actions.onChange(MissionSection.CORE) { it.copy(operationId = option.value.ifBlank { null }) }
+        },
+        expanded = open,
+        onExpandedChange = { open = it },
+        label = stringResource(R.string.mission_admin_operation),
+        selectedValue = form.operationId.orEmpty(),
+        enabled = writable,
+    )
 }
 
 /**
@@ -492,6 +554,81 @@ private fun ActualStart(
         // Design ch. 06 (F2) puts the lifecycle on the status badge — „kein Formular, kein
         // Overflow-Eintrag, keine zweite Stelle". The line above still says check-in is locked,
         // which is the fact this section is responsible for.
+    }
+    EndState(form = form, writable = writable, actions = actions)
+}
+
+/**
+ * When the Einsatz actually ended — a state line and, while it runs, the action that ends it.
+ *
+ * **Ending it is not a status.** Activation auto-stamps `actualStartTime` server-side and nothing
+ * does the same for the end: `actualEndTime` on the schedule PATCH is the only thing that sets it,
+ * and setting it also closes every participant's open end-time — which is what the payout figures
+ * rest on. The app sent it never, so an Einsatz begun on a phone stayed open for everyone on it.
+ *
+ * Shaped like the start above: the fact first, then the action, never a bare field.
+ *
+ * @param form what is typed.
+ * @param writable whether a write may run right now.
+ * @param actions what the tab can do.
+ */
+@Composable
+private fun EndState(
+    form: MissionAdminForm,
+    writable: Boolean,
+    actions: MissionAdminActions,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+    ) {
+        Text(
+            text = stringResource(R.string.mission_admin_actual_end).krtUppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        Text(
+            text =
+                if (form.ended) {
+                    stringResource(R.string.mission_admin_ended_at, form.actualEnd.toKrtStartedAt())
+                } else {
+                    stringResource(R.string.mission_admin_not_ended)
+                },
+            style = MaterialTheme.typography.bodySmall,
+            color = if (form.ended) KrtPalette.Gray1 else KrtPalette.TextMuted,
+        )
+    }
+    when {
+        form.endingNow -> {
+            KrtDateTimeField(
+                label = stringResource(R.string.mission_admin_end_mission),
+                date = form.endDate,
+                time = form.endClock,
+                onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(endDate = v) } },
+                onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(endClock = v) } },
+                enabled = writable,
+                // An end records something that has happened, so „liegt in der Vergangenheit"
+                // would fire on every legitimate entry.
+                warnPast = false,
+            )
+            KrtGhostButton(
+                text = stringResource(R.string.mission_timeline_cancel),
+                onClick = actions.onCancelEndMission,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = writable,
+            )
+        }
+
+        // Only a running Einsatz can be ended: ending one that never began would stamp a close
+        // over an open start, and the server would take it.
+        form.started && !form.ended -> {
+            KrtGhostButton(
+                text = stringResource(R.string.mission_admin_end_mission),
+                onClick = actions.onEndMission,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = writable,
+            )
+        }
     }
 }
 

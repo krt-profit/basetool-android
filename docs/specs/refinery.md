@@ -134,6 +134,13 @@ The conversion lives in the repository, once, at the boundary. Everything above 
 member's unit, `PIECE` materials are not divided, and the amount the booking sends is the same
 number the screen shows.
 
+**The create form re-made the same mistake, in its labels (found 2026-09-01).** Built later under
+`REQ-APP-REF-009`, it wrote `Eingang (SCU)` / `Ausgang (SCU)` over two fields whose values went to
+the server unconverted — so the figure a member typed as SCU was stored as units, a hundredth of
+what they meant. The fix is the opposite of the one above: the create form does **not** convert.
+Its fields say `(Units)`, which is what the wire takes, and the SCU reading is shown beneath them
+for the eye. Converting there would have made the form disagree with the edit that re-reads it.
+
 **Acceptance**
 
 - [x] `62200` on the wire reads as `622` SCU (`RefineryRepositoryTest`).
@@ -280,11 +287,51 @@ refuses the whole order with a `goods[0]`-shaped message that names an index rat
 The CTA is validation-dimmed until the form is whole, without a padlock: nothing here is forbidden,
 it is unfinished, and the design distinguishes the two.
 
-**The material fields are pickers, not free text.** The wire wants a material id; a typed name
-carries none, so every line would be dropped and the form could never be sent — with the CTA
-correctly dimmed and no way to un-dim it. Typing again clears the pick, so a stale id is never sent
-under a new label. The search is the one the Lager's booking form uses: a run's ore is an ordinary
-material and a second list would be a second answer to the same question.
+**The ore is a picker, not free text.** The wire wants a material id; a typed name carries none, so
+every line would be dropped and the form could never be sent — with the CTA correctly dimmed and no
+way to un-dim it. Typing again clears the pick, so a stale id is never sent under a new label.
+
+**The picker offers ores, and only ores.** `rawOnly=true`, the same narrowing the web form's
+`remote-materials-raw` combobox does and the same definition behind it (`type = RAW` or the manual
+raw flag). This is not a convenience. `RefineryOrderService.resolveGood` refuses any other input
+with an `IllegalArgumentException`, and the global handler **deliberately strips its message** — so
+a member who picks a refined material is told the order is invalid and never which line or why, with
+no field error to hang it on either. Filtering the list is the only thing that keeps that rejection
+off the screen.
+
+> [!warning] Corrected 2026-09-01 — this section used to say the opposite
+> It read: *"The search is the one the Lager's booking form uses: a run's ore is an ordinary
+> material and a second list would be a second answer to the same question."* That reasoning is
+> wrong against the server, which accepts only raw ore here, and the app shipped the unfiltered
+> catalogue on the strength of it. A run's ore is **not** an ordinary material to this endpoint.
+
+**The output material is derived, never asked for.** `resolveGood` sets it from the ore's
+`refinedMaterial` when the payload leaves it out, and rejects a value that disagrees. So the form
+shows it and the wire omits it, exactly as the web form does — a picker there could only ever
+produce a rejection nobody can read. For an ore the catalogue names no refined material for, the
+server stores the **input material itself**; the app names that rather than the web form's em dash,
+because the screen would otherwise show nothing for a good that will be stored under a real name.
+
+**The quantities are in units, and the SCU figure stands beside them.** Both fields count units, a
+hundred to the SCU — `REQ-APP-REF-004a`, and the web form labels them `(Units)` with a read-only
+`(SCU)` box next to each. This form shipped labelled `Eingang (SCU)` / `Ausgang (SCU)` over fields
+that were sent unconverted, so a member entering the 442 SCU they had just refined recorded 4.42.
+The labels now say units and the SCU reading is shown beneath, converted for the eye only: nothing
+converts behind the member's back, which is the rule REQ-APP-REF-004a settled after the same
+confusion nearly wrote a Lager entry a hundred times a yield.
+
+**The yield bonus is read, not written.** It is UEX-derived: `RefineryGoodDto` documents that
+inbound writes ignore it and the database persists nothing for it. The form had it as an input
+field, which offered a member a value to type that was discarded on arrival. It is gone from the
+form and off the wire. The web form's badge, which shows the refinery's actual bonus for the picked
+ore, needs the per-location yield map the web fetches through a frontend-only proxy
+(`/refinery-orders/locations/{id}/yields`); there is no backend endpoint for it, so the app shows no
+badge rather than half of one. **On the gap list.**
+
+**The picker says when it is not showing everything.** Fifty rows, the web combobox's render cap,
+and `totalElements` decides whether a line announces the rest (ADR-0104). The shipped 25 with
+nothing beside it read as "there is no such ore" — the failure that once hid 28 of 53 locations in
+the Lager's booking form.
 
 **„Gestartet" is a date and a time in the member's own format**, assembled into the instant the wire
 wants. An unreadable pair is `null` rather than a guess. **„Endet" is computed** from start plus
@@ -306,15 +353,29 @@ is silently unsendable, which is exactly how it presented on a device.
   blocks the whole order (`RefineryCreateTest`).
 - [x] Without a refinery or a method nothing is sent (`RefineryCreateTest`).
 - [x] The start is read from the two fields, and a half-typed date is no date (`RefineryCreateTest`).
+- [x] The ore search asks for `rawOnly=true` (`RefineryRepositoryTest`).
+- [x] A row carries the material it refines into, and carries none where the catalogue names none
+  (`RefineryRepositoryTest`).
+- [x] Picking an ore fills the output; an ore with no refined material stands in for its own output;
+  typing over the ore clears both (`RefineryEditTest`).
+- [x] The derived output material and the yield bonus never reach the wire — asserted as an
+  **absence**, because either would have produced a request that looks perfectly valid
+  (`RefineryRepositoryTest`).
+- [x] A quantity reads back in SCU beside the units field, and an unparsed one reads back as nothing
+  rather than as `0` (`RefineryCreateTest`).
+- [x] A page that leaves ores behind says so, and one that carries the catalogue does not
+  (`RefineryRepositoryTest`).
 - [x] Verified on a device against the local test stack: both pickers load (`200`/`200`), the goods
   material picker searches, and `POST /api/v1/refinery-orders` answers **200** — the order lands as
-  `IN_PROGRESS` at Levski · Cormack with 620 → 442 SCU at quality 874, and the app opens it.
+  `IN_PROGRESS` at Levski · Cormack at quality 874, and the app opens it. **The figures recorded
+  here originally read "620 → 442 SCU"; they were 620 and 442 *units*, i.e. 6.2 → 4.42 SCU. The
+  label was wrong, and so was this note (corrected 2026-09-01).**
 
 **Vhost:** `/api/v1/refinery-orders` (POST), `/api/v1/locations/refineries`,
 `/api/v1/refining-methods` — runbook Phase M.
 
-**Code:** `RefineryRepository` (`RefineryCreateSource`), `RefineryCreateViewModel`,
-`RefineryCreateScreen`
+**Code:** `RefineryRepository` (`RefineryCreateSource`, `RefineryInputMaterial`,
+`RefineryMaterialMatches`), `RefineryCreateViewModel`, `RefineryCreateScreen`
 
 ---
 
@@ -405,3 +466,21 @@ worth. Recorded here as the small deviation it is.
 
 **Code:** `RefineryRepository.deleteOrder`, `RefineryDetailState.deletable`,
 `RefineryDetailViewModel.onDelete*`, `RefineryScreen.DeleteConfirmation`
+
+### REQ-APP-REF-013 — The member's own refinery orders open on the newest
+
+The `my-orders` request carries `sort=startedAt,desc`.
+
+Same fault as REQ-APP-NOTIF-016 and the same cause: with no sort parameter the server orders
+`startedAt` **ascending**, so the list opened on the member's oldest order and anything still
+refining sat on the last page — the opposite of what the screen is for. The web app sends
+`startedAt,desc`.
+
+**Acceptance**
+
+- [x] The request carries `sort=startedAt,desc` (`RefineryRepositoryTest`).
+- [x] **Walked on a device (2026-09-01):** phone and tablet both open on the member's newest
+      order (26.08. 11:20) and end on the oldest (26.08. 11:18) at „ENDE DER LISTE". The three
+      newer orders in the test stack belong to another member and are correctly absent.
+
+**Code:** `core/data/RefineryRepository.kt`

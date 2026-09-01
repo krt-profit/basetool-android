@@ -385,6 +385,7 @@ private fun ProductionError(error: ApiError) {
             stringResource(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
+                    is ApiError.Conflict -> R.string.refused_inline
                     is ApiError.Forbidden -> R.string.order_production_not_allowed
                     is ApiError.Validation -> R.string.order_production_alloc_error
                     else -> R.string.write_failed

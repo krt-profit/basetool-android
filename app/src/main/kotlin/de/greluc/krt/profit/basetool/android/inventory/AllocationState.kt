@@ -71,10 +71,10 @@ data class AllocationSheetState(
     private val total: BigDecimal get() = entry.amount?.toBigDecimalOrNull() ?: BigDecimal.ZERO
 
     /** What is left of the entry after the Auftrag split, as the member has it right now. */
-    val jobOrderRest: BigDecimal get() = total - jobOrders.sum()
+    val jobOrderRest: BigDecimal get() = total - jobOrders.krtSum()
 
     /** The same for the Einsatz split. */
-    val missionRest: BigDecimal get() = total - missions.sum()
+    val missionRest: BigDecimal get() = total - missions.krtSum()
 
     /** Whether either split promises more than the entry holds. */
     val overbooked: Boolean get() = jobOrderRest.signum() < 0 || missionRest.signum() < 0
@@ -125,7 +125,7 @@ data class AllocationSheetState(
  * @return the total of the rows' amounts, treating an unparseable one as zero — the field is
  *   mid-edit, and a sum that refuses to compute would freeze the rest figure the member is watching.
  */
-private fun List<AllocationRow>.sum(): BigDecimal =
+internal fun List<AllocationRow>.krtSum(): BigDecimal =
     fold(BigDecimal.ZERO) { acc, row -> acc + (row.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
 
 /**

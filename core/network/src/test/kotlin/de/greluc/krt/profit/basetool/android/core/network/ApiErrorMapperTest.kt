@@ -118,6 +118,25 @@ class ApiErrorMapperTest {
     }
 
     @Test
+    fun `a business refusal is not dressed up as a concurrent edit`() {
+        // BUSINESS_CONFLICT and its relatives (BANK_ACCOUNT_NOT_EMPTY, BANK_NOT_REVERSIBLE,
+        // ENTITY_IN_USE, ...) are 409s that nobody raced for. Mapping them onto OptimisticLock told
+        // the member somebody else had changed the row and to reload — untrue, and the advice
+        // cannot succeed because reloading does not change the rule that fired.
+        val error = mapper.map(response(status = 409, body = problemBody("BUSINESS_CONFLICT")))
+
+        assertTrue(error is ApiError.Conflict)
+    }
+
+    @Test
+    fun `a business refusal keeps the server's reason, which is the only text that explains it`() {
+        val error = mapper.map(response(status = 409, body = problemBody("BANK_ACCOUNT_NOT_EMPTY")))
+
+        // The screen has no sentence of its own that would be true here.
+        assertEquals("D", (error as ApiError.Conflict).problem?.detail)
+    }
+
+    @Test
     fun `an edge error page classifies by status instead of exploding`() {
         // NPM answers HTML, not problem+json. Losing the status here would leave the UI with
         // nothing to show; only the localised prose is unavailable.

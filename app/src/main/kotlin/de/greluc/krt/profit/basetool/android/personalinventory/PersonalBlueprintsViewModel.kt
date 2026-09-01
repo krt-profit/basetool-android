@@ -21,6 +21,7 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalBlueprintSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -649,10 +650,11 @@ class PersonalBlueprintsViewModel(
      * @param note what the member typed.
      */
     fun onNoteChanged(note: String) {
+        val capped = note.take(FieldLimits.BLUEPRINT_NOTE)
         val next =
             when (val editor = mutableState.value.editor) {
-                is BlueprintEditor.Adding -> editor.copy(note = note, error = null)
-                is BlueprintEditor.Editing -> editor.copy(note = note, error = null)
+                is BlueprintEditor.Adding -> editor.copy(note = capped, error = null)
+                is BlueprintEditor.Editing -> editor.copy(note = capped, error = null)
                 BlueprintEditor.Closed -> return
             }
         mutableState.value = mutableState.value.copy(editor = next)

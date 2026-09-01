@@ -197,7 +197,14 @@ class OrderProduction(
         scope.launch {
             val result = options.members(query)
             if (result is ApiResult.Success) {
-                write(read()?.let { it.copy(bookIn = it.bookIn.copy(members = result.value)) })
+                write(
+                    read()?.let {
+                        it.copy(
+                            bookIn =
+                                it.bookIn.copy(members = result.value.rows, moreMembers = result.value.more),
+                        )
+                    },
+                )
             }
         }
     }
@@ -340,7 +347,14 @@ class OrderProduction(
     private suspend fun loadLocations(query: String) {
         val result = options.locations(query)
         if (result is ApiResult.Success) {
-            write(read()?.let { it.copy(bookIn = it.bookIn.copy(locations = result.value)) })
+            write(
+                read()?.let {
+                    it.copy(
+                        bookIn =
+                            it.bookIn.copy(locations = result.value.rows, moreLocations = result.value.more),
+                    )
+                },
+            )
         }
     }
 

@@ -301,6 +301,11 @@
     <string name="operation_detail_payout_open">Open</string>
     <string name="operation_detail_payout_donated">Waived</string>
     <string name="operation_detail_payout_line">Share %1$s · %2$s</string>
+    <string name="operation_detail_payout_percent">%1$s %%</string>
+    <string name="operation_detail_payout_expenses">incl. %1$s expenses</string>
+    <string name="operation_detail_payout_fee">%1$s fee</string>
+    <string name="operation_detail_payout_paid_by">Paid out %1$s by %2$s</string>
+    <string name="operation_detail_payout_paid_at">Paid out %1$s</string>
     <string name="operation_detail_payout_route_member">Payout</string>
     <string name="operation_detail_payout_route_org">Org treasury (waived)</string>
     <string name="operation_detail_payout_undo_title">Take the payout back?</string>
@@ -594,6 +599,8 @@
     <string name="bank_booking_reverse_title">Reverse booking?</string>
     <string name="bank_booking_reverse_text">Writes a negated counter-booking. The original stays in the ledger unchanged.</string>
     <string name="bank_booking_reverse_note">Note</string>
+    <string name="bank_booking_counterparty">to %1$s</string>
+    <string name="bank_booking_fee">Fee %1$s</string>
     <string name="bank_booking_reversed">Reversed</string>
     <string name="bank_conflict_self_transfer">Source and target holder have to differ.</string>
     <string name="bank_conflict_holder_inactive">This holder is inactive and can receive nothing new.</string>
@@ -651,7 +658,6 @@
     <string name="order_create_amount">Amount</string>
     <string name="order_create_min_quality">Min. quality</string>
     <string name="order_create_min_quality_none">None</string>
-    <string name="order_create_more_matches">More matches exist — refine the search.</string>
     <string name="order_create_no_matches">No orderable material found.</string>
     <string name="order_create_add_material">Add material</string>
     <string name="order_create_remove_material">Remove material</string>
@@ -733,9 +739,9 @@
         <item quantity="one">%1$d claim</item>
         <item quantity="other">%1$d claims</item>
     </plurals>
-    <string name="orders_material_of">/ %1$s SCU</string>
-    <string name="orders_material_booked">Booked: %1$s SCU</string>
-    <string name="orders_material_claimed">Promised: %1$s SCU</string>
+    <string name="orders_material_of">/ %1$s %2$s</string>
+    <string name="orders_material_booked">Booked: %1$s %2$s</string>
+    <string name="orders_material_claimed">Promised: %1$s %2$s</string>
     <string name="orders_material_claimed_none">Promised: —</string>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Parts of this order are hidden from you.</string>
@@ -849,6 +855,9 @@
     <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
+    <!-- Fallback when the server refuses on a rule but names no reason. -->
+    <string name="refused_inline">Not possible — the action was refused.</string>
+    <string name="picker_more_matches">More matches available — narrow the search.</string>
     <plurals name="personal_inventory_location_capped">
         <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>
         <item quantity="other">Only the first %1$d matches. Search more precisely if yours is missing.</item>
@@ -1042,6 +1051,9 @@
     <string name="booking_mode_note">Note</string>
     <string name="booking_field_material">Material</string>
     <string name="booking_field_amount">Amount (%1$s)</string>
+    <string name="booking_kind_material">Material</string>
+    <string name="booking_kind_item">Item</string>
+    <string name="booking_field_item">Item</string>
     <string name="booking_unit_unknown">unit</string>
     <string name="booking_amount_hint">Fractions allowed: cSCU (0.01) and µSCU (0.001).</string>
     <string name="booking_available">In this entry: %1$s</string>
@@ -1086,6 +1098,7 @@
     <string name="booking_open">Book</string>
     <string name="inventory_entries_title">Entries</string>
     <string name="inventory_entry_note">Note</string>
+    <string name="inventory_entry_on_board">On the exchange</string>
     <string name="inventory_entries_none">No entries.</string>
     <string name="order_detail_assign_me">Take it on</string>
     <string name="order_detail_unassign_me">Step off</string>
@@ -1210,11 +1223,13 @@
     <string name="refinery_create_ratings">Cost %1$d · Speed %2$d · Yield %3$d</string>
     <string name="refinery_create_goods">Goods (at least 1)</string>
     <string name="refinery_create_input_material">Input material (required)</string>
-    <string name="refinery_create_input_quantity">Input (SCU, required)</string>
-    <string name="refinery_create_output_material">Output material</string>
-    <string name="refinery_create_output_quantity">Output (SCU, required)</string>
+    <string name="refinery_create_more_materials">More ores available — narrow the search.</string>
+    <string name="refinery_create_input_quantity">Input amount (units, required)</string>
+    <string name="refinery_create_output_material">Output material (follows from the input)</string>
+    <string name="refinery_create_output_material_none">—</string>
+    <string name="refinery_create_output_quantity">Output amount (units, required)</string>
+    <string name="refinery_create_scu_hint">= %1$s SCU</string>
     <string name="refinery_create_quality">Quality (0–1000)</string>
-    <string name="refinery_create_bonus">Yield bonus (%)</string>
     <string name="refinery_create_add_good">+ Good</string>
     <string name="refinery_create_remove_good">Remove good</string>
     <string name="refinery_create_timing">Timing</string>
@@ -1313,6 +1328,7 @@
     <string name="allocation_add_cancel">Cancel</string>
     <string name="allocation_rest_free">%1$s free</string>
     <string name="allocation_rest_none">Nothing left</string>
+    <string name="allocation_remove">Remove allocation</string>
     <string name="allocation_overbooked">Over-allocated</string>
     <string name="allocation_save">Save the allocation</string>
     <string name="allocation_open">Allocate</string>
@@ -1359,6 +1375,12 @@
     <string name="mission_struct_add_unit_short">Unit</string>
     <string name="mission_struct_unit_name">Unit name</string>
     <string name="mission_struct_hvu">High-value unit (HVU)</string>
+    <string name="mission_struct_unit_ship">Ship</string>
+    <string name="mission_struct_unit_ship_none">None</string>
+    <string name="mission_struct_unit_responsible">Responsible</string>
+    <string name="mission_struct_unit_responsible_none">Nobody</string>
+    <string name="mission_struct_unit_frequency">Frequency</string>
+    <string name="mission_struct_unit_note">Note</string>
     <string name="mission_struct_remove_unit">Remove unit</string>
     <string name="mission_struct_add_crew">Assign somebody</string>
     <string name="mission_struct_remove_crew">Take off board</string>
@@ -1388,6 +1410,8 @@
     <string name="mission_admin_name">Title</string>
     <string name="mission_admin_description">Description</string>
     <string name="mission_admin_meeting_point">Meeting point</string>
+    <string name="mission_admin_operation">Operation</string>
+    <string name="mission_admin_operation_none">None</string>
     <string name="mission_admin_meeting_time">Meeting time (Teamspeak)</string>
     <string name="mission_admin_planned_start">Planned start (server join)</string>
     <string name="mission_admin_planned_end">Planned end</string>
@@ -1468,10 +1492,6 @@
     <string name="mission_crew_roles_empty">No CREW functions defined.</string>
     <string name="mission_timeline_up">Up</string>
     <string name="mission_timeline_down">Down</string>
-    <plurals name="mission_member_notice">
-        <item quantity="one">%1$d of at most %2$d matches — keep typing to narrow it</item>
-        <item quantity="other">%1$d of at most %2$d matches — keep typing to narrow it</item>
-    </plurals>
     <string name="mission_crew_assign">Assign someone</string>
     <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
     <string name="mission_admin_people">People</string>
@@ -1483,6 +1503,10 @@
     <string name="mission_admin_not_started">Not started yet — check-in is locked for everyone.</string>
     <string name="mission_admin_running_since">Running since %1$s</string>
     <string name="mission_admin_correct_start">Correct the start time</string>
+    <string name="mission_admin_actual_end">Actual end</string>
+    <string name="mission_admin_ended_at">Ended %1$s</string>
+    <string name="mission_admin_not_ended">Still running</string>
+    <string name="mission_admin_end_mission">End mission</string>
     <string name="mission_admin_visibility_internal">Internal only</string>
     <string name="mission_admin_visibility_open">Whole organisation</string>
     <string name="mission_admin_internal_hint">Off: the whole organisation sees the Einsatz.</string>
@@ -1522,10 +1546,10 @@
     <string name="mission_crew_assign_title">Assign someone — %1$s</string>
     <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
     <string name="order_handover_title">Record handover</string>
-    <string name="order_handover_subject">%1$s · %2$s of %3$s SCU</string>
-    <string name="order_handover_amount">Amount (SCU)</string>
+    <string name="order_handover_subject">%1$s · %2$s of %3$s %4$s</string>
+    <string name="order_handover_amount">Amount (%1$s)</string>
     <string name="order_handover_after">After this handover</string>
-    <string name="order_handover_after_value">%1$s / %2$s SCU</string>
+    <string name="order_handover_after_value">%1$s / %2$s %3$s</string>
     <string name="order_handover_fulfils">Fulfilled</string>
     <string name="order_handover_stock">From which stock</string>
     <string name="order_handover_stock_hint">The handover books the chosen stock row out.</string>
@@ -1828,6 +1852,11 @@
     <string name="bank_direct_target_holder">Holder at the target</string>
     <string name="bank_direct_note">Purpose</string>
     <string name="bank_direct_no_approval">A direct booking has no request behind it and no second approval. A wrong one is corrected with a reversal.</string>
+    <string name="bank_direct_fee_inclusive">Amount is the debited gross</string>
+    <string name="bank_direct_fee">Fee: %1$s aUEC</string>
+    <string name="bank_direct_fee_debited">Debited: %1$s aUEC</string>
+    <string name="bank_direct_fee_arrives">Arrives: %1$s aUEC</string>
+    <string name="bank_direct_fee_hint">An estimate from the configured rate. The server computes the binding figure when it books.</string>
     <string name="bank_direct_preview">Balance afterwards: %1$s aUEC</string>
     <string name="bank_direct_over_balance">The amount exceeds the balance.</string>
     <string name="bank_direct_failed">Booking refused — nothing was booked.</string>

@@ -31,6 +31,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOpti
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 
 /** The create sheet, for the tests that open it. */
 const val BANK_GRANT_SHEET_TAG: String = "bank-grant-sheet"
@@ -114,6 +115,7 @@ fun BankGrantSheet(
                 placeholder = stringResource(R.string.bank_grants_add_member_placeholder),
                 selectedValue = draft.selected?.id,
             )
+            PickerOverflowNote(more = draft.moreOptions)
             Text(
                 text = stringResource(R.string.bank_grants_add_flags_note),
                 style = MaterialTheme.typography.bodySmall,

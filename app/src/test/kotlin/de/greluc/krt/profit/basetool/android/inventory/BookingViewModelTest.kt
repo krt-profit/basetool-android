@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.GameItemStock
 import de.greluc.krt.profit.basetool.android.core.data.InventoryAllocation
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
@@ -26,6 +27,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -48,6 +50,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.math.BigDecimal
 
 /**
  * The booking form's rules.
@@ -130,14 +133,21 @@ class BookingViewModelTest {
             return answer
         }
 
-        override suspend fun materials(query: String): ApiResult<List<MaterialOption>> =
-            ApiResult.Success(listOf(MaterialOption("m1", "Quantainium", "SCU")))
+        override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> =
+            ApiResult.Success(PickerPage(listOf(MaterialOption("m1", "Quantainium", "SCU"))))
 
-        override suspend fun locations(query: String): ApiResult<List<LocationOption>> =
-            ApiResult.Success(listOf(LocationOption("l1", "ARC-L1")))
+        var itemOptions: List<GameItemOption> = listOf(GameItemOption("gi1", "Medizinische Station T2"))
 
-        override suspend fun members(query: String): ApiResult<List<MemberOption>> =
-            ApiResult.Success(listOf(MemberOption("u1", "Rhea")))
+        override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
+
+        override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+            ApiResult.Success(PickerPage(itemOptions))
+
+        override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
+            ApiResult.Success(PickerPage(listOf(LocationOption("l1", "ARC-L1"))))
+
+        override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+            ApiResult.Success(PickerPage(listOf(MemberOption("u1", "Rhea"))))
 
         var orgUnitAnswer: List<OrgUnitOption> =
             listOf(OrgUnitOption("ou1", "Bereich Profit"), OrgUnitOption("ou2", "SK Nebelkraehe"))
@@ -179,10 +189,17 @@ class BookingViewModelTest {
         ): ApiResult<InventoryEntry> = error("not used")
 
         override suspend fun orderTargets(): ApiResult<List<AllocationTarget>> =
-            ApiResult.Success(emptyList())
+            ApiResult.Success(
+                listOf(
+                    // Asks for m1 only, so a Titanium booking must not be offered it.
+                    AllocationTarget("jo1", "#91", requiredMaterialIds = listOf("m1")),
+                    // Names no requirement, so it is offered whatever is booked.
+                    AllocationTarget("jo2", "#104"),
+                ),
+            )
 
         override suspend fun missionTargets(): ApiResult<List<AllocationTarget>> =
-            ApiResult.Success(emptyList())
+            ApiResult.Success(listOf(AllocationTarget("mi1", "Bergung")))
     }
 
     private lateinit var source: FakeSource
@@ -447,7 +464,7 @@ class BookingViewModelTest {
         BookingViewModel(source, connectivity)
 
     @Test
-    fun `booking in needs a material, a place and an amount`() =
+    fun `booking in needs a material, a place, an amount and a grade`() =
         runTest(dispatcher) {
             val vm = model()
             vm.openBookIn {}
@@ -458,7 +475,225 @@ class BookingViewModelTest {
             vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
             vm.onAmountChanged("12.5")
 
+            // Still not sendable: the server requires a grade of a material row
+            // (`InventoryItemCreateDto`, REQ-INV-029) and the web form marks the field required.
+            // Without this the CTA invited a booking that comes back a 400.
+            assertEquals(false, vm.state.value?.submittable)
+
+            vm.onQualityChanged("874")
+
             assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `an item booking needs its item and a whole amount, and no grade at all`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("3")
+
+            assertEquals("an item is not picked yet", false, vm.state.value?.submittable)
+
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            // No quality was ever typed, and none is wanted: the server refuses one on an item
+            // row (`isQualityConsistentWithCatalog`, REQ-INV-029).
+            assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `half an item is not a quantity`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            // `ValidQuantityAmountValidator` refuses `amount % 1 != 0` for a game item outright.
+            vm.onAmountChanged("2,5")
+            assertEquals(false, vm.state.value?.submittable)
+
+            vm.onAmountChanged("2")
+            assertEquals(true, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `an item booking sends the item, and never a material or a grade`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onQualityChanged("874")
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("3")
+            vm.onSave()
+            advanceUntilIdle()
+
+            // The material and the grade picked before the switch are gone, not merely unused:
+            // the server takes exactly one catalogue reference and refuses a quality beside an
+            // item, so either survivor would have refused the whole booking.
+            val sent = source.bookedIn.single()
+            assertEquals("gi1", sent.gameItemId)
+            assertNull(sent.materialId)
+            assertNull(sent.quality)
+        }
+
+    @Test
+    fun `switching back to material clears the item`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            vm.onKindChanged(BookingCatalogKind.MATERIAL)
+
+            assertNull(vm.state.value?.gameItem)
+            assertEquals("", vm.state.value?.gameItemQuery)
+        }
+
+    @Test
+    fun `an item is counted in pieces, so the SCU affordances stay away`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+
+            // Drives both the cSCU hint and the merge opt-in. An item always merges into a
+            // matching stack server-side, so the toggle would be a control that changes nothing.
+            assertEquals(false, vm.state.value?.materialIsScu)
+        }
+
+    @Test
+    fun `an earmark travels with the booking rather than after it`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onQualityChanged("874")
+            vm.onAmountChanged("400")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+            vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "250")
+            vm.onSave()
+            advanceUntilIdle()
+
+            // One request, not a booking followed by a write per target: the server checks the sum
+            // and every target in the same transaction that creates the row (Variante C).
+            val sent = source.bookedIn.single()
+            assertEquals(1, sent.jobOrderAllocations.size)
+            assertEquals("jo1", sent.jobOrderAllocations.single().targetId)
+            assertEquals("250", sent.jobOrderAllocations.single().amount)
+        }
+
+    @Test
+    fun `a new earmark starts at what is left rather than at zero`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onAmountChanged("400")
+
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+            assertEquals("400", vm.state.value?.jobOrderSplit?.single()?.amount)
+
+            // And the next one starts at what the first left over.
+            vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "250")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo2", "#104"))
+            assertEquals("150", vm.state.value?.jobOrderSplit?.last()?.amount)
+        }
+
+    @Test
+    fun `promising more than is booked in blocks the whole booking`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onQualityChanged("874")
+            vm.onAmountChanged("400")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+
+            vm.splits.amount(AllocationKind.JOB_ORDER, "jo1", "500")
+
+            // The server refuses the booking, not just the earmark (R5), so the CTA goes dark
+            // rather than letting a member expect a row that will not exist.
+            assertEquals(true, vm.state.value?.splitOverbooked)
+            assertEquals(false, vm.state.value?.submittable)
+        }
+
+    @Test
+    fun `the two splits are reconciled apart`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onAmountChanged("400")
+            vm.splits.add(AllocationKind.JOB_ORDER, AllocationTarget("jo1", "#91"))
+            vm.splits.add(AllocationKind.MISSION, AllocationTarget("mi1", "Bergung"))
+
+            // The same 400 SCU may be promised to an Auftrag and to an Einsatz; one shared rest
+            // would be wrong in both directions.
+            assertEquals(BigDecimal.ZERO.compareTo(vm.state.value?.jobOrderRest), 0)
+            assertEquals(BigDecimal.ZERO.compareTo(vm.state.value?.missionRest), 0)
+            assertEquals(false, vm.state.value?.splitOverbooked)
+        }
+
+    @Test
+    fun `an item row never carries a mission earmark`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.splits.add(AllocationKind.MISSION, AllocationTarget("mi1", "Bergung"))
+            vm.onKindChanged(BookingCatalogKind.ITEM)
+            vm.onGameItemChosen(GameItemOption("gi1", "Medizinische Station T2"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("3")
+            vm.onSave()
+            advanceUntilIdle()
+
+            // The form does not offer the Einsatz split in item mode; this is the second lock, for
+            // a split entered before the switch. The server refuses one outright (REQ-INV-031).
+            assertEquals(emptyList<Any>(), source.bookedIn.single().missionAllocations)
+        }
+
+    @Test
+    fun `an Auftrag that never asked for this material is not offered`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            advanceUntilIdle()
+            vm.onMaterialChosen(MaterialOption("m2", "Titanium", "SCU"))
+
+            // The server checks every earmark against its target's own requirement, so offering
+            // #91 here would be offering a rejection. A target naming no requirement stays.
+            val offered = vm.state.value?.offerable(AllocationKind.JOB_ORDER).orEmpty().map { it.id }
+            assertEquals(listOf("jo2"), offered)
+        }
+
+    @Test
+    fun `a grade of zero is a grade, and blank is the absence the server refuses`() =
+        runTest(dispatcher) {
+            val vm = model()
+            vm.openBookIn {}
+            vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
+            vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
+            vm.onAmountChanged("12.5")
+
+            vm.onQualityChanged("0")
+            assertEquals(true, vm.state.value?.submittable)
+
+            vm.onQualityChanged("")
+            assertEquals(false, vm.state.value?.submittable)
         }
 
     @Test
@@ -596,6 +831,7 @@ class BookingViewModelTest {
             vm.onMaterialChosen(MaterialOption("m1", "Quantainium", "SCU"))
             vm.onPlaceChosen(LocationOption("l1", "ARC-L1"))
             vm.onAmountChanged("3")
+            vm.onQualityChanged("874")
             vm.onSave()
             advanceUntilIdle()
 

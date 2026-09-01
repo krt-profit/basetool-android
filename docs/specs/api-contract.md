@@ -279,3 +279,32 @@ against — a different point, now written down beside this one so the two are n
   would pass even with the defect present.
 
 **Code:** `ApiReader`, `CallAwait`
+
+### REQ-APP-API-007 — A 409 is only a concurrency conflict when the server says so
+
+`OPTIMISTIC_LOCK` maps to `ApiError.OptimisticLock` and its reload prompt. **Every other 409 maps
+to `ApiError.Conflict`**, and the screen shows the server's `detail`.
+
+**Because the reload advice is false and unreachable for the rest.** `BUSINESS_CONFLICT` is the
+backend's own name for a "cross-aggregate invariant or state-machine refusal", and it shares the
+409 status with `BANK_ACCOUNT_NOT_EMPTY`, `BANK_ACCOUNT_HAS_PENDING_REQUESTS`,
+`BANK_NOT_REVERSIBLE`, `BANK_REQUEST_NOT_PENDING`, `BANK_REQUEST_ALREADY_APPROVED`,
+`BANK_OWNER_APPROVAL_REQUIRED`, `BANK_CARTEL_APPROVAL_REQUIRED`, `BANK_JUSTIFICATION_REQUIRED`,
+the `BANK_SPLIT_*` family and `ENTITY_IN_USE`. Classifying them by status alone told the member
+„Jemand anderes hat diesen Eintrag inzwischen geändert — lade neu und speichere erneut", when
+nobody had changed anything and reloading cannot clear the rule that fired.
+
+**The server's `detail` is the whole message.** What rule refused is something only the backend
+knows; the screen has no sentence of its own that would be true. `ApiError.fieldMessage()`
+therefore answers for `Conflict` as it does for `Validation`, and `refused_inline` stands in only
+when the body named nothing.
+
+`OVER_ALLOCATION` is **422**, not 409, and stays a validation error — status and code agree there.
+
+**Acceptance**
+
+- [x] `BUSINESS_CONFLICT` classifies as `Conflict`, not `OptimisticLock` (`ApiErrorMapperTest`).
+- [x] The server's reason survives classification (`ApiErrorMapperTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/network/ApiErrorMapper.kt`, `core/network/ApiError.kt`, `ui/FieldMessage.kt`

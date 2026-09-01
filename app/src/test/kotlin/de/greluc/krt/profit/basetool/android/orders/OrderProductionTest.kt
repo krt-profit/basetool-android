@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.orders
 
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItem
 import de.greluc.krt.profit.basetool.android.core.data.JobOrderItemRequirement
@@ -15,6 +16,7 @@ import de.greluc.krt.profit.basetool.android.core.data.JobOrderProductionSource
 import de.greluc.krt.profit.basetool.android.core.data.LocationOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -404,11 +406,16 @@ class OrderProductionTest {
 
     /** Where produced stock may land. */
     private inner class FakeOptions : BookInOptions {
-        override suspend fun locations(query: String): ApiResult<List<LocationOption>> =
-            ApiResult.Success(listOf(LocationOption(id = "loc1", name = "ARC-L1")))
+        override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
 
-        override suspend fun members(query: String): ApiResult<List<MemberOption>> =
-            ApiResult.Success(listOf(MemberOption(id = "u2", name = "Dorn")))
+        override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+            ApiResult.Success(PickerPage())
+
+        override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
+            ApiResult.Success(PickerPage(listOf(LocationOption(id = "loc1", name = "ARC-L1"))))
+
+        override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+            ApiResult.Success(PickerPage(listOf(MemberOption(id = "u2", name = "Dorn"))))
 
         override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
             ApiResult.Success(memberships)

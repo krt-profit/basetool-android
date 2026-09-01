@@ -985,3 +985,128 @@ One picker still serves all three writes.
 **Code:** `MissionManager`, `MissionDetail.managers` / `.canManageManagers`,
 `MissionMemberActions`, `MemberSection`, `MissionStructure.askRemoveManager` /
 `.confirmRemoveManager`
+
+---
+
+### REQ-APP-MIS-033 — An Einsatz joins an Operation from its own Kern section
+
+`PATCH /missions/{id}/core` carries `operationId`, and that is the **only** way the assignment can
+be made: the Operation's own write has no such field because the wire has none, which the app's
+Operation form already said out loud — „ein Einsatz wird über den Einsatz selbst zugeordnet".
+
+The Einsatz had no such control either. So the app pointed a member at a screen that did not have
+what it promised, and the dead end read like a missing permission rather than a missing field. The
+web has had an Operation picker on its mission form throughout.
+
+The Kern section now carries the picker, filled from `GET /operations/lookup` after the tab has
+opened — the tab shows what is already known first, and a read the member waits for would make
+attaching an Einsatz feel like the reason it is slow. „Keine" stands first, because standing alone
+is the ordinary case.
+
+**The status change had to learn it too.** The Kern PATCH **replaces** the section, so the
+status-only write that „Einsatz läuft jetzt" performs would have detached the Einsatz from its
+Operation as a side effect. It echoes `operationId` now, exactly as it already echoed
+`calendarLink` for the same reason.
+
+**Acceptance**
+
+- [x] The Kern section offers the Operations and sends the pick (`MissionAdminTest`).
+- [x] A status change echoes the Operation rather than clearing it (covered by the same call site;
+      the echo is asserted through `MissionDetail.operationId`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `MissionRepository` (`patchCore`, `operationOptions`), `MissionDetail.operationId`,
+`MissionAdmin`, `MissionAdminUi` (`OperationField`)
+
+---
+
+### REQ-APP-MIS-034 — A unit write echoes what it does not edit, and an Einsatz can be ended
+
+Two findings from reading the app's writes against the server's, both of them about a field the app
+never sent.
+
+**The unit write was destroying data.** `PUT /missions/{id}/units/{unitId}` is a **replace**, and
+`MissionStructureService.updateMissionUnit` writes the ship type, the ship, the frequency, the
+responsible member and the note *unconditionally* — an omitted one becomes `null`. The app sent the
+name and the HVU mark alone, so correcting a typo in a unit's name wiped all five, every one of them
+set from the web. Nothing failed and nothing said so.
+
+The unit model now carries those five **by id** and the write echoes them, the same way the Kern
+section already echoed its calendar link. And because the ids are in hand, the form can now set them
+too: a ship from the mission's own `/unit-ship-options` (the ships a **registered participant** owns
+plus those already pinned to a unit — a hangar-wide list would offer ships nobody on the roster can
+bring), a responsible member, a frequency and a note.
+
+**An Einsatz could not be ended.** Activation auto-stamps `actualStartTime` server-side; **nothing**
+does the same for the end. `actualEndTime` on the schedule PATCH is the only thing that sets it, and
+setting it also closes every participant's open end-time — which is what the payout figures rest on.
+The app sent it never, so an Einsatz begun on a phone stayed open for everyone on it. „Einsatz
+beenden" sits in the Zeitplan section now, shaped like the start above it: the fact first, then the
+action, and the time pair opens filled with **now** because that is what ending one means in
+practice. It is echoed when it is not being edited, for the same replace-semantics reason as above.
+
+**Acceptance**
+
+- [x] A rename sends back everything the unit was carrying (`MissionUnitFieldsTest`).
+- [x] A new unit carries what was picked for it (`MissionUnitFieldsTest`).
+- [x] A running Einsatz can be ended, and the pair opens filled with now (`MissionAdminTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `MissionDetail` (`MissionUnitFields`, `MissionUnit.fields`, `actualEndTime`),
+`MissionRepository`, `MissionStructure`, `MissionAdmin`, `MissionStructureUi` (`UnitFields`),
+`MissionAdminUi` (`EndState`)
+
+### REQ-APP-MIS-035 — The Einsatz list's sort direction follows the past filter
+
+`plannedStartTime,asc` while the list looks forward; `plannedStartTime,desc` once „Vergangene" is
+on.
+
+**One direction cannot serve both.** Ascending is right for the default view — the next Einsatz
+belongs at the top. But the screen is a flat list with no grouping, so the moment past Einsätze are
+included the same order puts the oldest one the org ever ran first and buries everything recent
+pages deep. Looking backwards means most recent first, which is what the web app's mission index
+uses.
+
+The status filter is unaffected: a ticked status still wins over the past toggle (REQ-APP-MIS-011).
+
+**Acceptance**
+
+- [x] Forward-looking asks ascending, past-inclusive asks descending (`MissionRepositoryTest`).
+- [x] **Walked on a device (2026-09-01):** on both form factors „Vergangene aus" ends on HEUTE
+      and „Vergangene an" begins with it — the order flips. Verified against the seeded
+      `planned_start_time` values (25.08., 27.08., 01.09.), which the rendered order matches in
+      both directions.
+
+**Code:** `core/data/MissionRepository.kt`
+
+### REQ-APP-MIS-036 — An Einsatz is grouped by the date it is sorted on
+
+The date header a row sits under must come from the same value that decides the row's position.
+
+**Found by device verification, 2026-09-01.** The list sorts on `plannedStartTime` but groups an
+**active** Einsatz under its `actualStartTime`. In the seeded test stack „Vertikaler Abbau Lyria" is
+planned for 25.08. and was actually started on 28.08., so the headers render
+
+```
+HEUTE (01.09.)  ·  DONNERSTAG 27.08.  ·  FREITAG 28.08.
+```
+
+— which reads as a broken sort even though every row is in its correct place. Confirmed on both the
+phone and the tablet, so it is not a form-factor artefact.
+
+This is **older than REQ-APP-MIS-035** and was not caused by it: with the previous ascending-only
+order the same mismatch rendered as `28.08. · 27.08. · HEUTE`, equally wrong and equally invisible
+to anyone not comparing against the data. Flipping the direction only changed which way it looks
+wrong.
+
+Either the header follows `plannedStartTime` for every row, or the sort follows whichever date the
+header shows — but a member must never see date headers that do not ascend or descend with the
+list.
+
+**Acceptance**
+
+- [ ] A mission whose actual start differs from its planned start sits under a header matching its
+      sort position, in both directions.
+- [ ] Walked on a device: outstanding.
+
+**Code:** the grouping in `missions/MissionsScreen.kt`

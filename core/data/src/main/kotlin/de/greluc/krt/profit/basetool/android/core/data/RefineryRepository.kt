@@ -251,6 +251,15 @@ private fun RefineryOrderDraft.totalMinutes(): Int? {
 /**
  * Maps one good of the form onto the wire.
  *
+ * Two fields the draft holds are deliberately **not** sent, both because the server owns them:
+ *
+ *  * the **output material**, which `resolveGood` derives from the input's `refinedMaterial` when
+ *    it is absent and rejects outright when it disagrees. Sending the derived value back would buy
+ *    nothing and would turn a legacy row whose output no longer matches its input into a `400` the
+ *    member cannot read. The web form omits it for the same reason.
+ *  * the **yield bonus**, which is UEX-derived and read-only: the write path ignores it and the
+ *    database persists nothing for it.
+ *
  * @return the good, or `null` without an input material — a line that names nothing is not a line.
  */
 private fun RefineryGoodDraft.toDto(): RefineryGoodDto? =
@@ -258,11 +267,10 @@ private fun RefineryGoodDraft.toDto(): RefineryGoodDto? =
         RefineryGoodDto(
             inputMaterial = MaterialDto(id = input, name = inputMaterialName),
             inputQuantity = inputQuantity.trim().toIntOrNull() ?: 0,
-            outputMaterial =
-                outputMaterialId?.let { MaterialDto(id = it, name = outputMaterialName) },
+            outputMaterial = null,
             outputQuantity = outputQuantity.trim().toIntOrNull() ?: 0,
             quality = quality.trim().toIntOrNull(),
-            yieldBonusPercent = yieldBonusPercent.trim().toIntOrNull(),
+            yieldBonusPercent = null,
         )
     }
 
@@ -357,16 +365,38 @@ data class RefiningMethod(
 )
 
 /**
+ * One ore a goods line may name, with the material it refines into.
+ *
+ * @property id the ore.
+ * @property name what to show for it.
+ * @property refinedId what it refines into, or `null` for an ore the catalogue names no output for.
+ * @property refinedName what to show for that.
+ */
+data class RefineryInputMaterial(
+    val id: String,
+    val name: String,
+    val refinedId: String? = null,
+    val refinedName: String? = null,
+)
+
+/**
  * One line of a new order: what went in, what came out.
+ *
+ * The output material is **derived, never chosen**. `RefineryOrderService.resolveGood` sets it from
+ * the input material's `refinedMaterial` when the payload leaves it out, and refuses any other
+ * value with a `400` whose message the server deliberately withholds -- so a picker here could only
+ * ever produce a rejection nobody can read. It is carried on the draft to be shown, and left off
+ * the wire, exactly as the web form does it.
  *
  * @property inputMaterialId the ore.
  * @property inputMaterialName what to show for it.
- * @property inputQuantity how much went in, as typed.
- * @property outputMaterialId the refined material, or `null` when the run has not named one.
+ * @property inputQuantity how much went in, as typed, in UNITS (see [RefineryGoodDraft.outputScu]).
+ * @property outputMaterialId the refined material the input resolves to, or `null` before a pick.
  * @property outputMaterialName what to show for it.
- * @property outputQuantity how much came out, as typed.
+ * @property outputQuantity how much came out, as typed, in UNITS -- 100 units are one SCU.
  * @property quality the grade, as typed, 0–1000.
- * @property yieldBonusPercent the bonus, as typed.
+ * @property yieldBonusPercent the refinery's UEX bonus for this material, read-only, as read back
+ *   from the server. The wire ignores it on write and the database persists nothing for it.
  */
 data class RefineryGoodDraft(
     val inputMaterialId: String? = null,
@@ -389,6 +419,24 @@ data class RefineryGoodDraft(
             inputMaterialId != null &&
                 (inputQuantity.trim().toIntOrNull() ?: 0) >= 1 &&
                 (outputQuantity.trim().toIntOrNull() ?: 0) >= 1
+
+    /**
+     * [outputQuantity] read back in SCU, or `null` when it is not a number yet.
+     *
+     * The field on the wire counts **units**, a hundred to the SCU, and REQ-APP-REF-004a records
+     * what assuming otherwise cost: a booking that would have created a Lager entry a hundred times
+     * the yield. The form therefore labels its fields in units and shows this beside them, the way
+     * the web form's read-only SCU box does -- so the member sees the figure they think in without
+     * anything converting behind their back.
+     */
+    val outputScu: Double?
+        get() = outputQuantity.trim().toIntOrNull()?.let { it / UNITS_PER_SCU }
+
+    /**
+     * [inputQuantity] read back in SCU, on the same rule as [outputScu].
+     */
+    val inputScu: Double?
+        get() = inputQuantity.trim().toIntOrNull()?.let { it / UNITS_PER_SCU }
 }
 
 /**
@@ -484,15 +532,24 @@ interface RefineryCreateSource : RefineryOrderDeleteSource {
     suspend fun methods(): ApiResult<List<RefiningMethod>>
 
     /**
-     * Searches the materials a goods line can name.
+     * Searches the ores a goods line can name.
      *
-     * The same search the Lager's booking form uses — a run's ore is an ordinary material, and a
-     * second list would be a second answer to the same question.
+     * **Not** the Lager's material search, which this once was. A refinery consumes raw ore, and
+     * `RefineryOrderService.resolveGood` refuses anything else — with an
+     * `IllegalArgumentException` the global handler deliberately strips of its message, so the
+     * member is told a line is invalid and never which one or why. Asking the server for
+     * `rawOnly=true` is what keeps that rejection off the screen: the same narrowing the web form's
+     * `remote-materials-raw` combobox does, and the same definition behind it (`type = RAW` or the
+     * manual raw flag).
+     *
+     * Each row carries the refined material the input resolves to, because the form shows it
+     * instead of asking for it.
      *
      * @param query what was typed; blank asks for the first page unfiltered.
-     * @return the candidates, or the classified failure.
+     * @return the candidates and whether the catalogue holds more of them, or the classified
+     *   failure.
      */
-    suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>>
+    suspend fun searchMaterials(query: String): ApiResult<PickerPage<RefineryInputMaterial>>
 
     /**
      * Creates the order the form describes.
@@ -619,6 +676,7 @@ class RefineryRepository(
                     .forEach { add(STATUS_PARAM to it.name) }
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
+                add(SORT_PARAM to NEWEST_FIRST)
             }
         return when (
             val result =
@@ -689,13 +747,14 @@ class RefineryRepository(
             }
         }
 
-    override suspend fun searchMaterials(query: String): ApiResult<List<Pair<String, String>>> =
+    override suspend fun searchMaterials(query: String): ApiResult<PickerPage<RefineryInputMaterial>> =
         when (
             val result =
                 reader.get(
                     MATERIALS_PATH,
                     listOf(
                         SEARCH_PARAM to query.trim(),
+                        RAW_ONLY_PARAM to "true",
                         PAGE_PARAM to "0",
                         SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
                     ),
@@ -707,11 +766,18 @@ class RefineryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(
+                val rows =
                     result.value.content.orEmpty().mapNotNull { row ->
-                        row.id?.let { it to row.name.orEmpty() }
-                    },
-                )
+                        row.id?.let {
+                            RefineryInputMaterial(
+                                id = it,
+                                name = row.name.orEmpty(),
+                                refinedId = row.refinedMaterial?.id,
+                                refinedName = row.refinedMaterial?.name,
+                            )
+                        }
+                    }
+                ApiResult.Success(krtPickerPage(rows, result.value.totalElements))
             }
         }
 
@@ -838,13 +904,37 @@ class RefineryRepository(
         /** What was typed into a material picker. */
         const val SEARCH_PARAM = "search"
 
-        /** How many candidates one search offers. */
-        private const val PICKER_PAGE_SIZE = 25
+        /**
+         * Narrows the material search to refinery inputs.
+         *
+         * `type = RAW` or the manual raw flag, resolved in the server's own picker query. The web
+         * form's input combobox sends the same thing.
+         */
+        const val RAW_ONLY_PARAM = "rawOnly"
+
+        /**
+         * How many candidates one search offers.
+         *
+         * Fifty, the web combobox's render cap. The page is not the whole answer and never was, so
+         * the search reports the overflow rather than trimming in silence (ADR-0104) — the
+         * shipped 25 with nothing beside it read as "there is no such ore".
+         */
+        private const val PICKER_PAGE_SIZE = 50
 
         /** What a successful call that returned nothing usable is reported as. */
         private const val HTTP_OK = 200
 
         private const val STATUS_PARAM = "status"
+        private const val SORT_PARAM = "sort"
+
+        /**
+         * Newest refinery order first.
+         *
+         * The server's fallback when no sort is sent is `startedAt` **ascending**, which opened the
+         * member's own refinery orders on the oldest one and pushed anything still running onto the
+         * last page. The web app sends `startedAt,desc`.
+         */
+        private const val NEWEST_FIRST = "startedAt,desc"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
         private const val DEFAULT_QUALITY = 0

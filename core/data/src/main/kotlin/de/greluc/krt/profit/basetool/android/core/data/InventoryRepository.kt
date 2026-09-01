@@ -15,6 +15,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BulkCheckoutReq
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BulkRebookResultDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.GroupedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryAllocationInput
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryAllocationWriteDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemBookOutDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.InventoryItemCreateDto
@@ -28,6 +29,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MaterialSelling
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.OrgUnitMembershipOptionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseAggregatedInventoryDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseGameItemReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseInventoryItemDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseLocationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMaterialDto
@@ -37,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.serializer
 import okhttp3.OkHttpClient
 
 /**
@@ -208,12 +211,36 @@ data class InventoryAllocation(
  * @property id the Auftrag or Einsatz.
  * @property label what to call it.
  * @property subtitle a second line, or `null`.
+ * @property requiredMaterialIds which materials the target asks for, empty when it names none.
+ * @property requiredGameItemIds the same for items.
  */
 data class AllocationTarget(
     val id: String,
     val label: String,
     val subtitle: String? = null,
-)
+    val requiredMaterialIds: List<String> = emptyList(),
+    val requiredGameItemIds: List<String> = emptyList(),
+) {
+    /**
+     * Whether this target has any use for what is being booked in.
+     *
+     * The server checks every earmark against the target's own requirement and refuses one that
+     * does not match, so offering an Auftrag that never asked for this material would be offering
+     * a rejection. A target that names **no** requirement is offered regardless: the lists are the
+     * order's material lines, and a mission carries none at all.
+     *
+     * @param catalogId the material or item being booked in, or `null` before one is picked.
+     * @param item whether that id names an item rather than a material.
+     * @return whether the target may be offered.
+     */
+    fun krtAccepts(
+        catalogId: String?,
+        item: Boolean,
+    ): Boolean {
+        val required = if (item) requiredGameItemIds else requiredMaterialIds
+        return catalogId == null || required.isEmpty() || catalogId in required
+    }
+}
 
 /**
  * One game item and where the org unit's copies of it sit (design ch. 09 artboard 21).
@@ -251,24 +278,59 @@ enum class BookOutKind {
 }
 
 /**
- * What booking material in carries.
+ * Maps the form's earmarks onto the wire, or to `null` when there are none.
  *
- * @property materialId what is being booked in
+ * A row whose amount is not a positive number is dropped rather than sent as a zero: the server
+ * reads a zero as an earmark of nothing and would create it, leaving a target promised nothing.
+ *
+ * @return the inputs, or `null` when nothing is earmarked.
+ */
+private fun List<InventoryAllocation>.krtToInputs(): List<InventoryAllocationInput>? =
+    mapNotNull { row ->
+        row.amount.krtToDoubleOrNull()?.takeIf { it > 0.0 }?.let {
+            InventoryAllocationInput(targetId = row.targetId, amount = it)
+        }
+    }.takeIf { it.isNotEmpty() }
+
+/**
+ * What booking stock in carries.
+ *
+ * **`materialId` and `gameItemId` exclude each other and one of them is required** — the server's
+ * own XOR (`InventoryItemCreateDto.isCatalogReferenceValid`, REQ-INV-029), mirrored by a DB check
+ * constraint. The two kinds then differ in three more ways, each of them a `400` when got wrong:
+ *
+ *  * a material row **requires** a quality and an item row **forbids** one;
+ *  * an item amount must be a **positive whole** number — items are counted, not measured;
+ *  * `mergeStock` is ignored for an item, because a piece-counted row always merges into a
+ *    matching stack server-side.
+ *
+ * @property materialId the material being booked in, or `null` for an item row
+ * @property gameItemId the item being booked in, or `null` for a material row
  * @property locationId where it goes
  * @property amount how much
- * @property quality the quality, 0–1000, or `null` when the material has none
+ * @property quality the quality, 0–1000; `null` for an item row, where the server refuses one
  * @property personal whether it is private stock rather than the shared Lager. Always `false` from
  *   the app: the Lager reads exclude private stock, so booking it in from here would put material
  *   somewhere no screen of this app can show it again
  * @property mergeStock whether the server may merge it into an identical entry
+ * @property jobOrderAllocations how much of the new row is earmarked for which Auftrag, entered
+ *   while booking in rather than afterwards (Variante C / split-at-check-in, REQ-INV-027 R4). The
+ *   server checks the sum against [amount] and every target against its own requirement, **in the
+ *   same transaction as the booking** — which is the whole point of sending them together.
+ *   Empty falls back to the server's own default: the row lands unassigned.
+ * @property missionAllocations the same for Einsätze. Always empty for an item row — the server
+ *   refuses a mission earmark there (REQ-INV-031), item stock goes to ITEM orders only.
  */
 data class BookInDraft(
-    val materialId: String,
+    val materialId: String? = null,
+    val gameItemId: String? = null,
     val locationId: String,
     val amount: String,
     val quality: Int?,
     val personal: Boolean = false,
     val mergeStock: Boolean = true,
+    val jobOrderAllocations: List<InventoryAllocation> = emptyList(),
+    val missionAllocations: List<InventoryAllocation> = emptyList(),
 )
 
 /**
@@ -330,6 +392,20 @@ data class MaterialOption(
     val id: String,
     val name: String,
     val unit: String?,
+)
+
+/**
+ * A game item the booking form can pick.
+ *
+ * Carries no unit: an item is always counted in whole pieces, which is what makes it a different
+ * kind of row rather than a material with a different unit.
+ *
+ * @property id what a booking sends as `gameItemId`
+ * @property name what to show for it
+ */
+data class GameItemOption(
+    val id: String,
+    val name: String,
 )
 
 /**
@@ -398,9 +474,9 @@ fun interface MaterialLookup {
      * Searches materials.
      *
      * @param query what the member typed.
-     * @return the matches, capped by the server's page size.
+     * @return one page of matches, and whether the catalogue holds more (ADR-0104).
      */
-    suspend fun materials(query: String): ApiResult<List<MaterialOption>>
+    suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>>
 }
 
 /**
@@ -490,17 +566,42 @@ interface BookInOptions {
      * Searches places.
      *
      * @param query what the member typed.
-     * @return the matches.
+     * @return one page of matches, and whether the catalogue holds more (ADR-0104).
      */
-    suspend fun locations(query: String): ApiResult<List<LocationOption>>
+    suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>>
+
+    /**
+     * Searches the game items a booking can name.
+     *
+     * A different catalogue from the materials, not a filter on them: an item is a finished
+     * product, the two live in separate tables and the server takes them in mutually exclusive
+     * fields. The same search the order form's item picker uses.
+     *
+     * @param query what the member typed.
+     * @return one page of matches, and whether the catalogue holds more (ADR-0104).
+     */
+    suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>>
+
+    /**
+     * Which of these entries are already offered on the Materialbörse.
+     *
+     * The web's Lager tree draws a mark on every released row, and the app drew none — so a member
+     * could offer the same stack twice, or hunt for an offer they had already made. `POST` is not
+     * involved: this is a read that takes the ids it is asking about.
+     *
+     * @param entryIds the rows on screen; an empty list asks nothing and answers nothing.
+     * @return the subset that is released; empty on a failure, which shows as „no marks" rather
+     *   than as a banner — the Lager itself is unaffected.
+     */
+    suspend fun releasedEntryIds(entryIds: List<String>): Set<String>
 
     /**
      * Searches members.
      *
      * @param query what the member typed.
-     * @return the matches.
+     * @return one page of matches, and whether the roster holds more (ADR-0104).
      */
-    suspend fun members(query: String): ApiResult<List<MemberOption>>
+    suspend fun members(query: String): ApiResult<PickerPage<MemberOption>>
 
     /**
      * Reads the org units stock may be booked into for one member.
@@ -791,9 +892,17 @@ class InventoryRepository(
                 amount = parseTypedAmount(draft.amount) ?: 0.0,
                 locationId = draft.locationId,
                 materialId = draft.materialId,
-                quality = draft.quality,
+                gameItemId = draft.gameItemId,
+                // Never sent for an item row: the server refuses a quality there outright
+                // (`isQualityConsistentWithCatalog`), so carrying one over from a mode the member
+                // switched away from would refuse the whole booking.
+                quality = draft.quality.takeIf { draft.gameItemId == null },
                 personal = draft.personal,
                 mergeStock = draft.mergeStock,
+                // Omitted rather than sent empty: an empty list and an absent one mean the same
+                // thing to the server, and `null` is what the other clients send.
+                jobOrderAllocations = draft.jobOrderAllocations.krtToInputs(),
+                missionAllocations = draft.missionAllocations.krtToInputs(),
             ),
             InventoryItemCreateDto.serializer(),
         )
@@ -878,6 +987,8 @@ class InventoryRepository(
                                 id = id,
                                 label = reference.displayId?.let { "#$it" } ?: id,
                                 subtitle = reference.handle?.takeIf { it.isNotBlank() },
+                                requiredMaterialIds = reference.requiredMaterialIds.orEmpty(),
+                                requiredGameItemIds = reference.requiredGameItemIds.orEmpty(),
                             )
                         }
                     },
@@ -1009,7 +1120,7 @@ class InventoryRepository(
             is ApiResult.Success -> ApiResult.Success(Unit)
         }
 
-    override suspend fun materials(query: String): ApiResult<List<MaterialOption>> {
+    override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> {
         val params =
             listOf(
                 SEARCH_PARAM to query.trim(),
@@ -1024,17 +1135,64 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toOption() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toOption() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
     }
 
-    override suspend fun locations(query: String): ApiResult<List<LocationOption>> {
+    override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> {
         val params =
             listOf(
                 SEARCH_PARAM to query.trim(),
                 PAGE_PARAM to "0",
                 SIZE_PARAM to PICKER_PAGE_SIZE.toString(),
+            )
+        return when (
+            val result =
+                reader.get(ITEM_CATALOG_PATH, params, PageResponseGameItemReferenceDto.serializer())
+        ) {
+            is ApiResult.Failure -> {
+                result
+            }
+
+            is ApiResult.Success -> {
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { row ->
+                            row.id?.let { GameItemOption(id = it, name = row.name.orEmpty()) }
+                        },
+                        result.value.totalElements,
+                    ),
+                )
+            }
+        }
+    }
+
+    override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> {
+        if (entryIds.isEmpty()) {
+            return emptySet()
+        }
+        val params = entryIds.map { RELEASED_IDS_PARAM to it }
+        return when (
+            val result =
+                reader.get(RELEASED_IDS_PATH, params, ListSerializer(serializer<String>()))
+        ) {
+            is ApiResult.Failure -> emptySet()
+            is ApiResult.Success -> result.value.toSet()
+        }
+    }
+
+    override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> {
+        val params =
+            listOf(
+                SEARCH_PARAM to query.trim(),
+                PAGE_PARAM to "0",
+                SIZE_PARAM to LOCATION_PAGE_SIZE.toString(),
             )
         return when (
             val result =
@@ -1045,12 +1203,17 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toOption() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toOption() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
     }
 
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> {
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> {
         val params =
             listOf(
                 QUERY_PARAM to query.trim(),
@@ -1065,7 +1228,12 @@ class InventoryRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toOption() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toOption() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
     }
@@ -1157,6 +1325,15 @@ class InventoryRepository(
         private const val MATERIALS_PATH = "/api/v1/materials/search"
         private const val LOCATIONS_PATH = "/api/v1/locations/search"
         private const val MEMBERS_PATH = "/api/v1/users/search"
+
+        /** The item catalogue behind the book-in's item picker — the order form's own search. */
+        private const val ITEM_CATALOG_PATH = "/api/v1/orders/item-catalog"
+
+        /** Which rows on screen are already offered on the Materialbörse. */
+        private const val RELEASED_IDS_PATH = "/api/v1/material-exchange/released-item-ids"
+
+        /** Repeated once per row asked about. */
+        private const val RELEASED_IDS_PARAM = "ids"
         private const val MATERIAL_ID_PARAM = "materialId"
         private const val LOCATION_ID_PARAM = "locationId"
         private const val USER_ID_PARAM = "userId"
@@ -1172,7 +1349,17 @@ class InventoryRepository(
         private const val ENTRY_PAGE_SIZE = 100
 
         /** How many rows a picker asks for. */
-        private const val PICKER_PAGE_SIZE = 25
+        private const val PICKER_PAGE_SIZE = 50
+
+        /**
+         * How many places one search offers.
+         *
+         * Two hundred, not [PICKER_PAGE_SIZE]. The location catalogue is small and bounded by the
+         * game universe, and a member booking stock expects to scroll it rather than guess a search
+         * term — which is why the web fetches the same. At `size=25` this very picker showed 25 of
+         * 53 places, with nothing on screen saying the list had been cut.
+         */
+        private const val LOCATION_PAGE_SIZE = 200
         private const val MATERIAL_PARAM = "materialIds"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"

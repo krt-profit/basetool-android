@@ -16,6 +16,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -34,6 +35,9 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class BankRepositoryTest {
     private companion object {
+        /** What the bank writes answer with: accepted, no body. */
+        const val HTTP_ACCEPTED = 202
+
         const val HTTP_OK = 200
         const val HTTP_FORBIDDEN = 403
 
@@ -66,7 +70,8 @@ class BankRepositoryTest {
                {"postingId": "p1", "type": "DEPOSIT", "amount": 12400.0000,
                 "note": "Verkauf Quantainium", "holderHandle": "Rhea",
                 "createdAt": "2026-08-22T10:00:00Z"},
-               {"postingId": "p2", "type": "WITHDRAWAL", "amount": 3200.0000},
+               {"postingId": "p2", "type": "WITHDRAWAL", "amount": 3200.0000,
+                "transferFee": 16.0000, "counterpartyHandle": "Kestrel"},
                {"postingId": "p3", "type": "WIPE_RESET", "amount": 0.0000}
              ],
              "page": 0, "totalElements": $LEDGER_TOTAL, "totalPages": 2}
@@ -75,17 +80,46 @@ class BankRepositoryTest {
 
     private lateinit var server: MockWebServer
     private lateinit var repository: BankRepository
+    private lateinit var staff: BankStaffRepository
 
     @Before
     fun setUp() {
         server = MockWebServer()
         server.start()
-        repository =
-            BankRepository(
-                httpClient = OkHttpClient(),
-                baseUrl = server.url("/").toString().removeSuffix("/"),
-            )
+        val base = server.url("/").toString().removeSuffix("/")
+        repository = BankRepository(httpClient = OkHttpClient(), baseUrl = base)
+        staff = BankStaffRepository(httpClient = OkHttpClient(), baseUrl = base)
     }
+
+    @Test
+    fun `the fee flag rides on a withdrawal and stays off a deposit`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_ACCEPTED).build())
+            staff.bookDirectly(
+                DirectBooking(
+                    kind = DirectBookingKind.WITHDRAWAL,
+                    accountId = "acc-1",
+                    amount = "100000",
+                    holderId = "h1",
+                    feeInclusive = true,
+                ),
+            )
+            assertTrue(server.takeRequest().body?.utf8().orEmpty().contains("\"feeInclusive\":true"))
+
+            server.enqueue(MockResponse.Builder().code(HTTP_ACCEPTED).build())
+            staff.bookDirectly(
+                DirectBooking(
+                    kind = DirectBookingKind.DEPOSIT,
+                    accountId = "acc-1",
+                    amount = "100000",
+                    holderId = "h1",
+                    feeInclusive = true,
+                ),
+            )
+            // A deposit is fee-free, so the flag decides nothing and must not travel: a field that
+            // changes nothing invites the next reader to think it did.
+            assertFalse(server.takeRequest().body?.utf8().orEmpty().contains("feeInclusive"))
+        }
 
     @After
     fun tearDown() {
@@ -178,6 +212,20 @@ class BankRepositoryTest {
             respond(LEDGER)
 
             assertNull((repository.bookings("a1") as ApiResult.Success).value.bookings[2].incoming)
+        }
+
+    @Test
+    fun `a booking keeps the fee it cost and the recipient it named`() =
+        runTest {
+            // Both are on the wire and both were dropped, which left a member re-reading a past
+            // transfer with an amount that did not match what left the account and no record of
+            // who received it.
+            respond(LEDGER)
+
+            val line = (repository.bookings("a1") as ApiResult.Success).value.bookings[1]
+
+            assertEquals("16.0000", line.transferFee)
+            assertEquals("Kestrel", line.counterpartyHandle)
         }
 
     @Test

@@ -64,6 +64,7 @@ class OrdersViewModelTest {
             statuses: Set<JobOrderStatus>,
             page: Int,
             pageSize: Int,
+            squadronIds: Set<String>,
         ): ApiResult<JobOrderPage> {
             filters.add(statuses)
             pages.add(page)

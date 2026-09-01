@@ -26,6 +26,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOpti
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSectionTitle
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 
 /** Test handle for the place picker — the one field the booking cannot go without. */
 const val ORDER_PRODUCTION_LOCATION_TAG: String = "order-production-location"
@@ -62,6 +63,7 @@ fun ProductionBookInSection(
             onChosen = actions.onLocation,
             modifier = Modifier.testTag(ORDER_PRODUCTION_LOCATION_TAG),
         )
+        PickerOverflowNote(more = bookIn.moreLocations)
         Picker(
             label = stringResource(R.string.order_production_owner),
             query = bookIn.ownerQuery,
@@ -70,6 +72,7 @@ fun ProductionBookInSection(
             onQuery = actions.onOwnerQuery,
             onChosen = actions.onOwner,
         )
+        PickerOverflowNote(more = bookIn.moreMembers)
         // Left blank the units run on the acting member — the server's own default. Saying so
         // beats a field that looks unfilled.
         KrtHint(explanation = stringResource(R.string.order_production_owner_hint))

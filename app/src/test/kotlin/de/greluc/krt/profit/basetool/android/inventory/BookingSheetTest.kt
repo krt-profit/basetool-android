@@ -18,7 +18,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.greluc.krt.profit.basetool.android.core.data.BookOutKind
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
+import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtTheme
@@ -73,11 +75,13 @@ class BookingSheetTest {
      *
      * @param state what the form holds.
      * @param modes receives every mode the segment reports.
+     * @param kinds receives every catalogue kind the book-in's switch reports.
      * @param saved records that the save action was taken.
      */
     private fun show(
         state: BookingState,
         modes: MutableList<BookingMode> = mutableListOf(),
+        kinds: MutableList<BookingCatalogKind> = mutableListOf(),
         saved: MutableList<Unit> = mutableListOf(),
     ) {
         compose.setContent {
@@ -87,6 +91,14 @@ class BookingSheetTest {
                     callbacks =
                         BookingCallbacks(
                             onMode = { modes.add(it) },
+                            onKind = { kinds.add(it) },
+                            onSplitAmount = { _, _, _ -> },
+                            onSplitStep = { _, _, _ -> },
+                            onSplitPicking = {},
+                            onSplitAdd = { _, _ -> },
+                            onSplitRemove = { _, _ -> },
+                            onGameItemQuery = {},
+                            onGameItem = {},
                             onAmount = {},
                             onQuality = {},
                             onMaterialQuery = {},
@@ -118,6 +130,50 @@ class BookingSheetTest {
 
         compose.onNodeWithTag(BOOKING_SHEET_TAG).assertIsDisplayed()
         compose.onNodeWithText("Material").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the cSCU hint stands beside an SCU material`() {
+        show(
+            BookingState(
+                mode = BookingMode.IN,
+                material = MaterialOption("m1", "Quantainium", "SCU"),
+            ),
+        )
+
+        compose.onNodeWithTag(BOOKING_SCU_HINT_TAG).assertExists()
+    }
+
+    @Test
+    fun `a book-in offers both catalogues, and the item side asks for no grade`() {
+        show(
+            BookingState(
+                mode = BookingMode.IN,
+                kind = BookingCatalogKind.ITEM,
+                gameItem = GameItemOption("gi1", "Medizinische Station T2"),
+            ),
+        )
+
+        compose.onNodeWithTag(BOOKING_KIND_TAG).assertExists()
+        // The grade field is gone rather than disabled: the server refuses a quality on an item
+        // row, so every value it could hold would be a rejection.
+        compose.onNodeWithText("Qualität", substring = true).assertDoesNotExist()
+        // And the amount says what it counts, in German rather than in the wire's word.
+        compose.onNodeWithText("Menge (Stück)").assertExists()
+    }
+
+    @Test
+    fun `the cSCU hint is absent from a material counted in pieces`() {
+        show(
+            BookingState(
+                mode = BookingMode.IN,
+                material = MaterialOption("gi1", "Medizinische Station", "PIECE"),
+            ),
+        )
+
+        // cSCU and µSCU are SCU words. Over a field counting pieces the hint offered fractions
+        // of a thing that has none — the rule the merge opt-in beside it already follows.
+        compose.onNodeWithTag(BOOKING_SCU_HINT_TAG).assertDoesNotExist()
     }
 
     @Test

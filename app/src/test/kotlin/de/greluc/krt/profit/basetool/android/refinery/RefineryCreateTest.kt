@@ -28,6 +28,15 @@ class RefineryCreateTest {
     private companion object {
         /** The wall clock „27.08.2026" + „21:00" stands for, wherever the device is. */
         val TYPED_START: LocalDateTime = LocalDateTime.parse("2026-08-27T21:00")
+
+        /** What the 62000 units of [good]'s input come to in SCU. */
+        const val INPUT_SCU = 620.0
+
+        /** What the 44200 units of [good]'s output come to in SCU. */
+        const val OUTPUT_SCU = 442.0
+
+        /** Compared as doubles, so the assertion needs a delta rather than an equality. */
+        const val SCU_TOLERANCE = 0.0001
     }
 
     private fun good(
@@ -98,5 +107,22 @@ class RefineryCreateTest {
     fun `a half-typed date is no date, rather than a guess`() {
         assertNull(draft(good()).copy(startedDate = "27.08.", startedTime = "21:00").startedAt)
         assertNull(draft(good()).startedAt)
+    }
+
+    @Test
+    fun `the quantities read back in SCU beside the units the field takes`() {
+        // The wire counts units, a hundred to the SCU, and the labels say so. This is the figure
+        // shown beside them -- REQ-APP-REF-004a records what confusing the two cost the last time:
+        // a booking that would have written a Lager entry a hundred times the yield.
+        val line = good(input = "62000", output = "44200")
+        assertEquals(INPUT_SCU, requireNotNull(line.inputScu), SCU_TOLERANCE)
+        assertEquals(OUTPUT_SCU, requireNotNull(line.outputScu), SCU_TOLERANCE)
+    }
+
+    @Test
+    fun `a quantity that is not a number yet has no SCU reading`() {
+        // Shown as an absence rather than as 0,00 SCU, which would claim a run of nothing.
+        assertNull(good(output = "").outputScu)
+        assertNull(good(input = "6,2").inputScu)
     }
 }

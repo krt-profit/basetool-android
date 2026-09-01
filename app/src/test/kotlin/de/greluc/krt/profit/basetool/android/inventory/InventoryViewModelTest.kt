@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.AllocationTarget
 import de.greluc.krt.profit.basetool.android.core.data.BookInDraft
 import de.greluc.krt.profit.basetool.android.core.data.BookOutDraft
 import de.greluc.krt.profit.basetool.android.core.data.BulkRebookResult
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.GameItemStock
 import de.greluc.krt.profit.basetool.android.core.data.InventoryEntry
 import de.greluc.krt.profit.basetool.android.core.data.InventoryGroup
@@ -24,6 +25,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MaterialEntryPage
 import de.greluc.krt.profit.basetool.android.core.data.MaterialOption
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.TerminalOption
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -147,14 +149,19 @@ class InventoryViewModelTest {
         var memberAnswer: List<MemberOption> = emptyList()
         var terminalAnswer: List<TerminalOption> = emptyList()
 
-        override suspend fun materials(query: String): ApiResult<List<MaterialOption>> =
-            ApiResult.Success(materialAnswer)
+        override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> =
+            ApiResult.Success(PickerPage(materialAnswer))
 
-        override suspend fun locations(query: String): ApiResult<List<LocationOption>> =
-            ApiResult.Success(locationAnswer)
+        override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
 
-        override suspend fun members(query: String): ApiResult<List<MemberOption>> =
-            ApiResult.Success(memberAnswer)
+        override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+            ApiResult.Success(PickerPage())
+
+        override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> =
+            ApiResult.Success(PickerPage(locationAnswer))
+
+        override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+            ApiResult.Success(PickerPage(memberAnswer))
 
         override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> =
             ApiResult.Success(emptyList())

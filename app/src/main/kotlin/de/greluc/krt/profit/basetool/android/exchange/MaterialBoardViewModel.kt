@@ -76,6 +76,8 @@ sealed interface BoardSheet {
      *
      * @property materialId the picked material, or `null` while nothing is picked.
      * @property materialName what it is called, for the field.
+     * @property matches what the picker's last search answered with.
+     * @property moreMatches whether the catalogue holds materials this page does not carry.
      * @property amount the wanted amount, as typed.
      * @property minQuality the minimum quality, as typed.
      * @property remark the note, as typed.
@@ -84,6 +86,7 @@ sealed interface BoardSheet {
         val materialId: String? = null,
         val materialName: String = "",
         val matches: List<MaterialOption> = emptyList(),
+        val moreMatches: Boolean = false,
         val searching: Boolean = false,
         val amount: String = "",
         val minQuality: String = "",
@@ -516,7 +519,13 @@ class MaterialBoardViewModel(
                 delay(SEARCH_DEBOUNCE_MS)
                 when (val result = materials.materials(query)) {
                     is ApiResult.Success -> {
-                        updateRequestSheet { it.copy(matches = result.value, searching = false) }
+                        updateRequestSheet {
+                            it.copy(
+                                matches = result.value.rows,
+                                moreMatches = result.value.more,
+                                searching = false,
+                            )
+                        }
                     }
 
                     is ApiResult.Failure -> {

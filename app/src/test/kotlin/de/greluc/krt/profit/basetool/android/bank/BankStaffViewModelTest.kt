@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.bank
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
@@ -81,6 +82,115 @@ class BankStaffViewModelTest {
             assertEquals("5000", sent.amount)
             // The sheet closes on success; the dashboard is re-read rather than patched.
             assertNull(model.state.value.direct)
+        }
+
+    @Test
+    fun `a withdrawal says what actually leaves the account`() =
+        runTest(dispatcher) {
+            val model = model(RecordingStaff())
+            model.loadOnce()
+            advanceUntilIdle()
+            model.directBooking.open("acc-1")
+            advanceUntilIdle()
+            model.directBooking.edit {
+                it.copy(kind = DirectBookingKind.WITHDRAWAL, amount = "100000", holderId = "h1")
+            }
+
+            // The default is on-top (ADR-0052): the typed figure is what the recipient RECEIVES
+            // and the account is debited the gross. The app used to show none of this and to
+            // preview the balance as if the fee did not exist.
+            val open = requireNotNull(model.state.value.direct)
+            assertEquals(BigDecimal("5000"), open.fee)
+            assertEquals(BigDecimal("105000"), open.debited)
+            assertEquals(BigDecimal("100000"), open.arrives)
+            assertEquals(BigDecimal("895000"), open.preview(BigDecimal("1000000")))
+        }
+
+    @Test
+    fun `fee-inclusive flips which side of the fee the typed figure is on`() =
+        runTest(dispatcher) {
+            val model = model(RecordingStaff())
+            model.loadOnce()
+            advanceUntilIdle()
+            model.directBooking.open("acc-1")
+            advanceUntilIdle()
+            model.directBooking.edit {
+                it.copy(
+                    kind = DirectBookingKind.WITHDRAWAL,
+                    amount = "100000",
+                    holderId = "h1",
+                    feeInclusive = true,
+                )
+            }
+
+            val open = requireNotNull(model.state.value.direct)
+            assertEquals(BigDecimal("100000"), open.debited)
+            assertEquals(BigDecimal("95000"), open.arrives)
+        }
+
+    @Test
+    fun `the coverage check runs against the gross, not the typed figure`() =
+        runTest(dispatcher) {
+            val model = model(RecordingStaff())
+            model.loadOnce()
+            advanceUntilIdle()
+            model.directBooking.open("acc-1")
+            advanceUntilIdle()
+            model.directBooking.edit {
+                it.copy(kind = DirectBookingKind.WITHDRAWAL, amount = "100000", holderId = "h1")
+            }
+
+            // 100 000 typed is within a 102 000 balance, but 105 000 leaves the account and the
+            // server's overdraft guard runs against that. Checking the typed figure would invite
+            // a booking the server refuses.
+            assertEquals(false, model.state.value.direct?.submittable(BigDecimal("102000")))
+            assertEquals(true, model.state.value.direct?.submittable(BigDecimal("110000")))
+        }
+
+    @Test
+    fun `a deposit carries no fee, and a same-holder transfer none either`() =
+        runTest(dispatcher) {
+            val model = model(RecordingStaff())
+            model.loadOnce()
+            advanceUntilIdle()
+            model.directBooking.open("acc-1")
+            advanceUntilIdle()
+
+            model.directBooking.edit { it.copy(amount = "100000", holderId = "h1") }
+            assertNull("a deposit is fee-free", model.state.value.direct?.fee)
+
+            model.directBooking.edit {
+                it.copy(
+                    kind = DirectBookingKind.TRANSFER,
+                    destinationAccountId = "acc-2",
+                    destinationHolderId = "h1",
+                )
+            }
+            assertNull("a same-holder transfer is fee-free", model.state.value.direct?.fee)
+
+            model.directBooking.edit { it.copy(destinationHolderId = "h2") }
+            assertEquals(BigDecimal("5000"), model.state.value.direct?.fee)
+        }
+
+    @Test
+    fun `the fee flag travels only where a fee applies`() =
+        runTest(dispatcher) {
+            val source = RecordingStaff()
+            val model = model(source)
+            model.loadOnce()
+            advanceUntilIdle()
+            model.directBooking.open("acc-1")
+            advanceUntilIdle()
+            model.directBooking.edit {
+                it.copy(amount = "5000", holderId = "h1", feeInclusive = true)
+            }
+            model.directBooking.confirm(null)
+            advanceUntilIdle()
+
+            // The draft may carry the flag; what matters is that a deposit takes no fee, so the
+            // repository leaves it off the wire (asserted in BankRepositoryTest).
+            assertEquals(DirectBookingKind.DEPOSIT, source.directBookings.single().kind)
+            assertEquals(false, source.directBookings.single().feeApplies)
         }
 
     @Test
@@ -162,6 +272,10 @@ class BankStaffViewModelTest {
         var pages: List<ApiResult<BankRequestPage>> = listOf(ApiResult.Success(emptyPage())),
     ) : BankStaffSource {
         var queueCalls = 0
+
+        override suspend fun transferFeeRate(): ApiResult<KrtDecimal> =
+
+            ApiResult.Success(KrtDecimal(java.math.BigDecimal("0.05")))
 
         override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> = dashboard
 

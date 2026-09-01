@@ -102,6 +102,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
@@ -619,6 +620,16 @@ private fun BookingRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            val fee = booking.feeLine()
+            if (fee != null) {
+                // The transfer's own cost, stated rather than left as the gap between the amount
+                // on the row and the amount that left the account.
+                Text(
+                    text = fee,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KrtPalette.TextMuted,
+                )
+            }
             if (reversed) {
                 // Saying it on the row is what makes the missing action legible: without it, a
                 // member sees a Storno offered on one line and absent on the next for no reason.
@@ -693,7 +704,13 @@ private fun BankBooking.subline(): String {
     LocalConfiguration.current
     val booked = createdAt
     val time = if (booked == null) null else booked.relativeToNow()
-    return listOfNotNull(holder?.takeIf { it.isNotBlank() }, time).joinToString(" · ")
+    // The recipient the transfer was actually made out to. It is on the wire and was being
+    // dropped, which left a member re-reading a past transfer with no record of who got it.
+    val toWhom =
+        counterpartyHandle
+            ?.takeIf { it.isNotBlank() }
+            ?.let { stringResource(R.string.bank_booking_counterparty, it) }
+    return listOfNotNull(holder?.takeIf { it.isNotBlank() }, toWhom, time).joinToString(" · ")
 }
 
 /**
@@ -914,7 +931,9 @@ fun BankAccountsRoute(
                     onAccount = { id -> requestsViewModel.onDraftChanged { it.copy(accountId = id) } },
                     onTarget = { id -> requestsViewModel.onDraftChanged { it.copy(targetAccountId = id) } },
                     onAmount = { value -> requestsViewModel.onDraftChanged { it.copy(amount = value) } },
-                    onNote = { value -> requestsViewModel.onDraftChanged { it.copy(note = value) } },
+                    onNote = { value ->
+                        requestsViewModel.onDraftChanged { it.copy(note = value.take(FieldLimits.NOTE)) }
+                    },
                     onSubmit = requestsViewModel::onSubmit,
                     onDismiss = requestsViewModel::onDismissSheet,
                 ),

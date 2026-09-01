@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.bank
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
@@ -88,6 +89,9 @@ class BankHolderViewModelTest {
     private class RegisterOnlyStaff(
         var holders: ApiResult<List<BankHolder>> = ApiResult.Success(emptyList()),
     ) : BankStaffSource {
+        override suspend fun transferFeeRate(): ApiResult<KrtDecimal> =
+            ApiResult.Success(KrtDecimal(java.math.BigDecimal("0.05")))
+
         override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> =
             ApiResult.Failure(ApiError.Forbidden())
 

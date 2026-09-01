@@ -74,6 +74,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.LocalKrtBottomBarInset
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
+import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
 import de.greluc.krt.profit.basetool.android.ui.rememberRootGridState
@@ -730,6 +731,7 @@ fun NewRequestSheet(
                 placeholder = stringResource(R.string.board_field_material_hint),
                 selectedValue = sheet.materialId,
             )
+            PickerOverflowNote(more = sheet.moreMatches)
         }
         // Menge and Min. Qualitaet share a row (artboard 10.4): both are short numbers about the
         // same stack, and full width each they pushed the CTA off the sheet on a phone.

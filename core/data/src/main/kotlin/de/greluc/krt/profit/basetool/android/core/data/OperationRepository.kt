@@ -502,4 +502,9 @@ private fun OperationPayoutDto.toModel(): OperationPayout =
         donated = donatedAmount?.toString(),
         payout = payoutAmount?.toString(),
         paidOut = paidOut == true,
+        participationPercentage = participationPercentage,
+        personalExpenses = personalExpenses?.toString(),
+        transferFee = transferFee?.toString(),
+        paidOutAt = paidOutAt,
+        paidOutByName = paidOutByName,
     )

@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.missions
 import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionPeopleSource
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,8 +43,8 @@ class MissionMemberPickerTest {
 
     private var state = MissionMemberPickerState()
     private var picked: Pair<MissionMemberTarget, MemberOption>? = null
-    private var answer: ApiResult<List<MemberOption>> =
-        ApiResult.Success(listOf(MemberOption(id = "u9", name = "Rhea")))
+    private var answer: ApiResult<PickerPage<MemberOption>> =
+        ApiResult.Success(PickerPage(listOf(MemberOption(id = "u9", name = "Rhea"))))
 
     private fun picker(scope: kotlinx.coroutines.CoroutineScope) =
         MissionMemberPicker(
@@ -147,7 +148,7 @@ class MissionMemberPickerTest {
 
     /** Records what was asked for. */
     private inner class RecordingSource : MissionPeopleSource {
-        override suspend fun members(query: String): ApiResult<List<MemberOption>> {
+        override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> {
             queries.add(query)
             return answer
         }

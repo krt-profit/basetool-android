@@ -22,6 +22,8 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionStatus
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionTimelineSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionUnitFields
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
@@ -65,6 +67,12 @@ internal data class CorePatch(
 internal class RecordingMissionAdmin(
     private val patches: MutableList<CorePatch>,
 ) : MissionAdminSource {
+    override suspend fun unitShipOptions(missionId: String): List<Pair<String, String>> =
+        listOf("s1" to "Carrack · Anvil Carrack")
+
+    override suspend fun operationOptions(): List<Pair<String, String>> =
+        listOf("op1" to "Bergung Hurston")
+
     override suspend fun patchCore(
         missionId: String,
         name: String,
@@ -72,6 +80,7 @@ internal class RecordingMissionAdmin(
         meetingPoint: String?,
         calendarLink: String?,
         status: String?,
+        operationId: String?,
         version: Long,
     ): ApiResult<MissionDetail> {
         patches.add(CorePatch(name, description, meetingPoint, calendarLink, status, version))
@@ -84,6 +93,7 @@ internal class RecordingMissionAdmin(
         plannedStartTime: String?,
         plannedEndTime: String?,
         actualStartTime: String?,
+        actualEndTime: String?,
         version: Long,
     ): ApiResult<MissionDetail> = error("the Verwaltung has its own test")
 
@@ -140,6 +150,7 @@ internal object NoMissionStructure : MissionStructureSource {
         missionId: String,
         name: String,
         highValue: Boolean,
+        fields: MissionUnitFields,
     ): ApiResult<MissionDetail> = error("the structure has its own test")
 
     override suspend fun updateUnit(
@@ -148,6 +159,7 @@ internal object NoMissionStructure : MissionStructureSource {
         name: String,
         highValue: Boolean,
         version: Long,
+        fields: MissionUnitFields,
     ): ApiResult<MissionDetail> = error("the structure has its own test")
 
     override suspend fun setCrewRoles(
@@ -262,12 +274,12 @@ internal object NoMissionTimeline : MissionTimelineSource {
 
 /** What the member picker was asked for, and what it is answered with. */
 private val memberQueries = mutableListOf<String>()
-private var memberAnswer: ApiResult<List<MemberOption>> =
-    ApiResult.Success(listOf(MemberOption(id = "u9", name = "Rhea")))
+private var memberAnswer: ApiResult<PickerPage<MemberOption>> =
+    ApiResult.Success(PickerPage(listOf(MemberOption(id = "u9", name = "Rhea"))))
 
 /** The two catalogue lookups. */
 internal class RecordingMissionPeople : MissionPeopleSource {
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> {
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> {
         memberQueries.add(query)
         return memberAnswer
     }
@@ -477,10 +489,12 @@ internal fun missionDetail(
     meetingTime = null,
     plannedStartTime = null,
     actualStartTime = if (started) Instant.parse("2026-08-23T12:00:00Z") else null,
+    actualEndTime = null,
     plannedEndTime = null,
     isInternal = false,
     meetingPoint = "ARC-L1",
     calendarLink = "https://calendar.example/e",
+    operationId = null,
     operationName = null,
     orgUnitName = null,
     orgUnitShorthand = null,

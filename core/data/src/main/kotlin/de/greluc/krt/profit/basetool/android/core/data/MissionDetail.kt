@@ -83,6 +83,12 @@ data class MissionCrewMember(
  * @property shipName the ship or ship type it flies, or `null`
  * @property highValue whether it is flagged HVU, which the design marks with its own chip
  * @property responsibleName who leads it, or `null`
+ * @property fields what it carries beyond its name and its mark, **by id**.
+ *
+ *   Read so a write can echo them. `PUT /units/{id}` is a **replace** and clears what it is not
+ *   sent: the app used to send name and HVU alone, so renaming a unit wiped its ship type, its
+ *   ship, its frequency, its responsible member and its note — every one of them set from the web,
+ *   and gone as the side effect of an unrelated edit.
  * @property crew who is aboard, in server order
  * @property version the unit's own optimistic lock, echoed by a rename or an HVU toggle
  */
@@ -94,6 +100,29 @@ data class MissionUnit(
     val responsibleName: String?,
     val crew: List<MissionCrewMember>,
     val version: Long = 0L,
+    val fields: MissionUnitFields = MissionUnitFields(),
+)
+
+/**
+ * What an Einsatz-Einheit carries beyond its name and its HVU mark.
+ *
+ * Its own type rather than five more parameters on two writes: both writes take exactly the same
+ * set, and a positional list of five nullables is where a ship id ends up in the frequency.
+ *
+ * @property shipTypeId which class of ship, or `null`.
+ * @property shipId which ship of it, or `null`. The server offers only ships a **registered
+ *   participant** owns plus those already pinned to one of the mission's units — deliberately not
+ *   org-unit-scoped, because a participant brings their own ship whichever unit they belong to.
+ * @property frequency the comms frequency, or `null`.
+ * @property responsibleUserId who answers for the unit, or `null`.
+ * @property note the free line, or `null`.
+ */
+data class MissionUnitFields(
+    val shipTypeId: String? = null,
+    val shipId: String? = null,
+    val frequency: Double? = null,
+    val responsibleUserId: String? = null,
+    val note: String? = null,
 )
 
 /**
@@ -165,9 +194,15 @@ data class MissionManager(
  * @property meetingTime the Teamspeak gathering time, or `null`
  * @property plannedStartTime the scheduled server-join time, or `null`
  * @property actualStartTime when it actually began, or `null`
+ * @property actualEndTime when it actually ended, or `null` while it runs. Read so the schedule
+ *   write can echo it: that PATCH replaces the section, and an omitted end would reopen a closed
+ *   Einsatz together with every participant end-time it closed.
  * @property plannedEndTime the scheduled end, or `null`
  * @property isInternal squadron-internal; an outsider never receives one at all
  * @property meetingPoint the in-fiction gathering location, or `null`
+ * @property operationId the umbrella Operation by id, or `null`. Carried because the Kern PATCH
+ *   **replaces** the section: a write that left it out would detach the Einsatz from its Operation
+ *   as a side effect of renaming it, the same trap `calendarLink` already carries a warning about.
  * @property operationName the umbrella Operation, or `null`
  * @property orgUnitName the owning unit's name, or `null`
  * @property orgUnitShorthand the owning unit's short form, which the badge draws
@@ -207,9 +242,11 @@ data class MissionDetail(
     val meetingTime: Instant?,
     val plannedStartTime: Instant?,
     val actualStartTime: Instant?,
+    val actualEndTime: Instant?,
     val plannedEndTime: Instant?,
     val isInternal: Boolean,
     val meetingPoint: String?,
+    val operationId: String?,
     val operationName: String?,
     val orgUnitName: String?,
     val orgUnitShorthand: String?,

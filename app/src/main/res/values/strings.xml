@@ -322,6 +322,15 @@
     <string name="operation_detail_payout_open">Offen</string>
     <string name="operation_detail_payout_donated">Verzicht</string>
     <string name="operation_detail_payout_line">Anteil %1$s · %2$s</string>
+    <!-- The share line's percentage suffix, e.g. "Anteil 4.150 (12,5 %) · Auszahlung". -->
+    <string name="operation_detail_payout_percent">%1$s %%</string>
+    <!-- What the transferred amount is made of: reimbursed outlay and the fee already
+         deducted. Without it the member sees a total whose parts are invisible. -->
+    <string name="operation_detail_payout_expenses">davon %1$s Auslagen</string>
+    <string name="operation_detail_payout_fee">%1$s Gebühr</string>
+    <!-- Who marked the payout done, and when. -->
+    <string name="operation_detail_payout_paid_by">Ausgezahlt %1$s von %2$s</string>
+    <string name="operation_detail_payout_paid_at">Ausgezahlt %1$s</string>
     <string name="operation_detail_payout_route_member">Auszahlung</string>
     <string name="operation_detail_payout_route_org">Org-Kasse (Verzicht)</string>
     <string name="operation_detail_payout_undo_title">Auszahlung zurücknehmen?</string>
@@ -615,6 +624,10 @@
     <string name="bank_booking_reverse_title">Buchung stornieren?</string>
     <string name="bank_booking_reverse_text">Erzeugt eine negierte Gegenbuchung. Die Originalbuchung bleibt unverändert im Ledger.</string>
     <string name="bank_booking_reverse_note">Notiz</string>
+    <!-- The recipient a transfer was made out to, on the ledger subline. -->
+    <string name="bank_booking_counterparty">an %1$s</string>
+    <!-- What the transfer itself cost. Only drawn when a fee was actually charged. -->
+    <string name="bank_booking_fee">Gebühr %1$s</string>
     <string name="bank_booking_reversed">Storniert</string>
     <string name="bank_conflict_self_transfer">Quell- und Ziel-Halter müssen verschieden sein.</string>
     <string name="bank_conflict_holder_inactive">Dieser Halter ist inaktiv und kann nichts Neues zugebucht bekommen.</string>
@@ -672,7 +685,6 @@
     <string name="order_create_amount">Menge</string>
     <string name="order_create_min_quality">Min. Qualität</string>
     <string name="order_create_min_quality_none">Keine</string>
-    <string name="order_create_more_matches">Weitere Treffer vorhanden — Suche verfeinern.</string>
     <string name="order_create_no_matches">Kein bestellbares Material gefunden.</string>
     <string name="order_create_add_material">Material hinzufügen</string>
     <string name="order_create_remove_material">Material entfernen</string>
@@ -754,9 +766,9 @@
         <item quantity="one">%1$d Zusage</item>
         <item quantity="other">%1$d Zusagen</item>
     </plurals>
-    <string name="orders_material_of">/ %1$s SCU</string>
-    <string name="orders_material_booked">Gebucht: %1$s SCU</string>
-    <string name="orders_material_claimed">Zugesagt: %1$s SCU</string>
+    <string name="orders_material_of">/ %1$s %2$s</string>
+    <string name="orders_material_booked">Gebucht: %1$s %2$s</string>
+    <string name="orders_material_claimed">Zugesagt: %1$s %2$s</string>
     <string name="orders_material_claimed_none">Zugesagt: —</string>
     <string name="orders_material_progress">%1$s / %2$s</string>
     <string name="orders_redacted">Teile dieses Auftrags sind für dich ausgeblendet.</string>
@@ -870,6 +882,10 @@
     <string name="conflict_cancel">Abbrechen</string>
     <string name="conflict_reload">Neu laden</string>
     <string name="write_failed">Konnte nicht gespeichert werden.</string>
+    <!-- Fallback when the server refuses on a rule but names no reason. Never the
+         concurrency wording: nobody edited anything. -->
+    <string name="refused_inline">Nicht möglich — der Vorgang wurde abgelehnt.</string>
+    <string name="picker_more_matches">Weitere Treffer vorhanden — Suche verfeinern.</string>
     <plurals name="personal_inventory_location_capped">
         <item quantity="one">Nur der erste Treffer. Suche genauer, wenn dein Ort fehlt.</item>
         <item quantity="other">Nur die ersten %1$d Treffer. Suche genauer, wenn dein Ort fehlt.</item>
@@ -1063,6 +1079,9 @@
     <string name="booking_mode_note">Notiz</string>
     <string name="booking_field_material">Material</string>
     <string name="booking_field_amount">Menge (%1$s)</string>
+    <string name="booking_kind_material">Material</string>
+    <string name="booking_kind_item">Item</string>
+    <string name="booking_field_item">Item</string>
     <string name="booking_unit_unknown">Einheit</string>
     <string name="booking_amount_hint">Teilmengen erlaubt: cSCU (0,01) und µSCU (0,001).</string>
     <string name="booking_available">Im Eintrag: %1$s</string>
@@ -1107,6 +1126,7 @@
     <string name="booking_open">Buchen</string>
     <string name="inventory_entries_title">Einträge</string>
     <string name="inventory_entry_note">Notiz</string>
+    <string name="inventory_entry_on_board">Auf der Börse</string>
     <string name="inventory_entries_none">Keine Einträge.</string>
     <string name="order_detail_assign_me">Übernehmen</string>
     <string name="order_detail_unassign_me">Abmelden</string>
@@ -1231,11 +1251,13 @@
     <string name="refinery_create_ratings">Kosten %1$d · Tempo %2$d · Ausbeute %3$d</string>
     <string name="refinery_create_goods">Waren (min. 1)</string>
     <string name="refinery_create_input_material">Eingangsmaterial (Pflicht)</string>
-    <string name="refinery_create_input_quantity">Eingang (SCU, Pflicht)</string>
-    <string name="refinery_create_output_material">Ausgangsmaterial</string>
-    <string name="refinery_create_output_quantity">Ausgang (SCU, Pflicht)</string>
+    <string name="refinery_create_more_materials">Weitere Erze vorhanden — Suche verfeinern.</string>
+    <string name="refinery_create_input_quantity">Eingangsmenge (Units, Pflicht)</string>
+    <string name="refinery_create_output_material">Ausgangsmaterial (ergibt sich aus dem Eingang)</string>
+    <string name="refinery_create_output_material_none">—</string>
+    <string name="refinery_create_output_quantity">Ausgangsmenge (Units, Pflicht)</string>
+    <string name="refinery_create_scu_hint">= %1$s SCU</string>
     <string name="refinery_create_quality">Qualität (0–1000)</string>
-    <string name="refinery_create_bonus">Ertragsbonus (%)</string>
     <string name="refinery_create_add_good">+ Ware</string>
     <string name="refinery_create_remove_good">Ware entfernen</string>
     <string name="refinery_create_timing">Timing</string>
@@ -1334,6 +1356,7 @@
     <string name="allocation_add_cancel">Abbrechen</string>
     <string name="allocation_rest_free">%1$s frei</string>
     <string name="allocation_rest_none">Rest 0</string>
+    <string name="allocation_remove">Zuordnung entfernen</string>
     <string name="allocation_overbooked">Überbucht</string>
     <string name="allocation_save">Zuordnung speichern</string>
     <string name="allocation_open">Zuordnen</string>
@@ -1380,6 +1403,12 @@
     <string name="mission_struct_add_unit_short">Einheit</string>
     <string name="mission_struct_unit_name">Name der Einheit</string>
     <string name="mission_struct_hvu">Hochwertiges Ziel (HVU)</string>
+    <string name="mission_struct_unit_ship">Schiff</string>
+    <string name="mission_struct_unit_ship_none">Keins</string>
+    <string name="mission_struct_unit_responsible">Verantwortlich</string>
+    <string name="mission_struct_unit_responsible_none">Niemand</string>
+    <string name="mission_struct_unit_frequency">Frequenz</string>
+    <string name="mission_struct_unit_note">Notiz</string>
     <string name="mission_struct_remove_unit">Einheit entfernen</string>
     <string name="mission_struct_add_crew">Person zuweisen</string>
     <string name="mission_struct_remove_crew">Von Bord nehmen</string>
@@ -1409,6 +1438,8 @@
     <string name="mission_admin_name">Titel</string>
     <string name="mission_admin_description">Beschreibung</string>
     <string name="mission_admin_meeting_point">Treffpunkt</string>
+    <string name="mission_admin_operation">Operation</string>
+    <string name="mission_admin_operation_none">Keine</string>
     <string name="mission_admin_meeting_time">Treffzeit (Teamspeak)</string>
     <string name="mission_admin_planned_start">Geplanter Start (Serverjoin)</string>
     <string name="mission_admin_planned_end">Geplantes Ende</string>
@@ -1489,10 +1520,6 @@
     <string name="mission_crew_roles_empty">Keine CREW-Funktionen hinterlegt.</string>
     <string name="mission_timeline_up">Hoch</string>
     <string name="mission_timeline_down">Runter</string>
-    <plurals name="mission_member_notice">
-        <item quantity="one">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
-        <item quantity="other">%1$d von höchstens %2$d Treffern — tippe weiter, um einzugrenzen</item>
-    </plurals>
     <string name="mission_crew_assign">Person zuweisen</string>
     <!-- Einsatz Verwaltung: section states, the start confirmation, the per-section 409 -->
     <string name="mission_admin_people">Personen</string>
@@ -1504,6 +1531,10 @@
     <string name="mission_admin_not_started">Noch nicht gestartet — Check-in ist für alle gesperrt.</string>
     <string name="mission_admin_running_since">Läuft seit %1$s</string>
     <string name="mission_admin_correct_start">Startzeit korrigieren</string>
+    <string name="mission_admin_actual_end">Tatsächliches Ende</string>
+    <string name="mission_admin_ended_at">Beendet %1$s</string>
+    <string name="mission_admin_not_ended">Läuft noch</string>
+    <string name="mission_admin_end_mission">Einsatz beenden</string>
     <string name="mission_admin_visibility_internal">Nur intern</string>
     <string name="mission_admin_visibility_open">Ganze Organisation</string>
     <string name="mission_admin_internal_hint">Aus: die ganze Organisation sieht den Einsatz.</string>
@@ -1543,10 +1574,10 @@
     <string name="mission_crew_assign_title">Person zuweisen — %1$s</string>
     <!-- Auftrag: Übergabe erfassen (design ch. 10 artboard 14) -->
     <string name="order_handover_title">Übergabe erfassen</string>
-    <string name="order_handover_subject">%1$s · %2$s von %3$s SCU</string>
-    <string name="order_handover_amount">Menge (SCU)</string>
+    <string name="order_handover_subject">%1$s · %2$s von %3$s %4$s</string>
+    <string name="order_handover_amount">Menge (%1$s)</string>
     <string name="order_handover_after">Nach dieser Übergabe</string>
-    <string name="order_handover_after_value">%1$s / %2$s SCU</string>
+    <string name="order_handover_after_value">%1$s / %2$s %3$s</string>
     <string name="order_handover_fulfils">Erfüllt</string>
     <string name="order_handover_stock">Aus welchem Bestand</string>
     <string name="order_handover_stock_hint">Die Übergabe bucht die gewählte Lagerzeile aus.</string>
@@ -1849,6 +1880,11 @@
     <string name="bank_direct_target_holder">Halter am Zielkonto</string>
     <string name="bank_direct_note">Verwendungszweck</string>
     <string name="bank_direct_no_approval">Direktbuchung ohne Antrag: es gibt keine zweite Freigabe. Korrigiert wird nur über eine Storno-Gegenbuchung.</string>
+    <string name="bank_direct_fee_inclusive">Betrag ist der abgebuchte Bruttobetrag</string>
+    <string name="bank_direct_fee">Gebühr: %1$s aUEC</string>
+    <string name="bank_direct_fee_debited">Wird abgebucht: %1$s aUEC</string>
+    <string name="bank_direct_fee_arrives">Kommt an: %1$s aUEC</string>
+    <string name="bank_direct_fee_hint">Schätzung nach dem hinterlegten Satz. Verbindlich rechnet der Server beim Buchen.</string>
     <string name="bank_direct_preview">Stand nach Buchung: %1$s aUEC</string>
     <string name="bank_direct_over_balance">Der Betrag übersteigt den Kontostand.</string>
     <string name="bank_direct_failed">Buchung abgelehnt — es wurde nichts gebucht.</string>

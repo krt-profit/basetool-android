@@ -637,3 +637,166 @@ and so nothing to declare (ADR-0104 is satisfied by the read).
 
 **Code:** `InventoryRepository.gameItemStock`, `GameItemStock`, `GameItemStockViewModel`,
 `GameItemStockScreen`
+
+---
+
+### REQ-APP-INV-019 — Booking in needs a grade, and the cSCU hint belongs to SCU
+
+**A material row without a grade is a rejection the form knows about.**
+`InventoryItemCreateDto` pairs the two with an `@AssertTrue` (REQ-INV-029): a material row requires
+a quality, a game-item row forbids one. The web form marks the field `required`. The app left it
+optional, so the CTA invited a booking the server answers with a `400` — legible since the
+field-error fix, but still a refusal the form could have prevented. Zero is a grade and passes;
+blank is the absence the server refuses.
+
+**The cSCU/µSCU hint is shown only for an SCU material.** cSCU and µSCU are SCU words, and over a
+field counting pieces the hint offered fractions of a thing that has none. This is the rule the
+merge opt-in beside it already followed — the web applies it too, hiding its own hint for `PIECE`.
+
+**Acceptance**
+
+- [x] Material, place and amount are not enough; a grade is (`BookingViewModelTest`).
+- [x] A grade of `0` passes and a blank one does not (`BookingViewModelTest`).
+- [x] The hint stands beside an SCU material and is absent from a piece one (`BookingSheetTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `BookingViewModel` (`submittable`, `qualityGiven`), `BookingSheet`
+
+---
+
+### REQ-APP-INV-020 — A book-in names one of two catalogues, and they are not interchangeable
+
+The web's booking form has carried a Material/Item switch since the item inventory landed
+(REQ-INV-029, ADR-0101); the app could read item stock („Game-Items" under „Mehr") but never book
+any in. It can now, and the two kinds are **kinds of row rather than one list with a filter** —
+`InventoryItemCreateDto` takes them in mutually exclusive fields, mirrored by the DB check
+constraint `chk_inventory_item_catalog_xor`, and asks different things of each:
+
+| | material row | item row |
+| --- | --- | --- |
+| catalogue field | `materialId` | `gameItemId` — never both, never neither |
+| grade | **required** | **forbidden** |
+| amount | SCU or pieces, per the material | positive **whole** units, always |
+| `mergeStock` | honoured for SCU | ignored; a piece row always merges |
+| mission earmark | allowed | refused (REQ-INV-031) |
+
+Each of those is a `400` when got wrong, so the form settles all of them before the CTA lights:
+the item side asks for no grade **and shows no field for one** (a field whose every value is a
+rejection is worse than none), the amount is refused unless whole, and the SCU affordances — the
+cSCU hint and the merge opt-in — stay away because an item is never measured in SCU.
+
+**Switching kinds drops the other side's pick**, rather than keeping it out of sight. The server
+takes exactly one catalogue reference, so a material still held in state behind a showing item is a
+booking nobody can watch being assembled — and the grade goes with it, because the item row refuses
+one. Pinned by a test that picks a material, types a grade, switches, and asserts that neither
+reaches the wire.
+
+**The amount label now says the unit in German.** It printed the wire's own word, so a piece-counted
+material read „Menge (PIECE)" on a German form. `unit()` still answers the wire value — the
+whole-number check compares against it — and `unitLabel()` is the rendering.
+
+Earmarks travel with the booking — see `REQ-APP-INV-021`, which closed the last difference between
+the two forms.
+
+**Acceptance**
+
+- [x] An item booking needs its item and a whole amount, and no grade (`BookingViewModelTest`).
+- [x] Half an item is not a quantity (`BookingViewModelTest`).
+- [x] A material and a grade picked before the switch reach neither the state nor the wire
+  (`BookingViewModelTest`, `InventoryRepositoryTest` — asserted as an absence).
+- [x] The item side draws the switch, no grade field, and „Menge (Stück)" (`BookingSheetTest`).
+- [x] The item picker searches `/api/v1/orders/item-catalog` and reports its overflow
+  (`InventoryRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `InventoryRepository` (`BookInDraft.gameItemId`, `gameItems`, `GameItemOption`),
+`BookingViewModel` (`BookingCatalogKind`), `BookingSheet`
+
+---
+
+### REQ-APP-INV-021 — Earmarks are entered with the booking, not after it
+
+The web has split at check-in since Variante C (REQ-INV-027 R4): booking 400 SCU in and saying „250
+for #91, 150 for #104" is **one** request, and the server checks the sum against the amount and
+every target against its own requirement in the same transaction that creates the row. The app
+booked first and assigned afterwards, one call per target, which is a different thing in four ways
+a member can feel:
+
+- two or three steps where the web has one;
+- between them the stock sits **unassigned** in the Lager, where everyone else sees it as free;
+- each nachtrag is its own write with its own `version` echo and its own 409, where the web's split
+  can only land or fail as a whole;
+- abandoning after the booking leaves an unassigned row that looks like any other.
+
+The app now sends `jobOrderAllocations` / `missionAllocations` with the booking. What follows from
+the server's rules:
+
+**The CTA goes dark when a split promises more than is being booked in.** The server refuses the
+**whole booking**, not just the earmark, so letting it be sent would take a member's row away for a
+figure they could have been shown.
+
+**The two splits are reconciled apart.** The same 400 SCU may be promised to an Auftrag *and* to an
+Einsatz; one shared rest would be wrong in both directions. This is the same rule the Zuordnung
+sheet already followed.
+
+**An Auftrag that never asked for this material is not offered.** `JobOrderReferenceDto` carries
+`requiredMaterialIds` / `requiredGameItemIds`, which the app used to drop on the floor; the web
+filters its options by exactly those. Offering the rest would be offering a rejection. A target
+naming **no** requirement is offered regardless — and missions carry none at all, so they are
+filtered only for duplicates.
+
+**An item row never carries a mission earmark** (REQ-INV-031). The form does not offer the split in
+item mode, and the send drops it a second time for a split entered before the kind was switched.
+
+**A new row starts at the rest, not at zero**, because a member earmarking a booking usually means
+all of it. **An earmark without a readable amount is dropped rather than sent as a zero**, which the
+server would create: a target promised nothing, standing among targets promised something.
+
+**One rendering, not two.** The Zuordnung sheet and the book-in draw the same `Split`, over a
+`SplitPane` / `SplitActions` pair. The one difference is a remove button, and it is a real one: a
+sheet row exists on the server and is taken back by writing a zero, while a book-in row exists only
+in the form until it is sent.
+
+The split handling lives in `BookingSplitHolder` rather than on the view model — the function cap
+was the signal, and the honest reading of it is that „what, how much, where" and „and to whom" are
+two questions.
+
+**Acceptance**
+
+- [x] An earmark travels in the booking request, once (`BookingViewModelTest`,
+  `InventoryRepositoryTest`).
+- [x] A new row starts at the rest, and the next one at what the first left (`BookingViewModelTest`).
+- [x] Promising more than is booked blocks the whole booking (`BookingViewModelTest`).
+- [x] The two splits are reconciled apart (`BookingViewModelTest`).
+- [x] An item row never carries a mission earmark (`BookingViewModelTest`).
+- [x] An Auftrag that never asked for the material is not offered (`BookingViewModelTest`).
+- [x] An earmark without an amount is dropped, not sent as a zero (`InventoryRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `InventoryRepository` (`BookInDraft`, `AllocationTarget.krtAccepts`),
+`BookingSplitHolder`, `BookingViewModel`, `BookingSheet` (`BookInSplits`), `AllocationSheet`
+(`Split`, `SplitPane`, `SplitActions`)
+
+---
+
+### REQ-APP-INV-022 — The tree says which rows are already on the Materialbörse
+
+The web's Lager marks every row it has released to the exchange, from
+`GET /material-exchange/released-item-ids` — a read that takes the ids on screen. The app marked
+none, so a member could offer the same stack twice, or hunt for an offer they had already made.
+
+The mark is fetched **after** the rows, not with them: the Lager read has nothing to do with the
+exchange, and a member waiting for the second call to see the first would be paying for a mark. A
+failure leaves the set as it was — no mark is the honest answer when nobody asked, and a banner over
+the tree would be about something the tree does not do.
+
+**Not done, deliberately:** the web's mark is a *checkbox* that also releases the row. The app
+offers a row on the exchange from the Materialbörse's own sheet, and a second entry point is a
+separate piece of work rather than part of showing the flag.
+
+**Acceptance**
+
+- [x] A released row is marked (`InventoryRepositoryTest` covers the read).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `InventoryRepository.releasedEntryIds`, `InventoryViewModel`, `InventoryScreen`

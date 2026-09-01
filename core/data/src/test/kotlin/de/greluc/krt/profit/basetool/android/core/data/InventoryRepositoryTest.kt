@@ -63,6 +63,34 @@ class InventoryRepositoryTest {
              "page": 0, "totalElements": 2, "totalPages": 1}
             """.trimIndent()
 
+        /** One row out of a catalogue of forty — a page that is hiding something. */
+        val MATERIALS_CAPPED =
+            """
+            {"content": [{"id": "m1", "name": "Quantainium", "quantityType": "SCU"}],
+             "page": 0, "totalElements": 40, "totalPages": 40}
+            """.trimIndent()
+
+        /** The same row, and the catalogue holds nothing else. */
+        val MATERIALS_COMPLETE =
+            """
+            {"content": [{"id": "m1", "name": "Quantainium", "quantityType": "SCU"}],
+             "page": 0, "totalElements": 1, "totalPages": 1}
+            """.trimIndent()
+
+        /** Two places, which is all of them. */
+        val LOCATIONS =
+            """
+            {"content": [{"id": "l1", "name": "ARC-L1"}, {"id": "l2", "name": "Area18"}],
+             "page": 0, "totalElements": 2, "totalPages": 1}
+            """.trimIndent()
+
+        /** One item out of a catalogue of thirty. */
+        val ITEMS =
+            """
+            {"content": [{"id": "gi1", "name": "Medizinische Station T2"}],
+             "page": 0, "totalElements": 30, "totalPages": 30}
+            """.trimIndent()
+
         val MEMBERS =
             """
             {"content": [{"id": "u1", "username": "rhea", "effectiveName": "Rhea"}],
@@ -175,10 +203,149 @@ class InventoryRepositoryTest {
         runTest {
             respond(MATERIALS)
 
-            val materials = (repository.materials("quant") as ApiResult.Success).value
+            val materials = (repository.materials("quant") as ApiResult.Success).value.rows
 
             assertEquals(1, materials.size)
             assertEquals("SCU", materials.single().unit)
+        }
+
+    @Test
+    fun `the place picker asks for the whole catalogue, not a screenful of it`() =
+        runTest {
+            respond(LOCATIONS)
+
+            repository.locations("")
+
+            // 200, not the generic picker page. The location catalogue is small and bounded by the
+            // game universe, and a member booking stock expects to scroll it. At `size=25` this
+            // very picker showed 25 of 53 places with nothing on screen saying so.
+            assertEquals("200", requestedUrl().queryParameter("size"))
+        }
+
+    @Test
+    fun `a picker page that leaves candidates behind says so`() =
+        runTest {
+            respond(MATERIALS_CAPPED)
+
+            val page = (repository.materials("q") as ApiResult.Success).value
+
+            // Read off `totalElements`, not off a full-looking page (ADR-0104).
+            assertTrue(page.more)
+        }
+
+    @Test
+    fun `a picker page that carries the catalogue claims nothing more`() =
+        runTest {
+            respond(MATERIALS_COMPLETE)
+
+            val page = (repository.materials("quant") as ApiResult.Success).value
+
+            assertFalse(page.more)
+        }
+
+    @Test
+    fun `an item booking sends the item and no quality at all`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(
+                    gameItemId = "gi1",
+                    locationId = "l1",
+                    amount = "3",
+                    // Carried over from a material the member had picked before switching: the
+                    // draft may hold it, the wire may not.
+                    quality = 874,
+                ),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains("\"gameItemId\":\"gi1\""))
+            // Asserted as an ABSENCE: the server refuses a quality on an item row outright
+            // (isQualityConsistentWithCatalog, REQ-INV-029), and a payload carrying one looks
+            // perfectly valid until it comes back a 400.
+            assertFalse("a quality must never travel with an item row, was: ${'$'}body", body.contains("quality"))
+            assertFalse("the catalogue reference is exclusive", body.contains("materialId"))
+        }
+
+    @Test
+    fun `the booking carries its earmarks, in the same request`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(
+                    materialId = "m1",
+                    locationId = "l1",
+                    amount = "400",
+                    quality = 874,
+                    jobOrderAllocations =
+                        listOf(InventoryAllocation("jo1", "#91", null, "250")),
+                    missionAllocations =
+                        listOf(InventoryAllocation("mi1", "Bergung", null, "100")),
+                ),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            // One request, not a booking followed by a write per target: the server checks the sum
+            // against the amount and every target against its own requirement in the same
+            // transaction that creates the row (Variante C, REQ-INV-027 R4).
+            assertTrue(body.contains("\"jobOrderAllocations\":[{\"targetId\":\"jo1\",\"amount\":250"))
+            assertTrue(body.contains("\"missionAllocations\":[{\"targetId\":\"mi1\",\"amount\":100"))
+        }
+
+    @Test
+    fun `an earmark without an amount is dropped rather than sent as a zero`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(
+                    materialId = "m1",
+                    locationId = "l1",
+                    amount = "400",
+                    quality = 874,
+                    jobOrderAllocations =
+                        listOf(
+                            InventoryAllocation("jo1", "#91", null, ""),
+                            InventoryAllocation("jo2", "#104", null, "0"),
+                        ),
+                ),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            // A zero is an earmark OF nothing, which the server would create: a target promised
+            // nothing, standing among targets promised something.
+            assertFalse("an empty split must not travel, was: ${'$'}body", body.contains("jobOrderAllocations"))
+        }
+
+    @Test
+    fun `a material booking still sends its quality`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_OK).build())
+
+            repository.bookIn(
+                BookInDraft(materialId = "m1", locationId = "l1", amount = "3", quality = 874),
+            )
+
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            assertTrue(body.contains("\"materialId\":\"m1\""))
+            assertTrue(body.contains("\"quality\":874"))
+            assertFalse(body.contains("gameItemId"))
+        }
+
+    @Test
+    fun `the item picker searches the order form's catalogue`() =
+        runTest {
+            respond(ITEMS)
+
+            val page = (repository.gameItems("station") as ApiResult.Success).value
+
+            // The item catalogue, not the materials: the two are separate tables and the server
+            // takes them in mutually exclusive fields.
+            assertTrue(requestedUrl().encodedPath.endsWith("/api/v1/orders/item-catalog"))
+            assertEquals("Medizinische Station T2", page.rows.single().name)
+            assertTrue(page.more)
         }
 
     @Test
@@ -187,7 +354,7 @@ class InventoryRepositoryTest {
             // effectiveName, not username: it is what the web app renders.
             respond(MEMBERS)
 
-            val members = (repository.members("rh") as ApiResult.Success).value
+            val members = (repository.members("rh") as ApiResult.Success).value.rows
 
             assertEquals("Rhea", members.single().name)
             assertEquals("rh", requestedUrl().queryParameter("query"))

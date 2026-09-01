@@ -97,6 +97,33 @@ class RefineryRepositoryTest {
                 "inputQuantity": 100, "outputQuantity": 8000}
              ]}
             """.trimIndent()
+
+        /**
+         * Two ore rows, the second without a refined material, out of a catalogue of forty.
+         *
+         * `totalElements` is deliberately far above the rows carried: the overflow flag is read
+         * off it rather than off a full-looking page.
+         */
+        private val RAW_MATERIALS =
+            """
+            {"content": [
+               {"id": "raw-agr", "name": "Agricium (Raw)", "type": "RAW",
+                "refinedMaterial": {"id": "ref-agr", "name": "Agricium"}},
+               {"id": "raw-ine", "name": "Inert Materials", "type": "RAW"}
+             ],
+             "totalElements": 40}
+            """.trimIndent()
+
+        /** The same two rows, and the catalogue holds nothing else. */
+        private val RAW_MATERIALS_COMPLETE =
+            """
+            {"content": [
+               {"id": "raw-agr", "name": "Agricium (Raw)", "type": "RAW",
+                "refinedMaterial": {"id": "ref-agr", "name": "Agricium"}},
+               {"id": "raw-ine", "name": "Inert Materials", "type": "RAW"}
+             ],
+             "totalElements": 2}
+            """.trimIndent()
     }
 
     private lateinit var server: MockWebServer
@@ -280,6 +307,18 @@ class RefineryRepositoryTest {
         }
 
     @Test
+    fun `the order list asks for the newest first`() =
+        runTest {
+            respond(ORDERS)
+
+            repository.myOrders(setOf(RefineryServerStatus.OPEN))
+
+            // The server's fallback is startedAt ASCENDING, which opened the list on the member's
+            // oldest order and pushed anything still refining onto the last page.
+            assertEquals("startedAt,desc", requestedUrl().queryParameter("sort"))
+        }
+
+    @Test
     fun `an unknown status is never echoed back to the server`() =
         runTest {
             respond(ORDERS)
@@ -289,5 +328,119 @@ class RefineryRepositoryTest {
             // UNKNOWN is this build's name for a status the server added. Sending it back would
             // turn one unrecognised row into a 400 on the whole page.
             assertTrue(requestedUrl().queryParameterValues("status").isEmpty())
+        }
+
+    @Test
+    fun `the ore picker asks the server for refinery inputs only`() =
+        runTest {
+            respond(RAW_MATERIALS)
+
+            repository.searchMaterials("agr")
+
+            // Without it the picker offers refined and non-refinable materials, and
+            // `RefineryOrderService.resolveGood` answers a picked one with an
+            // IllegalArgumentException the global handler strips of its message: the member is
+            // told the order is invalid and never which line or why.
+            assertEquals("true", requestedUrl().queryParameter("rawOnly"))
+        }
+
+    @Test
+    fun `an ore carries the material it refines into`() =
+        runTest {
+            respond(RAW_MATERIALS)
+
+            val rows = (repository.searchMaterials("") as ApiResult.Success).value.rows
+
+            // The form shows the output rather than asking for it, so the row has to carry it.
+            assertEquals("Agricium", rows.first().refinedName)
+            assertEquals("ref-agr", rows.first().refinedId)
+        }
+
+    @Test
+    fun `an ore the catalogue names no output for carries none`() =
+        runTest {
+            respond(RAW_MATERIALS)
+
+            val rows = (repository.searchMaterials("") as ApiResult.Success).value.rows
+
+            // The server falls back to the input material itself for these; the row says only
+            // that it knows of no refined material, and the form does the falling back.
+            assertNull(rows.last().refinedId)
+            assertNull(rows.last().refinedName)
+        }
+
+    @Test
+    fun `a page that leaves ores behind says so`() =
+        runTest {
+            respond(RAW_MATERIALS)
+
+            val matches = (repository.searchMaterials("") as ApiResult.Success).value
+
+            // `totalElements` is 40 against the two rows carried. A picker that shows a full page
+            // and says nothing is indistinguishable from one that has shown everything (ADR-0104).
+            assertTrue(matches.more)
+        }
+
+    @Test
+    fun `the derived output material and the read-only bonus never reach the wire`() =
+        runTest {
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(HTTP_OK)
+                    .setHeader("Content-Type", "application/json")
+                    .body(
+                        """
+                        {"id": "r9", "location": {"id": "loc1", "name": "Levski"},
+                         "goods": []}
+                        """.trimIndent(),
+                    )
+                    .build(),
+            )
+
+            val result =
+                repository.createOrder(
+                    RefineryOrderDraft(
+                        locationId = "loc1",
+                        methodId = "met1",
+                        goods =
+                            listOf(
+                                RefineryGoodDraft(
+                                    inputMaterialId = "raw-agr",
+                                    inputMaterialName = "Agricium (Raw)",
+                                    inputQuantity = "62000",
+                                    outputMaterialId = "ref-agr",
+                                    outputMaterialName = "Agricium",
+                                    outputQuantity = "44200",
+                                    yieldBonusPercent = "12",
+                                ),
+                            ),
+                    ),
+                )
+
+            assertTrue(result is ApiResult.Success)
+            val body = server.takeRequest().body?.utf8().orEmpty()
+            // Asserted as an ABSENCE, because either value would have produced a request that
+            // looks perfectly valid. The server derives the output from the input's
+            // refinedMaterial and refuses a disagreeing one with a 400 it strips the message from;
+            // the bonus is UEX-derived and the write path drops it. The draft still carries both,
+            // because the form shows them.
+            assertFalse("the derived output must not be sent, was: ${'$'}body", body.contains("outputMaterial\":{"))
+            assertFalse("the read-only bonus must not be sent, was: ${'$'}body", body.contains("yieldBonusPercent\":1"))
+            // The line itself did travel, so the absences above are not an empty request.
+            assertTrue(body.contains("\"inputMaterial\":{\"id\":\"raw-agr\""))
+            assertTrue(body.contains("\"outputQuantity\":44200"))
+        }
+
+    @Test
+    fun `a page that carries the whole catalogue claims nothing more`() =
+        runTest {
+            respond(RAW_MATERIALS_COMPLETE)
+
+            val matches = (repository.searchMaterials("") as ApiResult.Success).value
+
+            // Asserted separately from the overflow case because the flag is read off
+            // `totalElements` rather than off a full-looking page: a page that happens to be
+            // exactly full is not evidence of more.
+            assertFalse(matches.more)
         }
 }

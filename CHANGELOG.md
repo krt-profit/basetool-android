@@ -2,6 +2,92 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Die Bank sagt jetzt, was die Gebühr kostet — vor dem Buchen.** Bei Auszahlung und
+  halterwechselnder Umbuchung stehen Gebühr, „wird abgebucht" und „kommt an" im Blatt, dazu ein
+  Schalter, ob dein Betrag der Bruttobetrag ist oder das, was ankommen soll. Bisher stand davon
+  nichts da: wer 100 000 auszahlte, bei dem verließen mehr als 100 000 das Konto, und „Stand nach
+  Buchung" rechnete die Gebühr auch nicht mit.
+- **Ein Einsatz lässt sich jetzt beenden** — im Verwaltungs-Tab unter „Zeitplan". Das schließt
+  zugleich die offenen Zeiten aller Teilnehmer, worauf die Auszahlung beruht. Bisher ging das
+  nirgends in der App: der Start wird beim Aktivieren gesetzt, das Ende von nichts.
+- **Eine Einsatz-Einheit trägt jetzt Schiff, Verantwortlichen, Frequenz und Notiz** — und behält
+  sie. Bisher löschte schon das Umbenennen einer Einheit alle vier, weil die App sie nicht
+  mitschickte und der Server die Einheit vollständig ersetzt.
+- **Das Lager zeigt, welche Zeilen schon auf der Materialbörse liegen.**
+- **Ein Einsatz lässt sich jetzt einer Operation zuordnen** — im Verwaltungs-Tab unter „Kern".
+  Bisher ging das nirgends: das Operationen-Formular verwies auf den Einsatz, und der hatte kein
+  solches Feld.
+
+- **Beim Einbuchen lässt sich der Bestand direkt zuordnen.** Unter dem Ort stehen jetzt
+  „Aufträge" und „Einsätze": 400 SCU einbuchen und dabei 250 für Auftrag #91 und 150 für #104
+  vormerken — in einem Schritt, wie im Webtool. Bisher musstest du erst einbuchen und den Eintrag
+  danach einzeln zuweisen; dazwischen lag der Bestand für alle anderen sichtbar als frei. Angeboten
+  werden nur Aufträge, die das Material überhaupt brauchen, und wer mehr vormerkt als er einbucht,
+  kommt nicht am Knopf vorbei.
+
+- **Game-Items lassen sich jetzt ins Lager einbuchen.** Das Einbuchen-Blatt hat oben einen
+  Umschalter „Material / Item"; die Item-Seite sucht im Item-Katalog, fragt keine Qualität (der
+  Server nimmt dort keine) und zählt in ganzen Stück. Ein Wechsel des Umschalters verwirft die
+  Wahl der anderen Seite — der Server nimmt genau eine von beiden.
+
+### Fixed
+
+- **Das Benachrichtigungs-Postfach öffnete auf der ältesten Nachricht.** Ohne
+  Sortier-Parameter sortiert der Server aufsteigend, also lag die Nachricht von heute auf der
+  letzten Seite. Betraf ebenso „Meine Raffinerieaufträge", wo alles noch Laufende hinten lag.
+- **Die Einsatzliste zeigte mit „Vergangene" den ältesten Einsatz zuerst.** Die Richtung folgt
+  jetzt dem Filter: kommende aufsteigend, vergangene mit dem jüngsten oben.
+- **Abgelehnte Vorgänge meldeten „Jemand anderes hat geändert".** Ein Konto mit Restbestand,
+  ein bereits entschiedener Antrag, eine nicht stornierbare Buchung — alle erschienen als
+  Gleichzeitigkeits-Konflikt samt Rat „neu laden und erneut speichern", der nicht aufgehen konnte.
+  Jetzt steht die Begründung des Servers da.
+- **Textfelder liefen ins Serverlimit statt zu begrenzen.** Einsatz-Beschreibung, Treffpunkt,
+  Einheiten-Notiz, Bank-Notiz und Lager-Notiz stoppen jetzt dort, wo der Server ablehnt.
+
+### Changed
+- **Eine Beteiligung zeigt, woraus sie besteht.** Neben dem Betrag stehen jetzt der Prozentsatz,
+  die darin erstatteten Auslagen und die abgezogene Gebühr, und bei erledigten Auszahlungen wer
+  sie wann gebucht hat. Bisher stand dort eine Summe, deren Teile unsichtbar waren.
+- **Buchungen nennen Gebühr und Empfänger auch im Nachhinein.** Beides stand auf der Leitung und
+  wurde verworfen, sodass eine vergangene Überweisung weder ihre Kosten noch den Empfänger zeigte.
+- **Die Übergabe-Maske nennt die Einheit der Position.** Bei einem Stück-Material stand dort
+  „Menge (SCU)" — auf dem einen Bildschirm, der einen Auftrag abschließt.
+- **Direktbuchungen tragen jetzt Begründung und Empfänger mit**, wie im Webtool. Bisher gingen
+  beide Angaben verloren.
+- **Die Mengen-Beschriftung nennt die Einheit auf Deutsch.** Bei einem Stück-Material stand dort
+  „Menge (PIECE)", das Wort vom Draht.
+- **Picker sagen jetzt, wenn sie nicht alles zeigen.** Ort, Material und Mitglied im Lager, die
+  Mitgliedersuche im Einsatz und die Grant-Suche in der Bank brachen die Liste bei 25 Treffern ab,
+  ohne ein Wort — ein fehlender Eintrag sah aus, als gäbe es ihn nicht. Die Ortsliste holt jetzt
+  außerdem den ganzen Katalog statt eines Bildschirms davon. Umgekehrt behauptet der Ort-Picker in
+  „Mein Inventar" nicht mehr, es gäbe weitere Treffer, wenn er gerade alle zeigt.
+- **Eine neue Materialzeile im Auftrag fordert wieder Qualität 650**, wie im Webtool. Bisher stand
+  dort „Keine": derselbe Auftrag, im Browser und auf dem Telefon angelegt, bestellte
+  unterschiedliches Material.
+- **Auftragspositionen nennen die Einheit des Materials.** Bei einem Stück-Material stand „SCU"
+  über der Menge — 500 Stück lasen sich als 500 SCU.
+- **Der Hinweis auf Teilmengen steht nur noch bei SCU-Material.** Über einem Feld, das Stück
+  zählt, bot er Bruchteile von etwas an, das keine hat.
+- **Einbuchen verlangt jetzt eine Qualität, bevor der Knopf freigibt.** Ohne sie lehnte der Server
+  die Buchung ab — eine Absage, die das Formular vorher kannte.
+- **Der Raffinerieauftrag bietet nur noch raffinierbare Erze an.** Bisher stand der ganze
+  Materialkatalog im Eingangs-Picker — und der Server lehnte ein nicht-raffinierbares Material ab,
+  ohne einen Grund zu nennen. Das **Ausgangsmaterial** wählst du nicht mehr selbst: es ergibt sich
+  aus dem Erz und steht als Text daneben, wie im Webtool.
+- **Die Mengenfelder heißen jetzt Units, nicht SCU** — und darunter steht, was das in SCU ist. Das
+  Feld war als SCU beschriftet, ging aber unverändert an den Server, der Units zählt: wer 442
+  eintrug und SCU meinte, legte 4,42 SCU an.
+- **Zeigt der Erz-Picker nicht alle Treffer, sagt er das.** Bisher endete die Liste bei 25 Zeilen,
+  ohne Hinweis — ein fehlendes Erz sah aus, als gäbe es das nicht.
+
+### Removed
+
+- **Das Feld „Ertragsbonus" im Raffinerieauftrag ist raus.** Der Server berechnet den Bonus aus
+  UEX-Daten und verwirft, was die App schickt — das Feld nahm einen Wert entgegen, der nie
+  irgendwo ankam.
+
 ## [0.2.0] — 2026-08-31
 
 ### Added

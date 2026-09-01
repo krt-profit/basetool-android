@@ -95,7 +95,10 @@ class ApiErrorMapper(
             }
 
             HTTP_CONFLICT -> {
-                ApiError.OptimisticLock(problem)
+                // Not OptimisticLock: that is what the explicit OPTIMISTIC_LOCK code above means.
+                // Every other 409 is the server refusing on a rule, and calling it a concurrent
+                // edit told the member to reload over a state that reloading does not change.
+                ApiError.Conflict(problem)
             }
 
             HTTP_UNPROCESSABLE, HTTP_BAD_REQUEST -> {

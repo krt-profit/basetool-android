@@ -439,3 +439,25 @@ hyphenless mid-word break is not.
 
 **Code:** `notifications/NotificationsScreen.kt`
 
+
+### REQ-APP-NOTIF-016 — The inbox opens on the newest notification
+
+The list request carries `sort=createdAt,desc`.
+
+**Because the parameter is not optional in effect.** `PaginationUtil.resolveSort` falls back to
+`Sort.by(defaultField).ascending()` when no sort is sent, and the notification default field is
+`createdAt` — so omitting the parameter does not mean „the server's order", it means **oldest
+first**. The inbox opened on whatever a member received when they joined the org, with today's
+notification on the last page. Nothing in the app re-sorted afterwards, so the wrong end was the
+only end a member ever saw. The web app sends `createdAt,desc` for exactly this reason.
+
+The page size stays the web app's fifty (REQ-APP-NOTIF-019's „newest 50" wording already assumed
+this order; the code did not deliver it).
+
+**Acceptance**
+
+- [x] The request carries `sort=createdAt,desc` (`NotificationRepositoryTest`).
+- [x] **Walked on a device (2026-09-01):** phone (API 37, 1080×2424) and tablet (API 37,
+      2560×1600) both open the inbox on 26.08. 20:32 and run strictly down to 11:00.
+
+**Code:** `core/data/NotificationRepository.kt`

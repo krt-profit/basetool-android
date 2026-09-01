@@ -98,10 +98,18 @@ data class MissionSectionConflict(
  * @property plannedEndClock its time.
  * @property actualStart when it actually began, as the wire string, blank while it has not. Not a
  *   field — a state line plus an action (artboard 8).
+ * @property actualEnd when it actually ended, as the server sent it; blank while it runs.
+ * @property endingNow whether the „Einsatz beenden" pair is open.
+ * @property endDate that pair's date half.
+ * @property endClock that pair's time half.
  * @property correctingStart whether the „Startzeit korrigieren" pair is open.
  * @property correctStartDate that pair's date half.
  * @property correctStartClock that pair's time half.
  * @property internal whether only the owning unit sees it.
+ * @property operationId which Operation the Einsatz belongs to, or `null` for none. The Kern
+ *   section is the **only** place this can be set: the Operation's own form has no such field
+ *   because the wire has none, and the app used to offer it in neither.
+ * @property operations what that picker may offer, read once with the tab.
  * @property partyLeadSet whether an Einsatzleitung is named — the first figure of the Personen
  *   head's „Leitung · Manager · Teilnehmer" count.
  * @property managerCount how many managers there are.
@@ -128,10 +136,16 @@ data class MissionAdminForm(
     val plannedEndDate: String = "",
     val plannedEndClock: String = "",
     val actualStart: String = "",
+    val actualEnd: String = "",
+    val endingNow: Boolean = false,
+    val endDate: String = "",
+    val endClock: String = "",
     val correctingStart: Boolean = false,
     val correctStartDate: String = "",
     val correctStartClock: String = "",
     val internal: Boolean = false,
+    val operationId: String? = null,
+    val operations: List<Pair<String, String>> = emptyList(),
     val partyLeadSet: Boolean = false,
     val managerCount: Int = 0,
     val participantCount: Int = 0,
@@ -146,6 +160,16 @@ data class MissionAdminForm(
     /** Whether the Einsatz has been started, which is what the server needs before any check-in. */
     val started: Boolean
         get() = actualStart.isNotBlank()
+
+    /**
+     * Whether it has been ended.
+     *
+     * No status says so: activation stamps the start server-side and nothing stamps the end, so
+     * `actualEndTime` is the only fact there is — and setting it closes every participant's open
+     * end-time with it.
+     */
+    val ended: Boolean
+        get() = actualEnd.isNotBlank()
 
     /**
      * Whether **this** section's fields may be edited right now.
@@ -223,6 +247,13 @@ class MissionAdmin(
             return
         }
         write(formFor(detail))
+        // After the form, not before: the tab opens on what is already known, and the Operation
+        // picker fills in when its list arrives. A read the member waits for would make attaching
+        // an Einsatz feel like the reason the tab is slow.
+        scope.launch {
+            val options = source.operationOptions()
+            write(read().form?.copy(operations = options))
+        }
     }
 
     /** Closes it, discarding what was typed. */
@@ -289,6 +320,25 @@ class MissionAdmin(
         write(open.copy(correctingStart = false))
     }
 
+    /**
+     * Opens the „Einsatz beenden" pair, filled with **now**.
+     *
+     * Now rather than blank because that is what ending an Einsatz means in practice, and because
+     * the alternative is a member typing today's date into a field they opened by pressing „end".
+     * It stays editable: a run written up the next morning ended when it ended.
+     */
+    fun endMission() {
+        val open = read().form ?: return
+        val (date, clock) = Instant.now().toString().toKrtDateTime()
+        write(open.copy(endingNow = true, endDate = date, endClock = clock))
+    }
+
+    /** Abandons that, leaving the Einsatz as it was. */
+    fun cancelEndMission() {
+        val open = read().form ?: return
+        write(open.copy(endingNow = false))
+    }
+
     /** Takes the member's own version after a conflict, writing it against the fresh counter. */
     fun keepMine() {
         val context = read()
@@ -328,7 +378,9 @@ class MissionAdmin(
             plannedEndDate = endDate,
             plannedEndClock = endClock,
             actualStart = detail.actualStartTime?.toString().orEmpty(),
+            actualEnd = detail.actualEndTime?.toString().orEmpty(),
             internal = detail.isInternal,
+            operationId = detail.operationId,
             partyLeadSet = !detail.partyLeadName.isNullOrBlank(),
             managerCount = detail.managers.size,
             participantCount = detail.registeredParticipants,
@@ -436,6 +488,9 @@ class MissionAdmin(
                     calendarLink = detail.calendarLink,
                     // The status is the badge's business (F2), never this form's.
                     status = null,
+                    // The only place an Einsatz joins an Operation: the Operation's own form has
+                    // no such field, because the wire has none. Blank means „keiner".
+                    operationId = form.operationId,
                     version = detail.coreVersion,
                 )
             }
@@ -451,6 +506,15 @@ class MissionAdmin(
                             krtWireInstant(form.correctStartDate, form.correctStartClock)
                         } else {
                             form.actualStart.blankToNull()
+                        },
+                    // Echoed when it is not being edited, for the same reason as the start: this
+                    // PATCH replaces the section, and an omitted end would reopen an Einsatz that
+                    // had been closed — together with every participant's end-time it closed.
+                    actualEndTime =
+                        if (form.endingNow) {
+                            krtWireInstant(form.endDate, form.endClock)
+                        } else {
+                            form.actualEnd.blankToNull()
                         },
                     version = detail.scheduleVersion,
                 )

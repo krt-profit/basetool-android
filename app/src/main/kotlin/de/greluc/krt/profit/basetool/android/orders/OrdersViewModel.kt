@@ -74,6 +74,8 @@ sealed interface OrdersPhase {
  */
 data class OrdersState(
     val statuses: Set<JobOrderStatus> = emptySet(),
+    val squadronIds: Set<String> = emptySet(),
+    val squadrons: List<Pair<String, String>> = emptyList(),
     val orders: List<JobOrder> = emptyList(),
     val total: Long = 0,
     val phase: OrdersPhase = OrdersPhase.Loading,
@@ -168,6 +170,25 @@ class OrdersViewModel(
     }
 
     /**
+     * Narrows the queue to one or more units, or widens it again.
+     *
+     * **Not the org pin.** The pin decides what the whole app is showing; this decides what this
+     * list shows within it, which is the difference that lets a member on „Alle Org-Einheiten" look
+     * at one squadron's orders without changing everything else. The web has offered both
+     * throughout; the app had only the pin.
+     *
+     * @param squadronIds which units, or empty for all of them.
+     */
+    fun onSquadronsChanged(squadronIds: Set<String>) {
+        if (squadronIds == mutableState.value.squadronIds) {
+            return
+        }
+        loadedOnce = true
+        mutableState.value = mutableState.value.copy(squadronIds = squadronIds)
+        reload(keepRows = false)
+    }
+
+    /**
      * Narrows to a set of statuses, or widens to all of them when [statuses] is empty.
      *
      * @param statuses the statuses to show.
@@ -209,7 +230,14 @@ class OrdersViewModel(
         }
         mutableState.value = current.copy(loadingMore = true)
         viewModelScope.launch {
-            when (val result = source.queue(current.statuses, page = current.page + 1)) {
+            when (
+                val result =
+                    source.queue(
+                        current.statuses,
+                        page = current.page + 1,
+                        squadronIds = current.squadronIds,
+                    )
+            ) {
                 is ApiResult.Success -> {
                     val latest = mutableState.value
                     mutableState.value =
@@ -238,6 +266,7 @@ class OrdersViewModel(
     private fun reload(keepRows: Boolean) {
         loadJob?.cancel()
         val statuses = mutableState.value.statuses
+        val squadronIds = mutableState.value.squadronIds
         if (!keepRows) {
             mutableState.value = mutableState.value.copy(phase = OrdersPhase.Loading)
         }
@@ -247,7 +276,7 @@ class OrdersViewModel(
                 // them after the first read, and a colour that arrives one frame after the rows
                 // would repaint the list in front of the member.
                 val thresholds = source.ageThresholds()
-                when (val result = source.queue(statuses, page = 0)) {
+                when (val result = source.queue(statuses, page = 0, squadronIds = squadronIds)) {
                     is ApiResult.Success -> {
                         mutableState.value =
                             mutableState.value.copy(

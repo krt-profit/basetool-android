@@ -22,8 +22,15 @@ private const val LOG_TAG = "MissionMemberPicker"
 /** How long typing must pause before a search goes out. */
 private const val DEBOUNCE_MS = 300L
 
-/** What the picker asks the server for; the notice repeats it so the cap is never silent. */
-const val MEMBER_PICKER_CAP: Int = 25
+/**
+ * What the picker asks the server for.
+ *
+ * The notice used to repeat this number on **every** search — „3 von höchstens 25 Treffern" —
+ * which states a cap that is not biting and says nothing about whether one is. The picker now
+ * reports the server's own `totalElements` instead, so the line appears when members are actually
+ * being withheld and stays away when they are not (ADR-0104).
+ */
+const val MEMBER_PICKER_CAP: Int = 50
 
 /**
  * Which of the three member-shaped writes a pick is for.
@@ -48,13 +55,15 @@ enum class MissionMemberTarget {
  *
  * @property target what the pick is for, or `null` while the picker is closed.
  * @property query what has been typed.
- * @property options what the server last answered, capped at [MEMBER_PICKER_CAP].
+ * @property options what the server last answered, at most [MEMBER_PICKER_CAP] of them.
+ * @property moreOptions whether the roster holds members this page does not carry.
  * @property searching whether a lookup is in flight.
  */
 data class MissionMemberPickerState(
     val target: MissionMemberTarget? = null,
     val query: String = "",
     val options: List<MemberOption> = emptyList(),
+    val moreOptions: Boolean = false,
     val searching: Boolean = false,
 ) {
     /** Whether the picker is on screen. */
@@ -149,7 +158,13 @@ class MissionMemberPicker(
                         // Only if the picker is still open for the same target. A pick or a dismiss
                         // during the round trip must not repopulate a closed picker.
                         if (current.open) {
-                            write(current.copy(options = result.value, searching = false))
+                            write(
+                                current.copy(
+                                    options = result.value.rows,
+                                    moreOptions = result.value.more,
+                                    searching = false,
+                                ),
+                            )
                         }
                     }
 

@@ -60,9 +60,11 @@ class MissionAdminTest {
             meetingTime = null,
             plannedStartTime = null,
             actualStartTime = if (started) Instant.parse("2026-08-28T19:00:00Z") else null,
+            actualEndTime = null,
             plannedEndTime = null,
             isInternal = false,
             meetingPoint = "ARC-L1",
+            operationId = null,
             operationName = null,
             orgUnitName = null,
             orgUnitShorthand = null,
@@ -91,6 +93,53 @@ class MissionAdminTest {
         write = { form = it },
         onSaved = { saved = it },
     )
+
+    @Test
+    fun `a running Einsatz can be ended, and the end is echoed once it is set`() =
+        runTest(dispatcher) {
+            val subject = admin(this, detail(started = true))
+            subject.open()
+            advanceUntilIdle()
+
+            // Ending is not a status: activation stamps the START server-side and nothing stamps
+            // the end, so this field is the only thing that closes an Einsatz — and with it every
+            // participant's open end-time.
+            assertEquals(false, form?.ended)
+            subject.endMission()
+            assertEquals(true, form?.endingNow)
+            assertNotNull("the pair opens filled with now", form?.endDate?.takeIf { it.isNotBlank() })
+
+            subject.cancelEndMission()
+            assertEquals(false, form?.endingNow)
+        }
+
+    @Test
+    fun `the Kern section is where an Einsatz joins an Operation`() =
+        runTest(dispatcher) {
+            val source = RecordingSource(detail())
+            val subject =
+                MissionAdmin(
+                    missionId = "m1",
+                    source = source,
+                    scope = this,
+                    read = { MissionAdminContext(form, detail(), canManage) },
+                    write = { form = it },
+                    onSaved = { saved = it },
+                )
+            subject.open()
+            advanceUntilIdle()
+
+            // The picker fills in after the form: the tab opens on what is already known.
+            assertEquals(listOf("op1" to "Bergung Hurston"), form?.operations)
+
+            subject.change(MissionSection.CORE) { it.copy(operationId = "op1") }
+            subject.save(MissionSection.CORE)
+            advanceUntilIdle()
+
+            // The Operation's own form has no such field because the wire has none, so this is
+            // the only place it can be set - and the app used to offer it in neither.
+            assertEquals(listOf("op1"), source.cores)
+        }
 
     @Test
     fun `the sheet opens filled from the Einsatz`() =
@@ -191,6 +240,16 @@ class MissionAdminTest {
     private inner class RecordingSource(
         private val answer: MissionDetail,
     ) : MissionAdminSource {
+        /** Which Operation each Kern write carried. */
+        val cores = mutableListOf<String?>()
+
+        override suspend fun unitShipOptions(missionId: String): List<Pair<String, String>> =
+
+            listOf("s1" to "Carrack · Anvil Carrack")
+
+        override suspend fun operationOptions(): List<Pair<String, String>> =
+            listOf("op1" to "Bergung Hurston")
+
         override suspend fun patchCore(
             missionId: String,
             name: String,
@@ -198,9 +257,11 @@ class MissionAdminTest {
             meetingPoint: String?,
             calendarLink: String?,
             status: String?,
+            operationId: String?,
             version: Long,
         ): ApiResult<MissionDetail> {
             calls.add(MissionSection.CORE to version)
+            cores.add(operationId)
             return ApiResult.Success(answer)
         }
 
@@ -210,6 +271,7 @@ class MissionAdminTest {
             plannedStartTime: String?,
             plannedEndTime: String?,
             actualStartTime: String?,
+            actualEndTime: String?,
             version: Long,
         ): ApiResult<MissionDetail> {
             calls.add(MissionSection.SCHEDULE to version)

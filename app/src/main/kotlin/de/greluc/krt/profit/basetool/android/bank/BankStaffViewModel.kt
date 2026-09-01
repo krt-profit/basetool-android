@@ -119,6 +119,10 @@ data class BankRejectState(
  * @property destinationHolderId who holds it there, for a transfer.
  * @property saving whether the write is in flight.
  * @property error what it was refused with.
+ * @property feeRate the org-wide in-game transfer fee, as a fraction, or `null` while it has not
+ *   been read. Guidance only — the authoritative fee is computed server-side at booking time.
+ * @property feeInclusive whether [amount] is the **debited gross** rather than what the recipient
+ *   receives. `false` is the server's own default and means the fee is added on top.
  */
 data class DirectBookingState(
     val kind: DirectBookingKind = DirectBookingKind.DEPOSIT,
@@ -130,9 +134,48 @@ data class DirectBookingState(
     val destinationHolderId: String? = null,
     val saving: Boolean = false,
     val error: ApiError? = null,
+    val feeRate: java.math.BigDecimal? = null,
+    val feeInclusive: Boolean = false,
 ) {
     /** The amount as a figure, or `null` when what was typed is not one. */
     val figure: java.math.BigDecimal? get() = parseTypedDecimal(amount)
+
+    /**
+     * Whether the in-game transfer fee applies to what is being booked.
+     *
+     * A withdrawal always, a transfer only when it changes holder, a deposit never (ADR-0052).
+     * The fee block is shown only here — a preview that appears on every mode teaches the member
+     * to ignore it.
+     */
+    val feeApplies: Boolean
+        get() =
+            when (kind) {
+                DirectBookingKind.DEPOSIT -> false
+                DirectBookingKind.WITHDRAWAL -> true
+                DirectBookingKind.TRANSFER -> holderId != null && holderId != destinationHolderId
+            }
+
+    /** The fee this booking would carry, or `null` when none applies or nothing is typed yet. */
+    val fee: java.math.BigDecimal?
+        get() =
+            figure
+                ?.takeIf { feeApplies && it.signum() > 0 }
+                ?.let { typed -> feeRate?.let { rate -> (typed * rate).setScale(0, java.math.RoundingMode.HALF_UP) } }
+                ?.takeIf { it.signum() > 0 }
+
+    /**
+     * What actually leaves the account.
+     *
+     * The figure the member typed is **not** it in the default mode: the fee is added on top and
+     * the account is debited the gross (`REQ-BANK-033`). This is the number the overdraft guard
+     * runs against server-side, so it is the one the form has to check and to show.
+     */
+    val debited: java.math.BigDecimal?
+        get() = figure?.let { typed -> if (feeInclusive) typed else typed + (fee ?: java.math.BigDecimal.ZERO) }
+
+    /** What the recipient ends up with. */
+    val arrives: java.math.BigDecimal?
+        get() = figure?.let { typed -> if (feeInclusive) typed - (fee ?: java.math.BigDecimal.ZERO) else typed }
 
     /**
      * Whether the CTA may be pressed.
@@ -142,19 +185,40 @@ data class DirectBookingState(
      * bound itself is applied by the screen, which is where the balance is.
      */
     fun submittable(balance: java.math.BigDecimal?): Boolean {
-        val typed = figure
-        val positive = typed != null && typed > java.math.BigDecimal.ZERO
+        val positive = figure?.let { it > java.math.BigDecimal.ZERO } == true
         val addressed = accountId != null && holderId != null
         val targeted =
             kind != DirectBookingKind.TRANSFER ||
                 (destinationAccountId != null && destinationHolderId != null)
-        val covered =
-            kind != DirectBookingKind.WITHDRAWAL ||
-                balance == null ||
-                typed == null ||
-                typed <= balance
-        return positive && addressed && targeted && covered && !saving
+        return positive && addressed && targeted && covers(balance) && reachesRecipient && !saving
     }
+
+    /**
+     * Whether the account can carry what this booking takes out of it.
+     *
+     * Against what is **debited**, not against what was typed: with the fee on top the gross is
+     * the figure the server's own overdraft guard uses, so checking the typed one would let the
+     * form invite a booking the server then refuses.
+     *
+     * @param balance what the account stands at, or `null` when the screen does not know.
+     * @return whether the withdrawal fits, and `true` for every other mode.
+     */
+    private fun covers(balance: java.math.BigDecimal?): Boolean {
+        val leaving = debited
+        return kind != DirectBookingKind.WITHDRAWAL ||
+            balance == null ||
+            leaving == null ||
+            leaving <= balance
+    }
+
+    /**
+     * Whether anything would actually arrive.
+     *
+     * In fee-inclusive mode the fee comes **out** of the amount, so a figure at or below the fee
+     * would leave the recipient nothing; the server answers `BANK_FEE_EXCEEDS_AMOUNT`.
+     */
+    private val reachesRecipient: Boolean
+        get() = !feeInclusive || arrives?.let { it.signum() > 0 } != false
 
     /**
      * What the source account stands at afterwards — the artboard's live preview.
@@ -163,9 +227,11 @@ data class DirectBookingState(
      * @return the figure after this booking, or `null` when either half is missing.
      */
     fun preview(balance: java.math.BigDecimal?): java.math.BigDecimal? =
-        figure?.let { typed ->
+        // `debited`, not the typed figure: on a fee-bearing booking more leaves the account than
+        // was typed, and a preview that ignored that showed a balance the account never reaches.
+        debited?.let { leaving ->
             balance?.let { current ->
-                if (kind == DirectBookingKind.DEPOSIT) current + typed else current - typed
+                if (kind == DirectBookingKind.DEPOSIT) current + leaving else current - leaving
             }
         }
 }
@@ -252,6 +318,25 @@ class BankStaffViewModel(
         fun open(accountId: String? = null) {
             mutableState.value =
                 mutableState.value.copy(direct = DirectBookingState(accountId = accountId))
+            loadFeeRate()
+        }
+
+        /**
+         * Reads the org-wide transfer-fee rate for the preview.
+         *
+         * A failure leaves the rate `null`, which shows **no** fee block — the same degradation the
+         * web chose. Saying nothing is right here: an invented rate would be a figure the member
+         * could act on, and the server computes the binding one anyway.
+         */
+        private fun loadFeeRate() {
+            viewModelScope.launch {
+                (source.transferFeeRate() as? ApiResult.Success)?.let { result ->
+                    mutableState.value =
+                        mutableState.value.copy(
+                            direct = mutableState.value.direct?.copy(feeRate = result.value.value),
+                        )
+                }
+            }
         }
 
         /** Closes it. */
@@ -296,6 +381,7 @@ class BankStaffViewModel(
                         note = open.note,
                         destinationAccountId = open.destinationAccountId,
                         destinationHolderId = open.destinationHolderId,
+                        feeInclusive = open.feeInclusive,
                     )
                 when (val result = source.bookDirectly(booking)) {
                     is ApiResult.Success -> {

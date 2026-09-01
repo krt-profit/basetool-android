@@ -7,6 +7,7 @@
 
 package de.greluc.krt.profit.basetool.android.bank
 
+import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.data.BankAccountStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
@@ -21,6 +22,7 @@ import de.greluc.krt.profit.basetool.android.core.data.BankRequestStatus
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffDashboard
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffSource
 import de.greluc.krt.profit.basetool.android.core.data.DirectBooking
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.Dispatchers
@@ -115,6 +117,9 @@ class BankLifecycleViewModelTest {
     private class HolderOnlyStaff(
         var holders: ApiResult<List<BankHolder>> = ApiResult.Success(emptyList()),
     ) : BankStaffSource {
+        override suspend fun transferFeeRate(): ApiResult<KrtDecimal> =
+            ApiResult.Success(KrtDecimal(java.math.BigDecimal("0.05")))
+
         override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> =
             ApiResult.Failure(ApiError.Forbidden())
 
@@ -150,7 +155,7 @@ class BankLifecycleViewModelTest {
     private class RecordingGrants : BankGrantSource {
         var matrix: ApiResult<List<BankGrant>> = ApiResult.Success(emptyList())
         var answer: ApiResult<BankGrant>? = null
-        val candidates = mutableMapOf<String, ApiResult<List<BankGrantee>>>()
+        val candidates = mutableMapOf<String, ApiResult<PickerPage<BankGrantee>>>()
         val searched = mutableListOf<String>()
         val written = mutableListOf<BankGrant>()
         val revoked = mutableListOf<Pair<String, String>>()
@@ -170,9 +175,9 @@ class BankLifecycleViewModelTest {
             return ApiResult.Success(Unit)
         }
 
-        override suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>> {
+        override suspend fun searchGrantees(query: String): ApiResult<PickerPage<BankGrantee>> {
             searched.add(query)
-            return candidates[query] ?: ApiResult.Success(emptyList())
+            return candidates[query] ?: ApiResult.Success(PickerPage())
         }
     }
 
@@ -468,7 +473,7 @@ class BankLifecycleViewModelTest {
     fun `opening the sheet offers candidates before anything is typed`() =
         runTest(dispatcher) {
             val grants = RecordingGrants()
-            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            grants.candidates[""] = ApiResult.Success(PickerPage(listOf(BankGrantee("u2", "Dorn"))))
             val viewModel = model(RecordingLifecycle(), grants = grants)
             viewModel.onAddGrant()
             advanceUntilIdle()
@@ -482,8 +487,8 @@ class BankLifecycleViewModelTest {
     fun `a search answer that arrives after the query moved on is dropped`() =
         runTest(dispatcher) {
             val grants = RecordingGrants()
-            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
-            grants.candidates["rh"] = ApiResult.Success(listOf(BankGrantee("u1", "Rhea")))
+            grants.candidates[""] = ApiResult.Success(PickerPage(listOf(BankGrantee("u2", "Dorn"))))
+            grants.candidates["rh"] = ApiResult.Success(PickerPage(listOf(BankGrantee("u1", "Rhea"))))
             val viewModel = model(RecordingLifecycle(), grants = grants)
             viewModel.onAddGrant()
             viewModel.onGranteeQuery("rh")
@@ -500,7 +505,7 @@ class BankLifecycleViewModelTest {
     fun `a creation is sent as a creation, on the account that is showing`() =
         runTest(dispatcher) {
             val grants = RecordingGrants()
-            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            grants.candidates[""] = ApiResult.Success(PickerPage(listOf(BankGrantee("u2", "Dorn"))))
             val viewModel = model(RecordingLifecycle(), grants = grants)
             viewModel.onSelectGrantAccount("a1")
             viewModel.onAddGrant()
@@ -540,7 +545,7 @@ class BankLifecycleViewModelTest {
     fun `a refused creation keeps the sheet open and says why`() =
         runTest(dispatcher) {
             val grants = RecordingGrants()
-            grants.candidates[""] = ApiResult.Success(listOf(BankGrantee("u2", "Dorn")))
+            grants.candidates[""] = ApiResult.Success(PickerPage(listOf(BankGrantee("u2", "Dorn"))))
             grants.answer = ApiResult.Failure(ApiError.Server(status = 409))
             val viewModel = model(RecordingLifecycle(), grants = grants)
             viewModel.onSelectGrantAccount("a1")

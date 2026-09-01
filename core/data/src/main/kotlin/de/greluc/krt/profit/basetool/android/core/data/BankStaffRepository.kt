@@ -23,6 +23,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderBooki
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankHolderTransferRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankTransactionDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankTransferFeeRateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankTransferRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankWithdrawalRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.CancelBankBookingRequest
@@ -182,44 +183,15 @@ class BankStaffRepository(
         val note = booking.note?.takeIf { it.isNotBlank() }
         return when (booking.kind) {
             DirectBookingKind.DEPOSIT -> {
-                reader.postAccepted(
-                    DEPOSITS_PATH,
-                    BankDepositRequest(
-                        accountId = booking.accountId,
-                        amount = amount,
-                        holderId = booking.holderId,
-                        note = note,
-                    ),
-                    BankDepositRequest.serializer(),
-                )
+                reader.krtDeposit(booking, amount, note)
             }
 
             DirectBookingKind.WITHDRAWAL -> {
-                reader.postAccepted(
-                    WITHDRAWALS_PATH,
-                    BankWithdrawalRequest(
-                        accountId = booking.accountId,
-                        amount = amount,
-                        holderId = booking.holderId,
-                        note = note,
-                    ),
-                    BankWithdrawalRequest.serializer(),
-                )
+                reader.krtWithdraw(booking, amount, note)
             }
 
             DirectBookingKind.TRANSFER -> {
-                reader.postAccepted(
-                    TRANSFERS_PATH,
-                    BankTransferRequest(
-                        sourceAccountId = booking.accountId,
-                        sourceHolderId = booking.holderId,
-                        destinationAccountId = target.orEmpty(),
-                        destinationHolderId = targetHolder.orEmpty(),
-                        amount = amount,
-                        note = note,
-                    ),
-                    BankTransferRequest.serializer(),
-                )
+                reader.krtTransfer(booking, amount, note, target, targetHolder)
             }
         }
     }
@@ -532,7 +504,13 @@ class BankStaffRepository(
             is ApiResult.Success -> ApiResult.Success(Unit)
         }
 
-    override suspend fun searchGrantees(query: String): ApiResult<List<BankGrantee>> =
+    override suspend fun transferFeeRate(): ApiResult<KrtDecimal> =
+        when (val result = reader.get(FEE_RATE_PATH, emptyList(), BankTransferFeeRateDto.serializer())) {
+            is ApiResult.Failure -> result
+            is ApiResult.Success -> ApiResult.Success(result.value.rate ?: KrtDecimal(java.math.BigDecimal.ZERO))
+        }
+
+    override suspend fun searchGrantees(query: String): ApiResult<PickerPage<BankGrantee>> =
         when (
             val result =
                 reader.get(
@@ -550,7 +528,12 @@ class BankStaffRepository(
             }
 
             is ApiResult.Success -> {
-                ApiResult.Success(result.value.content.orEmpty().mapNotNull { it.toGrantee() })
+                ApiResult.Success(
+                    krtPickerPage(
+                        result.value.content.orEmpty().mapNotNull { it.toGrantee() },
+                        result.value.totalElements,
+                    ),
+                )
             }
         }
 
@@ -585,13 +568,13 @@ class BankStaffRepository(
         const val STAFF_REQUESTS_PATH = "/api/v1/bank/requests"
 
         /** The Verwaltung's three direct bookings (design ch. 12 artboard 9). */
-        private const val DEPOSITS_PATH = "/api/v1/bank/deposits"
+        internal const val DEPOSITS_PATH = "/api/v1/bank/deposits"
 
         /** Its counterpart. */
-        private const val WITHDRAWALS_PATH = "/api/v1/bank/withdrawals"
+        internal const val WITHDRAWALS_PATH = "/api/v1/bank/withdrawals"
 
         /** And the move between two of the unit's accounts. */
-        private const val TRANSFERS_PATH = "/api/v1/bank/transfers"
+        internal const val TRANSFERS_PATH = "/api/v1/bank/transfers"
 
         /** The per-account grants matrix. */
         const val STAFF_GRANTS_PATH = "/api/v1/bank/grants"
@@ -604,11 +587,19 @@ class BankStaffRepository(
          */
         const val GRANTEE_SEARCH_PATH = "/api/v1/users/search-bank"
 
+        /**
+         * The org-wide in-game transfer-fee rate.
+         *
+         * Read for the booking form's preview only — the authoritative fee is computed
+         * server-side at booking time (REQ-BANK-033).
+         */
+        const val FEE_RATE_PATH = "/api/v1/bank/transfer-fee-rate"
+
         /** What was typed into the grantee picker. */
         const val QUERY_PARAM = "query"
 
         /** How many candidates one search offers. */
-        private const val GRANTEE_PAGE_SIZE = 25
+        private const val GRANTEE_PAGE_SIZE = 50
 
         /** The stem a Storno addresses; the transaction's id and `/reversal` complete it. */
         const val REVERSAL_PATH = "/api/v1/bank/transactions"
@@ -829,3 +820,104 @@ private fun BankGrantDto.toModel(): BankGrant? {
         )
     }
 }
+
+/*
+ * The three senders live outside the class: they are one paragraph each, they share
+ * nothing but the reader, and inside they pushed it past the function cap for no gain in
+ * cohesion.
+ */
+
+/**
+ * Books money in.
+ *
+ * Fee-free by definition, so it carries no `feeInclusive`: a flag that decides nothing invites
+ * the next reader to think it did.
+ *
+ * @param booking the form.
+ * @param amount the parsed figure.
+ * @param note the Verwendungszweck, or `null`.
+ * @return what the server answered.
+ */
+private suspend fun ApiReader.krtDeposit(
+    booking: DirectBooking,
+    amount: KrtDecimal,
+    note: String?,
+): ApiResult<Unit> =
+    postAccepted(
+        BankStaffRepository.DEPOSITS_PATH,
+        BankDepositRequest(
+            accountId = booking.accountId,
+            amount = amount,
+            holderId = booking.holderId,
+            note = note,
+            // A deposit takes no justification -- the server's schema has none. The
+            // counterparty is who handed the money over.
+            counterpartyUserId = booking.counterpartyUserId,
+            counterpartyOrgUnitId = booking.counterpartyOrgUnitId,
+            counterpartyExternalName =
+                booking.counterpartyExternalName?.takeIf { it.isNotBlank() },
+        ),
+        BankDepositRequest.serializer(),
+    )
+
+/**
+ * Books money out.
+ *
+ * @param booking the form.
+ * @param amount the parsed figure.
+ * @param note the Verwendungszweck, or `null`.
+ * @return what the server answered.
+ */
+private suspend fun ApiReader.krtWithdraw(
+    booking: DirectBooking,
+    amount: KrtDecimal,
+    note: String?,
+): ApiResult<Unit> =
+    postAccepted(
+        BankStaffRepository.WITHDRAWALS_PATH,
+        BankWithdrawalRequest(
+            accountId = booking.accountId,
+            amount = amount,
+            holderId = booking.holderId,
+            note = note,
+            justification = booking.justification?.takeIf { it.isNotBlank() },
+            counterpartyUserId = booking.counterpartyUserId,
+            counterpartyOrgUnitId = booking.counterpartyOrgUnitId,
+            counterpartyExternalName =
+                booking.counterpartyExternalName?.takeIf { it.isNotBlank() },
+            feeInclusive = booking.feeInclusive.takeIf { booking.feeApplies },
+        ),
+        BankWithdrawalRequest.serializer(),
+    )
+
+/**
+ * Moves money between two accounts of the unit.
+ *
+ * @param booking the form.
+ * @param amount the parsed figure.
+ * @param note the Verwendungszweck, or `null`.
+ * @param target the receiving account, already checked for presence.
+ * @param targetHolder who holds it there, likewise.
+ * @return what the server answered.
+ */
+private suspend fun ApiReader.krtTransfer(
+    booking: DirectBooking,
+    amount: KrtDecimal,
+    note: String?,
+    target: String?,
+    targetHolder: String?,
+): ApiResult<Unit> =
+    postAccepted(
+        BankStaffRepository.TRANSFERS_PATH,
+        BankTransferRequest(
+            sourceAccountId = booking.accountId,
+            sourceHolderId = booking.holderId,
+            destinationAccountId = target.orEmpty(),
+            destinationHolderId = targetHolder.orEmpty(),
+            amount = amount,
+            note = note,
+            justification = booking.justification?.takeIf { it.isNotBlank() },
+            feeInclusive = booking.feeInclusive.takeIf { booking.feeApplies },
+        ),
+        BankTransferRequest.serializer(),
+    )

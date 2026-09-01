@@ -74,6 +74,14 @@ data class OperationRollup(
  * @property payout what is actually transferred: reimbursement plus share minus the in-game
  *   transfer fee, already rounded by the server to whole aUEC
  * @property paidOut whether a manager has marked this participant as paid
+ * @property participationPercentage the share of the Operation this participant's attendance
+ *   earned, as a percentage; what makes [share] a figure a member can check rather than accept
+ * @property personalExpenses the participant's own outlay, reimbursed **inside** [payout] — the
+ *   part of the transfer that is their money coming back rather than profit
+ * @property transferFee the in-game fee already deducted from [payout], so the difference between
+ *   what was earned and what arrives is stated rather than left as an unexplained gap
+ * @property paidOutAt when a manager marked this paid, ISO-8601 UTC; `null` while it is open
+ * @property paidOutByName who marked it paid. A member name: shown, never logged.
  */
 data class OperationPayout(
     val participantId: String?,
@@ -83,6 +91,11 @@ data class OperationPayout(
     val donated: String?,
     val payout: String?,
     val paidOut: Boolean,
+    val participationPercentage: Double? = null,
+    val personalExpenses: String? = null,
+    val transferFee: String? = null,
+    val paidOutAt: String? = null,
+    val paidOutByName: String? = null,
 ) {
     /**
      * What attendance earned this participant, before they decided where it goes.

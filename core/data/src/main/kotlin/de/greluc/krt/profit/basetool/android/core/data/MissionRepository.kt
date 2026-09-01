@@ -24,6 +24,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFrequenc
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionListDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionParticipantDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionUnitDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.OperationReferenceDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseJobTypeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionFinanceEntryDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.PageResponseMissionListDto
@@ -31,6 +32,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionCor
 import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionFlagsRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.PatchMissionScheduleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.SetPartyLeadRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.ShipDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateCrewRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdateParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.UpdatePayoutPreferenceRequest
@@ -155,6 +157,32 @@ interface MissionFinanceSource {
  */
 interface MissionAdminSource {
     /**
+     * The Operations the Kern section may attach this Einsatz to.
+     *
+     * Read here rather than from the Operation side because that is where the write lives: an
+     * Einsatz joins an Operation through `PATCH /missions/{id}/core`, and the Operation's own
+     * form has no such field.
+     *
+     * @return what the picker may offer, id to name; empty on a failure, which shows as „nothing
+     *   to attach to" rather than as a banner over a form about something else.
+     */
+    suspend fun operationOptions(): List<Pair<String, String>>
+
+    /**
+     * The ships one of this Einsatz's units may be crewed with.
+     *
+     * Every ship a **registered participant** owns, plus every ship already pinned to one of the
+     * mission's units. Deliberately not org-unit-scoped: a participant brings their own ship
+     * whichever unit they belong to, so a cross-unit participant's ship is selectable here and
+     * nowhere else.
+     *
+     * @param missionId the Einsatz.
+     * @return the ships, id to a readable label; empty on a failure, which reads as „no ship to
+     *   pick" rather than as a banner over a form about something else.
+     */
+    suspend fun unitShipOptions(missionId: String): List<Pair<String, String>>
+
+    /**
      * Rewrites the Kern section: title, briefing, meeting point, calendar link, status.
      *
      * > **This replaces the whole section, it does not merge into it.** The server assigns every
@@ -173,6 +201,12 @@ interface MissionAdminSource {
      * @param meetingPoint the gathering place, or `null` to clear it.
      * @param calendarLink the external calendar entry, or `null` to clear it.
      * @param status the new lifecycle status, or `null` to leave it untouched.
+     * @param operationId which Operation the Einsatz belongs to, or `null` for none.
+     *
+     *   **This is the only way an Einsatz joins an Operation.** The Operation's own form carries no
+     *   such field — the wire has none — so the assignment lives here, on the mission's Kern
+     *   section, and needs that section's counter like everything else on it. The app used to send
+     *   neither, which left its own Operation form pointing at a control that did not exist.
      * @param version the **Kern** section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure — `409` when the counter is
      *   stale, which is a concurrent edit of *this* section and nothing else.
@@ -184,6 +218,7 @@ interface MissionAdminSource {
         meetingPoint: String?,
         calendarLink: String?,
         status: String?,
+        operationId: String?,
         version: Long,
     ): ApiResult<MissionDetail>
 
@@ -198,6 +233,12 @@ interface MissionAdminSource {
      * @param plannedStartTime the scheduled server join, or `null`.
      * @param plannedEndTime the scheduled end, or `null`.
      * @param actualStartTime when it actually began, or `null`.
+     * @param actualEndTime when it actually ended, or `null`.
+     *
+     *   **This is the only way an Einsatz ends.** No status stamps it — activation auto-stamps the
+     *   *start* and nothing does the same for the end — and setting it also closes every
+     *   participant's open end-time, which is what the payout figures rest on. The app sent it
+     *   never, so an Einsatz begun on a phone stayed open for everyone on it.
      * @param version the **Zeitplan** section's counter as last read.
      * @return the Einsatz as it now stands, or the classified failure.
      */
@@ -207,6 +248,7 @@ interface MissionAdminSource {
         plannedStartTime: String?,
         plannedEndTime: String?,
         actualStartTime: String?,
+        actualEndTime: String?,
         version: Long,
     ): ApiResult<MissionDetail>
 
@@ -346,12 +388,14 @@ interface MissionStructureSource {
      * @param missionId the Einsatz.
      * @param name what to call it.
      * @param highValue whether it is flagged HVU.
+     * @param fields what it carries beyond those two.
      * @return the Einsatz as it now stands, or the classified failure.
      */
     suspend fun addUnit(
         missionId: String,
         name: String,
         highValue: Boolean,
+        fields: MissionUnitFields = MissionUnitFields(),
     ): ApiResult<MissionDetail>
 
     /**
@@ -369,6 +413,7 @@ interface MissionStructureSource {
         name: String,
         highValue: Boolean,
         version: Long,
+        fields: MissionUnitFields = MissionUnitFields(),
     ): ApiResult<MissionDetail>
 
     /**
@@ -649,7 +694,7 @@ class MissionRepository(
                 query.until?.let { add(END_PARAM to it.toString()) }
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
-                add(SORT_PARAM to DEFAULT_SORT)
+                add(SORT_PARAM to if (query.includePast) PAST_SORT else DEFAULT_SORT)
             }
 
         return when (val result = reader.get(SEARCH_PATH, params, PageResponseMissionListDto.serializer())) {
@@ -777,6 +822,57 @@ class MissionRepository(
             ),
         )
 
+    override suspend fun operationOptions(): List<Pair<String, String>> =
+        when (
+            val result =
+                reader.get(
+                    OPERATIONS_LOOKUP_PATH,
+                    emptyList(),
+                    ListSerializer(OperationReferenceDto.serializer()),
+                )
+        ) {
+            // Empty rather than a failure: the picker is one field on a form about something else,
+            // and a banner over the Kern section would be about the wrong thing.
+            is ApiResult.Failure -> {
+                emptyList()
+            }
+
+            is ApiResult.Success -> {
+                result.value.mapNotNull { row ->
+                    row.id?.let { id -> id to (row.name?.takeIf { it.isNotBlank() } ?: id) }
+                }
+            }
+        }
+
+    override suspend fun unitShipOptions(missionId: String): List<Pair<String, String>> =
+        when (
+            val result =
+                reader.get(
+                    "${missionPath(missionId)}/unit-ship-options",
+                    emptyList(),
+                    ListSerializer(ShipDto.serializer()),
+                )
+        ) {
+            is ApiResult.Failure -> {
+                emptyList()
+            }
+
+            is ApiResult.Success -> {
+                result.value.mapNotNull { ship ->
+                    ship.id?.let { id ->
+                        // The type beside the name, because a participant may bring two of a kind
+                        // and „Carrack" twice is not a choice.
+                        val label =
+                            listOfNotNull(
+                                ship.name?.takeIf { it.isNotBlank() },
+                                ship.shipType?.name?.takeIf { it.isNotBlank() },
+                            ).joinToString(" · ").ifBlank { id }
+                        id to label
+                    }
+                }
+            }
+        }
+
     override suspend fun patchCore(
         missionId: String,
         name: String,
@@ -784,6 +880,7 @@ class MissionRepository(
         meetingPoint: String?,
         calendarLink: String?,
         status: String?,
+        operationId: String?,
         version: Long,
     ): ApiResult<MissionDetail> =
         oneMission(
@@ -798,6 +895,7 @@ class MissionRepository(
                     meetingPoint = meetingPoint,
                     calendarLink = calendarLink,
                     status = status,
+                    operationId = operationId,
                 ),
                 PatchMissionCoreRequest.serializer(),
                 MissionDto.serializer(),
@@ -810,6 +908,7 @@ class MissionRepository(
         plannedStartTime: String?,
         plannedEndTime: String?,
         actualStartTime: String?,
+        actualEndTime: String?,
         version: Long,
     ): ApiResult<MissionDetail> =
         oneMission(
@@ -823,6 +922,7 @@ class MissionRepository(
                     plannedStartTime = plannedStartTime,
                     plannedEndTime = plannedEndTime,
                     actualStartTime = actualStartTime,
+                    actualEndTime = actualEndTime,
                 ),
                 PatchMissionScheduleRequest.serializer(),
                 MissionDto.serializer(),
@@ -1067,12 +1167,23 @@ class MissionRepository(
         const val DEFAULT_PAGE_SIZE: Int = 25
 
         /**
-         * The server's sort, named explicitly rather than left to the default.
+         * The server's sort for the default, forward-looking list.
          *
          * `plannedStartTime` is on the backend's sort whitelist; a field that is not would be
-         * answered with a 400, so this is not a free-form string.
+         * answered with a 400, so this is not a free-form string. Ascending is right while the list
+         * shows what is coming: the next mission belongs at the top.
          */
         const val DEFAULT_SORT: String = "plannedStartTime,asc"
+
+        /**
+         * The sort once past missions are included.
+         *
+         * The screen is a flat list with no grouping, so the ascending order that serves the
+         * upcoming view puts the oldest mission the org ever ran at the top the moment „Vergangene"
+         * is switched on — burying everything recent pages deep. Looking backwards means most
+         * recent first, which is also what the web app's mission index uses.
+         */
+        const val PAST_SORT: String = "plannedStartTime,desc"
 
         /** Log subsystem. Search terms are member input and never reach the log. */
         private const val LOG_TAG = "missions"
@@ -1090,6 +1201,9 @@ class MissionRepository(
         private const val PATCH = "PATCH"
 
         private const val SEARCH_PATH = "/api/v1/missions/search"
+
+        /** The Operations the Kern section may attach an Einsatz to. */
+        private const val OPERATIONS_LOOKUP_PATH = "/api/v1/operations/lookup"
 
         /**
          * The Funktionen a **participant** can be asked for or assigned — read when the sign-up
@@ -1301,10 +1415,12 @@ private fun MissionDto.toModel(requestedId: String): MissionDetail {
         meetingTime = meetingTime?.toInstantOrNull(),
         plannedStartTime = plannedStartTime?.toInstantOrNull(),
         actualStartTime = actualStartTime?.toInstantOrNull(),
+        actualEndTime = actualEndTime?.toInstantOrNull(),
         plannedEndTime = plannedEndTime?.toInstantOrNull(),
         isInternal = isInternal ?: false,
         meetingPoint = meetingPoint?.takeIf { it.isNotBlank() },
         calendarLink = calendarLink?.takeIf { it.isNotBlank() },
+        operationId = operation?.id,
         operationName = operation?.name,
         orgUnitName = owningSquadron?.name,
         orgUnitShorthand = owningSquadron?.shorthand,
@@ -1428,12 +1544,21 @@ class MissionStructureRepository(
         missionId: String,
         name: String,
         highValue: Boolean,
+        fields: MissionUnitFields,
     ): ApiResult<MissionDetail> =
         oneMission(
             missionId,
             reader.post(
                 "${missionPath(missionId)}/units",
-                AddUnitRequest(name = name, highValueUnit = highValue),
+                AddUnitRequest(
+                    name = name,
+                    highValueUnit = highValue,
+                    shipTypeId = fields.shipTypeId,
+                    shipId = fields.shipId,
+                    frequency = fields.frequency,
+                    responsibleUserId = fields.responsibleUserId,
+                    note = fields.note,
+                ),
                 AddUnitRequest.serializer(),
                 MissionDto.serializer(),
             ),
@@ -1445,6 +1570,7 @@ class MissionStructureRepository(
         name: String,
         highValue: Boolean,
         version: Long,
+        fields: MissionUnitFields,
     ): ApiResult<MissionDetail> =
         oneMission(
             missionId,
@@ -1453,7 +1579,16 @@ class MissionStructureRepository(
                 // The version is echoed, not omitted. `UpdateUnitRequest` makes it nullable and the
                 // server treats an absent one as "do not check" — which turns a concurrent rename
                 // into a silent overwrite instead of the 409 the counter exists to raise.
-                UpdateUnitRequest(name = name, highValueUnit = highValue, version = version),
+                UpdateUnitRequest(
+                    name = name,
+                    highValueUnit = highValue,
+                    version = version,
+                    shipTypeId = fields.shipTypeId,
+                    shipId = fields.shipId,
+                    frequency = fields.frequency,
+                    responsibleUserId = fields.responsibleUserId,
+                    note = fields.note,
+                ),
                 UpdateUnitRequest.serializer(),
                 MissionDto.serializer(),
             ),
@@ -1602,6 +1737,14 @@ private fun MissionUnitDto.toModel(): MissionUnit? {
         name = name.orEmpty(),
         shipName = ship?.name ?: shipType?.name,
         highValue = highValueUnit ?: false,
+        fields =
+            MissionUnitFields(
+                shipTypeId = shipType?.id,
+                shipId = ship?.id,
+                frequency = frequency,
+                responsibleUserId = responsibleUser?.id,
+                note = note,
+            ),
         responsibleName = responsibleUser?.effectiveName ?: responsibleUser?.displayName,
         crew =
             crew.orEmpty().mapNotNull { member ->

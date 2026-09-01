@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.JobOrderItemHan
 import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.ClaimBucket
 import de.greluc.krt.profit.basetool.android.core.data.ClaimQuality
+import de.greluc.krt.profit.basetool.android.core.data.GameItemOption
 import de.greluc.krt.profit.basetool.android.core.data.HandoverStockRow
 import de.greluc.krt.profit.basetool.android.core.data.Identity
 import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
@@ -29,6 +30,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MemberOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitOption
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
+import de.greluc.krt.profit.basetool.android.core.data.PickerPage
 import de.greluc.krt.profit.basetool.android.core.data.ProductionBooking
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -82,9 +84,17 @@ private object NoOrgUnits : OrgUnitSource {
 
 /** Where produced stock could land — never asked here. */
 private object NoBookInOptions : BookInOptions {
-    override suspend fun locations(query: String): ApiResult<List<LocationOption>> = ApiResult.Success(emptyList())
+    override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
 
-    override suspend fun members(query: String): ApiResult<List<MemberOption>> = ApiResult.Success(emptyList())
+    override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
+        ApiResult.Success(PickerPage())
+
+    override suspend fun locations(
+        query: String,
+    ): ApiResult<PickerPage<LocationOption>> = ApiResult.Success(PickerPage())
+
+    override suspend fun members(query: String): ApiResult<PickerPage<MemberOption>> =
+        ApiResult.Success(PickerPage())
 
     override suspend fun orgUnitsFor(userId: String): ApiResult<List<OrgUnitOption>> = ApiResult.Success(emptyList())
 }
@@ -185,6 +195,7 @@ class OrderDetailViewModelTest {
             statuses: Set<JobOrderStatus>,
             page: Int,
             pageSize: Int,
+            squadronIds: Set<String>,
         ): ApiResult<JobOrderPage> = error("the detail never reads the queue")
 
         /** The queue's age thresholds; the defaults, since no test tunes them. */

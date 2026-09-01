@@ -12,6 +12,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionAdminSource
 import de.greluc.krt.profit.basetool.android.core.data.MissionDetail
 import de.greluc.krt.profit.basetool.android.core.data.MissionManager
 import de.greluc.krt.profit.basetool.android.core.data.MissionStructureSource
+import de.greluc.krt.profit.basetool.android.core.data.MissionUnitFields
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,7 @@ private const val LOG_TAG = "MissionStructure"
  * @property unitName the new Einheit's name, as typed — or the edited one's, while
  *   [editingUnitId] names a unit.
  * @property unitHighValue whether it is to be flagged HVU.
+ * @property unitFields what a new Einheit carries beyond its name and its mark.
  * @property composingUnit whether the „Einheit hinzufügen" sheet is open. Design ch. 18 §3 (E7)
  *   keeps composing out of the list itself, and artboard 06-14 replaced the permanent form above
  *   the Einheiten with a dashed „+ Einheit" at their foot.
@@ -53,6 +55,7 @@ private const val LOG_TAG = "MissionStructure"
 data class MissionStructureDraft(
     val unitName: String = "",
     val unitHighValue: Boolean = false,
+    val unitFields: MissionUnitFields = MissionUnitFields(),
     val composingUnit: Boolean = false,
     val editingUnitId: String? = null,
     val editingUnitVersion: Long = 0L,
@@ -113,33 +116,40 @@ class MissionStructure(
         if (name.isEmpty()) {
             return
         }
-        run(draft) { structure.addUnit(missionId, name, draft.unitHighValue) }
+        run(draft) { structure.addUnit(missionId, name, draft.unitHighValue, draft.unitFields) }
     }
 
     /**
-     * Renames an Einheit, or flips its HVU mark.
+     * Renames an Einheit, flips its HVU mark, or sets what it carries.
      *
-     * Both in one write because the endpoint is a **replace**: `UpdateUnitRequest` carries the
-     * name and the flag together, so sending one without the other would clear whichever was
-     * omitted.
+     * **The endpoint is a replace, and it replaces everything.** `UpdateUnitRequest` carries the
+     * ship type, the ship, the frequency, the responsible member and the note beside the name and
+     * the flag, and the server writes each of them unconditionally — an omitted one is set to
+     * `null`. So the app's rename, which sent name and flag alone, **wiped all five** every time
+     * somebody corrected a typo, and every one of them had been set from the web.
+     *
+     * Whatever the form does not edit is therefore echoed from [fields], the same way the mission's
+     * Kern section echoes its calendar link.
      *
      * @param unitId which one.
      * @param name what it is now called.
      * @param highValue whether it is flagged HVU.
      * @param version the unit's own optimistic lock, as last read.
+     * @param fields what it carries; pass the unit's own to leave them alone.
      */
     fun updateUnit(
         unitId: String,
         name: String,
         highValue: Boolean,
         version: Long,
+        fields: MissionUnitFields,
     ) {
         val (draft, _) = read()
         val trimmed = name.trim()
         if (trimmed.isEmpty()) {
             return
         }
-        run(draft) { structure.updateUnit(missionId, unitId, trimmed, highValue, version) }
+        run(draft) { structure.updateUnit(missionId, unitId, trimmed, highValue, version, fields) }
     }
 
     /**
