@@ -608,6 +608,7 @@ interface JobOrderSource {
         statuses: Set<JobOrderStatus> = emptySet(),
         page: Int = 0,
         pageSize: Int = JobOrderRepository.DEFAULT_PAGE_SIZE,
+        squadronIds: Set<String> = emptySet(),
     ): ApiResult<JobOrderPage>
 
     /**
@@ -749,17 +750,22 @@ class JobOrderRepository(
      * @param statuses which statuses to include.
      * @param page the zero-based page index.
      * @param pageSize how many rows to ask for.
+     * @param squadronIds narrow to these units; empty means every unit the pin admits.
      * @return the page, or the classified failure.
      */
     override suspend fun queue(
         statuses: Set<JobOrderStatus>,
         page: Int,
         pageSize: Int,
+        squadronIds: Set<String>,
     ): ApiResult<JobOrderPage> {
         val params =
             buildList {
                 statuses.filter { it != JobOrderStatus.UNKNOWN }
                     .forEach { add(STATUS_PARAM to it.name) }
+                // Repeated, like the statuses: the endpoint takes a multi-select, which is how the
+                // web's queue narrows to one or more units while the org pin stays on „alle".
+                squadronIds.forEach { add(SQUADRON_PARAM to it) }
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
             }
@@ -1156,6 +1162,15 @@ class JobOrderRepository(
         /** Where an item order is raised. */
         private const val ITEMS_PATH = "/api/v1/orders/items"
         private const val STATUS_PARAM = "status"
+
+        /**
+         * Narrows the queue to one or more units.
+         *
+         * Not the same thing as the org pin: the pin decides what the whole app is showing, this
+         * decides what **this list** shows within it. The web offers both, the app only the pin,
+         * so a member on „Alle Org-Einheiten" could not look at one squadron's orders alone.
+         */
+        private const val SQUADRON_PARAM = "squadronId"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
         private const val VERSION_PARAM = "version"

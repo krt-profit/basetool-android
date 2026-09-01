@@ -152,6 +152,8 @@ class InventoryViewModelTest {
         override suspend fun materials(query: String): ApiResult<PickerPage<MaterialOption>> =
             ApiResult.Success(PickerPage(materialAnswer))
 
+        override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
+
         override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
             ApiResult.Success(PickerPage())
 

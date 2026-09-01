@@ -236,6 +236,7 @@ class OrderCollectionTest {
             statuses: Set<JobOrderStatus>,
             page: Int,
             pageSize: Int,
+            squadronIds: Set<String>,
         ): ApiResult<JobOrderPage> = error("the collection reads one order")
 
         override suspend fun detail(id: String): ApiResult<JobOrder> = ApiResult.Success(order())

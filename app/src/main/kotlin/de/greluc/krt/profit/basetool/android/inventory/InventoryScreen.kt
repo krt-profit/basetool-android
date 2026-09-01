@@ -333,6 +333,7 @@ private fun InventoryTree(
                     unit = group.unit,
                     online = online,
                     selection = selection,
+                    released = state.released,
                     denials = denials,
                     onBookOut = onBookOut,
                     onAllocate = onAllocate,
@@ -589,6 +590,7 @@ private data class EntryRowContext(
     val unit: String?,
     val online: Boolean,
     val selection: Set<String>,
+    val released: Set<String>,
     val denials: DenialState,
     val onBookOut: (InventoryEntry) -> Unit,
     val onAllocate: (InventoryEntry) -> Unit,
@@ -645,6 +647,7 @@ private fun LazyListScope.entryRows(
                             selected = entry.id in rows.selection,
                             selecting = rows.selection.isNotEmpty(),
                             onToggleSelected = { rows.onToggleSelected(entry.id) },
+                            released = entry.id in rows.released,
                             denials = rows.denials,
                         )
                     }
@@ -662,17 +665,20 @@ private fun LazyListScope.entryRows(
  * @param online whether a booking can be sent at all.
  * @param onBookOut opens the booking form on it.
  * @param selected whether this row is in the selection.
+ * @param released whether it is already offered on the Materialbörse.
  * @param selecting whether the list is in selection mode at all.
  * @param onToggleSelected the row was long-pressed, or tapped while selecting.
  * @param denials where a tapped lock raises its refusal.
  */
 @Composable
+@Suppress("LongParameterList")
 private fun EntryRow(
     entry: InventoryEntry,
     unit: String?,
     online: Boolean,
     selected: Boolean,
     selecting: Boolean,
+    released: Boolean,
     onBookOut: () -> Unit,
     onAllocate: () -> Unit,
     onToggleSelected: () -> Unit,
@@ -736,6 +742,15 @@ private fun EntryRow(
                     color = KrtPalette.TextMuted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (released) {
+                // The web's tree marks every released row; the app marked none, so a member could
+                // offer the same stack twice or hunt for an offer they had already made.
+                Text(
+                    text = stringResource(R.string.inventory_entry_on_board),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }

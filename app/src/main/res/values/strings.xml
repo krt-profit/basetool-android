@@ -1110,6 +1110,7 @@
     <string name="booking_open">Buchen</string>
     <string name="inventory_entries_title">Einträge</string>
     <string name="inventory_entry_note">Notiz</string>
+    <string name="inventory_entry_on_board">Auf der Börse</string>
     <string name="inventory_entries_none">Keine Einträge.</string>
     <string name="order_detail_assign_me">Übernehmen</string>
     <string name="order_detail_unassign_me">Abmelden</string>
@@ -1386,6 +1387,12 @@
     <string name="mission_struct_add_unit_short">Einheit</string>
     <string name="mission_struct_unit_name">Name der Einheit</string>
     <string name="mission_struct_hvu">Hochwertiges Ziel (HVU)</string>
+    <string name="mission_struct_unit_ship">Schiff</string>
+    <string name="mission_struct_unit_ship_none">Keins</string>
+    <string name="mission_struct_unit_responsible">Verantwortlich</string>
+    <string name="mission_struct_unit_responsible_none">Niemand</string>
+    <string name="mission_struct_unit_frequency">Frequenz</string>
+    <string name="mission_struct_unit_note">Notiz</string>
     <string name="mission_struct_remove_unit">Einheit entfernen</string>
     <string name="mission_struct_add_crew">Person zuweisen</string>
     <string name="mission_struct_remove_crew">Von Bord nehmen</string>
@@ -1508,6 +1515,10 @@
     <string name="mission_admin_not_started">Noch nicht gestartet — Check-in ist für alle gesperrt.</string>
     <string name="mission_admin_running_since">Läuft seit %1$s</string>
     <string name="mission_admin_correct_start">Startzeit korrigieren</string>
+    <string name="mission_admin_actual_end">Tatsächliches Ende</string>
+    <string name="mission_admin_ended_at">Beendet %1$s</string>
+    <string name="mission_admin_not_ended">Läuft noch</string>
+    <string name="mission_admin_end_mission">Einsatz beenden</string>
     <string name="mission_admin_visibility_internal">Nur intern</string>
     <string name="mission_admin_visibility_open">Ganze Organisation</string>
     <string name="mission_admin_internal_hint">Aus: die ganze Organisation sieht den Einsatz.</string>

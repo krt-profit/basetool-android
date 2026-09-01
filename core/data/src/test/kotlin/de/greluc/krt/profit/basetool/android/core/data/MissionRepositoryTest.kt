@@ -578,6 +578,7 @@ class MissionRepositoryTest {
                 plannedStartTime = null,
                 plannedEndTime = null,
                 actualStartTime = "2026-08-28T19:00:00Z",
+                actualEndTime = null,
                 version = SCHEDULE_VERSION,
             )
 
@@ -705,6 +706,7 @@ class MissionRepositoryTest {
             meetingTime = null,
             plannedStartTime = null,
             actualStartTime = null,
+            actualEndTime = null,
             plannedEndTime = null,
             isInternal = false,
             meetingPoint = null,

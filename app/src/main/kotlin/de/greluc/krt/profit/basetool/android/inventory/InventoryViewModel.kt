@@ -111,6 +111,8 @@ sealed interface EntriesPhase {
  * @property opened the state of each opened group, keyed by material id
  * @property withStockOnly whether groups holding nothing are hidden
  * @property openedStacks the state of each opened stack, keyed by [stackKey]
+ * @property released which rows are already offered on the Materialbörse. Accumulated as stacks
+ *   open, because that is when their ids become known.
  * @property online whether a booking can be sent at all
  * @property allocation the open Zuordnung sheet, or `null`
  * @property selection the rows long-pressed into selection mode; empty means the mode is off
@@ -128,6 +130,7 @@ data class InventoryState(
     val opened: Map<String, StackPhase> = emptyMap(),
     val withStockOnly: Boolean = false,
     val openedStacks: Map<String, EntriesPhase> = emptyMap(),
+    val released: Set<String> = emptySet(),
     val online: Boolean = true,
     val allocation: AllocationSheetState? = null,
     val selection: Set<String> = emptySet(),
@@ -422,6 +425,20 @@ class InventoryViewModel(
         val latest = mutableState.value
         if (key in latest.openedStacks) {
             mutableState.value = latest.copy(openedStacks = latest.openedStacks + (key to phase))
+        }
+        if (phase is EntriesPhase.Ready) {
+            // After the rows, not with them: the Lager read has nothing to do with the exchange,
+            // and a member waiting for the second call to see the first would be paying for a
+            // mark. A failure leaves the set as it was — no mark is the honest answer when nobody
+            // asked, and a banner over the tree would be about something the tree does not do.
+            val ids = phase.entries.map { it.id }
+            viewModelScope.launch {
+                val released = source.releasedEntryIds(ids)
+                if (released.isNotEmpty()) {
+                    mutableState.value =
+                        mutableState.value.copy(released = mutableState.value.released + released)
+                }
+            }
         }
     }
 

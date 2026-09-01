@@ -39,6 +39,7 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiReader
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.serializer
 import okhttp3.OkHttpClient
 
 /**
@@ -580,6 +581,19 @@ interface BookInOptions {
      * @return one page of matches, and whether the catalogue holds more (ADR-0104).
      */
     suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>>
+
+    /**
+     * Which of these entries are already offered on the Materialbörse.
+     *
+     * The web's Lager tree draws a mark on every released row, and the app drew none — so a member
+     * could offer the same stack twice, or hunt for an offer they had already made. `POST` is not
+     * involved: this is a read that takes the ids it is asking about.
+     *
+     * @param entryIds the rows on screen; an empty list asks nothing and answers nothing.
+     * @return the subset that is released; empty on a failure, which shows as „no marks" rather
+     *   than as a banner — the Lager itself is unaffected.
+     */
+    suspend fun releasedEntryIds(entryIds: List<String>): Set<String>
 
     /**
      * Searches members.
@@ -1159,6 +1173,20 @@ class InventoryRepository(
         }
     }
 
+    override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> {
+        if (entryIds.isEmpty()) {
+            return emptySet()
+        }
+        val params = entryIds.map { RELEASED_IDS_PARAM to it }
+        return when (
+            val result =
+                reader.get(RELEASED_IDS_PATH, params, ListSerializer(serializer<String>()))
+        ) {
+            is ApiResult.Failure -> emptySet()
+            is ApiResult.Success -> result.value.toSet()
+        }
+    }
+
     override suspend fun locations(query: String): ApiResult<PickerPage<LocationOption>> {
         val params =
             listOf(
@@ -1300,6 +1328,12 @@ class InventoryRepository(
 
         /** The item catalogue behind the book-in's item picker — the order form's own search. */
         private const val ITEM_CATALOG_PATH = "/api/v1/orders/item-catalog"
+
+        /** Which rows on screen are already offered on the Materialbörse. */
+        private const val RELEASED_IDS_PATH = "/api/v1/material-exchange/released-item-ids"
+
+        /** Repeated once per row asked about. */
+        private const val RELEASED_IDS_PARAM = "ids"
         private const val MATERIAL_ID_PARAM = "materialId"
         private const val LOCATION_ID_PARAM = "locationId"
         private const val USER_ID_PARAM = "userId"

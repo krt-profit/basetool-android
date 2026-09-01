@@ -406,6 +406,8 @@ class OrderProductionTest {
 
     /** Where produced stock may land. */
     private inner class FakeOptions : BookInOptions {
+        override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
+
         override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
             ApiResult.Success(PickerPage())
 

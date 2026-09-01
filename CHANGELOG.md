@@ -9,6 +9,13 @@
   Schalter, ob dein Betrag der Bruttobetrag ist oder das, was ankommen soll. Bisher stand davon
   nichts da: wer 100 000 auszahlte, bei dem verließen mehr als 100 000 das Konto, und „Stand nach
   Buchung" rechnete die Gebühr auch nicht mit.
+- **Ein Einsatz lässt sich jetzt beenden** — im Verwaltungs-Tab unter „Zeitplan". Das schließt
+  zugleich die offenen Zeiten aller Teilnehmer, worauf die Auszahlung beruht. Bisher ging das
+  nirgends in der App: der Start wird beim Aktivieren gesetzt, das Ende von nichts.
+- **Eine Einsatz-Einheit trägt jetzt Schiff, Verantwortlichen, Frequenz und Notiz** — und behält
+  sie. Bisher löschte schon das Umbenennen einer Einheit alle vier, weil die App sie nicht
+  mitschickte und der Server die Einheit vollständig ersetzt.
+- **Das Lager zeigt, welche Zeilen schon auf der Materialbörse liegen.**
 - **Ein Einsatz lässt sich jetzt einer Operation zuordnen** — im Verwaltungs-Tab unter „Kern".
   Bisher ging das nirgends: das Operationen-Formular verwies auf den Einsatz, und der hatte kein
   solches Feld.

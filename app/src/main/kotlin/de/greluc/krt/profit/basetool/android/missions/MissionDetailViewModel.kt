@@ -214,6 +214,8 @@ data class MissionDetailState(
     val timeline: MissionTimelineDraft = MissionTimelineDraft(),
     val memberPicker: MissionMemberPickerState = MissionMemberPickerState(),
     val crewJobTypes: List<MissionJobType> = emptyList(),
+    val unitShips: List<Pair<String, String>> = emptyList(),
+    val unitMembers: List<Pair<String, String>> = emptyList(),
     val error: ApiError? = null,
 ) {
     /**
@@ -1021,6 +1023,23 @@ class MissionDetailViewModel(
         // offer Pilot and Turret for a participant's Funktion, which the server refuses with a 400.
         if (tab == MissionTab.UNITS) {
             loadCrewJobTypes()
+            // The unit pickers' options, on the same terms as the CREW catalogue above: only for
+            // a caller who may manage, once, and silently on failure — an empty picker is the
+            // truth for an Einsatz whose roster owns no ships. The ships are the MISSION's own
+            // list, not the hangar's: a hangar-wide one would offer ships nobody on the roster
+            // can bring.
+            val current = mutableState.value
+            if (current.canManage && current.unitShips.isEmpty()) {
+                viewModelScope.launch {
+                    val ships = seams.admin.unitShipOptions(missionId)
+                    val members = (seams.people.members("") as? ApiResult.Success)?.value?.rows.orEmpty()
+                    mutableState.value =
+                        mutableState.value.copy(
+                            unitShips = ships,
+                            unitMembers = members.map { it.id to it.name },
+                        )
+                }
+            }
         }
         if (tab == MissionTab.PARTICIPANTS) {
             val current = mutableState.value

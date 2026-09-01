@@ -1234,6 +1234,8 @@ fun MissionDetailRoute(
                 enabled = state.writable && !state.structure.busy,
                 draft = state.structure,
                 denials = denials,
+                shipOptions = state.unitShips,
+                memberOptions = state.unitMembers,
                 onChange = viewModel.structure::change,
                 onAddUnit = viewModel.structure::addUnit,
                 onRemoveUnit = viewModel.structure::removeUnit,
@@ -1254,6 +1256,8 @@ fun MissionDetailRoute(
                             editingUnitVersion = unit.version,
                             editingUnitOriginalName = unit.name,
                             editingUnitHighValue = unit.highValue,
+                            // Carried into the draft so the save can send them back unchanged.
+                            unitFields = unit.fields,
                         )
                     }
                 },
@@ -1264,6 +1268,10 @@ fun MissionDetailRoute(
                         draft.unitName,
                         draft.editingUnitHighValue,
                         version,
+                        // Echoed, not edited: the endpoint replaces the whole unit, so leaving
+                        // these out cleared the ship, the frequency, the responsible member and
+                        // the note on every rename.
+                        draft.unitFields,
                     )
                 },
                 onSetCrewRoles = viewModel.structure::setCrewRoles,
@@ -1317,6 +1325,8 @@ fun MissionDetailRoute(
                 onDismissLifecycle = viewModel.lifecycle::dismiss,
                 onCorrectStart = viewModel.admin::correctStart,
                 onCancelCorrectStart = viewModel.admin::cancelCorrectStart,
+                onEndMission = viewModel.admin::endMission,
+                onCancelEndMission = viewModel.admin::cancelEndMission,
                 onKeepMine = viewModel.admin::keepMine,
                 onReload = viewModel.admin::reloadAfterConflict,
             ),

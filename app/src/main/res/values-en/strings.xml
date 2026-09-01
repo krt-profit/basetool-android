@@ -1089,6 +1089,7 @@
     <string name="booking_open">Book</string>
     <string name="inventory_entries_title">Entries</string>
     <string name="inventory_entry_note">Note</string>
+    <string name="inventory_entry_on_board">On the exchange</string>
     <string name="inventory_entries_none">No entries.</string>
     <string name="order_detail_assign_me">Take it on</string>
     <string name="order_detail_unassign_me">Step off</string>
@@ -1365,6 +1366,12 @@
     <string name="mission_struct_add_unit_short">Unit</string>
     <string name="mission_struct_unit_name">Unit name</string>
     <string name="mission_struct_hvu">High-value unit (HVU)</string>
+    <string name="mission_struct_unit_ship">Ship</string>
+    <string name="mission_struct_unit_ship_none">None</string>
+    <string name="mission_struct_unit_responsible">Responsible</string>
+    <string name="mission_struct_unit_responsible_none">Nobody</string>
+    <string name="mission_struct_unit_frequency">Frequency</string>
+    <string name="mission_struct_unit_note">Note</string>
     <string name="mission_struct_remove_unit">Remove unit</string>
     <string name="mission_struct_add_crew">Assign somebody</string>
     <string name="mission_struct_remove_crew">Take off board</string>
@@ -1487,6 +1494,10 @@
     <string name="mission_admin_not_started">Not started yet — check-in is locked for everyone.</string>
     <string name="mission_admin_running_since">Running since %1$s</string>
     <string name="mission_admin_correct_start">Correct the start time</string>
+    <string name="mission_admin_actual_end">Actual end</string>
+    <string name="mission_admin_ended_at">Ended %1$s</string>
+    <string name="mission_admin_not_ended">Still running</string>
+    <string name="mission_admin_end_mission">End mission</string>
     <string name="mission_admin_visibility_internal">Internal only</string>
     <string name="mission_admin_visibility_open">Whole organisation</string>
     <string name="mission_admin_internal_hint">Off: the whole organisation sees the Einsatz.</string>

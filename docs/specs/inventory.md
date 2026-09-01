@@ -776,3 +776,27 @@ two questions.
 **Code:** `InventoryRepository` (`BookInDraft`, `AllocationTarget.krtAccepts`),
 `BookingSplitHolder`, `BookingViewModel`, `BookingSheet` (`BookInSplits`), `AllocationSheet`
 (`Split`, `SplitPane`, `SplitActions`)
+
+---
+
+### REQ-APP-INV-022 — The tree says which rows are already on the Materialbörse
+
+The web's Lager marks every row it has released to the exchange, from
+`GET /material-exchange/released-item-ids` — a read that takes the ids on screen. The app marked
+none, so a member could offer the same stack twice, or hunt for an offer they had already made.
+
+The mark is fetched **after** the rows, not with them: the Lager read has nothing to do with the
+exchange, and a member waiting for the second call to see the first would be paying for a mark. A
+failure leaves the set as it was — no mark is the honest answer when nobody asked, and a banner over
+the tree would be about something the tree does not do.
+
+**Not done, deliberately:** the web's mark is a *checkbox* that also releases the row. The app
+offers a row on the exchange from the Materialbörse's own sheet, and a second entry point is a
+separate piece of work rather than part of showing the flag.
+
+**Acceptance**
+
+- [x] A released row is marked (`InventoryRepositoryTest` covers the read).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `InventoryRepository.releasedEntryIds`, `InventoryViewModel`, `InventoryScreen`

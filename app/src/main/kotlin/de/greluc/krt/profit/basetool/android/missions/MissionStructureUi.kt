@@ -21,6 +21,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,6 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.data.MissionCrewMember
 import de.greluc.krt.profit.basetool.android.core.data.MissionJobType
 import de.greluc.krt.profit.basetool.android.core.data.MissionParticipant
 import de.greluc.krt.profit.basetool.android.core.data.MissionUnit
+import de.greluc.krt.profit.basetool.android.core.data.krtToDoubleOrNull
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtAssocAdd
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
@@ -46,7 +51,9 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtGhos
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtHint
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIcon
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtIconButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtRadioRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSelectField
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSheetOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtStatusDot
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
@@ -80,6 +87,8 @@ const val MISSION_FREQ_ADD_TAG: String = "mission-freq-add"
  * @property enabled whether a write may run right now.
  * @property draft what is being composed.
  * @property denials where a refused tap is announced.
+ * @property shipOptions the ships one of this Einsatz's units may be crewed with.
+ * @property memberOptions who may be made responsible for a unit.
  * @property onChange a field changed.
  * @property onAddUnit add the Einheit that is typed.
  * @property onRemoveUnit remove an Einheit by id.
@@ -94,6 +103,8 @@ data class MissionStructureActions(
     val enabled: Boolean,
     val draft: MissionStructureDraft,
     val denials: DenialState,
+    val shipOptions: List<Pair<String, String>> = emptyList(),
+    val memberOptions: List<Pair<String, String>> = emptyList(),
     val onChange: ((MissionStructureDraft) -> MissionStructureDraft) -> Unit,
     val onAddUnit: () -> Unit,
     val onRemoveUnit: (String) -> Unit,
@@ -183,6 +194,7 @@ fun UnitComposeSheet(structure: MissionStructureActions) {
                 label = stringResource(R.string.mission_struct_hvu),
                 enabled = structure.enabled,
             )
+            UnitFields(structure = structure)
             KrtCtaButton(
                 text = stringResource(R.string.mission_struct_add_unit),
                 onClick = structure.onAddUnit,
@@ -192,6 +204,97 @@ fun UnitComposeSheet(structure: MissionStructureActions) {
         }
     }
 }
+
+/**
+ * What an Einheit carries beyond its name and its mark: ship, frequency, responsible member, note.
+ *
+ * All four were writable in the web and in neither half of the app — and worse than absent: the
+ * unit write is a **replace**, so a rename sent without them cleared every one. They are echoed
+ * now whether or not the member touches them, and these are the controls that touch them.
+ *
+ * The ship list is the mission's own (`/unit-ship-options`): the ships a **registered participant**
+ * owns plus those already pinned to a unit. A hangar-wide list would offer ships nobody on the
+ * roster can bring.
+ *
+ * @param structure the tab's state and actions.
+ */
+@Composable
+private fun UnitFields(structure: MissionStructureActions) {
+    var shipOpen by remember { mutableStateOf(false) }
+    var responsibleOpen by remember { mutableStateOf(false) }
+    val fields = structure.draft.unitFields
+    val noShip = stringResource(R.string.mission_struct_unit_ship_none)
+    KrtSelectField(
+        value = structure.shipOptions.firstOrNull { it.first == fields.shipId }?.second ?: noShip,
+        options =
+            listOf(KrtOption(value = "", label = noShip)) +
+                structure.shipOptions.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = { option ->
+            shipOpen = false
+            structure.onChange {
+                it.copy(unitFields = it.unitFields.copy(shipId = option.value.ifBlank { null }))
+            }
+        },
+        expanded = shipOpen,
+        onExpandedChange = { shipOpen = it },
+        label = stringResource(R.string.mission_struct_unit_ship),
+        selectedValue = fields.shipId.orEmpty(),
+        enabled = structure.enabled,
+    )
+    val noResponsible = stringResource(R.string.mission_struct_unit_responsible_none)
+    KrtSelectField(
+        value =
+            structure.memberOptions.firstOrNull { it.first == fields.responsibleUserId }?.second
+                ?: noResponsible,
+        options =
+            listOf(KrtOption(value = "", label = noResponsible)) +
+                structure.memberOptions.map { KrtOption(value = it.first, label = it.second) },
+        onSelect = { option ->
+            responsibleOpen = false
+            structure.onChange {
+                it.copy(
+                    unitFields =
+                        it.unitFields.copy(responsibleUserId = option.value.ifBlank { null }),
+                )
+            }
+        },
+        expanded = responsibleOpen,
+        onExpandedChange = { responsibleOpen = it },
+        label = stringResource(R.string.mission_struct_unit_responsible),
+        selectedValue = fields.responsibleUserId.orEmpty(),
+        enabled = structure.enabled,
+    )
+    KrtTextField(
+        value = fields.frequency?.let { krtPlainFrequency(it) }.orEmpty(),
+        onValueChange = { v ->
+            structure.onChange {
+                it.copy(unitFields = it.unitFields.copy(frequency = v.krtToDoubleOrNull()))
+            }
+        },
+        label = stringResource(R.string.mission_struct_unit_frequency),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        enabled = structure.enabled,
+    )
+    KrtTextField(
+        value = fields.note.orEmpty(),
+        onValueChange = { v ->
+            structure.onChange {
+                it.copy(unitFields = it.unitFields.copy(note = v.takeIf { t -> t.isNotBlank() }))
+            }
+        },
+        label = stringResource(R.string.mission_struct_unit_note),
+        enabled = structure.enabled,
+    )
+}
+
+/**
+ * A frequency as the field spells it.
+ *
+ * @param value the figure.
+ * @return it without a trailing `.0`, which is what a whole frequency would otherwise show.
+ */
+private fun krtPlainFrequency(value: Double): String =
+    java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
 
 /**
  * One Einheit's header band — artboard 06-14's `card--flush` head.

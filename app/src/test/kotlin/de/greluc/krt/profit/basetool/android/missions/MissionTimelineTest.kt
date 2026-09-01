@@ -66,6 +66,7 @@ class MissionTimelineTest {
             meetingTime = null,
             plannedStartTime = null,
             actualStartTime = null,
+            actualEndTime = null,
             plannedEndTime = null,
             isInternal = false,
             meetingPoint = null,

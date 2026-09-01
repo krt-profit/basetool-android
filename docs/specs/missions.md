@@ -1017,3 +1017,41 @@ Operation as a side effect. It echoes `operationId` now, exactly as it already e
 
 **Code:** `MissionRepository` (`patchCore`, `operationOptions`), `MissionDetail.operationId`,
 `MissionAdmin`, `MissionAdminUi` (`OperationField`)
+
+---
+
+### REQ-APP-MIS-034 — A unit write echoes what it does not edit, and an Einsatz can be ended
+
+Two findings from reading the app's writes against the server's, both of them about a field the app
+never sent.
+
+**The unit write was destroying data.** `PUT /missions/{id}/units/{unitId}` is a **replace**, and
+`MissionStructureService.updateMissionUnit` writes the ship type, the ship, the frequency, the
+responsible member and the note *unconditionally* — an omitted one becomes `null`. The app sent the
+name and the HVU mark alone, so correcting a typo in a unit's name wiped all five, every one of them
+set from the web. Nothing failed and nothing said so.
+
+The unit model now carries those five **by id** and the write echoes them, the same way the Kern
+section already echoed its calendar link. And because the ids are in hand, the form can now set them
+too: a ship from the mission's own `/unit-ship-options` (the ships a **registered participant** owns
+plus those already pinned to a unit — a hangar-wide list would offer ships nobody on the roster can
+bring), a responsible member, a frequency and a note.
+
+**An Einsatz could not be ended.** Activation auto-stamps `actualStartTime` server-side; **nothing**
+does the same for the end. `actualEndTime` on the schedule PATCH is the only thing that sets it, and
+setting it also closes every participant's open end-time — which is what the payout figures rest on.
+The app sent it never, so an Einsatz begun on a phone stayed open for everyone on it. „Einsatz
+beenden" sits in the Zeitplan section now, shaped like the start above it: the fact first, then the
+action, and the time pair opens filled with **now** because that is what ending one means in
+practice. It is echoed when it is not being edited, for the same replace-semantics reason as above.
+
+**Acceptance**
+
+- [x] A rename sends back everything the unit was carrying (`MissionUnitFieldsTest`).
+- [x] A new unit carries what was picked for it (`MissionUnitFieldsTest`).
+- [x] A running Einsatz can be ended, and the pair opens filled with now (`MissionAdminTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `MissionDetail` (`MissionUnitFields`, `MissionUnit.fields`, `actualEndTime`),
+`MissionRepository`, `MissionStructure`, `MissionAdmin`, `MissionStructureUi` (`UnitFields`),
+`MissionAdminUi` (`EndState`)

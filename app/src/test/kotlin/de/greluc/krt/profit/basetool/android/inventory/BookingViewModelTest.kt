@@ -138,6 +138,8 @@ class BookingViewModelTest {
 
         var itemOptions: List<GameItemOption> = listOf(GameItemOption("gi1", "Medizinische Station T2"))
 
+        override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
+
         override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
             ApiResult.Success(PickerPage(itemOptions))
 

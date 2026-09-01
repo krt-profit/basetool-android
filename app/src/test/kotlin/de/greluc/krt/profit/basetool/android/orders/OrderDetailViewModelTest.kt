@@ -84,6 +84,8 @@ private object NoOrgUnits : OrgUnitSource {
 
 /** Where produced stock could land — never asked here. */
 private object NoBookInOptions : BookInOptions {
+    override suspend fun releasedEntryIds(entryIds: List<String>): Set<String> = emptySet()
+
     override suspend fun gameItems(query: String): ApiResult<PickerPage<GameItemOption>> =
         ApiResult.Success(PickerPage())
 
@@ -193,6 +195,7 @@ class OrderDetailViewModelTest {
             statuses: Set<JobOrderStatus>,
             page: Int,
             pageSize: Int,
+            squadronIds: Set<String>,
         ): ApiResult<JobOrderPage> = error("the detail never reads the queue")
 
         /** The queue's age thresholds; the defaults, since no test tunes them. */

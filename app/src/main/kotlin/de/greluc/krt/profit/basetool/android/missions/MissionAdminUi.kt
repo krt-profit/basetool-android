@@ -73,6 +73,8 @@ private const val MIN_BRIEFING_LINES = 3
  * @property onDismissLifecycle the confirmation was declined.
  * @property onCorrectStart the started time is to be corrected.
  * @property onCancelCorrectStart that correction was abandoned.
+ * @property onEndMission the Einsatz is to be ended, which opens the time pair.
+ * @property onCancelEndMission that was abandoned.
  * @property onKeepMine a conflict is resolved by re-writing the member's own version.
  * @property onReload a conflict is resolved by taking the server's.
  */
@@ -85,6 +87,8 @@ data class MissionAdminActions(
     val onDismissLifecycle: () -> Unit,
     val onCorrectStart: () -> Unit,
     val onCancelCorrectStart: () -> Unit,
+    val onEndMission: () -> Unit = {},
+    val onCancelEndMission: () -> Unit = {},
     val onKeepMine: () -> Unit,
     val onReload: () -> Unit,
 )
@@ -539,6 +543,81 @@ private fun ActualStart(
         // Design ch. 06 (F2) puts the lifecycle on the status badge — „kein Formular, kein
         // Overflow-Eintrag, keine zweite Stelle". The line above still says check-in is locked,
         // which is the fact this section is responsible for.
+    }
+    EndState(form = form, writable = writable, actions = actions)
+}
+
+/**
+ * When the Einsatz actually ended — a state line and, while it runs, the action that ends it.
+ *
+ * **Ending it is not a status.** Activation auto-stamps `actualStartTime` server-side and nothing
+ * does the same for the end: `actualEndTime` on the schedule PATCH is the only thing that sets it,
+ * and setting it also closes every participant's open end-time — which is what the payout figures
+ * rest on. The app sent it never, so an Einsatz begun on a phone stayed open for everyone on it.
+ *
+ * Shaped like the start above: the fact first, then the action, never a bare field.
+ *
+ * @param form what is typed.
+ * @param writable whether a write may run right now.
+ * @param actions what the tab can do.
+ */
+@Composable
+private fun EndState(
+    form: MissionAdminForm,
+    writable: Boolean,
+    actions: MissionAdminActions,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(KrtSpacing.s4),
+    ) {
+        Text(
+            text = stringResource(R.string.mission_admin_actual_end).krtUppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = KrtPalette.TextMuted,
+        )
+        Text(
+            text =
+                if (form.ended) {
+                    stringResource(R.string.mission_admin_ended_at, form.actualEnd.toKrtStartedAt())
+                } else {
+                    stringResource(R.string.mission_admin_not_ended)
+                },
+            style = MaterialTheme.typography.bodySmall,
+            color = if (form.ended) KrtPalette.Gray1 else KrtPalette.TextMuted,
+        )
+    }
+    when {
+        form.endingNow -> {
+            KrtDateTimeField(
+                label = stringResource(R.string.mission_admin_end_mission),
+                date = form.endDate,
+                time = form.endClock,
+                onDate = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(endDate = v) } },
+                onTime = { v -> actions.onChange(MissionSection.SCHEDULE) { it.copy(endClock = v) } },
+                enabled = writable,
+                // An end records something that has happened, so „liegt in der Vergangenheit"
+                // would fire on every legitimate entry.
+                warnPast = false,
+            )
+            KrtGhostButton(
+                text = stringResource(R.string.mission_timeline_cancel),
+                onClick = actions.onCancelEndMission,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = writable,
+            )
+        }
+
+        // Only a running Einsatz can be ended: ending one that never began would stamp a close
+        // over an open start, and the server would take it.
+        form.started && !form.ended -> {
+            KrtGhostButton(
+                text = stringResource(R.string.mission_admin_end_mission),
+                onClick = actions.onEndMission,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = writable,
+            )
+        }
     }
 }
 
