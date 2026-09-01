@@ -102,7 +102,9 @@ class OrgUnitRepositoryTest {
                 ),
                 units,
             )
-            assertEquals("/api/v1/users/me/memberships", server.takeRequest().target)
+            // The pinnable-units endpoint, not the membership list: an admin holds no Staffel
+            // membership and would otherwise be offered no unit at all (REQ-SEC-048).
+            assertEquals("/api/v1/me/org-units", server.takeRequest().target)
         }
 
     @Test

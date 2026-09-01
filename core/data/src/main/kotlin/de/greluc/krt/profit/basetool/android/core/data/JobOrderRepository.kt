@@ -340,6 +340,7 @@ data class JobOrder(
     val createdAt: Instant?,
     val version: Long?,
     val redacted: Boolean,
+    val canEdit: Boolean? = null,
 )
 
 /**
@@ -1278,6 +1279,9 @@ private fun JobOrderDto.toModel(): JobOrder? {
         // `null` is read as not redacted: the flag is an addition, and treating its absence as
         // "something is missing" would put a caveat on every order an older server sends.
         redacted = redacted == true,
+        // Role AND scope, as the endpoint gates it — the flag the app used to hold covered only
+        // the role half and was documented as a hint for exactly that reason (REQ-SEC-047).
+        canEdit = canEdit,
     )
 }
 

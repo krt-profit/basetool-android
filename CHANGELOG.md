@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Als Admin durftest du in der App nichts, was du im Webtool darfst.** Lagereinträge zuordnen, fremde Zeilen umbuchen, Aufträge bearbeiten, Status und Priorität ändern, Auszahlungen bestätigen — alles ausgegraut, obwohl der Server es erlaubt hätte. Und im Org-Einheiten-Umschalter stand nur „Alle Org-Einheiten", ohne eine Einheit zum Auswählen. Offiziere traf dasselbe. Die App las zwei Felder als Berechtigung, die etwas anderes aussagen: ob eine **Staffel-Mitgliedschaft** das Häkchen trägt — und ein Admin hat per Design keine Staffel-Mitgliedschaft. Sie fragt jetzt den Server, was sie darf, statt es aus Rollen zu erschließen.
+
+### Added
+
+- **Raffinerie-Ausgabe lässt sich auf ein anderes Mitglied einlagern.** Im Einlagern-Blatt steht pro Position eine Mitgliedersuche. Wer die Logistiker-Rolle nicht erreicht, sieht seinen eigenen Namen in einem gesperrten Feld und den Grund dazu — einen Picker anzubieten, dessen fremde Auswahl der Server ohnehin ablehnt, wäre schlechter als keiner.
+
+
 ## [0.2.1] — 2026-09-01
 
 ### Added

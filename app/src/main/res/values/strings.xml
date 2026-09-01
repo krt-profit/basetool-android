@@ -1279,6 +1279,12 @@
     <string name="refinery_store_all">Alle Positionen einlagern</string>
     <string name="refinery_store_personal">Als persönlichen Eintrag einlagern</string>
     <string name="refinery_store_personal_note">Persönlich schließt einen Auftrag aus, und eine persönliche Zeile erhält kein Einsatz-Earmark der Order.</string>
+    <!-- The receiver of the refined output. Only a Logistician (or above) may choose another
+         member; everyone else sees their own name, disabled. -->
+    <string name="refinery_store_user">Mitglied</string>
+    <string name="refinery_store_user_self">Du</string>
+    <string name="refinery_store_user_search">Mitglied suchen…</string>
+    <string name="refinery_store_user_locked">Wird auf dich gebucht. Auf ein anderes Mitglied zu buchen ist eine Logistiker-Aufgabe.</string>
     <string name="refinery_store_note">Notiz</string>
     <string name="refinery_store_line_done">Eingelagert</string>
     <string name="refinery_store_failed">Diese Position konnte nicht eingelagert werden.</string>

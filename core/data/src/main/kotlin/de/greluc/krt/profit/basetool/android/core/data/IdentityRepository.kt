@@ -70,14 +70,19 @@ interface IdentitySource {
  *
  * @property userId the backend user id — the key an Operation's payout rows and an order's
  *   assignee rows are written against
- * @property logistician whether the caller holds the Logistician grant, which is what decides
- *   whether a screen offers a Logistician-only control at all
- * @property missionManager whether they hold the mission-manager grant, which decides the same
- *   for the Operation's payout confirmation
+ * @property logistician whether the caller **reaches** Logistician through the role hierarchy —
+ *   Logistician, Officer and Admin alike. The server's `isLogisticianOrAbove`, not the
+ *   me-response's `isLogistician`: that one reports whether a *Staffel membership row* carries the
+ *   flag, and an admin holds no Staffel membership by design.
+ * @property missionManager whether they reach Mission-Manager the same way — the flag behind the
+ *   Operation's payout confirmation, and false for an admin under the old membership reading.
  * @property bankEmployee whether the caller may see the bank's staff surface at all — the scope
  *   segment's gate (`REQ-APP-BANK-007`). A **hint, never a gate**, like everything else here.
  * @property bankManagement whether they additionally hold Bank-Management, which decides the
  *   account lifecycle and the grants tab.
+ * @property admin whether the caller holds ADMIN. Not „above a role" but a different scope: an
+ *   admin sees every org unit rather than their own memberships, which is what the org picker turns
+ *   on. Server-resolved like the rest.
  * @property permissions the backend's own capability vocabulary for this caller — `HANGAR_WRITE`,
  *   `MISSION_READ` and the rest. A **hint, never a gate**: the server stays the authority, and a
  *   screen that skips a check because this set said so is a defect rather than an optimisation
@@ -90,6 +95,7 @@ data class Identity(
     val bankManagement: Boolean = false,
     val permissions: Set<String> = emptySet(),
     val blueprintOverview: Boolean = false,
+    val admin: Boolean = false,
 )
 
 /**
@@ -182,8 +188,16 @@ class IdentityRepository(
                         val identity =
                             Identity(
                                 userId = id,
-                                logistician = result.value.isLogistician == true,
-                                missionManager = result.value.isMissionManager == true,
+                                // From /me/capabilities, NOT from the me-response's isLogistician
+                                // / isMissionManager. Those two answer „does a Staffel membership
+                                // row carry this flag" — an admin holds no Staffel membership by
+                                // design, so both read false for the one role that may do
+                                // everything, and reading them as permission hid the Lager writes,
+                                // the Auftrag writes and the payout confirmation from admins and
+                                // officers the server would have let through (REQ-SEC-047).
+                                logistician = capabilities?.isLogisticianOrAbove == true,
+                                missionManager = capabilities?.isMissionManagerOrAbove == true,
+                                admin = capabilities?.isAdmin == true,
                                 bankEmployee = capabilities?.canViewBankStaff == true,
                                 bankManagement = capabilities?.canManageBank == true,
                                 permissions = result.value.permissions.orEmpty().toSet(),

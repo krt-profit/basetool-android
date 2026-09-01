@@ -56,17 +56,20 @@ class IdentityCapabilitiesTest {
      * @param roles what the me-response reports as assigned; deliberately populated, so a
      *   regression that starts reading them again is visible.
      * @param capabilities the capabilities body, or `null` to make that read fail.
+     * @param meExtras extra me-response fields, appended raw. Used to state the membership flags
+     *   explicitly so a regression that starts reading them again shows up as a failure.
      * @return the identity the app assembled.
      */
     private suspend fun identityWith(
         roles: String,
         capabilities: String?,
+        meExtras: String = "",
     ): Identity {
         server.enqueue(
             MockResponse.Builder()
                 .code(HTTP_OK)
                 .addHeader("Content-Type", "application/json")
-                .body("""{"id":"$USER_ID","roles":[$roles]}""")
+                .body("""{"id":"$USER_ID","roles":[$roles]$meExtras}""")
                 .build(),
         )
         server.enqueue(
@@ -87,6 +90,82 @@ class IdentityCapabilitiesTest {
         assertTrue("the me-read should succeed", result is ApiResult.Success)
         return (result as ApiResult.Success).value
     }
+
+    @Test
+    fun `an admin reaches Logistician and Mission-Manager without holding either membership`() =
+        runTest {
+            // The defect this whole change exists for. The me-response's isLogistician /
+            // isMissionManager report whether a STAFFEL MEMBERSHIP ROW carries the flag, and an
+            // admin holds no Staffel membership by design — so both were false and the app greyed
+            // out the Lager writes, the Auftrag writes and the payout confirmation for the one role
+            // that may do everything. The me-response below still says false, on purpose: if a
+            // regression starts reading it again, this test goes red.
+            val identity =
+                identityWith(
+                    roles = """"Admin"""",
+                    meExtras = ""","isLogistician":false,"isMissionManager":false""",
+                    capabilities =
+                        """{"canViewBankStaff":true,"canManageBank":true,""" +
+                            """"isLogisticianOrAbove":true,"isMissionManagerOrAbove":true,""" +
+                            """"isAdmin":true}""",
+                )
+
+            assertTrue(identity.logistician)
+            assertTrue(identity.missionManager)
+            assertTrue(identity.admin)
+        }
+
+    @Test
+    fun `an officer reaches both roles too, and is not an admin`() =
+        runTest {
+            val identity =
+                identityWith(
+                    roles = """"Officer"""",
+                    meExtras = ""","isLogistician":false,"isMissionManager":false""",
+                    capabilities =
+                        """{"canViewBankStaff":false,"canManageBank":false,""" +
+                            """"isLogisticianOrAbove":true,"isMissionManagerOrAbove":true,""" +
+                            """"isAdmin":false}""",
+                )
+
+            assertTrue(identity.logistician)
+            assertTrue(identity.missionManager)
+            assertFalse(identity.admin)
+        }
+
+    @Test
+    fun `a plain member reaches neither, even though the me-response would have said nothing`() =
+        runTest {
+            val identity =
+                identityWith(
+                    roles = """"KRT Member"""",
+                    capabilities =
+                        """{"canViewBankStaff":false,"canManageBank":false,""" +
+                            """"isLogisticianOrAbove":false,"isMissionManagerOrAbove":false,""" +
+                            """"isAdmin":false}""",
+                )
+
+            assertFalse(identity.logistician)
+            assertFalse(identity.missionManager)
+            assertFalse(identity.admin)
+        }
+
+    @Test
+    fun `a failed capabilities read locks the grants rather than guessing them`() =
+        runTest {
+            // The narrower reading: an outage must not hand somebody a control the server refuses.
+            // The me-response deliberately claims the membership flags are set.
+            val identity =
+                identityWith(
+                    roles = """"KRT Member"""",
+                    meExtras = ""","isLogistician":true,"isMissionManager":true""",
+                    capabilities = null,
+                )
+
+            assertFalse(identity.logistician)
+            assertFalse(identity.missionManager)
+            assertFalse(identity.admin)
+        }
 
     @Test
     fun `a bank employee sees the staff surface but not the lifecycle`() =

@@ -1251,6 +1251,10 @@
     <string name="refinery_store_all">Store all items</string>
     <string name="refinery_store_personal">Store as a personal entry</string>
     <string name="refinery_store_personal_note">Personal excludes a job order, and a personal line gets none of the order\'s mission earmark.</string>
+    <string name="refinery_store_user">Member</string>
+    <string name="refinery_store_user_self">You</string>
+    <string name="refinery_store_user_search">Search member…</string>
+    <string name="refinery_store_user_locked">Booked onto you. Booking onto another member is a Logistician task.</string>
     <string name="refinery_store_note">Note</string>
     <string name="refinery_store_line_done">Stored</string>
     <string name="refinery_store_failed">This item could not be stored.</string>
