@@ -307,6 +307,18 @@ class RefineryRepositoryTest {
         }
 
     @Test
+    fun `the order list asks for the newest first`() =
+        runTest {
+            respond(ORDERS)
+
+            repository.myOrders(setOf(RefineryServerStatus.OPEN))
+
+            // The server's fallback is startedAt ASCENDING, which opened the list on the member's
+            // oldest order and pushed anything still refining onto the last page.
+            assertEquals("startedAt,desc", requestedUrl().queryParameter("sort"))
+        }
+
+    @Test
     fun `an unknown status is never echoed back to the server`() =
         runTest {
             respond(ORDERS)

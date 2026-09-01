@@ -514,6 +514,7 @@ private fun AllocationSheetState.errorText(error: ApiError): String =
                 is ApiError.Forbidden -> R.string.allocation_error_forbidden
                 is ApiError.Validation -> R.string.allocation_error_amount
                 is ApiError.OptimisticLock -> R.string.conflict_inline
+                is ApiError.Conflict -> R.string.refused_inline
                 else -> R.string.write_failed
             },
         )

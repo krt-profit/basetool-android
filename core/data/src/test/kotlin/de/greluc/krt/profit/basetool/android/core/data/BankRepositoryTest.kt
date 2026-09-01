@@ -70,7 +70,8 @@ class BankRepositoryTest {
                {"postingId": "p1", "type": "DEPOSIT", "amount": 12400.0000,
                 "note": "Verkauf Quantainium", "holderHandle": "Rhea",
                 "createdAt": "2026-08-22T10:00:00Z"},
-               {"postingId": "p2", "type": "WITHDRAWAL", "amount": 3200.0000},
+               {"postingId": "p2", "type": "WITHDRAWAL", "amount": 3200.0000,
+                "transferFee": 16.0000, "counterpartyHandle": "Kestrel"},
                {"postingId": "p3", "type": "WIPE_RESET", "amount": 0.0000}
              ],
              "page": 0, "totalElements": $LEDGER_TOTAL, "totalPages": 2}
@@ -211,6 +212,20 @@ class BankRepositoryTest {
             respond(LEDGER)
 
             assertNull((repository.bookings("a1") as ApiResult.Success).value.bookings[2].incoming)
+        }
+
+    @Test
+    fun `a booking keeps the fee it cost and the recipient it named`() =
+        runTest {
+            // Both are on the wire and both were dropped, which left a member re-reading a past
+            // transfer with an amount that did not match what left the account and no record of
+            // who received it.
+            respond(LEDGER)
+
+            val line = (repository.bookings("a1") as ApiResult.Success).value.bookings[1]
+
+            assertEquals("16.0000", line.transferFee)
+            assertEquals("Kestrel", line.counterpartyHandle)
         }
 
     @Test

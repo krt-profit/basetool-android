@@ -164,6 +164,18 @@ class NotificationRepositoryTest {
         }
 
     @Test
+    fun `the inbox asks for the newest first`() =
+        runTest {
+            respond(INBOX)
+
+            repository.inbox()
+
+            // Without this parameter the server sorts createdAt ASCENDING, which opened the inbox
+            // on the oldest notification a member ever received and put today's on the last page.
+            assertEquals("createdAt,desc", requestedUrl().queryParameter("sort"))
+        }
+
+    @Test
     fun `the page size asked for is the web app's own fifty`() =
         runTest {
             respond(INBOX)

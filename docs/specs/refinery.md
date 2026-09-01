@@ -466,3 +466,19 @@ worth. Recorded here as the small deviation it is.
 
 **Code:** `RefineryRepository.deleteOrder`, `RefineryDetailState.deletable`,
 `RefineryDetailViewModel.onDelete*`, `RefineryScreen.DeleteConfirmation`
+
+### REQ-APP-REF-013 — The member's own refinery orders open on the newest
+
+The `my-orders` request carries `sort=startedAt,desc`.
+
+Same fault as REQ-APP-NOTIF-016 and the same cause: with no sort parameter the server orders
+`startedAt` **ascending**, so the list opened on the member's oldest order and anything still
+refining sat on the last page — the opposite of what the screen is for. The web app sends
+`startedAt,desc`.
+
+**Acceptance**
+
+- [x] The request carries `sort=startedAt,desc` (`RefineryRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/data/RefineryRepository.kt`

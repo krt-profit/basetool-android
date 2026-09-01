@@ -61,6 +61,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppe
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.ui.DenialState
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -181,7 +182,7 @@ fun UnitComposeSheet(structure: MissionStructureActions) {
             StructureError(structure)
             KrtTextField(
                 value = structure.draft.unitName,
-                onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
+                onValueChange = { v -> structure.onChange { it.copy(unitName = v.take(FieldLimits.NAME)) } },
                 label = stringResource(R.string.mission_struct_unit_name),
                 enabled = structure.enabled,
             )
@@ -279,7 +280,8 @@ private fun UnitFields(structure: MissionStructureActions) {
         value = fields.note.orEmpty(),
         onValueChange = { v ->
             structure.onChange {
-                it.copy(unitFields = it.unitFields.copy(note = v.takeIf { t -> t.isNotBlank() }))
+                val capped = v.take(FieldLimits.NOTE)
+                it.copy(unitFields = it.unitFields.copy(note = capped.takeIf { t -> t.isNotBlank() }))
             }
         },
         label = stringResource(R.string.mission_struct_unit_note),
@@ -493,7 +495,7 @@ fun UnitRenameSheet(structure: MissionStructureActions) {
             StructureError(structure)
             KrtTextField(
                 value = typed,
-                onValueChange = { v -> structure.onChange { it.copy(unitName = v) } },
+                onValueChange = { v -> structure.onChange { it.copy(unitName = v.take(FieldLimits.NAME)) } },
                 label = stringResource(R.string.mission_struct_unit_name),
                 enabled = structure.enabled,
             )

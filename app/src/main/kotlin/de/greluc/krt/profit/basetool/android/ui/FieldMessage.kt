@@ -8,6 +8,7 @@
 package de.greluc.krt.profit.basetool.android.ui
 
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.core.network.ProblemDetail
 
 /**
  * The server's own words for a validation refusal, when it named what was wrong.
@@ -18,28 +19,47 @@ import de.greluc.krt.profit.basetool.android.core.network.ApiError
  * ch. 02 §6 draws the field error naming the fault („Menge muss größer als 0 sein."), which is
  * exactly what the server already sent.
  *
- * Only [ApiError.Validation] is answered here. A 403, a 409 or a dropped connection needs the
- * screen's own sentence, because the server's is about the request rather than about what the
- * member should do next.
+ * [ApiError.Conflict] is answered too, and for the same reason. It is a `409` that is **not** a
+ * concurrent edit — a rule refusing, such as an account that still holds a balance or a request
+ * that has already been decided. What rule fired is something only the server knows, so its
+ * `detail` is the whole message; the screen has no sentence of its own that would be true.
+ *
+ * [ApiError.OptimisticLock] is deliberately still excluded: there the member's next step („reload
+ * and save again") matters more than the server's phrasing, and the reload modal carries it.
+ * A 403 or a dropped connection likewise needs the screen's own copy.
  *
  * @return the sentence to show, or `null` when the server named nothing and the caller's own copy
  *   has to stand in.
  */
-fun ApiError.fieldMessage(): String? {
-    val problem = (this as? ApiError.Validation)?.problem ?: return null
+fun ApiError.fieldMessage(): String? =
+    when (this) {
+        // A rule refused: the server's `detail` names which one, and nothing else can.
+        is ApiError.Conflict -> problem?.detail?.takeIf { it.isNotBlank() }
+
+        is ApiError.Validation -> problem?.namedFields()
+
+        else -> null
+    }
+
+/**
+ * The sentences a validation body named, or its overall detail when it named no field.
+ *
+ * @return the joined message, or `null` when the body carried nothing sayable.
+ */
+private fun ProblemDetail.namedFields(): String? {
     val named =
-        problem.fieldErrors
+        fieldErrors
             ?.mapNotNull { it.message }
             ?.filter { it.isNotBlank() }
             ?.takeIf { it.isNotEmpty() }
-            ?: problem.errors
+            ?: errors
                 ?.values
                 ?.filter { it.isNotBlank() }
                 .orEmpty()
     return if (named.isNotEmpty()) {
         named.joinToString(FIELD_MESSAGE_SEPARATOR)
     } else {
-        problem.detail?.takeIf { it.isNotBlank() }
+        detail?.takeIf { it.isNotBlank() }
     }
 }
 

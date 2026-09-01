@@ -81,6 +81,24 @@ sealed interface ApiError {
     ) : ApiError
 
     /**
+     * The server refused on a rule, not on a race.
+     *
+     * A `409` whose code is **not** `OPTIMISTIC_LOCK`: a state-machine or cross-aggregate refusal
+     * such as `BANK_ACCOUNT_NOT_EMPTY`, `BANK_REQUEST_NOT_PENDING`, `BANK_NOT_REVERSIBLE`,
+     * `ENTITY_IN_USE` or the generic `BUSINESS_CONFLICT`. These used to be shown as
+     * [OptimisticLock], which told the member somebody else had edited the row and to reload —
+     * false on both counts, and the advice loops because reloading changes nothing.
+     *
+     * The server's own `detail` is the only text that says what was actually refused, so a screen
+     * rendering this **must** show it rather than a generic phrase.
+     *
+     * @property problem the parsed body, if any
+     */
+    data class Conflict(
+        override val problem: ProblemDetail? = null,
+    ) : ApiError
+
+    /**
      * The requested resource does not exist, or is hidden from this caller.
      *
      * @property problem the parsed body, if any

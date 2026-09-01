@@ -301,6 +301,11 @@
     <string name="operation_detail_payout_open">Open</string>
     <string name="operation_detail_payout_donated">Waived</string>
     <string name="operation_detail_payout_line">Share %1$s · %2$s</string>
+    <string name="operation_detail_payout_percent">%1$s %%</string>
+    <string name="operation_detail_payout_expenses">incl. %1$s expenses</string>
+    <string name="operation_detail_payout_fee">%1$s fee</string>
+    <string name="operation_detail_payout_paid_by">Paid out %1$s by %2$s</string>
+    <string name="operation_detail_payout_paid_at">Paid out %1$s</string>
     <string name="operation_detail_payout_route_member">Payout</string>
     <string name="operation_detail_payout_route_org">Org treasury (waived)</string>
     <string name="operation_detail_payout_undo_title">Take the payout back?</string>
@@ -594,6 +599,8 @@
     <string name="bank_booking_reverse_title">Reverse booking?</string>
     <string name="bank_booking_reverse_text">Writes a negated counter-booking. The original stays in the ledger unchanged.</string>
     <string name="bank_booking_reverse_note">Note</string>
+    <string name="bank_booking_counterparty">to %1$s</string>
+    <string name="bank_booking_fee">Fee %1$s</string>
     <string name="bank_booking_reversed">Reversed</string>
     <string name="bank_conflict_self_transfer">Source and target holder have to differ.</string>
     <string name="bank_conflict_holder_inactive">This holder is inactive and can receive nothing new.</string>
@@ -848,6 +855,8 @@
     <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
+    <!-- Fallback when the server refuses on a rule but names no reason. -->
+    <string name="refused_inline">Not possible — the action was refused.</string>
     <string name="picker_more_matches">More matches available — narrow the search.</string>
     <plurals name="personal_inventory_location_capped">
         <item quantity="one">Only the first match. Search more precisely if yours is missing.</item>

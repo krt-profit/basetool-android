@@ -17,6 +17,7 @@ import de.greluc.krt.profit.basetool.android.core.data.PersonalLocation
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
 import de.greluc.krt.profit.basetool.android.core.network.Connectivity
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.FirstLoadRetry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -337,7 +338,7 @@ class PersonalInventoryViewModel(
      *
      * @param value what the member typed.
      */
-    fun onNoteChanged(value: String) = editor { it.copy(note = value, error = null) }
+    fun onNoteChanged(value: String) = editor { it.copy(note = value.take(FieldLimits.INVENTORY_NOTE), error = null) }
 
     /**
      * Chooses a place.

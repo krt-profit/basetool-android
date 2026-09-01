@@ -147,7 +147,12 @@ class NotificationRepository(
         page: Int,
         pageSize: Int,
     ): ApiResult<NotificationPage> {
-        val params = listOf(PAGE_PARAM to page.toString(), SIZE_PARAM to pageSize.toString())
+        val params =
+            listOf(
+                PAGE_PARAM to page.toString(),
+                SIZE_PARAM to pageSize.toString(),
+                SORT_PARAM to NEWEST_FIRST,
+            )
         return when (val result = reader.get(INBOX_PATH, params, PageResponseNotificationDto.serializer())) {
             is ApiResult.Failure -> result
             is ApiResult.Success -> ApiResult.Success(result.value.toModel(page))
@@ -246,6 +251,17 @@ class NotificationRepository(
         private const val NOTIFICATION_EVENT = "notification"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
+        private const val SORT_PARAM = "sort"
+
+        /**
+         * Newest notification first.
+         *
+         * Sent explicitly because the server sorts **ascending** when the parameter is absent
+         * (`PaginationUtil.resolveSort` falls back to `Sort.by(defaultField).ascending()`), which
+         * opened the inbox on the oldest notification a member ever received and put today's on
+         * the last page. The web app sends `createdAt,desc` for the same reason.
+         */
+        private const val NEWEST_FIRST = "createdAt,desc"
     }
 }
 

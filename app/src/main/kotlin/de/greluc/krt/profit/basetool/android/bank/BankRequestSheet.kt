@@ -437,6 +437,7 @@ internal fun bankRequestErrorMessage(error: ApiError): String =
             is ApiError.Forbidden -> R.string.bank_account_error_forbidden_message
             is ApiError.Validation -> R.string.bank_request_error_amount
             is ApiError.OptimisticLock -> R.string.conflict_inline
+            is ApiError.Conflict -> R.string.refused_inline
             else -> R.string.write_failed
         },
     )

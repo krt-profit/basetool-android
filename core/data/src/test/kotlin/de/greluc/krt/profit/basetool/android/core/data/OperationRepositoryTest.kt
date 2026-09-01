@@ -69,12 +69,18 @@ class OperationRepositoryTest {
                           {"missionId": "m2", "missionName": "Konvoi-Eskorte", "totalSum": -11700.0000}]}
             """.trimIndent()
 
+        /** The share the fixture's first participant was weighted at. */
+        const val EXPECTED_PERCENTAGE = 12.5
+
         val PAYOUTS =
             """
             {"totalDonations": 4150.0000,
              "payouts": [
                {"participantId": "u1", "participantName": "Rhea", "payoutPreference": "PAYOUT",
-                "shareAmount": 4150.0000, "payoutAmount": 4129.2500, "paidOut": true},
+                "shareAmount": 4150.0000, "payoutAmount": 4129.2500, "paidOut": true,
+                "participationPercentage": 12.5, "personalExpenses": 300.0000,
+                "transferFee": 20.7500, "paidOutAt": "2026-08-30T10:15:00Z",
+                "paidOutByName": "Kestrel"},
                {"participantId": "u2", "participantName": "Dorn", "payoutPreference": "DONATE",
                 "shareAmount": 0.0000, "donatedAmount": 4150.0000, "payoutAmount": 0.0000,
                 "paidOut": false}
@@ -247,6 +253,25 @@ class OperationRepositoryTest {
             assertEquals("4150.0000", overview.payouts.totalDonations)
             assertTrue(overview.payouts.rows.first().paidOut)
             assertTrue(overview.payouts.rows[1].donating)
+        }
+
+    @Test
+    fun `a payout carries what it is made of, not just the total`() =
+        runTest {
+            // 4150 earned, 4129.25 transferred. The 20.75 gap is the fee, and 300 of what does
+            // arrive is the member's own outlay coming back — the app showed the total and dropped
+            // both, leaving a figure nobody could check.
+            respond(HEAD)
+            respond(ROLLUP)
+            respond(PAYOUTS)
+
+            val result = repository.overview("o1")
+
+            val row = (result as ApiResult.Success).value.payouts.rows.first()
+            assertEquals(EXPECTED_PERCENTAGE, row.participationPercentage)
+            assertEquals("300.0000", row.personalExpenses)
+            assertEquals("20.7500", row.transferFee)
+            assertEquals("Kestrel", row.paidOutByName)
         }
 
     @Test

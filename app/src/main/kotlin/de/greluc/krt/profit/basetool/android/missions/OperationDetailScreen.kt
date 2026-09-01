@@ -611,7 +611,7 @@ private fun PayoutRow(
                 text =
                     stringResource(
                         R.string.operation_detail_payout_line,
-                        formatAmount(row.earnedShare.orEmpty()),
+                        formatAmount(row.earnedShare.orEmpty()) + row.percentSuffix(),
                         stringResource(
                             if (row.donating) {
                                 R.string.operation_detail_payout_route_org
@@ -623,6 +623,7 @@ private fun PayoutRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
+            PayoutComposition(row = row)
         }
         KrtChip(text = row.payoutLabel(), tone = row.payoutTone())
         if (state.missionManager && row.participantId != null) {
@@ -630,6 +631,112 @@ private fun PayoutRow(
         }
     }
 }
+
+/**
+ * „ (12,5 %)" after the share, when the server said what proportion it was.
+ *
+ * The percentage is what makes the amount checkable: a member can see their attendance was
+ * weighted the way they expected, instead of taking the figure on trust. Absent on the wire for
+ * rows the server did not weight, and then this adds nothing.
+ *
+ * @return the suffix, or an empty string.
+ */
+@Composable
+private fun OperationPayout.percentSuffix(): String {
+    val pct = participationPercentage ?: return ""
+    return " (" + stringResource(R.string.operation_detail_payout_percent, formatPercent(pct)) + ")"
+}
+
+/**
+ * Renders a participation percentage without trailing noise.
+ *
+ * The wire carries a `Double`, so a clean half prints as `12.5` and a whole one as `25.0`; the
+ * latter reads as false precision on a figure that is exactly a quarter.
+ *
+ * @param value the percentage as sent.
+ * @return the rendered number, decimal comma, at most one decimal place.
+ */
+private fun formatPercent(value: Double): String {
+    val rounded = kotlin.math.round(value * PERCENT_ROUNDING) / PERCENT_ROUNDING
+    val text =
+        if (rounded == kotlin.math.floor(rounded)) {
+            rounded.toInt().toString()
+        } else {
+            rounded.toString()
+        }
+    return text.replace('.', ',')
+}
+
+/** One decimal place, which is the precision the web app shows a participation share at. */
+private const val PERCENT_ROUNDING = 10.0
+
+/**
+ * What the transferred figure is made of, and who closed it.
+ *
+ * The server sends the participation percentage, the reimbursed outlay carried **inside** the
+ * payout, and the in-game fee already deducted from it — and the app dropped all three, leaving a
+ * member with a total and no way to check it. „Du bekommst 45.000" and „davon 12.000 erstattete
+ * Auslagen, 2.250 Gebuehr" are different statements about the same money.
+ *
+ * Every part is optional on the wire, so each is rendered only when it is there; a row with
+ * nothing to add draws nothing rather than an empty line.
+ *
+ * @param row the payout row.
+ */
+@Composable
+private fun PayoutComposition(row: OperationPayout) {
+    val parts =
+        buildList {
+            row.personalExpenses
+                ?.takeIf { it.isNotBlank() && it.toBigDecimalOrNull()?.signum() != 0 }
+                ?.let { add(stringResource(R.string.operation_detail_payout_expenses, formatAmount(it))) }
+            row.transferFee
+                ?.takeIf { it.isNotBlank() && it.toBigDecimalOrNull()?.signum() != 0 }
+                ?.let { add(stringResource(R.string.operation_detail_payout_fee, formatAmount(it))) }
+        }
+    if (parts.isNotEmpty()) {
+        Text(
+            text = parts.joinToString(PAYOUT_PART_SEPARATOR),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+    }
+    val paidLine = row.paidOutLine()
+    if (paidLine != null) {
+        Text(
+            text = paidLine,
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+    }
+}
+
+/**
+ * „Ausgezahlt am … von …", once a manager has closed the row.
+ *
+ * The name is shown because the web shows it — an audit fact the member is entitled to see. It is
+ * never logged.
+ *
+ * @return the line, or `null` while the payout is still open or the server named no time.
+ */
+@Composable
+private fun OperationPayout.paidOutLine(): String? {
+    val stamp =
+        paidOutAt
+            ?.takeIf { paidOut }
+            ?.toKrtDateTime()
+            ?.takeIf { (date, _) -> date.isNotEmpty() }
+            ?.let { (date, time) -> "$date $time" }
+    val by = paidOutByName?.takeIf { it.isNotBlank() }
+    return when {
+        stamp == null -> null
+        by != null -> stringResource(R.string.operation_detail_payout_paid_by, stamp, by)
+        else -> stringResource(R.string.operation_detail_payout_paid_at, stamp)
+    }
+}
+
+/** Between two parts of the payout composition, the design's separator between two facts. */
+private const val PAYOUT_PART_SEPARATOR = " · "
 
 /**
  * The manager's confirm box on a payout row.

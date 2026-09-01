@@ -1055,3 +1055,23 @@ practice. It is echoed when it is not being edited, for the same replace-semanti
 **Code:** `MissionDetail` (`MissionUnitFields`, `MissionUnit.fields`, `actualEndTime`),
 `MissionRepository`, `MissionStructure`, `MissionAdmin`, `MissionStructureUi` (`UnitFields`),
 `MissionAdminUi` (`EndState`)
+
+### REQ-APP-MIS-035 — The Einsatz list's sort direction follows the past filter
+
+`plannedStartTime,asc` while the list looks forward; `plannedStartTime,desc` once „Vergangene" is
+on.
+
+**One direction cannot serve both.** Ascending is right for the default view — the next Einsatz
+belongs at the top. But the screen is a flat list with no grouping, so the moment past Einsätze are
+included the same order puts the oldest one the org ever ran first and buries everything recent
+pages deep. Looking backwards means most recent first, which is what the web app's mission index
+uses.
+
+The status filter is unaffected: a ticked status still wins over the past toggle (REQ-APP-MIS-011).
+
+**Acceptance**
+
+- [x] Forward-looking asks ascending, past-inclusive asks descending (`MissionRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/data/MissionRepository.kt`

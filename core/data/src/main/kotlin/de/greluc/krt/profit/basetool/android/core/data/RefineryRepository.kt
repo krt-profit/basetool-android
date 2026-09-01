@@ -676,6 +676,7 @@ class RefineryRepository(
                     .forEach { add(STATUS_PARAM to it.name) }
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
+                add(SORT_PARAM to NEWEST_FIRST)
             }
         return when (
             val result =
@@ -924,6 +925,16 @@ class RefineryRepository(
         private const val HTTP_OK = 200
 
         private const val STATUS_PARAM = "status"
+        private const val SORT_PARAM = "sort"
+
+        /**
+         * Newest refinery order first.
+         *
+         * The server's fallback when no sort is sent is `startedAt` **ascending**, which opened the
+         * member's own refinery orders on the oldest one and pushed anything still running onto the
+         * last page. The web app sends `startedAt,desc`.
+         */
+        private const val NEWEST_FIRST = "startedAt,desc"
         private const val PAGE_PARAM = "page"
         private const val SIZE_PARAM = "size"
         private const val DEFAULT_QUALITY = 0

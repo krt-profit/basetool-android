@@ -694,7 +694,7 @@ class MissionRepository(
                 query.until?.let { add(END_PARAM to it.toString()) }
                 add(PAGE_PARAM to page.toString())
                 add(SIZE_PARAM to pageSize.toString())
-                add(SORT_PARAM to DEFAULT_SORT)
+                add(SORT_PARAM to if (query.includePast) PAST_SORT else DEFAULT_SORT)
             }
 
         return when (val result = reader.get(SEARCH_PATH, params, PageResponseMissionListDto.serializer())) {
@@ -1167,12 +1167,23 @@ class MissionRepository(
         const val DEFAULT_PAGE_SIZE: Int = 25
 
         /**
-         * The server's sort, named explicitly rather than left to the default.
+         * The server's sort for the default, forward-looking list.
          *
          * `plannedStartTime` is on the backend's sort whitelist; a field that is not would be
-         * answered with a 400, so this is not a free-form string.
+         * answered with a 400, so this is not a free-form string. Ascending is right while the list
+         * shows what is coming: the next mission belongs at the top.
          */
         const val DEFAULT_SORT: String = "plannedStartTime,asc"
+
+        /**
+         * The sort once past missions are included.
+         *
+         * The screen is a flat list with no grouping, so the ascending order that serves the
+         * upcoming view puts the oldest mission the org ever ran at the top the moment „Vergangene"
+         * is switched on — burying everything recent pages deep. Looking backwards means most
+         * recent first, which is also what the web app's mission index uses.
+         */
+        const val PAST_SORT: String = "plannedStartTime,desc"
 
         /** Log subsystem. Search terms are member input and never reach the log. */
         private const val LOG_TAG = "missions"

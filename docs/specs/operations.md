@@ -356,3 +356,30 @@ string: the server stores what it is sent, and a blank line reads as a deliberat
 
 **Code:** `OperationRepository.create` / `.update`, `OperationFormViewModel`, `OperationFormScreen`,
 `OperationsScreen` (the list's action), `OperationDetailScreen` (the `⋮`)
+
+### REQ-APP-OPS-015 — A payout shows what it is made of
+
+Each payout row states the participation percentage beside the share, the reimbursed personal
+expenses carried **inside** the transferred amount, the transfer fee already deducted from it, and
+— once closed — who marked it paid and when.
+
+**Because a total without its parts cannot be checked.** The server sends all five
+(`participationPercentage`, `personalExpenses`, `transferFee`, `paidOutAt`, `paidOutByName`) and
+the app mapped none of them, so a member saw „4 150 Anteil, 4 129,25 Auszahlung" with a 20,75 gap
+that nothing on the screen explained, and no way to tell how much of the transfer was their own
+outlay coming back rather than profit. The web app renders all five
+(`operation-detail.html:325/332/333/345`). This is the read-side counterpart of the write-side fee
+disclosure in REQ-APP-BANK-012.
+
+`paidOutByName` is a member name: shown, never logged.
+
+Parts absent on the wire draw nothing rather than a zero — most rows carry no fee, and „Gebühr 0"
+on every one of them would bury the rows where a fee was really charged.
+
+**Acceptance**
+
+- [x] All five survive the mapper (`OperationRepositoryTest`).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/data/OperationRepository.kt`, `core/data/OperationDetail.kt`,
+`missions/OperationDetailScreen.kt`

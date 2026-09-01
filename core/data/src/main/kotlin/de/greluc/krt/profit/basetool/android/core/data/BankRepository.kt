@@ -243,6 +243,11 @@ data class BankRequestDraft(
  * @property note what it was for, or `null`
  * @property holder whose holding it moved, or `null`
  * @property createdAt when it was posted, in UTC
+ * @property transferFee what the transfer itself cost, when the server charged one. Shown so the
+ *   amount on the row and the amount that left the account are reconcilable rather than silently
+ *   different.
+ * @property counterpartyHandle the recipient as recorded on the transfer, or `null`. A member
+ *   handle: shown, never logged.
  */
 data class BankBooking(
     val id: String,
@@ -253,6 +258,8 @@ data class BankBooking(
     val holder: String?,
     val createdAt: Instant?,
     val reversesTransactionId: String? = null,
+    val transferFee: String? = null,
+    val counterpartyHandle: String? = null,
 ) {
     /**
      * Whether this row is itself a counter-booking.
@@ -1826,6 +1833,11 @@ private fun BankBookingDto.toModel(): BankBooking? {
         holder = holderHandle,
         createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
         reversesTransactionId = reversedTransactionId,
+        // The fee the transfer actually cost and who it went to. Both are on the wire and the app
+        // dropped both, so a member reading a past transfer saw an amount that did not match what
+        // left the account and no record of the recipient they had entered.
+        transferFee = transferFee?.toString(),
+        counterpartyHandle = counterpartyHandle?.trim()?.takeIf { it.isNotEmpty() },
     )
 }
 

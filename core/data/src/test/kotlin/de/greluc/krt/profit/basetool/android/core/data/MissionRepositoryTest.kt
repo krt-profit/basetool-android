@@ -250,6 +250,29 @@ class MissionRepositoryTest {
         }
 
     @Test
+    fun `the upcoming list puts the next mission first`() =
+        runTest {
+            respond(ONE_PAGE)
+
+            repository.search(MissionQuery(includePast = false))
+
+            assertEquals("plannedStartTime,asc", requestedUrl().queryParameter("sort"))
+        }
+
+    @Test
+    fun `including the past flips the list to most recent first`() =
+        runTest {
+            // The screen is a flat list with no grouping, so keeping the ascending order here put
+            // the oldest mission the org ever ran at the top the moment „Vergangene" was switched
+            // on, burying everything recent pages deep.
+            respond(ONE_PAGE)
+
+            repository.search(MissionQuery(includePast = true))
+
+            assertEquals("plannedStartTime,desc", requestedUrl().queryParameter("sort"))
+        }
+
+    @Test
     fun `a ticked status wins over the past toggle`() =
         runTest {
             // Subtracting the finished ones from an explicit "show me the finished ones" would

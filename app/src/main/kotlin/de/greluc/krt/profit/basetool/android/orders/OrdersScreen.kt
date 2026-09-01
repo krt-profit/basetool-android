@@ -1467,6 +1467,7 @@ private fun WriteError(error: ApiError) {
             error.fieldMessage() ?: stringResource(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
+                    is ApiError.Conflict -> R.string.refused_inline
                     is ApiError.Forbidden -> R.string.order_detail_not_allowed
                     else -> R.string.write_failed
                 },

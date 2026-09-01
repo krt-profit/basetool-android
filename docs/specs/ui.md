@@ -594,3 +594,26 @@ never varies carries no information.
 **Code:** `core/data/PickerPage.kt`, `ui/PickerOverflowNote.kt`, `InventoryRepository`,
 `MissionTimelineRepository`, `BankStaffRepository`, `RefineryRepository`, `JobOrderRepository`,
 `PersonalInventoryRepository`
+
+### REQ-APP-UI-014 — Text fields stop where the server stops
+
+Every free-text field the app writes caps its input at the backend's `@Size(max=…)` for that field,
+via the constants in `ui/FieldLimits.kt`.
+
+**Because the alternative is a refusal after the typing.** The backend constrains 130 string
+fields; the app capped one. A member could write a 20 000-character Einsatz description, submit it,
+and learn only from the validation error that it was too long — with the text still in the field
+and no indication of how much had to go. The web app sets `maxlength` on its inputs.
+
+The limits are the backend's numbers, mirrored in one file so a server change has one place to
+follow. Capping is silent for short fields — nobody types a 255-character name by accident — while
+the long fields a member genuinely fills carry a visible counter at the call site (the order note
+does this already, and its counter turns warning-yellow before the ceiling rather than at it).
+
+**Acceptance**
+
+- [x] Mission name, description and meeting point; unit name and note; bank note; personal
+      inventory and blueprint notes all cap at the server's value.
+- [ ] Walked on a device: outstanding.
+
+**Code:** `ui/FieldLimits.kt` and its call sites

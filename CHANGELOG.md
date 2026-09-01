@@ -32,7 +32,26 @@
   Server nimmt dort keine) und zählt in ganzen Stück. Ein Wechsel des Umschalters verwirft die
   Wahl der anderen Seite — der Server nimmt genau eine von beiden.
 
+### Fixed
+
+- **Das Benachrichtigungs-Postfach öffnete auf der ältesten Nachricht.** Ohne
+  Sortier-Parameter sortiert der Server aufsteigend, also lag die Nachricht von heute auf der
+  letzten Seite. Betraf ebenso „Meine Raffinerieaufträge", wo alles noch Laufende hinten lag.
+- **Die Einsatzliste zeigte mit „Vergangene" den ältesten Einsatz zuerst.** Die Richtung folgt
+  jetzt dem Filter: kommende aufsteigend, vergangene mit dem jüngsten oben.
+- **Abgelehnte Vorgänge meldeten „Jemand anderes hat geändert".** Ein Konto mit Restbestand,
+  ein bereits entschiedener Antrag, eine nicht stornierbare Buchung — alle erschienen als
+  Gleichzeitigkeits-Konflikt samt Rat „neu laden und erneut speichern", der nicht aufgehen konnte.
+  Jetzt steht die Begründung des Servers da.
+- **Textfelder liefen ins Serverlimit statt zu begrenzen.** Einsatz-Beschreibung, Treffpunkt,
+  Einheiten-Notiz, Bank-Notiz und Lager-Notiz stoppen jetzt dort, wo der Server ablehnt.
+
 ### Changed
+- **Eine Beteiligung zeigt, woraus sie besteht.** Neben dem Betrag stehen jetzt der Prozentsatz,
+  die darin erstatteten Auslagen und die abgezogene Gebühr, und bei erledigten Auszahlungen wer
+  sie wann gebucht hat. Bisher stand dort eine Summe, deren Teile unsichtbar waren.
+- **Buchungen nennen Gebühr und Empfänger auch im Nachhinein.** Beides stand auf der Leitung und
+  wurde verworfen, sodass eine vergangene Überweisung weder ihre Kosten noch den Empfänger zeigte.
 - **Die Übergabe-Maske nennt die Einheit der Position.** Bei einem Stück-Material stand dort
   „Menge (SCU)" — auf dem einen Bildschirm, der einen Auftrag abschließt.
 - **Direktbuchungen tragen jetzt Begründung und Empfänger mit**, wie im Webtool. Bisher gingen

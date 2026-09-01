@@ -805,3 +805,21 @@ either.
 
 **Code:** `BankRepository` (`DirectBooking.feeApplies`), `BankStaffRepository`,
 `BankStaffViewModel` (`DirectBookingState`), `BankDirectBookingSheet` (`FeeBlock`)
+
+### REQ-APP-BANK-018 — A past booking still names its fee and its recipient
+
+The ledger row shows `transferFee` when one was charged, and `counterpartyHandle` on the subline.
+
+Both are on the wire and both were dropped, so a member re-reading a transfer saw an amount that
+did not match what left the account and no record of who received it. REQ-APP-BANK-012 states the
+fee **before** the transfer is sent; this is the same fact afterwards, and without it the
+disclosure only exists while the sheet is open.
+
+A zero fee draws nothing, for the same reason as REQ-APP-OPS-015.
+
+**Acceptance**
+
+- [x] Both survive the mapper (`BankRepositoryTest` fixture carries them).
+- [ ] Walked on a device: outstanding.
+
+**Code:** `core/data/BankRepository.kt`, `bank/BankScreen.kt`, `bank/BookingFeeLine.kt`

@@ -44,6 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtToLo
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.krtUppercase
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import java.time.Duration
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
@@ -294,13 +295,19 @@ private fun CoreFields(
 ) {
     KrtTextField(
         value = form.name,
-        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(name = v) } },
+        onValueChange = { v ->
+            actions.onChange(MissionSection.CORE) { it.copy(name = v.take(FieldLimits.NAME)) }
+        },
         label = stringResource(R.string.mission_admin_name),
         enabled = writable,
     )
     KrtTextField(
         value = form.description,
-        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(description = v) } },
+        onValueChange = { v ->
+            actions.onChange(MissionSection.CORE) {
+                it.copy(description = v.take(FieldLimits.DESCRIPTION))
+            }
+        },
         modifier = Modifier.heightIn(min = DESCRIPTION_MIN),
         label = stringResource(R.string.mission_admin_description),
         enabled = writable,
@@ -308,7 +315,11 @@ private fun CoreFields(
     )
     KrtTextField(
         value = form.meetingPoint,
-        onValueChange = { v -> actions.onChange(MissionSection.CORE) { it.copy(meetingPoint = v) } },
+        onValueChange = { v ->
+            actions.onChange(MissionSection.CORE) {
+                it.copy(meetingPoint = v.take(FieldLimits.MEETING_POINT))
+            }
+        },
         label = stringResource(R.string.mission_admin_meeting_point),
         enabled = writable,
     )

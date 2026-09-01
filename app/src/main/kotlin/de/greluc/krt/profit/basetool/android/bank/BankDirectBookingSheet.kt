@@ -43,6 +43,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSele
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
+import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import java.math.BigDecimal
 
 /** Test handle for the sheet. */
@@ -203,7 +204,7 @@ fun BankDirectBookingSheet(
             }
             KrtTextField(
                 value = state.note,
-                onValueChange = { value -> onEdit { it.copy(note = value) } },
+                onValueChange = { value -> onEdit { it.copy(note = value.take(FieldLimits.NOTE)) } },
                 label = stringResource(R.string.bank_direct_note),
                 modifier = Modifier.fillMaxWidth(),
             )
