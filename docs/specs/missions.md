@@ -1072,6 +1072,41 @@ The status filter is unaffected: a ticked status still wins over the past toggle
 **Acceptance**
 
 - [x] Forward-looking asks ascending, past-inclusive asks descending (`MissionRepositoryTest`).
-- [ ] Walked on a device: outstanding.
+- [x] **Walked on a device (2026-09-01):** on both form factors „Vergangene aus" ends on HEUTE
+      and „Vergangene an" begins with it — the order flips. Verified against the seeded
+      `planned_start_time` values (25.08., 27.08., 01.09.), which the rendered order matches in
+      both directions.
 
 **Code:** `core/data/MissionRepository.kt`
+
+### REQ-APP-MIS-036 — An Einsatz is grouped by the date it is sorted on
+
+The date header a row sits under must come from the same value that decides the row's position.
+
+**Found by device verification, 2026-09-01.** The list sorts on `plannedStartTime` but groups an
+**active** Einsatz under its `actualStartTime`. In the seeded test stack „Vertikaler Abbau Lyria" is
+planned for 25.08. and was actually started on 28.08., so the headers render
+
+```
+HEUTE (01.09.)  ·  DONNERSTAG 27.08.  ·  FREITAG 28.08.
+```
+
+— which reads as a broken sort even though every row is in its correct place. Confirmed on both the
+phone and the tablet, so it is not a form-factor artefact.
+
+This is **older than REQ-APP-MIS-035** and was not caused by it: with the previous ascending-only
+order the same mismatch rendered as `28.08. · 27.08. · HEUTE`, equally wrong and equally invisible
+to anyone not comparing against the data. Flipping the direction only changed which way it looks
+wrong.
+
+Either the header follows `plannedStartTime` for every row, or the sort follows whichever date the
+header shows — but a member must never see date headers that do not ascend or descend with the
+list.
+
+**Acceptance**
+
+- [ ] A mission whose actual start differs from its planned start sits under a header matching its
+      sort position, in both directions.
+- [ ] Walked on a device: outstanding.
+
+**Code:** the grouping in `missions/MissionsScreen.kt`

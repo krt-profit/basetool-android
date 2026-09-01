@@ -479,6 +479,8 @@ refining sat on the last page — the opposite of what the screen is for. The we
 **Acceptance**
 
 - [x] The request carries `sort=startedAt,desc` (`RefineryRepositoryTest`).
-- [ ] Walked on a device: outstanding.
+- [x] **Walked on a device (2026-09-01):** phone and tablet both open on the member's newest
+      order (26.08. 11:20) and end on the oldest (26.08. 11:18) at „ENDE DER LISTE". The three
+      newer orders in the test stack belong to another member and are correctly absent.
 
 **Code:** `core/data/RefineryRepository.kt`

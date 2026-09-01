@@ -457,6 +457,7 @@ this order; the code did not deliver it).
 **Acceptance**
 
 - [x] The request carries `sort=createdAt,desc` (`NotificationRepositoryTest`).
-- [ ] Walked on a device: outstanding.
+- [x] **Walked on a device (2026-09-01):** phone (API 37, 1080×2424) and tablet (API 37,
+      2560×1600) both open the inbox on 26.08. 20:32 and run strictly down to 11:00.
 
 **Code:** `core/data/NotificationRepository.kt`
