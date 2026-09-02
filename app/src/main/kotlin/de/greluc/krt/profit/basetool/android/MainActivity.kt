@@ -745,7 +745,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
-                initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
+                initializer {
+                    OrgUnitViewModel(container.orgUnits, container.activeOrgUnit, container.identity)
+                }
                 initializer { MemberPreferencesViewModel(container.memberPreferences) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }

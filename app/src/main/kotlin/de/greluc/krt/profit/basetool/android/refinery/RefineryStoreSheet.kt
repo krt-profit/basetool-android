@@ -217,7 +217,10 @@ private fun StoreReceiver(
     actions: RefineryStoreActions,
     picker: RefineryMemberPickerState,
 ) {
-    if (!isLogistician()) {
+    // Unknown counts as "not offered" here for the same reason the Lager gates lock: a picker
+    // whose every foreign choice answers 403 is worse than none, and that is exactly what an
+    // unread identity would produce.
+    if (isLogistician() != true) {
         KrtTextField(
             value = stringResource(R.string.refinery_store_user_self),
             onValueChange = {},

@@ -11,7 +11,9 @@ package de.greluc.krt.profit.basetool.android.ui
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import de.greluc.krt.profit.basetool.android.core.data.Identity
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -107,6 +109,51 @@ class RowWritePermissionTest {
         // Unknown is not forbidden: refusing on an outage would lock a member out of their own
         // stock because a request timed out. The server stays the authority either way.
         assertTrue(mayEdit(caller = null, canEdit = null, ownerId = SOMEBODY_ELSE))
+    }
+
+    @Test
+    fun `an unread identity does not hand out the Logistician grant`() {
+        // The owner's objection, pinned. This used to return true, so every gated control was open
+        // for the whole of app start — the window before the identity arrives — and the app offered
+        // writes the server then refused with a 403. That is the failure ADR-0011 exists to
+        // prevent; "no data leaked" does not make it acceptable.
+        var answer: Boolean? = true
+        compose.setContent {
+            CompositionLocalProvider(LocalCaller provides null) { answer = isLogistician() }
+        }
+
+        assertNull(answer)
+    }
+
+    @Test
+    fun `an unknown permission locks the control without claiming a missing grant`() {
+        // Locking is right; blaming the member is not. Somebody who holds the role must not be told
+        // they lack it because a request timed out, so the unknown state carries its own words.
+        val gate =
+            Gate.of(
+                permitted = null,
+                reason = "Dafür brauchst du die Rolle Logistiker.",
+                detail = "Ein Offizier vergibt sie.",
+                unknownReason = "Berechtigung nicht prüfbar",
+                unknownDetail = "Deine Berechtigungen konnten nicht geladen werden.",
+            )
+
+        assertFalse(gate.allowed)
+        assertEquals("Berechtigung nicht prüfbar", gate.reason)
+    }
+
+    @Test
+    fun `a held grant still opens the control`() {
+        val gate =
+            Gate.of(
+                permitted = true,
+                reason = "r",
+                detail = "d",
+                unknownReason = "u",
+                unknownDetail = "ud",
+            )
+
+        assertTrue(gate.allowed)
     }
 
     @Test

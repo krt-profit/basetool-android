@@ -18,10 +18,19 @@ import de.greluc.krt.profit.basetool.android.core.data.Identity
  * fetched the identity and the Lager fetched none, which is how the Zuordnung and the bulk Umbuchen
  * shipped with no permission awareness at all (ADR-0011).
  *
- * `null` means "not read yet, or the read failed". Every caller must treat that as **unknown, not
- * as forbidden**: refusing on an outage would lock a member out of their own stock because a request
- * timed out. Unknown therefore leaves the control fully enabled and lets the server answer — the
- * behaviour the whole app had before this, kept as the honest fallback.
+ * `null` means "not read yet, or the read failed", and it is a **third state, not a synonym for
+ * either answer**. It used to read as *permitted*, on the grounds that refusing during an outage
+ * would lock a member out of their own stock. That reasoning protected the wrong thing: it left
+ * every gated control open during the window the identity is still loading — which is every app
+ * start — so the app offered writes the server then refused with a `403`. ADR-0011 exists to stop
+ * exactly that.
+ *
+ * Reading it as *forbidden* would be worse in a different way: the refusal copy names a missing
+ * grant („Dafür brauchst du die Rolle Logistiker."), and saying that to somebody who holds the role
+ * is a lie with a plausible face.
+ *
+ * So unknown is neither. It **locks the control like a refusal and says something true instead** —
+ * that the permission could not be checked — which is what [Gate.unknown] renders.
  */
 val LocalCaller = compositionLocalOf<Identity?> { null }
 
@@ -73,25 +82,39 @@ fun mayEditRowOf(
  * Backed by the server's `isLogisticianOrAbove`, so an admin and an officer read as held. Under the
  * previous membership-derived flag both read as *not* held and the Zuordnung was locked for them.
  *
- * @return whether the role is reached. Unknown reads as held, for the reason in [LocalCaller].
+ * @return whether the role is reached, or `null` when the identity has not been read. **Not**
+ *   `true` on unknown: an offered control whose write the server then refuses is the failure
+ *   ADR-0011 exists to prevent, and the owner called it out as such. The caller renders the
+ *   unknown state as locked-but-honest rather than as a missing grant.
  */
 @Composable
-fun isLogistician(): Boolean {
-    val caller = LocalCaller.current ?: return true
-    return caller.logistician
-}
+fun isLogistician(): Boolean? = LocalCaller.current?.logistician
+
+/**
+ * Whether the caller is an administrator.
+ *
+ * **Not a gate — a wording.** The admin area is web-only permanently, so nothing here unlocks a
+ * screen on this answer. What it decides is what the org switcher's no-pin row is allowed to
+ * promise: sending no `X-Active-Org-Unit-Id` gives an admin `adminAllScope` — every org unit there
+ * is — and gives everyone else the union of their own reach. Labelling both „Alle Org-Einheiten"
+ * told a member they were seeing everything when they were seeing their own two Staffeln (measured
+ * on the test stack 2026-09-01: 884.8 SCU under that row against an admin's 1403.4).
+ *
+ * @return whether the caller is an admin, or `null` when the identity has not been read. Treat
+ *   `null` as the narrower wording: over-promising during the load window is the same defect in
+ *   miniature.
+ */
+@Composable
+fun isAdmin(): Boolean? = LocalCaller.current?.admin
 
 /**
  * Whether the caller holds a backend capability.
  *
  * @param permission one of the backend's own constants — `HANGAR_WRITE`, `MISSION_READ`, …
- * @return whether it is held. Unknown reads as held, for the reason in [LocalCaller].
+ * @return whether it is held, or `null` when the identity has not been read.
  */
 @Composable
-fun holds(permission: String): Boolean {
-    val caller = LocalCaller.current ?: return true
-    return permission in caller.permissions
-}
+fun holds(permission: String): Boolean? = LocalCaller.current?.let { permission in it.permissions }
 
 /** The backend capability names the app checks against. Mirrors `backend/support/Permissions.java`. */
 object KrtPermissions {

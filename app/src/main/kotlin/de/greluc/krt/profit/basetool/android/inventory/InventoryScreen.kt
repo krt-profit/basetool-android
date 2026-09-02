@@ -802,10 +802,12 @@ private fun EntryActions(
     denials: DenialState,
 ) {
     val roleGate =
-        Gate(
-            allowed = isLogistician(),
+        Gate.of(
+            permitted = isLogistician(),
             reason = stringResource(R.string.gate_role_logistician),
             detail = stringResource(R.string.gate_role_logistician_detail),
+            unknownReason = stringResource(R.string.gate_unknown),
+            unknownDetail = stringResource(R.string.gate_unknown_detail),
         )
     val rowGate =
         Gate(
@@ -1299,10 +1301,12 @@ fun InventoryRoute(
                     onDismiss = viewModel::onAllocationDismissed,
                 ),
             saveGate =
-                Gate(
-                    allowed = isLogistician(),
+                Gate.of(
+                    permitted = isLogistician(),
                     reason = stringResource(R.string.gate_role_logistician),
                     detail = stringResource(R.string.gate_role_logistician_detail),
+                    unknownReason = stringResource(R.string.gate_unknown),
+                    unknownDetail = stringResource(R.string.gate_unknown_detail),
                 ),
             denials = denials,
         )

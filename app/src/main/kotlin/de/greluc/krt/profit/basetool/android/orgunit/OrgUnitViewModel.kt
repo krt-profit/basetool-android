@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.auth.ActiveOrgUnitStore
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.IdentitySource
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
 import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -71,12 +72,25 @@ data class OrgUnitState(
  * read leaves the previous state and logs; blocking the shell on it would turn one failed request
  * into an unusable app.
  *
+ * **An administrator is the exception to step 3, and it is not cosmetic.** The fallback below picks
+ * `units.firstOrNull()` when nothing else settles it, which is right for a member — a single-unit
+ * member should see their unit's name, not „Alle" for a scope that was never in doubt. For an
+ * admin the offered list is the whole catalogue rather than a membership list, so that fallback
+ * pins whatever sorts first (the Organisationsleitung, since the picker orders top-down) on the
+ * very first launch. The consequence is not merely a wrong badge: a pinned admin is *excluded*
+ * from ownerless rows, because `AccessGateService` grants those only while the header is absent.
+ * So the one caller for whom „alles sehen" is the point would silently start narrowed. An admin
+ * with no stored pin therefore defaults to „Alle Org-Einheiten", not to a unit.
+ *
  * @property source reads the memberships and the server's default
  * @property store the pin, shared with the request interceptor
+ * @property identity answers whether the caller is an admin; a failed read is treated as "not an
+ *   admin", which lands on the pre-existing member behaviour rather than on a widened one
  */
 class OrgUnitViewModel(
     private val source: OrgUnitSource,
     private val store: ActiveOrgUnitStore,
+    private val identity: IdentitySource,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(OrgUnitState())
 
@@ -106,6 +120,15 @@ class OrgUnitViewModel(
                 }
 
             if (wantsAll) {
+                mutableState.value = OrgUnitState(units = units, allChosen = true, loaded = true)
+                return@launch
+            }
+            if (store.current() == null && isAdmin()) {
+                // First launch for an administrator. Left to resolveActive() this would pin the
+                // first unit of the whole catalogue and start them narrowed — see the note on the
+                // class. Written to the store, not just to the state, so the interceptor and the
+                // next cold start agree with the badge.
+                store.pinAll()
                 mutableState.value = OrgUnitState(units = units, allChosen = true, loaded = true)
                 return@launch
             }
@@ -182,6 +205,25 @@ class OrgUnitViewModel(
             }
         return serverDefault?.takeIf { it in known } ?: units.firstOrNull()?.id
     }
+
+    /**
+     * Whether the caller is an administrator.
+     *
+     * @return `true` only on a successful read that says so. A failed read answers `false` — the
+     *   narrower of the two, which lands on the unchanged member path rather than widening the
+     *   default scope on the strength of a request that did not come back.
+     */
+    private suspend fun isAdmin(): Boolean =
+        when (val result = identity.me()) {
+            is ApiResult.Success -> {
+                result.value.admin
+            }
+
+            is ApiResult.Failure -> {
+                KrtLog.w(LOG_TAG) { "the caller's identity could not be read: ${result.error}" }
+                false
+            }
+        }
 
     private companion object {
         /** Log subsystem. No member identity is written here. */

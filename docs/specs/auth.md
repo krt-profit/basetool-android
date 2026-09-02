@@ -806,7 +806,7 @@ Every permission the app gates on comes from the server:
 | May write **this** Lager row | `InventoryItemDto.canEdit` |
 | May edit **this** Auftrag | `JobOrderDto.canEdit` |
 | May manage **this** Einsatz | `MissionDto.canEdit` (already did) |
-| May pin **which** org units | `GET /me/org-units` |
+| May pin **which** org units | `GET /me/org-units` (see the correction below) |
 
 **Because the fields it used to read answer a different question.** `/users/me` reports
 `isLogistician` and `isMissionManager`, and both mean *"does a Staffel membership row carry this
@@ -837,7 +837,64 @@ the app refuses in place where it knows, and lets the server answer where it doe
 - [x] The server's `canEdit = true` wins over a caller who neither owns the row nor holds a grant;
       `canEdit = false` wins over a caller who does hold one (`RowWritePermissionTest`).
 - [x] The org picker reads `/me/org-units` (`OrgUnitRepositoryTest`).
-- [ ] Walked on a device with an admin account: outstanding.
+- [x] It renders whatever kinds that endpoint returns — `switcherLabel()` already covers all four
+      („Bereich PROFIT", the OL by its plain name), so the 2026-09-01 widening of REQ-SEC-048 needed
+      no client change. A member seated on a Bereich or the Organisationsleitung and on nothing else
+      now has something to pin here for the first time.
+- [x] **Walked on a device (2026-09-01):** against a backend built from the branch (Flyway 234–236
+      applied, the published image stands at 233), the app calls `GET /me/capabilities` and
+      `GET /me/org-units` and both answer `200`. A Lager row belonging to another member renders its
+      Zuordnung control **enabled** for a caller holding `Officer` and **no** membership flag —
+      the combination the previous membership-derived gate refused.
+- [x] Walked on a device with an admin account (2026-09-02, `Pixel_10a` against the test stack,
+      after the main repo's REQ-SEC-035 reversal put `Admin` on the mobile scope): the app reads
+      „WILLKOMMEN, TEST-ADMIN" with the context badge on „Alle Einheiten", the switcher offers all
+      eight org units of all four kinds with „Alle Org-Einheiten" first and selected, and the Lager
+      under it totals 1403.4 SCU — the org-wide figure, against 784.8 for a single-Staffel member.
+- [x] The switcher's no-pin row is worded for the caller — „Alle Org-Einheiten" for an admin,
+      „Alle meine Org-Einheiten" for everyone else, and the narrower wording while the identity is
+      still unread. One label for both over-promised: an unpinned member gets the union of their own
+      units, not everything (measured on the test stack 2026-09-01, a two-Staffel member read 884.8
+      SCU against an admin's 1403.4). Read from the shell's identity rather than through
+      `LocalCaller`, because the switcher sheet is a sibling of the content Box and sits outside
+      that provider — the composable answers `null` there and every admin would get the narrow
+      wording (`BasetoolApp.kt`).
+- [x] An administrator's cold start lands on „Alle Org-Einheiten" instead of a pinned unit
+      (`OrgUnitViewModelTest`). The fallback picked `units.firstOrNull()`, which for an admin is the
+      first of the whole catalogue — the Organisationsleitung — and a pinned admin is excluded from
+      ownerless rows, so the one caller who needs the widest read would have started the narrowest.
+      An admin who has pinned a unit keeps it; a member is unaffected; a failed identity read takes
+      the member path rather than widening.
+- [x] The switcher sheet scrolls, and the no-pin row is its first entry. `KrtBottomSheet` lays its
+      body out in a bare `Column`, so beyond roughly fourteen rows everything was clipped and
+      untappable — starting with the row that had been emitted last (`BasetoolApp.kt`).
+
+> **Correction, 2026-09-01 — what the org picker does *not* fix.** The reported symptom was an
+> admin seeing only „Alle Org-Einheiten". Reading `/me/org-units` does **not** change that, and it
+> was wrong of an earlier revision to imply it would. The main repo's REQ-SEC-035 withholds `Admin`
+> from the mobile client's Keycloak scope **on purpose** — its rationale is that admin-wide scope is
+> a rule "the app has no screen designed around" — and REQ-SEC-036 stops a partial-scope client's
+> token from ever writing that role into the account. So an app caller is never an admin, the
+> endpoint's admin branch cannot fire from here, and an admin without a Staffel membership genuinely
+> has no unit to pin in the app. Confirmed on a device: a Keycloak account holding `Admin` arrived
+> in the backend as `KRT Member` alone.
+>
+> What this requirement **does** fix for that member is everything else they reported — the Lager,
+> the Auftrag and the payout controls — because those ride on `Officer`, which *is* in the mobile
+> scope, and it is the membership-versus-authorisation confusion that was hiding them.
+>
+> **Addendum, 2026-09-01.** A second, separate cause of an empty switcher was found while verifying
+> this: the endpoint offered Staffeln and SKs only, so a member whose only seat is on a **Bereich**
+> or the **Organisationsleitung** was given nothing either — regardless of `Admin`. That one is a
+> genuine defect and is fixed upstream in REQ-SEC-048; the app picks it up without a code change.
+>
+> **The paragraph above is superseded, 2026-09-02.** It ends "an admin's reach in the app still
+> comes from their seats, not from the role", and the owner reversed the premise: the mobile
+> Keycloak scope carries `Admin` now (main repo REQ-SEC-035, reversal note). An app caller *is* an
+> admin, the endpoint's admin branch fires, and „Alle Org-Einheiten" means every org unit rather
+> than the caller's own reach. The 2026-09-01 text is kept because it is the correct reading of the
+> design as it then stood, and because it is the reason the reversal happened: the symptom was
+> never this requirement's defect.
 
 **Code:** `core/data/IdentityRepository.kt`, `ui/Caller.kt`, `orders/OrdersViewModel.kt`,
 `core/data/OrgUnitRepository.kt` · **Upstream:** main repo `REQ-SEC-047`, `REQ-SEC-048`, ADR-0151
