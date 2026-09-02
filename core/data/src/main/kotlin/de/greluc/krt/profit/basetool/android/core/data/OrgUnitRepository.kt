@@ -51,14 +51,18 @@ interface OrgUnitSource {
 }
 
 /**
- * Reads the member's org units from the backend.
+ * Reads the org units the member may work in.
  *
- * **`/users/me/memberships`, not `/users/{id}/memberships`.** The web sidebar builds the same list
- * from two calls — resolve the principal's id, then ask for that id's memberships — and the app
- * uses a me-scoped endpoint added for it (main repo `REQ-API-009`). One round trip instead of two
- * matters on a phone; what matters more is that the id-taking path would have had to be reachable
- * from the public API vhost, which is a default-deny allow-list precisely so that a path able to
- * name *another* member never has to be on it.
+ * **`/me/org-units`, which answers what may be *pinned* rather than what is *joined*.** For most
+ * members those are the same list. For an admin they are not: an admin holds no Staffel membership
+ * by design, so a membership read returned nothing and the switcher offered only „Alle
+ * Org-Einheiten" — no way to narrow the app to one unit at all. The web app had the branch
+ * (`isAdmin()` → the active catalogue) and this one did not, which is what a rule duplicated across
+ * two clients eventually costs. It lives on the server now (REQ-SEC-048, ADR-0151).
+ *
+ * Still me-scoped and still one round trip. The id-taking path would have had to be reachable from
+ * the public API vhost, which is a default-deny allow-list precisely so that a path able to name
+ * *another* member never has to be on it.
  *
  * Nothing here is cached. The list changes when an administrator changes it, which the app cannot
  * observe, and it is two small reads on a screen the member opened deliberately.
@@ -154,8 +158,16 @@ class OrgUnitRepository(
         /** Log subsystem. Org-unit names are not member identities, but nothing here is logged. */
         const val LOG_TAG = "orgunit"
 
-        /** The me-scoped switcher options (main repo `REQ-API-009`). */
-        const val MEMBERSHIPS_PATH = "/api/v1/users/me/memberships"
+        /**
+         * The org units the caller may pin — **not** their memberships.
+         *
+         * `/users/me/memberships` answers a different question, and for an admin it answers it with
+         * nothing: an admin holds no Staffel membership by design, so the picker offered „Alle
+         * Org-Einheiten" and no unit to narrow to. The web app had branched on `isAdmin()` and read
+         * two catalogues instead; the app had no such branch. The rule now lives once on the server
+         * (REQ-SEC-048), so neither client carries the fork.
+         */
+        const val MEMBERSHIPS_PATH = "/api/v1/me/org-units"
 
         /** The server's own idea of the caller's active unit. */
         const val ACTIVE_ORG_UNIT_PATH = "/api/v1/me/active-org-unit"

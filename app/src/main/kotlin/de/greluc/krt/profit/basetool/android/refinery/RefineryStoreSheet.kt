@@ -13,10 +13,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -29,11 +34,14 @@ import de.greluc.krt.profit.basetool.android.core.data.RefineryStoreLine
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtBottomSheet
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCard
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCheckboxRow
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCombobox
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtCtaButton
+import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtOption
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
+import de.greluc.krt.profit.basetool.android.ui.isLogistician
 
 /** The Einlagern form, for the tests that open it. */
 const val REFINERY_STORE_FORM_TAG: String = "refinery-store-form"
@@ -49,6 +57,9 @@ data class RefineryStoreActions(
     val onLineChanged: (RefineryStoreLine) -> Unit,
     val onStoreAll: () -> Unit,
     val onDismiss: () -> Unit,
+    val onPickMember: (Int) -> Unit = {},
+    val onMemberQuery: (String) -> Unit = {},
+    val onMemberDismiss: () -> Unit = {},
 )
 
 /**
@@ -67,6 +78,7 @@ data class RefineryStoreActions(
  * @param busy whether the run is being booked right now.
  * @param error what the last attempt was refused with, or `null`.
  * @param actions what the form reports back.
+ * @param memberPicker the receiver lookup, open for at most one line at a time.
  */
 @Composable
 fun RefineryStoreSheet(
@@ -74,6 +86,7 @@ fun RefineryStoreSheet(
     busy: Boolean,
     error: ApiError?,
     actions: RefineryStoreActions,
+    memberPicker: RefineryMemberPickerState = RefineryMemberPickerState(),
 ) {
     KrtBottomSheet(
         onDismiss = actions.onDismiss,
@@ -84,8 +97,13 @@ fun RefineryStoreSheet(
             contentPadding = PaddingValues(KrtSpacing.s16),
             verticalArrangement = Arrangement.spacedBy(KrtSpacing.s12),
         ) {
-            items(lines, key = { it.key }) { line ->
-                StoreLineCard(line = line, actions = actions)
+            itemsIndexed(lines, key = { _, line -> line.key }) { index, line ->
+                StoreLineCard(
+                    line = line,
+                    index = index,
+                    actions = actions,
+                    memberPicker = memberPicker,
+                )
             }
             item(key = "submit") {
                 Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
@@ -117,7 +135,9 @@ fun RefineryStoreSheet(
 @Composable
 private fun StoreLineCard(
     line: RefineryStoreLine,
+    index: Int,
     actions: RefineryStoreActions,
+    memberPicker: RefineryMemberPickerState,
 ) {
     KrtCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(KrtSpacing.s8)) {
@@ -157,6 +177,12 @@ private fun StoreLineCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = KrtPalette.TextMuted,
             )
+            StoreReceiver(
+                line = line,
+                index = index,
+                actions = actions,
+                picker = memberPicker,
+            )
             KrtTextField(
                 value = line.note,
                 onValueChange = {
@@ -168,4 +194,75 @@ private fun StoreLineCard(
             )
         }
     }
+}
+
+/**
+ * Who this line's output is booked onto.
+ *
+ * **Two shapes, one rule.** A Logistician (through the hierarchy, so an admin and an officer too)
+ * gets a roster picker; everyone else gets a disabled field naming themselves. That is the web
+ * app's own conclusion, written down beside its combobox: offering a roster whose every foreign
+ * choice answers 403 is worse than not offering one (REQ-SEC-039). The server refuses per line —
+ * `canManageUserInventory(targetUserId)` — so this is a hint, not the gate.
+ *
+ * @param line the store line.
+ * @param index its position, which is what the picker opens against.
+ * @param actions what the form reports back.
+ * @param picker the roster lookup's current state.
+ */
+@Composable
+private fun StoreReceiver(
+    line: RefineryStoreLine,
+    index: Int,
+    actions: RefineryStoreActions,
+    picker: RefineryMemberPickerState,
+) {
+    // Unknown counts as "not offered" here for the same reason the Lager gates lock: a picker
+    // whose every foreign choice answers 403 is worse than none, and that is exactly what an
+    // unread identity would produce.
+    if (isLogistician() != true) {
+        KrtTextField(
+            value = stringResource(R.string.refinery_store_user_self),
+            onValueChange = {},
+            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.refinery_store_user),
+            enabled = false,
+        )
+        Text(
+            text = stringResource(R.string.refinery_store_user_locked),
+            style = MaterialTheme.typography.bodySmall,
+            color = KrtPalette.TextMuted,
+        )
+        return
+    }
+    var expanded by remember(index) { mutableStateOf(false) }
+    KrtCombobox(
+        query = picker.query.ifEmpty { line.userName.orEmpty() },
+        onQueryChange = {
+            expanded = true
+            if (picker.open != index) actions.onPickMember(index)
+            actions.onMemberQuery(it)
+        },
+        options = picker.results.map { KrtOption(value = it.id, label = it.name) },
+        onSelect = { option ->
+            picker.results.firstOrNull { it.id == option.value }?.let { picked ->
+                actions.onLineChanged(line.copy(userId = picked.id, userName = picked.name))
+            }
+            expanded = false
+            actions.onMemberDismiss()
+        },
+        expanded = expanded && picker.open == index,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.refinery_store_user),
+        placeholder = stringResource(R.string.refinery_store_user_search),
+        // Stated when it bites and silent when it does not (ADR-0104).
+        notice =
+            when {
+                picker.open != index -> null
+                picker.loading -> stringResource(R.string.mission_member_searching)
+                picker.more -> stringResource(R.string.picker_more_matches)
+                else -> null
+            },
+    )
 }

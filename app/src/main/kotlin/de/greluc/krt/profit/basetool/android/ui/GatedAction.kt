@@ -56,7 +56,39 @@ data class Gate(
     val allowed: Boolean,
     val reason: String,
     val detail: String,
-)
+) {
+    companion object {
+        /**
+         * Builds a gate from a permission that may not have been read yet.
+         *
+         * **Three states, not two.** `true` opens the control; `false` locks it and names the
+         * missing grant; `null` — the identity has not been read, or the read failed — locks it too
+         * but says the permission could not be checked. Reading unknown as permitted left every
+         * gated control open for the whole of app start and offered writes the server then refused
+         * (ADR-0011); reading it as a missing grant would tell somebody who holds the role that they
+         * do not.
+         *
+         * @param permitted the permission's answer, or `null` when it is not known.
+         * @param reason the missing-grant headline, used only for a real refusal.
+         * @param detail who hands that grant out.
+         * @param unknownReason the headline when the answer is not known.
+         * @param unknownDetail what to do about it.
+         * @return the gate to render.
+         */
+        fun of(
+            permitted: Boolean?,
+            reason: String,
+            detail: String,
+            unknownReason: String,
+            unknownDetail: String,
+        ): Gate =
+            when (permitted) {
+                true -> Gate(allowed = true, reason = reason, detail = detail)
+                false -> Gate(allowed = false, reason = reason, detail = detail)
+                null -> Gate(allowed = false, reason = unknownReason, detail = unknownDetail)
+            }
+    }
+}
 
 /**
  * One refusal, and the tap that raised it.

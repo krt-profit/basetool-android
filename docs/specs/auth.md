@@ -795,3 +795,144 @@ app is open takes effect without a sign-out.
 
 **Enforced by:** `core/data/IdentityRepository.kt` · the shared identity holder ·
 **Decision:** [ADR-0011](../adr/0011-the-app-knows-its-permissions-and-refuses-in-place.md)
+
+### REQ-APP-AUTH-014 — The app is told its authorisation; it never derives it
+
+Every permission the app gates on comes from the server:
+
+| What | Where from |
+| --- | --- |
+| Reaches Logistician / Mission-Manager / is Admin | `GET /me/capabilities` — `isLogisticianOrAbove`, `isMissionManagerOrAbove`, `isAdmin` |
+| May write **this** Lager row | `InventoryItemDto.canEdit` |
+| May edit **this** Auftrag | `JobOrderDto.canEdit` |
+| May manage **this** Einsatz | `MissionDto.canEdit` (already did) |
+| May pin **which** org units | `GET /me/org-units` (see the correction below) |
+
+**Because the fields it used to read answer a different question.** `/users/me` reports
+`isLogistician` and `isMissionManager`, and both mean *"does a Staffel membership row carry this
+flag"* — `UserMapper.resolveLogistician` reads the membership rows and nothing else. **An admin
+holds no Staffel membership by design**, so both were `false` for the one role that may do
+everything, and the app greyed out the Lager's Zuordnung and Umbuchen, the Auftrag's edit, status
+and priority controls, and the Operation's payout confirmation. Officers without the flag were
+locked out the same way. The server would have permitted all of it.
+
+This is not an approximation of the rule. It is a different rule that coincides for a plain
+Logistician and diverges for both roles above one.
+
+**A row flag beats a role flag where one exists.** `JobOrderDto.canEdit` carries role *and* scope,
+which the app could never compute: a Logistician of Staffel A holds the grant and not the scope for
+Staffel B's order. `mayEditRowOf` therefore prefers the row's own answer and falls back to
+"own row" only when the server sent none.
+
+**Unknown stays permissive, refusal stays the server's.** A failed capabilities read locks the
+grants (a narrower reading cannot offer what the server refuses), but an absent row flag leaves the
+control enabled — refusing on an outage would lock a member out of their own stock. ADR-0011 stands:
+the app refuses in place where it knows, and lets the server answer where it does not.
+
+**Acceptance**
+
+- [x] An admin and an officer read as Logistician and Mission-Manager even though the me-response's
+      membership flags say `false` (`IdentityCapabilitiesTest`).
+- [x] A failed capabilities read locks both grants rather than guessing (`IdentityCapabilitiesTest`).
+- [x] The server's `canEdit = true` wins over a caller who neither owns the row nor holds a grant;
+      `canEdit = false` wins over a caller who does hold one (`RowWritePermissionTest`).
+- [x] The org picker reads `/me/org-units` (`OrgUnitRepositoryTest`).
+- [x] It renders whatever kinds that endpoint returns — `switcherLabel()` already covers all four
+      („Bereich PROFIT", the OL by its plain name), so the 2026-09-01 widening of REQ-SEC-048 needed
+      no client change. A member seated on a Bereich or the Organisationsleitung and on nothing else
+      now has something to pin here for the first time.
+- [x] **Walked on a device (2026-09-01):** against a backend built from the branch (Flyway 234–236
+      applied, the published image stands at 233), the app calls `GET /me/capabilities` and
+      `GET /me/org-units` and both answer `200`. A Lager row belonging to another member renders its
+      Zuordnung control **enabled** for a caller holding `Officer` and **no** membership flag —
+      the combination the previous membership-derived gate refused.
+- [x] Walked on a device with an admin account (2026-09-02, `Pixel_10a` against the test stack,
+      after the main repo's REQ-SEC-035 reversal put `Admin` on the mobile scope): the app reads
+      „WILLKOMMEN, TEST-ADMIN" with the context badge on „Alle Einheiten", the switcher offers all
+      eight org units of all four kinds with „Alle Org-Einheiten" first and selected, and the Lager
+      under it totals 1403.4 SCU — the org-wide figure, against 784.8 for a single-Staffel member.
+- [x] The switcher's no-pin row is worded for the caller — „Alle Org-Einheiten" for an admin,
+      „Alle meine Org-Einheiten" for everyone else, and the narrower wording while the identity is
+      still unread. One label for both over-promised: an unpinned member gets the union of their own
+      units, not everything (measured on the test stack 2026-09-01, a two-Staffel member read 884.8
+      SCU against an admin's 1403.4). Read from the shell's identity rather than through
+      `LocalCaller`, because the switcher sheet is a sibling of the content Box and sits outside
+      that provider — the composable answers `null` there and every admin would get the narrow
+      wording (`BasetoolApp.kt`).
+- [x] An administrator's cold start lands on „Alle Org-Einheiten" instead of a pinned unit
+      (`OrgUnitViewModelTest`). The fallback picked `units.firstOrNull()`, which for an admin is the
+      first of the whole catalogue — the Organisationsleitung — and a pinned admin is excluded from
+      ownerless rows, so the one caller who needs the widest read would have started the narrowest.
+      An admin who has pinned a unit keeps it; a member is unaffected; a failed identity read takes
+      the member path rather than widening.
+- [x] The switcher sheet scrolls, and the no-pin row is its first entry. `KrtBottomSheet` lays its
+      body out in a bare `Column`, so beyond roughly fourteen rows everything was clipped and
+      untappable — starting with the row that had been emitted last (`BasetoolApp.kt`).
+
+> **Correction, 2026-09-01 — what the org picker does *not* fix.** The reported symptom was an
+> admin seeing only „Alle Org-Einheiten". Reading `/me/org-units` does **not** change that, and it
+> was wrong of an earlier revision to imply it would. The main repo's REQ-SEC-035 withholds `Admin`
+> from the mobile client's Keycloak scope **on purpose** — its rationale is that admin-wide scope is
+> a rule "the app has no screen designed around" — and REQ-SEC-036 stops a partial-scope client's
+> token from ever writing that role into the account. So an app caller is never an admin, the
+> endpoint's admin branch cannot fire from here, and an admin without a Staffel membership genuinely
+> has no unit to pin in the app. Confirmed on a device: a Keycloak account holding `Admin` arrived
+> in the backend as `KRT Member` alone.
+>
+> What this requirement **does** fix for that member is everything else they reported — the Lager,
+> the Auftrag and the payout controls — because those ride on `Officer`, which *is* in the mobile
+> scope, and it is the membership-versus-authorisation confusion that was hiding them.
+>
+> **Addendum, 2026-09-01.** A second, separate cause of an empty switcher was found while verifying
+> this: the endpoint offered Staffeln and SKs only, so a member whose only seat is on a **Bereich**
+> or the **Organisationsleitung** was given nothing either — regardless of `Admin`. That one is a
+> genuine defect and is fixed upstream in REQ-SEC-048; the app picks it up without a code change.
+>
+> **The paragraph above is superseded, 2026-09-02.** It ends "an admin's reach in the app still
+> comes from their seats, not from the role", and the owner reversed the premise: the mobile
+> Keycloak scope carries `Admin` now (main repo REQ-SEC-035, reversal note). An app caller *is* an
+> admin, the endpoint's admin branch fires, and „Alle Org-Einheiten" means every org unit rather
+> than the caller's own reach. The 2026-09-01 text is kept because it is the correct reading of the
+> design as it then stood, and because it is the reason the reversal happened: the symptom was
+> never this requirement's defect.
+
+**Code:** `core/data/IdentityRepository.kt`, `ui/Caller.kt`, `orders/OrdersViewModel.kt`,
+`core/data/OrgUnitRepository.kt` · **Upstream:** main repo `REQ-SEC-047`, `REQ-SEC-048`, ADR-0151
+
+### REQ-APP-AUTH-015 — Refined output may be booked onto another member, by a Logistician
+
+The Einlagern sheet offers a member picker per line. A caller who does not reach Logistician sees
+their own name in a disabled field and a sentence saying why.
+
+**The wire always carried it; nothing set it.** `RefineryOrderStoreItemDto.userId` was mapped and
+sent from the first version of the sheet, always as `null`, so the server fell back to the order's
+owner. What was missing was the control.
+
+**Only a Logistician is offered the picker**, which is the web app's own conclusion, written beside
+its combobox: *"offering a roster picker whose every foreign choice answers 403 is worse than not
+offering one"*. The server decides per line — `canManageUserInventory(targetUserId)`, org-unit-aware
+since REQ-SEC-039 — so this is a hint, never the gate. Gated on the hierarchy-resolved grant, so an
+admin and an officer are offered it too.
+
+The roster is `/users/search`, shared with the Lager's member picker: one question, one list. The
+overflow line follows ADR-0104 — stated when the cap bites, silent when it does not.
+
+**Acceptance**
+
+- [x] A non-Logistician sees a disabled field naming themselves, and no picker.
+- [ ] Walked on a device: outstanding.
+
+**Code:** `refinery/RefineryMemberPicker.kt`, `refinery/RefineryStoreSheet.kt` ·
+**Related:** main repo `REQ-SEC-039`, `REQ-APP-AUTH-014`
+
+### Deliberately not built — managing another member's ships
+
+`GET|PUT|DELETE /api/v1/users/{userId}/ships[/{shipId}]` are gated `@PreAuthorize(HAS_ROLE_ADMIN)`
+and name another member in the path: functionally the admin area, which stays **web-only** by the
+owner decision of 2026-08-17. Confirmed 2026-09-01.
+
+Worth stating because the ordinary write, `PUT /api/v1/ships/{id}`, *looks* as though an admin
+passes — its gate is `canEditShip(#id)`, whose scope predicate has an `isAdmin()` path. It does not:
+`HangarService.updateShip` throws unless the caller owns the ship, with no admin bypass. Reading the
+annotation without the service behind it gives the wrong answer, which is how this nearly became a
+feature.

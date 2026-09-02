@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Als Admin sahst du in der App nur deine eigenen Einheiten statt aller.** Der mobile Keycloak-Client trug die Rolle `Admin` bewusst nicht — damit warst du in der App faktisch ein Mitglied ohne Mitgliedschaften: keine Einheit zum Umschalten, und „Alle Org-Einheiten“ lieferte deine eigene (leere) Reichweite statt wirklich allem. Der Client trägt `Admin` jetzt (Haupt-Repo, REQ-SEC-035). Dazu drei Fehler in der App behoben: sie pinnte beim Kaltstart selbst die erste Einheit des Katalogs, der Umschalter konnte nicht scrollen, und „Alle Org-Einheiten“ stand als letzter Eintrag — ab acht Einheiten also unerreichbar. Die Administrations-Seiten bleiben weiterhin nur im Webtool.
+
+- **„Alle Org-Einheiten“ versprach dir mehr, als es lieferte.** Ohne Pin sieht ein Admin wirklich alles, jedes andere Mitglied die Vereinigung seiner eigenen Einheiten. Beschriftet war beides gleich; für Nicht-Admins heißt der Eintrag jetzt „Alle meine Org-Einheiten“.
+
+- **Als Admin durftest du in der App nichts, was du im Webtool darfst.** Lagereinträge zuordnen, fremde Zeilen umbuchen, Aufträge bearbeiten, Status und Priorität ändern, Auszahlungen bestätigen — alles ausgegraut, obwohl der Server es erlaubt hätte. Offiziere traf dasselbe. Die App las zwei Felder als Berechtigung, die etwas anderes aussagen: ob eine **Staffel-Mitgliedschaft** das Häkchen trägt — und ein Admin hat per Design keine Staffel-Mitgliedschaft. Sie fragt jetzt den Server, was sie darf, statt es aus Rollen zu erschließen.
+
+### Added
+
+- **Raffinerie-Ausgabe lässt sich auf ein anderes Mitglied einlagern.** Im Einlagern-Blatt steht pro Position eine Mitgliedersuche. Wer die Logistiker-Rolle nicht erreicht, sieht seinen eigenen Namen in einem gesperrten Feld und den Grund dazu — einen Picker anzubieten, dessen fremde Auswahl der Server ohnehin ablehnt, wäre schlechter als keiner.
+
+
 ## [0.2.1] — 2026-09-01
 
 ### Added

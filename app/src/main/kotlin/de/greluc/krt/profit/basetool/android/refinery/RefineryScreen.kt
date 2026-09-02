@@ -1214,7 +1214,11 @@ fun RefineryOrderDetailRoute(
                     onLineChanged = viewModel::onLineChanged,
                     onStoreAll = viewModel::onStoreAll,
                     onDismiss = viewModel::onStoreFormDismissed,
+                    onPickMember = viewModel.memberPicker::open,
+                    onMemberQuery = viewModel.memberPicker::query,
+                    onMemberDismiss = viewModel.memberPicker::dismiss,
                 ),
+            memberPicker = state.memberPicker,
         )
     }
 }

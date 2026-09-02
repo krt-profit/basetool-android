@@ -448,7 +448,7 @@ data class OrderDetailState(
     val editMode: OrderFormMode?
         get() =
             when {
-                me?.logistician == true -> {
+                mayEditOrder -> {
                     OrderFormMode.EDIT
                 }
 
@@ -513,21 +513,21 @@ data class OrderDetailState(
 
     /** Whether the status control belongs on this screen. */
     val statusChangeable: Boolean
-        get() = me?.logistician == true
+        get() = mayEditOrder
 
     /**
      * Whether the caller may book a production run.
      *
-     * The endpoint's own gate is `LOGISTICIAN or OFFICER or ADMIN` plus edit scope on the Auftrag;
-     * the flag the app holds covers the first and is a **hint, never a gate** — the control is
-     * drawn either way and the server stays the authority (ADR-0011).
+     * The endpoint gates on `hasRole('LOGISTICIAN')` **and** edit scope on the Auftrag. The app used
+     * to hold only the first half — and held it as a membership flag, which read `false` for an
+     * admin. [mayEditOrder] carries both halves now, computed server-side per order.
      *
      * Deliberately **not** folded together with [writable]. Being offline is not a missing grant,
      * and the refusal this flag drives names one — „Dafür brauchst du die Rolle Logistiker." would
      * be a false statement about a member who simply has no signal.
      */
     val productionAllowed: Boolean
-        get() = me?.logistician == true
+        get() = mayEditOrder
 
     /**
      * Whether the priority control belongs on this screen.
@@ -537,7 +537,18 @@ data class OrderDetailState(
      * back there.
      */
     val priorityChangeable: Boolean
-        get() = me?.logistician == true && order?.priority != null
+        get() = mayEditOrder && order?.priority != null
+
+    /**
+     * Whether the server says this caller may edit **this** order.
+     *
+     * `JobOrderDto.canEdit` is the endpoint's own rule — role reached through the hierarchy *and*
+     * edit scope on the responsible org unit — so it is right for an admin, for an officer, and for
+     * a Logistician standing in front of another Staffel's order alike. `null` means a server that
+     * does not send it yet: fall back to the role half, which is now itself hierarchy-resolved.
+     */
+    private val mayEditOrder: Boolean
+        get() = order?.canEdit ?: (me?.logistician == true)
 }
 
 /**

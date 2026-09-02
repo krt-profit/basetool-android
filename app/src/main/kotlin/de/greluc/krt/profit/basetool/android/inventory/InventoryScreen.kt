@@ -802,14 +802,16 @@ private fun EntryActions(
     denials: DenialState,
 ) {
     val roleGate =
-        Gate(
-            allowed = isLogistician(),
+        Gate.of(
+            permitted = isLogistician(),
             reason = stringResource(R.string.gate_role_logistician),
             detail = stringResource(R.string.gate_role_logistician_detail),
+            unknownReason = stringResource(R.string.gate_unknown),
+            unknownDetail = stringResource(R.string.gate_unknown_detail),
         )
     val rowGate =
         Gate(
-            allowed = mayEditRowOf(entry.holderId),
+            allowed = mayEditRowOf(entry.canEdit, entry.holderId),
             reason = stringResource(R.string.gate_own_row),
             detail = stringResource(R.string.gate_own_row_detail),
         )
@@ -1207,7 +1209,8 @@ fun InventoryRoute(
                     // individual rows wear applies to the batch (design ch. 09, artboard 5:
                     // „Enthält die Auswahl fremde Zeilen, rendert Umbuchen im Gesperrt-Stil …
                     // die Auswahl bleibt bestehen"). Refusing does not clear what was picked.
-                    val ownsEveryRow = state.selectedEntries().all { mayEditRowOf(it.holderId) }
+                    val ownsEveryRow =
+                        state.selectedEntries().all { mayEditRowOf(it.canEdit, it.holderId) }
                     val bulkGate =
                         Gate(
                             allowed = ownsEveryRow,
@@ -1298,10 +1301,12 @@ fun InventoryRoute(
                     onDismiss = viewModel::onAllocationDismissed,
                 ),
             saveGate =
-                Gate(
-                    allowed = isLogistician(),
+                Gate.of(
+                    permitted = isLogistician(),
                     reason = stringResource(R.string.gate_role_logistician),
                     detail = stringResource(R.string.gate_role_logistician_detail),
+                    unknownReason = stringResource(R.string.gate_unknown),
+                    unknownDetail = stringResource(R.string.gate_unknown_detail),
                 ),
             denials = denials,
         )

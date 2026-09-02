@@ -100,6 +100,7 @@
     <string name="nav_settings">Settings</string>
     <string name="org_switcher_title">Active org unit</string>
     <string name="org_switcher_all">All org units</string>
+    <string name="org_switcher_all_mine">All my org units</string>
     <string name="org_switcher_all_short">All units</string>
     <string name="placeholder_under_construction">This area is still being built.</string>
 
@@ -1251,6 +1252,10 @@
     <string name="refinery_store_all">Store all items</string>
     <string name="refinery_store_personal">Store as a personal entry</string>
     <string name="refinery_store_personal_note">Personal excludes a job order, and a personal line gets none of the order\'s mission earmark.</string>
+    <string name="refinery_store_user">Member</string>
+    <string name="refinery_store_user_self">You</string>
+    <string name="refinery_store_user_search">Search member…</string>
+    <string name="refinery_store_user_locked">Booked onto you. Booking onto another member is a Logistician task.</string>
     <string name="refinery_store_note">Note</string>
     <string name="refinery_store_line_done">Stored</string>
     <string name="refinery_store_failed">This item could not be stored.</string>
@@ -1443,6 +1448,8 @@
         <item quantity="other">%1$d checked in</item>
     </plurals>
     <string name="mission_detail_function_label">Function on board</string>
+    <string name="gate_unknown">Permission not checkable</string>
+    <string name="gate_unknown_detail">Your permissions could not be loaded. Check the connection and reload.</string>
     <string name="gate_role_logistician">That needs the Logistiker role.</string>
     <string name="gate_role_logistician_detail">Granted per Staffel by the administration.</string>
     <string name="gate_own_row">Only your own entry — someone else’s is changed by a Logistiker.</string>

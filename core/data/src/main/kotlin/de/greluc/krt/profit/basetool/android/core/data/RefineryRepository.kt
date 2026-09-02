@@ -332,6 +332,7 @@ data class RefineryStoreLine(
     val jobOrderId: String? = null,
     val note: String = "",
     val userId: String? = null,
+    val userName: String? = null,
     val owningOrgUnitId: String? = null,
 ) {
     /**

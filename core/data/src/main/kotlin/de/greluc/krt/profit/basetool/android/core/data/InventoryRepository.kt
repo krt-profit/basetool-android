@@ -125,6 +125,11 @@ data class MaterialEntryPage(
  * @property quality the quality, or `null`
  * @property note the member's own note, or `null`
  * @property version optimistic-locking version
+ * @property canEdit whether **this caller** may write to this row, as the server answered it. Not
+ *   re-derived: the rule is per-row and hierarchy-aware, and every client-side approximation of it
+ *   gets an admin wrong (REQ-SEC-047). `null` means an older server said nothing — read as unknown,
+ *   which leaves the control enabled and lets the server decide, the same fallback the rest of the
+ *   permission handling uses.
  * @property jobOrderAllocations how much of this entry is promised to which Auftrag
  * @property jobOrderRest what the server says is left after the Auftrag split, as it rendered it
  * @property missionAllocations how much is promised to which Einsatz
@@ -154,6 +159,7 @@ data class InventoryEntry(
     val missionAllocations: List<InventoryAllocation> = emptyList(),
     val missionRest: String? = null,
     val owningOrgUnitId: String? = null,
+    val canEdit: Boolean? = null,
 )
 
 /**
@@ -1468,6 +1474,10 @@ private fun InventoryItemDto.toEntry(): InventoryEntry? {
         quality = quality?.toString(),
         personal = personal == true,
         owningOrgUnitId = owningSquadron?.id,
+        // The server's own per-row answer (REQ-SEC-047). Null on a build talking to an older
+        // server, which the screen reads as „unknown" and leaves the control enabled rather than
+        // locking a member out of their own stock.
+        canEdit = canEdit,
         note = note?.takeIf { it.isNotBlank() },
         version = version,
         jobOrderAllocations =

@@ -10,6 +10,7 @@ package de.greluc.krt.profit.basetool.android.refinery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.greluc.krt.profit.basetool.android.core.common.KrtLog
+import de.greluc.krt.profit.basetool.android.core.data.BookInOptions
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSections
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
@@ -379,6 +380,7 @@ data class RefineryDetailState(
     val retryIn: Int? = null,
     val now: OffsetDateTime = OffsetDateTime.now(),
     val lines: List<RefineryStoreLine> = emptyList(),
+    val memberPicker: RefineryMemberPickerState = RefineryMemberPickerState(),
     val busy: String? = null,
     val confirmingDelete: Boolean = false,
     val deleting: Boolean = false,
@@ -412,6 +414,7 @@ data class RefineryDetailState(
  */
 data class RefineryDetailWrites(
     val store: RefineryStoreSource? = null,
+    val roster: BookInOptions? = null,
     val delete: RefineryOrderDeleteSource? = null,
 )
 
@@ -439,6 +442,20 @@ class RefineryDetailViewModel(
     clock: Flow<OffsetDateTime> = minuteTicker(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(RefineryDetailState(orderId = orderId))
+
+    /**
+     * Who the output is booked onto, for the Logistician who may choose (REQ-SEC-039).
+     *
+     * Held here rather than in the sheet so the choice survives a recomposition and so the search
+     * runs in the view model's scope.
+     */
+    val memberPicker =
+        RefineryMemberPicker(
+            roster = writes.roster,
+            scope = viewModelScope,
+            read = { mutableState.value.memberPicker },
+            write = { picker -> mutableState.value = mutableState.value.copy(memberPicker = picker) },
+        )
 
     /** What the screen draws. */
     val state: StateFlow<RefineryDetailState> = mutableState.asStateFlow()

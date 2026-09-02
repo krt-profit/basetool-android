@@ -477,6 +477,10 @@ class MainActivity : AppCompatActivity() {
                                             container.liveSync,
                                             RefineryDetailWrites(
                                                 store = container.refinery,
+                                                // The roster behind the receiver picker. Shares
+                                                // /users/search with the Lager's own member
+                                                // picker: one question, one list.
+                                                roster = container.inventory,
                                                 delete = container.refinery,
                                             ),
                                         )
@@ -741,7 +745,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 initializer { AppLockViewModel(container.appLock) }
                 initializer { TermsGateViewModel(container.terms) }
-                initializer { OrgUnitViewModel(container.orgUnits, container.activeOrgUnit) }
+                initializer {
+                    OrgUnitViewModel(container.orgUnits, container.activeOrgUnit, container.identity)
+                }
                 initializer { MemberPreferencesViewModel(container.memberPreferences) }
                 initializer { MissionsViewModel(container.missions, container.liveSync) }
                 initializer { OperationsViewModel(container.operations) }

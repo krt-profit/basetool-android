@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -384,27 +386,53 @@ fun BasetoolApp(
             onDismiss = { orgSwitcherOpen = false },
             title = stringResource(R.string.org_switcher_title),
         ) {
-            orgUnit.units.forEach { unit ->
-                KrtSheetOption(
-                    text = unit.switcherLabel(),
-                    selected = unit.id == orgUnit.activeId,
-                    onClick = {
-                        onSelectOrgUnit(unit.id)
-                        orgSwitcherOpen = false
-                    },
-                )
-            }
-            // The row the app was missing: no pin at all, which the backend answers with the union
-            // of the member's own units — never a unit they do not belong to (design ch. 02,
-            // artboard 7, verified in docs/TENANCY_VERIFICATION.md).
+            // The no-pin row goes FIRST, and the list below it scrolls. Both matter once an admin
+            // is offered the whole catalogue: `KrtBottomSheet` lays its body out in a plain Column
+            // with no scroll of its own, so at roughly 48 dp a row an expanded phone sheet holds
+            // about fourteen — and this row, emitted last, was the first thing clipped off the
+            // bottom and out of reach. It is also the entry an admin wants most often, which is a
+            // second reason for it not to be at the end of eight units.
+            //
+            // Two wordings, because sending no pin means two different things. An ADMIN gets
+            // `adminAllScope` — literally every org unit; everyone else gets the union of their own
+            // reach (RequestScopeResolver#currentScopePredicate), never a unit they do not belong
+            // to (design ch. 02, artboard 7, verified in docs/TENANCY_VERIFICATION.md). One label
+            // said „Alle Org-Einheiten" to both, which promises a member more than it delivers:
+            // measured on the test stack 2026-09-01, a member of two Staffeln read 884.8 SCU under
+            // this row while an admin read 1403.4.
+            //
+            // Read from `who` rather than through `isAdmin()`: this sheet is a sibling of the
+            // shell's content Box, so it sits OUTSIDE the CompositionLocalProvider that supplies
+            // LocalCaller — the composable would silently answer `null` here and every admin would
+            // get the narrow wording. Unknown still takes the narrow wording on purpose;
+            // over-promising during the load window is the same defect in miniature.
             KrtSheetOption(
-                text = stringResource(R.string.org_switcher_all),
+                text =
+                    stringResource(
+                        if (who?.admin == true) {
+                            R.string.org_switcher_all
+                        } else {
+                            R.string.org_switcher_all_mine
+                        },
+                    ),
                 selected = orgUnit.allChosen,
                 onClick = {
                     onSelectAllOrgUnits()
                     orgSwitcherOpen = false
                 },
             )
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                orgUnit.units.forEach { unit ->
+                    KrtSheetOption(
+                        text = unit.switcherLabel(),
+                        selected = unit.id == orgUnit.activeId,
+                        onClick = {
+                            onSelectOrgUnit(unit.id)
+                            orgSwitcherOpen = false
+                        },
+                    )
+                }
+            }
         }
     }
 }
