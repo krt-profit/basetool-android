@@ -89,7 +89,6 @@ class DashboardViewModelTest {
 
         override suspend fun join(
             missionId: String,
-            userId: String,
             desiredJobTypeId: String?,
             donate: Boolean,
         ): ApiResult<MissionDetail> = error("this fake never signs anybody up")

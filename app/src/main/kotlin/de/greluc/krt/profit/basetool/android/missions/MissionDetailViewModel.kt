@@ -717,17 +717,19 @@ class MissionDetailViewModel(
     fun onJoinConfirmed() {
         val current = mutableState.value
         val open = current.joinSheet ?: return
-        val userId = current.me?.userId
-        if (open.saving || !current.writable || userId == null) {
+        if (open.saving || !current.writable) {
             return
         }
+        // No `me?.userId` guard any more: `join` derives the member from the token, so the sign-up
+        // no longer waits on the `/me` read. It used to, because the old route had to name the
+        // member — which meant a failed `/me` silently disabled signing up for a reason the member
+        // could not see.
         mutableState.value = current.copy(joinSheet = open.copy(saving = true, error = null))
         viewModelScope.launch {
             when (
                 val result =
                     seams.read.join(
                         missionId = missionId,
-                        userId = userId,
                         desiredJobTypeId = open.desired?.id,
                         donate = open.donate,
                     )

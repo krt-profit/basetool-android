@@ -221,7 +221,6 @@ class MissionRosterTest {
 
         override suspend fun join(
             missionId: String,
-            userId: String,
             desiredJobTypeId: String?,
             donate: Boolean,
         ): ApiResult<MissionDetail> = error("a manager does not sign anybody up from here")

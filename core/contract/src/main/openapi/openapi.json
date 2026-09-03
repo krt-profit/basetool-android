@@ -23403,6 +23403,7 @@
       "post" : {
         "tags" : [ "Missions" ],
         "summary" : "Join a mission",
+        "description" : "Self-enrolment: adds the caller as participant. The body is optional and carries the desired job type and the payout preference; omitting it (or either field) keeps the pre-2026-09-02 behaviour, including the profile-default payout chain of REQ-MISSION-002.",
         "operationId" : "joinMission",
         "parameters" : [ {
           "name" : "id",
@@ -23413,6 +23414,15 @@
             "format" : "uuid"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JoinMissionRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -42403,8 +42413,17 @@
       "get" : {
         "tags" : [ "Orders" ],
         "summary" : "Lookup active job orders",
-        "description" : "Returns a reference list of active job orders.",
+        "description" : "Returns a reference list of active job orders. With withNeeds=true every order also carries its outstanding need per material bucket, for the Lager allocation pickers.",
         "operationId" : "lookupJobOrders",
+        "parameters" : [ {
+          "name" : "withNeeds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -44893,7 +44912,7 @@
       "get" : {
         "tags" : [ "me-controller" ],
         "summary" : "List the org units the caller may pin as their active context",
-        "description" : "Admins get every active Staffel and Spezialkommando; everyone else gets their own memberships. Encapsulates the branch both clients would otherwise duplicate.",
+        "description" : "Admins get every active org unit of all four kinds; everyone else gets the units they belong to or reach through a Bereich/OL seat. Encapsulates the branch both clients would otherwise duplicate.",
         "operationId" : "getPinnableOrgUnits",
         "responses" : {
           "200" : {
@@ -50715,6 +50734,13 @@
             "enum" : [ "ACCOUNT_CREATED", "ACCOUNT_RENAMED", "ACCOUNT_CLOSED", "ACCOUNT_REOPENED", "ACCOUNT_RESPONSIBLE_CHANGED", "HOLDER_REGISTERED", "HOLDER_DEACTIVATED", "HOLDER_REACTIVATED", "GRANT_CREATED", "GRANT_UPDATED", "GRANT_REVOKED", "DEPOSIT_BOOKED", "DEPOSIT_SPLIT_BOOKED", "WITHDRAWAL_BOOKED", "TRANSFER_BOOKED", "HOLDER_TRANSFER", "HOLDER_REBOOKED", "TRANSACTION_REVERSED", "WIPE_RESET_EXECUTED", "STATEMENT_EXPORTED", "MANAGEMENT_REPORT_EXPORTED", "AUDIT_LOG_EXPORTED", "AUDIT_LOG_PURGED", "BOOKING_REQUEST_CREATED", "BOOKING_REQUEST_CONFIRMED", "BOOKING_REQUEST_REJECTED", "BOOKING_REQUEST_CANCELLED", "BOOKING_REQUEST_UPDATED", "BALANCE_TARGET_SET", "BALANCE_TARGET_CLEARED", "BALANCE_VISIBILITY_GRANTED", "BALANCE_VISIBILITY_REVOKED", "APPROVAL_LIMIT_SET", "APPROVAL_LIMIT_CLEARED", "BOOKING_REQUEST_OWNER_APPROVAL_GRANTED", "BOOKING_REQUEST_OWNER_APPROVAL_REVOKED", "BOOKING_REQUEST_OWNER_APPROVAL_CONFIRMED", "CARTEL_APPROVAL_TIERS_SET", "CARTEL_APPROVAL_TIERS_CLEARED" ]
           }
         }, {
+          "name" : "clientId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -51588,6 +51614,13 @@
           "schema" : {
             "type" : "string",
             "enum" : [ "INVENTORY_ITEM_CREATED", "INVENTORY_ITEM_UPDATED", "INVENTORY_ITEM_MERGED", "INVENTORY_ITEM_NOTE_UPDATED", "INVENTORY_ALLOCATION_ADDED", "INVENTORY_ALLOCATION_CHANGED", "INVENTORY_ALLOCATION_REMOVED", "INVENTORY_ITEM_CONSUMED", "INVENTORY_ITEM_TRANSFERRED", "INVENTORY_ITEM_SOLD", "INVENTORY_ITEM_DEPERSONALIZED", "INVENTORY_ITEM_PERSONALIZED", "INVENTORY_ITEM_DELIVERY_TOGGLED", "INVENTORY_BULK_CHECKED_OUT", "INVENTORY_BULK_REBOOKED", "INVENTORY_WIPED", "INVENTORY_RECEIVED_FROM_REFINERY", "INVENTORY_RECEIVED_FROM_PRODUCTION", "INVENTORY_HANDED_OVER", "INVENTORY_CONSUMED_BY_PRODUCTION", "INVENTORY_ORG_RESTAMPED", "INVENTORY_OWNER_REASSIGNED", "INVENTORY_PURGED_ON_USER_DELETION", "INVENTORY_AUDIT_EXPORTED", "INVENTORY_AUDIT_PURGED", "JOB_ORDER_CREATED", "JOB_ORDER_ITEM_CREATED", "JOB_ORDER_UPDATED", "JOB_ORDER_ITEM_UPDATED", "JOB_ORDER_STATUS_CHANGED", "JOB_ORDER_PRIORITY_CHANGED", "JOB_ORDER_BLUEPRINT_COUNTING_CHANGED", "JOB_ORDER_DELETED", "JOB_ORDER_COMPLETED", "JOB_ORDER_REASSIGNED", "JOB_ORDER_ASSIGNEE_ADDED", "JOB_ORDER_ASSIGNEE_REMOVED", "JOB_ORDER_ASSIGNEE_NOTE_SET", "JOB_ORDER_ASSIGNEE_NOTE_CLEARED", "JOB_ORDER_MATERIAL_UNLINKED", "JOB_ORDER_INVENTORY_UNLINKED", "JOB_ORDER_HANDOVER_CREATED", "JOB_ORDER_ITEM_HANDOVER_CREATED", "JOB_ORDER_PRODUCTION_BOOKED", "JOB_ORDER_CLAIM_UPSERTED", "JOB_ORDER_CLAIM_WITHDRAWN", "JOB_ORDER_AUDIT_EXPORTED", "JOB_ORDER_AUDIT_PURGED", "REFINERY_ORDER_CREATED", "REFINERY_ORDER_UPDATED", "REFINERY_ORDER_CANCELED", "REFINERY_ORDER_STORED", "REFINERY_METHOD_CREATED", "REFINERY_METHOD_UPDATED", "REFINERY_METHOD_DELETED", "REFINERY_METHODS_SYNCED", "REFINERY_YIELDS_SYNCED", "REFINERY_ORDERS_REASSIGNED", "REFINERY_AUDIT_EXPORTED", "REFINERY_AUDIT_PURGED", "PERSONAL_INVENTORY_CREATED", "PERSONAL_INVENTORY_UPDATED", "PERSONAL_INVENTORY_DELETED", "PERSONAL_DATA_PURGED_ON_USER_DELETION", "PERSONAL_INVENTORY_AUDIT_EXPORTED", "PERSONAL_INVENTORY_AUDIT_PURGED", "MISSION_CREATED", "MISSION_UPDATED", "MISSION_DELETED", "MISSION_PARTICIPANT_ADDED", "MISSION_PARTICIPANT_REMOVED", "MISSION_PARTICIPANT_UPDATED", "MISSION_PARTICIPANT_CHECKED_IN", "MISSION_PARTICIPANT_CHECKED_OUT", "MISSION_UNIT_ADDED", "MISSION_UNIT_UPDATED", "MISSION_UNIT_REMOVED", "MISSION_CREW_ADDED", "MISSION_CREW_UPDATED", "MISSION_CREW_REMOVED", "MISSION_FREQUENCY_CHANGED", "MISSION_FREQUENCY_REMOVED", "MISSION_OWNER_CHANGED", "MISSION_OWNING_ORG_UNIT_CHANGED", "MISSION_PARTY_LEAD_CHANGED", "MISSION_MANAGER_ADDED", "MISSION_MANAGER_REMOVED", "MISSION_FINANCE_ENTRY_CREATED", "MISSION_FINANCE_ENTRY_UPDATED", "MISSION_FINANCE_ENTRY_DELETED", "MISSION_STEP_ADDED", "MISSION_STEP_UPDATED", "MISSION_STEP_REMOVED", "MISSION_STEP_REORDERED", "MISSION_STEP_DONE_CHANGED", "MISSION_OBJECTIVE_ADDED", "MISSION_OBJECTIVE_UPDATED", "MISSION_OBJECTIVE_REMOVED", "MISSION_OBJECTIVE_REORDERED", "MISSION_AUDIT_EXPORTED", "MISSION_AUDIT_PURGED", "OPERATION_CREATED", "OPERATION_UPDATED", "OPERATION_DELETED", "OPERATION_PAYOUT_TOGGLED", "OPERATION_AUDIT_EXPORTED", "OPERATION_AUDIT_PURGED", "MEMBERSHIP_GRANTED", "MEMBERSHIP_REVOKED", "ROLE_GRANTED", "ROLE_CHANGED", "ROLE_REVOKED", "CAPABILITY_FLAGS_CHANGED", "ROLE_PERMISSIONS_CHANGED", "KOMMANDO_GROUP_CREATED", "KOMMANDO_GROUP_UPDATED", "KOMMANDO_GROUP_DELETED", "USER_DELETED", "USER_MERGED", "ROLE_AUDIT_EXPORTED", "ROLE_AUDIT_PURGED", "PROMOTION_TOPIC_CREATED", "PROMOTION_TOPIC_UPDATED", "PROMOTION_TOPIC_DELETED", "PROMOTION_CATEGORY_CREATED", "PROMOTION_CATEGORY_UPDATED", "PROMOTION_CATEGORY_DELETED", "PROMOTION_LEVEL_CONTENT_CREATED", "PROMOTION_LEVEL_CONTENT_UPDATED", "PROMOTION_LEVEL_CONTENT_DELETED", "PROMOTION_RANK_REQUIREMENT_CREATED", "PROMOTION_RANK_REQUIREMENT_UPDATED", "PROMOTION_RANK_REQUIREMENT_DELETED", "PROMOTION_EVALUATION_CREATED", "PROMOTION_EVALUATION_UPDATED", "PROMOTION_EVALUATION_DELETED", "PROMOTION_AUDIT_EXPORTED", "PROMOTION_AUDIT_PURGED", "MARKET_OFFER_RELEASED", "MARKET_OFFER_DEACTIVATED", "MARKET_REMARK_UPDATED", "MARKET_INTEREST_REGISTERED", "MARKET_INTEREST_WITHDRAWN", "MARKET_REQUEST_CREATED", "MARKET_REQUEST_UPDATED", "MARKET_REQUEST_DEACTIVATED", "MARKET_REQUEST_INTEREST_SIGNALLED", "MARKET_REQUEST_INTEREST_WITHDRAWN", "MARKET_AUDIT_EXPORTED", "MARKET_AUDIT_PURGED" ]
+          }
+        }, {
+          "name" : "clientId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         }, {
           "name" : "page",
@@ -59720,6 +59753,19 @@
         },
         "required" : [ "kind", "objectivesVersion", "title" ]
       },
+      "JoinMissionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "desiredJobTypeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "payoutPreference" : {
+            "type" : "string",
+            "enum" : [ "PAYOUT", "DONATE" ]
+          }
+        }
+      },
       "AddFrequencyRequest" : {
         "type" : "object",
         "properties" : {
@@ -63509,6 +63555,56 @@
           }
         }
       },
+      "JobOrderGameItemNeedDto" : {
+        "type" : "object",
+        "properties" : {
+          "gameItemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "orderedAmount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "deliveredAmount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "allocatedAmount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "outstandingAmount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "JobOrderMaterialNeedDto" : {
+        "type" : "object",
+        "properties" : {
+          "materialId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "qualityFloor" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "requiredAmount" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "bookedAmount" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "outstandingAmount" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
       "JobOrderReferenceDto" : {
         "type" : "object",
         "properties" : {
@@ -63548,6 +63644,18 @@
             "items" : {
               "type" : "string",
               "format" : "uuid"
+            }
+          },
+          "materialNeeds" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JobOrderMaterialNeedDto"
+            }
+          },
+          "gameItemNeeds" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JobOrderGameItemNeedDto"
             }
           }
         }
@@ -65469,6 +65577,9 @@
           },
           "details" : {
             "type" : "string"
+          },
+          "clientId" : {
+            "type" : "string"
           }
         }
       },
@@ -65572,6 +65683,9 @@
             "format" : "uuid"
           },
           "details" : {
+            "type" : "string"
+          },
+          "clientId" : {
             "type" : "string"
           }
         }
