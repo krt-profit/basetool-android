@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Nach einer Schnellaktion vom Dashboard kamst du nicht mehr zurück.** „Einbuchen" öffnete das Lager, und ein Tippen auf „Übersicht" blieb danach im Lager stehen — bis die App neu gestartet wurde. Betraf alle vier Schnellaktionen sowie den „Einsätze"-Verweis aus den Operationen: sie öffneten ein Ziel der Navigationsleiste am Rücksprungspeicher der Leiste vorbei. Sie benutzen jetzt denselben Weg wie die Leiste selbst.
+
 ## [0.2.2] — 2026-09-02
 
 ### Fixed
