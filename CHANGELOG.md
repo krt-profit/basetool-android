@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Ausbuchen meldete einen Fehler, obwohl es geklappt hatte.** Wer den letzten Rest eines Materials ausbuchte, sah „Konnte nicht gespeichert werden." — gebucht war es trotzdem. Der Server antwortet in diesem Fall ohne Inhalt (die Zeile ist ja weg), und die App hielt das für einen Fehler. Wer es daraufhin erneut versuchte, bekam einen echten Fehler, weil die Zeile nicht mehr existierte. Betraf Ausbuchen, Umbuchen und Verkaufen gleichermaßen.
+
+### Changed
+
+- **Fehlermeldungen beim Speichern nennen jetzt Statuscode und Referenz.** Wenn der Server keinen eigenen Grund mitschickt, steht hinter der Meldung z. B. „(HTTP 403 · Ref. 1f12be12)". Vorher lasen sich eine Abweisung am Zugang, eine fehlende Berechtigung und ein Verarbeitungsfehler identisch — für dich und für den, dem du es meldest. Mit der Referenz ist ein Bericht in einem Schritt nachvollziehbar.
+
+### Fixed
+
 - **Nach einer Schnellaktion vom Dashboard kamst du nicht mehr zurück.** „Einbuchen" öffnete das Lager, und ein Tippen auf „Übersicht" blieb danach im Lager stehen — bis die App neu gestartet wurde. Betraf alle vier Schnellaktionen sowie den „Einsätze"-Verweis aus den Operationen: sie öffneten ein Ziel der Navigationsleiste am Rücksprungspeicher der Leiste vorbei. Sie benutzen jetzt denselben Weg wie die Leiste selbst.
 
 - **Die Anmeldung zu einem Einsatz schlug immer fehl.** „Konnte nicht gespeichert werden." — während Abmelden und das Webtool funktionierten. Die App schickte die Anmeldung an einen Pfad, den der API-Zugang nach außen gar nicht freigibt; sie wurde abgewiesen, bevor sie den Server erreichte. Sie geht jetzt den vorgesehenen Weg und nimmt dabei beides mit, was der Anmeldebogen fragt: gewünschte Funktion und Auszahlungsart. **Setzt die Server-Seite voraus** (Haupt-Repo #1765) — vorher nicht ausliefern.

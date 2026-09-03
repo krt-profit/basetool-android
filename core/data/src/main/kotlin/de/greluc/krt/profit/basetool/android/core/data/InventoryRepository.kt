@@ -1289,13 +1289,7 @@ class InventoryRepository(
         path: String,
         body: B,
         serializer: kotlinx.serialization.SerializationStrategy<B>,
-    ): ApiResult<Unit> =
-        when (
-            val result = reader.post(path, body, serializer, InventoryItemDto.serializer())
-        ) {
-            is ApiResult.Failure -> result
-            is ApiResult.Success -> ApiResult.Success(Unit)
-        }
+    ): ApiResult<Unit> = reader.postUnit(path, body, serializer)
 
     companion object {
         /** Groups per page. */

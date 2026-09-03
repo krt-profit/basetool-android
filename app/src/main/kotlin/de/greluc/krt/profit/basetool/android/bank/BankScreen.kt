@@ -106,9 +106,9 @@ import de.greluc.krt.profit.basetool.android.ui.FieldLimits
 import de.greluc.krt.profit.basetool.android.ui.LocalCaller
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
 import de.greluc.krt.profit.basetool.android.ui.relativeToNow
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Konten list. */
@@ -1640,7 +1640,7 @@ private fun BankSettingsSheet(
             state.error?.let { error ->
                 KrtFieldError(
                     text =
-                        error.fieldMessage() ?: stringResource(
+                        error.writeFailureText(
                             if (error is ApiError.OptimisticLock) {
                                 R.string.conflict_inline
                             } else {

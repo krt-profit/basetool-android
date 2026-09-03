@@ -36,8 +36,16 @@ class WriteErrorWordingTest {
         /** The generic sentence. A file that renders it is a write-failure site. */
         const val GENERIC = "R.string.write_failed"
 
-        /** Taking the server's words — `fieldMessage`. */
-        const val DEFERS = "fieldMessage()"
+        /**
+         * Taking the server's words.
+         *
+         * `writeFailureText` is the preferred shape and the reason it counts: it calls
+         * [fieldMessage] itself and appends the status and correlation id when the server named
+         * nothing, so a site that uses it cannot forget either half. The bare `fieldMessage()` still
+         * counts — a screen that reads the server's sentence and renders it its own way is doing the
+         * thing this test is about.
+         */
+        val DEFERS = listOf("writeFailureText(", "fieldMessage()")
 
         /** Overruling them on purpose, with a sentence of the screen's own. */
         const val DECIDES = "is ApiError.Validation ->"
@@ -63,13 +71,13 @@ class WriteErrorWordingTest {
             writeFailureSites()
                 .filterNot { file ->
                     val source = file.readText()
-                    source.contains(DEFERS) || source.contains(DECIDES)
+                    DEFERS.any { source.contains(it) } || source.contains(DECIDES)
                 }.map { it.name }
                 .sorted()
 
         assertEquals(
             "these let a validation refusal fall through to $GENERIC, which throws away the field " +
-                "name and the rule the server already sent — prefer `error.$DEFERS ?: …`, or map " +
+                "name and the rule the server already sent — prefer `error.writeFailureText(…)`, or map " +
                 "`$DECIDES` to a sentence of this screen's own if it knows better",
             emptyList<String>(),
             offenders,

@@ -63,8 +63,8 @@ import de.greluc.krt.profit.basetool.android.ui.ConflictOn
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.PickerOverflowNote
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.isWideWindow
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the booking sheet. */
@@ -177,7 +177,7 @@ fun BookingSheet(
             state.error?.let { error ->
                 KrtFieldError(
                     text =
-                        error.fieldMessage() ?: stringResource(
+                        error.writeFailureText(
                             if (error is ApiError.OptimisticLock) {
                                 R.string.conflict_inline
                             } else {

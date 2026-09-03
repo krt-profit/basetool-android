@@ -106,11 +106,11 @@ import de.greluc.krt.profit.basetool.android.ui.DenialToast
 import de.greluc.krt.profit.basetool.android.ui.Gate
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
 import de.greluc.krt.profit.basetool.android.ui.krtShortDay
 import de.greluc.krt.profit.basetool.android.ui.rememberDenialState
 import de.greluc.krt.profit.basetool.android.ui.rememberGated
 import de.greluc.krt.profit.basetool.android.ui.rememberRootListState
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
@@ -1464,7 +1464,7 @@ private fun NoteSheet(
 private fun WriteError(error: ApiError) {
     KrtFieldError(
         text =
-            error.fieldMessage() ?: stringResource(
+            error.writeFailureText(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Conflict -> R.string.refused_inline
