@@ -38,6 +38,9 @@ class BankRepositoryTest {
         /** What the bank writes answer with: accepted, no body. */
         const val HTTP_ACCEPTED = 202
 
+        /** A booking that actually moved the ledger. */
+        const val HTTP_CREATED = 201
+
         const val HTTP_OK = 200
         const val HTTP_FORBIDDEN = 403
 
@@ -91,10 +94,99 @@ class BankRepositoryTest {
         staff = BankStaffRepository(httpClient = OkHttpClient(), baseUrl = base)
     }
 
+    /**
+     * A `202` is **not** a booking, and the difference has to survive the repository.
+     *
+     * Over the KRT employee ceiling the server does not refuse the withdrawal — it files it as a
+     * band-routed approval request and answers `202` with a `pendingRequest` where a booking would
+     * have carried a `transaction` (REQ-BANK-047, ADR-0109). Both are 2xx, so a client that only
+     * asks "was it successful" closes its sheet on a withdrawal that moved nothing.
+     */
+    @Test
+    fun `a filed withdrawal is reported as filed, not as booked`() =
+        runTest {
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(HTTP_ACCEPTED)
+                    .setHeader("Content-Type", "application/json")
+                    .body("""{"pendingRequest":{"id":"r1","type":"WITHDRAWAL"}}""")
+                    .build(),
+            )
+
+            val result =
+                staff.bookDirectly(
+                    DirectBooking(
+                        kind = DirectBookingKind.WITHDRAWAL,
+                        accountId = "acc-1",
+                        amount = "100000",
+                        holderId = "h1",
+                    ),
+                )
+
+            assertEquals(BankDirectOutcome.REQUEST_FILED, (result as ApiResult.Success).value)
+        }
+
+    /** Under the ceiling the same call books, and says so. */
+    @Test
+    fun `a booked transfer is reported as booked`() =
+        runTest {
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(HTTP_CREATED)
+                    .setHeader("Content-Type", "application/json")
+                    .body("""{"transaction":{"id":"t1"}}""")
+                    .build(),
+            )
+
+            val result =
+                staff.bookDirectly(
+                    DirectBooking(
+                        kind = DirectBookingKind.TRANSFER,
+                        accountId = "acc-1",
+                        amount = "1000",
+                        holderId = "h1",
+                        destinationAccountId = "acc-2",
+                        destinationHolderId = "h2",
+                    ),
+                )
+
+            assertEquals(BankDirectOutcome.BOOKED, (result as ApiResult.Success).value)
+        }
+
+    /**
+     * A deposit has no ceiling, so it cannot be filed and its answer is discarded.
+     *
+     * Pinned so that the asymmetry is deliberate rather than an oversight: `bookDeposit` answers
+     * `201` with the transaction and never a `pendingRequest`.
+     */
+    @Test
+    fun `a deposit is always booked`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(HTTP_CREATED).build())
+
+            val result =
+                staff.bookDirectly(
+                    DirectBooking(
+                        kind = DirectBookingKind.DEPOSIT,
+                        accountId = "acc-1",
+                        amount = "1000",
+                        holderId = "h1",
+                    ),
+                )
+
+            assertEquals(BankDirectOutcome.BOOKED, (result as ApiResult.Success).value)
+        }
+
     @Test
     fun `the fee flag rides on a withdrawal and stays off a deposit`() =
         runTest {
-            server.enqueue(MockResponse.Builder().code(HTTP_ACCEPTED).build())
+            server.enqueue(
+                MockResponse.Builder()
+                    .code(HTTP_CREATED)
+                    .setHeader("Content-Type", "application/json")
+                    .body("{}")
+                    .build(),
+            )
             staff.bookDirectly(
                 DirectBooking(
                     kind = DirectBookingKind.WITHDRAWAL,

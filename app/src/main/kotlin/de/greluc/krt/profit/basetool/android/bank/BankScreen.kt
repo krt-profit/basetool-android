@@ -941,9 +941,6 @@ fun BankAccountsRoute(
     }
 }
 
-/** Test handle for the Verwaltung's „Direktbuchung" entry. */
-const val BANK_DIRECT_OPEN_TAG: String = "bank-direct-open"
-
 /**
  * The Verwaltung scope's content.
  *
@@ -1011,51 +1008,12 @@ private fun BankStaffScope(
             )
         }
         if (staffTab == LIFECYCLE_TAB && phaseIsReady(state)) {
-            KrtBottomCtaBar(
-                modifier =
-                    if (isWideWindow()) {
-                        Modifier.padding(bottom = LocalKrtBottomBarInset.current)
-                    } else {
-                        Modifier
-                    },
-            ) {
-                // Artboard 9: the direct booking is offered here and nowhere in the member view,
-                // and without Bank-Management it is locked at the entry rather than at the CTA.
-                KrtGhostButton(
-                    text = stringResource(R.string.bank_direct_title),
-                    onClick = {
-                        if (state.management) {
-                            viewModel.directBooking.open()
-                        } else {
-                            managementToast = true
-                        }
-                    },
-                    modifier = Modifier.weight(1f).testTag(BANK_DIRECT_OPEN_TAG),
-                    iconRes =
-                        if (state.management) {
-                            DesignR.drawable.ic_krt_swap
-                        } else {
-                            DesignR.drawable.ic_krt_lock
-                        },
-                )
-                KrtCtaButton(
-                    text = stringResource(R.string.bank_lifecycle_create),
-                    onClick = {
-                        if (state.management) {
-                            lifecycleViewModel.onPrompt(BankLifecyclePrompt.Create(""))
-                        } else {
-                            managementToast = true
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    iconRes =
-                        if (state.management) {
-                            DesignR.drawable.ic_krt_plus
-                        } else {
-                            DesignR.drawable.ic_krt_lock
-                        },
-                )
-            }
+            BankStaffCtaBar(
+                management = state.management,
+                onDirectBooking = { viewModel.directBooking.open() },
+                onCreateAccount = { lifecycleViewModel.onPrompt(BankLifecyclePrompt.Create("")) },
+                onLocked = { managementToast = true },
+            )
         }
     }
     state.direct?.let { direct ->
@@ -1076,6 +1034,17 @@ private fun BankStaffScope(
             message = stringResource(R.string.bank_staff_grants_locked),
             actionLabel = stringResource(R.string.action_ok),
             onAction = { managementToast = false },
+        )
+    }
+    // Over the KRT employee ceiling the server files the attempt instead of booking it and answers
+    // 202 (REQ-BANK-047, ADR-0109). Both are 2xx, so without this the sheet would close on a
+    // withdrawal that moved nothing and the member would find the old balance with no explanation.
+    if (state.filed) {
+        KrtToast(
+            title = stringResource(R.string.bank_direct_filed_title),
+            message = stringResource(R.string.bank_direct_filed_message),
+            actionLabel = stringResource(R.string.action_ok),
+            onAction = { viewModel.directBooking.acknowledgeFiled() },
         )
     }
 }

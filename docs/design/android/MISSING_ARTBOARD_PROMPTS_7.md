@@ -189,6 +189,15 @@ The refusal path needs no change — the danger modal with a reason is exactly r
 
 ## 2c — The staff bank has no direct booking form, and we think that is deliberate
 
+> [!note] Answered in round 8, and the answer was the opposite — read this section as the question
+> it was, not as a finding
+> Round 8 drew it as **chapter 12 artboard 9** and decided the direct booking **stays**. Built as
+> `REQ-APP-BANK-016`. The sentence below — „no artboard in chapter 12 draws any of them" — was true
+> when it was written and was then copied into the API-vhost allow-list as a *reason for an
+> exclusion*, where nobody re-checked it: the four paths answered `404` in production long after
+> the feature shipped (main-repo runbook phase O, ADR-0156). Left standing as the historical
+> question, with this pointer.
+
 The owner's parity brief asks for „alle funktionen die die bank und ihre unterseiten im web
 frontend haben". The web's staff bank has three direct booking forms — `POST /bank/deposits`,
 `/withdrawals`, `/transfers`, plus `GET /transfer-fee-rate` — for a booking that had no request

@@ -14,6 +14,7 @@ import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountLifecycleRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankAccountRefDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingDto
+import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingOutcomeDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankBookingRequestDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardAccountDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.BankDashboardDto
@@ -168,7 +169,7 @@ class BankStaffRepository(
             ),
         )
 
-    override suspend fun bookDirectly(booking: DirectBooking): ApiResult<Unit> {
+    override suspend fun bookDirectly(booking: DirectBooking): ApiResult<BankDirectOutcome> {
         val figure = parseTypedDecimal(booking.amount)
         val target = booking.destinationAccountId
         val targetHolder = booking.destinationHolderId
@@ -828,6 +829,45 @@ private fun BankGrantDto.toModel(): BankGrant? {
  */
 
 /**
+ * Reads which of the two answers came back.
+ *
+ * Keyed on `pendingRequest` rather than on an absent `transaction`: the filed request is the
+ * positive fact, so a field added to this object later cannot turn a booking into a filing by
+ * accident.
+ *
+ * @receiver the answer of a write that has a ceiling.
+ * @return the outcome, or the failure unchanged.
+ */
+private fun ApiResult<BankBookingOutcomeDto>.krtOutcome(): ApiResult<BankDirectOutcome> =
+    when (this) {
+        is ApiResult.Failure -> {
+            this
+        }
+
+        is ApiResult.Success -> {
+            ApiResult.Success(
+                if (value.pendingRequest != null) {
+                    BankDirectOutcome.REQUEST_FILED
+                } else {
+                    BankDirectOutcome.BOOKED
+                },
+            )
+        }
+    }
+
+/**
+ * Reads a write that cannot file anything as the booking it is.
+ *
+ * @receiver the answer of a write with no ceiling.
+ * @return [BankDirectOutcome.BOOKED], or the failure unchanged.
+ */
+private fun ApiResult<Unit>.krtBooked(): ApiResult<BankDirectOutcome> =
+    when (this) {
+        is ApiResult.Failure -> this
+        is ApiResult.Success -> ApiResult.Success(BankDirectOutcome.BOOKED)
+    }
+
+/**
  * Books money in.
  *
  * Fee-free by definition, so it carries no `feeInclusive`: a flag that decides nothing invites
@@ -842,7 +882,10 @@ private suspend fun ApiReader.krtDeposit(
     booking: DirectBooking,
     amount: KrtDecimal,
     note: String?,
-): ApiResult<Unit> =
+): ApiResult<BankDirectOutcome> =
+    // A deposit has no ceiling -- `bookDeposit` answers 201 with the transaction and never files a
+    // request -- so its answer carries nothing the sheet needs and is discarded. The two below
+    // cannot do that.
     postAccepted(
         BankStaffRepository.DEPOSITS_PATH,
         BankDepositRequest(
@@ -858,22 +901,27 @@ private suspend fun ApiReader.krtDeposit(
                 booking.counterpartyExternalName?.takeIf { it.isNotBlank() },
         ),
         BankDepositRequest.serializer(),
-    )
+    ).krtBooked()
 
 /**
- * Books money out.
+ * Books money out — or files it, which is not the same thing.
+ *
+ * Over the KRT employee ceiling the server does **not** refuse: it raises a band-routed approval
+ * request and answers `202` with a `pendingRequest` where a booking would have carried a
+ * `transaction` (REQ-BANK-047, ADR-0109). Both are 2xx, so the answer has to be read rather than
+ * discarded — otherwise the sheet closes on a withdrawal that moved nothing and says so to nobody.
  *
  * @param booking the form.
  * @param amount the parsed figure.
  * @param note the Verwendungszweck, or `null`.
- * @return what the server answered.
+ * @return whether it was booked or filed, or the classified failure.
  */
 private suspend fun ApiReader.krtWithdraw(
     booking: DirectBooking,
     amount: KrtDecimal,
     note: String?,
-): ApiResult<Unit> =
-    postAccepted(
+): ApiResult<BankDirectOutcome> =
+    post(
         BankStaffRepository.WITHDRAWALS_PATH,
         BankWithdrawalRequest(
             accountId = booking.accountId,
@@ -888,17 +936,20 @@ private suspend fun ApiReader.krtWithdraw(
             feeInclusive = booking.feeInclusive.takeIf { booking.feeApplies },
         ),
         BankWithdrawalRequest.serializer(),
-    )
+        BankBookingOutcomeDto.serializer(),
+    ).krtOutcome()
 
 /**
- * Moves money between two accounts of the unit.
+ * Moves money between two accounts of the unit — or files it.
+ *
+ * Same ceiling as the withdrawal above, and the same reason for reading the answer.
  *
  * @param booking the form.
  * @param amount the parsed figure.
  * @param note the Verwendungszweck, or `null`.
  * @param target the receiving account, already checked for presence.
  * @param targetHolder who holds it there, likewise.
- * @return what the server answered.
+ * @return whether it was booked or filed, or the classified failure.
  */
 private suspend fun ApiReader.krtTransfer(
     booking: DirectBooking,
@@ -906,8 +957,8 @@ private suspend fun ApiReader.krtTransfer(
     note: String?,
     target: String?,
     targetHolder: String?,
-): ApiResult<Unit> =
-    postAccepted(
+): ApiResult<BankDirectOutcome> =
+    post(
         BankStaffRepository.TRANSFERS_PATH,
         BankTransferRequest(
             sourceAccountId = booking.accountId,
@@ -920,4 +971,5 @@ private suspend fun ApiReader.krtTransfer(
             feeInclusive = booking.feeInclusive.takeIf { booking.feeApplies },
         ),
         BankTransferRequest.serializer(),
-    )
+        BankBookingOutcomeDto.serializer(),
+    ).krtOutcome()

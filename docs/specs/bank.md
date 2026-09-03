@@ -208,9 +208,9 @@ detail with its transfer, plus the staff account detail's two additions over the
 >   rather than a „KRT-Freigaben" ladder. Built as `REQ-APP-BANK-017`, on the account rather than
 >   as a fifth tab, for the reason recorded there.
 >
-> `GET /transfer-fee-rate` and `PATCH /bank/accounts/{id}/approval-tiers` are still unused: the fee
-> is shown from the figures the booking answers carry, and the approval-tiers endpoint is the
-> ladder the artboard replaced.
+> `PATCH /bank/accounts/{id}/approval-tiers` is still unused: it is the ladder the artboard
+> replaced. `GET /transfer-fee-rate` **is** used — `transferFeeRate()` reads it for the sheet's
+> fee preview, and this line said otherwise until 2026-09-03.
 
 **Every admitted path is named individually and anchored.** `/api/v1/bank` is **not** in the
 vhost's read-only family, so naming a path opens every verb the backend serves on it — which is
@@ -222,8 +222,18 @@ what the lifecycle and grants writes need. The safety comes from the allow-list 
 - [x] `/api/v1/bank/admin/**` is in neither the contract set nor the vhost allow-list, and the
   nightly edge probe asserts it still answers `404` (main repo `ExternalContractTest`,
   `docs/API_VHOST_ROLLOUT_RUNBOOK.md`, `edge-deny-probe`).
-- [x] No direct booking path (`/bank/deposits`, `/bank/withdrawals`, `/bank/transfers`,
-  `/bank/transfer-fee-rate`) is admitted, and the probe asserts each still answers `404`.
+- [x] All four direct-booking paths (`/bank/deposits`, `/bank/withdrawals`, `/bank/transfers`,
+  `/bank/transfer-fee-rate`) are admitted, frozen and probed at `401` — main-repo runbook
+  **phase O**, [ADR-0156](https://github.com/krt-profit/basetool/blob/main/docs/adr/0156-the-app-carries-the-banks-direct-booking.md).
+
+  > [!warning] This box asserted the opposite until 2026-09-03, four paragraphs after the callout
+  > above retracted it
+  > It read *"No direct booking path … is admitted, and the probe asserts each still answers
+  > `404`"* — checked, and true of the vhost, which is what made it so durable: the prose said the
+  > grounds had fallen away on 2026-08-30, the acceptance box still demanded the exclusion, and the
+  > nightly probe agreed with the box. Every direct booking in production was a `404` rendered as
+  > „Konnte nicht gespeichert werden." for the whole time in between. A retraction that leaves one
+  > checked box standing has not retracted anything.
 - [x] The staff surface is reached only by a caller the **server** calls a bank employee; the app
   derives the flag from the roles on `GET /api/v1/users/me` and treats it as a hint, never a gate
   (ADR-0011).
@@ -698,9 +708,30 @@ over the balance is **validation-dimmed with a line at the field**, not locked: 
 forbidden, the figure is simply larger than the account holds — a distinction the design draws
 deliberately.
 
-**The entry is locked, not hidden.** Without `canManageBank` the Verwaltung's „Direktbuchung"
-button is tappable and answers with the role, as artboard 9 asks („403 … gesperrt-antippbar schon
-am Einstieg") and as the Grants tab beside it already does.
+**The entry carries no role gate of its own.** All four endpoints ask for
+`hasRole('BANK_EMPLOYEE')` plus a **per-account** grant — `canDeposit` / `canWithdraw` /
+`canTransfer`, with management and admin unrestricted (`BankSecurityService.hasCapability`) — and
+the Verwaltung scope is already unreachable without `bankEmployee`, which the server resolves
+through the hierarchy. The per-account half is a fact about the account picked *inside* the sheet,
+so it is decided per call and shown as the `403` it is.
+
+> [!danger] Corrected 2026-09-03 — the entry was locked behind `canManageBank`, and artboard 9
+> asks for that lock
+> The artboard's state list says „403 (Rolle Bank-Management fehlt) = gesperrt-antippbar schon am
+> Einstieg", and the app followed it. It does not match the endpoint it describes: a plain
+> Bankmitarbeiter holding `can_withdraw` on one account — exactly the caller the Grants tab exists
+> to create — could book in the web and was refused in the app. The endpoint is the authority, so
+> the artboard is overridden on this one point ([ADR-0156](https://github.com/krt-profit/basetool/blob/main/docs/adr/0156-the-app-carries-the-banks-direct-booking.md));
+> it is filed in the deviation register rather than followed. „Konto anlegen" beside it keeps its
+> Bank-Management lock, because *that* endpoint gates on it.
+
+**A `202` is not a booking, and the sheet says so.** Over the KRT employee ceiling the server does
+not refuse: it files the attempt as a band-routed approval request and answers `202` with a
+`pendingRequest` where a booking carries a `transaction` (main repo REQ-BANK-047, ADR-0109). Both
+are 2xx, so the answer is read rather than discarded — until 2026-09-03 it was not, and the sheet
+closed on a withdrawal that had moved nothing with no message at all. „Zur Freigabe eingereicht"
+now names it, with its own acknowledgement rather than a timeout: a notice saying the money did
+**not** move is one a member must not be able to miss.
 
 **Acceptance**
 
@@ -710,6 +741,10 @@ am Einstieg") and as the Grants tab beside it already does.
   (`BankStaffViewModelTest`).
 - [x] Without a holder nothing is sent, in any mode (`BankStaffViewModelTest`).
 - [x] A transfer needs both halves of its target (`BankStaffViewModelTest`).
+- [x] A `202` raises the „eingereicht" notice and a `201` does not; the notice survives the reload
+  the booking itself triggers (`BankStaffViewModelTest`, `BankRepositoryTest`).
+- [x] A bank employee **without** Bank-Management may open the sheet, while „Konto anlegen" beside
+  it stays locked for them (`BankStaffCtaBarTest`).
 - [ ] Observed on a device, with and without Bank-Management.
 
 **Code:** `BankStaffRepository.bookDirectly`, `DirectBooking`, `DirectBookingState`,
