@@ -353,19 +353,21 @@ internal class RecordingSource(
     var leaveAnswer: ApiResult<Unit> = ApiResult.Success(Unit)
 
     var jobTypeAnswer: List<MissionJobType> = listOf(MissionJobType("j1", "Pilot"))
-    val joinRequests = mutableListOf<Triple<String, String?, Boolean>>()
+
+    // No userId: `join` derives the member from the token, so the request carries only
+    // the sheet's two answers (backend ADR-0154).
+    val joinRequests = mutableListOf<Pair<String?, Boolean>>()
 
     override suspend fun jobTypes(): ApiResult<List<MissionJobType>> =
         ApiResult.Success(jobTypeAnswer)
 
     override suspend fun join(
         missionId: String,
-        userId: String,
         desiredJobTypeId: String?,
         donate: Boolean,
     ): ApiResult<MissionDetail> {
         joins.add(missionId)
-        joinRequests.add(Triple(userId, desiredJobTypeId, donate))
+        joinRequests.add(desiredJobTypeId to donate)
         return joinAnswer ?: detail(missionId)
     }
 

@@ -480,7 +480,7 @@ class MissionDetailViewModelTest {
             model.onJoinConfirmed()
             advanceUntilIdle()
 
-            assertEquals(listOf(Triple("u1", pilot.id, true)), source.joinRequests)
+            assertEquals(listOf(pilot.id to true), source.joinRequests)
             assertNull("a landed sign-up closes its sheet", model.state.value.joinSheet)
         }
 
