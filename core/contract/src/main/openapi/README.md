@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `f4d94d871504b77e2e9276383182d7ed9a95d077` (2026-09-03) — **PR krt-profit/basetool#1765, not yet on `main`** |
+| Copied from commit | `f4d94d871504b77e2e9276383182d7ed9a95d077` (2026-09-03) — PR krt-profit/basetool#1765, **merged**; ships to production with backend 1.6.18 |
 | Document | OpenAPI 3.1.0 · 402 paths · 409 schemas |
 
 > The copy is ahead of the backend's `main` on purpose: it carries the **optional request body of
