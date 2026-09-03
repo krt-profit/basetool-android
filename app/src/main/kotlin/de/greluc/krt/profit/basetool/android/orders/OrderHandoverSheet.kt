@@ -34,7 +34,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the Übergabe sheet. */
@@ -288,7 +288,7 @@ private fun Double.krtPlainAmount(): String = java.math.BigDecimal(this.toString
 private fun HandoverError(error: ApiError) {
     KrtFieldError(
         text =
-            error.fieldMessage() ?: stringResource(
+            error.writeFailureText(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Conflict -> R.string.refused_inline

@@ -38,7 +38,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 
 /** Test handle for the add sheet's save action. */
 const val BLUEPRINTS_SAVE_TAG: String = "blueprints-save"
@@ -316,7 +316,7 @@ private fun SheetActions(
 private fun SheetError(error: ApiError) {
     KrtFieldError(
         text =
-            error.fieldMessage() ?: stringResource(
+            error.writeFailureText(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Conflict -> R.string.refused_inline

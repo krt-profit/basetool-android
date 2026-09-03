@@ -856,6 +856,10 @@
     <string name="conflict_cancel">Cancel</string>
     <string name="conflict_reload">Reload</string>
     <string name="write_failed">Could not be saved.</string>
+    <!-- Appended to a write failure the server did not explain: the status and the
+         correlation id are what makes a report diagnosable in one step. -->
+    <string name="write_failed_reference">HTTP %1$d \u00b7 Ref. %2$s</string>
+    <string name="write_failed_status">HTTP %1$d</string>
     <!-- Fallback when the server refuses on a rule but names no reason. -->
     <string name="refused_inline">Not possible — the action was refused.</string>
     <string name="picker_more_matches">More matches available — narrow the search.</string>

@@ -7,6 +7,10 @@
 
 package de.greluc.krt.profit.basetool.android.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import de.greluc.krt.profit.basetool.android.R
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ProblemDetail
 
@@ -65,3 +69,54 @@ private fun ProblemDetail.namedFields(): String? {
 
 /** Between two field messages, the same separator the design uses between two facts on a line. */
 private const val FIELD_MESSAGE_SEPARATOR = " · "
+
+/**
+ * What a write surface shows when a write fails.
+ *
+ * The server's own sentence when there is one ([fieldMessage]); otherwise the screen's copy **plus
+ * the technical reference** — the HTTP status and the correlation id.
+ *
+ * That suffix is not decoration. Until 2026-09-03 every refusal a member could hit read the same:
+ * „Konnte nicht gespeichert werden." An edge refusal, an authorisation refusal and a parse failure
+ * were indistinguishable to the member *and* to whoever they reported it to, and two separate
+ * defects that week were diagnosed only by reading the production log. The status alone separates
+ * those three, and the correlation id finds the exact request in one grep.
+ *
+ * Kept deliberately short and appended in parentheses: it is a reference to quote, not an
+ * explanation to read. A member who does not care can ignore it; a member reporting a problem can
+ * type six characters and save an afternoon.
+ *
+ * @param fallback the screen's own sentence, used when the server named nothing.
+ * @return the message to show.
+ */
+@Composable
+fun ApiError.writeFailureText(
+    @StringRes fallback: Int,
+): String {
+    val named = fieldMessage()
+    val own = stringResource(fallback)
+    val status = httpStatus()
+    val reference = problem?.correlationId?.takeIf { it.isNotBlank() }
+    return when {
+        named != null -> named
+        status == null -> own
+        reference == null -> "$own (" + stringResource(R.string.write_failed_status, status) + ")"
+        else -> "$own (" + stringResource(R.string.write_failed_reference, status, reference) + ")"
+    }
+}
+
+/**
+ * The HTTP status behind a failure, where one exists.
+ *
+ * [ApiError.Network] never reached a server, so it has none — and saying „HTTP 0" would be worse
+ * than saying nothing. Everything else either carries the status itself or can read it from the
+ * problem body the server sent.
+ *
+ * @return the status, or `null` when the request produced no HTTP response.
+ */
+private fun ApiError.httpStatus(): Int? =
+    when (this) {
+        is ApiError.Network -> null
+        is ApiError.Server -> status
+        else -> problem?.status
+    }

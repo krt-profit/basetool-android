@@ -75,7 +75,7 @@ import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
 import de.greluc.krt.profit.basetool.android.ui.DISABLED_WRITE_ALPHA
 import de.greluc.krt.profit.basetool.android.ui.OfflineBand
 import de.greluc.krt.profit.basetool.android.ui.contentGutter
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the scrolling content of the Operation detail. */
@@ -289,7 +289,7 @@ private fun OperationDetailBody(
             item(key = "write-error") {
                 KrtFieldError(
                     text =
-                        error.fieldMessage() ?: stringResource(
+                        error.writeFailureText(
                             if (error is ApiError.Forbidden) {
                                 R.string.operation_detail_payout_not_allowed
                             } else {

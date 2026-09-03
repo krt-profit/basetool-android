@@ -44,7 +44,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtText
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtPalette
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 
 /** Test handle for the editor sheet. */
 const val PERSONAL_INVENTORY_EDITOR_TAG: String = "personal-inventory-editor"
@@ -174,7 +174,7 @@ fun PersonalInventoryEditor(
 private fun EditorError(error: ApiError) {
     KrtFieldError(
         text =
-            error.fieldMessage() ?: stringResource(
+            error.writeFailureText(
                 when (error) {
                     is ApiError.OptimisticLock -> R.string.conflict_inline
                     is ApiError.Conflict -> R.string.refused_inline

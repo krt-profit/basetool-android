@@ -28,7 +28,7 @@ import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtSpin
 import de.greluc.krt.profit.basetool.android.core.designsystem.component.KrtTextField
 import de.greluc.krt.profit.basetool.android.core.designsystem.theme.KrtSpacing
 import de.greluc.krt.profit.basetool.android.navigation.ProvideScreenTopBar
-import de.greluc.krt.profit.basetool.android.ui.fieldMessage
+import de.greluc.krt.profit.basetool.android.ui.writeFailureText
 import de.greluc.krt.profit.basetool.android.core.designsystem.R as DesignR
 
 /** Test handle for the form. */
@@ -123,7 +123,7 @@ fun OperationFormScreen(
             // slot for every field, and „Konnte nicht gespeichert werden." names none of them.
             state.error?.let { error ->
                 KrtFieldError(
-                    text = error.fieldMessage() ?: stringResource(R.string.write_failed),
+                    text = error.writeFailureText(R.string.write_failed),
                 )
             }
             KrtCtaButton(

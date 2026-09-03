@@ -299,6 +299,38 @@ class ApiReader(
         withoutBody(path, Request.Builder().url("$baseUrl$path".toHttpUrl()).delete())
 
     /**
+     * Sends a `POST` with a JSON body whose **answer** may legitimately have none.
+     *
+     * `POST /inventory/{id}/book-out` is the case this exists for. It answers `200` with the
+     * remaining row — unless the book-out empties the stack, and then the row is gone and the answer
+     * is `204 No Content`. Read through [post] that empty body fails to parse, and a book-out that
+     * **succeeded** is reported to the member as "could not be saved": they retry, the row no longer
+     * exists, and every retry is a truthful `403`. Seen in production on 2026-09-03 — one `204`
+     * followed by four `403`s on the same id, from a member who thought nothing had happened.
+     *
+     * Distinct from [delete] only in the verb and the payload;
+     * the point is the same, which is that discarding the answer must not mean refusing to accept
+     * one that is empty.
+     *
+     * @param B the request type
+     * @param path the API path, beginning with a slash
+     * @param body the payload
+     * @param bodySerializer the serializer for [B]
+     * @return success on any 2xx, with or without a body, or the classified failure
+     */
+    suspend fun <B> postUnit(
+        path: String,
+        body: B,
+        bodySerializer: SerializationStrategy<B>,
+    ): ApiResult<Unit> =
+        withoutBody(
+            path,
+            Request.Builder()
+                .url("$baseUrl$path".toHttpUrl())
+                .post(json.encodeToString(bodySerializer, body).toRequestBody(JSON_MEDIA_TYPE)),
+        )
+
+    /**
      * Sends a `POST` that carries no body and parses what comes back.
      *
      * Some writes are entirely addressed by their path — "put this member on this order" names
