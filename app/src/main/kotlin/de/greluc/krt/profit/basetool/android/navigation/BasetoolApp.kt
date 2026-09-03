@@ -459,29 +459,6 @@ private fun selectedTopLevelRoute(
     }
 
 /**
- * Navigates to a top-level destination, preserving each destination's own back stack.
- *
- * `saveState`/`restoreState` are what make list scroll positions and open details survive a trip
- * through another tab, and `launchSingleTop` keeps repeated navigation from stacking duplicates.
- *
- * @param route the destination route.
- * @param restoreState whether to come back to where this tab was left. `false` lands on the tab's
- *   own root instead — what "Mehr" wants, since a menu that reopens on the page you were trying to
- *   leave is not a menu.
- */
-private fun NavHostController.navigateToTopLevel(
-    route: String,
-    restoreState: Boolean = true,
-) {
-    val target = route
-    navigate(target) {
-        popUpTo(graph.startDestinationId) { saveState = true }
-        launchSingleTop = true
-        this.restoreState = restoreState
-    }
-}
-
-/**
  * The bar above every screen — either the destination's own title, or a pushed screen's head.
  *
  * Its own composable because assembling it is three decisions (which title, whether the org chip
