@@ -383,10 +383,13 @@ private fun listDestination(
                 orgUnitName = orgUnitName,
                 onMarkAnnouncementRead = dashboard::onAnnouncementRead,
                 onRefresh = dashboard::onRefresh,
+                // A mission detail belongs on this tab's stack; the other three open a
+                // top-level destination and must go through the shell's helper, or the
+                // navigation bar can no longer get back here (see TopLevelNavigation.kt).
                 onOpenMission = { navController.navigate(missionDetailRoute(it)) },
-                onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
-                onQuickAction = { action -> navController.navigate(action.destination.route) },
-                onOpenInbox = { navController.navigate(KrtDestination.Notifications.route) },
+                onOpenMissions = { navController.navigateToTopLevel(KrtDestination.Missions.route) },
+                onQuickAction = { action -> navController.navigateToTopLevel(action.destination.route) },
+                onOpenInbox = { navController.navigateToTopLevel(KrtDestination.Notifications.route) },
             )
         }
 
@@ -732,7 +735,9 @@ private fun OperationsListDetail(
             onOpenOperation = {
                 if (wide) selected = it else navController.navigate(operationDetailRoute(it))
             },
-            onOpenMissions = { navController.navigate(KrtDestination.Missions.route) },
+            // Einsätze is a navigation-bar destination, so it goes through the shell's helper
+            // rather than onto the Operationen stack (see TopLevelNavigation.kt).
+            onOpenMissions = { navController.navigateToTopLevel(KrtDestination.Missions.route) },
         )
     }
 }
