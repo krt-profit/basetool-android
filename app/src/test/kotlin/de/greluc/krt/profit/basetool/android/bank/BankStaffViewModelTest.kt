@@ -66,7 +66,7 @@ class BankStaffViewModelTest {
     fun `a direct deposit sends the mode, the holder and the amount`() =
         runTest(dispatcher) {
             val source = RecordingStaff()
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -98,7 +98,7 @@ class BankStaffViewModelTest {
         runTest(dispatcher) {
             val source = RecordingStaff()
             source.directAnswer = ApiResult.Success(BankDirectOutcome.REQUEST_FILED)
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -122,7 +122,7 @@ class BankStaffViewModelTest {
         runTest(dispatcher) {
             val source = RecordingStaff()
             source.directAnswer = ApiResult.Success(BankDirectOutcome.BOOKED)
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -139,7 +139,7 @@ class BankStaffViewModelTest {
     @Test
     fun `a withdrawal says what actually leaves the account`() =
         runTest(dispatcher) {
-            val model = model(RecordingStaff())
+            val model = staffModel(RecordingStaff())
             model.loadOnce()
             advanceUntilIdle()
             model.directBooking.open("acc-1")
@@ -161,7 +161,7 @@ class BankStaffViewModelTest {
     @Test
     fun `fee-inclusive flips which side of the fee the typed figure is on`() =
         runTest(dispatcher) {
-            val model = model(RecordingStaff())
+            val model = staffModel(RecordingStaff())
             model.loadOnce()
             advanceUntilIdle()
             model.directBooking.open("acc-1")
@@ -183,7 +183,7 @@ class BankStaffViewModelTest {
     @Test
     fun `the coverage check runs against the gross, not the typed figure`() =
         runTest(dispatcher) {
-            val model = model(RecordingStaff())
+            val model = staffModel(RecordingStaff())
             model.loadOnce()
             advanceUntilIdle()
             model.directBooking.open("acc-1")
@@ -202,7 +202,7 @@ class BankStaffViewModelTest {
     @Test
     fun `a deposit carries no fee, and a same-holder transfer none either`() =
         runTest(dispatcher) {
-            val model = model(RecordingStaff())
+            val model = staffModel(RecordingStaff())
             model.loadOnce()
             advanceUntilIdle()
             model.directBooking.open("acc-1")
@@ -228,7 +228,7 @@ class BankStaffViewModelTest {
     fun `the fee flag travels only where a fee applies`() =
         runTest(dispatcher) {
             val source = RecordingStaff()
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
             model.directBooking.open("acc-1")
@@ -249,7 +249,7 @@ class BankStaffViewModelTest {
     fun `a withdrawal over the balance cannot be sent`() =
         runTest(dispatcher) {
             val source = RecordingStaff()
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -274,7 +274,7 @@ class BankStaffViewModelTest {
     fun `without a holder nothing is sent, in any mode`() =
         runTest(dispatcher) {
             val source = RecordingStaff()
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -293,7 +293,7 @@ class BankStaffViewModelTest {
     fun `a transfer needs both halves of its target`() =
         runTest(dispatcher) {
             val source = RecordingStaff()
-            val model = model(source)
+            val model = staffModel(source)
             model.loadOnce()
             advanceUntilIdle()
 
@@ -312,67 +312,6 @@ class BankStaffViewModelTest {
             assertTrue(model.state.value.direct!!.submittable(null))
         }
 
-    /**
-     * Answers the two staff reads.
-     *
-     * @property dashboard what [staffDashboard] returns.
-     * @property pages the queue, one entry per page; the walk stops when a page says it is last.
-     */
-    private class RecordingStaff(
-        var dashboard: ApiResult<BankStaffDashboard> =
-            ApiResult.Success(BankStaffDashboard(false, emptyList(), BankStaffTotals(null, 0, 0))),
-        var pages: List<ApiResult<BankRequestPage>> = listOf(ApiResult.Success(emptyPage())),
-    ) : BankStaffSource {
-        var queueCalls = 0
-
-        override suspend fun transferFeeRate(): ApiResult<KrtDecimal> =
-
-            ApiResult.Success(KrtDecimal(java.math.BigDecimal("0.05")))
-
-        override suspend fun staffDashboard(): ApiResult<BankStaffDashboard> = dashboard
-
-        override suspend fun requestQueue(
-            statuses: Set<BankRequestStatus>,
-            page: Int,
-            pageSize: Int,
-        ): ApiResult<BankRequestPage> {
-            queueCalls++
-            return pages.getOrElse(page) { ApiResult.Success(emptyPage()) }
-        }
-
-        var holderAnswer: ApiResult<List<BankHolder>> = ApiResult.Success(emptyList())
-        val confirmations = mutableListOf<BankConfirmation>()
-        val rejections = mutableListOf<Triple<String, String, Long>>()
-        var decisionAnswer: ApiResult<BankBookingRequest>? = null
-
-        override suspend fun holders(): ApiResult<List<BankHolder>> = holderAnswer
-
-        override suspend fun confirmRequest(
-            confirmation: BankConfirmation,
-        ): ApiResult<BankBookingRequest> {
-            confirmations.add(confirmation)
-            return decisionAnswer ?: ApiResult.Success(request("a1"))
-        }
-
-        val directBookings = mutableListOf<DirectBooking>()
-        var directAnswer: ApiResult<BankDirectOutcome> =
-            ApiResult.Success(BankDirectOutcome.BOOKED)
-
-        override suspend fun bookDirectly(booking: DirectBooking): ApiResult<BankDirectOutcome> {
-            directBookings.add(booking)
-            return directAnswer
-        }
-
-        override suspend fun rejectRequest(
-            id: String,
-            reason: String,
-            version: Long,
-        ): ApiResult<BankBookingRequest> {
-            rejections.add(Triple(id, reason, version))
-            return decisionAnswer ?: ApiResult.Success(request("a1"))
-        }
-    }
-
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
@@ -382,11 +321,6 @@ class BankStaffViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
-
-    private fun model(
-        source: BankStaffSource,
-        memberVisible: List<BankAccountSummary> = emptyList(),
-    ) = BankStaffViewModel(source = source, memberAccounts = { ApiResult.Success(memberVisible) })
 
     @Test
     fun `the per-account counter is aggregated from the queue`() =
@@ -406,7 +340,7 @@ class BankStaffViewModelTest {
                             ApiResult.Success(
                                 BankRequestPage(
                                     requests =
-                                        listOf(request("a1"), request("a1"), request("a2")),
+                                        listOf(bankRequest("a1"), bankRequest("a1"), bankRequest("a2")),
                                     page = 0,
                                     totalPages = 1,
                                     totalElements = THREE_REQUESTS.toLong(),
@@ -414,7 +348,7 @@ class BankStaffViewModelTest {
                             ),
                         ),
                 )
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -435,7 +369,7 @@ class BankStaffViewModelTest {
                         listOf(
                             ApiResult.Success(
                                 BankRequestPage(
-                                    listOf(request("a1")),
+                                    listOf(bankRequest("a1")),
                                     page = 0,
                                     totalPages = TWO_PAGES,
                                     totalElements = TWO_PAGES.toLong(),
@@ -443,7 +377,7 @@ class BankStaffViewModelTest {
                             ),
                             ApiResult.Success(
                                 BankRequestPage(
-                                    listOf(request("a1")),
+                                    listOf(bankRequest("a1")),
                                     page = 1,
                                     totalPages = TWO_PAGES,
                                     totalElements = TWO_PAGES.toLong(),
@@ -451,7 +385,7 @@ class BankStaffViewModelTest {
                             ),
                         ),
                 )
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -468,7 +402,7 @@ class BankStaffViewModelTest {
                     dashboard = ApiResult.Success(dashboardOf(account("a1"))),
                     pages = listOf(ApiResult.Failure(ApiError.Server(status = HTTP_ERROR))),
                 )
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -485,7 +419,7 @@ class BankStaffViewModelTest {
                 RecordingStaff(
                     dashboard = ApiResult.Success(dashboardOf(account("a1"), account("a2"))),
                 )
-            val viewModel = model(source, memberVisible = listOf(summary("a1")))
+            val viewModel = staffModel(source, memberVisible = listOf(summary("a1")))
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -515,7 +449,7 @@ class BankStaffViewModelTest {
     fun `a caller without the role gets a refusal, not a crash`() =
         runTest(dispatcher) {
             val source = RecordingStaff(dashboard = ApiResult.Failure(ApiError.Forbidden()))
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -534,7 +468,7 @@ class BankStaffViewModelTest {
                             BankStaffDashboard(true, listOf(account("a1")), BankStaffTotals("1", 1, 0)),
                         ),
                 )
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -544,7 +478,7 @@ class BankStaffViewModelTest {
     @Test
     fun `confirming needs a holder, which is why it cannot be a button`() =
         runTest(dispatcher) {
-            val request = request("a1")
+            val request = bankRequest("a1")
             val state = BankConfirmState(request)
 
             // Artboard 5 draws a bare CTA. ConfirmBankBookingRequest.holderId is @NotNull, so a
@@ -556,7 +490,7 @@ class BankStaffViewModelTest {
     @Test
     fun `an over-limit request additionally needs the attestation`() =
         runTest(dispatcher) {
-            val flagged = request("a1").copy(requiresOwnerApproval = true)
+            val flagged = bankRequest("a1").copy(requiresOwnerApproval = true)
             val state = BankConfirmState(flagged, holderId = "h1")
 
             // Without it the server answers BANK_OWNER_APPROVAL_REQUIRED (REQ-BANK-041).
@@ -567,7 +501,7 @@ class BankStaffViewModelTest {
     @Test
     fun `a transfer needs the receiving holder too`() =
         runTest(dispatcher) {
-            val transfer = request("a1").copy(kind = BankRequestKind.TRANSFER)
+            val transfer = bankRequest("a1").copy(kind = BankRequestKind.TRANSFER)
             val state = BankConfirmState(transfer, holderId = "h1")
 
             assertFalse(state.submittable)
@@ -584,7 +518,7 @@ class BankStaffViewModelTest {
                         listOf(
                             ApiResult.Success(
                                 BankRequestPage(
-                                    listOf(request("a1")),
+                                    listOf(bankRequest("a1")),
                                     page = 0,
                                     totalPages = 1,
                                     totalElements = 1,
@@ -593,7 +527,7 @@ class BankStaffViewModelTest {
                         ),
                 )
             source.holderAnswer = ApiResult.Success(listOf(holder("h1"), holder("h2")))
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -613,11 +547,11 @@ class BankStaffViewModelTest {
     fun `a refusal without a reason is not sent at all`() =
         runTest(dispatcher) {
             val source = RecordingStaff(dashboard = ApiResult.Success(dashboardOf(account("a1"))))
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            viewModel.onRejectOpen(request("a1"))
+            viewModel.onRejectOpen(bankRequest("a1"))
             viewModel.onRejectSubmit()
             advanceUntilIdle()
 
@@ -630,11 +564,11 @@ class BankStaffViewModelTest {
     fun `a refusal sends its reason trimmed, with the version it read`() =
         runTest(dispatcher) {
             val source = RecordingStaff(dashboard = ApiResult.Success(dashboardOf(account("a1"))))
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
-            viewModel.onRejectOpen(request("a1"))
+            viewModel.onRejectOpen(bankRequest("a1"))
             viewModel.onRejectReason("  Beleg fehlt  ")
             viewModel.onRejectSubmit()
             advanceUntilIdle()
@@ -649,7 +583,7 @@ class BankStaffViewModelTest {
             val source = RecordingStaff(dashboard = ApiResult.Success(dashboardOf(account("a1"))))
             source.holderAnswer =
                 ApiResult.Success(listOf(holder("h1"), holder("h2", active = false)))
-            val viewModel = model(source)
+            val viewModel = staffModel(source)
             viewModel.loadOnce()
             advanceUntilIdle()
 
@@ -697,33 +631,6 @@ class BankStaffViewModelTest {
             )
 
         /**
-         * A pending request against one account.
-         *
-         * @param accountId which account.
-         * @return the request.
-         */
-        fun request(accountId: String) =
-            BankBookingRequest(
-                id = "r-$accountId-${accountId.hashCode()}",
-                accountId = accountId,
-                accountName = "Einsatzkasse",
-                targetAccountId = null,
-                kind = BankRequestKind.WITHDRAWAL,
-                amount = "1000",
-                note = null,
-                status = BankRequestStatus.PENDING,
-                requester = "Rhea",
-                rejectReason = null,
-                applicableLimit = null,
-                requiresOwnerApproval = false,
-                ownerApprovalGranted = false,
-                ownerApprovalBy = null,
-                requiredApprover = null,
-                createdAt = "2026-08-01T00:00:00Z",
-                version = 1,
-            )
-
-        /**
          * The member-visible summary of one account.
          *
          * @param id the account.
@@ -753,6 +660,6 @@ class BankStaffViewModelTest {
         ) = BankHolder(id = id, handle = "Halter $id", active = active, totalHeld = "1000")
 
         /** An empty last page. */
-        fun emptyPage() = BankRequestPage(emptyList(), page = 0, totalPages = 1, totalElements = 0)
+        fun emptyRequestPage() = BankRequestPage(emptyList(), page = 0, totalPages = 1, totalElements = 0)
     }
 }

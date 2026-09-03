@@ -2,11 +2,11 @@
 
 **Date:** 2026-09-03 · **Previous:** `MISSING_ARTBOARD_PROMPTS_15.md`.
 
-Two items, both on **chapter 12 artboard 9**, and both surfaced by the same thing: the sheet was
+Three items, all on **chapter 12 artboard 9**, and all surfaced by the same thing: the sheet was
 built in round 8 and has been answering `404` in production ever since, because the API vhost's
 allow-list excluded its four paths on the ground that *no artboard draws them*. Artboard 9 does.
 The rules are in place now (main-repo runbook phase O, ADR-0156), and the moment the sheet could be
-reached, two questions the artboard settles wrongly or not at all became live.
+reached, three questions the artboard settles wrongly or not at all became live.
 
 Neither item is blocked. Each says what the app does **today**, so the design side is ratifying or
 overriding a known state rather than a guess.
@@ -15,6 +15,7 @@ overriding a known state rather than a guess.
 | --- | --- | --- |
 | **D1** | Built **deliberately different** from the drawing | Ratify, or overrule |
 | **E1** | **Not drawn at all** | Draw it, or ratify the fallback |
+| **E2** | **Not drawn at all** — five fields the web has | Draw them, or tell us to trim |
 
 ---
 
@@ -85,3 +86,39 @@ explaining either. The web says it out loud (`approvalRequestFiledMessage()`).
 > the CTA for exactly that reason). That needs a wire field the app does not have today — the
 > ceiling is not on any response it reads — so it is a backend ask, not a redraw. Tell us which of
 > the two you want and we will file the ask.
+
+---
+
+## E2 · Five fields of the web's „Kontobewegung" that artboard 9 does not draw
+
+**Where:** `12 Bank.dc.html`, artboard 9. The drawing has the segment, the account, the amount, the
+holder, the note and — on a transfer — the second account and holder. The web's modal has five more,
+and a booking made from the app carried less than the same booking made in a browser.
+
+They are built now, because the gap was worse than a missing field: `REQ-APP-BANK-012` and the
+0.2.1 changelog both told members the counterparty and the reason were „now sent". They were on the
+wire and nothing could fill them.
+
+| Field | Modes | Why it is not optional to us |
+| --- | --- | --- |
+| **Begründung** | Auszahlung · Umbuchung | **Required** on a `CARTEL` / `CARTEL_BANK` / `SPECIAL` account. Without it the server answers `BANK_JUSTIFICATION_REQUIRED` — a 409 collected after everything else is typed. This is not a nicety; it is what makes a KRT withdrawal possible from a phone at all. |
+| **Notiz Bankmitarbeiter** | all three | Internal, redacted from the org unit's own members (REQ-BANK-054). A second field, not a longer note: the two have different readers. |
+| **Einzahler / Empfänger** | Einzahlung · Auszahlung | REQ-BANK-044. Either a member picked from the bank's own user search, or — behind „Kein Tool-Account" — a typed name. |
+| **Einheit** | Einzahlung · Auszahlung | Which unit the counterparty acted for; independent of the two above. |
+| **Aufteilung** | Einzahlung | Toggle plus a 1–100 share, with a live preview. |
+
+**How they are laid out today**, pending a drawing: the counterparty is a labelled group
+(„Einzahler" / „Empfänger") holding the toggle, then either the picker or the name field, then the
+unit select and one hint. The split is a toggle that reveals its percentage and a preview line, the
+same shape as the fee block directly beneath it. Begründung and Notiz Bankmitarbeiter are plain
+fields in the flow, each with its hint.
+
+> **What would settle it:** artboard 9 redrawn with the five, in whatever order and grouping the
+> chapter wants — or a decision to **trim** some of them for a phone. Trimming is a real answer:
+> the split and the unit are the two we would miss least. Begründung is the one that cannot go,
+> because the server refuses without it.
+
+> [!note] The sheet is getting long
+> Nine fields on a deposit with the counterparty group open. The web has the room of a modal on a
+> desktop; this is a bottom sheet on a 412 dp phone. If the chapter wants a fold („Weitere
+> Angaben") we will build it — that is a layout decision, and the artboard is where it belongs.

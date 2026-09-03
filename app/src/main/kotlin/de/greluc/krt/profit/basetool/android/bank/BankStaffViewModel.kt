@@ -14,6 +14,8 @@ import de.greluc.krt.profit.basetool.android.core.data.BankAccountSummary
 import de.greluc.krt.profit.basetool.android.core.data.BankBookingRequest
 import de.greluc.krt.profit.basetool.android.core.data.BankConfirmation
 import de.greluc.krt.profit.basetool.android.core.data.BankDirectOutcome
+import de.greluc.krt.profit.basetool.android.core.data.BankGrantSource
+import de.greluc.krt.profit.basetool.android.core.data.BankGrantee
 import de.greluc.krt.profit.basetool.android.core.data.BankHolder
 import de.greluc.krt.profit.basetool.android.core.data.BankRequestKind
 import de.greluc.krt.profit.basetool.android.core.data.BankStaffAccount
@@ -23,6 +25,8 @@ import de.greluc.krt.profit.basetool.android.core.data.DirectBooking
 import de.greluc.krt.profit.basetool.android.core.data.DirectBookingKind
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncSource
 import de.greluc.krt.profit.basetool.android.core.data.LiveSyncTopic
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnit
+import de.greluc.krt.profit.basetool.android.core.data.OrgUnitSource
 import de.greluc.krt.profit.basetool.android.core.data.parseTypedDecimal
 import de.greluc.krt.profit.basetool.android.core.network.ApiError
 import de.greluc.krt.profit.basetool.android.core.network.ApiResult
@@ -31,6 +35,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+/**
+ * The account kinds a withdrawal or a transfer must be justified on.
+ *
+ * The same three the web tests (`JUSTIFICATION_TYPES` in `krt-bank-account-search.js`) and the
+ * same three the server enforces. Written out rather than derived, because a fourth kind must be
+ * a deliberate addition on both clients at once.
+ */
+private val JUSTIFICATION_TYPES = setOf("CARTEL", "CARTEL_BANK", "SPECIAL")
+
+/** The upper bound of a split share, and the divisor its preview uses. */
+private const val SPLIT_MAX = 100
 
 /**
  * One row of the staff dashboard, with the two facts the row cannot work out for itself.
@@ -124,6 +140,27 @@ data class BankRejectState(
  *   been read. Guidance only — the authoritative fee is computed server-side at booking time.
  * @property feeInclusive whether [amount] is the **debited gross** rather than what the recipient
  *   receives. `false` is the server's own default and means the fee is added on top.
+ * @property accountType the selected account's kind, carried because the justification rule turns
+ *   on it and the state is where the rule can be enforced. Set by the picker; `null` until an
+ *   account is chosen.
+ * @property justification why the money is being moved. **Required** on a withdrawal or a transfer
+ *   out of a `CARTEL` / `CARTEL_BANK` / `SPECIAL` account — the server answers a blank one with
+ *   `BANK_JUSTIFICATION_REQUIRED`, which is a refusal the form can prevent instead of collecting.
+ *   A deposit has no such field on the wire at all.
+ * @property staffNote the bank's internal note, on all three modes. Redacted from the org unit's
+ *   own members (REQ-BANK-054), which is what makes it a different field from [note] rather than a
+ *   longer one.
+ * @property counterpartyUserId the other side of the booking, when they hold a tool account.
+ * @property counterpartyExternal whether the other side is **not** a tool user, which is what
+ *   swaps the picker for a free-text name. Not on the wire — it decides which of the two
+ *   counterparty fields is sent.
+ * @property counterpartyExternalName the other side's name when they have no account.
+ * @property counterpartyOrgUnitId the other side's org unit. Independent of the two above: a
+ *   registered member can still be acting for a unit, and an external party can belong to one.
+ * @property splitEnabled whether a deposit is spread across the squadron accounts. Deposit only.
+ * @property splitPercent the share that is spread, 1..100, as typed. The server carries a
+ *   cross-field rule the document does not express — a split needs a percentage and a non-split
+ *   must omit one — so the two travel together or not at all.
  */
 data class DirectBookingState(
     val kind: DirectBookingKind = DirectBookingKind.DEPOSIT,
@@ -137,9 +174,68 @@ data class DirectBookingState(
     val error: ApiError? = null,
     val feeRate: java.math.BigDecimal? = null,
     val feeInclusive: Boolean = false,
+    val accountType: String? = null,
+    val justification: String = "",
+    val staffNote: String = "",
+    val counterpartyUserId: String? = null,
+    val counterpartyExternal: Boolean = false,
+    val counterpartyExternalName: String = "",
+    val counterpartyOrgUnitId: String? = null,
+    val splitEnabled: Boolean = false,
+    val splitPercent: String = "",
 ) {
     /** The amount as a figure, or `null` when what was typed is not one. */
     val figure: java.math.BigDecimal? get() = parseTypedDecimal(amount)
+
+    /**
+     * Whether a reason must be given before this booking may be sent.
+     *
+     * Three account kinds demand one, and only on the two modes that take money **out**: the KRT
+     * account, the bank's own, and the special accounts. The same three the web tests
+     * (`JUSTIFICATION_TYPES`), and the same rule the server enforces with
+     * `BANK_JUSTIFICATION_REQUIRED` — checked here so the refusal is a dimmed CTA rather than a
+     * 409 after the member has typed everything else.
+     *
+     * An **unknown** type does not demand one. The flag is the account's own and arrives with it;
+     * inventing a requirement from a missing field would lock a booking the server would take.
+     */
+    val justificationRequired: Boolean
+        get() = kind != DirectBookingKind.DEPOSIT && accountType in JUSTIFICATION_TYPES
+
+    /** Whether the counterparty block belongs on this mode — it is not on the transfer's wire. */
+    val counterpartyApplies: Boolean get() = kind != DirectBookingKind.TRANSFER
+
+    /** Whether the split controls belong on this mode. */
+    val splitApplies: Boolean get() = kind == DirectBookingKind.DEPOSIT
+
+    /** The split share as a figure, or `null` when what was typed is not one. */
+    val splitFigure: java.math.BigDecimal? get() = parseTypedDecimal(splitPercent)
+
+    /**
+     * What the split would send to the squadron accounts, and what stays behind.
+     *
+     * Rounded the way the web rounds it — half-up on the share, remainder by subtraction — so the
+     * two figures always add back to the deposit and neither client can show a total the other
+     * does not.
+     *
+     * @return share and remainder, or `null` while either half is missing.
+     */
+    val splitPreview: Pair<java.math.BigDecimal, java.math.BigDecimal>?
+        get() {
+            val gross = figure?.takeIf { it.signum() > 0 } ?: return null
+            val percent = splitFigure?.takeIf { splitValid } ?: return null
+            val share =
+                (gross * percent)
+                    .divide(java.math.BigDecimal(SPLIT_MAX), 0, java.math.RoundingMode.HALF_UP)
+            return share to (gross - share)
+        }
+
+    /** Whether the typed share is one the server will take. */
+    val splitValid: Boolean
+        get() =
+            splitFigure?.let {
+                it >= java.math.BigDecimal.ONE && it <= java.math.BigDecimal(SPLIT_MAX)
+            } == true
 
     /**
      * Whether the in-game transfer fee applies to what is being booked.
@@ -191,8 +287,34 @@ data class DirectBookingState(
         val targeted =
             kind != DirectBookingKind.TRANSFER ||
                 (destinationAccountId != null && destinationHolderId != null)
-        return positive && addressed && targeted && covers(balance) && reachesRecipient && !saving
+        return positive &&
+            addressed &&
+            targeted &&
+            covers(balance) &&
+            reachesRecipient &&
+            reasoned &&
+            splitConsistent &&
+            !saving
     }
+
+    /**
+     * Whether the reason this booking needs has been given.
+     *
+     * @see justificationRequired
+     */
+    private val reasoned: Boolean
+        get() = !justificationRequired || justification.isNotBlank()
+
+    /**
+     * Whether the split is in a shape the server accepts.
+     *
+     * `BankDepositRequest` carries an `@AssertTrue` — a split needs a percentage and a non-split
+     * must omit one — and it is `@Schema(hidden = true)`, so it appears in **no** generated client
+     * and cannot be enforced by the contract tests. A rule the document does not express is one
+     * the client has to know by hand; this is where it is written down.
+     */
+    private val splitConsistent: Boolean
+        get() = !splitApplies || !splitEnabled || splitValid
 
     /**
      * Whether the account can carry what this booking takes out of it.
@@ -248,6 +370,10 @@ data class DirectBookingState(
  * @property queue the undecided requests, in the order the server returned them. The same read
  *   the per-account counter is aggregated from, so the badge cannot disagree with the list.
  * @property holders the unit's holders, which a confirmation has to name one of.
+ * @property counterpartyOptions what the counterparty picker currently offers.
+ * @property counterpartyQuery what was typed into it, held here so the field survives a
+ *   recomposition and the answer that arrives late can be matched against it.
+ * @property orgUnitOptions every active org unit of either kind, for the counterparty's unit.
  * @property filed set when a direct booking came back **filed** rather than booked — over
  *   the KRT employee ceiling the server raises an approval request instead (REQ-BANK-047,
  *   ADR-0109) and answers 202. The balance has not moved, so the screen has to say so;
@@ -267,6 +393,9 @@ data class BankStaffState(
     val totals: BankStaffTotals? = null,
     val management: Boolean = false,
     val filed: Boolean = false,
+    val counterpartyOptions: List<BankGrantee> = emptyList(),
+    val counterpartyQuery: String = "",
+    val orgUnitOptions: List<OrgUnit> = emptyList(),
     val openRequestTotal: Int = 0,
     val countsPartial: Boolean = false,
     val phase: BankPhase = BankPhase.Loading,
@@ -296,6 +425,12 @@ class BankStaffViewModel(
     private val source: BankStaffSource,
     private val memberAccounts: suspend () -> ApiResult<List<BankAccountSummary>>,
     private val liveSync: LiveSyncSource? = null,
+    // The counterparty's two lists. `BankStaffRepository` implements BankGrantSource as well, so
+    // this is the same object as `source` at the call site -- named separately because the
+    // interface says what is used, and a view model that took the whole repository would be free
+    // to reach for anything on it.
+    private val grantees: BankGrantSource? = null,
+    private val orgUnits: OrgUnitSource? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BankStaffState())
 
@@ -351,6 +486,53 @@ class BankStaffViewModel(
         }
 
         /**
+         * Searches the counterparty picker.
+         *
+         * The same endpoint the web's counterparty picker uses (`/users/search-bank`), and NOT
+         * `/users/search`: the two run the same query over the same scope and differ only in the
+         * role gate, which here is widened to BANK_EMPLOYEE — a bank manager holding no org role
+         * gets 403 on the other one and would have no picker at all.
+         *
+         * A refused search leaves the previous options standing rather than emptying the list: the
+         * write the member is heading for reports its own failure, and an empty picker would say
+         * „there is nobody" about a request that never answered.
+         *
+         * @param query what was typed; blank asks for the first page unfiltered.
+         */
+        fun searchCounterparty(query: String) {
+            mutableState.value = mutableState.value.copy(counterpartyQuery = query)
+            val search = grantees ?: return
+            viewModelScope.launch {
+                val result = search.searchGrantees(query)
+                if (result is ApiResult.Success && mutableState.value.counterpartyQuery == query) {
+                    mutableState.value =
+                        mutableState.value.copy(counterpartyOptions = result.value.rows)
+                }
+            }
+        }
+
+        /**
+         * Reads the org units the counterparty may be acting for.
+         *
+         * Every active unit of either kind, which is what the web offers an **external** party.
+         * For a registered member the web narrows to their own memberships and auto-selects a sole
+         * one; that refinement is not built here, so the list is wider than the web's and never
+         * narrower — it can cost a scroll, it cannot hide the right answer.
+         */
+        fun loadOrgUnits() {
+            if (mutableState.value.orgUnitOptions.isNotEmpty()) {
+                return
+            }
+            val units = orgUnits ?: return
+            viewModelScope.launch {
+                val result = units.activeAllKinds()
+                if (result is ApiResult.Success) {
+                    mutableState.value = mutableState.value.copy(orgUnitOptions = result.value)
+                }
+            }
+        }
+
+        /**
          * Acknowledges the notice that the last attempt was filed rather than booked.
          *
          * Its own action rather than a timeout: the notice says the money has **not** moved, and a
@@ -398,6 +580,30 @@ class BankStaffViewModel(
                         destinationAccountId = open.destinationAccountId,
                         destinationHolderId = open.destinationHolderId,
                         feeInclusive = open.feeInclusive,
+                        // A deposit has no justification on the wire at all, so sending one there
+                        // would be a field the schema does not carry rather than an empty one.
+                        justification =
+                            open.justification.takeIf {
+                                open.kind != DirectBookingKind.DEPOSIT && it.isNotBlank()
+                            },
+                        staffNote = open.staffNote.takeIf { it.isNotBlank() },
+                        // Exactly one of the two counterparty identities: the toggle decides which,
+                        // and sending both would leave the server to guess which one the member
+                        // meant. The unit is independent of both -- a registered member can act
+                        // for a unit, and an external party can belong to one.
+                        counterpartyUserId =
+                            open.counterpartyUserId?.takeIf {
+                                open.counterpartyApplies && !open.counterpartyExternal
+                            },
+                        counterpartyExternalName =
+                            open.counterpartyExternalName.takeIf {
+                                open.counterpartyApplies && open.counterpartyExternal && it.isNotBlank()
+                            },
+                        counterpartyOrgUnitId =
+                            open.counterpartyOrgUnitId?.takeIf { open.counterpartyApplies },
+                        splitEnabled = open.splitApplies && open.splitEnabled,
+                        splitPercent =
+                            open.splitPercent.takeIf { open.splitApplies && open.splitEnabled },
                     )
                 when (val result = source.bookDirectly(booking)) {
                     is ApiResult.Success -> {

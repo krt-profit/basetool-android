@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- **Die Direktbuchung nimmt jetzt alles mit, was das Webtool fragt.** Bisher fehlten fünf Angaben: **Begründung** (bei KRT-, Bank- und Sonderkonten Pflicht — ohne sie hat der Server jede Auszahlung abgelehnt), **Notiz Bankmitarbeiter**, **Einzahler bzw. Empfänger** samt Einheit, und die **Aufteilung auf die Staffelkonten** bei einer Einzahlung. Begründung und Empfänger standen zwar schon in der Übertragung, aber kein Feld konnte sie füllen — die Angabe im Changelog zu 0.2.1 stimmte insofern nicht.
+
+- **Die Freigabe-Limits eines Kontos ließen sich nicht speichern.** „Setzen" und „Entfernen" scheiterten am API-Zugang, während die aktuellen Werte korrekt angezeigt wurden — weshalb es aussah, als würde nichts passieren. Freigegeben mit Runbook-Phase P im Haupt-Repo.
+
 - **Direkt buchen ging in der App nicht — obwohl es eingebaut war.** Ein-, Aus- und Umbuchen ohne Antrag scheiterte immer am API-Zugang, der die vier Pfade nicht freigab. Sie sind jetzt frei (Haupt-Repo, Runbook-Phase O). Dazu zwei Fehler behoben: der Einstieg verlangte die Rolle **Bank-Management**, obwohl der Server nur **Bankmitarbeiter** plus deine Freigabe auf dem Konto verlangt — wer also auf einem Konto buchen durfte, kam im Webtool durch und in der App nicht. Und lag der Betrag über deinem Direktbuchungs-Limit, schloss das Blatt wie bei einer erledigten Buchung: gebucht war nichts, die Buchung stand als Antrag in der Freigabe, und die App sagte es nicht. Jetzt sagt sie „Zur Freigabe eingereicht".
 
 - **Die Materialsammelübersicht war für jede Rolle schreibgesperrt.** Lieferstatus, „Verknüpfung lösen" und das Entfernen eines Materials ohne Bestand waren ausgegraut — bei jedem Konto, auch mit Logistiker-Rolle. Die App fragt jetzt den Auftrag, ob du ihn bearbeiten darfst, und schaltet die drei Aktionen entsprechend frei. **Braucht die Freischaltung am API-Zugang** (Haupt-Repo, Runbook-Phase N).

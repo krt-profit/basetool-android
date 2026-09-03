@@ -899,6 +899,16 @@ private suspend fun ApiReader.krtDeposit(
             counterpartyOrgUnitId = booking.counterpartyOrgUnitId,
             counterpartyExternalName =
                 booking.counterpartyExternalName?.takeIf { it.isNotBlank() },
+            staffNote = booking.staffNote?.takeIf { it.isNotBlank() },
+            // The two halves of the split travel together or not at all: `BankDepositRequest`
+            // carries an @AssertTrue refusing either alone, and it is @Schema(hidden = true), so
+            // nothing generated from the document knows about it.
+            splitEnabled = booking.splitEnabled,
+            splitPercent =
+                booking.splitPercent
+                    ?.takeIf { booking.splitEnabled }
+                    ?.let { parseTypedDecimal(it) }
+                    ?.let { KrtDecimal(it) },
         ),
         BankDepositRequest.serializer(),
     ).krtBooked()
@@ -934,6 +944,7 @@ private suspend fun ApiReader.krtWithdraw(
             counterpartyExternalName =
                 booking.counterpartyExternalName?.takeIf { it.isNotBlank() },
             feeInclusive = booking.feeInclusive.takeIf { booking.feeApplies },
+            staffNote = booking.staffNote?.takeIf { it.isNotBlank() },
         ),
         BankWithdrawalRequest.serializer(),
         BankBookingOutcomeDto.serializer(),
@@ -969,6 +980,7 @@ private suspend fun ApiReader.krtTransfer(
             note = note,
             justification = booking.justification?.takeIf { it.isNotBlank() },
             feeInclusive = booking.feeInclusive.takeIf { booking.feeApplies },
+            staffNote = booking.staffNote?.takeIf { it.isNotBlank() },
         ),
         BankTransferRequest.serializer(),
         BankBookingOutcomeDto.serializer(),

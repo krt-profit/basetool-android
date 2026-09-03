@@ -715,6 +715,11 @@ class MainActivity : AppCompatActivity() {
                     // caller reaches only through their office.
                     container.bank::balances,
                     container.liveSync,
+                    // The same repository as the first argument: it implements BankGrantSource
+                    // too, and the counterparty picker reads the same /users/search-bank the
+                    // Grants tab does.
+                    container.bankStaff,
+                    container.orgUnits,
                 )
             }
             initializer {
