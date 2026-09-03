@@ -740,6 +740,12 @@ now names it, with its own acknowledgement rather than a timeout: a notice sayin
 - [x] A withdrawal over the balance cannot be sent, and becomes sendable when it fits
   (`BankStaffViewModelTest`).
 - [x] Without a holder nothing is sent, in any mode (`BankStaffViewModelTest`).
+- [x] A withdrawal from a `CARTEL` account cannot be sent without a Begründung, and an `ORG_UNIT`
+  account — or an unknown kind — demands none (`BankStaffViewModelTest`).
+- [x] A split needs a share in 1..100, and the two halves are sent together or not at all
+  (`BankStaffViewModelTest`).
+- [x] Switching the counterparty identity clears the other one, and a transfer sends no
+  counterparty at all (`BankStaffViewModelTest`).
 - [x] A transfer needs both halves of its target (`BankStaffViewModelTest`).
 - [x] A `202` raises the „eingereicht" notice and a `201` does not; the notice survives the reload
   the booking itself triggers (`BankStaffViewModelTest`, `BankRepositoryTest`).
@@ -766,6 +772,15 @@ answer with the account's settings — so the write is also the re-read.
 **The read is free.** `BankApprovalLimitsDto` rides on the account's settings response, which the
 app already fetches for the balance target and the visibility grants.
 
+> [!danger] And that is exactly why the writes were invisible until 2026-09-03
+> The settings `GET` was admitted by the API vhost in phase 3, so this section has always drawn the
+> current limits correctly — and **every „Setzen" and „Entfernen" answered `404`**. `approval-limit`
+> appeared nowhere in the main repo's allow-list runbook: not admitted, and not among the
+> deliberate exclusions either. The exclusion that *is* written down names
+> `/bank/accounts/{id}/approval-tiers`, the ladder editor this artboard replaced, so a reader
+> checking whether the limits had been kept out on purpose would have found that line and stopped.
+> Admitted by runbook **phase P**, frozen, and probed at `401` on both verbs of all four leaves.
+
 **The actions are the artboard's words: „Setzen" and „Entfernen"** — not „Speichern", which would
 promise a form, and not „Löschen", which would promise a deletion. Removing asks first and the
 confirmation **names the limit that then applies**, because removing one is not the same as setting
@@ -789,6 +804,8 @@ somebody had set.
 - [x] Setting a limit sends the dimension it was opened on (`BankViewModelTest`).
 - [x] An unreadable amount is not sent (`BankViewModelTest`).
 - [x] Removing asks first, names the fallback, and then sends the dimension (`BankViewModelTest`).
+- [x] All four leaves are admitted by the vhost, frozen in `ExternalContractTest` and probed at
+  `401` on **both** verbs — main-repo runbook **phase P**.
 - [ ] Observed on a device.
 
 **Code:** `BankApprovalLimits`, `BankLimitTarget`, `BankRepository.setApprovalLimit` /
@@ -828,17 +845,53 @@ member would act on.
 withdrawal and a transfer, and the `counterparty*` trio (REQ-BANK-044) on a deposit and a
 withdrawal.
 
-> [!bug] Corrected 2026-09-03 — this said „also now sent", and nothing can fill them
-> `DirectBooking` carries all four and `BankStaffRepository` genuinely puts them on the wire, but
-> `DirectBookingState` has no field for any of them and `confirm` never sets one, so every booking
-> sends `null`. The sentence was true of the layer and false of the app, and the 0.2.1 changelog
+> [!bug] Corrected 2026-09-03 — this said „also now sent" while nothing could fill them
+> `DirectBooking` carried all four and `BankStaffRepository` genuinely put them on the wire, but
+> `DirectBookingState` had no field for any of them and `confirm` never set one, so every booking
+> sent `null`. The sentence was true of the layer and false of the app, and the 0.2.1 changelog
 > entry („Direktbuchungen tragen jetzt Begründung und Empfänger mit, wie im Webtool") repeated it
-> to members — it stands as shipped and is corrected here rather than rewritten there.
->
-> The web's „Kontobewegung" modal also carries a **split deposit** (`splitEnabled` /
-> `splitPercent`) and a **`staffNote`** on all three, which this app models nowhere. So the field
-> parity the heading claims is not reached yet; what is reached is the booking itself. The gap is
-> its own change.
+> to members — it stands as shipped rather than being rewritten. **The form now fills them**, see
+> below.
+
+**The rest of the web's fields, added 2026-09-03.** The sheet drew four of the modal's controls and
+sent none of the others; it now carries all of them.
+
+- **Begründung** — withdrawal and transfer only, and **required** on a `CARTEL`, `CARTEL_BANK` or
+  `SPECIAL` account. The requirement belongs to the **account**, so the kind travels with the id in
+  the state rather than being re-derived at submit time, and the CTA is validation-dimmed with the
+  reason at the field. The server answers a blank one with `BANK_JUSTIFICATION_REQUIRED` — a 409
+  collected *after* everything else has been typed, which is the refusal this prevents. A deposit
+  has no such field on the wire at all, so no account kind can demand one there.
+- **Notiz Bankmitarbeiter** — all three modes, internal, redacted from the org unit's own members
+  (REQ-BANK-054). A second field rather than a longer `note`, because the two have different
+  readers.
+- **Einzahler / Empfänger** — deposit and withdrawal only; `BankTransferRequest` carries no
+  counterparty, because both sides of a transfer are accounts of the same unit and the account
+  fields already name them. Either a member picked from `/users/search-bank` — the same list the
+  web's picker uses, and **not** `/users/search`, whose role gate would 403 a bank manager holding
+  no org role — or, behind „Kein Tool-Account", a typed name. Switching clears the other, because
+  sending both leaves the server to guess which one was meant.
+- **Einheit** — independent of that choice: a registered member can be acting for a unit and an
+  external party can belong to one. Offered from `active-all-kinds`. *The web narrows this to a
+  registered member's own memberships and auto-selects a sole one; that refinement is not built, so
+  the list here is wider and never narrower — it can cost a scroll, it cannot hide the right
+  answer.*
+- **Aufteilung auf die Staffelkonten** — deposit only, a toggle plus a 1–100 share with a live
+  preview that rounds the way the web rounds (half-up on the share, remainder by subtraction), so
+  the two clients cannot show different totals for the same booking.
+
+> [!warning] The split's two halves are one control, and no test can see the rule
+> `BankDepositRequest` carries an `@AssertTrue` refusing a split without a percentage and a
+> percentage without a split — and it is `@Schema(hidden = true)`, so it reaches no generated
+> client and **no contract guard**. The toggle therefore clears the field when it is unticked, and
+> `submittable` refuses an out-of-range share, because a rule the document cannot express is one
+> the client has to keep by hand.
+
+> [!note] Artboard 9 draws none of these fields
+> The drawing is the four controls the sheet already had. Adding them is a deviation from the
+> handoff, taken deliberately because the web has them and a booking made from the app otherwise
+> carries less than the same booking made in a browser — the gap `REQ-APP-BANK-012` had claimed was
+> already closed. Filed in `MISSING_ARTBOARD_PROMPTS_16.md` for the design side to draw or trim.
 
 **Acceptance**
 

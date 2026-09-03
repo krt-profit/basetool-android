@@ -1017,6 +1017,13 @@ private fun BankStaffScope(
         }
     }
     state.direct?.let { direct ->
+        // Both lists are read when the sheet opens rather than at screen load: they are needed by
+        // one optional field on two of three modes, and reading them for every visit to the tab
+        // would put two requests behind a control most bookings never touch.
+        LaunchedEffect(Unit) {
+            viewModel.directBooking.loadOrgUnits()
+            viewModel.directBooking.searchCounterparty("")
+        }
         BankDirectBookingSheet(
             state = direct,
             accounts = state.rows.map { it.account },
@@ -1024,6 +1031,10 @@ private fun BankStaffScope(
             onEdit = viewModel.directBooking::edit,
             onConfirm = viewModel.directBooking::confirm,
             onDismiss = viewModel.directBooking::close,
+            counterpartyOptions = state.counterpartyOptions,
+            counterpartyQuery = state.counterpartyQuery,
+            orgUnitOptions = state.orgUnitOptions,
+            onCounterpartyQuery = viewModel.directBooking::searchCounterparty,
         )
     }
     StaffScopeDialogs(state = state, viewModel = viewModel)

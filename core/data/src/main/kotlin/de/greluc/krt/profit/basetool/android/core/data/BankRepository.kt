@@ -1217,6 +1217,12 @@ enum class DirectBookingKind {
  *   paid it (REQ-BANK-044) — recorded on the transaction header, not on the holder posting.
  * @property counterpartyOrgUnitId which unit that member acted for.
  * @property counterpartyExternalName who received it when they are not a member at all.
+ * @property staffNote the bank's internal note, on all three kinds. Redacted from the org unit's
+ *   own members (REQ-BANK-054), which is what makes it a second field rather than a longer [note].
+ * @property splitEnabled whether a deposit is spread across the squadron accounts; deposit only.
+ * @property splitPercent the share that is spread, 1..100. Travels **with** [splitEnabled] and
+ *   never without it: `BankDepositRequest` carries an `@AssertTrue` refusing either half alone,
+ *   and it is `@Schema(hidden = true)`, so no generated client and no contract test can see it.
  */
 data class DirectBooking(
     val kind: DirectBookingKind,
@@ -1231,6 +1237,9 @@ data class DirectBooking(
     val counterpartyUserId: String? = null,
     val counterpartyOrgUnitId: String? = null,
     val counterpartyExternalName: String? = null,
+    val staffNote: String? = null,
+    val splitEnabled: Boolean = false,
+    val splitPercent: String? = null,
 ) {
     /**
      * Whether the in-game transfer fee applies to this booking.
