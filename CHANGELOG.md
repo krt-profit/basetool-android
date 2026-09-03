@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Die Materialsammelübersicht war für jede Rolle schreibgesperrt.** Lieferstatus, „Verknüpfung lösen" und das Entfernen eines Materials ohne Bestand waren ausgegraut — bei jedem Konto, auch mit Logistiker-Rolle. Die App fragt jetzt den Auftrag, ob du ihn bearbeiten darfst, und schaltet die drei Aktionen entsprechend frei. **Braucht die Freischaltung am API-Zugang** (Haupt-Repo, Runbook-Phase N).
+
+- **Jemanden aus einer Einheit zu entfernen schlug immer fehl.** „Konnte nicht gespeichert werden." — die App benutzte einen Pfad, den der Server als veraltet markiert hat und den der API-Zugang nicht freigibt. Sie benutzt jetzt den vorgesehenen und lädt den Einsatz danach neu. **Braucht ebenfalls die Freischaltung am API-Zugang.**
+
 ## [0.2.3] — 2026-09-03
 
 ### Fixed

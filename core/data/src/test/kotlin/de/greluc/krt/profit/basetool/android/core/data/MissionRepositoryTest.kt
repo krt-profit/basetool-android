@@ -42,6 +42,9 @@ class MissionRepositoryTest {
         /** A normal answer. */
         const val HTTP_OK = 200
 
+        /** A write that succeeded and has nothing to say. */
+        const val HTTP_NO_CONTENT = 204
+
         /** The server is up but broken. */
         const val HTTP_SERVER_ERROR = 500
 
@@ -686,6 +689,35 @@ class MissionRepositoryTest {
             // plain one with the whole Einsatz, which is what the screen swaps.
             assertTrue(request.target.endsWith("/units/u1/crew"))
             assertTrue(request.body?.utf8().orEmpty().contains(""""participantId":"p2""""))
+        }
+
+    /**
+     * The one call on the Einheiten screen that was still sending the deprecated full-DTO path.
+     *
+     * Two things had to move together. `DELETE …/crew/{crewId}` carries an `@ApiDeprecation` with a
+     * sunset, and the vhost admits neither it nor its replacement — so switching alone would have
+     * traded one 404 for another. The `/slim` endpoint answers `204`, which is why the Einsatz is
+     * re-read here rather than folded out of the answer: there is no answer to fold.
+     */
+    @Test
+    fun `taking somebody off an Einheit deletes the slim path and re-reads the Einsatz`() =
+        runTest {
+            respond("", status = HTTP_NO_CONTENT)
+            respond("""{"id":"m1","name":"Lyria"}""")
+            val structure = MissionStructureRepository(reader = reader())
+
+            val result = structure.removeCrew("m1", unitId = "u1", crewId = "c1")
+
+            val deletion = server.takeRequest()
+            assertEquals("DELETE", deletion.method)
+            assertTrue(
+                "the deprecated path is the one the edge refuses",
+                deletion.target.endsWith("/units/u1/crew/c1/slim"),
+            )
+            val reread = server.takeRequest()
+            assertEquals("GET", reread.method)
+            assertTrue("the screen swaps the whole Einsatz", reread.target.endsWith("/api/v1/missions/m1"))
+            assertEquals("Lyria", (result as ApiResult.Success).value.name)
         }
 
     /** The party lead carries its own section counter, like the other three. */

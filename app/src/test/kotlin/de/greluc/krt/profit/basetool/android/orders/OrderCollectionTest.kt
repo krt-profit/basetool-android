@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -62,6 +63,9 @@ class OrderCollectionTest {
     private val unlinkedMaterials = mutableListOf<String>()
 
     private var rows: List<MaterialCollectionRow> = listOf(row())
+
+    /** What the server says about this caller and this order; `null` is an older server. */
+    private var canEdit: Boolean? = true
 
     private fun row(allocated: BigDecimal? = ALLOCATED) =
         MaterialCollectionRow(
@@ -104,6 +108,7 @@ class OrderCollectionTest {
             createdAt = null,
             version = 1L,
             redacted = false,
+            canEdit = canEdit,
         )
 
     @Before
@@ -169,6 +174,54 @@ class OrderCollectionTest {
 
             assertNull(vm.state.value.confirming)
             assertEquals(listOf("e1"), unlinkedEntries)
+        }
+
+    /**
+     * The screen's three writes are offered because the **order** says so.
+     *
+     * `canEdit` is `isLogisticianOrAbove() && canEditJobOrder(id)`, resolved server-side per order —
+     * the same expression the two unlink endpoints carry in their own `@PreAuthorize`, so the
+     * controls agree with the server rather than restating its rule.
+     */
+    @Test
+    fun `an order the caller may edit opens the writes`() =
+        runTest(dispatcher) {
+            val vm = model()
+
+            advanceUntilIdle()
+
+            assertTrue(vm.state.value.allowed)
+        }
+
+    /** A member without the grant sees the same rows and no controls. */
+    @Test
+    fun `an order the caller may not edit leaves the screen read-only`() =
+        runTest(dispatcher) {
+            canEdit = false
+            val vm = model()
+
+            advanceUntilIdle()
+
+            assertFalse(vm.state.value.allowed)
+            assertEquals(listOf("Laranite"), vm.state.value.rows.map { it.materialName })
+        }
+
+    /**
+     * An absent flag closes the screen rather than opening it.
+     *
+     * It is absent only from a server too old to send it, and all three writes here remove work:
+     * offering a delete the server would refuse costs the member the attempt and tells them
+     * nothing.
+     */
+    @Test
+    fun `an absent canEdit leaves the screen read-only`() =
+        runTest(dispatcher) {
+            canEdit = null
+            val vm = model()
+
+            advanceUntilIdle()
+
+            assertFalse(vm.state.value.allowed)
         }
 
     /** The delivered flag echoes the row's own version, so a concurrent change is a 409. */

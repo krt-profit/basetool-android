@@ -63,7 +63,8 @@ data class UnlinkConfirm(
  * @property displayId its number, for the back link and the title.
  * @property rows the linked stock rows.
  * @property unbacked the materials the Auftrag needs that no row covers.
- * @property allowed whether the caller may change anything here.
+ * @property allowed whether the caller may change anything here — read off the order, see
+ *   [OrderCollectionViewModel.load].
  * @property loading whether the first read is running.
  * @property saving whether a write is in flight.
  * @property error the last failure.
@@ -88,7 +89,7 @@ data class OrderCollectionState(
  * > chapter 16's first draft filed this page under the material reference and corrected itself.
  *
  * @property source the rows and the three writes.
- * @property orders where the order is read, for its number and its required materials.
+ * @property orders where the order is read, for its number, its required materials and the gate.
  * @property orderId which Auftrag.
  */
 class OrderCollectionViewModel(
@@ -117,6 +118,17 @@ class OrderCollectionViewModel(
                             rows = result.value,
                             displayId = order?.displayId.orEmpty(),
                             unbacked = order.krtUnbacked(result.value),
+                            // `canEdit` is `isLogisticianOrAbove() && canEditJobOrder(id)`,
+                            // computed server-side per order — the same expression the two
+                            // unlink endpoints carry in their own `@PreAuthorize`. So the
+                            // screen agrees with them by construction rather than by a rule
+                            // written twice.
+                            //
+                            // An absent flag closes the screen. It is only absent from a
+                            // server too old to send it, and these three writes remove work:
+                            // guessing "allowed" there would offer a member a delete the
+                            // server then refuses.
+                            allowed = order?.canEdit == true,
                             loading = false,
                         )
                 }
@@ -131,19 +143,13 @@ class OrderCollectionViewModel(
     }
 
     /**
-     * Tells the screen whether the caller may write here.
-     *
-     * Passed in rather than derived: the gate is `LOGISTICIAN | OFFICER | ADMIN` plus edit scope on
-     * the order, and the detail screen already knows the first half.
-     *
-     * @param value whether writes are offered.
-     */
-    fun onAllowed(value: Boolean) {
-        mutableState.value = mutableState.value.copy(allowed = value)
-    }
-
-    /**
      * Flips one row's delivered flag.
+     *
+     * The one write on this screen whose server-side gate is **not** the order's. It lives on
+     * `/inventory` and is judged by `canEditInventoryItem` — the row's rule. So a caller the screen
+     * has opened can still be refused here, on a row whose stock belongs to another unit, and the
+     * 403 is shown rather than pre-empted: the collection row carries no per-row permission on the
+     * wire, and hiding a control the server would have allowed is the worse of the two errors.
      *
      * @param row which row.
      */

@@ -832,6 +832,19 @@ clears the other. The app therefore always sends both, and echoes the unit's own
 goes over the wire, so dropping one id revokes exactly that role, and the crew row's own `version`
 is echoed.
 
+**Taking somebody off an Einheit is the `/slim` DELETE.** `DELETE …/units/{unitId}/crew/{crewId}`
+and `…/crew/{crewId}/slim` both exist; the first is `@ApiDeprecation`-marked with a sunset, and the
+app sends the second. It answers `204`, so there is no Einsatz to fold out of the answer and the
+screen **re-reads** the Einsatz instead — one extra GET on a path the member has just been reading,
+in exchange for a write that is not on a clock.
+
+> [!danger] Corrected 2026-09-03 — the app had been sending the deprecated path, and the API vhost
+> admitted neither
+> Every removal was a `404` at the edge, rendered as „Konnte nicht gespeichert werden.". Switching
+> to `/slim` alone would have traded one 404 for another: the replacement was not on the allow-list
+> either. Both moved together (main repo, runbook phase N). The **adding** half
+> (`POST …/units/{unitId}/crew`) is still refused at the edge and is not part of that change.
+
 **The roles come from the CREW catalogue, never the MISSION one.** `job_type.archetype` splits the
 two and they **share their names** — Pilot, Turret, Cargo. Reading either unfiltered offers the
 wrong list and the backend refuses with *"is not of archetype …"*, a `400` that looks right on
@@ -843,6 +856,7 @@ the tab says so in a sentence.
 
 - [ ] A rename sends the name, the HVU flag and the unit's version.
 - [ ] Toggling one role sends the whole remaining set plus the crew row's version.
+- [x] A removal sends `DELETE …/crew/{crewId}/slim` and re-reads the Einsatz afterwards.
 - [ ] The Einheiten tab requests `?archetype=CREW`; the Teilnehmer tab requests `?archetype=MISSION`.
 - [ ] An empty catalogue renders a sentence, not an empty row.
 
