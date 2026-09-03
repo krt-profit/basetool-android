@@ -824,10 +824,21 @@ Now, wherever a fee applies:
 A failed rate read shows **no** fee block rather than a guessed one: an invented rate is a figure a
 member would act on.
 
-**Also now sent**, having been dropped on the floor: `justification` on a withdrawal and a transfer,
-and the `counterparty*` trio (REQ-BANK-044) on a deposit and a withdrawal. A booking made from the
-app carried less than the same booking made in the browser, and could not be completed afterwards
-either.
+**Carried by the repository**, having been dropped on the floor before: `justification` on a
+withdrawal and a transfer, and the `counterparty*` trio (REQ-BANK-044) on a deposit and a
+withdrawal.
+
+> [!bug] Corrected 2026-09-03 — this said „also now sent", and nothing can fill them
+> `DirectBooking` carries all four and `BankStaffRepository` genuinely puts them on the wire, but
+> `DirectBookingState` has no field for any of them and `confirm` never sets one, so every booking
+> sends `null`. The sentence was true of the layer and false of the app, and the 0.2.1 changelog
+> entry („Direktbuchungen tragen jetzt Begründung und Empfänger mit, wie im Webtool") repeated it
+> to members — it stands as shipped and is corrected here rather than rewritten there.
+>
+> The web's „Kontobewegung" modal also carries a **split deposit** (`splitEnabled` /
+> `splitPercent`) and a **`staffNote`** on all three, which this app models nowhere. So the field
+> parity the heading claims is not reached yet; what is reached is the booking itself. The gap is
+> its own change.
 
 **Acceptance**
 
