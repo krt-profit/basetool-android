@@ -7,14 +7,18 @@
 | | |
 |---|---|
 | Source | [`krt-profit/basetool`](https://github.com/krt-profit/basetool) · `backend/src/main/resources/api/openapi.json` |
-| Copied from commit | `131e1c6f7205e5e51e11daba35799c8bb95a63e3` (2026-08-20) — **PR krt-profit/basetool#1613, not yet on `main`** |
-| Document | OpenAPI 3.1.0 · 397 paths · 403 schemas |
+| Copied from commit | `f4d94d871504b77e2e9276383182d7ed9a95d077` (2026-09-03) — **PR krt-profit/basetool#1765, not yet on `main`** |
+| Document | OpenAPI 3.1.0 · 402 paths · 409 schemas |
 
-> The copy is ahead of the backend's `main` on purpose: it carries
-> `GET /api/v1/users/me/memberships`, which the org-unit switcher calls and which lands with
-> basetool#1613. **This repository must not release a build that calls it before that PR is
-> merged and deployed** — the endpoint would 404 and the switcher would show nothing.
-> The schemas are unchanged, so nothing generated from this copy depends on the new path.
+> The copy is ahead of the backend's `main` on purpose: it carries the **optional request body of
+> `POST /api/v1/missions/{id}/join`** (`JoinMissionRequest`), which the sign-up sheet sends and which
+> lands with basetool#1765. **This repository must not release a build that sends it before that PR
+> is merged and deployed** — an older backend ignores an unknown body, so the sign-up would succeed
+> while silently dropping the desired Funktion and the payout preference, which is worse than
+> failing.
+>
+> (The previous note here tracked `GET /api/v1/users/me/memberships` and basetool#1613, merged
+> 2026-08-20.)
 
 ## Refreshing it
 

@@ -12,9 +12,9 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCrewRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCustomFrequencyRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddFrequencyRequest
-import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantPublicRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddUnitRequest
+import de.greluc.krt.profit.basetool.android.core.contract.model.JoinMissionRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryCreateDto
 import de.greluc.krt.profit.basetool.android.core.contract.model.MissionFinanceEntryDto
@@ -535,21 +535,26 @@ interface MissionSource : MissionFinanceSource {
     /**
      * Signs the caller up, with what they asked for.
      *
-     * Sent through `participants/add` rather than `join`, because `join` takes no body and the
-     * sheet has two answers to carry: the payout preference and the desired function. Both
-     * endpoints are guarded by `canSeeMission`, so this is the same permission through a door that
-     * fits — verified against the running stack rather than inferred.
+     * Sent through `join`, which since basetool#1765 takes an optional body carrying the sheet's
+     * two answers — the desired function and the payout preference (backend ADR-0154).
+     *
+     * It used to go through `participants/add`, on the reasoning that both endpoints are guarded by
+     * `canSeeMission` and that this was therefore the same permission through a door that fits. The
+     * permission reasoning was right and the door was not: the **API vhost is a default-deny
+     * allow-list** and does not expose `participants/add`, so every sign-up was refused at the edge
+     * and never reached the backend — reported 2026-09-02, after the app had shipped. The check
+     * that endorsed the old route ran against the test stack, which has no vhost in front of it.
+     *
+     * `join` needs no `userId`: it derives the member from the token and can only ever enrol the
+     * caller, which is also why it needs no self-vs-manager check.
      *
      * @param missionId the mission.
-     * @param userId the caller's own id; this endpoint can name anybody, and the app names only the
-     *   member using it.
      * @param desiredJobTypeId the function they would like, or `null` for no preference.
      * @param donate whether their share goes to the org treasury instead of to them.
      * @return the mission as it now stands, or the classified failure.
      */
     suspend fun join(
         missionId: String,
-        userId: String,
         desiredJobTypeId: String?,
         donate: Boolean,
     ): ApiResult<MissionDetail>
@@ -757,26 +762,24 @@ class MissionRepository(
 
     override suspend fun join(
         missionId: String,
-        userId: String,
         desiredJobTypeId: String?,
         donate: Boolean,
     ): ApiResult<MissionDetail> =
         when (
             val result =
                 reader.post(
-                    path = "${missionPath(missionId)}/participants/add",
+                    path = "${missionPath(missionId)}/join",
                     body =
-                        AddParticipantPublicRequest(
-                            userId = userId,
+                        JoinMissionRequest(
                             desiredJobTypeId = desiredJobTypeId,
                             payoutPreference =
                                 if (donate) {
-                                    AddParticipantPublicRequest.PayoutPreference.DONATE
+                                    JoinMissionRequest.PayoutPreference.DONATE
                                 } else {
-                                    AddParticipantPublicRequest.PayoutPreference.PAYOUT
+                                    JoinMissionRequest.PayoutPreference.PAYOUT
                                 },
                         ),
-                    bodySerializer = AddParticipantPublicRequest.serializer(),
+                    bodySerializer = JoinMissionRequest.serializer(),
                     deserializer = MissionDto.serializer(),
                 )
         ) {
