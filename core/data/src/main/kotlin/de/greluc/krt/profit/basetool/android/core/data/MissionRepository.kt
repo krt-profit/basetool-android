@@ -11,7 +11,6 @@ import de.greluc.krt.profit.basetool.android.core.contract.KrtDecimal
 import de.greluc.krt.profit.basetool.android.core.contract.KrtJson
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCrewRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddCustomFrequencyRequest
-import de.greluc.krt.profit.basetool.android.core.contract.model.AddFrequencyRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddParticipantRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.AddUnitRequest
 import de.greluc.krt.profit.basetool.android.core.contract.model.JoinMissionRequest
@@ -333,21 +332,6 @@ interface MissionAdminSource {
  * grown past what a single abstraction should ask a caller to depend on.
  */
 interface MissionStructureSource {
-    /**
-     * Adds a frequency from the catalogue.
-     *
-     * @param missionId the Einsatz.
-     * @param frequencyTypeId which frequency.
-     * @param value the frequency itself. The type names the channel and this is the number on it —
-     *   both are required, because the catalogue holds the purpose and not the setting.
-     * @return the Einsatz as it now stands, or the classified failure.
-     */
-    suspend fun addFrequency(
-        missionId: String,
-        frequencyTypeId: String,
-        value: String,
-    ): ApiResult<MissionDetail>
-
     /**
      * Adds a frequency the catalogue does not hold — a channel invented for this Einsatz.
      *
@@ -1490,21 +1474,6 @@ class MissionStructureRepository(
     constructor(httpClient: OkHttpClient, baseUrl: String) : this(
         ApiReader(httpClient = httpClient, baseUrl = baseUrl, json = KrtJson, logTag = "MissionStructure"),
     )
-
-    override suspend fun addFrequency(
-        missionId: String,
-        frequencyTypeId: String,
-        value: String,
-    ): ApiResult<MissionDetail> =
-        oneMission(
-            missionId,
-            reader.post(
-                "${missionPath(missionId)}/frequencies",
-                AddFrequencyRequest(frequencyTypeId = frequencyTypeId, value = KrtDecimal(BigDecimal(value))),
-                AddFrequencyRequest.serializer(),
-                MissionDto.serializer(),
-            ),
-        )
 
     override suspend fun addCustomFrequency(
         missionId: String,

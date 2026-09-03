@@ -460,13 +460,13 @@ class MainActivity : AppCompatActivity() {
                                             collectionId,
                                         )
                                     },
-                                    orderEdit = { editedId ->
+                                    orderEdit = { editedId, editMode ->
                                         OrderCreateViewModel(
                                             source = container.orders,
                                             orgUnits = container.orgUnits,
                                             orders = container.orders,
                                             orderId = editedId,
-                                            mode = OrderFormMode.EDIT,
+                                            mode = editMode,
                                         )
                                     },
                                     refineryOrder = {

@@ -224,7 +224,11 @@ enum class KrtDestination(
      * The same screen as [OrderCreate], pre-filled — design ch. 10 artboard 10 is explicit that
      * there is no second layout — so it carries the order's id and nothing else.
      */
-    OrderEdit("order-edit/{orderId}", R.string.order_edit_title, DesignR.drawable.ic_krt_edit),
+    OrderEdit(
+        "order-edit/{orderId}/{orderEditMode}",
+        R.string.order_edit_title,
+        DesignR.drawable.ic_krt_edit,
+    ),
 
     /**
      * The stock rows linked to one Auftrag, pushed from its detail's overflow.
@@ -409,10 +413,23 @@ const val MATERIAL_ID_ARG: String = "materialId"
 /**
  * The route that opens the edit form for one Auftrag.
  *
+ * The mode travels with the id and is not re-derived by the form. Which of the two writes a member
+ * may perform — the Logistician's `PUT /orders/{id}` or the requester's narrower
+ * `PUT /orders/{id}/requested` — is decided where the order and the caller's standing are both
+ * known, which is the detail screen. The form is told what it opened.
+ *
+ * It used to be hardcoded to [OrderFormMode.EDIT] at the view-model factory, so the requester's
+ * mode existed, was computed correctly on the detail screen, and could never reach the form: a
+ * requester silently sent the Logistician's path (audit 2026-09-03).
+ *
  * @param orderId the Auftrag to rewrite.
+ * @param mode which of the two edits this is.
  * @return the concrete route.
  */
-fun orderEditRoute(orderId: String): String = "order-edit/" + orderId
+fun orderEditRoute(
+    orderId: String,
+    mode: String,
+): String = "order-edit/" + orderId + "/" + mode
 
 /**
  * The route that opens one Auftrag's linked stock rows.
@@ -474,6 +491,9 @@ fun orderDetailRoute(orderId: String): String = "order/" + orderId
 
 /** The name of the id argument in [KrtDestination.OrderDetail]'s route. */
 const val ORDER_ID_ARG: String = "orderId"
+
+/** Which of the two Auftrag edits the form was opened for; see [orderEditRoute]. */
+const val ORDER_EDIT_MODE_ARG: String = "orderEditMode"
 
 /**
  * The route that opens one Raffinerie order.
